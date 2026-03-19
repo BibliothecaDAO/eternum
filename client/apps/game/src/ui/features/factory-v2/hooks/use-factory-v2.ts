@@ -30,7 +30,7 @@ import {
 } from "../pending-launch-storage";
 import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
 import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
-import { resolveRunPrimaryAction } from "../presenters";
+import { getSimpleStepTitle, getStepStatusMessage, resolveRunPrimaryAction } from "../presenters";
 import type {
   FactoryGameMode,
   FactoryLaunchPreset,
@@ -1164,42 +1164,33 @@ function buildPendingRunSteps(mode: FactoryGameMode): FactoryRun["steps"] {
   return (
     mode === "eternum"
       ? [
-          createPendingStep("launch-request", "Launch the game", "Starting the launch now.", "running"),
-          createPendingStep("create-world", "Create the game", "Creating the game now.", "pending"),
-          createPendingStep(
-            "wait-for-factory-index",
-            "Wait for the game to appear",
-            "Waiting for the game to show up.",
-            "pending",
-          ),
-          createPendingStep("configure-world", "Apply the game setup", "Applying the game setup.", "pending"),
-          createPendingStep("grant-lootchest-role", "Enable loot chests", "Enabling loot chests.", "pending"),
-          createPendingStep("grant-village-pass-role", "Enable village pass", "Enabling village pass.", "pending"),
-          createPendingStep("create-banks", "Create banks", "Creating the banks.", "pending"),
-          createPendingStep("create-indexer", "Start live updates", "Starting live updates.", "pending"),
+          createPendingStep("launch-request", "running"),
+          createPendingStep("create-world", "pending"),
+          createPendingStep("wait-for-factory-index", "pending"),
+          createPendingStep("configure-world", "pending"),
+          createPendingStep("grant-lootchest-role", "pending"),
+          createPendingStep("grant-village-pass-role", "pending"),
+          createPendingStep("create-banks", "pending"),
+          createPendingStep("create-indexer", "pending"),
         ]
       : [
-          createPendingStep("launch-request", "Launch the game", "Starting the launch now.", "running"),
-          createPendingStep("create-world", "Create the game", "Creating the game now.", "pending"),
-          createPendingStep(
-            "wait-for-factory-index",
-            "Wait for the game to appear",
-            "Waiting for the game to show up.",
-            "pending",
-          ),
-          createPendingStep("configure-world", "Apply the game setup", "Applying the game setup.", "pending"),
-          createPendingStep("grant-lootchest-role", "Enable loot chests", "Enabling loot chests.", "pending"),
-          createPendingStep("create-indexer", "Start live updates", "Starting live updates.", "pending"),
+          createPendingStep("launch-request", "running"),
+          createPendingStep("create-world", "pending"),
+          createPendingStep("wait-for-factory-index", "pending"),
+          createPendingStep("configure-world", "pending"),
+          createPendingStep("grant-lootchest-role", "pending"),
+          createPendingStep("create-indexer", "pending"),
         ]
   ) satisfies FactoryRun["steps"];
 }
 
 function createPendingStep(
   id: FactoryRun["steps"][number]["id"],
-  title: string,
-  latestEvent: string,
   status: FactoryRun["steps"][number]["status"],
 ): FactoryRun["steps"][number] {
+  const title = getSimpleStepTitle({ id, title: id });
+  const latestEvent = getStepStatusMessage(id, status) ?? "Waiting to start.";
+
   return {
     id,
     title,

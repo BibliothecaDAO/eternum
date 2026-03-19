@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-19",
+    title: "Factory Steps Read Clearly",
+    description:
+      "Factory setup steps now use shorter progress wording and clearer status text, so the watch flow reads like work in progress instead of instructions or backend jargon.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-19",
     title: "Factory Timing Gets A Full Row",
     description:
       "Blitz now gives the start schedule its own full-width row, so the date and time controls no longer feel squeezed next to the game duration picker.",

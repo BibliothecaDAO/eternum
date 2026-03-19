@@ -2,6 +2,14 @@ import type { FactoryRecoveryStepId, FactoryRun, FactoryRunStatus, FactoryRunSte
 
 type FactoryRunStep = FactoryRun["steps"][number];
 type FactoryRunLaunchScope = "full" | FactoryRecoveryStepId;
+type FactoryStepCopy = {
+  title: string;
+  pending: string;
+  running: string;
+  done: string;
+  failed: string;
+  alreadyDone?: string;
+};
 
 interface FactoryRunPrimaryAction {
   kind: "retry" | "continue";
@@ -10,118 +18,106 @@ interface FactoryRunPrimaryAction {
   stepId: FactoryRecoveryStepId;
 }
 
-const SIMPLE_STEP_TITLES: Record<string, string> = {
-  "launch-request": "Launch the game",
-  "create-world": "Create the game",
-  "wait-factory-index": "Wait for the game to appear",
-  "wait-for-factory-index": "Wait for the game to appear",
-  "apply-config": "Apply the game setup",
-  "configure-world": "Apply the game setup",
-  "grant-lootchest-role": "Enable loot chests",
-  "create-indexer": "Start live updates",
-  "wait-indexer": "Start live updates",
-  "grant-village-pass": "Enable village pass",
-  "grant-village-pass-role": "Enable village pass",
-  "create-banks": "Create banks",
-  "sync-paymaster": "Enable gas coverage",
-  "publish-ready-state": "Mark the game ready",
-};
-
-const STEP_DETAIL_MESSAGES: Record<
-  FactoryRunStepId,
-  {
-    pending: string;
-    running: string;
-    done: string;
-    failed: string;
-    alreadyDone?: string;
-  }
-> = {
+const STEP_COPY_BY_ID: Record<FactoryRunStepId, FactoryStepCopy> = {
   "launch-request": {
-    pending: "The launch request has not been sent yet.",
-    running: "We are sending the launch request now.",
-    done: "The launch request was accepted.",
-    failed: "The launch request could not be sent.",
+    title: "Submitting request",
+    pending: "We have not sent the request to start this game yet.",
+    running: "We’re sending the request to start this game.",
+    done: "The request to start this game was accepted.",
+    failed: "We could not send the request to start this game.",
   },
   "create-world": {
-    pending: "The game has not been created yet.",
-    running: "We are creating the game now.",
-    done: "The game has been created.",
-    failed: "The game could not be created.",
+    title: "Creating world",
+    pending: "We have not started creating the new game world yet.",
+    running: "We’re creating the new game world.",
+    done: "The new game world is ready.",
+    failed: "We could not create the new game world.",
   },
   "wait-factory-index": {
-    pending: "We have not checked for the new game yet.",
-    running: "We are waiting for the game to appear.",
-    done: "The game is showing up.",
-    failed: "The game has not appeared yet.",
+    title: "Waiting for game",
+    pending: "We have not started checking for the new game yet.",
+    running: "We’re waiting for the new game to appear in Factory.",
+    done: "The new game is now showing up in Factory.",
+    failed: "The new game has not appeared in Factory yet.",
   },
   "wait-for-factory-index": {
-    pending: "We have not checked for the new game yet.",
-    running: "We are waiting for the game to appear.",
-    done: "The game is showing up.",
-    failed: "The game has not appeared yet.",
+    title: "Waiting for game",
+    pending: "We have not started checking for the new game yet.",
+    running: "We’re waiting for the new game to appear in Factory.",
+    done: "The new game is now showing up in Factory.",
+    failed: "The new game has not appeared in Factory yet.",
   },
   "apply-config": {
-    pending: "The game setup has not been applied yet.",
-    running: "We are applying the game setup.",
-    done: "The game setup is in place.",
-    failed: "The game setup did not finish.",
+    title: "Applying settings",
+    pending: "We have not started applying this game’s settings yet.",
+    running: "We’re applying this game’s settings.",
+    done: "This game’s settings are in place.",
+    failed: "We could not finish applying this game’s settings.",
   },
   "configure-world": {
-    pending: "The game setup has not been applied yet.",
-    running: "We are applying the game setup.",
-    done: "The game setup is in place.",
-    failed: "The game setup did not finish.",
+    title: "Applying settings",
+    pending: "We have not started applying this game’s settings yet.",
+    running: "We’re applying this game’s settings.",
+    done: "This game’s settings are in place.",
+    failed: "We could not finish applying this game’s settings.",
   },
   "grant-lootchest-role": {
-    pending: "Loot chests are not enabled yet.",
-    running: "We are enabling loot chests.",
-    done: "Loot chests are enabled.",
-    failed: "Loot chests could not be enabled.",
+    title: "Setting up loot chests",
+    pending: "We have not started turning on loot chests yet.",
+    running: "We’re turning on loot chests for this game.",
+    done: "Loot chests are ready for this game.",
+    failed: "We could not turn on loot chests for this game.",
   },
   "grant-village-pass": {
-    pending: "Village pass is not enabled yet.",
-    running: "We are enabling village pass.",
-    done: "Village pass is enabled.",
-    failed: "Village pass could not be enabled.",
+    title: "Setting up village pass",
+    pending: "We have not started turning on village pass yet.",
+    running: "We’re turning on village pass for this game.",
+    done: "Village pass is ready for this game.",
+    failed: "We could not turn on village pass for this game.",
   },
   "grant-village-pass-role": {
-    pending: "Village pass is not enabled yet.",
-    running: "We are enabling village pass.",
-    done: "Village pass is enabled.",
-    failed: "Village pass could not be enabled.",
+    title: "Setting up village pass",
+    pending: "We have not started turning on village pass yet.",
+    running: "We’re turning on village pass for this game.",
+    done: "Village pass is ready for this game.",
+    failed: "We could not turn on village pass for this game.",
   },
   "create-banks": {
-    pending: "Banks are not created yet.",
-    running: "We are creating the banks.",
-    done: "Banks are ready.",
-    failed: "Banks could not be created.",
+    title: "Preparing banks",
+    pending: "We have not started preparing the banks yet.",
+    running: "We’re preparing the banks for this game.",
+    done: "The banks are ready for this game.",
+    failed: "We could not prepare the banks for this game.",
   },
   "create-indexer": {
-    pending: "Live updates are not ready yet.",
-    running: "We are starting live updates.",
-    done: "Live updates are ready.",
-    failed: "Live updates are not ready yet.",
-    alreadyDone: "Live updates were already ready.",
+    title: "Finishing setup",
+    pending: "We have not started the final setup step yet.",
+    running: "We’re finishing the last setup step.",
+    done: "The last setup step is done.",
+    failed: "We could not finish the last setup step.",
+    alreadyDone: "The last setup step was already done.",
   },
   "wait-indexer": {
-    pending: "Live updates are not ready yet.",
-    running: "We are starting live updates.",
-    done: "Live updates are ready.",
-    failed: "Live updates are not ready yet.",
-    alreadyDone: "Live updates were already ready.",
+    title: "Finishing setup",
+    pending: "We have not started the final setup step yet.",
+    running: "We’re finishing the last setup step.",
+    done: "The last setup step is done.",
+    failed: "We could not finish the last setup step.",
+    alreadyDone: "The last setup step was already done.",
   },
   "sync-paymaster": {
-    pending: "Gas coverage is not ready yet.",
-    running: "We are enabling gas coverage.",
-    done: "Gas coverage is ready.",
-    failed: "Gas coverage could not be enabled.",
+    title: "Setting up gas coverage",
+    pending: "We have not started turning on gas coverage yet.",
+    running: "We’re turning on gas coverage for this game.",
+    done: "Gas coverage is ready for this game.",
+    failed: "We could not turn on gas coverage for this game.",
   },
   "publish-ready-state": {
-    pending: "This game is not marked ready yet.",
-    running: "We are marking the game ready.",
+    title: "Marking game ready",
+    pending: "We have not marked this game ready yet.",
+    running: "We’re marking this game ready.",
     done: "This game is marked ready.",
-    failed: "This game could not be marked ready.",
+    failed: "We could not mark this game ready.",
   },
 };
 
@@ -286,16 +282,16 @@ export const resolveRunProgressMetrics = (run: FactoryRun) => {
 };
 
 export const getSimpleStepTitle = (step: Pick<FactoryRun["steps"][number], "id" | "title">) =>
-  SIMPLE_STEP_TITLES[step.id] ?? step.title;
+  STEP_COPY_BY_ID[step.id]?.title ?? step.title;
 
-export const getStepDetailMessage = (step: FactoryRun["steps"][number]) => {
-  const detailMessages = STEP_DETAIL_MESSAGES[step.id];
+export const getStepStatusMessage = (stepId: FactoryRunStepId, status: FactoryStepStatus) => {
+  const detailMessages = STEP_COPY_BY_ID[stepId];
 
   if (!detailMessages) {
-    return step.latestEvent;
+    return null;
   }
 
-  switch (step.status) {
+  switch (status) {
     case "running":
       return detailMessages.running;
     case "succeeded":
@@ -309,6 +305,10 @@ export const getStepDetailMessage = (step: FactoryRun["steps"][number]) => {
     default:
       return detailMessages.pending;
   }
+};
+
+export const getStepDetailMessage = (step: FactoryRun["steps"][number]) => {
+  return getStepStatusMessage(step.id, step.status) ?? step.latestEvent;
 };
 
 export const getRunHeadline = (run: FactoryRun) => {

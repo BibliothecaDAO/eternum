@@ -3,18 +3,18 @@ import type { LaunchGameStepId } from "../types";
 export function resolveLaunchStepTitle(stepId: LaunchGameStepId): string {
   switch (stepId) {
     case "create-world":
-      return "Create world";
+      return "Creating world";
     case "wait-for-factory-index":
-      return "Wait for factory index";
+      return "Waiting for game";
     case "configure-world":
-      return "Configure world";
+      return "Applying settings";
     case "grant-lootchest-role":
-      return "Grant loot chest role";
+      return "Setting up loot chests";
     case "grant-village-pass-role":
-      return "Grant village pass roles";
+      return "Setting up village pass";
     case "create-banks":
-      return "Create banks";
+      return "Preparing banks";
     case "create-indexer":
-      return "Create indexer";
+      return "Finishing setup";
   }
 }
