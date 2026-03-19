@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-glow-70",
-    "launchRequestId": "23305545213-1",
+    "gameName": "bltz-kick-619",
+    "launchRequestId": "23306245015-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23305545213,
+    "workflowRunId": 23306245015,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "ed0228dc-0032-4105-9a89-3c2f4509e90a"
+    "stepId": "create-world",
+    "leaseId": "a3614833-1fb1-4380-9ad2-f735b1d35cef"
   },
-  "acquiredAt": "2026-03-19T16:35:38.587Z",
-  "heartbeatAt": "2026-03-19T16:35:40.244Z",
-  "expiresAt": "2026-03-19T16:35:40.244Z",
-  "releasedAt": "2026-03-19T16:35:40.244Z"
+  "acquiredAt": "2026-03-19T16:49:39.464Z",
+  "heartbeatAt": "2026-03-19T16:49:39.464Z",
+  "expiresAt": "2026-03-19T16:59:39.464Z"
 }
