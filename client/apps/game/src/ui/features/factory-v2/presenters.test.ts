@@ -115,9 +115,9 @@ describe("factory run recovery actions", () => {
       ],
     });
 
-    expect(getSimpleStepTitle(run.steps[0])).toBe("Start live updates");
-    expect(getStepDetailMessage(run.steps[0])).toBe("Live updates are not ready yet.");
-    expect(getStepDetailMessage(run.steps[1])).toBe("The game setup has not been applied yet.");
+    expect(getSimpleStepTitle(run.steps[0])).toBe("Finishing setup");
+    expect(getStepDetailMessage(run.steps[0])).toBe("We could not finish the last setup step.");
+    expect(getStepDetailMessage(run.steps[1])).toBe("We have not started applying this game’s settings yet.");
   });
 
   it("counts the active setup step in progress labels", () => {

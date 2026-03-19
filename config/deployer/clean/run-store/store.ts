@@ -44,11 +44,11 @@ function resolveFactoryRunLeaseDurationMs(): number {
 
 function buildFactoryRunSteps(gameType: FactoryRunRecord["gameType"]): FactoryRunStepRecord[] {
   const sharedSteps: FactoryRunStepRecord[] = [
-    buildFactoryRunStep("create-world", "Create world"),
-    buildFactoryRunStep("wait-for-factory-index", "Wait for factory index"),
-    buildFactoryRunStep("configure-world", "Configure world"),
-    buildFactoryRunStep("grant-lootchest-role", "Grant loot chest role"),
-    buildFactoryRunStep("create-indexer", "Create indexer"),
+    buildFactoryRunStep("create-world"),
+    buildFactoryRunStep("wait-for-factory-index"),
+    buildFactoryRunStep("configure-world"),
+    buildFactoryRunStep("grant-lootchest-role"),
+    buildFactoryRunStep("create-indexer"),
   ];
 
   if (gameType !== "eternum") {
@@ -57,13 +57,15 @@ function buildFactoryRunSteps(gameType: FactoryRunRecord["gameType"]): FactoryRu
 
   return [
     ...sharedSteps.slice(0, 4),
-    buildFactoryRunStep("grant-village-pass-role", "Grant village pass roles"),
-    buildFactoryRunStep("create-banks", "Create banks"),
+    buildFactoryRunStep("grant-village-pass-role"),
+    buildFactoryRunStep("create-banks"),
     sharedSteps[4],
   ];
 }
 
-function buildFactoryRunStep(id: LaunchGameStepId, title: string): FactoryRunStepRecord {
+function buildFactoryRunStep(id: LaunchGameStepId): FactoryRunStepRecord {
+  const title = resolveLaunchStepTitle(id);
+
   return {
     id,
     title,

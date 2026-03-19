@@ -15,6 +15,7 @@ import {
   getRunStatusMeta,
   getStepDetailMessage,
   getSimpleStepTitle,
+  getStepStatusMessage,
   getStepStatusMeta,
   resolveRunProgressMetrics,
   resolveRunPrimaryAction,
@@ -858,11 +859,11 @@ function buildWatchTimelineRun(run: FactoryRun): FactoryRun {
 }
 
 function buildAcceptedLaunchRequestStep(): FactoryRun["steps"][number] {
-  const latestEvent = "The launch request was accepted.";
+  const latestEvent = getStepStatusMessage("launch-request", "succeeded") ?? "The request was accepted.";
 
   return {
     id: "launch-request",
-    title: "Launch the game",
+    title: getSimpleStepTitle({ id: "launch-request", title: "launch-request" }),
     summary: latestEvent,
     workflowName: "launch-request",
     status: "succeeded",
