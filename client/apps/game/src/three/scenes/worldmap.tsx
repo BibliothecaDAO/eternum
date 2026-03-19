@@ -104,7 +104,6 @@ import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
-  shouldAcceptArmyTabSelectionAttempt,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
@@ -242,6 +241,9 @@ import {
 } from "./worldmap-chunk-presentation";
 import { resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
 import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
+import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
+import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
+import { createProvisionalBiomeTracker, resolveArmySpawnBiome } from "./provisional-biome";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -252,6 +254,7 @@ interface CachedMatrixEntry {
   expectedExploredTerrainInstances?: number;
   terrainFingerprint?: string;
   visibleTerrainOwnership?: Array<[string, VisibleTerrainInstanceRef]>;
+  generation?: number;
 }
 
 interface PreparedTerrainChunk {
@@ -595,6 +598,8 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private exploredTilesGeneration = createTerrainCacheGeneration();
+  private provisionalBiomes = createProvisionalBiomeTracker();
   private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = WORLDMAP_CHUNK_POLICY.cache.recommendedMinSize;
@@ -869,12 +874,17 @@ export default class WorldmapScene extends WarpTravel {
 
         // Ensure army spawn location is marked as explored for pathfinding
         // This fixes the bug where newly spawned armies can't see movement options
-        if (!this.exploredTiles.has(normalizedPos.x)) {
-          this.exploredTiles.set(normalizedPos.x, new Map());
-        }
-        if (!this.exploredTiles.get(normalizedPos.x)!.has(normalizedPos.y)) {
-          // Mark spawn location as grassland (default safe biome for pathfinding)
+        const spawnResult = resolveArmySpawnBiome(
+          this.exploredTiles,
+          normalizedPos.x, normalizedPos.y, BiomeType.Grassland,
+        );
+        if (spawnResult.action === "write_provisional") {
+          if (!this.exploredTiles.has(normalizedPos.x)) {
+            this.exploredTiles.set(normalizedPos.x, new Map());
+          }
           this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
+          this.provisionalBiomes.mark(normalizedPos.x, normalizedPos.y);
+          this.exploredTilesGeneration.bump();
         }
 
         await this.armyManager.onTileUpdate(update);
@@ -2232,14 +2242,27 @@ export default class WorldmapScene extends WarpTravel {
 
         await this.updateVisibleChunks(true, { reason: "default" });
 
-        if (!this.pendingArmyMovements.has(selectedEntityId) && this.armyManager.hasArmy(selectedEntityId)) {
-          this.onArmySelection(selectedEntityId, playerAddress, { deferDuringChunkTransition: false });
-        } else {
-          if (import.meta.env.DEV) {
-            console.warn(
-              `[DEBUG] Army ${selectedEntityId} still unavailable after forced chunk refresh during selection recovery`,
-            );
+        // Army meshes may not be instantiated immediately after chunk refresh.
+        // Retry a few times with short delays to let the army manager populate.
+        const MAX_RETRIES = 5;
+        const RETRY_DELAY_MS = 200;
+        for (let i = 0; i <= MAX_RETRIES; i++) {
+          if (this.pendingArmyMovements.has(selectedEntityId)) break;
+
+          if (this.armyManager.hasArmy(selectedEntityId)) {
+            this.onArmySelection(selectedEntityId, playerAddress, { deferDuringChunkTransition: false });
+            return;
           }
+
+          if (i < MAX_RETRIES) {
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+          }
+        }
+
+        if (import.meta.env.DEV) {
+          console.warn(
+            `[DEBUG] Army ${selectedEntityId} still unavailable after forced chunk refresh during selection recovery`,
+          );
         }
       } catch (error) {
         if (import.meta.env.DEV) {
@@ -3036,7 +3059,12 @@ export default class WorldmapScene extends WarpTravel {
     const row = normalized.y;
 
     const existingBiome = this.exploredTiles.get(col)?.get(row);
-    const tileAlreadyKnown = !removeExplored && existingBiome !== undefined;
+    // If tile was provisionally set by army spawn, treat as new tile (allow overwrite)
+    const wasProvisional = existingBiome !== undefined && this.provisionalBiomes.isProvisional(col, row);
+    if (wasProvisional) {
+      this.provisionalBiomes.clear(col, row);
+    }
+    const tileAlreadyKnown = !removeExplored && existingBiome !== undefined && !wasProvisional;
     const hasBiomeDelta = !removeExplored && tileAlreadyKnown && existingBiome !== biome;
 
     // Duplicate tile updates can happen across chunk/bounds churn. Invalidate overlapping caches
@@ -3061,6 +3089,7 @@ export default class WorldmapScene extends WarpTravel {
           this.exploredTiles.set(col, new Map());
         }
         this.exploredTiles.get(col)!.set(row, biome);
+        this.exploredTilesGeneration.bump();
         gameWorkerManager.updateExploredTile(col, row, biome);
         incrementWorldmapRenderCounter("duplicateTileAuthoritativeUpdates");
       }
@@ -3106,6 +3135,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (removeExplored) {
       this.exploredTiles.get(col)?.delete(row);
+      this.exploredTilesGeneration.bump();
 
       const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
       if (Number.isFinite(chunkRow) && Number.isFinite(chunkCol)) {
@@ -3122,6 +3152,7 @@ export default class WorldmapScene extends WarpTravel {
       this.exploredTiles.set(col, new Map());
     }
     this.exploredTiles.get(col)!.set(row, biome);
+    this.exploredTilesGeneration.bump();
     gameWorkerManager.updateExploredTile(col, row, biome);
 
     const pos = getWorldPositionForHex({ row, col });
@@ -3803,6 +3834,10 @@ export default class WorldmapScene extends WarpTravel {
 
     const halfRows = rows / 2;
     const halfCols = cols / 2;
+    const { row: snapshotCenterRow, col: snapshotCenterCol } = this.getChunkCenter(startRow, startCol);
+    const exploredTilesSnapshot = snapshotExploredTilesRegion(this.exploredTiles, {
+      centerCol: snapshotCenterCol, centerRow: snapshotCenterRow, halfCols, halfRows,
+    });
     const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
     const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
     const frameBudget = this.hexGridFrameBudgetMs;
@@ -3953,7 +3988,7 @@ export default class WorldmapScene extends WarpTravel {
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
         const shouldHideTile = isStructure;
-        const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+        const isExplored = lookupSnapshotBiome(exploredTilesSnapshot, globalCol, globalRow) || false;
 
         if (shouldHideTile) {
           return;
@@ -4076,6 +4111,10 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const cachedMetadata = cachedMatrices.get("__meta__");
+    if (isTerrainCacheStale(cachedMetadata?.generation, this.exploredTilesGeneration.current())) {
+      this.removeCachedMatricesForChunk(startRow, startCol);
+      return null;
+    }
     const expectedExploredTerrainInstances =
       cachedMetadata?.expectedExploredTerrainInstances ?? this.getExpectedExploredTerrainInstances(startRow, startCol);
     const terrainFingerprint = this.getTerrainFingerprintForChunk(startRow, startCol);
@@ -4139,6 +4178,12 @@ export default class WorldmapScene extends WarpTravel {
 
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_miss");
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses");
+    const { row: prepCenterRow, col: prepCenterCol } = this.getChunkCenter(startRow, startCol);
+    const prepHalfCols = cols / 2;
+    const prepHalfRows = rows / 2;
+    const prepSnapshot = snapshotExploredTilesRegion(this.exploredTiles, {
+      centerCol: prepCenterCol, centerRow: prepCenterRow, halfCols: prepHalfCols, halfRows: prepHalfRows,
+    });
     await Promise.all(this.modelLoadPromises);
 
     return new Promise<PreparedTerrainChunk>((resolve) => {
@@ -4245,7 +4290,7 @@ export default class WorldmapScene extends WarpTravel {
         tempPosition.set(baseX, 0, baseZ);
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
-        const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+        const isExplored = lookupSnapshotBiome(prepSnapshot, globalCol, globalRow) || false;
 
         if (isStructure) {
           return;
@@ -4344,6 +4389,7 @@ export default class WorldmapScene extends WarpTravel {
       expectedExploredTerrainInstances: preparedTerrain.expectedExploredTerrainInstances,
       terrainFingerprint: preparedTerrain.terrainFingerprint,
       visibleTerrainOwnership: preparedTerrain.visibleTerrainOwnership,
+      generation: this.exploredTilesGeneration.current(),
     });
 
     this.cachedMatrices.set(chunkKey, cachedChunk);
@@ -5115,6 +5161,7 @@ export default class WorldmapScene extends WarpTravel {
       expectedExploredTerrainInstances,
       terrainFingerprint,
       visibleTerrainOwnership,
+      generation: this.exploredTilesGeneration.current(),
     });
 
     this.touchMatrixCache(chunkKey);
@@ -6661,17 +6708,17 @@ export default class WorldmapScene extends WarpTravel {
           });
         }
 
-        if (
-          shouldAcceptArmyTabSelectionAttempt({
-            hasPendingMovement,
-            selectionSucceeded,
-          })
-        ) {
+        if (selectionSucceeded) {
           this.state.setLeftNavigationView(LeftView.EntityView);
-          break;
+        } else {
+          // Army not yet rendered in this chunk — queue recovery so it gets
+          // selected once the chunk finishes loading instead of skipping it.
+          this.queueArmySelectionRecovery(army.entityId, account);
+          this.state.setLeftNavigationView(LeftView.EntityView);
         }
-
-        attempts++;
+        // Always stop on this army — don't skip to the next one,
+        // which would cause the camera to flicker between positions.
+        break;
       }
       // If all armies have pending movements, do nothing
     } finally {
