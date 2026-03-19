@@ -62,7 +62,13 @@ const BIOME_COMBAT_BONUS: Record<number, [number, number, number]> = {
 
 // ── Strength calculation ─────────────────────────────────────────────
 
-interface Strength {
+/**
+ * Result of a combat strength calculation.
+ *
+ * Encapsulates the raw numeric strength, biome context, and a
+ * human-readable display string the agent can show directly.
+ */
+export interface Strength {
   /** Base strength (troop count × tier value / 100). */
   base: number;
   /** Biome modifier percentage (e.g. 30, -30, or 0). */
@@ -74,11 +80,21 @@ interface Strength {
 /**
  * Calculate combat strength for a single troop group.
  *
+ * Strength = `floor(troopCount × tierValue / 100)`.
+ * The biome modifier is resolved but **not** applied to the base — it is
+ * returned separately so the caller can display context like "+30% on this tile".
+ *
  * @param troopCount - Number of troops in the group.
- * @param troopTier - Troop tier: "T1", "T2", or "T3".
- * @param troopType - Troop type: "Knight", "Crossbowman", or "Paladin".
+ * @param troopTier - Troop tier: `"T1"`, `"T2"`, or `"T3"`.
+ * @param troopType - Troop type: `"Knight"`, `"Crossbowman"`, or `"Paladin"`.
  * @param biome - Biome ID of the tile; determines the combat bonus modifier.
- * @returns A `Strength` object with base strength, biome modifier percentage, and a display string.
+ * @returns A {@link Strength} with base value, biome modifier, and display string.
+ *
+ * @example
+ * ```ts
+ * const s = calculateStrength(500, "T2", "Knight", 10);
+ * // s.base === 1250, s.biomeModifier === 30, s.display === "1,250 (+30% on this tile)"
+ * ```
  */
 export function calculateStrength(troopCount: number, troopTier: string, troopType: string, biome: number): Strength {
   const tierValue = TIER_VALUE[troopTier] ?? TIER_VALUE.T1;
@@ -101,12 +117,27 @@ export function calculateStrength(troopCount: number, troopTier: string, troopTy
 /**
  * Calculate aggregate combat strength across multiple guard slots.
  *
- * Sums base strength from all slots. Uses the biome modifier of the slot
- * with the highest troop count as the dominant modifier.
+ * Sums base strength from all slots. The biome modifier is taken from the
+ * slot with the highest troop count (the "dominant" group), since that
+ * group contributes the most to the overall combat result.
+ *
+ * Returns `{ base: 0, biomeModifier: 0, display: "0" }` for an empty array.
  *
  * @param guards - Guard slot descriptors, each with troop count, tier, and type.
  * @param biome - Biome ID of the tile the guards occupy.
- * @returns A `Strength` object with combined base, dominant biome modifier, and a display string.
+ * @returns A {@link Strength} with combined base, dominant biome modifier, and display string.
+ *
+ * @example
+ * ```ts
+ * const s = calculateGuardStrength(
+ *   [
+ *     { count: 300, troopTier: "T1", troopType: "Knight" },
+ *     { count: 100, troopTier: "T2", troopType: "Paladin" },
+ *   ],
+ *   10, // biome where Knights get +30%
+ * );
+ * // s.base === 550, s.biomeModifier === 30 (Knight is dominant)
+ * ```
  */
 export function calculateGuardStrength(
   guards: Array<{ count: number; troopTier: string; troopType: string }>,

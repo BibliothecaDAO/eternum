@@ -73,6 +73,12 @@ export type { TileState, Position };
 // on-chain via TroopStaminaConfig. Callers can override via StaminaConfig.
 // ============================================================================
 
+/**
+ * Stamina configuration mirroring the on-chain TroopStaminaConfig.
+ *
+ * All fields have sensible defaults matching the current game config.
+ * Pass a custom instance to any stamina-related function to override.
+ */
 export interface StaminaConfig {
   /** Stamina gained per tick (default: 20) */
   gainPerTick: number;
@@ -88,6 +94,7 @@ export interface StaminaConfig {
   maxCrossbowman: number;
 }
 
+/** Default stamina values matching the current on-chain game config. */
 export const DEFAULT_STAMINA_CONFIG: StaminaConfig = {
   gainPerTick: 20,
   travelCost: 20,
@@ -105,6 +112,21 @@ const TIER_BONUS: Record<string, number> = {
   [TroopTier.T3]: 40,
 };
 
+/**
+ * Calculate the maximum stamina for a given troop type and tier.
+ *
+ * Matches the Cairo `stamina.cairo max()` logic: base from troop type + tier bonus.
+ *
+ * @param troop - The troop type (Knight, Paladin, or Crossbowman).
+ * @param tier - The troop tier (T1, T2, or T3).
+ * @param config - Optional stamina config override.
+ * @returns The maximum stamina value.
+ *
+ * @example
+ * ```ts
+ * maxStamina(TroopType.Paladin, TroopTier.T2); // 140 + 20 = 160
+ * ```
+ */
 export function maxStamina(
   troop: TroopType,
   tier: TroopTier,
@@ -142,6 +164,25 @@ const PALADIN_EXPENSIVE = new Set([
   BiomeType.TropicalSeasonalForest, BiomeType.TropicalRainForest,
 ]);
 
+/**
+ * Compute the stamina travel bonus/penalty for a biome and troop type.
+ *
+ * Matches Cairo `troop.cairo stamina_travel_bonus()` exactly. The returned value
+ * is a modifier added to the base travel cost: negative means cheaper movement,
+ * positive means more expensive.
+ *
+ * @param biome - The biome type of the tile.
+ * @param troop - The troop type moving through the tile.
+ * @param bonusValue - The magnitude of the bonus/penalty (from config).
+ * @returns Stamina modifier: negative = discount, positive = surcharge, 0 = neutral.
+ *
+ * @example
+ * ```ts
+ * staminaTravelBonus(BiomeType.Ocean, TroopType.Knight);    // -10 (cheaper)
+ * staminaTravelBonus(BiomeType.Scorched, TroopType.Knight); // +10 (expensive)
+ * staminaTravelBonus(BiomeType.Bare, TroopType.Paladin);    // -10 (open terrain)
+ * ```
+ */
 export function staminaTravelBonus(
   biome: BiomeType,
   troop: TroopType,
@@ -156,6 +197,16 @@ export function staminaTravelBonus(
   return 0;
 }
 
+/**
+ * Calculate the total stamina cost to traverse a single tile.
+ *
+ * Equivalent to `travelCost + staminaTravelBonus(biome, troop)`.
+ *
+ * @param biome - The biome type of the tile.
+ * @param troop - The troop type moving through the tile.
+ * @param config - Optional stamina config override.
+ * @returns Total stamina cost for this tile.
+ */
 export function travelStaminaCost(
   biome: BiomeType,
   troop: TroopType,
@@ -164,7 +215,17 @@ export function travelStaminaCost(
   return config.travelCost + staminaTravelBonus(biome, troop, config.bonusValue);
 }
 
-/** Get stamina cost from a numeric biome ID */
+/**
+ * Calculate the travel stamina cost from a numeric biome ID.
+ *
+ * Converts the biome ID to a BiomeType, then delegates to {@link travelStaminaCost}.
+ * Falls back to the base travel cost if the biome is unknown or `BiomeType.None`.
+ *
+ * @param biomeId - Numeric biome identifier from the tile data.
+ * @param troop - The troop type moving through the tile.
+ * @param config - Optional stamina config override.
+ * @returns Total stamina cost for this tile.
+ */
 export function travelStaminaCostById(
   biomeId: number,
   troop: TroopType,
@@ -179,14 +240,38 @@ export function travelStaminaCostById(
 // H3 MAPPING
 // ============================================================================
 
+/** H3 resolution used for all hex cell operations. */
 export const H3_RES = 7;
+
+/**
+ * Anchor H3 cell used as the origin for local IJ coordinate mapping.
+ * All game coordinates are translated relative to this cell.
+ */
 export const ANCHOR = latLngToCell(37.7749, -122.4194, H3_RES);
 
+/**
+ * Convert Eternum even-r offset coordinates to an H3 cell index.
+ *
+ * Translates offset (x, y) to axial (q, r), then maps into H3's local IJ space
+ * relative to {@link ANCHOR}.
+ *
+ * @param x - The column coordinate (even-r offset).
+ * @param y - The row coordinate (even-r offset).
+ * @returns H3 cell index string.
+ */
 export function coordToH3(x: number, y: number): string {
   const q = x - Math.trunc((y + (y & 1)) / 2);
   return localIjToCell(ANCHOR, { i: q, j: -y });
 }
 
+/**
+ * Convert an H3 cell index back to Eternum even-r offset coordinates.
+ *
+ * Inverse of {@link coordToH3}: maps from H3 local IJ space back to game (x, y).
+ *
+ * @param h3Cell - H3 cell index string.
+ * @returns Position with x (column) and y (row) in even-r offset coords.
+ */
 export function h3ToPosition(h3Cell: string): Position {
   const ij = cellToLocalIj(ANCHOR, h3Cell);
   const q = ij.i || 0;
@@ -198,25 +283,49 @@ export function h3ToPosition(h3Cell: string): Position {
 // TILE INDEX
 // ============================================================================
 
+/**
+ * Pre-built lookup index mapping game tiles to H3 cells.
+ *
+ * Created once via {@link buildH3TileIndex} and reused across multiple
+ * {@link findPath} calls. Stores biome, occupier, position, and coordinate
+ * mappings in both directions.
+ */
 export interface H3TileIndex {
+  /** H3 cell → numeric biome ID. 0 = unexplored. */
   h3ToBiome: Map<string, number>;
+  /** H3 cell → occupier type. 0 = empty, non-zero = occupied. */
   h3ToOccupier: Map<string, number>;
+  /** H3 cell → original (non-normalized) game position. */
   h3ToPosition: Map<string, Position>;
+  /** "x,y" coordinate key → H3 cell. For fast lookup from game coords. */
   keyToH3: Map<string, string>;
-  /** Coordinate offset subtracted to normalize into H3's IJ range */
+  /** X coordinate offset subtracted during normalization into H3's IJ range. */
   originX: number;
+  /** Y coordinate offset subtracted during normalization into H3's IJ range. */
   originY: number;
+  /** Total number of indexed tiles. */
   count: number;
 }
 
 /**
- * Build H3 tile index from game client TileState[].
- * Call once, reuse for multiple findPath calls.
+ * Build an H3 tile index from game client TileState[].
  *
  * Normalizes coordinates by subtracting the minimum x/y so that H3's
  * localIjToCell works correctly. Eternum world coords (~2 billion)
  * overflow H3's IJ space at resolution 7 — normalization brings them
  * near zero where H3 operates.
+ *
+ * Call once, then reuse the returned index for multiple {@link findPath} calls.
+ *
+ * @param tiles - Array of tile states from the game client (ViewClient).
+ * @returns An {@link H3TileIndex} ready for pathfinding queries.
+ *
+ * @example
+ * ```ts
+ * const tiles = await viewClient.getTiles();
+ * const index = buildH3TileIndex(tiles);
+ * const result = findPath(start, end, index, { troop: TroopType.Knight });
+ * ```
  */
 export function buildH3TileIndex(tiles: TileState[]): H3TileIndex {
   if (tiles.length === 0) {
@@ -266,16 +375,22 @@ export function buildH3TileIndex(tiles: TileState[]): H3TileIndex {
 // PATH RESULT
 // ============================================================================
 
+/**
+ * Result of a pathfinding query.
+ *
+ * Contains the full path as positions, the direction array ready for contract
+ * calls, and stamina cost information.
+ */
 export interface PathResult {
   /** Ordered positions from start to end (inclusive). */
   path: Position[];
-  /** Direction enum values for each step. Ready for contract calls. */
+  /** Direction enum values for each step. Ready for `explorer_travel` contract calls. */
   directions: Direction[];
   /** Number of hex steps. */
   distance: number;
   /** Total stamina cost for the path. */
   staminaCost: number;
-  /** True if a path was found but exceeds maxStamina budget. */
+  /** True if a path was found but exceeds the maxStamina budget. */
   reachedLimit: boolean;
 }
 
@@ -283,25 +398,42 @@ export interface PathResult {
 // PATHFINDING
 // ============================================================================
 
+/** Options for {@link findPath} and {@link findPathNative}. */
 export interface FindPathOptions {
-  /** Troop type for biome cost calculation. */
+  /** Troop type for biome-weighted cost calculation. Omit for uniform cost. */
   troop?: TroopType;
-  /** Maximum stamina budget. */
+  /** Maximum stamina budget. If set and path exceeds it, `reachedLimit` will be true. */
   maxStamina?: number;
-  /** Stamina config override (default: DEFAULT_STAMINA_CONFIG). */
+  /** Stamina config override (default: {@link DEFAULT_STAMINA_CONFIG}). */
   staminaConfig?: StaminaConfig;
 }
 
 /**
- * Find optimal travel path between two explored tiles.
+ * Find the optimal travel path between two explored tiles using H3-based A*.
  *
- * Matches on-chain explorer_move() rules:
+ * Matches on-chain `explorer_move()` rules:
  *   - ALL tiles (including destination) must be not-occupied
  *   - ALL tiles must be discovered (biome != 0)
  *   - Cost per tile = travelCost +/- stamina_travel_bonus(biome, troop)
  *
- * Returns null if unreachable. Returns PathResult with reachedLimit=true
- * if path exists but exceeds maxStamina.
+ * @param start - Starting position in game coordinates.
+ * @param end - Destination position in game coordinates.
+ * @param index - Pre-built H3 tile index from {@link buildH3TileIndex}.
+ * @param options - Troop type, stamina budget, and config overrides.
+ * @returns The optimal path, or `null` if the destination is unreachable.
+ *
+ * @example
+ * ```ts
+ * const result = findPath(
+ *   { x: 100, y: 200 },
+ *   { x: 105, y: 203 },
+ *   index,
+ *   { troop: TroopType.Knight, maxStamina: 120 },
+ * );
+ * if (result && !result.reachedLimit) {
+ *   await explorer_travel(explorerId, result.directions);
+ * }
+ * ```
  */
 export function findPath(
   start: Position,
@@ -401,8 +533,9 @@ export function findPath(
 }
 
 /**
- * Convert H3 cell path → positions + direction array.
- * Throws if any consecutive pair is non-adjacent (internal bug).
+ * Convert an H3 cell path into game positions and a direction array.
+ *
+ * @throws If any consecutive pair in the path is non-adjacent (indicates an internal bug).
  */
 function buildResult(
   startH3: string,
@@ -446,6 +579,19 @@ function buildResult(
 // UTILITIES
 // ============================================================================
 
+/**
+ * Calculate the number of ticks needed to regenerate enough stamina.
+ *
+ * @param currentStamina - The explorer's current stamina.
+ * @param requiredStamina - The stamina needed (e.g. from a path's staminaCost).
+ * @param config - Optional stamina config override.
+ * @returns Number of ticks to wait, or 0 if stamina is already sufficient.
+ *
+ * @example
+ * ```ts
+ * const ticks = regenTicksNeeded(40, 100); // Math.ceil((100 - 40) / 20) = 3
+ * ```
+ */
 export function regenTicksNeeded(
   currentStamina: number,
   requiredStamina: number,
@@ -456,7 +602,15 @@ export function regenTicksNeeded(
 }
 
 /**
- * Tile cost function compatible with the old pathfinding.ts TileCostFn signature.
+ * Create a tile cost function compatible with the legacy `pathfinding.ts` TileCostFn signature.
+ *
+ * Returns a function that maps "x,y" keys to their stamina travel cost,
+ * using the H3 tile index for biome lookups.
+ *
+ * @param index - Pre-built H3 tile index.
+ * @param troop - Troop type for biome cost calculation.
+ * @param config - Optional stamina config override.
+ * @returns A function `(tileKey: string) => number` returning the stamina cost.
  */
 export function makeTileCostFn(
   index: H3TileIndex,
@@ -477,8 +631,14 @@ export function makeTileCostFn(
 // ============================================================================
 
 /**
- * Mark a tile as blocked in the index (e.g. army just moved there but Torii
- * hasn't synced yet). Uses original (non-normalized) coordinates.
+ * Mark a tile as blocked in the index.
+ *
+ * Used when an army just moved to a tile but Torii hasn't synced yet.
+ * Sets the occupier to non-zero so pathfinding treats it as impassable.
+ *
+ * @param index - The H3 tile index to mutate.
+ * @param x - Original (non-normalized) x coordinate.
+ * @param y - Original (non-normalized) y coordinate.
  */
 export function markBlocked(index: H3TileIndex, x: number, y: number): void {
   const h3 = index.keyToH3.get(`${x},${y}`);
@@ -488,8 +648,14 @@ export function markBlocked(index: H3TileIndex, x: number, y: number): void {
 }
 
 /**
- * Mark a tile as unblocked (e.g. explorer left this tile).
- * Uses original (non-normalized) coordinates.
+ * Mark a tile as unblocked in the index.
+ *
+ * Used when an explorer leaves a tile. Sets the occupier to 0 so
+ * pathfinding treats it as passable again.
+ *
+ * @param index - The H3 tile index to mutate.
+ * @param x - Original (non-normalized) x coordinate.
+ * @param y - Original (non-normalized) y coordinate.
  */
 export function markUnblocked(index: H3TileIndex, x: number, y: number): void {
   const h3 = index.keyToH3.get(`${x},${y}`);
@@ -499,9 +665,15 @@ export function markUnblocked(index: H3TileIndex, x: number, y: number): void {
 }
 
 /**
- * Mark a tile as explored (e.g. just explored but Torii hasn't synced).
- * Uses original (non-normalized) coordinates.
- * Adds the tile to the H3 index if it doesn't exist yet.
+ * Mark a tile as explored in the index.
+ *
+ * Used when a tile was just explored but Torii hasn't synced yet.
+ * If the tile doesn't exist in the index, it is added with the given biome.
+ *
+ * @param index - The H3 tile index to mutate.
+ * @param x - Original (non-normalized) x coordinate.
+ * @param y - Original (non-normalized) y coordinate.
+ * @param biome - Biome ID to assign (default: 1, any non-zero = discovered).
  */
 export function markExplored(
   index: H3TileIndex,
@@ -527,8 +699,15 @@ export function markExplored(
 }
 
 /**
- * Convenience: apply recentlyMoved and recentlyExplored overlays from the
- * agent's MapContext onto an H3TileIndex.
+ * Apply runtime overlays from the agent's MapContext onto an H3TileIndex.
+ *
+ * Handles three overlay types in order:
+ * 1. `recentlyMoved` — marks tiles as blocked (army arrived but not yet synced).
+ * 2. `recentlyExplored` — marks tiles as explored (discovered but not yet synced).
+ * 3. `selfPosition` — unblocks the explorer's own tile (self is not an obstacle).
+ *
+ * @param index - The H3 tile index to mutate.
+ * @param options - Overlay data from the agent's MapContext.
  */
 export function applyMapOverlays(
   index: H3TileIndex,
@@ -567,6 +746,12 @@ export function applyMapOverlays(
 // grid index.
 // ============================================================================
 
+/**
+ * Minimal grid interface for native A* pathfinding.
+ *
+ * Abstracts tile data access so {@link findPathNative} works with any
+ * backing store (Map, database, etc.) without coupling to H3.
+ */
 export interface GridIndex {
   /** Biome ID at position. 0 = unexplored. */
   getBiome(x: number, y: number): number;
@@ -578,7 +763,18 @@ export interface GridIndex {
   isSynthetic?(x: number, y: number): boolean;
 }
 
-/** Adapter: wrap MapSnapshot.gridIndex into our GridIndex interface. */
+/**
+ * Adapt a MapSnapshot's gridIndex Map into the {@link GridIndex} interface.
+ *
+ * @param gridIndex - A Map keyed by "x,y" with biome and occupierType values.
+ * @returns A {@link GridIndex} implementation backed by the Map.
+ *
+ * @example
+ * ```ts
+ * const grid = gridIndexFromSnapshot(mapSnapshot.gridIndex);
+ * const result = findPathNative(start, end, grid, { troop: TroopType.Knight });
+ * ```
+ */
 export function gridIndexFromSnapshot(
   gridIndex: Map<string, { biome: number; occupierType: number }>,
 ): GridIndex {
@@ -590,10 +786,33 @@ export function gridIndexFromSnapshot(
 }
 
 /**
- * Native A* pathfinder on the even-r offset hex grid.
+ * Find the optimal path using native even-r offset hex A*.
  *
- * Uses getNeighborHexes for neighbor lookup — guaranteed correct adjacency.
- * No H3 dependency. Works directly with game coordinates.
+ * Unlike {@link findPath}, this has no H3 dependency. It uses
+ * `getNeighborHexes` from `@bibliothecadao/types` for neighbor lookup,
+ * guaranteeing correct adjacency on the even-r offset grid.
+ *
+ * Matches the same on-chain movement rules as {@link findPath}:
+ *   - ALL tiles must be discovered (biome != 0)
+ *   - ALL tiles must be not-occupied (occupier == 0)
+ *   - Synthetic (unexplored) tiles use exploreCost instead of travel cost
+ *
+ * @param start - Starting position in game coordinates.
+ * @param end - Destination position in game coordinates.
+ * @param grid - A {@link GridIndex} providing tile data lookups.
+ * @param options - Troop type, stamina budget, and config overrides.
+ * @returns The optimal path, or `null` if the destination is unreachable.
+ *
+ * @example
+ * ```ts
+ * const grid = gridIndexFromSnapshot(mapSnapshot.gridIndex);
+ * const result = findPathNative(
+ *   { x: 100, y: 200 },
+ *   { x: 105, y: 203 },
+ *   grid,
+ *   { troop: TroopType.Paladin, maxStamina: 160 },
+ * );
+ * ```
  */
 export function findPathNative(
   start: Position,
