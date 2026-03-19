@@ -18,3 +18,38 @@ export function buildFactoryStartAtValue(nextDate: string, nextTime: string, cur
 
   return `${resolvedDate}T${resolvedTime}`;
 }
+
+export function formatFactoryStartDateLabel(datePart: string) {
+  if (!datePart) {
+    return "Pick a date";
+  }
+
+  const displayDate = new Date(`${datePart}T12:00:00`);
+
+  if (!Number.isFinite(displayDate.getTime())) {
+    return datePart;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(displayDate);
+}
+
+export function formatFactoryStartTimeLabel(timePart: string) {
+  if (!timePart) {
+    return "Pick a time";
+  }
+
+  const displayTime = new Date(`2000-01-01T${timePart}`);
+
+  if (!Number.isFinite(displayTime.getTime())) {
+    return timePart;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(displayTime);
+}

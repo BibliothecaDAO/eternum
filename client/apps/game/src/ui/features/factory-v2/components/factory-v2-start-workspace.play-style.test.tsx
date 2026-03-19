@@ -154,6 +154,8 @@ describe("FactoryV2StartWorkspace play style", () => {
 
     const startDateInput = container.querySelector<HTMLInputElement>("#factory-start-date");
     const startTimeInput = container.querySelector<HTMLInputElement>("#factory-start-time");
+    const startDateDisplay = container.querySelector('[data-testid="factory-start-date-display"]');
+    const startTimeDisplay = container.querySelector('[data-testid="factory-start-time-display"]');
     const launchGrid = startDateInput?.closest(".grid");
     const startDatePanel = startDateInput?.closest("label");
     const startTimePanel = startTimeInput?.closest("label");
@@ -161,12 +163,16 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(container.querySelector("#factory-start-at")).toBeNull();
     expect(startDateInput?.className).toContain("min-w-0");
     expect(startDateInput?.className).toContain("max-w-full");
-    expect(startDateInput?.className).toContain("overflow-hidden");
-    expect(startDateInput?.className).toContain("[&::-webkit-datetime-edit]:overflow-hidden");
+    expect(startDateInput?.className).toContain("absolute");
+    expect(startDateInput?.className).toContain("opacity-0");
     expect(startTimeInput?.className).toContain("min-w-0");
     expect(startTimeInput?.className).toContain("max-w-full");
-    expect(startTimeInput?.className).toContain("overflow-hidden");
-    expect(startTimeInput?.className).toContain("[&::-webkit-datetime-edit]:overflow-hidden");
+    expect(startTimeInput?.className).toContain("absolute");
+    expect(startTimeInput?.className).toContain("opacity-0");
+    expect(startDateDisplay?.className).toContain("px-4");
+    expect(startDateDisplay?.className).toContain("gap-3");
+    expect(startTimeDisplay?.className).toContain("px-4");
+    expect(startTimeDisplay?.className).toContain("gap-3");
     expect(launchGrid?.className).toContain("min-w-0");
     expect(launchGrid?.className).toContain("sm:grid-cols-2");
     expect(startDatePanel?.className).toContain("rounded-[20px]");

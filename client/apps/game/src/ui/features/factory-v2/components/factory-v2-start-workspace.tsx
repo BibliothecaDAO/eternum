@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import Rocket from "lucide-react/dist/esm/icons/rocket";
 import RotateCw from "lucide-react/dist/esm/icons/rotate-cw";
 import { formatFactoryDurationLabel } from "../duration";
@@ -18,7 +20,13 @@ import {
   type FactoryMoreOptionsErrors,
 } from "../map-options";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
-import { buildFactoryStartAtValue, resolveFactoryStartDatePart, resolveFactoryStartTimePart } from "../start-time";
+import {
+  buildFactoryStartAtValue,
+  formatFactoryStartDateLabel,
+  formatFactoryStartTimeLabel,
+  resolveFactoryStartDatePart,
+  resolveFactoryStartTimePart,
+} from "../start-time";
 import type { FactoryDurationOption, FactoryGameMode, FactoryLaunchPreset } from "../types";
 import { FactoryV2MoreOptions } from "./factory-v2-more-options";
 
@@ -36,13 +44,13 @@ const FACTORY_FIELD_CONTROL_CLASS_NAME =
 const FACTORY_SELECT_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} appearance-none pr-11 font-medium`;
 
 const FACTORY_SCHEDULE_PANEL_CLASS_NAME =
-  "block min-w-0 overflow-hidden rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]";
+  "block min-w-0 overflow-hidden rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)] transition-colors focus-within:border-black/16";
 
-const FACTORY_NATIVE_PICKER_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} overflow-hidden pr-2 text-left [color-scheme:light] [contain:layout_paint] [&::-webkit-calendar-picker-indicator]:shrink-0 [&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-date-and-time-value]:max-w-full [&::-webkit-date-and-time-value]:overflow-hidden [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:block [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit]:max-w-full [&::-webkit-datetime-edit]:overflow-hidden [&::-webkit-datetime-edit-fields-wrapper]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:max-w-full [&::-webkit-datetime-edit-fields-wrapper]:overflow-hidden`;
+const FACTORY_NATIVE_PICKER_INPUT_CLASS_NAME =
+  "absolute inset-0 h-full w-full min-w-0 max-w-full cursor-pointer opacity-0";
 
-const FACTORY_DATE_CONTROL_CLASS_NAME = FACTORY_NATIVE_PICKER_CONTROL_CLASS_NAME;
-
-const FACTORY_TIME_CONTROL_CLASS_NAME = FACTORY_NATIVE_PICKER_CONTROL_CLASS_NAME;
+const FACTORY_SCHEDULE_VALUE_SURFACE_CLASS_NAME =
+  "pointer-events-none mt-2 flex h-11 items-center gap-3 rounded-[18px] border border-black/10 bg-white/78 px-4 text-left text-[13px] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] md:text-sm";
 
 export const FactoryV2StartWorkspace = ({
   mode,
@@ -368,31 +376,68 @@ const FactoryV2StartTimeField = ({ startAt, onChange }: { startAt: string; onCha
         <span className="text-[11px] leading-5 text-black/38">Your local time</span>
       </div>
       <div className="grid min-w-0 gap-2 sm:grid-cols-2">
-        <label className={FACTORY_SCHEDULE_PANEL_CLASS_NAME}>
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38">Date</span>
-          <input
-            id="factory-start-date"
-            type="date"
-            value={startDate}
-            onChange={(event) => onChange(buildFactoryStartAtValue(event.target.value, startTime, startAt))}
-            className={FACTORY_DATE_CONTROL_CLASS_NAME}
-          />
-        </label>
-        <label className={FACTORY_SCHEDULE_PANEL_CLASS_NAME}>
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38">Time</span>
-          <input
-            id="factory-start-time"
-            type="time"
-            value={startTime}
-            onChange={(event) => onChange(buildFactoryStartAtValue(startDate, event.target.value, startAt))}
-            className={FACTORY_TIME_CONTROL_CLASS_NAME}
-          />
-        </label>
+        <FactoryV2NativePickerField
+          inputId="factory-start-date"
+          label="Date"
+          type="date"
+          value={startDate}
+          displayValue={formatFactoryStartDateLabel(startDate)}
+          icon={<CalendarDays className="h-4 w-4 text-black/36" />}
+          displayTestId="factory-start-date-display"
+          onChange={(value) => onChange(buildFactoryStartAtValue(value, startTime, startAt))}
+        />
+        <FactoryV2NativePickerField
+          inputId="factory-start-time"
+          label="Time"
+          type="time"
+          value={startTime}
+          displayValue={formatFactoryStartTimeLabel(startTime)}
+          icon={<Clock3 className="h-4 w-4 text-black/36" />}
+          displayTestId="factory-start-time-display"
+          onChange={(value) => onChange(buildFactoryStartAtValue(startDate, value, startAt))}
+        />
       </div>
       <p className="mt-2 text-sm leading-6 text-black/48">Choose the day and local time when this game should begin.</p>
     </div>
   );
 };
+
+const FactoryV2NativePickerField = ({
+  inputId,
+  label,
+  type,
+  value,
+  displayValue,
+  icon,
+  displayTestId,
+  onChange,
+}: {
+  inputId: string;
+  label: string;
+  type: "date" | "time";
+  value: string;
+  displayValue: string;
+  icon: ReactNode;
+  displayTestId: string;
+  onChange: (value: string) => void;
+}) => (
+  <label className={FACTORY_SCHEDULE_PANEL_CLASS_NAME}>
+    <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38">{label}</span>
+    <div className="relative min-w-0">
+      <div data-testid={displayTestId} className={FACTORY_SCHEDULE_VALUE_SURFACE_CLASS_NAME}>
+        {icon}
+        <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-black/72">{displayValue}</span>
+      </div>
+      <input
+        id={inputId}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={FACTORY_NATIVE_PICKER_INPUT_CLASS_NAME}
+      />
+    </div>
+  </label>
+);
 
 const FactoryV2DurationField = ({
   durationMinutes,
