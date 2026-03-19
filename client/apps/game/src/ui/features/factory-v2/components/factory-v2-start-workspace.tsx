@@ -242,33 +242,16 @@ export const FactoryV2StartWorkspace = ({
               ) : null}
             </div>
 
-            <div className={cn("grid min-w-0 gap-4", showsDuration ? "sm:grid-cols-2" : "")}>
+            <div data-testid="factory-launch-timing" className="space-y-4">
               <FactoryV2StartTimeField startAt={startAt} onChange={onStartAtChange} />
 
               {showsDuration && durationMinutes !== null ? (
-                <div className="min-w-0">
-                  <label
-                    htmlFor="factory-duration"
-                    className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
-                  >
-                    Duration
-                  </label>
-                  <div className="relative mt-2">
-                    <select
-                      id="factory-duration"
-                      value={String(durationMinutes)}
-                      onChange={(event) => onDurationChange(Number(event.target.value))}
-                      className={cn(FACTORY_SELECT_CONTROL_CLASS_NAME, appearance.listItemClassName)}
-                    >
-                      {durationOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/45" />
-                  </div>
-                </div>
+                <FactoryV2DurationField
+                  durationMinutes={durationMinutes}
+                  durationOptions={durationOptions}
+                  appearanceClassName={appearance.listItemClassName}
+                  onChange={onDurationChange}
+                />
               ) : null}
             </div>
           </FactoryV2StartSectionCard>
@@ -369,8 +352,8 @@ const FactoryV2StartTimeField = ({ startAt, onChange }: { startAt: string; onCha
   const startTime = resolveFactoryStartTimePart(startAt);
 
   return (
-    <div className="min-w-0">
-      <div className="flex items-center justify-between gap-3">
+    <div className="min-w-0 space-y-2">
+      <div className="space-y-1 sm:flex sm:items-end sm:justify-between sm:gap-3 sm:space-y-0">
         <label
           htmlFor="factory-start-date"
           className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
@@ -379,11 +362,9 @@ const FactoryV2StartTimeField = ({ startAt, onChange }: { startAt: string; onCha
         </label>
         <span className="text-[11px] leading-5 text-black/38">Your local time</span>
       </div>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-2">
-        <div className="min-w-0">
-          <label htmlFor="factory-start-date" className="sr-only">
-            Start date
-          </label>
+      <div className="grid min-w-0 gap-2 sm:grid-cols-2">
+        <label className="block min-w-0 rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38">Date</span>
           <input
             id="factory-start-date"
             type="date"
@@ -391,11 +372,9 @@ const FactoryV2StartTimeField = ({ startAt, onChange }: { startAt: string; onCha
             onChange={(event) => onChange(buildFactoryStartAtValue(event.target.value, startTime, startAt))}
             className={FACTORY_DATE_CONTROL_CLASS_NAME}
           />
-        </div>
-        <div className="min-w-0">
-          <label htmlFor="factory-start-time" className="sr-only">
-            Start time
-          </label>
+        </label>
+        <label className="block min-w-0 rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]">
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38">Time</span>
           <input
             id="factory-start-time"
             type="time"
@@ -403,12 +382,48 @@ const FactoryV2StartTimeField = ({ startAt, onChange }: { startAt: string; onCha
             onChange={(event) => onChange(buildFactoryStartAtValue(startDate, event.target.value, startAt))}
             className={FACTORY_TIME_CONTROL_CLASS_NAME}
           />
-        </div>
+        </label>
       </div>
       <p className="mt-2 text-sm leading-6 text-black/48">Choose the day and local time when this game should begin.</p>
     </div>
   );
 };
+
+const FactoryV2DurationField = ({
+  durationMinutes,
+  durationOptions,
+  appearanceClassName,
+  onChange,
+}: {
+  durationMinutes: number;
+  durationOptions: FactoryDurationOption[];
+  appearanceClassName: string;
+  onChange: (value: number) => void;
+}) => (
+  <div className="min-w-0">
+    <label
+      htmlFor="factory-duration"
+      className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+    >
+      Duration
+    </label>
+    <div className="relative mt-2">
+      <select
+        id="factory-duration"
+        value={String(durationMinutes)}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className={cn(FACTORY_SELECT_CONTROL_CLASS_NAME, appearanceClassName)}
+      >
+        {durationOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/45" />
+    </div>
+  </div>
+);
 
 const FactoryV2InlineOptionField = ({
   field,
