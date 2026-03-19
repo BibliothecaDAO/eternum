@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { factoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
@@ -12,20 +12,8 @@ export const FactoryV2Content = () => {
   const factory = useFactoryV2();
   const appearance = resolveFactoryModeAppearance(factory.selectedMode);
   const [selectedWorkflow, setSelectedWorkflow] = useState<FactoryWorkflowView>("start");
-  const [dismissedWatchSessionKey, setDismissedWatchSessionKey] = useState<string | null>(null);
-  const watchSessionKey = resolveWatchSessionKey(factory);
-  const hasAutoWatchPreference = Boolean(factory.matchingRun) || factory.shouldPreferWatchView;
-
-  useEffect(() => {
-    if (!shouldAutoOpenWatch(hasAutoWatchPreference, watchSessionKey, dismissedWatchSessionKey)) {
-      return;
-    }
-
-    setSelectedWorkflow("watch");
-  }, [dismissedWatchSessionKey, hasAutoWatchPreference, watchSessionKey]);
 
   const launchSelectedPreset = async () => {
-    setDismissedWatchSessionKey(null);
     setSelectedWorkflow("watch");
     const launched = await factory.launchSelectedPreset();
 
@@ -34,10 +22,7 @@ export const FactoryV2Content = () => {
     }
   };
 
-  const selectWorkflow = (nextWorkflow: FactoryWorkflowView) => {
-    setSelectedWorkflow(nextWorkflow);
-    setDismissedWatchSessionKey(nextWorkflow === "start" ? watchSessionKey : null);
-  };
+  const selectWorkflow = (nextWorkflow: FactoryWorkflowView) => setSelectedWorkflow(nextWorkflow);
 
   return (
     <section className={cn("relative overflow-hidden md:rounded-[36px] md:border md:p-8", appearance.canvasClassName)}>
@@ -139,31 +124,4 @@ export const FactoryV2Content = () => {
       </div>
     </section>
   );
-};
-
-const shouldAutoOpenWatch = (
-  hasAutoWatchPreference: boolean,
-  watchSessionKey: string | null,
-  dismissedWatchSessionKey: string | null,
-) => {
-  if (!watchSessionKey) {
-    return false;
-  }
-
-  if (!hasAutoWatchPreference) {
-    return false;
-  }
-
-  return dismissedWatchSessionKey !== watchSessionKey;
-};
-
-const resolveWatchSessionKey = (factory: ReturnType<typeof useFactoryV2>) => {
-  const sessionName = factory.activeRunName ?? factory.matchingRun?.name ?? null;
-  const sessionEnvironment = factory.selectedRun?.environment ?? factory.selectedEnvironmentId ?? null;
-
-  if (!sessionName || !sessionEnvironment) {
-    return null;
-  }
-
-  return `${sessionEnvironment}:${sessionName}`;
 };

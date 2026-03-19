@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { getRunDetailMessage, getStepDetailMessage, resolveRunPrimaryAction } from "./presenters";
+import {
+  getRunDetailMessage,
+  getRunProgressLabel,
+  getSimpleStepTitle,
+  getStepDetailMessage,
+  resolveRunPrimaryAction,
+} from "./presenters";
 import type { FactoryRun } from "./types";
 
 function buildFactoryRun(overrides: Partial<FactoryRun> = {}): FactoryRun {
@@ -49,7 +55,7 @@ describe("factory run recovery actions", () => {
       launchScope: "full",
       stepId: "create-world",
     });
-    expect(getRunDetailMessage(run)).toBe("This game stopped right away. Start the launch again from the top.");
+    expect(getRunDetailMessage(run)).toBe("This launch stopped early, so it will need a full retry.");
   });
 
   it("keeps later failures on step-by-step recovery", () => {
@@ -82,7 +88,7 @@ describe("factory run recovery actions", () => {
       launchScope: "wait-for-factory-index",
       stepId: "wait-for-factory-index",
     });
-    expect(getRunDetailMessage(run)).toBe("This game got stuck partway through. Try this part again.");
+    expect(getRunDetailMessage(run)).toBe("This setup stalled on one step, so that step will need another try.");
   });
 
   it("uses plain language for step detail rows", () => {
@@ -109,7 +115,75 @@ describe("factory run recovery actions", () => {
       ],
     });
 
-    expect(getStepDetailMessage(run.steps[0])).toBe("The game is not online yet.");
-    expect(getStepDetailMessage(run.steps[1])).toBe("The setup has not been applied yet.");
+    expect(getSimpleStepTitle(run.steps[0])).toBe("Start live updates");
+    expect(getStepDetailMessage(run.steps[0])).toBe("Live updates are not ready yet.");
+    expect(getStepDetailMessage(run.steps[1])).toBe("The game setup has not been applied yet.");
+  });
+
+  it("counts the active setup step in progress labels", () => {
+    expect(
+      getRunProgressLabel(
+        buildFactoryRun({
+          status: "running",
+          steps: [
+            {
+              id: "create-world",
+              title: "Create world",
+              summary: "Creating the game.",
+              workflowName: "create-world",
+              status: "running",
+              verification: "Creating the game.",
+              latestEvent: "Creating the game.",
+            },
+            {
+              id: "wait-for-factory-index",
+              title: "Wait for factory index",
+              summary: "Waiting to run.",
+              workflowName: "wait-for-factory-index",
+              status: "pending",
+              verification: "Waiting to run.",
+              latestEvent: "Waiting to run.",
+            },
+          ],
+        }),
+      ),
+    ).toBe("1 of 2 parts");
+
+    expect(
+      getRunProgressLabel(
+        buildFactoryRun({
+          status: "running",
+          steps: [
+            {
+              id: "create-world",
+              title: "Create world",
+              summary: "Create world succeeded.",
+              workflowName: "create-world",
+              status: "succeeded",
+              verification: "Create world succeeded.",
+              latestEvent: "Create world succeeded.",
+            },
+            {
+              id: "wait-for-factory-index",
+              title: "Wait for factory index",
+              summary: "Waiting for factory index.",
+              workflowName: "wait-for-factory-index",
+              status: "running",
+              verification: "Waiting for factory index.",
+              latestEvent: "Waiting for factory index.",
+            },
+            {
+              id: "configure-world",
+              title: "Configure world",
+              summary: "Waiting to run.",
+              workflowName: "configure-world",
+              status: "pending",
+              verification: "Waiting to run.",
+              latestEvent: "Waiting to run.",
+            },
+          ],
+        }),
+      ),
+    ).toBe("2 of 3 parts");
   });
 });

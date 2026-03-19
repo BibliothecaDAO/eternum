@@ -11,6 +11,7 @@ interface FactoryRunPrimaryAction {
 }
 
 const SIMPLE_STEP_TITLES: Record<string, string> = {
+  "launch-request": "Launch the game",
   "create-world": "Create the game",
   "wait-factory-index": "Wait for the game to appear",
   "wait-for-factory-index": "Wait for the game to appear",
@@ -36,6 +37,12 @@ const STEP_DETAIL_MESSAGES: Record<
     alreadyDone?: string;
   }
 > = {
+  "launch-request": {
+    pending: "The launch request has not been sent yet.",
+    running: "We are sending the launch request now.",
+    done: "The launch request was accepted.",
+    failed: "The launch request could not be sent.",
+  },
   "create-world": {
     pending: "The game has not been created yet.",
     running: "We are creating the game now.",
@@ -263,6 +270,21 @@ export const getNextStep = (run: FactoryRun) => {
   return run.steps.slice(currentStepIndex + 1).find((step) => step.status === "pending") ?? null;
 };
 
+export const resolveRunProgressMetrics = (run: FactoryRun) => {
+  const totalSteps = Math.max(run.steps.length, 1);
+  const currentStep = getCurrentStep(run);
+  const settledSteps = countSatisfiedSteps(run);
+  const currentStepIndex = currentStep ? run.steps.findIndex((step) => step.id === currentStep.id) : -1;
+  const currentStepNumber =
+    currentStepIndex >= 0 ? currentStepIndex + 1 : run.status === "complete" ? totalSteps : Math.max(settledSteps, 1);
+
+  return {
+    currentStepIndex,
+    currentStepNumber,
+    totalSteps,
+  };
+};
+
 export const getSimpleStepTitle = (step: Pick<FactoryRun["steps"][number], "id" | "title">) =>
   SIMPLE_STEP_TITLES[step.id] ?? step.title;
 
@@ -335,8 +357,10 @@ export const getRunDetailMessage = (run: FactoryRun) => {
   }
 };
 
-export const getRunProgressLabel = (run: FactoryRun) =>
-  `${countSatisfiedSteps(run)} of ${run.steps.length} parts finished`;
+export const getRunProgressLabel = (run: FactoryRun) => {
+  const { currentStepNumber, totalSteps } = resolveRunProgressMetrics(run);
+  return `${currentStepNumber} of ${totalSteps} parts`;
+};
 
 export const resolveRunPrimaryAction = (run: FactoryRun): FactoryRunPrimaryAction | null => {
   const retryableStep = resolveRetryableStep(run);

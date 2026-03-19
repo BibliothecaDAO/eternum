@@ -12,6 +12,7 @@ describe("FactoryV2Content workflow default", () => {
 
     expect(source).toContain('useState<FactoryWorkflowView>("start")');
     expect(source).not.toContain('setSelectedWorkflow("start");');
-    expect(source).not.toContain("[factory.selectedMode]");
+    expect(source).not.toContain("shouldAutoOpenWatch");
+    expect(source).not.toContain("dismissedWatchSessionKey");
   });
 });

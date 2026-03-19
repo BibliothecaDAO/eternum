@@ -40,7 +40,12 @@ vi.mock("./factory-v2-watch-workspace", () => ({
 }));
 
 vi.mock("./factory-v2-workflow-switch", () => ({
-  FactoryV2WorkflowSwitch: () => <div>Workflow switch</div>,
+  FactoryV2WorkflowSwitch: ({ onSelect }: { onSelect: (view: "start" | "watch") => void }) => (
+    <div>
+      <button onClick={() => onSelect("start")}>Start a game</button>
+      <button onClick={() => onSelect("watch")}>Check a game</button>
+    </div>
+  ),
 }));
 
 const waitForAsyncWork = async () => {
@@ -77,7 +82,6 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   isLoadingRuns: false,
   isResolvingRunName: false,
   notice: null,
-  shouldPreferWatchView: false,
   environmentUnavailableReason: null,
   moreOptions: {
     isOpen: false,
@@ -139,7 +143,9 @@ describe("FactoryV2Content network handling", () => {
       await waitForAsyncWork();
     });
 
-    const launchButton = container.querySelector("button");
+    const launchButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Launch"),
+    );
     expect(launchButton?.textContent).toContain("Launch");
 
     await act(async () => {
@@ -152,7 +158,6 @@ describe("FactoryV2Content network handling", () => {
 
   it("continues immediately without opening a network switch prompt", async () => {
     const factory = buildFactoryState({
-      shouldPreferWatchView: true,
       activeRunName: "etrn-sunrise-01",
       selectedRun: { id: "run-1", name: "etrn-sunrise-01", environment: "mainnet" },
     });
@@ -163,15 +168,22 @@ describe("FactoryV2Content network handling", () => {
       await waitForAsyncWork();
     });
 
+    await act(async () => {
+      const watchButton = Array.from(container.querySelectorAll("button")).find((button) =>
+        button.textContent?.includes("Check a game"),
+      );
+      (watchButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
     await vi.waitFor(() => {
       expect(container.textContent).toContain("Continue");
     });
 
-    const continueButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Continue"),
-    );
-
     await act(async () => {
+      const continueButton = Array.from(container.querySelectorAll("button")).find((button) =>
+        button.textContent?.includes("Continue"),
+      );
       (continueButton as HTMLButtonElement).click();
       await waitForAsyncWork();
     });
