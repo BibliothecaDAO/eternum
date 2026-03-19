@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { FactoryRun } from "../types";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
 
 vi.mock("@/ui/design-system/atoms/lib/utils", () => ({
@@ -23,12 +24,12 @@ const waitForAsyncWork = async () => {
   await Promise.resolve();
 };
 
-const buildRun = (overrides: Partial<ReturnType<typeof buildRunBase>> = {}) => ({
+const buildRun = (overrides: Partial<FactoryRun> = {}): FactoryRun => ({
   ...buildRunBase(),
   ...overrides,
 });
 
-const buildRunBase = () => ({
+const buildRunBase = (): FactoryRun => ({
   id: "run-1",
   syncKey: "sync-1",
   mode: "blitz" as const,
