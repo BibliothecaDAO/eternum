@@ -22,6 +22,12 @@ interface ShouldSwitchModelForPositionInput<TModel> {
   resolvedModel: TModel;
 }
 
+interface RaycastIntersectionLike<TMesh> {
+  distance: number;
+  mesh: TMesh;
+  instanceId: number | undefined;
+}
+
 export function resolveRotationUpdate(input: ResolveRotationUpdateInput): number {
   const { currentRotation, targetRotation, rotationSpeed, deltaTime } = input;
   const rotationDiff = targetRotation - currentRotation;
@@ -50,4 +56,15 @@ export function resolveMovementProgressUpdate(
 
 export function shouldSwitchModelForPosition<TModel>(input: ShouldSwitchModelForPositionInput<TModel>): boolean {
   return input.currentModel !== input.resolvedModel;
+}
+
+export function resolveNearestIntersection<TMesh>(
+  current: RaycastIntersectionLike<TMesh> | undefined,
+  candidate: RaycastIntersectionLike<TMesh>,
+): RaycastIntersectionLike<TMesh> {
+  if (!current || candidate.distance < current.distance) {
+    return candidate;
+  }
+
+  return current;
 }

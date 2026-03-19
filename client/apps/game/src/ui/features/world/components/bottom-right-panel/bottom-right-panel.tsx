@@ -28,6 +28,7 @@ import {
   BuildingTypeToString,
   ID,
   ResourcesIds,
+  TileOccupier,
   findResourceById,
 } from "@bibliothecadao/types";
 import { Component, getComponentValue, Metadata, Schema } from "@dojoengine/recs";
@@ -201,35 +202,42 @@ const MapTilePanel = () => {
     return tile.occupier_id !== 0;
   }, [tile]);
 
+  const occupierType = useMemo(() => tile?.occupier_type ?? 0, [tile]);
+
+  const isSpire = useMemo(() => {
+    return occupierType === TileOccupier.Spire;
+  }, [occupierType]);
+
   const isStructure = useMemo(() => {
-    return isTileOccupierStructure(tile?.occupier_type || 0);
-  }, [tile]);
+    return Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
+  }, [occupierType, tile?.occupier_is_structure]);
 
   const isChest = useMemo(() => {
-    return isTileOccupierChest(tile?.occupier_type || 0);
-  }, [tile]);
+    return isTileOccupierChest(occupierType);
+  }, [occupierType]);
 
   const isQuest = useMemo(() => {
-    return isTileOccupierQuest(tile?.occupier_type || 0);
-  }, [tile]);
+    return isTileOccupierQuest(occupierType);
+  }, [occupierType]);
 
   const tileTypeLabel = useMemo(() => {
     if (!tile) return "Hex Tile";
     if (!hasOccupier) return "Biome Tile";
+    if (isSpire) return "Spire Tile";
     if (isStructure) return "Structure Tile";
     if (isChest) return "Relic Tile";
     if (isQuest) return "Quest Tile";
     return "Army Tile";
-  }, [tile, hasOccupier, isStructure, isChest, isQuest]);
+  }, [tile, hasOccupier, isSpire, isStructure, isChest, isQuest]);
 
   const panelTitle = selectedHex
     ? `${tileTypeLabel} · (${selectedHex.col - FELT_CENTER()}, ${selectedHex.row - FELT_CENTER()})`
     : "No Tile Selected";
 
   const syncableEntityType = useMemo<SyncableEntityType | null>(() => {
-    if (!tile || !hasOccupier || isChest || isQuest) return null;
+    if (!tile || !hasOccupier || isSpire || isChest || isQuest) return null;
     return isStructure ? "structure" : "explorer";
-  }, [hasOccupier, isChest, isQuest, isStructure, tile]);
+  }, [hasOccupier, isChest, isQuest, isSpire, isStructure, tile]);
 
   const syncableEntityId = useMemo<ID | null>(() => {
     if (!tile || !syncableEntityType) return null;

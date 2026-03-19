@@ -13,23 +13,32 @@ import {
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
 import { LabelData, LabelTypeDefinition } from "./label-types";
 
+// `@bibliothecadao/types` dist currently omits `StructureType.BitcoinMine` from enum typings.
+// Keep support for chain value `8` without depending on the missing enum member.
+const BITCOIN_MINE_STRUCTURE_TYPE = 8 as StructureType;
+
 /**
  * Structure icon paths
  */
 const STRUCTURE_ICONS = (isBlitz: boolean) => ({
   STRUCTURES: {
     [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Camp]: "/images/labels/enemy_village.png",
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
+    [StructureType.HolySite]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
     [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+    [BITCOIN_MINE_STRUCTURE_TYPE]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
   } as Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Camp]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   } as Record<StructureType, string>,
   ALLY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/allies_village.png",
+    [StructureType.Camp]: "/images/labels/allies_village.png",
     [StructureType.Realm]: "/images/labels/allies_realm.png",
   } as Record<StructureType, string>,
 });

@@ -19,8 +19,8 @@ import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
  * Visibility state for a single frame
  */
 interface FrameVisibilityState {
-  /** Frame ID when this state was computed */
-  frameId: number;
+  /** Visibility version when this state was computed */
+  version: number;
   /** Timestamp of computation */
   timestamp: number;
   /** Set of visible chunk keys */
@@ -63,7 +63,7 @@ export class CentralizedVisibilityManager {
   private boxVisibilityCache = new WeakMap<
     Box3,
     {
-      frameId: number;
+      visibilityVersion: number;
       visible: boolean;
       minX: number;
       minY: number;
@@ -76,7 +76,7 @@ export class CentralizedVisibilityManager {
   private sphereVisibilityCache = new WeakMap<
     Sphere,
     {
-      frameId: number;
+      visibilityVersion: number;
       visible: boolean;
       centerX: number;
       centerY: number;
@@ -87,7 +87,7 @@ export class CentralizedVisibilityManager {
   private pointVisibilityCache = new WeakMap<
     Vector3,
     {
-      frameId: number;
+      visibilityVersion: number;
       visible: boolean;
       x: number;
       y: number;
@@ -100,6 +100,7 @@ export class CentralizedVisibilityManager {
 
   // Frame state
   private currentFrameId = 0;
+  private currentVisibilityVersion = 0;
   private frameState: FrameVisibilityState;
   private isDirty = true;
 
@@ -137,6 +138,11 @@ export class CentralizedVisibilityManager {
    * Must be called before using visibility queries.
    */
   initialize(camera: PerspectiveCamera, controls: MapControls): void {
+    if (this.disposeControlsListener) {
+      this.disposeControlsListener();
+      this.disposeControlsListener = null;
+    }
+
     this.camera = camera;
     this.controls = controls;
 
@@ -172,10 +178,11 @@ export class CentralizedVisibilityManager {
     this.currentFrameId++;
 
     // Only recompute if camera moved or first frame
-    if (this.isDirty || this.frameState.frameId !== this.currentFrameId) {
+    if (this.isDirty || this.frameState.version === 0) {
       this.updateFrustum();
       this.computeChunkVisibility();
-      this.frameState.frameId = this.currentFrameId;
+      this.currentVisibilityVersion += 1;
+      this.frameState.version = this.currentVisibilityVersion;
       this.frameState.timestamp = performance.now();
       this.cachedBoxChecks = 0;
       this.cachedSphereChecks = 0;
@@ -287,7 +294,7 @@ export class CentralizedVisibilityManager {
     const cached = this.boxVisibilityCache.get(box);
     if (
       cached &&
-      cached.frameId === this.currentFrameId &&
+      cached.visibilityVersion === this.currentVisibilityVersion &&
       cached.minX === box.min.x &&
       cached.minY === box.min.y &&
       cached.minZ === box.min.z &&
@@ -300,7 +307,7 @@ export class CentralizedVisibilityManager {
 
     const visible = this.frustum.intersectsBox(box);
     this.boxVisibilityCache.set(box, {
-      frameId: this.currentFrameId,
+      visibilityVersion: this.currentVisibilityVersion,
       visible,
       minX: box.min.x,
       minY: box.min.y,
@@ -321,7 +328,7 @@ export class CentralizedVisibilityManager {
     const cached = this.sphereVisibilityCache.get(sphere);
     if (
       cached &&
-      cached.frameId === this.currentFrameId &&
+      cached.visibilityVersion === this.currentVisibilityVersion &&
       cached.centerX === sphere.center.x &&
       cached.centerY === sphere.center.y &&
       cached.centerZ === sphere.center.z &&
@@ -332,7 +339,7 @@ export class CentralizedVisibilityManager {
 
     const visible = this.frustum.intersectsSphere(sphere);
     this.sphereVisibilityCache.set(sphere, {
-      frameId: this.currentFrameId,
+      visibilityVersion: this.currentVisibilityVersion,
       visible,
       centerX: sphere.center.x,
       centerY: sphere.center.y,
@@ -350,7 +357,7 @@ export class CentralizedVisibilityManager {
     const cached = this.pointVisibilityCache.get(point);
     if (
       cached &&
-      cached.frameId === this.currentFrameId &&
+      cached.visibilityVersion === this.currentVisibilityVersion &&
       cached.x === point.x &&
       cached.y === point.y &&
       cached.z === point.z
@@ -360,7 +367,7 @@ export class CentralizedVisibilityManager {
 
     const visible = this.frustum.containsPoint(point);
     this.pointVisibilityCache.set(point, {
-      frameId: this.currentFrameId,
+      visibilityVersion: this.currentVisibilityVersion,
       visible,
       x: point.x,
       y: point.y,
@@ -483,6 +490,7 @@ export class CentralizedVisibilityManager {
     this.chunkBounds.clear();
     this.onChangeListeners.clear();
     this.frameState = this.createEmptyFrameState();
+    this.currentVisibilityVersion = 0;
     this.camera = null;
     this.controls = null;
 
@@ -497,7 +505,7 @@ export class CentralizedVisibilityManager {
 
   private createEmptyFrameState(): FrameVisibilityState {
     return {
-      frameId: 0,
+      version: 0,
       timestamp: 0,
       visibleChunks: new Set(),
     };
@@ -580,7 +588,7 @@ export function getVisibilityManager(config?: VisibilityManagerConfig): Centrali
 /**
  * Reset the singleton instance (useful for testing or hot reload).
  */
-function resetVisibilityManager(): void {
+export function resetVisibilityManager(): void {
   if (visibilityManagerInstance) {
     visibilityManagerInstance.dispose();
     visibilityManagerInstance = null;

@@ -13,6 +13,8 @@ import {
   createStaminaBar,
   createTroopCountDisplay,
   updateDirectionIndicators,
+  updateGuardArmyDisplay,
+  updateProductionDisplay,
   updateStaminaBar,
 } from "./label-components";
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
@@ -25,17 +27,22 @@ import { resolveCameraView } from "./label-view";
 const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
   STRUCTURES: {
     [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Camp]: "/images/labels/enemy_village.png",
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
+    [StructureType.HolySite]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`, // Lords resource ID
     [StructureType.FragmentMine]: fragmentMineIcon,
+    [StructureType.BitcoinMine]: fragmentMineIcon,
   } as Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Camp]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   } as Record<StructureType, string>,
   ALLY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/allies_village.png",
+    [StructureType.Camp]: "/images/labels/allies_village.png",
     [StructureType.Realm]: "/images/labels/allies_realm.png",
   } as Record<StructureType, string>,
 });
@@ -746,10 +753,10 @@ const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
     const guardDisplay = element.querySelector('[data-component="guard-armies"]');
     if (Array.isArray(data.guardArmies)) {
-      const newGuardDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
       if (guardDisplay) {
-        guardDisplay.replaceWith(newGuardDisplay);
+        updateGuardArmyDisplay(guardDisplay as HTMLElement, data.guardArmies, cameraView);
       } else if (contentContainer) {
+        const newGuardDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
         const ownerNode = contentContainer.querySelector('[data-component="owner"]');
         if (ownerNode && ownerNode.parentElement === contentContainer) {
           contentContainer.insertBefore(newGuardDisplay, ownerNode.nextSibling);
@@ -776,8 +783,7 @@ const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     // Update active productions display
     const productionsDisplay = element.querySelector('[data-component="productions"]');
     if (productionsDisplay) {
-      const newProductionsDisplay = createProductionDisplay(data.activeProductions ?? [], cameraView);
-      productionsDisplay.replaceWith(newProductionsDisplay);
+      updateProductionDisplay(productionsDisplay as HTMLElement, data.activeProductions ?? [], cameraView);
     }
 
     // Update hyperstructure realm count

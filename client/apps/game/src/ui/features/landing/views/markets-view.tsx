@@ -6,7 +6,9 @@ import {
   useAvatarProfiles,
   useAvatarProfilesByUsernames,
 } from "@/hooks/use-player-avatar";
+import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useWorldsAvailability } from "@/hooks/use-world-availability";
 import type { MarketClass } from "@/pm/class";
 import { useOptionalControllers } from "@/pm/hooks/controllers/use-controllers";
 import { getPredictionMarketChain } from "@/pm/prediction-market-config";
@@ -554,6 +556,22 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const [pagesByFilter, setPagesByFilter] = useState<Record<string, number>>({});
   const currentPage = pagesByFilter[filterKey] ?? 1;
   const offset = (currentPage - 1) * PAGE_SIZE;
+  const { worlds: factoryWorlds } = useFactoryWorlds(["mainnet", "slot"]);
+  const { results: worldAvailabilityByKey } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0);
+  const blockedDevModeOracleAddresses = useMemo(() => {
+    const blockedAddresses = new Set<string>();
+
+    worldAvailabilityByKey.forEach((availability) => {
+      if (!availability.meta?.devModeOn) return;
+
+      const prizeDistributionAddress = normalizeHexAddress(availability.meta.prizeDistributionAddress ?? "");
+      if (prizeDistributionAddress) {
+        blockedAddresses.add(prizeDistributionAddress);
+      }
+    });
+
+    return Array.from(blockedAddresses);
+  }, [worldAvailabilityByKey]);
 
   const { counts, isLoading: isCountsLoading, isFetching: isCountsFetching } = useMultiChainMarketCounts(selectedChain);
   const hasLiveMarkets = counts.live > 0;
@@ -563,6 +581,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     chainFilter: selectedChain,
     limit: PAGE_SIZE,
     offset,
+    blockedOracleAddresses: blockedDevModeOracleAddresses,
   });
 
   const handleCardClick = useCallback(

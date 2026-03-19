@@ -3,6 +3,7 @@ import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provi
 import { useDojo } from "@bibliothecadao/react";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 
 interface TransactionSubmittedPayload {
   transactionHash: string;
@@ -102,9 +103,7 @@ export const useTransactionListener = () => {
     };
 
     const handleTransactionFailed = (error: string | TransactionFailedPayload, meta?: TransactionFailedPayload) => {
-      // Parse the error payload (can be string or object)
-      const message =
-        typeof error === "string" ? error : typeof error?.message === "string" ? error.message : "Transaction failed";
+      const message = extractReadableErrorMessage(error, extractReadableErrorMessage(meta, "Transaction failed"));
 
       const type = typeof error === "object" && error?.type ? error.type : (meta?.type ?? null);
 
@@ -112,7 +111,7 @@ export const useTransactionListener = () => {
         typeof error === "object" && error?.transactionHash ? error.transactionHash : (meta?.transactionHash ?? null);
 
       const transactionCount =
-        typeof error === "object" && error?.transactionCount
+        typeof error === "object" && typeof error?.transactionCount === "number"
           ? error.transactionCount
           : (meta?.transactionCount ?? undefined);
 

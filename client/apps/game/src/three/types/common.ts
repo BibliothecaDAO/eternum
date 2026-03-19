@@ -6,6 +6,7 @@ import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
 export enum SceneName {
   WorldMap = "map",
   Hexception = "hex",
+  FastTravel = "travel",
 }
 
 export enum HyperstructureTypesNames {

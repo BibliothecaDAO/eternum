@@ -26,7 +26,7 @@ pub mod trade_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::DEFAULT_NS;
+    use crate::constants::{DEFAULT_NS, ResourceTypes};
     use crate::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::resource::arrivals::ResourceArrivalImpl;
@@ -43,6 +43,9 @@ pub mod trade_systems {
     use crate::systems::utils::donkey::iDonkeyImpl;
     use crate::systems::utils::village::iVillageImpl;
 
+    fn is_tradable(resource_type: u8) -> bool {
+        resource_type != ResourceTypes::RESEARCH
+    }
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -96,15 +99,27 @@ pub mod trade_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
+            // ensure maker resource is not taker resource
+            assert!(maker_gives_resource_type != taker_pays_resource_type, "maker resource is taker resource");
+
             // ensure maker structure is owned by caller
             let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, maker_id);
             maker_structure_owner.assert_caller_owner();
+
+            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, maker_id);
+            let mut taker_coord_for_donkey = maker_structure.coord();
 
             // ensure taker structure exists
             if taker_id.is_non_zero() {
                 let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, taker_id);
                 taker_structure.assert_exists();
+                taker_coord_for_donkey = taker_structure.coord();
             }
+
+            //  ensure donkey can transport resource
+            iDonkeyImpl::assert_can_transport(ref world, maker_structure.coord(), taker_coord_for_donkey);
+
+            iDonkeyImpl::assert_can_transport(ref world, taker_coord_for_donkey, maker_structure.coord());
 
             // ensure trade count does not exceed max
             let trade_config: TradeConfig = WorldConfigUtilImpl::get_member(world, selector!("trade_config"));
@@ -115,8 +130,9 @@ pub mod trade_systems {
             let now = starknet::get_block_timestamp().try_into().unwrap();
             assert!(expires_at > now, "expires at is in the past");
 
-            // ensure maker resource is not taker resource
-            assert!(maker_gives_resource_type != taker_pays_resource_type, "maker resource is taker resource");
+            // Ensure resources are tradable
+            assert!(is_tradable(maker_gives_resource_type), "resource is not tradable");
+            assert!(is_tradable(taker_pays_resource_type), "resource is not tradable");
 
             // ensure amounts are valid
             assert!(maker_gives_resource_type.is_non_zero(), "maker gives resource type is 0");
@@ -223,8 +239,13 @@ pub mod trade_systems {
                 }
             }
 
-            // compute resource arrival time
+            //  ensure donkey can transport resources
             let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
+            iDonkeyImpl::assert_can_transport(ref world, maker_structure.coord(), taker_structure.coord());
+
+            iDonkeyImpl::assert_can_transport(ref world, taker_structure.coord(), maker_structure.coord());
+
+            // compute resource arrival time
             let donkey_speed = SpeedImpl::for_donkey(ref world);
             let travel_time = iDistanceKmImpl::time_required(
                 ref world, maker_structure.coord(), taker_structure.coord(), donkey_speed, true,

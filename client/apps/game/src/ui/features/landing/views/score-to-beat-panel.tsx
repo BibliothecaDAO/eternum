@@ -466,6 +466,7 @@ export const ScoreToBeatPanel = () => {
   }, []);
 
   const scoreToBeatRows = scoreToBeatEntries;
+  const scoreToBeatTopTen = scoreToBeatRows.slice(0, 10);
   const topScoreToBeat = scoreToBeatRows[0] ?? null;
   const scoreToBeatRuns = topScoreToBeat?.runs ?? [];
   const scoreToBeatAddresses = scoreToBeatRows.map((entry) => entry.address);

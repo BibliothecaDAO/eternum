@@ -485,7 +485,7 @@ export default class HexceptionScene extends HexagonScene {
     this.lastRealmKey = realmKey;
   }
 
-  onSwitchOff() {
+  onSwitchOff(_nextSceneName?: SceneName) {
     this.labels.forEach((label) => {
       this.scene.remove(label.label);
     });
