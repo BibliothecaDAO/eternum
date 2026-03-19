@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-kick-619",
-    "launchRequestId": "23306245015-1",
+    "gameName": "bltz-pop-962",
+    "launchRequestId": "23306258288-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23306245015,
+    "workflowRunId": 23306258288,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "0aa903a4-a83c-419b-a6fa-5b48efd78b50"
+    "stepId": "grant-lootchest-role",
+    "leaseId": "46925339-803d-4aee-a046-097d3ce0f5f8"
   },
-  "acquiredAt": "2026-03-19T16:53:30.698Z",
-  "heartbeatAt": "2026-03-19T16:53:32.534Z",
-  "expiresAt": "2026-03-19T16:53:32.534Z",
-  "releasedAt": "2026-03-19T16:53:32.534Z"
+  "acquiredAt": "2026-03-19T16:53:42.404Z",
+  "heartbeatAt": "2026-03-19T16:53:42.404Z",
+  "expiresAt": "2026-03-19T17:03:42.404Z"
 }
