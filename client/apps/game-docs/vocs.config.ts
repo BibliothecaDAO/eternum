@@ -27,15 +27,17 @@ export default defineConfig({
   ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984380",
   head: {
     link: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=block",
       },
       {
         rel: "stylesheet",
         href: "/styles.css",
       },
-    ],
+    ] as any,
     script: [
       {
         children: `
@@ -65,7 +67,7 @@ export default defineConfig({
 })();
         `.trim(),
       },
-    ],
+    ] as any,
   },
   theme: {
     colorScheme: "dark",
@@ -118,7 +120,6 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/realms/realm",
           items: [
-            { text: "Realms", link: "/blitz/realms/realm" },
             { text: "Buildings", link: "/blitz/realms/buildings" },
           ],
         },
@@ -127,7 +128,6 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/materials/resources",
           items: [
-            { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
             { text: "Production Automation", link: "/blitz/materials/automation" },
             { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
@@ -140,7 +140,6 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/military/armies",
           items: [
-            { text: "Armies", link: "/blitz/military/armies" },
             { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/blitz/military/stamina-and-biomes" },
             { text: "Damage", link: "/blitz/military/damage" },
@@ -151,7 +150,6 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/worldmap-movement/worldmap",
           items: [
-            { text: "The World Map", link: "/blitz/worldmap-movement/worldmap" },
             { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
           ],
         },
@@ -171,7 +169,6 @@ export default defineConfig({
         { text: "World Physics", link: "/eternum/world-physics" },
         {
           text: "Realms & Villages",
-          link: "/eternum/realm-and-villages/realm",
           collapsed: true,
           link: "/eternum/realm-and-villages/realm",
           items: [
@@ -182,7 +179,6 @@ export default defineConfig({
         },
         {
           text: "Materials",
-          link: "/eternum/resources/resources",
           collapsed: true,
           link: "/eternum/resources/resources",
           items: [
@@ -195,7 +191,6 @@ export default defineConfig({
         },
         {
           text: "Military",
-          link: "/eternum/military/armies",
           collapsed: true,
           link: "/eternum/military/armies",
           items: [
@@ -207,7 +202,6 @@ export default defineConfig({
         },
         {
           text: "World Map & Movement",
-          link: "/eternum/worldmap-movement/worldmap",
           collapsed: true,
           link: "/eternum/worldmap-movement/worldmap",
           items: [{ text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" }],
@@ -230,11 +224,10 @@ export default defineConfig({
           link: "/development/axis/overview",
           items: [
             { text: "Overview", link: "/development/axis/overview" },
-            { text: "Install and Run", link: "/development/axis/install-and-run" },
-            { text: "Worlds and Auth", link: "/development/axis/worlds-and-auth" },
-            { text: "Headless and API", link: "/development/axis/headless-and-api" },
-            { text: "Config and Ops", link: "/development/axis/configuration-and-operations" },
-            { text: "CLI Reference", link: "/development/axis/cli-reference" },
+            { text: "Setup", link: "/development/axis/setup" },
+            { text: "Configuration", link: "/development/axis/configuration" },
+            { text: "Tools Reference", link: "/development/axis/tools-reference" },
+            { text: "Map Protocol", link: "/development/axis/map-protocol" },
           ],
         },
         { text: "Client", link: "/development/client" },

@@ -1,0 +1,37 @@
+---
+layout: docs
+title: Axis Tools
+showOutline: false
+---
+
+# Tools
+
+:::info
+Display coordinates. Positive Y = north.
+:::
+
+| Tool                    | Params                                                 | Description                                      |
+| ----------------------- | ------------------------------------------------------ | -----------------------------------------------  |
+| `status`                | —                                                      | Readiness check, auth link                       |
+| `map_tile_info`         | `x`, `y`                                               | Biome, entity, guards, resources, strength       |
+| `map_nearby`            | `x`, `y`, `radius`                                     | Nearby armies, enemies, structures, chests       |
+| `map_entity_info`       | `entity_id`                                            | Troops, stamina, guards, resources, owner        |
+| `map_find`              | `type`, `ref_x`, `ref_y`                               | Find entities by type, sorted by distance        |
+| `map_briefing`          | —                                                      | Game state summary                               |
+| `automation`            | `action`                                               | `start`, `stop`, `status`                        |
+| `move_army`             | `army_id`, `target_x`, `target_y`                      | Pathfind, move, auto-explore                     |
+| `simulate_attack`       | `army_id`, `target_x`, `target_y`                      | Preview battle outcome                           |
+| `attack_target`         | `army_id`, `target_x`, `target_y`                      | Attack adjacent target                           |
+| `attack_from_guard`     | `structure_id`, `slot`, `target_army_id`               | Guard slot attacks adjacent enemy                |
+| `raid_target`           | `army_id`, `target_x`, `target_y`, `steal_resources`   | 10% damage, steal resources                      |
+| `create_army`           | `structure_id`, `troop_type`, `tier`, `amount`         | Spawn army, auto-picks troop type                |
+| `open_chest`            | `army_id`, `chest_x`, `chest_y`                        | Open adjacent chest                              |
+| `reinforce_army`        | `army_id`, `amount`                                    | Add troops from home structure                   |
+| `send_resources`        | `from_structure_id`, `to_structure_id`, `resources`    | Donkey caravan between structures                |
+| `transfer_to_structure` | `army_id`, `structure_id`, `resources`                 | Army → adjacent structure                        |
+| `transfer_to_army`      | `from_army_id`, `to_army_id`, `resources`              | Army → adjacent army                             |
+| `guard_from_storage`    | `structure_id`, `slot`, `troop_type`, `tier`, `amount` | Storage → guard slot                             |
+| `guard_from_army`       | `army_id`, `structure_id`, `slot`, `amount`            | Army → guard slot                                |
+| `unguard_to_army`       | `structure_id`, `slot`, `army_id`, `amount`            | Guard slot → army                                |
+| `transfer_troops`       | `from_army_id`, `to_army_id`, `amount`                 | Troops between adjacent armies                   |
+| `apply_relic`           | `entity_id`, `relic_resource_id`, `recipient_type`     | Buff army, guards, or production                 |

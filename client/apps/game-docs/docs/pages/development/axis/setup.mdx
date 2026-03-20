@@ -1,0 +1,82 @@
+---
+layout: docs
+title: Axis Setup
+showOutline: false
+---
+
+# Setup
+
+Node.js 22+, pnpm, and realms settled in the game client.
+
+::::steps
+
+### Clone and build
+
+```bash
+git clone https://github.com/bibliothecadao/eternum.git
+cd eternum && pnpm install
+pnpm build:packages
+pnpm --dir packages/client build
+cd client/apps/onchain-agent
+cp .env.example .env
+```
+
+### Configure
+
+Edit `.env`:
+
+```bash
+CHAIN=slot
+WORLD_NAME=<world-name>
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+See [Configuration](/development/axis/configuration) for all variables.
+
+### Run
+
+Pick one:
+
+::::
+
+## MCP Server
+
+```bash [Terminal]
+# from repo root
+claude mcp add eternum \
+  -- npx tsx ./client/apps/onchain-agent/dev/scripts/mcp-server.ts
+```
+
+1. Call `status`
+2. Auth URL copied to clipboard — paste in browser
+3. Approve on Cartridge
+4. Call `status` again
+
+:::tip 
+`ANTHROPIC_API_KEY` not needed — Claude Code provides the model. 
+:::
+
+## PI Agent
+
+```bash [Terminal]
+# from client/apps/onchain-agent
+pnpm dev
+```
+
+1. Browser opens for Cartridge auth
+2. Approve
+3. Tick loop starts
+
+## Troubleshooting
+
+:::details[Common issues]
+
+|          Problem           |                            Fix                            |
+| :------------------------: | :-------------------------------------------------------: |
+|    Auth link every time    |     Session expired. Re-authenticate. Try incognito.      |
+| "Server is starting" hangs |     `CHAIN` and `WORLD_NAME` must match a live world.     |
+|    "Map not loaded yet"    |               Wait ~10 seconds after auth.                |
+|      Missing packages      | `pnpm build:packages && pnpm --dir packages/client build` |
+| Auth browser doesn't open  |                Check terminal for the URL.                |
+
+:::

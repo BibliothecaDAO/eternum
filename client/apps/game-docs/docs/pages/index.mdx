@@ -1,40 +1,82 @@
 ---
-layout: landing
+layout: minimal
+showLogo: false
+content:
+  width: 100%
+  horizontalPadding: 0px
+  verticalPadding: 0px
 ---
 
 import { HomePage } from "vocs/components";
 
-<HomePage.Root>
-  <div style={{
-    position: "absolute",
-    inset: 0,
-    zIndex: -10
-  }}>
-    <img 
-      src={`/images/covers/0${Math.floor(Math.random() * 8) + 1}.png`}
-      alt="Eternum Cover"
-      style={{
-        width: "100%",
-        height: "100%",
-        objectFit: "cover"
-      }}
-    />
+<style>{`
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  .vocs_DocsLayout_gutterTop { display: none !important; }
+  .landing-root {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 100;
+    background-color: #141520;
+    animation: fadeIn 0.6s ease-out 0.3s both;
+  }
+`}</style>
+
+<div className="landing-root">
+  <img
+    src={`/images/covers/0${Math.floor(Math.random() * 8) + 1}.png`}
+    alt=""
+    style={{
+      position: "absolute",
+      inset: 0,
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      zIndex: 0,
+    }}
+  />
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      backgroundColor: "rgba(20, 21, 32, 0.7)",
+      zIndex: 1,
+    }}
+  />
+  <div
+    style={{
+      position: "relative",
+      zIndex: 2,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "32px",
+      padding: "0 24px",
+      maxWidth: "720px",
+      textAlign: "center",
+    }}
+  >
+    <div style={{ width: "200px", height: "80px" }}>
+      <img
+        src="/images/logos/realms-world-white.svg"
+        alt="Realms Logo"
+        width="200"
+        height="80"
+        style={{ width: "200px", height: "80px" }}
+      />
+    </div>
+    <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#e8e4dc", margin: 0 }}>
+      The Realmverse is a decentralized, open-source, and community-driven gaming ecosystem built on the Dojo framework,
+      featuring both Eternum seasonal gameplay and Blitz competitive tournaments.
+    </p>
+    <div style={{ display: "flex", gap: "12px" }}>
+      <HomePage.Button href="/overview/introduction" variant="accent">
+        Get Started
+      </HomePage.Button>
+      <HomePage.Button href="https://market.realms.world">Marketplace</HomePage.Button>
+    </div>
   </div>
-
-{" "}
-
-<img src="/images/logos/realms-world-white.svg" alt="Realms Logo" />
-<HomePage.Description>
-  The Realmverse is a decentralized, open-source, and community-driven gaming ecosystem built on the Dojo framework,
-  featuring both Eternum seasonal gameplay and Blitz competitive tournaments.
-</HomePage.Description>
-<HomePage.Buttons>
-  <HomePage.Button href="/overview/introduction" variant="primary">
-    Get Started
-  </HomePage.Button>
-  <HomePage.Button href="https://empire.realms.world" variant="outline">
-    Enter the Realms
-  </HomePage.Button>
-</HomePage.Buttons>
-
-</HomePage.Root>
+</div>

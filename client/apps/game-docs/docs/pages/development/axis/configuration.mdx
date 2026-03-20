@@ -1,0 +1,54 @@
+---
+layout: docs
+title: Axis Configuration
+showOutline: false
+---
+
+# Configuration
+
+`client/apps/onchain-agent/.env`
+
+```bash
+# Required
+WORLD_NAME=<world-name>
+ANTHROPIC_API_KEY=sk-ant-...   # PI agent only
+
+# Optional (defaults shown)
+CHAIN=mainnet
+MODEL_PROVIDER=anthropic
+MODEL_ID=claude-sonnet-4-20250514
+TICK_INTERVAL_MS=60000
+TORII_URL=                     # auto-discovered
+WORLD_ADDRESS=                 # auto-discovered
+RPC_URL=                       # auto-discovered
+```
+
+:::details[x402 Provider — on-chain USDC permits instead of an API key]
+
+```bash
+MODEL_PROVIDER=x402
+
+# Required
+X402_PRIVATE_KEY=0x...
+
+# Optional (defaults shown)
+X402_ROUTER_URL=https://ai.xgate.run
+X402_MODEL_ID=kimi-k2.5
+X402_MODEL_NAME=Kimi K2.5
+X402_NETWORK=eip155:8453
+X402_PERMIT_CAP=10000000
+X402_PAYMENT_HEADER=PAYMENT-SIGNATURE
+```
+
+:::
+
+## Runtime Data
+
+`~/.axis/worlds/<worldAddress>/`:
+
+```bash
+├── soul.md
+├── automation-status.txt
+├── tasks/
+└── .cartridge/
+```
