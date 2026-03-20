@@ -3,15 +3,14 @@ import { buildFactoryCreateRunRequest } from "./create-run-request";
 import {
   createFactoryMoreOptionsDraft,
   getFactoryMoreOptionField,
-  getFactoryMapOptionSections,
-  validateFactoryMapOptions,
+  getFactoryMoreOptionSections,
   validateFactoryMoreOptions,
 } from "./map-options";
 
 describe("Factory V2 map options", () => {
   it("shows the correct advanced fields for each mode and keeps Blitz player cap out of the advanced drawer", () => {
-    const blitzSections = getFactoryMapOptionSections("blitz");
-    const eternumSections = getFactoryMapOptionSections("eternum");
+    const blitzSections = getFactoryMoreOptionSections("blitz");
+    const eternumSections = getFactoryMoreOptionSections("eternum");
 
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
       "Essence Rift chance",
@@ -32,6 +31,9 @@ describe("Factory V2 map options", () => {
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
       "Relic discovery interval",
     );
+    expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
+      "Prize token address",
+    );
   });
 
   it("exposes the Blitz max players field separately from advanced sections", () => {
@@ -44,7 +46,7 @@ describe("Factory V2 map options", () => {
 
   it("omits map overrides when the displayed values still match the environment defaults", () => {
     const draft = createFactoryMoreOptionsDraft("eternum", "slot");
-    const result = validateFactoryMapOptions("eternum", "slot", draft);
+    const result = validateFactoryMoreOptions("eternum", "slot", draft);
 
     expect(result.hasErrors).toBe(false);
     expect(result.mapConfigOverrides).toBeUndefined();
@@ -57,7 +59,7 @@ describe("Factory V2 map options", () => {
     draft.hyperstructureRadiusMultiplier = "98.21";
     draft.hyperstructureChanceLossPerFound = "0.125";
 
-    const result = validateFactoryMapOptions("eternum", "slot", draft);
+    const result = validateFactoryMoreOptions("eternum", "slot", draft);
 
     expect(result.hasErrors).toBe(false);
     expect(result.mapConfigOverrides).toMatchObject({
@@ -74,7 +76,7 @@ describe("Factory V2 map options", () => {
     const draft = createFactoryMoreOptionsDraft("blitz", "slot");
     draft.relicHexDistance = "256";
 
-    const result = validateFactoryMapOptions("blitz", "slot", draft);
+    const result = validateFactoryMoreOptions("blitz", "slot", draft);
 
     expect(result.hasErrors).toBe(true);
     expect(result.errors.relicHexDistance).toContain("between 0 and 255");
@@ -95,6 +97,13 @@ describe("Factory V2 map options", () => {
     });
   });
 
+  it("keeps non-official Blitz durations on the base more-options defaults", () => {
+    const baseDraft = createFactoryMoreOptionsDraft("blitz", "slot");
+    const customDurationDraft = createFactoryMoreOptionsDraft("blitz", "slot", 45);
+
+    expect(customDurationDraft).toEqual(baseDraft);
+  });
+
   it("omits max player overrides when two-player mode hides the field", () => {
     const draft = createFactoryMoreOptionsDraft("blitz", "slot");
     draft.maxPlayers = "12";
@@ -103,6 +112,51 @@ describe("Factory V2 map options", () => {
 
     expect(result.hasErrors).toBe(false);
     expect(result.blitzRegistrationOverrides).toBeUndefined();
+  });
+
+  it("formats blitz prize defaults from the config and keeps precision empty until needed", () => {
+    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+
+    expect(draft.prizeToken).toMatch(/^0x/i);
+    expect(draft.prizeAmount).toBe("10");
+    expect(draft.prizePrecision).toBe("");
+  });
+
+  it("requires explicit prize token decimals when the token address changes", () => {
+    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+    draft.prizeToken = "0x1234";
+
+    const result = validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false });
+
+    expect(result.hasErrors).toBe(true);
+    expect(result.errors.prizePrecision).toContain("required");
+  });
+
+  it("converts human prize amounts into raw blitz registration overrides", () => {
+    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+    draft.prizeAmount = "500";
+
+    const result = validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false });
+
+    expect(result.hasErrors).toBe(false);
+    expect(result.blitzRegistrationOverrides).toMatchObject({
+      fee_amount: "500000000000000000000",
+    });
+  });
+
+  it("uses explicit decimals when a custom prize token is selected", () => {
+    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+    draft.prizeToken = "0x1234";
+    draft.prizeAmount = "0.00004";
+    draft.prizePrecision = "6";
+
+    const result = validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false });
+
+    expect(result.hasErrors).toBe(false);
+    expect(result.blitzRegistrationOverrides).toEqual({
+      fee_token: "0x1234",
+      fee_amount: "40",
+    });
   });
 
   it("includes map config overrides in the create-run payload", () => {
@@ -163,11 +217,15 @@ describe("Factory V2 map options", () => {
       showsDuration: true,
       blitzRegistrationOverrides: {
         registration_count_max: 12,
+        fee_token: "0x1234",
+        fee_amount: "40000",
       },
     });
 
     expect(request.blitzRegistrationOverrides).toEqual({
       registration_count_max: 12,
+      fee_token: "0x1234",
+      fee_amount: "40000",
     });
   });
 });

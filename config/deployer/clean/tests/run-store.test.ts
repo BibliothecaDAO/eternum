@@ -139,6 +139,8 @@ describe("factory run store", () => {
         startTime: "2026-03-18T10:00:00Z",
         blitzRegistrationOverrides: {
           registration_count_max: 12,
+          fee_token: "0x1234",
+          fee_amount: "40000",
         },
       },
     });
@@ -147,6 +149,8 @@ describe("factory run store", () => {
 
     expect(inputRecord.request.blitzRegistrationOverrides).toEqual({
       registration_count_max: 12,
+      fee_token: "0x1234",
+      fee_amount: "40000",
     });
   });
 

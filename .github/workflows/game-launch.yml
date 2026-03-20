@@ -197,10 +197,28 @@ jobs:
             account_lease_args+=(--branch "${FACTORY_RUN_STORE_BRANCH}")
           fi
 
+          resolve_config_sync_target() {
+            GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
+            GAME_LAUNCH_GAME_TYPE="${GAME_LAUNCH_ENVIRONMENT##*.}"
+
+            if [ -z "${GAME_LAUNCH_NETWORK}" ] || [ -z "${GAME_LAUNCH_GAME_TYPE}" ]; then
+              echo "Unable to resolve config sync target from ${GAME_LAUNCH_ENVIRONMENT}" >&2
+              exit 1
+            fi
+          }
+
+          sync_current_config() {
+            pnpm run "config:sync:${GAME_LAUNCH_NETWORK}:${GAME_LAUNCH_GAME_TYPE}" >/dev/null
+          }
+
+          resolve_config_sync_target
+
           run_launch_step_command() {
             local step_id="$1"
             local step_log=".context/game-launch/${step_id}.log"
             local exit_code=0
+
+            sync_current_config
 
             set +e
             bun config/deployer/clean/cli/launch-step.ts --step "${step_id}" "${args[@]}" 2>&1 | tee "${step_log}"
@@ -213,6 +231,8 @@ jobs:
           record_launch_step_started() {
             local step_id="$1"
 
+            sync_current_config
+
             bun config/deployer/clean/cli/launch-run-store.ts \
               --event step-started \
               --step "${step_id}" \
@@ -221,6 +241,8 @@ jobs:
 
           record_launch_step_succeeded() {
             local step_id="$1"
+
+            sync_current_config
 
             bun config/deployer/clean/cli/launch-run-store.ts \
               --event step-succeeded \
@@ -231,6 +253,8 @@ jobs:
           record_launch_step_failed() {
             local step_id="$1"
             local step_log=".context/game-launch/${step_id}.log"
+
+            sync_current_config
 
             bun config/deployer/clean/cli/launch-run-store.ts \
               --event step-failed \
@@ -270,6 +294,8 @@ jobs:
             fi
 
             while true; do
+              sync_current_config
+
               set +e
               lease_output=$(
                 bun config/deployer/clean/cli/launch-account-lease.ts \
@@ -318,6 +344,7 @@ jobs:
             (
               while true; do
                 sleep "${heartbeat_seconds}"
+                sync_current_config
                 bun config/deployer/clean/cli/launch-account-lease.ts \
                   --event heartbeat \
                   --step "${step_id}" \
@@ -346,6 +373,8 @@ jobs:
             if [ -z "${FACTORY_ACCOUNT_LEASE_ID:-}" ]; then
               return 0
             fi
+
+            sync_current_config
 
             bun config/deployer/clean/cli/launch-account-lease.ts \
               --event release \
@@ -445,6 +474,7 @@ jobs:
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
+          sync_current_config
           bun config/deployer/clean/cli/launch-run-store.ts --event launch-started "${run_store_args[@]}"
 
       - name: Create world

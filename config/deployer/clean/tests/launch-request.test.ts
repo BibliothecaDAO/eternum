@@ -16,6 +16,8 @@ describe("launch request helpers", () => {
         }),
         "blitz-registration-overrides-json": JSON.stringify({
           registration_count_max: 12,
+          fee_token: "0x1234",
+          fee_amount: "40000",
         }),
       }),
     ).toMatchObject({
@@ -30,6 +32,8 @@ describe("launch request helpers", () => {
       },
       blitzRegistrationOverrides: {
         registration_count_max: 12,
+        fee_token: "0x1234",
+        fee_amount: "40000",
       },
     });
   });

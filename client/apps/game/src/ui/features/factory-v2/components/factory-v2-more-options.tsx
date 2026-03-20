@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import type { FactoryMapOptionSection, FactoryMapOptionsDraft, FactoryMapOptionsErrors } from "../map-options";
+import type { FactoryMoreOptionSection, FactoryMoreOptionsDraft, FactoryMoreOptionsErrors } from "../map-options";
 import type { FactoryGameMode } from "../types";
 
-const buildInitialExpandedSectionIds = (sections: FactoryMapOptionSection[]) => (sections[0] ? [sections[0].id] : []);
+const buildInitialExpandedSectionIds = (sections: FactoryMoreOptionSection[]) => (sections[0] ? [sections[0].id] : []);
 
-const buildSectionIdSignature = (sections: FactoryMapOptionSection[]) =>
+const buildSectionIdSignature = (sections: FactoryMoreOptionSection[]) =>
   sections.map((section) => section.id).join("|");
 
 export const FactoryV2MoreOptions = ({
@@ -21,12 +21,12 @@ export const FactoryV2MoreOptions = ({
 }: {
   mode: FactoryGameMode;
   isOpen: boolean;
-  sections: FactoryMapOptionSection[];
-  draft: FactoryMapOptionsDraft;
-  errors: FactoryMapOptionsErrors;
+  sections: FactoryMoreOptionSection[];
+  draft: FactoryMoreOptionsDraft;
+  errors: FactoryMoreOptionsErrors;
   invalidReason: string | null;
   onToggle: () => void;
-  onValueChange: (fieldId: keyof FactoryMapOptionsDraft, value: string) => void;
+  onValueChange: (fieldId: keyof FactoryMoreOptionsDraft, value: string) => void;
 }) => {
   const [expandedSectionIds, setExpandedSectionIds] = useState(() => buildInitialExpandedSectionIds(sections));
   const sectionIdSignature = buildSectionIdSignature(sections);
@@ -44,7 +44,7 @@ export const FactoryV2MoreOptions = ({
     return null;
   }
 
-  const toggleSection = (sectionId: FactoryMapOptionSection["id"]) => {
+  const toggleSection = (sectionId: FactoryMoreOptionSection["id"]) => {
     setExpandedSectionIds((currentSectionIds) =>
       currentSectionIds.includes(sectionId)
         ? currentSectionIds.filter((currentId) => currentId !== sectionId)
@@ -74,7 +74,7 @@ export const FactoryV2MoreOptions = ({
               ) : null}
             </div>
             <p className="mt-1 text-[11px] text-black/45">
-              Chance fields use percentages. Time fields use minutes where shown.
+              Chance fields use percentages. Time fields use minutes where shown. Prize amounts use human values.
             </p>
           </div>
           <ChevronDown
@@ -128,32 +128,47 @@ export const FactoryV2MoreOptions = ({
                           <span className="block text-[13px] font-medium leading-5 text-black/74">{field.label}</span>
                           <span className="block text-[11px] leading-4 text-black/38">{field.helperText}</span>
                         </div>
-                        <div
+                        {field.inputType === "number" ? (
+                          <div
+                            className={cn(
+                              "flex h-8 items-center gap-1 rounded-full border bg-white px-2.5 shadow-[0_1px_0_rgba(255,255,255,0.55)]",
+                              errors[field.id] ? "border-rose-400/70" : "border-black/10",
+                            )}
+                          >
+                            <input
+                              type="number"
+                              inputMode={field.inputMode}
+                              min={field.min}
+                              max={field.max}
+                              step={field.step}
+                              value={draft[field.id]}
+                              onChange={(event) => onValueChange(field.id, event.target.value)}
+                              className={cn(
+                                "h-7 border-0 bg-transparent p-0 text-right text-[13px] font-semibold text-black outline-none",
+                                field.inputMode === "decimal" ? "w-16" : "w-20",
+                              )}
+                            />
+                            {field.unitLabel ? (
+                              <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-black/42">
+                                {field.unitLabel}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                      {field.inputType === "text" ? (
+                        <input
+                          type="text"
+                          inputMode={field.inputMode}
+                          value={draft[field.id]}
+                          placeholder={field.placeholder}
+                          onChange={(event) => onValueChange(field.id, event.target.value)}
                           className={cn(
-                            "flex h-8 items-center gap-1 rounded-full border bg-white px-2.5 shadow-[0_1px_0_rgba(255,255,255,0.55)]",
+                            "mt-2 block h-10 w-full rounded-[14px] border bg-white px-3 text-[13px] text-black outline-none transition-colors placeholder:text-black/25",
                             errors[field.id] ? "border-rose-400/70" : "border-black/10",
                           )}
-                        >
-                          <input
-                            type="number"
-                            inputMode={field.inputMode === "percentage" ? "decimal" : "numeric"}
-                            min={field.min}
-                            max={field.max}
-                            step={field.step}
-                            value={draft[field.id]}
-                            onChange={(event) => onValueChange(field.id, event.target.value)}
-                            className={cn(
-                              "h-7 border-0 bg-transparent p-0 text-right text-[13px] font-semibold text-black outline-none",
-                              field.inputMode === "percentage" ? "w-16" : "w-20",
-                            )}
-                          />
-                          {field.unitLabel ? (
-                            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-black/42">
-                              {field.unitLabel}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
+                        />
+                      ) : null}
                       {errors[field.id] ? (
                         <span className="mt-1 block text-[11px] leading-5 text-rose-700">{errors[field.id]}</span>
                       ) : null}

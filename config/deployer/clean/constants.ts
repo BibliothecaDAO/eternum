@@ -52,7 +52,7 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     chain: "slot",
     gameType: "blitz",
     toriiEnv: "slot",
-    configPath: "config/environments/data/blitz.slot.json",
+    configPath: "config/generated/blitz.slot.json",
     ...SLOT_DEFAULTS,
   },
   "slot.eternum": {
@@ -60,7 +60,7 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     chain: "slot",
     gameType: "eternum",
     toriiEnv: "slot",
-    configPath: "config/environments/data/eternum.slot.json",
+    configPath: "config/generated/eternum.slot.json",
     ...SLOT_DEFAULTS,
   },
 };

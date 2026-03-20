@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { getGameManifest } from "../../../../contracts/utils/utils";
 import { FACTORY_WORLD_CONFIG_STEPS, resolveFactoryWorldConfigSteps } from "../config/steps";
-import { loadEnvironmentConfiguration } from "../config/config-loader";
+import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import { setBlitzRegistrationParametersConfig, setFaithConfig, setSeasonConfig } from "../config/native-steps";
 
 describe("native config steps", () => {
@@ -42,11 +42,17 @@ describe("native config steps", () => {
     }).map((step) => step.id);
 
     expect(blitzStepIds).toContain("blitz-registration");
-    expect(blitzStepIds).toContain("faith");
+    expect(blitzStepIds).toContain("mmr");
+    expect(blitzStepIds).not.toContain("faith");
+    expect(blitzStepIds).not.toContain("trade");
+    expect(blitzStepIds).not.toContain("bank");
     expect(blitzStepIds).toContain("season");
     expect(blitzStepIds).not.toContain("blitz-season");
 
     expect(eternumStepIds).toContain("faith");
+    expect(eternumStepIds).toContain("trade");
+    expect(eternumStepIds).toContain("bank");
+    expect(eternumStepIds).not.toContain("mmr");
     expect(eternumStepIds).toContain("season");
     expect(eternumStepIds).not.toContain("blitz-registration");
     expect(eternumStepIds).not.toContain("blitz-season");
@@ -132,5 +138,35 @@ describe("native config steps", () => {
     expect(seasonPayload.start_settling_at).toBe(registrationStartAt);
     expect(seasonPayload.start_main_at).toBe(registrationStartAt + 100);
     expect(seasonPayload.end_at).toBe((seasonPayload.start_main_at as number) + config.season.durationSeconds);
+  });
+
+  test("carries inferred blitz profile duration through the season payload", async () => {
+    const baseConfig = loadEnvironmentConfiguration("slot.blitz");
+    const config = applyDeploymentConfigOverrides(baseConfig, {
+      startMainAt: 0,
+      factoryAddress: "0xabc",
+      durationSeconds: 3_600,
+    });
+    config.season.startMainAt = 0;
+    config.blitz.registration.registration_delay_seconds = 10;
+    config.blitz.registration.registration_period_seconds = 100;
+
+    const capturedCalls: Array<Record<string, unknown>> = [];
+    const provider = {
+      manifest: getGameManifest("slot") as any,
+      set_season_config: async (payload: Record<string, unknown>) => {
+        capturedCalls.push(payload);
+        return { statusReceipt: "ok" };
+      },
+    };
+
+    await setSeasonConfig({
+      account: { address: "0x1" } as any,
+      provider: provider as any,
+      config,
+    });
+
+    expect(capturedCalls).toHaveLength(1);
+    expect(capturedCalls[0]?.end_at).toBe((capturedCalls[0]?.start_main_at as number) + 3_600);
   });
 });

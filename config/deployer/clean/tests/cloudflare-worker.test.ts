@@ -79,6 +79,8 @@ describe("factory worker map config overrides", () => {
           gameStartTime: "2026-03-18T10:00:00Z",
           blitzRegistrationOverrides: {
             registration_count_max: 12,
+            fee_token: "0x1234",
+            fee_amount: "40000",
           },
         }),
       }),
@@ -92,6 +94,8 @@ describe("factory worker map config overrides", () => {
     expect(dispatchBody.inputs.blitz_registration_overrides_json).toBe(
       JSON.stringify({
         registration_count_max: 12,
+        fee_token: "0x1234",
+        fee_amount: "40000",
       }),
     );
   });
@@ -188,6 +192,8 @@ describe("factory worker map config overrides", () => {
             startTime: "2026-03-18T10:00:00Z",
             blitzRegistrationOverrides: {
               registration_count_max: 12,
+              fee_token: "0x1234",
+              fee_amount: "40000",
             },
           },
         });
@@ -216,6 +222,8 @@ describe("factory worker map config overrides", () => {
     expect(dispatchBody.inputs.blitz_registration_overrides_json).toBe(
       JSON.stringify({
         registration_count_max: 12,
+        fee_token: "0x1234",
+        fee_amount: "40000",
       }),
     );
   });

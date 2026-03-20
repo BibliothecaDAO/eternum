@@ -6,7 +6,7 @@ import {
 
 const FAST_TRAVEL_HEX_SIZE = 1;
 
-export interface FastTravelChunkPolicy {
+interface FastTravelChunkPolicy {
   chunkSize: number;
   renderSize: {
     width: number;
