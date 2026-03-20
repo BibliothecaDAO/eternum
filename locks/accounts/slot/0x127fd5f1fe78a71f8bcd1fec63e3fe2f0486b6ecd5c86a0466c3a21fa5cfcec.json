@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-clash-756",
-    "launchRequestId": "23362520454-1",
+    "gameName": "bltz-ping-976",
+    "launchRequestId": "23362620544-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23362520454,
+    "workflowRunId": 23362620544,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "7e271977-4eb3-45a5-a360-1577e06c432b"
+    "stepId": "create-world",
+    "leaseId": "645eae17-b7fb-4e2e-87e6-a822ce7c14ce"
   },
-  "acquiredAt": "2026-03-20T21:08:36.443Z",
-  "heartbeatAt": "2026-03-20T21:08:41.721Z",
-  "expiresAt": "2026-03-20T21:08:41.721Z",
-  "releasedAt": "2026-03-20T21:08:41.721Z"
+  "acquiredAt": "2026-03-20T21:08:55.813Z",
+  "heartbeatAt": "2026-03-20T21:08:55.813Z",
+  "expiresAt": "2026-03-20T21:18:55.813Z"
 }
