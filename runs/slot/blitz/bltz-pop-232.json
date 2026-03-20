@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-pop-232",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/blitz/bltz-pop-232/23362065061-1.json",
   "latestLaunchRequestId": "23362065061-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-20T20:41:36.962Z",
-  "updatedAt": "2026-03-20T20:52:19.786Z",
+  "updatedAt": "2026-03-20T20:53:54.726Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,11 +62,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Finishing setup succeeded",
       "startedAt": "2026-03-20T20:52:19.786Z",
-      "finishedAt": "2026-03-20T20:48:21.087Z"
+      "finishedAt": "2026-03-20T20:53:54.726Z"
     }
   ],
   "artifacts": {
@@ -74,14 +74,17 @@
     "createGameTxHash": "0x25462a4ad5170975e8a3a5943b8ec258b3f68546f45690c439da34ea472f01d",
     "worldAddress": "0x021a7f346ffa85d6369520fcb77c95df7889430eb97a3da9421142459778561e",
     "configureTxHash": "0x5123969ad012d44f2bbf8d93bec44ae258e464c20962a3433f4d1ffb3a6179d",
-    "lootChestRoleTxHash": "0x374223017b05ce61b07c850d014ef5228022996a3af9b2bf80222c5d153407a"
+    "lootChestRoleTxHash": "0x374223017b05ce61b07c850d014ef5228022996a3af9b2bf80222c5d153407a",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "credence0x/factory-v2-polish",
+      "runId": 23362106714,
+      "runNumber": 779,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23362106714",
+      "status": "completed",
+      "conclusion": "success"
+    }
   },
-  "activeLease": {
-    "launchRequestId": "23362065061-1",
-    "workflowRunId": 23362065061,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-20T20:52:19.786Z",
-    "expiresAt": "2026-03-20T21:37:19.786Z"
-  }
+  "completedAt": "2026-03-20T20:53:54.726Z"
 }
