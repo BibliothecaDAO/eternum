@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ConnectionStatus = "connected" | "degraded" | "disconnected";
+type ConnectionStatus = "connected" | "degraded" | "disconnected";
 
 interface ConnectionState {
   status: ConnectionStatus;

@@ -1,9 +1,7 @@
 {
-  "ignoreDependencies": ["@videos/.*"],
+  "ignoreDependencies": [],
   "ignore": [
-    ".context/**",
     "**/*.js",
-    "**/vitest**",
 
     "packages/**",
     "client/apps/landing/src/components/ui/**",

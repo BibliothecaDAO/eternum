@@ -3,7 +3,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 const DEFAULT_HEALTH_CHECK_INTERVAL_MS = 15_000;
 const DEFAULT_STALE_THRESHOLD_MS = 30_000;
 
-export interface ConnectionHealthMonitorConfig {
+interface ConnectionHealthMonitorConfig {
   onReconnectSpatial: () => Promise<void>;
   onReconnectGlobal: () => Promise<void>;
   healthCheckFn: () => Promise<boolean>;
