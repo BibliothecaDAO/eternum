@@ -24,7 +24,25 @@ export type WorldmapChunkDiagnosticsEvent =
   | "duplicate_tile_cache_invalidated"
   | "duplicate_tile_reconcile_requested"
   | "switch_duration_recorded"
-  | "manager_duration_recorded";
+  | "terrain_ready_duration_recorded"
+  | "terrain_commit_duration_recorded"
+  | "first_visible_commit_duration_recorded"
+  | "manager_duration_recorded"
+  | "manager_catch_up_duration_recorded"
+  | "prepared_chunk_prewarm_hit"
+  | "prepared_chunk_prewarm_miss"
+  | "terrain_visible_commit"
+  | "refresh_reason_default"
+  | "refresh_reason_hydrated_chunk"
+  | "refresh_reason_duplicate_tile"
+  | "refresh_reason_tile_overlap_repair"
+  | "duplicate_tile_reconcile_mode_invalidate_only"
+  | "duplicate_tile_reconcile_mode_local_reconcile"
+  | "duplicate_tile_reconcile_mode_atomic_refresh"
+  | "stale_terrain_refresh_dropped"
+  | "terrain_bounds_recovery"
+  | "tile_hydration_drain_completed"
+  | "cache_reject_fingerprint";
 
 export interface WorldmapChunkDiagnostics {
   transitionStarted: number;
@@ -51,12 +69,38 @@ export interface WorldmapChunkDiagnostics {
   refreshSuperseded: number;
   duplicateTileCacheInvalidated: number;
   duplicateTileReconcileRequested: number;
+  terrainVisibleCommit: number;
+  refreshReasonDefault: number;
+  refreshReasonHydratedChunk: number;
+  refreshReasonDuplicateTile: number;
+  refreshReasonTileOverlapRepair: number;
+  duplicateTileReconcileModeInvalidateOnly: number;
+  duplicateTileReconcileModeLocalReconcile: number;
+  duplicateTileReconcileModeAtomicRefresh: number;
+  staleTerrainRefreshDropped: number;
+  terrainBoundsRecovery: number;
+  tileHydrationDrainCompleted: number;
+  cacheRejectFingerprint: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
   switchDurationMsSamples: number[];
+  terrainReadyDurationMsTotal: number;
+  terrainReadyDurationMsMax: number;
+  terrainReadyDurationMsSamples: number[];
+  terrainCommitDurationMsTotal: number;
+  terrainCommitDurationMsMax: number;
+  terrainCommitDurationMsSamples: number[];
+  firstVisibleCommitDurationMsTotal: number;
+  firstVisibleCommitDurationMsMax: number;
+  firstVisibleCommitDurationMsSamples: number[];
   managerDurationMsTotal: number;
   managerDurationMsMax: number;
   managerDurationMsSamples: number[];
+  managerCatchUpDurationMsTotal: number;
+  managerCatchUpDurationMsMax: number;
+  managerCatchUpDurationMsSamples: number[];
+  preparedChunkPrewarmHit: number;
+  preparedChunkPrewarmMiss: number;
   updatedAtMs: number;
 }
 
@@ -92,14 +136,51 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     refreshSuperseded: 0,
     duplicateTileCacheInvalidated: 0,
     duplicateTileReconcileRequested: 0,
+    terrainVisibleCommit: 0,
+    refreshReasonDefault: 0,
+    refreshReasonHydratedChunk: 0,
+    refreshReasonDuplicateTile: 0,
+    refreshReasonTileOverlapRepair: 0,
+    duplicateTileReconcileModeInvalidateOnly: 0,
+    duplicateTileReconcileModeLocalReconcile: 0,
+    duplicateTileReconcileModeAtomicRefresh: 0,
+    staleTerrainRefreshDropped: 0,
+    terrainBoundsRecovery: 0,
+    tileHydrationDrainCompleted: 0,
+    cacheRejectFingerprint: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
     switchDurationMsSamples: [],
+    terrainReadyDurationMsTotal: 0,
+    terrainReadyDurationMsMax: 0,
+    terrainReadyDurationMsSamples: [],
+    terrainCommitDurationMsTotal: 0,
+    terrainCommitDurationMsMax: 0,
+    terrainCommitDurationMsSamples: [],
+    firstVisibleCommitDurationMsTotal: 0,
+    firstVisibleCommitDurationMsMax: 0,
+    firstVisibleCommitDurationMsSamples: [],
     managerDurationMsTotal: 0,
     managerDurationMsMax: 0,
     managerDurationMsSamples: [],
+    managerCatchUpDurationMsTotal: 0,
+    managerCatchUpDurationMsMax: 0,
+    managerCatchUpDurationMsSamples: [],
+    preparedChunkPrewarmHit: 0,
+    preparedChunkPrewarmMiss: 0,
     updatedAtMs: Date.now(),
   };
+}
+
+function recordDurationSample(
+  samples: number[],
+  durationMs: number,
+): number[] {
+  samples.push(durationMs);
+  if (samples.length > MAX_DURATION_SAMPLES) {
+    samples.shift();
+  }
+  return samples;
 }
 
 export function recordChunkDiagnosticsEvent(
@@ -182,24 +263,88 @@ export function recordChunkDiagnosticsEvent(
     case "duplicate_tile_reconcile_requested":
       diagnostics.duplicateTileReconcileRequested += 1;
       break;
+    case "prepared_chunk_prewarm_hit":
+      diagnostics.preparedChunkPrewarmHit += 1;
+      break;
+    case "prepared_chunk_prewarm_miss":
+      diagnostics.preparedChunkPrewarmMiss += 1;
+      break;
+    case "terrain_visible_commit":
+      diagnostics.terrainVisibleCommit += 1;
+      break;
+    case "refresh_reason_default":
+      diagnostics.refreshReasonDefault += 1;
+      break;
+    case "refresh_reason_hydrated_chunk":
+      diagnostics.refreshReasonHydratedChunk += 1;
+      break;
+    case "refresh_reason_duplicate_tile":
+      diagnostics.refreshReasonDuplicateTile += 1;
+      break;
+    case "refresh_reason_tile_overlap_repair":
+      diagnostics.refreshReasonTileOverlapRepair += 1;
+      break;
+    case "duplicate_tile_reconcile_mode_invalidate_only":
+      diagnostics.duplicateTileReconcileModeInvalidateOnly += 1;
+      break;
+    case "duplicate_tile_reconcile_mode_local_reconcile":
+      diagnostics.duplicateTileReconcileModeLocalReconcile += 1;
+      break;
+    case "duplicate_tile_reconcile_mode_atomic_refresh":
+      diagnostics.duplicateTileReconcileModeAtomicRefresh += 1;
+      break;
+    case "stale_terrain_refresh_dropped":
+      diagnostics.staleTerrainRefreshDropped += 1;
+      break;
+    case "terrain_bounds_recovery":
+      diagnostics.terrainBoundsRecovery += 1;
+      break;
+    case "tile_hydration_drain_completed":
+      diagnostics.tileHydrationDrainCompleted += 1;
+      break;
+    case "cache_reject_fingerprint":
+      diagnostics.cacheRejectFingerprint += 1;
+      break;
     case "switch_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;
       diagnostics.switchDurationMsTotal += durationMs;
       diagnostics.switchDurationMsMax = Math.max(diagnostics.switchDurationMsMax, durationMs);
-      diagnostics.switchDurationMsSamples.push(durationMs);
-      if (diagnostics.switchDurationMsSamples.length > MAX_DURATION_SAMPLES) {
-        diagnostics.switchDurationMsSamples.shift();
-      }
+      recordDurationSample(diagnostics.switchDurationMsSamples, durationMs);
+      break;
+    }
+    case "terrain_ready_duration_recorded": {
+      const durationMs = options?.durationMs ?? 0;
+      diagnostics.terrainReadyDurationMsTotal += durationMs;
+      diagnostics.terrainReadyDurationMsMax = Math.max(diagnostics.terrainReadyDurationMsMax, durationMs);
+      recordDurationSample(diagnostics.terrainReadyDurationMsSamples, durationMs);
+      break;
+    }
+    case "terrain_commit_duration_recorded": {
+      const durationMs = options?.durationMs ?? 0;
+      diagnostics.terrainCommitDurationMsTotal += durationMs;
+      diagnostics.terrainCommitDurationMsMax = Math.max(diagnostics.terrainCommitDurationMsMax, durationMs);
+      recordDurationSample(diagnostics.terrainCommitDurationMsSamples, durationMs);
+      break;
+    }
+    case "first_visible_commit_duration_recorded": {
+      const durationMs = options?.durationMs ?? 0;
+      diagnostics.firstVisibleCommitDurationMsTotal += durationMs;
+      diagnostics.firstVisibleCommitDurationMsMax = Math.max(diagnostics.firstVisibleCommitDurationMsMax, durationMs);
+      recordDurationSample(diagnostics.firstVisibleCommitDurationMsSamples, durationMs);
       break;
     }
     case "manager_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;
       diagnostics.managerDurationMsTotal += durationMs;
       diagnostics.managerDurationMsMax = Math.max(diagnostics.managerDurationMsMax, durationMs);
-      diagnostics.managerDurationMsSamples.push(durationMs);
-      if (diagnostics.managerDurationMsSamples.length > MAX_DURATION_SAMPLES) {
-        diagnostics.managerDurationMsSamples.shift();
-      }
+      recordDurationSample(diagnostics.managerDurationMsSamples, durationMs);
+      break;
+    }
+    case "manager_catch_up_duration_recorded": {
+      const durationMs = options?.durationMs ?? 0;
+      diagnostics.managerCatchUpDurationMsTotal += durationMs;
+      diagnostics.managerCatchUpDurationMsMax = Math.max(diagnostics.managerCatchUpDurationMsMax, durationMs);
+      recordDurationSample(diagnostics.managerCatchUpDurationMsSamples, durationMs);
       break;
     }
   }

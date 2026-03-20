@@ -22,7 +22,7 @@ const ANIMATION_INTERVAL_MULTIPLIER_LARGE = 3;
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
-  private biomeMeshes: any[] = [];
+  private biomeMeshes: THREE.Mesh[] = [];
   private count: number = 0;
   private mixer: AnimationMixer | null = null;
   private animation: AnimationClip | null = null;
@@ -309,6 +309,10 @@ export default class InstancedModel {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
         child.instanceMatrix.needsUpdate = true;
+        if (this.worldBounds) {
+          this.applyWorldBounds(child);
+          return;
+        }
         child.computeBoundingSphere();
         this.applyWorldBounds(child);
       }

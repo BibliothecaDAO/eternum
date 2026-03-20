@@ -22,7 +22,7 @@ export const TabButton = ({ isActive, label, onClick }: { isActive: boolean; lab
   <button
     className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
       isActive
-        ? "bg-gold text-black shadow-[0_20px_45px_-25px_rgba(255,215,128,0.85)]"
+        ? "bg-gold text-brown shadow-[0_20px_45px_-25px_rgba(255,215,128,0.85)]"
         : "border border-gold/20 bg-gold/5 text-gold/70 hover:bg-gold/10 hover:border-gold/40"
     }`}
     onClick={onClick}

@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./hexagon-scene", () => ({
-  HexagonScene: class {},
+  HexagonScene: class {
+    protected bootstrapSceneOwnership(): void {}
+  },
 }));
 
 import { WarpTravel } from "./warp-travel";
@@ -11,6 +13,8 @@ import {
   type WarpTravelLifecycleAdapter,
   type WarpTravelLifecycleState,
 } from "./warp-travel-lifecycle";
+
+let constructorBootstrapCalls = 0;
 
 function createAdapter(overrides: Partial<WarpTravelLifecycleAdapter> = {}): {
   adapter: WarpTravelLifecycleAdapter;
@@ -93,6 +97,38 @@ class CountingWarpTravel extends WarpTravel {
   }
 }
 
+class ConstructorBootstrapWarpTravel extends WarpTravel {
+  protected override bootstrapSceneOwnership(): void {
+    constructorBootstrapCalls += 1;
+  }
+
+  protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
+    return {
+      moveCameraToSceneLocation: () => {},
+      attachLabelGroupsToScene: () => {},
+      attachManagerLabels: () => {},
+      registerStoreSubscriptions: () => {},
+      setupCameraZoomHandler: () => {},
+      refreshScene: async () => {},
+      disposeStoreSubscriptions: () => {},
+      detachLabelGroupsFromScene: () => {},
+      detachManagerLabels: () => {},
+    };
+  }
+
+  protected onHexagonMouseMove(): void {}
+
+  protected onHexagonDoubleClick(): void {}
+
+  protected onHexagonClick(): void {}
+
+  protected onHexagonRightClick(): void {}
+
+  public moveCameraToURLLocation(): void {}
+
+  public onSwitchOff(_nextSceneName?: unknown): void {}
+}
+
 function createCountingWarpTravel(): CountingWarpTravel {
   const instance = Object.create(CountingWarpTravel.prototype) as CountingWarpTravel;
   instance.adapterCreations = 0;
@@ -109,6 +145,21 @@ function createCountingWarpTravel(): CountingWarpTravel {
 }
 
 describe("runWarpTravelSetupLifecycle", () => {
+  it("bootstraps scene ownership during construction for constructor-time scene dependencies", () => {
+    constructorBootstrapCalls = 0;
+
+    new ConstructorBootstrapWarpTravel(
+      "worldmap" as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    expect(constructorBootstrapCalls).toBe(1);
+  });
+
   it("runs shared initial activation and marks the runtime initialized", async () => {
     const { adapter, events } = createAdapter();
 

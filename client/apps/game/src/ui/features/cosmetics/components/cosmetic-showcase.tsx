@@ -1,5 +1,6 @@
 import Button from "@/ui/design-system/atoms/button";
 import { CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
+import { isDevPreviewSyntheticTokenId } from "@/ui/features/cosmetics/lib/dev-preview-cosmetics";
 import { useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 import { CosmeticModelViewer } from "./cosmetic-model-viewer";
@@ -8,14 +9,15 @@ const TRADE_BASE_URL = "https://empire.realms.world/trade/cosmetics";
 
 interface CosmeticShowcaseProps {
   item: CosmeticItem | null;
+  loadoutScopeKey?: string;
 }
 
-export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
+export const CosmeticShowcase = ({ item, loadoutScopeKey }: CosmeticShowcaseProps) => {
   const attributes = item?.attributes ?? item?.metadata?.attributes ?? [];
   const slot = item?.slot ?? attributes.find((attribute) => attribute.trait_type === "Type")?.value ?? null;
 
-  const addCosmetic = useCosmeticLoadoutStore((state) => state.addCosmetic);
-  const selectedBySlot = useCosmeticLoadoutStore((state) => state.selectedBySlot);
+  const addCosmetic = useCosmeticLoadoutStore((state) => state.addCosmetic, { scopeKey: loadoutScopeKey });
+  const selectedBySlot = useCosmeticLoadoutStore((state) => state.selectedBySlot, { scopeKey: loadoutScopeKey });
 
   const slotTokenId = slot ? selectedBySlot[slot] : undefined;
   const isEquipped = Boolean(slot && item?.tokenId && slotTokenId === item.tokenId);
@@ -28,7 +30,7 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
       return;
     }
 
-    addCosmetic(slot, item.tokenId);
+    addCosmetic(slot, item);
   };
 
   return (
@@ -82,7 +84,7 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
               {isEquipped ? "Equipped" : hasSlotConflict ? "Replace equipped cosmetic" : "Equip cosmetic"}
             </Button>
 
-            {item?.tokenId && (
+            {item?.tokenId && !isDevPreviewSyntheticTokenId(item.tokenId) && (
               <a
                 href={`${TRADE_BASE_URL}/${item.tokenId}`}
                 target="_blank"
@@ -98,6 +100,13 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
           {!canEquip && (
             <p className="text-xs text-gold/50">
               On-chain cosmetics expose a token and slot before they can be assigned.
+            </p>
+          )}
+
+          {item?.tokenId && isDevPreviewSyntheticTokenId(item.tokenId) && (
+            <p className="text-xs text-amber-200">
+              Dev preview cosmetic only. This selection is available for local testing and will not be registered
+              onchain.
             </p>
           )}
 

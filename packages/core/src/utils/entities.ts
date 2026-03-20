@@ -1,5 +1,4 @@
 import {
-  BlitzStructureTypeToNameMapping,
   CapacityConfig,
   ClientComponents,
   ContractAddress,
@@ -15,6 +14,7 @@ import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
+import { getStructureTypeName } from "./structure";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
@@ -105,11 +105,8 @@ export const getStructureName = (
   } else if (structure.base.category === StructureType.Hyperstructure) {
     originalName = getHyperstructureName(structure);
   } else {
-    if (isBlitz) {
-      originalName = `${BlitzStructureTypeToNameMapping[structure.base.category as StructureType]} ${structure.entity_id}`;
-    } else {
-      originalName = `${StructureType[structure.base.category]} ${structure.entity_id}`;
-    }
+    const structureTypeName = getStructureTypeName(structure.base.category as StructureType, isBlitz) || "Structure";
+    originalName = `${structureTypeName} ${structure.entity_id}`;
   }
 
   return { name: cachedName || originalName, originalName };

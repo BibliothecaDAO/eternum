@@ -54,8 +54,9 @@ describe("cosmetics resolver", () => {
       defaultModelType: ModelType.Knight1,
     });
 
-    expect(result.cosmeticId).toContain("army:Knight:T1");
-    expect(result.modelType).toBe(ModelType.Knight1);
+    expect(result.skin.cosmeticId).toContain("army:Knight:T1");
+    expect(result.skin.modelType).toBe(ModelType.Knight1);
+    expect(result.skin.isFallback).toBe(true);
     expect(result.attachments).toEqual([]);
   });
 
@@ -66,8 +67,69 @@ describe("cosmetics resolver", () => {
       defaultModelKey: "Realm",
     });
 
-    expect(result.cosmeticId).toContain("structure:Realm".toLowerCase());
-    expect(result.modelType).toBeUndefined();
+    expect(result.skin.cosmeticId).toContain("structure:Realm".toLowerCase());
+    expect(result.skin.modelType).toBeUndefined();
+    expect(result.skin.isFallback).toBe(true);
+  });
+
+  it("rejects incompatible selected skins and falls back", () => {
+    playerCosmeticsStore.setSnapshot({
+      owner: "0x1",
+      version: 1,
+      ownership: {
+        owner: "0x1",
+        version: 1,
+        ownedAttrs: [],
+        eligibleCosmeticIds: [],
+      },
+      selection: {
+        armies: {
+          [formatArmyCosmeticTarget(TroopType.Crossbowman, TroopTier.T1)]: {
+            skin: "structure:realm:castle-s1-lvl2",
+          },
+        },
+      },
+    });
+
+    const result = resolveArmyCosmetic({
+      owner: "0x1",
+      troopType: TroopType.Crossbowman,
+      tier: TroopTier.T1,
+      defaultModelType: ModelType.Crossbowman1,
+    });
+
+    expect(result.skin.cosmeticId).toContain("army:Crossbowman:T1");
+    expect(result.skin.isFallback).toBe(true);
+  });
+
+  it("rejects selected cosmetics that are not ownership-eligible", () => {
+    playerCosmeticsStore.setSnapshot({
+      owner: "0x1",
+      version: 1,
+      ownership: {
+        owner: "0x1",
+        version: 1,
+        ownedAttrs: [],
+        eligibleCosmeticIds: [],
+      },
+      selection: {
+        armies: {
+          [formatArmyCosmeticTarget(TroopType.Knight, TroopTier.T3)]: {
+            skin: "army:Knight:T3:legacy",
+          },
+        },
+      },
+    });
+
+    const result = resolveArmyCosmetic({
+      owner: "0x1",
+      troopType: TroopType.Knight,
+      tier: TroopTier.T3,
+      defaultModelType: ModelType.Knight3,
+    });
+
+    expect(result.skin.cosmeticId).toBe("army:Knight:T3:base");
+    expect(result.skin.isFallback).toBe(true);
   });
 
   it("merges per-army attachments when compatible", () => {
@@ -88,6 +150,12 @@ describe("cosmetics resolver", () => {
     playerCosmeticsStore.setSnapshot({
       owner: "0x1",
       version: 1,
+      ownership: {
+        owner: "0x1",
+        version: 1,
+        ownedAttrs: [],
+        eligibleCosmeticIds: ["attachment:weapon:bow-common", "attachment:test:crossbow-banner"],
+      },
       selection: {
         armies: {
           [formatArmyCosmeticTarget(TroopType.Crossbowman, TroopTier.T1)]: {
@@ -95,7 +163,6 @@ describe("cosmetics resolver", () => {
           },
         },
         globalAttachments: [],
-        tokens: [],
       },
     });
 
@@ -109,5 +176,40 @@ describe("cosmetics resolver", () => {
     const attachmentIds = result.attachments.map((attachment) => attachment.id).toSorted();
     expect(attachmentIds).toEqual(["bow-common", "crossbow-banner"]);
     expect(result.attachments.every((item) => !!item.slot)).toBe(true);
+  });
+
+  it("lets target-local attachments replace global attachments in the same slot", () => {
+    playerCosmeticsStore.setSnapshot({
+      owner: "0x1",
+      version: 1,
+      ownership: {
+        owner: "0x1",
+        version: 1,
+        ownedAttrs: [],
+        eligibleCosmeticIds: [
+          "attachment:army:aura-legacy",
+          "attachment:structure:aura-winter-spike",
+          "attachment:structure:aura-legacy",
+        ],
+      },
+      selection: {
+        structures: {
+          "structure:Realm": {
+            attachments: ["attachment:structure:aura-winter-spike"],
+          },
+        },
+        globalAttachments: ["attachment:structure:aura-legacy"],
+      },
+    });
+
+    const result = resolveStructureCosmetic({
+      owner: "0x1",
+      structureType: StructureType.Realm,
+      defaultModelKey: "Realm",
+    });
+
+    expect(result.attachments.filter((attachment) => attachment.slot === "aura")).toEqual([
+      expect.objectContaining({ id: "winter-spike-aura" }),
+    ]);
   });
 });

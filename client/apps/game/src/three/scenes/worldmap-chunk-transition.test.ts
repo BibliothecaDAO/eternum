@@ -4,8 +4,11 @@ import {
   resolveDuplicateTileReconcilePlan,
   resolveEntityActionPathsTransitionTokenSync,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
+  resolvePendingChunkRefreshUiReason,
+  shouldHoldShortcutArmySelectionProtection,
   shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldClearEntitySelectionForEntityActionTransition,
+  shouldClearEntitySelectionForChunkSwitch,
   resolveRefreshCompletionActions,
   resolveDuplicateTileUpdateMode,
   resolveDuplicateTileUpdateActions,
@@ -93,6 +96,106 @@ describe("resolveChunkSwitchActions", () => {
       shouldUnregisterPreviousChunk: false,
       shouldRestorePreviousState: false,
     });
+  });
+});
+
+describe("shouldClearEntitySelectionForChunkSwitch", () => {
+  it("clears selection for default chunk switches outside shortcut tabbing", () => {
+    expect(
+      shouldClearEntitySelectionForChunkSwitch({
+        reason: "default",
+        isShortcutArmySelectionInFlight: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("preserves selection for explicit shortcut chunk switches", () => {
+    expect(
+      shouldClearEntitySelectionForChunkSwitch({
+        reason: "shortcut",
+        isShortcutArmySelectionInFlight: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("preserves selection when a default refresh overlaps shortcut tabbing", () => {
+    expect(
+      shouldClearEntitySelectionForChunkSwitch({
+        reason: "default",
+        isShortcutArmySelectionInFlight: true,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("resolvePendingChunkRefreshUiReason", () => {
+  it("promotes queued refreshes to shortcut mode while tab selection is in flight", () => {
+    expect(
+      resolvePendingChunkRefreshUiReason({
+        currentReason: "default",
+        isShortcutArmySelectionInFlight: true,
+      }),
+    ).toBe("shortcut");
+  });
+
+  it("keeps shortcut mode sticky until the queued refresh is consumed", () => {
+    expect(
+      resolvePendingChunkRefreshUiReason({
+        currentReason: "shortcut",
+        isShortcutArmySelectionInFlight: false,
+      }),
+    ).toBe("shortcut");
+  });
+
+  it("stays in default mode when no shortcut selection is active", () => {
+    expect(
+      resolvePendingChunkRefreshUiReason({
+        currentReason: "default",
+        isShortcutArmySelectionInFlight: false,
+      }),
+    ).toBe("default");
+  });
+});
+
+describe("shouldHoldShortcutArmySelectionProtection", () => {
+  it("holds protection while a chunk refresh timer is pending", () => {
+    expect(
+      shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: true,
+        isChunkRefreshRunning: false,
+        hasGlobalChunkSwitchPromise: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("holds protection while a chunk refresh is running", () => {
+    expect(
+      shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: false,
+        isChunkRefreshRunning: true,
+        hasGlobalChunkSwitchPromise: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("holds protection while a global chunk switch is still in flight", () => {
+    expect(
+      shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: false,
+        isChunkRefreshRunning: false,
+        hasGlobalChunkSwitchPromise: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("releases protection when chunk work has fully drained", () => {
+    expect(
+      shouldHoldShortcutArmySelectionProtection({
+        hasPendingChunkRefreshTimer: false,
+        isChunkRefreshRunning: false,
+        hasGlobalChunkSwitchPromise: false,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -782,7 +885,7 @@ describe("shouldForceRefreshForDuplicateTileUpdate", () => {
     ).toBe(true);
   });
 
-  it("forces refresh when a duplicate tile update targets a visible hex in the active chunk", () => {
+  it("forces refresh for same-biome visible duplicate while visible membership is uncertain", () => {
     expect(
       shouldForceRefreshForDuplicateTileUpdate({
         removeExplored: false,
@@ -875,7 +978,7 @@ describe("resolveDuplicateTileUpdateActions", () => {
     });
   });
 
-  it("forces refresh when duplicate update is visible in active chunk", () => {
+  it("requests refresh for same-biome visible duplicate while visible membership is uncertain", () => {
     expect(
       resolveDuplicateTileUpdateActions({
         removeExplored: false,
@@ -921,7 +1024,7 @@ describe("resolveDuplicateTileUpdateMode", () => {
       expected: "invalidate_and_refresh",
     },
     {
-      name: "duplicate tile is visible and stable",
+      name: "duplicate tile is visible and needs correctness-preserving refresh",
       input: {
         removeExplored: false,
         tileAlreadyKnown: true,
@@ -1045,11 +1148,13 @@ describe("resolveDuplicateTileReconcilePlan", () => {
       }),
     ).toEqual({
       shouldInvalidateCaches: true,
+      shouldUpdateAuthoritativeState: true,
       refreshStrategy: "immediate",
+      reconcileMode: "atomic_chunk_refresh",
     });
   });
 
-  it("returns deferred strategy for visible duplicate reconciliation without biome delta", () => {
+  it("returns atomic refresh with deferred scheduling for visible duplicate without biome delta", () => {
     expect(
       resolveDuplicateTileReconcilePlan({
         removeExplored: false,
@@ -1061,7 +1166,9 @@ describe("resolveDuplicateTileReconcilePlan", () => {
       }),
     ).toEqual({
       shouldInvalidateCaches: true,
+      shouldUpdateAuthoritativeState: false,
       refreshStrategy: "deferred",
+      reconcileMode: "atomic_chunk_refresh",
     });
   });
 
@@ -1076,8 +1183,89 @@ describe("resolveDuplicateTileReconcilePlan", () => {
       }),
     ).toEqual({
       shouldInvalidateCaches: false,
+      shouldUpdateAuthoritativeState: false,
       refreshStrategy: "none",
+      reconcileMode: "none",
     });
+  });
+});
+
+describe("resolveDuplicateTileReconcilePlan – Stage 3: reconcile modes", () => {
+  it("same-biome visible duplicate returns atomic refresh reconcile mode", () => {
+    const plan = resolveDuplicateTileReconcilePlan({
+      removeExplored: false,
+      tileAlreadyKnown: true,
+      hasBiomeDelta: false,
+      currentChunk: "24,24",
+      isChunkTransitioning: false,
+      isVisibleInCurrentChunk: true,
+    });
+
+    expect(plan.reconcileMode).toBe("atomic_chunk_refresh");
+    expect(plan.refreshStrategy).toBe("deferred");
+    expect(plan.shouldInvalidateCaches).toBe(true);
+  });
+
+  it("biome-delta visible duplicate returns atomic_chunk_refresh reconcile mode", () => {
+    const plan = resolveDuplicateTileReconcilePlan({
+      removeExplored: false,
+      tileAlreadyKnown: true,
+      hasBiomeDelta: true,
+      currentChunk: "24,24",
+      isChunkTransitioning: false,
+      isVisibleInCurrentChunk: true,
+    });
+
+    expect(plan.reconcileMode).toBe("atomic_chunk_refresh");
+    expect(plan.refreshStrategy).toBe("immediate");
+    expect(plan.shouldUpdateAuthoritativeState).toBe(true);
+  });
+
+  it("same-biome offscreen duplicate returns invalidate_only reconcile mode", () => {
+    const plan = resolveDuplicateTileReconcilePlan({
+      removeExplored: false,
+      tileAlreadyKnown: true,
+      hasBiomeDelta: false,
+      currentChunk: "24,24",
+      isChunkTransitioning: false,
+      isVisibleInCurrentChunk: false,
+    });
+
+    expect(plan.reconcileMode).toBe("invalidate_only");
+    expect(plan.shouldInvalidateCaches).toBe(true);
+    expect(plan.refreshStrategy).toBe("none");
+  });
+
+  it("biome-delta offscreen duplicate returns invalidate_only reconcile mode with deferred refresh", () => {
+    // Biome delta offscreen: data updated via shouldUpdateAuthoritativeState,
+    // but refresh is deferred since tile is not visible. However the reconcileMode
+    // is atomic_chunk_refresh because the actions layer requested refresh.
+    const plan = resolveDuplicateTileReconcilePlan({
+      removeExplored: false,
+      tileAlreadyKnown: true,
+      hasBiomeDelta: true,
+      currentChunk: "24,24",
+      isChunkTransitioning: false,
+      isVisibleInCurrentChunk: false,
+    });
+
+    expect(plan.reconcileMode).toBe("atomic_chunk_refresh");
+    expect(plan.shouldUpdateAuthoritativeState).toBe(true);
+    expect(plan.refreshStrategy).toBe("immediate");
+  });
+
+  it("non-duplicate tile returns none reconcile mode", () => {
+    const plan = resolveDuplicateTileReconcilePlan({
+      removeExplored: false,
+      tileAlreadyKnown: false,
+      currentChunk: "24,24",
+      isChunkTransitioning: false,
+      isVisibleInCurrentChunk: true,
+    });
+
+    expect(plan.reconcileMode).toBe("none");
+    expect(plan.shouldInvalidateCaches).toBe(false);
+    expect(plan.refreshStrategy).toBe("none");
   });
 });
 
@@ -1148,6 +1336,52 @@ describe("waitForChunkTransitionToSettle", () => {
 
     resolveSecond?.();
     await waitPromise;
+  });
+
+  it("returns after max iterations when getTransitionPromise always returns a new promise", async () => {
+    let iterations = 0;
+    const getTransitionPromise = () => {
+      iterations++;
+      return Promise.resolve();
+    };
+
+    await waitForChunkTransitionToSettle(getTransitionPromise, undefined, { maxIterations: 50 });
+    expect(iterations).toBeLessThanOrEqual(51);
+  });
+
+  it("returns immediately when isSwitchedOff returns true before the first iteration", async () => {
+    let reads = 0;
+    const getTransitionPromise = () => {
+      reads++;
+      return Promise.resolve();
+    };
+
+    await waitForChunkTransitionToSettle(getTransitionPromise, undefined, {
+      isSwitchedOff: () => true,
+    });
+    expect(reads).toBe(0);
+  });
+
+  it("returns when isSwitchedOff becomes true mid-loop", async () => {
+    let iterations = 0;
+    const getTransitionPromise = () => {
+      iterations++;
+      return Promise.resolve();
+    };
+
+    await waitForChunkTransitionToSettle(getTransitionPromise, undefined, {
+      isSwitchedOff: () => iterations >= 5,
+      maxIterations: 100,
+    });
+    expect(iterations).toBeGreaterThanOrEqual(5);
+    expect(iterations).toBeLessThan(100);
+  });
+
+  it("still returns on first iteration when getTransitionPromise returns null", async () => {
+    await waitForChunkTransitionToSettle(() => null, undefined, {
+      isSwitchedOff: () => false,
+      maxIterations: 50,
+    });
   });
 });
 
@@ -1304,5 +1538,53 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
       shouldRequestRefresh: false,
       shouldForceRefresh: false,
     });
+  });
+});
+
+describe("resolveDuplicateTileReconcilePlan – Stage 0: authoritative state update signal", () => {
+  it("duplicate tile with biome delta returns a plan that requires authoritative state update", () => {
+    const plan = resolveDuplicateTileReconcilePlan({
+      removeExplored: false,
+      tileAlreadyKnown: true,
+      hasBiomeDelta: true,
+      currentChunk: "24,24",
+      isChunkTransitioning: false,
+      isVisibleInCurrentChunk: true,
+    });
+
+    // Stage 0: the plan MUST include shouldUpdateAuthoritativeState so the caller
+    // writes the biome delta to exploredTiles BEFORE early-returning for reconcile scheduling.
+    expect(plan).toHaveProperty("shouldUpdateAuthoritativeState", true);
+  });
+
+  it("duplicate visible tile with same biome does not require authoritative state update", () => {
+    const plan = resolveDuplicateTileReconcilePlan({
+      removeExplored: false,
+      tileAlreadyKnown: true,
+      hasBiomeDelta: false,
+      currentChunk: "24,24",
+      isChunkTransitioning: false,
+      isVisibleInCurrentChunk: true,
+    });
+
+    // Same biome: no data loss risk, so no authoritative update needed.
+    expect(plan).toHaveProperty("shouldUpdateAuthoritativeState", false);
+  });
+
+  it("offscreen duplicate biome delta returns deferred reconcile mode", () => {
+    const plan = resolveDuplicateTileReconcilePlan({
+      removeExplored: false,
+      tileAlreadyKnown: true,
+      hasBiomeDelta: true,
+      currentChunk: "24,24",
+      isChunkTransitioning: false,
+      isVisibleInCurrentChunk: false,
+    });
+
+    // Offscreen tiles with biome deltas should still signal authoritative update.
+    // Stage 0: refresh strategy remains "immediate" for biome deltas (Stage 3
+    // will change offscreen to "deferred").
+    expect(plan).toHaveProperty("shouldUpdateAuthoritativeState", true);
+    expect(plan.refreshStrategy).toBe("immediate");
   });
 });

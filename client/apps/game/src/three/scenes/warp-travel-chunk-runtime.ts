@@ -1,3 +1,5 @@
+import { resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
+
 export interface WarpTravelChunkCoordinatesInput {
   x: number;
   z: number;
@@ -37,17 +39,22 @@ export interface WarpTravelVisibleChunkDecision {
 }
 
 export function resolveWarpTravelChunkCoordinates(input: WarpTravelChunkCoordinatesInput): WarpTravelChunkCoordinates {
-  const chunkX = Math.floor(input.x / (input.chunkSize * input.hexSize * Math.sqrt(3)));
-  const chunkZ = Math.floor(input.z / (input.chunkSize * input.hexSize * 1.5));
-  const startCol = chunkX * input.chunkSize;
-  const startRow = chunkZ * input.chunkSize;
+  const result = resolveWorldmapChunkFromWorldPosition({
+    worldX: input.x,
+    worldZ: input.z,
+    chunkSize: input.chunkSize,
+  });
+
+  // Derive chunkX/chunkZ from startCol/startRow for backwards compatibility
+  const chunkX = result.startCol / input.chunkSize;
+  const chunkZ = result.startRow / input.chunkSize;
 
   return {
     chunkX,
     chunkZ,
-    startCol,
-    startRow,
-    chunkKey: `${startRow},${startCol}`,
+    startCol: result.startCol,
+    startRow: result.startRow,
+    chunkKey: result.chunkKey,
   };
 }
 

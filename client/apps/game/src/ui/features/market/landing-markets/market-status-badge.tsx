@@ -28,12 +28,12 @@ const STATUS_STYLES: Record<StatusKey, string> = {
   trading: "border-brilliance/40 bg-brilliance/10 text-brilliance",
   closed: "border-orange/40 bg-orange/10 text-orange",
   resolvable: "border-gold/40 bg-gold/10 text-gold",
-  resolved: "border-blueish/40 bg-blueish/10 text-blueish",
-  settling: "border-blueish/40 bg-blueish/10 text-blueish",
-  pending: "border-lightest/30 bg-lightest/5 text-lightest/80",
-  upcoming: "border-lightest/30 bg-lightest/5 text-lightest/80",
+  resolved: "border-gold/55 bg-gold/20 text-gold",
+  settling: "border-gold/40 bg-gold/10 text-gold",
+  pending: "border-gold/25 bg-brown/45 text-gold/80",
+  upcoming: "border-gold/25 bg-brown/45 text-gold/80",
   cancelled: "border-danger/40 bg-danger/10 text-danger",
-  default: "border-lightest/30 bg-lightest/5 text-lightest/80",
+  default: "border-gold/25 bg-brown/45 text-gold/80",
 };
 
 const STATUS_ICONS: Record<StatusKey, LucideIcon> = {
@@ -57,19 +57,14 @@ const formatStatus = (status?: unknown) => {
 };
 
 export const MarketStatusBadge = ({ market }: { market: MarketClass }) => {
-  const nowMs = Date.now();
-
-  const startAtMs = Number(market.start_at ?? market.created_at) * 1_000;
-  const resolveAtMs = Number(market.resolve_at) * 1_000;
-  const endAtMs = Number(market.end_at) * 1_000;
-  const resolvedAtMs = Number(market.resolved_at) * 1_000;
+  const rawStatus = String((market as { status?: string }).status ?? "").toLowerCase();
 
   const computedStatus = ((): StatusKey => {
-    if (market.isResolved() || (Number.isFinite(resolvedAtMs) && resolvedAtMs > 0)) return "resolved";
-    if (market.isResolvable() || (Number.isFinite(resolveAtMs) && resolveAtMs > 0 && resolveAtMs <= nowMs))
-      return "resolvable";
-    if (market.isEnded() || (Number.isFinite(endAtMs) && endAtMs > 0 && endAtMs <= nowMs)) return "closed";
-    if (Number.isFinite(startAtMs) && startAtMs > nowMs) return "upcoming";
+    if (rawStatus.includes("cancel")) return "cancelled";
+    if (rawStatus.includes("upcoming") || rawStatus.includes("pending")) return "upcoming";
+    if (market.isResolved()) return "resolved";
+    if (market.isResolvable()) return "resolvable";
+    if (market.isEnded()) return "closed";
     return "open";
   })();
 

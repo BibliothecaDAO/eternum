@@ -9,6 +9,41 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-19",
+    title: "Stable Biome Chunk Refresh",
+    description:
+      "Fixed world map biome flicker during chunk refreshes and rapid traversal, so terrain updates stay visually stable while nearby tiles and managers catch up.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-18",
+    title: "1v1 Capacity Display Fix",
+    description:
+      "Blitz 1v1 game cards and registration checks now use the true two-player cap, so the lobby count and Register availability stay aligned with onchain settlement limits.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-17",
+    title: "Spire and Mine Tile Actions",
+    description:
+      "Selected tile interactions now handle Spires with a direct Ethereal Layer travel action, show Holy Site devotion placeholders, and keep mine naming consistent across Blitz and Eternum views.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-17",
+    title: "Eternum Settlement Card Stats",
+    description:
+      "Eternum game cards now show settled-player counts plus settled realm and village totals, so card stats stay meaningful for worlds that do not use player registration.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-17",
+    title: "Infinite Season Timer Fix",
+    description:
+      "Fixed infinite sandbox worlds so the header no longer shows a 0h end countdown or urgent red flashing, and the End season leaderboard action is now hidden when a season has no end timestamp.",
+    type: "fix",
+  },
+  {
     date: "2026-03-06",
     title: "Tournament Leaderboard Table Cleanup",
     description:

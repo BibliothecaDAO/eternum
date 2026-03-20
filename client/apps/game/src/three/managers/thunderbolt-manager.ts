@@ -58,6 +58,7 @@ interface ActiveThunderBolt {
 export class ThunderBoltManager {
   private thunderBolts: THREE.Group = new THREE.Group();
   private activeThunderBolts: ActiveThunderBolt[] = [];
+  private scheduledSpawnTimeouts: Array<ReturnType<typeof setTimeout>> = [];
   private config: ThunderBoltConfig = {
     radius: 2,
     count: 5,
@@ -477,12 +478,14 @@ export class ThunderBoltManager {
     const spawnInterval = randomHexes.length > 1 ? maxSpawnPeriod / (randomHexes.length - 1) : 0;
 
     randomHexes.forEach((hex, index) => {
-      setTimeout(
+      const timeoutId = setTimeout(
         () => {
+          this.scheduledSpawnTimeouts = this.scheduledSpawnTimeouts.filter((scheduledTimeoutId) => scheduledTimeoutId !== timeoutId);
           this.createThunderBolt(hex);
         },
         index * spawnInterval + Math.random() * 10,
       );
+      this.scheduledSpawnTimeouts.push(timeoutId);
     });
   }
 
@@ -518,7 +521,8 @@ export class ThunderBoltManager {
             // Core layers (index 0) stay brighter, outer layers fade more
             const layerFade = layerIndex === 0 ? 1.0 : 0.7 + layerIndex * 0.1;
             const opacity = THREE.MathUtils.clamp(baseFade * (0.7 + flicker * 0.3) * layerFade, 0.02, 1);
-            layer.material.opacity = opacity * (layer.material.opacity > 0.5 ? 1.0 : 0.8);
+            const layerBrightness = layerIndex === 0 ? 1.0 : 0.8;
+            layer.material.opacity = THREE.MathUtils.clamp(opacity * layerBrightness, 0.02, 1);
 
             // Only tint non-white layers
             if (layerIndex > 0) {
@@ -558,6 +562,9 @@ export class ThunderBoltManager {
   }
 
   public cleanup(): void {
+    this.scheduledSpawnTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+    this.scheduledSpawnTimeouts = [];
+
     this.activeThunderBolts.forEach((thunderBolt) => {
       this.disposeThunderBolt(thunderBolt);
     });

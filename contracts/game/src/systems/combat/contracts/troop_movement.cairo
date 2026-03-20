@@ -75,7 +75,7 @@ pub mod troop_movement_systems {
     #[abi(embed_v0)]
     impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
         fn explorer_move(
-            ref self: ContractState, explorer_id: ID, mut directions: Span<Direction>, explore: bool,
+            ref self: ContractState, explorer_id: ID, mut directions: Span<Direction>, mut explore: bool,
         ) -> Span<Tile> {
             let mut tiles_to_return: Array<Tile> = array![];
 
@@ -134,6 +134,24 @@ pub mod troop_movement_systems {
                 biomes.append(biome);
 
                 let mut occupy_destination: bool = true;
+
+                if explore {
+                    // ensure only one tile can be explored
+                    assert!(directions.len().is_zero(), "explorer can only move one direction when exploring");
+                    if tile.discovered() {
+                        // this branch corrects for the case where an explorer tries to explore an already explored
+                        // tile.
+                        // which may be the case if the indexer is out of sync with actual chain state
+
+                        // force consume vrf seed
+                        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+                        let _vrf_seed: u256 = rng_library_dispatcher
+                            .get_random_number(Source::Salt(tile.to_seed()), world);
+                        // set explore to false
+                        explore = false;
+                    }
+                }
+
                 if explore {
                     // ensure only one tile can be explored
                     assert!(directions.len().is_zero(), "explorer can only move one direction when exploring");

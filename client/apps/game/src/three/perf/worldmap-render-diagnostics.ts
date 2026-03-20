@@ -6,21 +6,64 @@ export type WorldmapRenderDurationMetric =
   | "updateManagersForChunk"
   | "executeRenderForChunk"
   | "performVisibleStructuresUpdate"
+  | "terrainPreparedMs"
+  | "chunkTerrainReadyMs"
+  | "chunkTerrainCommitMs"
+  | "chunkManagerCatchUpMs"
+  | "tileHydrationDrainMs"
+  | "structureHydrationDrainMs"
+  | "structureAssetPrewarmMs"
+  | "presentationCommittedMs"
+  | "presentationSkewMs"
   | "workerFindPath"
   | "createPath";
 
 export type WorldmapRenderGauge = "activePaths" | "visibleArmies" | "visibleStructures" | "activeLabels";
+export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
-export type WorldmapRenderCounter = "workerFindPathCalls" | "workerFindPathBypasses" | "pathCreateCalls";
+export type WorldmapRenderCounter =
+  | "workerFindPathCalls"
+  | "workerFindPathBypasses"
+  | "pathCreateCalls"
+  | "controlsChangeEvents"
+  | "chunkRefreshRequests"
+  | "updateVisibleChunksCalls"
+  | "zoomTransitionsStarted"
+  | "zoomTransitionsCompleted"
+  | "zoomTransitionsCancelled"
+  | "terrainVisibleCommits"
+  | "duplicateTileAuthoritativeUpdates"
+  | "terrainVisibleOverlapRepairCount"
+  | "terrainVisibleReplaceCount"
+  | "terrainVisibleAppendCount"
+  | "terrainVisibleRebuildCount"
+  | "staleTerrainCacheFingerprintRejectCount"
+  | "preparedChunkPrewarmHits"
+  | "preparedChunkPrewarmMisses"
+  | "postCommitManagerCatchUpImmediate"
+  | "postCommitManagerCatchUpDeferred";
+
+export interface WorldmapZoomTelemetrySummary {
+  controlsChangeEvents: number;
+  chunkRefreshRequests: number;
+  updateVisibleChunksCalls: number;
+  zoomTransitions: {
+    started: number;
+    completed: number;
+    cancelled: number;
+  };
+}
 
 export type WorldmapForceRefreshReason =
   | "default"
   | "visibility_recovery"
   | "duplicate_tile"
+  | "deferred_transition_tile"
   | "structure_count_change"
   | "hydrated_chunk"
   | "terrain_self_heal"
   | "offscreen_chunk"
+  | "tile_overlap_repair"
   | "shortcut"
   | "army_dead";
 
@@ -34,6 +77,7 @@ export interface WorldmapRenderDurationStats {
 export interface WorldmapRenderDiagnosticsSnapshot {
   durations: Record<WorldmapRenderDurationMetric, WorldmapRenderDurationStats>;
   gauges: Record<WorldmapRenderGauge, number>;
+  uploadBytes: Record<WorldmapRenderUploadMetric, number>;
   counters: Record<WorldmapRenderCounter, number>;
   forceRefreshReasons: Record<WorldmapForceRefreshReason, number>;
   updatedAtMs: number;
@@ -53,6 +97,15 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     updateManagersForChunk: createDurationStats(),
     executeRenderForChunk: createDurationStats(),
     performVisibleStructuresUpdate: createDurationStats(),
+    terrainPreparedMs: createDurationStats(),
+    chunkTerrainReadyMs: createDurationStats(),
+    chunkTerrainCommitMs: createDurationStats(),
+    chunkManagerCatchUpMs: createDurationStats(),
+    tileHydrationDrainMs: createDurationStats(),
+    structureHydrationDrainMs: createDurationStats(),
+    structureAssetPrewarmMs: createDurationStats(),
+    presentationCommittedMs: createDurationStats(),
+    presentationSkewMs: createDurationStats(),
     workerFindPath: createDurationStats(),
     createPath: createDurationStats(),
   },
@@ -62,19 +115,41 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleStructures: 0,
     activeLabels: 0,
   },
+  uploadBytes: {
+    cachedChunkReplay: 0,
+  },
   counters: {
     workerFindPathCalls: 0,
     workerFindPathBypasses: 0,
     pathCreateCalls: 0,
+    controlsChangeEvents: 0,
+    chunkRefreshRequests: 0,
+    updateVisibleChunksCalls: 0,
+    zoomTransitionsStarted: 0,
+    zoomTransitionsCompleted: 0,
+    zoomTransitionsCancelled: 0,
+    terrainVisibleCommits: 0,
+    duplicateTileAuthoritativeUpdates: 0,
+    terrainVisibleOverlapRepairCount: 0,
+    terrainVisibleReplaceCount: 0,
+    terrainVisibleAppendCount: 0,
+    terrainVisibleRebuildCount: 0,
+    staleTerrainCacheFingerprintRejectCount: 0,
+    preparedChunkPrewarmHits: 0,
+    preparedChunkPrewarmMisses: 0,
+    postCommitManagerCatchUpImmediate: 0,
+    postCommitManagerCatchUpDeferred: 0,
   },
   forceRefreshReasons: {
     default: 0,
     visibility_recovery: 0,
     duplicate_tile: 0,
+    deferred_transition_tile: 0,
     structure_count_change: 0,
     hydrated_chunk: 0,
     terrain_self_heal: 0,
     offscreen_chunk: 0,
+    tile_overlap_repair: 0,
     shortcut: 0,
     army_dead: 0,
   },
@@ -106,6 +181,11 @@ export function incrementWorldmapRenderCounter(counter: WorldmapRenderCounter, a
   diagnosticsState.updatedAtMs = Date.now();
 }
 
+export function incrementWorldmapRenderUploadBytes(metric: WorldmapRenderUploadMetric, amount: number): void {
+  diagnosticsState.uploadBytes[metric] += Math.max(0, Math.floor(amount));
+  diagnosticsState.updatedAtMs = Date.now();
+}
+
 export function incrementWorldmapForceRefreshReason(reason: WorldmapForceRefreshReason): void {
   diagnosticsState.forceRefreshReasons[reason] += 1;
   diagnosticsState.updatedAtMs = Date.now();
@@ -123,9 +203,25 @@ export function snapshotWorldmapRenderDiagnostics(): WorldmapRenderDiagnosticsSn
       ]),
     ) as WorldmapRenderDiagnosticsSnapshot["durations"],
     gauges: { ...diagnosticsState.gauges },
+    uploadBytes: { ...diagnosticsState.uploadBytes },
     counters: { ...diagnosticsState.counters },
     forceRefreshReasons: { ...diagnosticsState.forceRefreshReasons },
     updatedAtMs: diagnosticsState.updatedAtMs,
+  };
+}
+
+export function createWorldmapZoomTelemetrySummary(
+  snapshot: WorldmapRenderDiagnosticsSnapshot,
+): WorldmapZoomTelemetrySummary {
+  return {
+    controlsChangeEvents: snapshot.counters.controlsChangeEvents,
+    chunkRefreshRequests: snapshot.counters.chunkRefreshRequests,
+    updateVisibleChunksCalls: snapshot.counters.updateVisibleChunksCalls,
+    zoomTransitions: {
+      started: snapshot.counters.zoomTransitionsStarted,
+      completed: snapshot.counters.zoomTransitionsCompleted,
+      cancelled: snapshot.counters.zoomTransitionsCancelled,
+    },
   };
 }
 

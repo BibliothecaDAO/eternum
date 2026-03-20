@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
+import {
+  resolveWorldmapChunkRefreshDebounceMs,
+  resolveWorldmapChunkRefreshSchedule,
+  shouldDelayWorldmapChunkSwitch,
+} from "./worldmap-chunk-switch-delay-policy";
 
 describe("shouldDelayWorldmapChunkSwitch", () => {
   const baseInput = {
@@ -49,5 +53,42 @@ describe("shouldDelayWorldmapChunkSwitch", () => {
         cameraPosition: { x: xThreshold, z: baseInput.cameraPosition.z },
       }),
     ).toBe(false);
+  });
+
+  it("uses a lower debounce for traversal refreshes than generic forced refreshes", () => {
+    const traversalDelayMs = resolveWorldmapChunkRefreshDebounceMs({
+      force: false,
+      reason: "default",
+    });
+    const forcedDelayMs = resolveWorldmapChunkRefreshDebounceMs({
+      force: true,
+      reason: "duplicate_tile",
+    });
+
+    expect(traversalDelayMs).toBeLessThan(forcedDelayMs);
+  });
+
+  it("reschedules only when a newly requested refresh deadline is earlier", () => {
+    const keepExisting = resolveWorldmapChunkRefreshSchedule({
+      existingDeadlineAtMs: 140,
+      nowMs: 100,
+      requestedDelayMs: 60,
+    });
+    const bringForward = resolveWorldmapChunkRefreshSchedule({
+      existingDeadlineAtMs: 180,
+      nowMs: 100,
+      requestedDelayMs: 20,
+    });
+
+    expect(keepExisting).toEqual({
+      shouldScheduleTimer: false,
+      delayMs: 40,
+      deadlineAtMs: 140,
+    });
+    expect(bringForward).toEqual({
+      shouldScheduleTimer: true,
+      delayMs: 20,
+      deadlineAtMs: 120,
+    });
   });
 });

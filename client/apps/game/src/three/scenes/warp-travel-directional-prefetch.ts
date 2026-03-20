@@ -18,15 +18,22 @@ interface ResolveWarpTravelDirectionalPrefetchPlanInput {
   getRenderAreaKeyForChunk: (chunkKey: string) => string;
 }
 
+function parseChunkKey(chunkKey: string): { row: number; col: number } {
+  const [row, col] = chunkKey.split(",").map(Number);
+  return { row, col };
+}
+
 export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTravelDirectionalPrefetchPlanInput): {
   desiredAreaKeys: string[];
   chunkKeysToEnqueue: string[];
+  presentationChunkKeysToPrewarm: string[];
   nextPrefetchedAhead: string[];
 } {
   if (!input.anchor) {
     return {
       desiredAreaKeys: [],
       chunkKeysToEnqueue: [],
+      presentationChunkKeysToPrewarm: [],
       nextPrefetchedAhead: [],
     };
   }
@@ -43,6 +50,23 @@ export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTrave
   const desiredAreaKeys: string[] = [];
   const nextPrefetchedAhead = [...input.prefetchedAhead];
   const chunkKeysToEnqueue: string[] = [];
+  const { row: forwardRow, col: forwardCol } = parseChunkKey(input.anchor.forwardChunkKey);
+  const presentationChunkKeysToPrewarm: string[] = [];
+
+  for (let forwardStride = 0; forwardStride <= input.forwardDepthStrides; forwardStride += 1) {
+    const row =
+      input.anchor.movementAxis === "z"
+        ? forwardRow + forwardStride * input.anchor.movementSign * input.chunkSize
+        : forwardRow;
+    const col =
+      input.anchor.movementAxis === "x"
+        ? forwardCol + forwardStride * input.anchor.movementSign * input.chunkSize
+        : forwardCol;
+    const chunkKey = `${row},${col}`;
+    if (!input.pinnedChunkKeys.has(chunkKey) && chunkKey !== input.currentChunk) {
+      presentationChunkKeysToPrewarm.push(chunkKey);
+    }
+  }
 
   prefetchTargets.forEach((chunkKey) => {
     if (input.pinnedChunkKeys.has(chunkKey) || chunkKey === input.currentChunk) {
@@ -64,6 +88,7 @@ export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTrave
   return {
     desiredAreaKeys,
     chunkKeysToEnqueue,
+    presentationChunkKeysToPrewarm,
     nextPrefetchedAhead,
   };
 }

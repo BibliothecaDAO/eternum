@@ -5,9 +5,10 @@ interface CosmeticGalleryProps {
   items: CosmeticItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  loadoutScopeKey?: string;
 }
 
-export const CosmeticGallery = ({ items, selectedId, onSelect }: CosmeticGalleryProps) => {
+export const CosmeticGallery = ({ items, selectedId, onSelect, loadoutScopeKey }: CosmeticGalleryProps) => {
   if (items.length === 0) {
     return (
       <section className="space-y-4">
@@ -23,7 +24,13 @@ export const CosmeticGallery = ({ items, selectedId, onSelect }: CosmeticGallery
     <section className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-3">
         {items.map((item) => (
-          <CosmeticTile key={item.id} item={item} active={item.id === selectedId} onSelect={onSelect} />
+          <CosmeticTile
+            key={item.id}
+            item={item}
+            active={item.id === selectedId}
+            onSelect={onSelect}
+            loadoutScopeKey={loadoutScopeKey}
+          />
         ))}
       </div>
     </section>

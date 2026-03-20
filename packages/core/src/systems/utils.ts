@@ -155,6 +155,12 @@ export const getStructureInfoFromTileOccupier = (
       };
     case TileOccupier.Bank:
       return { type: StructureType.Bank, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.HolySite:
+      return { type: StructureType.HolySite, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.Camp:
+      return { type: StructureType.Camp, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.BitcoinMine:
+      return { type: StructureType.BitcoinMine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
 
     default:
       return undefined;

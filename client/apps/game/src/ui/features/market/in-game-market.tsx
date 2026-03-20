@@ -7,16 +7,17 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useCurrentGameMarket } from "./hooks/use-current-game-market";
 import { MarketCreationSection, MarketDetailsSection } from "./components";
 import { MarketsProviders } from "./index";
+import Panel from "@/ui/design-system/atoms/panel";
 
 /**
  * Loading state component for the market panel.
  */
 const MarketLoadingState = () => (
   <div className="flex h-full items-center justify-center p-4">
-    <div className="text-center text-sm text-gold/70">
+    <Panel tone="wood" padding="md" radius="lg" border="subtle" className="w-full max-w-sm text-center">
       <RefreshCw className="mx-auto mb-2 h-5 w-5 animate-spin" />
-      Loading prediction market...
-    </div>
+      <p className="text-sm text-gold/80">Loading prediction market...</p>
+    </Panel>
   </div>
 );
 
@@ -43,6 +44,20 @@ const InGameMarketContent = () => {
     const seasonConfig = configManager.getSeasonConfig();
     return seasonConfig?.endAt ?? null;
   }, []);
+  const isDevModeGame = useMemo(() => {
+    const devModeConfig = configManager.getDevModeConfig();
+    return Boolean(devModeConfig?.dev_mode_on);
+  }, []);
+
+  if (isDevModeGame) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <Panel tone="wood" padding="md" radius="lg" border="subtle" className="w-full max-w-sm text-center">
+          <p className="text-sm text-gold/80">Prediction markets are disabled for dev mode games.</p>
+        </Panel>
+      </div>
+    );
+  }
 
   // Render loading state
   if (isLoading) {

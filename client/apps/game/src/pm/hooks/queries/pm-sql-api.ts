@@ -145,6 +145,7 @@ export interface MarketWithDetailsRow extends MarketRow {
   terms?: string;
   position_ids?: string;
   denominator?: string;
+  resolution_payout_numerators?: string | null;
 }
 
 interface MarketBuyAmountRow {
@@ -193,10 +194,15 @@ const PM_SQL_QUERIES = {
       mc.title,
       mc.terms,
       mc.position_ids,
-      vd.value as denominator
+      vd.value as denominator,
+      cr.payout_numerators as resolution_payout_numerators
     FROM "pm-Market" m
     LEFT JOIN "pm-MarketCreated" mc ON m.market_id = mc.market_id
     LEFT JOIN "pm-VaultDenominator" vd ON m.market_id = vd.market_id
+    LEFT JOIN "pm-ConditionResolution" cr
+      ON LOWER(m.condition_id) = LOWER(cr.condition_id)
+      AND LOWER(m.oracle) = LOWER(cr.oracle)
+      AND LOWER(m.question_id) = LOWER(cr.question_id)
     WHERE {whereClause}
     ORDER BY m.start_at DESC
     LIMIT {limit} OFFSET {offset}
@@ -246,10 +252,15 @@ const PM_SQL_QUERIES = {
       mc.title,
       mc.terms,
       mc.position_ids,
-      vd.value as denominator
+      vd.value as denominator,
+      cr.payout_numerators as resolution_payout_numerators
     FROM "pm-Market" m
     LEFT JOIN "pm-MarketCreated" mc ON m.market_id = mc.market_id
     LEFT JOIN "pm-VaultDenominator" vd ON m.market_id = vd.market_id
+    LEFT JOIN "pm-ConditionResolution" cr
+      ON LOWER(m.condition_id) = LOWER(cr.condition_id)
+      AND LOWER(m.oracle) = LOWER(cr.oracle)
+      AND LOWER(m.question_id) = LOWER(cr.question_id)
     WHERE m.oracle_params LIKE '%{prizeAddress}%'
     ORDER BY m.start_at DESC
     LIMIT 1
