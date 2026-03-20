@@ -56,6 +56,7 @@ export interface SqlApiLike {
   fetchStructureByCoord(coordX: number, coordY: number): Promise<any | null>;
   fetchGuardsByStructure(entityId: number): Promise<any[]>;
   fetchResourceBalances(entityIds: number[]): Promise<any[]>;
+  fetchResourceBalancesWithProduction(entityIds: number[]): Promise<any[]>;
   fetchExplorerById(entityId: number): Promise<any | null>;
   fetchExplorersByIds?(entityIds: number[]): Promise<any[]>;
   fetchStructuresByEntityIds?(entityIds: number[]): Promise<any[]>;
@@ -157,10 +158,10 @@ export class ViewClient {
 
       const entityId = Number(structure.entity_id);
 
-      // Fetch guards and resources in parallel
+      // Fetch guards and resources (with production data) in parallel
       const [guards, resourceRows] = await Promise.all([
         this.sql.fetchGuardsByStructure(entityId),
-        this.sql.fetchResourceBalances([entityId]),
+        this.sql.fetchResourceBalancesWithProduction([entityId]),
       ]);
 
       return {
@@ -303,12 +304,35 @@ export class ViewClient {
     return result;
   }
 
-  /** Parse a ResourceBalanceRow into clean ResourceInfo[]. Only includes non-zero balances. */
+  /**
+   * Parse a ResourceBalanceRow into clean ResourceInfo[].
+   * Projects unharvested production forward so Fragment Mines (and any
+   * structure with active production) show their real current balance.
+   */
   private parseResources(row: any): ResourceInfo[] {
     if (!row) return [];
+    const now = Math.floor(Date.now() / 1000);
     const result: ResourceInfo[] = [];
     for (const { column, name } of BALANCE_COLUMNS) {
-      const amount = parseBalance(row[column]);
+      let amount = parseBalance(row[column]);
+
+      // Project unharvested production forward
+      const prefix = column.replace("_BALANCE", "_PRODUCTION");
+      const rate = row[`${prefix}.production_rate`];
+      const left = row[`${prefix}.output_amount_left`];
+      const updatedAt = Number(row[`${prefix}.last_updated_at`] ?? 0);
+      if (rate && updatedAt > 0) {
+        const elapsed = Math.max(0, now - updatedAt);
+        const rateBig = BigInt(rate);
+        if (rateBig > 0n) {
+          let produced = BigInt(elapsed) * rateBig;
+          // Cap at output_amount_left (except food which is uncapped)
+          const leftBig = left ? BigInt(left) : 0n;
+          if (leftBig > 0n && produced > leftBig) produced = leftBig;
+          amount += Number(produced) / RESOURCE_PRECISION;
+        }
+      }
+
       if (amount > 0) {
         result.push({ name, amount: Math.floor(amount) });
       }

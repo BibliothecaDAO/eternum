@@ -5,7 +5,6 @@
  * when `filePath` is null (e.g. in tests).
  */
 
-import { writeFileSync } from "fs";
 import type { EternumClient, ExplorerInfo, StructureInfo } from "@bibliothecadao/client";
 import type { StaminaConfig } from "@bibliothecadao/torii";
 import { renderMap } from "./renderer.js";
@@ -219,7 +218,7 @@ export function createMapLoop(
       // indexed the stamina-consuming tx yet. It's cleared per-army in the
       // move tool when explorerInfo returns an updated staminaUpdatedTick.
 
-      if (ctx.filePath) writeFileSync(ctx.filePath, snapshot.text);
+      // ASCII text output removed — snapshot is data-only now
     } catch (_) {
       // Silently skip failed refreshes — next cycle will retry
     }
