@@ -56,10 +56,22 @@ import type { MapContext } from "../../src/map/context.js";
 import { createMapProtocol } from "../../src/map/protocol.js";
 import type { ToolContext } from "../../src/tools/core/context.js";
 import {
-  moveArmy, attackTarget, createArmy, simulateAttack,
-  guardFromStorage, guardFromArmy, unguardToArmy,
-  openChest, attackFromGuard, raidTarget, reinforceArmy, applyRelic,
-  sendResources, transferToStructure, transferToArmy, transferTroops,
+  moveArmy,
+  attackTarget,
+  createArmy,
+  simulateAttack,
+  guardFromStorage,
+  guardFromArmy,
+  unguardToArmy,
+  openChest,
+  attackFromGuard,
+  raidTarget,
+  reinforceArmy,
+  applyRelic,
+  sendResources,
+  transferToStructure,
+  transferToArmy,
+  transferTroops,
 } from "../../src/tools/core/index.js";
 import type { GameConfig } from "@bibliothecadao/torii";
 
@@ -76,8 +88,12 @@ import type { GameConfig } from "@bibliothecadao/torii";
   console.log = toStderr;
   console.info = toStderr;
   console.debug = toStderr;
-  console.warn = (...a: any[]) => { if (!providerNoise(String(a[0]))) toStderr(...a); };
-  console.error = (...a: any[]) => { if (!providerNoise(String(a[0]))) toStderr(...a); };
+  console.warn = (...a: any[]) => {
+    if (!providerNoise(String(a[0]))) toStderr(...a);
+  };
+  console.error = (...a: any[]) => {
+    if (!providerNoise(String(a[0]))) toStderr(...a);
+  };
 }
 
 /** Log to stderr with `[eternum-mcp]` prefix. MCP owns stdout. */
@@ -125,8 +141,15 @@ async function main() {
   const getCtx = (): ToolContext | null => {
     if (!client || !provider || !account || !gameConfig || !mapCtx.snapshot) return null;
     return {
-      client, provider, signer: account, playerAddress, gameConfig,
-      snapshot: mapCtx.snapshot, mapCenter, donkeyCapacityGrams, resourceWeightGrams,
+      client,
+      provider,
+      signer: account,
+      playerAddress,
+      gameConfig,
+      snapshot: mapCtx.snapshot,
+      mapCenter,
+      donkeyCapacityGrams,
+      resourceWeightGrams,
     };
   };
 
@@ -229,7 +252,16 @@ async function main() {
     "map_find",
     "Find entities by type across the map. Types: hyperstructure, mine, village, chest, enemy_army, enemy_structure, own_army, own_structure. Sorted by distance from ref position.",
     {
-      type: z.enum(["hyperstructure", "mine", "village", "chest", "enemy_army", "enemy_structure", "own_army", "own_structure"]),
+      type: z.enum([
+        "hyperstructure",
+        "mine",
+        "village",
+        "chest",
+        "enemy_army",
+        "enemy_structure",
+        "own_army",
+        "own_structure",
+      ]),
       ref_x: z.coerce.number().optional().describe("Reference X for distance sorting"),
       ref_y: z.coerce.number().optional().describe("Reference Y for distance sorting"),
     },
@@ -256,7 +288,7 @@ async function main() {
   server.tool(
     "automation",
     "Toggle the background automation system (building, upgrading, production for all realms). " +
-    "Use action='status' to check, 'start' to enable, 'stop' to disable.",
+      "Use action='status' to check, 'start' to enable, 'stop' to disable.",
     { action: z.enum(["start", "stop", "status"]).describe("start, stop, or status") },
     async ({ action }) => {
       const err = notReady();
@@ -268,7 +300,9 @@ async function main() {
           for (const s of automationStatus.values()) {
             const errs = s.errors.length > 0 ? ` | ERRORS: ${s.errors.join("; ")}` : "";
             const built = s.lastBuilt.length > 0 ? ` | built: ${s.lastBuilt.join(", ")}` : "";
-            lines.push(`  ${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}${built}${errs}`);
+            lines.push(
+              `  ${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}${built}${errs}`,
+            );
           }
         } else {
           lines.push("  No realm data yet.");
@@ -281,7 +315,14 @@ async function main() {
         automationLoop!.start();
         automationRunning = true;
         log("Automation started.");
-        return { content: [{ type: "text", text: "Automation started. Building, upgrading, and production will run every 60s for all owned realms." }] };
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Automation started. Building, upgrading, and production will run every 60s for all owned realms.",
+            },
+          ],
+        };
       }
 
       if (action === "stop") {
@@ -315,8 +356,8 @@ async function main() {
   server.tool(
     "simulate_attack",
     "Preview a battle outcome WITHOUT executing it. Shows predicted casualties, winner, and biome advantage. " +
-    "Use this before attack_target to decide whether to commit. " +
-    "NOTE: Larger armies are disproportionately stronger due to combat scaling.",
+      "Use this before attack_target to decide whether to commit. " +
+      "NOTE: Larger armies are disproportionately stronger due to combat scaling.",
     {
       army_id: z.coerce.number().describe("Entity ID of your army"),
       target_x: z.coerce.number().describe("Target map X"),
@@ -329,8 +370,8 @@ async function main() {
   server.tool(
     "attack_target",
     "Attack a target adjacent to your army. Reports battle outcome including casualties. " +
-    "NOTE: Larger armies are disproportionately stronger due to combat scaling — always attack with your biggest army. " +
-    "Use simulate_attack first to preview the outcome before committing.",
+      "NOTE: Larger armies are disproportionately stronger due to combat scaling — always attack with your biggest army. " +
+      "Use simulate_attack first to preview the outcome before committing.",
     {
       army_id: z.coerce.number().describe("Entity ID of your army"),
       target_x: z.coerce.number().describe("Target map X"),
@@ -343,10 +384,14 @@ async function main() {
   server.tool(
     "attack_from_guard",
     "Attack an adjacent enemy army using your structure's guards. Defensive strike — no army needed. " +
-    "NOTE: Larger groups in one slot are disproportionately stronger.",
+      "NOTE: Larger groups in one slot are disproportionately stronger.",
     {
       structure_id: z.coerce.number().describe("Entity ID of your structure"),
-      slot: z.coerce.number().min(0).max(3).describe("Guard slot to attack with (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
+      slot: z.coerce
+        .number()
+        .min(0)
+        .max(3)
+        .describe("Guard slot to attack with (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
       target_army_id: z.coerce.number().describe("Entity ID of the enemy army to attack"),
     },
     async ({ structure_id, slot, target_army_id }) =>
@@ -356,20 +401,28 @@ async function main() {
   server.tool(
     "raid_target",
     "Raid an adjacent structure for resources. Deals only 10% of normal battle damage but can steal loot on success. " +
-    "Success if your damage > 2x defender's, fail if < 0.5x, chance-based in between. " +
-    "NOTE: Larger armies are disproportionately stronger.",
+      "Success if your damage > 2x defender's, fail if < 0.5x, chance-based in between. " +
+      "NOTE: Larger armies are disproportionately stronger.",
     {
       army_id: z.coerce.number().describe("Entity ID of your raiding army"),
       target_x: z.coerce.number().describe("Target structure map X"),
       target_y: z.coerce.number().describe("Target structure map Y"),
-      steal_resources: z.array(z.object({
-        resource_id: z.coerce.number().describe("Resource type ID to steal"),
-        amount: z.coerce.number().describe("Amount to steal (human-readable)"),
-      })).optional().default([]).describe("Resources to steal on success"),
+      steal_resources: z
+        .array(
+          z.object({
+            resource_id: z.coerce.number().describe("Resource type ID to steal"),
+            amount: z.coerce.number().describe("Amount to steal (human-readable)"),
+          }),
+        )
+        .optional()
+        .default([])
+        .describe("Resources to steal on success"),
     },
     async ({ army_id, target_x, target_y, steal_resources }) =>
       mcpCall(raidTarget, {
-        armyId: army_id, targetX: target_x, targetY: target_y,
+        armyId: army_id,
+        targetX: target_x,
+        targetY: target_y,
         stealResources: steal_resources?.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })) ?? [],
       }),
   );
@@ -379,7 +432,7 @@ async function main() {
   server.tool(
     "create_army",
     "Create a new army at one of your realms. Auto-selects troop type by biome. " +
-    "NOTE: Larger armies are disproportionately stronger — 1 army of 2000 beats 2 armies of 1000. Prefer fewer, bigger armies.",
+      "NOTE: Larger armies are disproportionately stronger — 1 army of 2000 beats 2 armies of 1000. Prefer fewer, bigger armies.",
     {
       structure_id: z.coerce.number().describe("Entity ID of your realm"),
       troop_type: z.enum(["Knight", "Paladin", "Crossbowman"]).optional().describe("Override troop type"),
@@ -398,8 +451,7 @@ async function main() {
       chest_x: z.coerce.number().describe("Chest map X"),
       chest_y: z.coerce.number().describe("Chest map Y"),
     },
-    async ({ army_id, chest_x, chest_y }) =>
-      mcpCall(openChest, { armyId: army_id, chestX: chest_x, chestY: chest_y }),
+    async ({ army_id, chest_x, chest_y }) => mcpCall(openChest, { armyId: army_id, chestX: chest_x, chestY: chest_y }),
   );
 
   // ── Resource Transfer Tools ──
@@ -407,19 +459,26 @@ async function main() {
   server.tool(
     "send_resources",
     "Transfer resources between your structures via donkey caravan. " +
-    "Automatically uses sender's donkeys, or recipient's donkeys (pickup) if sender has none. " +
-    "Resources arrive after travel time. Automation will offload arrivals automatically.",
+      "Automatically uses sender's donkeys, or recipient's donkeys (pickup) if sender has none. " +
+      "Resources arrive after travel time. Automation will offload arrivals automatically.",
     {
       from_structure_id: z.coerce.number().describe("Entity ID of source structure"),
       to_structure_id: z.coerce.number().describe("Entity ID of destination structure"),
-      resources: z.array(z.object({
-        resource_id: z.coerce.number().describe("Resource type ID (e.g. 38=Essence, 3=Wood, 4=Copper, 7=Gold, 25=Donkey)"),
-        amount: z.coerce.number().describe("Amount to send (human-readable, not precision-scaled)"),
-      })).describe("Resources to send"),
+      resources: z
+        .array(
+          z.object({
+            resource_id: z.coerce
+              .number()
+              .describe("Resource type ID (e.g. 38=Essence, 3=Wood, 4=Copper, 7=Gold, 25=Donkey)"),
+            amount: z.coerce.number().describe("Amount to send (human-readable, not precision-scaled)"),
+          }),
+        )
+        .describe("Resources to send"),
     },
     async ({ from_structure_id, to_structure_id, resources }) =>
       mcpCall(sendResources, {
-        fromStructureId: from_structure_id, toStructureId: to_structure_id,
+        fromStructureId: from_structure_id,
+        toStructureId: to_structure_id,
         resources: resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
       }),
   );
@@ -429,9 +488,9 @@ async function main() {
   server.tool(
     "guard_from_storage",
     "Add troops from a structure's own resource storage into one of its guard slots. " +
-    "Structures can have up to 4 guard slots (Alpha=0, Bravo=1, Charlie=2, Delta=3). " +
-    "Check map_entity_info first to see which slots are occupied. " +
-    "NOTE: Larger groups in one slot are disproportionately stronger — concentrate troops in fewer slots.",
+      "Structures can have up to 4 guard slots (Alpha=0, Bravo=1, Charlie=2, Delta=3). " +
+      "Check map_entity_info first to see which slots are occupied. " +
+      "NOTE: Larger groups in one slot are disproportionately stronger — concentrate troops in fewer slots.",
     {
       structure_id: z.coerce.number().describe("Entity ID of the structure to guard"),
       slot: z.coerce.number().min(0).max(3).describe("Guard slot (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
@@ -446,8 +505,8 @@ async function main() {
   server.tool(
     "guard_from_army",
     "Move troops from an adjacent army into a structure's guard slot. " +
-    "The army must be adjacent to the structure. " +
-    "NOTE: Larger groups in one slot are disproportionately stronger — concentrate troops in fewer slots.",
+      "The army must be adjacent to the structure. " +
+      "NOTE: Larger groups in one slot are disproportionately stronger — concentrate troops in fewer slots.",
     {
       army_id: z.coerce.number().describe("Entity ID of the army donating troops"),
       structure_id: z.coerce.number().describe("Entity ID of the structure to garrison"),
@@ -461,20 +520,19 @@ async function main() {
   server.tool(
     "reinforce_army",
     "Add more troops from the home structure's storage to an existing army. " +
-    "The army must be adjacent to its home structure. " +
-    "NOTE: Larger armies are disproportionately stronger — reinforce rather than create new armies.",
+      "The army must be adjacent to its home structure. " +
+      "NOTE: Larger armies are disproportionately stronger — reinforce rather than create new armies.",
     {
       army_id: z.coerce.number().describe("Entity ID of the army to reinforce"),
       amount: z.coerce.number().describe("Number of troops to add"),
     },
-    async ({ army_id, amount }) =>
-      mcpCall(reinforceArmy, { armyId: army_id, amount }),
+    async ({ army_id, amount }) => mcpCall(reinforceArmy, { armyId: army_id, amount }),
   );
 
   server.tool(
     "transfer_troops",
     "Transfer troops between two adjacent armies of the same type and tier. " +
-    "NOTE: Larger armies are disproportionately stronger — use this to consolidate small armies into one big one.",
+      "NOTE: Larger armies are disproportionately stronger — use this to consolidate small armies into one big one.",
     {
       from_army_id: z.coerce.number().describe("Entity ID of the army giving troops"),
       to_army_id: z.coerce.number().describe("Entity ID of the army receiving troops"),
@@ -487,7 +545,7 @@ async function main() {
   server.tool(
     "unguard_to_army",
     "Move troops from a structure's guard slot to an adjacent army. " +
-    "The army must be adjacent to the structure and have the same troop type/tier.",
+      "The army must be adjacent to the structure and have the same troop type/tier.",
     {
       structure_id: z.coerce.number().describe("Entity ID of the structure"),
       slot: z.coerce.number().min(0).max(3).describe("Guard slot (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
@@ -501,18 +559,23 @@ async function main() {
   server.tool(
     "transfer_to_structure",
     "Transfer resources (relics, loot, etc.) from an army to an adjacent structure. " +
-    "The army must be adjacent to the structure.",
+      "The army must be adjacent to the structure.",
     {
       army_id: z.coerce.number().describe("Entity ID of the army carrying resources"),
       structure_id: z.coerce.number().describe("Entity ID of the receiving structure"),
-      resources: z.array(z.object({
-        resource_id: z.coerce.number().describe("Resource type ID"),
-        amount: z.coerce.number().describe("Amount to transfer (human-readable)"),
-      })).describe("Resources to transfer"),
+      resources: z
+        .array(
+          z.object({
+            resource_id: z.coerce.number().describe("Resource type ID"),
+            amount: z.coerce.number().describe("Amount to transfer (human-readable)"),
+          }),
+        )
+        .describe("Resources to transfer"),
     },
     async ({ army_id, structure_id, resources }) =>
       mcpCall(transferToStructure, {
-        armyId: army_id, structureId: structure_id,
+        armyId: army_id,
+        structureId: structure_id,
         resources: resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
       }),
   );
@@ -523,14 +586,19 @@ async function main() {
     {
       from_army_id: z.coerce.number().describe("Entity ID of the army giving resources"),
       to_army_id: z.coerce.number().describe("Entity ID of the army receiving resources"),
-      resources: z.array(z.object({
-        resource_id: z.coerce.number().describe("Resource type ID"),
-        amount: z.coerce.number().describe("Amount to transfer (human-readable)"),
-      })).describe("Resources to transfer"),
+      resources: z
+        .array(
+          z.object({
+            resource_id: z.coerce.number().describe("Resource type ID"),
+            amount: z.coerce.number().describe("Amount to transfer (human-readable)"),
+          }),
+        )
+        .describe("Resources to transfer"),
     },
     async ({ from_army_id, to_army_id, resources }) =>
       mcpCall(transferToArmy, {
-        fromArmyId: from_army_id, toArmyId: to_army_id,
+        fromArmyId: from_army_id,
+        toArmyId: to_army_id,
         resources: resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
       }),
   );
@@ -540,8 +608,8 @@ async function main() {
   server.tool(
     "apply_relic",
     "Apply a relic buff to an army, structure guards, or structure production. " +
-    "Costs Essence. Relics come from opening chests. " +
-    "Recipient types: 0=Explorer (army buff), 1=StructureGuard (guard buff), 2=StructureProduction (production buff).",
+      "Costs Essence. Relics come from opening chests. " +
+      "Recipient types: 0=Explorer (army buff), 1=StructureGuard (guard buff), 2=StructureProduction (production buff).",
     {
       entity_id: z.coerce.number().describe("Entity ID of the army or structure to buff"),
       relic_resource_id: z.coerce.number().describe("Resource ID of the relic to apply"),
@@ -558,9 +626,18 @@ async function main() {
   log("MCP transport connected. Bootstrapping...");
 
   // Exit cleanly when Claude Code closes the connection
-  process.stdin.on("end", () => { log("stdin closed — exiting."); process.exit(0); });
-  process.on("SIGTERM", () => { log("SIGTERM — exiting."); process.exit(0); });
-  process.on("SIGINT", () => { log("SIGINT — exiting."); process.exit(0); });
+  process.stdin.on("end", () => {
+    log("stdin closed — exiting.");
+    process.exit(0);
+  });
+  process.on("SIGTERM", () => {
+    log("SIGTERM — exiting.");
+    process.exit(0);
+  });
+  process.on("SIGINT", () => {
+    log("SIGINT — exiting.");
+    process.exit(0);
+  });
 
   // ── Bootstrap (runs AFTER handshake — no timeout risk) ──
   try {
@@ -620,34 +697,46 @@ async function main() {
     try {
       const sql = client.sql as any;
       const baseUrl = sql.baseUrl ?? config.toriiUrl + "/sql";
-      const res = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`);
+      const res = await fetch(
+        `${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`,
+      );
       if (res.ok) {
-        const rows = await res.json() as any[];
+        const rows = (await res.json()) as any[];
         if (rows[0]?.map_center_offset != null) {
           mapCenter = BASE_MAP_CENTER - Number(rows[0].map_center_offset);
           log(`Map center: ${mapCenter} (offset ${rows[0].map_center_offset})`);
         }
       }
-    } catch { /* non-critical — coords will use raw values */ }
+    } catch {
+      /* non-critical — coords will use raw values */
+    }
 
     // Query donkey capacity and resource weights for transport calculations
     try {
       const sql = client.sql as any;
       const baseUrl = sql.baseUrl ?? config.toriiUrl + "/sql";
-      const capRes = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT `capacity_config.donkey_capacity` as cap FROM `s1_eternum-WorldConfig` LIMIT 1")}`);
+      const capRes = await fetch(
+        `${baseUrl}?query=${encodeURIComponent("SELECT `capacity_config.donkey_capacity` as cap FROM `s1_eternum-WorldConfig` LIMIT 1")}`,
+      );
       if (capRes.ok) {
-        const rows = await capRes.json() as any[];
+        const rows = (await capRes.json()) as any[];
         if (rows[0]?.cap != null) donkeyCapacityGrams = Number(rows[0].cap);
       }
-      const weightRes = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT resource_type, weight_gram FROM `s1_eternum-WeightConfig`")}`);
+      const weightRes = await fetch(
+        `${baseUrl}?query=${encodeURIComponent("SELECT resource_type, weight_gram FROM `s1_eternum-WeightConfig`")}`,
+      );
       if (weightRes.ok) {
-        const rows = await weightRes.json() as any[];
+        const rows = (await weightRes.json()) as any[];
         for (const row of rows) {
           resourceWeightGrams.set(Number(row.resource_type), Number(BigInt(row.weight_gram)));
         }
       }
-      log(`Transport config: donkey capacity ${donkeyCapacityGrams}g, ${resourceWeightGrams.size} resource weights loaded`);
-    } catch { /* non-critical */ }
+      log(
+        `Transport config: donkey capacity ${donkeyCapacityGrams}g, ${resourceWeightGrams.size} resource weights loaded`,
+      );
+    } catch {
+      /* non-critical */
+    }
 
     // Map loop
     const mapLoop = createMapLoop(client, mapCtx, playerAddress, 10_000, gameConfig!.stamina, undefined, mapCenter);
@@ -659,11 +748,21 @@ async function main() {
       if (mapCtx.snapshot) break;
       await new Promise((r) => setTimeout(r, 1000));
     }
-    log(mapCtx.snapshot ? `Map loaded: ${mapCtx.snapshot.tiles.length} tiles` : "Map failed to load (tools will retry)");
+    log(
+      mapCtx.snapshot ? `Map loaded: ${mapCtx.snapshot.tiles.length} tiles` : "Map failed to load (tools will retry)",
+    );
 
     // Automation loop (off by default)
     automationLoop = createAutomationLoop(
-      client, provider, account, playerAddress, config.dataDir, mapCtx, gameConfig!, 60_000, automationStatus,
+      client,
+      provider,
+      account,
+      playerAddress,
+      config.dataDir,
+      mapCtx,
+      gameConfig!,
+      60_000,
+      automationStatus,
     );
 
     bootstrapDone = true;

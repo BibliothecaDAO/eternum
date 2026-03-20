@@ -107,7 +107,21 @@ async function main() {
         const type = url.searchParams.get("type");
         if (!type) {
           res.writeHead(400);
-          res.end(JSON.stringify({ error: "type required", options: ["hyperstructure", "mine", "village", "chest", "enemy_army", "enemy_structure", "own_army", "own_structure"] }));
+          res.end(
+            JSON.stringify({
+              error: "type required",
+              options: [
+                "hyperstructure",
+                "mine",
+                "village",
+                "chest",
+                "enemy_army",
+                "enemy_structure",
+                "own_army",
+                "own_structure",
+              ],
+            }),
+          );
           return;
         }
         const refX = url.searchParams.get("ref_x");
@@ -134,23 +148,35 @@ async function main() {
 
       if (path === "/status") {
         res.writeHead(200);
-        res.end(JSON.stringify({ tiles: tileCount, lastRefresh: lastRefresh?.toISOString(), uptime: process.uptime() }, null, 2));
+        res.end(
+          JSON.stringify(
+            { tiles: tileCount, lastRefresh: lastRefresh?.toISOString(), uptime: process.uptime() },
+            null,
+            2,
+          ),
+        );
         return;
       }
 
       // Root — list endpoints
       res.writeHead(200);
-      res.end(JSON.stringify({
-        endpoints: {
-          "/tile_info?x=&y=": "What's at this position?",
-          "/nearby?x=&y=&radius=5": "What's around here?",
-          "/entity_info?entity_id=": "Full details on an entity",
-          "/find?type=&ref_x=&ref_y=": "Find entities by type",
-          "/diagnostics": "Current threats & opportunities",
-          "/briefing": "Compact tick context (text)",
-          "/status": "Server status",
-        },
-      }, null, 2));
+      res.end(
+        JSON.stringify(
+          {
+            endpoints: {
+              "/tile_info?x=&y=": "What's at this position?",
+              "/nearby?x=&y=&radius=5": "What's around here?",
+              "/entity_info?entity_id=": "Full details on an entity",
+              "/find?type=&ref_x=&ref_y=": "Find entities by type",
+              "/diagnostics": "Current threats & opportunities",
+              "/briefing": "Compact tick context (text)",
+              "/status": "Server status",
+            },
+          },
+          null,
+          2,
+        ),
+      );
     } catch (err: any) {
       res.writeHead(500);
       res.end(JSON.stringify({ error: err.message }));

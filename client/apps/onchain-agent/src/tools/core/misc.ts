@@ -65,7 +65,10 @@ export interface AttackFromGuardResult {
 export async function attackFromGuard(input: AttackFromGuardInput, ctx: ToolContext): Promise<AttackFromGuardResult> {
   let structPos: { x: number; y: number } | null = null;
   for (const t of ctx.snapshot.tiles) {
-    if (t.occupierId === input.structureId) { structPos = t.position; break; }
+    if (t.occupierId === input.structureId) {
+      structPos = t.position;
+      break;
+    }
   }
   if (!structPos) return { success: false, message: `Structure ${input.structureId} not found.`, combat: null };
 
@@ -87,7 +90,12 @@ export async function attackFromGuard(input: AttackFromGuardInput, ctx: ToolCont
     const defStamina = projectExplorerStamina(targetExplorer, ctx.gameConfig.stamina);
     combat = simulateCombat(
       { troopCount: guard.count, troopType: guard.troopType, troopTier: guard.troopTier, stamina: 100 },
-      { troopCount: targetExplorer.troopCount, troopType: targetExplorer.troopType, troopTier: targetExplorer.troopTier, stamina: defStamina },
+      {
+        troopCount: targetExplorer.troopCount,
+        troopType: targetExplorer.troopType,
+        troopTier: targetExplorer.troopTier,
+        stamina: defStamina,
+      },
       biome,
     );
   }
@@ -105,7 +113,11 @@ export async function attackFromGuard(input: AttackFromGuardInput, ctx: ToolCont
   }
 
   if (!combat) {
-    return { success: true, message: `Attacked enemy army ${input.targetArmyId} from ${slotNames[input.slot]} guard.`, combat: null };
+    return {
+      success: true,
+      message: `Attacked enemy army ${input.targetArmyId} from ${slotNames[input.slot]} guard.`,
+      combat: null,
+    };
   }
 
   const lines = [
@@ -139,11 +151,15 @@ export async function raidTarget(input: RaidTargetInput, ctx: ToolContext): Prom
   if (!explorer) return { success: false, message: `Army ${input.armyId} not found.` };
 
   const direction = directionBetween(explorer.position, { x: targetRawX, y: targetRawY });
-  if (direction === null) return { success: false, message: `Army not adjacent to (${input.targetX},${input.targetY}). Move first.` };
+  if (direction === null)
+    return { success: false, message: `Army not adjacent to (${input.targetX},${input.targetY}). Move first.` };
 
   const tile = ctx.snapshot.gridIndex.get(`${targetRawX},${targetRawY}`);
   if (!tile || !isStructure(tile.occupierType)) {
-    return { success: false, message: `No structure at (${input.targetX},${input.targetY}). Raids only work on structures.` };
+    return {
+      success: false,
+      message: `No structure at (${input.targetX},${input.targetY}). Raids only work on structures.`,
+    };
   }
 
   const structure = await ctx.client.view.structureAt(targetRawX, targetRawY);
@@ -166,10 +182,14 @@ export async function raidTarget(input: RaidTargetInput, ctx: ToolContext): Prom
     return { success: false, message: `Raid failed: ${extractTxError(err)}` };
   }
 
-  const stealSummary = (input.stealResources?.length ?? 0) > 0
-    ? ` Attempted to steal: ${input.stealResources!.map((r) => `${r.amount} of resource ${r.resourceId}`).join(", ")}.`
-    : "";
-  return { success: true, message: `Raided structure at (${input.targetX},${input.targetY}). 10% damage dealt.${stealSummary}` };
+  const stealSummary =
+    (input.stealResources?.length ?? 0) > 0
+      ? ` Attempted to steal: ${input.stealResources!.map((r) => `${r.amount} of resource ${r.resourceId}`).join(", ")}.`
+      : "";
+  return {
+    success: true,
+    message: `Raided structure at (${input.targetX},${input.targetY}). 10% damage dealt.${stealSummary}`,
+  };
 }
 
 // ── Reinforce Army ──
@@ -203,7 +223,11 @@ export async function reinforceArmy(input: ReinforceArmyInput, ctx: ToolContext)
     }
   }
 
-  if (!homePos) return { success: false, message: `Army ${input.armyId} is not adjacent to any of your structures. Move it home first.` };
+  if (!homePos)
+    return {
+      success: false,
+      message: `Army ${input.armyId} is not adjacent to any of your structures. Move it home first.`,
+    };
 
   const homeDirection = directionBetween(explorer.position, homePos);
   if (homeDirection === null) return { success: false, message: "Cannot determine direction to home structure." };
@@ -251,5 +275,8 @@ export async function applyRelic(input: ApplyRelicInput, ctx: ToolContext): Prom
     return { success: false, message: `Apply relic failed: ${extractTxError(err)}` };
   }
 
-  return { success: true, message: `Applied relic ${input.relicResourceId} to entity ${input.entityId} as ${recipientNames[input.recipientType] ?? `type ${input.recipientType}`}.` };
+  return {
+    success: true,
+    message: `Applied relic ${input.relicResourceId} to entity ${input.entityId} as ${recipientNames[input.recipientType] ?? `type ${input.recipientType}`}.`,
+  };
 }

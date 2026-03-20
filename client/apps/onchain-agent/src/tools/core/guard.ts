@@ -101,10 +101,7 @@ export interface GuardFromArmyResult {
  * The army must be adjacent to the structure. Looks up both positions,
  * computes the direction, and calls `explorer_guard_swap`.
  */
-export async function guardFromArmy(
-  input: GuardFromArmyInput,
-  ctx: ToolContext,
-): Promise<GuardFromArmyResult> {
+export async function guardFromArmy(input: GuardFromArmyInput, ctx: ToolContext): Promise<GuardFromArmyResult> {
   // Find structure position from the map snapshot
   let structPos: { x: number; y: number } | null = null;
   for (const t of ctx.snapshot?.tiles ?? []) {
@@ -122,7 +119,10 @@ export async function guardFromArmy(
   if (structPos) {
     const adjacencyCheck = directionBetween(explorer.position, structPos);
     if (adjacencyCheck === null) {
-      return { success: false, message: `Army ${input.armyId} is not adjacent to structure ${input.structureId}. Move first.` };
+      return {
+        success: false,
+        message: `Army ${input.armyId} is not adjacent to structure ${input.structureId}. Move first.`,
+      };
     }
   }
 
@@ -178,10 +178,7 @@ export interface UnguardToArmyResult {
  * The army must be adjacent to the structure and have the same troop type/tier.
  * Computes the direction from structure to army and calls `guard_explorer_swap`.
  */
-export async function unguardToArmy(
-  input: UnguardToArmyInput,
-  ctx: ToolContext,
-): Promise<UnguardToArmyResult> {
+export async function unguardToArmy(input: UnguardToArmyInput, ctx: ToolContext): Promise<UnguardToArmyResult> {
   // Find structure position from the map snapshot
   let structPos: { x: number; y: number } | null = null;
   for (const t of ctx.snapshot?.tiles ?? []) {
@@ -202,7 +199,10 @@ export async function unguardToArmy(
 
   const direction = directionBetween(structPos, explorer.position);
   if (direction === null) {
-    return { success: false, message: `Army ${input.armyId} is not adjacent to structure ${input.structureId}. Move first.` };
+    return {
+      success: false,
+      message: `Army ${input.armyId} is not adjacent to structure ${input.structureId}. Move first.`,
+    };
   }
 
   const scaledAmount = Math.floor(input.amount * RESOURCE_PRECISION);

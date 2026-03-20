@@ -11,7 +11,9 @@ Query layer between the agent and the game world — modeled after
 
 ## Why LSP
 
-LSP decoupled code intelligence from editors. Before it, every editor reimplemented parsing, type checking, and navigation. LSP gave editors a standard way to ask questions: "what's at this position?", "find all references", "go to definition." The editor stopped doing analysis. It started asking.
+LSP decoupled code intelligence from editors. Before it, every editor reimplemented parsing, type checking, and
+navigation. LSP gave editors a standard way to ask questions: "what's at this position?", "find all references", "go to
+definition." The editor stopped doing analysis. It started asking.
 
 An LLM agent has the same problem with game state. Raw tile arrays are like raw source files — the agent would need to
 parse, filter, classify, track ownership, compute distances, and detect threats on every tick. The map protocol gives
@@ -19,22 +21,20 @@ the agent a standard way to ask questions instead.
 
 ## Design
 
-|                LSP                |          Map Protocol          |            Question             |
-| :-------------------------------- | :---------------------------------------------: | ------------------------------: |
-|       `textDocument/hover`        |        `tileInfo(x, y)`        |    What's at this position?     |
-|     `textDocument/references`     |     `nearby(x, y, radius)`     |       What's around here?       |
-|     `textDocument/definition`     |     `entityInfo(entityId)`     |   Tell me about this entity.    |
-|        `workspace/symbol`         |       `find(type, ref?)`       |     Find all X on the map.      |
+| LSP                               |          Map Protocol          |                        Question |
+| :-------------------------------- | :----------------------------: | ------------------------------: |
+| `textDocument/hover`              |        `tileInfo(x, y)`        |        What's at this position? |
+| `textDocument/references`         |     `nearby(x, y, radius)`     |             What's around here? |
+| `textDocument/definition`         |     `entityInfo(entityId)`     |      Tell me about this entity. |
+| `workspace/symbol`                |       `find(type, ref?)`       |          Find all X on the map. |
 | `textDocument/publishDiagnostics` | `diagnostics()` / `briefing()` | Threats, opportunities, status. |
 
-:::note 
-[Key properties borrowed from LSP]
+:::note [Key properties borrowed from LSP]
 
 - **Queries, not data dumps.** The agent asks a specific question and gets an actionable answer. It never receives the
   full tile array. This keeps context windows small and decisions focused.
 - **Pushed diagnostics.** Threats and opportunities are computed on refresh and injected before each tick — the agent
-  doesn't poll for danger, it's told. 
-:::
+  doesn't poll for danger, it's told. :::
 
 ## Coordinate Abstraction
 

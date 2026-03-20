@@ -119,7 +119,11 @@ ${after.armies}
         }
       } else if (msg.role === "toolResult") {
         const text = Array.isArray(msg.content)
-          ? msg.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("").slice(0, 200)
+          ? msg.content
+              .filter((b: any) => b.type === "text")
+              .map((b: any) => b.text)
+              .join("")
+              .slice(0, 200)
           : String(msg.content ?? "").slice(0, 200);
         if (text) prompt += `  ${text}\n`;
       }
@@ -263,7 +267,6 @@ export async function evolve(
 
   // Save current as "before" for next cycle
   const snapshotForNext = { ...currentSnapshot };
-
 
   const response = await completeSimple(model, {
     systemPrompt:

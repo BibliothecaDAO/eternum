@@ -102,12 +102,15 @@ export interface MapContext {
    * (`atTick`). Used to subtract from Torii's stale stamina projection
    * so tools don't overestimate remaining stamina.
    */
-  staminaSpent?: Map<number, {
-    /** Stamina points consumed by the move. */
-    spent: number;
-    /** Game tick when the stamina was spent. */
-    atTick: number;
-  }>;
+  staminaSpent?: Map<
+    number,
+    {
+      /** Stamina points consumed by the move. */
+      spent: number;
+      /** Game tick when the stamina was spent. */
+      atTick: number;
+    }
+  >;
 
   /**
    * Authoritative stamina overrides from move results or chain error messages.
@@ -115,10 +118,13 @@ export interface MapContext {
    * Keyed by explorer entity ID. Takes priority over Torii's stale stamina
    * when present. Cleared when the map loop confirms Torii has caught up.
    */
-  knownStamina?: Map<number, {
-    /** Remaining stamina for the explorer. */
-    stamina: number;
-    /** Wall-clock timestamp (ms) when the value was recorded. Expires after ~120s. */
-    time: number;
-  }>;
+  knownStamina?: Map<
+    number,
+    {
+      /** Remaining stamina for the explorer. */
+      stamina: number;
+      /** Wall-clock timestamp (ms) when the value was recorded. Expires after ~120s. */
+      time: number;
+    }
+  >;
 }

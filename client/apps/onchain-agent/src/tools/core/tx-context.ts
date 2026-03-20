@@ -76,7 +76,9 @@ export function extractTxError(err: any): string {
       }
 
       if (msg && msg !== "Transaction execution error") return `${msg} (code ${code})`;
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   }
 
   // Walk common nested error shapes from starknet.js / provider

@@ -320,14 +320,18 @@ export async function main() {
   try {
     const sql = client.sql as any;
     const baseUrl = sql.baseUrl ?? config.toriiUrl + "/sql";
-    const res = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`);
+    const res = await fetch(
+      `${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`,
+    );
     if (res.ok) {
-      const rows = await res.json() as any[];
+      const rows = (await res.json()) as any[];
       if (rows[0]?.map_center_offset != null) {
         mapCenter = BASE_MAP_CENTER - Number(rows[0].map_center_offset);
       }
     }
-  } catch { /* non-critical — coords will use raw values */ }
+  } catch {
+    /* non-critical — coords will use raw values */
+  }
 
   // Build the shared ToolContext — snapshot is mutable, updated each map tick
   const toolCtx: ToolContext = {
@@ -341,10 +345,7 @@ export async function main() {
   };
 
   // 4. Tools — core tools + read/grep/find/ls scoped to dataDir
-  const tools: AgentTool[] = [
-    ...createReadOnlyTools(config.dataDir),
-    ...createCoreTools(toolCtx, mapCtx),
-  ];
+  const tools: AgentTool[] = [...createReadOnlyTools(config.dataDir), ...createCoreTools(toolCtx, mapCtx)];
 
   // 5. System prompt
   const systemPrompt = buildSystemPrompt(config.dataDir);
@@ -368,9 +369,10 @@ export async function main() {
       // Keep toolCtx.snapshot in sync with the latest map data each tick
       if (mapCtx.snapshot) toolCtx.snapshot = mapCtx.snapshot;
       const briefing = mapCtx.protocol?.briefing() ?? "";
-      const errorBlock = toolErrors.length > 0
-        ? "\n<tool_errors>\n" + toolErrors.map((e) => `  ${e.tool}: ${e.error}`).join("\n") + "\n</tool_errors>"
-        : "";
+      const errorBlock =
+        toolErrors.length > 0
+          ? "\n<tool_errors>\n" + toolErrors.map((e) => `  ${e.tool}: ${e.error}`).join("\n") + "\n</tool_errors>"
+          : "";
       agent.setSystemPrompt(buildSystemPrompt(config.dataDir) + "\n\n" + briefing + errorBlock);
       const maxChars = (model.contextWindow ?? 200_000) * 3;
       const pruneTarget = Math.floor(maxChars * 0.5);
@@ -431,9 +433,17 @@ export async function main() {
 
   // 7. Map loop — refreshes tile data in the background
   let onThreatCallback: ((alerts: any[]) => void) | null = null;
-  const mapLoop = createMapLoop(client, mapCtx, account.address, undefined, gameConfig.stamina, (alerts) => {
-    if (onThreatCallback) onThreatCallback(alerts);
-  }, mapCenter);
+  const mapLoop = createMapLoop(
+    client,
+    mapCtx,
+    account.address,
+    undefined,
+    gameConfig.stamina,
+    (alerts) => {
+      if (onThreatCallback) onThreatCallback(alerts);
+    },
+    mapCenter,
+  );
   mapLoop.start();
   mapCtx.refresh = async () => {
     await mapLoop.refresh();
@@ -518,19 +528,26 @@ export async function main() {
     if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
       evolving = true;
       evolve(model, config.dataDir, {
-            map: mapCtx.protocol?.briefing() ?? "Map not loaded",
-            structures: [...automationStatus.values()]
-              .map((s) => `${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}`)
-              .join("\n") || "No structures",
-            armies: mapCtx.snapshot?.explorerDetails
-              ? [...mapCtx.snapshot.explorerDetails.entries()]
-                  .map(([id, info]: [number, any]) => `army ${id} | ${info.troopCount?.toLocaleString() ?? "?"} ${info.troopType ?? "?"} ${info.troopTier ?? "?"}`)
-                  .join("\n")
-              : "No armies",
-            toolErrors: toolErrors.map((e) => `${e.tool}: ${e.error}`).join("\n") || "None",
-            recentMessages: (agent as any).state?.messages?.slice(-30),
-            timestamp: Date.now(),
-          })
+        map: mapCtx.protocol?.briefing() ?? "Map not loaded",
+        structures:
+          [...automationStatus.values()]
+            .map(
+              (s) =>
+                `${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}`,
+            )
+            .join("\n") || "No structures",
+        armies: mapCtx.snapshot?.explorerDetails
+          ? [...mapCtx.snapshot.explorerDetails.entries()]
+              .map(
+                ([id, info]: [number, any]) =>
+                  `army ${id} | ${info.troopCount?.toLocaleString() ?? "?"} ${info.troopType ?? "?"} ${info.troopTier ?? "?"}`,
+              )
+              .join("\n")
+          : "No armies",
+        toolErrors: toolErrors.map((e) => `${e.tool}: ${e.error}`).join("\n") || "None",
+        recentMessages: (agent as any).state?.messages?.slice(-30),
+        timestamp: Date.now(),
+      })
         .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
         .finally(() => {
           evolving = false;

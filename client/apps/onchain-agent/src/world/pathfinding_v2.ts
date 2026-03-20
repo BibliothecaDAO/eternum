@@ -123,15 +123,13 @@ const TIER_BONUS: Record<string, number> = {
  * maxStamina(TroopType.Paladin, TroopTier.T2); // 140 + 20 = 160
  * ```
  */
-export function maxStamina(
-  troop: TroopType,
-  tier: TroopTier,
-  config: StaminaConfig = DEFAULT_STAMINA_CONFIG,
-): number {
+export function maxStamina(troop: TroopType, tier: TroopTier, config: StaminaConfig = DEFAULT_STAMINA_CONFIG): number {
   const base =
-    troop === TroopType.Knight ? config.maxKnight :
-    troop === TroopType.Paladin ? config.maxPaladin :
-    config.maxCrossbowman;
+    troop === TroopType.Knight
+      ? config.maxKnight
+      : troop === TroopType.Paladin
+        ? config.maxPaladin
+        : config.maxCrossbowman;
   return base + (TIER_BONUS[tier] ?? 0);
 }
 
@@ -151,13 +149,20 @@ const OCEAN_BIOMES = new Set([BiomeType.DeepOcean, BiomeType.Ocean]);
 const SCORCHED_BIOMES = new Set([BiomeType.Scorched]);
 // Biomes where Paladin gets -bonusValue (open terrain advantage)
 const PALADIN_CHEAP = new Set([
-  BiomeType.Bare, BiomeType.Tundra, BiomeType.Shrubland,
-  BiomeType.Grassland, BiomeType.TemperateDesert, BiomeType.SubtropicalDesert,
+  BiomeType.Bare,
+  BiomeType.Tundra,
+  BiomeType.Shrubland,
+  BiomeType.Grassland,
+  BiomeType.TemperateDesert,
+  BiomeType.SubtropicalDesert,
 ]);
 // Biomes where Paladin gets +bonusValue (forest disadvantage)
 const PALADIN_EXPENSIVE = new Set([
-  BiomeType.Taiga, BiomeType.TemperateDeciduousForest, BiomeType.TemperateRainForest,
-  BiomeType.TropicalSeasonalForest, BiomeType.TropicalRainForest,
+  BiomeType.Taiga,
+  BiomeType.TemperateDeciduousForest,
+  BiomeType.TemperateRainForest,
+  BiomeType.TropicalSeasonalForest,
+  BiomeType.TropicalRainForest,
 ]);
 
 /**
@@ -236,7 +241,6 @@ export function travelStaminaCostById(
 // PATH RESULT
 // ============================================================================
 
-
 /**
  * Result of a pathfinding query.
  *
@@ -299,9 +303,7 @@ export interface GridIndex {
  * const result = findPathNative(start, end, grid, { troop: TroopType.Knight });
  * ```
  */
-export function gridIndexFromSnapshot(
-  gridIndex: Map<string, { biome: number; occupierType: number }>,
-): GridIndex {
+export function gridIndexFromSnapshot(gridIndex: Map<string, { biome: number; occupierType: number }>): GridIndex {
   return {
     getBiome: (x, y) => gridIndex.get(`${x},${y}`)?.biome ?? 0,
     getOccupier: (x, y) => gridIndex.get(`${x},${y}`)?.occupierType ?? 0,
@@ -441,10 +443,7 @@ export function findPathNative(
   for (let i = 0; i < path.length - 1; i++) {
     const from = path[i]!;
     const to = path[i + 1]!;
-    const dir = getDirectionBetweenAdjacentHexes(
-      { col: from.x, row: from.y },
-      { col: to.x, row: to.y },
-    );
+    const dir = getDirectionBetweenAdjacentHexes({ col: from.x, row: from.y }, { col: to.x, row: to.y });
     if (dir === null) {
       // Should never happen with native neighbors — but safety check
       throw new Error(`Non-adjacent hex pair: (${from.x},${from.y}) → (${to.x},${to.y})`);

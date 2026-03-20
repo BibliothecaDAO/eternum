@@ -213,7 +213,8 @@ export function createAutomationLoop(
             const canAffordUpgrade =
               upgradeCosts?.length > 0 &&
               upgradeCosts.every(
-                (c: { resource: number; amount: number }) => (snapshot.projectedBalances.get(c.resource) ?? 0) >= c.amount,
+                (c: { resource: number; amount: number }) =>
+                  (snapshot.projectedBalances.get(c.resource) ?? 0) >= c.amount,
               );
             if (canAffordUpgrade) {
               upgradeIntent = plan.upgrade;
@@ -287,8 +288,10 @@ export function createAutomationLoop(
           // Write build diagnostics to file for debugging
           try {
             const { appendFileSync } = await import("fs");
-            appendFileSync("/tmp/eternum-build-debug.txt",
-              `[${new Date().toISOString()}] ${structureType} ${entityId} | plan: ${plan.builds.length} builds | candidates: ${candidateBuilds.length} | affordable: ${buildActions.length} | idle: ${plan.idle ?? 'no'}\n`);
+            appendFileSync(
+              "/tmp/eternum-build-debug.txt",
+              `[${new Date().toISOString()}] ${structureType} ${entityId} | plan: ${plan.builds.length} builds | candidates: ${candidateBuilds.length} | affordable: ${buildActions.length} | idle: ${plan.idle ?? "no"}\n`,
+            );
           } catch {}
           if (buildActions.length > 0) {
             console.log(
@@ -297,7 +300,10 @@ export function createAutomationLoop(
           }
           if (candidateBuilds.length > 0 && buildActions.length === 0) {
             console.log(
-              `[AUTO] ${structureType} ${entityId} | ${candidateBuilds.length} candidates but 0 affordable: ${candidateBuilds.map((b) => b.label).slice(0, 5).join(", ")}`,
+              `[AUTO] ${structureType} ${entityId} | ${candidateBuilds.length} candidates but 0 affordable: ${candidateBuilds
+                .map((b) => b.label)
+                .slice(0, 5)
+                .join(", ")}`,
             );
             for (const skipped of unifiedPlan.skippedBuilds) {
               console.log(`[AUTO]   skipped ${skipped.label}: ${skipped.reason}`);
@@ -307,11 +313,16 @@ export function createAutomationLoop(
             const slotCount = slots.length;
             const diagLines = [
               `${structureType} ${entityId} | ${plan.builds.length} planned but 0 candidates | slots found: ${slotCount}`,
-              `First 3 builds: ${plan.builds.slice(0, 3).map(b => `${b.step.label}(type=${b.step.building})`).join(", ")}`,
+              `First 3 builds: ${plan.builds
+                .slice(0, 3)
+                .map((b) => `${b.step.label}(type=${b.step.building})`)
+                .join(", ")}`,
             ];
             for (const b of plan.builds.slice(0, 3)) {
               const cfg = gameConfig.buildingCosts[b.step.building];
-              diagLines.push(`  ${b.step.label}(${b.step.building}): complexCosts=${cfg?.complexCosts?.length ?? 'MISSING'}, simpleCosts=${cfg?.simpleCosts?.length ?? 'MISSING'}, popCost=${cfg?.populationCost ?? 'MISSING'}`);
+              diagLines.push(
+                `  ${b.step.label}(${b.step.building}): complexCosts=${cfg?.complexCosts?.length ?? "MISSING"}, simpleCosts=${cfg?.simpleCosts?.length ?? "MISSING"}, popCost=${cfg?.populationCost ?? "MISSING"}`,
+              );
             }
             // Write to a file we can read since stderr isn't visible
             try {
@@ -348,8 +359,8 @@ export function createAutomationLoop(
 
           // Build order progress — count actual buildings on the realm vs total steps.
           // Using the plan's last index was misleading when builds failed silently.
-          const totalBuildings = Array.from(buildingCounts.values()).reduce((a, b) => a + b, 0)
-            + tickResult.built.length; // include what we just built this tick
+          const totalBuildings =
+            Array.from(buildingCounts.values()).reduce((a, b) => a + b, 0) + tickResult.built.length; // include what we just built this tick
           const progress = `${Math.min(totalBuildings, buildOrder.steps.length)}/${buildOrder.steps.length}`;
 
           return {
@@ -422,10 +433,14 @@ export function createAutomationLoop(
                   try {
                     const parsed = typeof slotVal === "string" ? JSON.parse(slotVal) : slotVal;
                     if (Array.isArray(parsed)) resourceCount = Math.max(1, parsed.length);
-                  } catch { /* use default 1 */ }
+                  } catch {
+                    /* use default 1 */
+                  }
 
                   try {
-                    console.log(`[AUTO] Attempting offload: structure ${structureId}, day ${day}, slot ${i}, resources ${resourceCount}`);
+                    console.log(
+                      `[AUTO] Attempting offload: structure ${structureId}, day ${day}, slot ${i}, resources ${resourceCount}`,
+                    );
                     await provider.arrivals_offload({
                       structureId,
                       day,
@@ -433,9 +448,13 @@ export function createAutomationLoop(
                       resource_count: resourceCount,
                       signer,
                     });
-                    console.log(`[AUTO] Offloaded arrival for structure ${structureId} day ${day} slot ${i} (${resourceCount} resources)`);
+                    console.log(
+                      `[AUTO] Offloaded arrival for structure ${structureId} day ${day} slot ${i} (${resourceCount} resources)`,
+                    );
                   } catch (offloadErr: any) {
-                    console.log(`[AUTO] Offload failed: structure ${structureId}, slot ${i}: ${offloadErr?.message ?? offloadErr}`);
+                    console.log(
+                      `[AUTO] Offload failed: structure ${structureId}, slot ${i}: ${offloadErr?.message ?? offloadErr}`,
+                    );
                   }
                 }
               }
@@ -462,11 +481,15 @@ export function createAutomationLoop(
             const rows = (await hypStructRes.json()) as any[];
             const normalizedPlayer = playerAddress.toLowerCase().replace(/^0x0*/, "0x");
             for (const r of rows) {
-              const owner = String(r.owner ?? "").toLowerCase().replace(/^0x0*/, "0x");
+              const owner = String(r.owner ?? "")
+                .toLowerCase()
+                .replace(/^0x0*/, "0x");
               if (owner === normalizedPlayer) ownedHyps.push(Number(r.entity_id));
             }
           }
-        } catch { /* non-critical */ }
+        } catch {
+          /* non-critical */
+        }
 
         if (ownedHyps.length > 0) {
           const hypIdList = ownedHyps.join(",");

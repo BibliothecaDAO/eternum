@@ -85,10 +85,7 @@ export interface CreateArmyResult {
  * 5. Finds an unoccupied adjacent hex for spawning.
  * 6. Calls `provider.explorer_create` to create the army on-chain.
  */
-export async function createArmy(
-  input: CreateArmyInput,
-  ctx: ToolContext,
-): Promise<CreateArmyResult> {
+export async function createArmy(input: CreateArmyInput, ctx: ToolContext): Promise<CreateArmyResult> {
   const { structureId, troopType: troopTypeOverride, tier: rawTier, amount: requestedAmount } = input;
 
   // ── Find structure tile by entity ID ──

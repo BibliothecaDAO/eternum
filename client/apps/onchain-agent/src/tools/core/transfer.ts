@@ -56,10 +56,7 @@ export interface SendResourcesResult {
  * Computes total cargo weight, checks donkey availability on both sides,
  * and routes via the sender's donkeys (send) or the recipient's (pickup).
  */
-export async function sendResources(
-  input: SendResourcesInput,
-  ctx: ToolContext,
-): Promise<SendResourcesResult> {
+export async function sendResources(input: SendResourcesInput, ctx: ToolContext): Promise<SendResourcesResult> {
   const { fromStructureId, toStructureId, resources } = input;
 
   if (fromStructureId === toStructureId) {
@@ -266,10 +263,7 @@ export interface TransferToArmyResult {
  *
  * Both armies must be on adjacent hexes.
  */
-export async function transferToArmy(
-  input: TransferToArmyInput,
-  ctx: ToolContext,
-): Promise<TransferToArmyResult> {
+export async function transferToArmy(input: TransferToArmyInput, ctx: ToolContext): Promise<TransferToArmyResult> {
   const { fromArmyId, toArmyId, resources } = input;
 
   if (resources.length === 0) {
@@ -333,10 +327,7 @@ export interface TransferTroopsResult {
  * Uses the `explorer_explorer_swap` provider call. Both armies must be
  * on adjacent hexes. Use this to consolidate small armies into one big one.
  */
-export async function transferTroops(
-  input: TransferTroopsInput,
-  ctx: ToolContext,
-): Promise<TransferTroopsResult> {
+export async function transferTroops(input: TransferTroopsInput, ctx: ToolContext): Promise<TransferTroopsResult> {
   const { fromArmyId, toArmyId, amount } = input;
 
   const fromExplorer = await ctx.client.view.explorerInfo(fromArmyId);
@@ -368,5 +359,8 @@ export async function transferTroops(
     return { success: false, message: `Transfer failed: ${extractTxError(err)}` };
   }
 
-  return { success: true, message: `Transferred ${amount.toLocaleString()} troops from army ${fromArmyId} to army ${toArmyId}.` };
+  return {
+    success: true,
+    message: `Transferred ${amount.toLocaleString()} troops from army ${fromArmyId} to army ${toArmyId}.`,
+  };
 }

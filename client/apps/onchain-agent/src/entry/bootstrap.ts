@@ -112,7 +112,6 @@ Use coordinates and entity IDs from the briefing or from previous query results.
 - Opportunities in the briefing are free value — take them
 `;
 
-
 const DEFAULT_TASKS: Record<string, string> = {
   priorities: `\
 # Priorities

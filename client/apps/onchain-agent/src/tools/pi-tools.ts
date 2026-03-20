@@ -79,14 +79,16 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
       async execute(_toolCallId: string, params: any) {
         if (!mapCtx.protocol) return { content: [{ type: "text" as const, text: "Map not loaded yet." }], details: {} };
         const r = await mapCtx.protocol.entityInfo(params.entity_id);
-        if (!r) return { content: [{ type: "text" as const, text: `Entity ${params.entity_id} not found.` }], details: {} };
+        if (!r)
+          return { content: [{ type: "text" as const, text: `Entity ${params.entity_id} not found.` }], details: {} };
         return { content: [{ type: "text" as const, text: JSON.stringify(r, null, 2) }], details: r };
       },
     },
     {
       name: "map_find",
       label: "Find Entities",
-      description: "Find entities by type: hyperstructure, mine, village, chest, enemy_army, enemy_structure, own_army, own_structure.",
+      description:
+        "Find entities by type: hyperstructure, mine, village, chest, enemy_army, enemy_structure, own_army, own_structure.",
       parameters: Type.Object({
         type: Type.String({ description: "Entity type to search for" }),
         ref_x: Type.Optional(Type.Number({ description: "Reference X for distance sorting" })),
@@ -115,8 +117,7 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
     {
       name: "move_army",
       label: "Move Army",
-      description:
-        "Move one of your armies to a target position. Pathfinds automatically. Explores unexplored tiles.",
+      description: "Move one of your armies to a target position. Pathfinds automatically. Explores unexplored tiles.",
       parameters: Type.Object({
         army_id: Type.Number({ description: "Entity ID of your army" }),
         target_x: Type.Number({ description: "Target map X" }),
@@ -248,10 +249,7 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
         chest_y: Type.Number({ description: "Chest map Y" }),
       }),
       async execute(_toolCallId: string, params: any) {
-        const result = await openChest(
-          { armyId: params.army_id, chestX: params.chest_x, chestY: params.chest_y },
-          ctx,
-        );
+        const result = await openChest({ armyId: params.army_id, chestX: params.chest_x, chestY: params.chest_y }, ctx);
         return { content: [{ type: "text" as const, text: result.message }], details: result };
       },
     },
@@ -272,7 +270,13 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
       }),
       async execute(_toolCallId: string, params: any) {
         const result = await guardFromStorage(
-          { structureId: params.structure_id, slot: params.slot, troopType: params.troop_type, tier: params.tier, amount: params.amount },
+          {
+            structureId: params.structure_id,
+            slot: params.slot,
+            troopType: params.troop_type,
+            tier: params.tier,
+            amount: params.amount,
+          },
           ctx,
         );
         return { content: [{ type: "text" as const, text: result.message }], details: result };
@@ -354,7 +358,11 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
       }),
       async execute(_toolCallId: string, params: any) {
         const result = await sendResources(
-          { fromStructureId: params.from_structure_id, toStructureId: params.to_structure_id, resources: params.resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })) },
+          {
+            fromStructureId: params.from_structure_id,
+            toStructureId: params.to_structure_id,
+            resources: params.resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
+          },
           ctx,
         );
         return { content: [{ type: "text" as const, text: result.message }], details: result };
@@ -376,7 +384,11 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
       }),
       async execute(_toolCallId: string, params: any) {
         const result = await transferToStructure(
-          { armyId: params.army_id, structureId: params.structure_id, resources: params.resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })) },
+          {
+            armyId: params.army_id,
+            structureId: params.structure_id,
+            resources: params.resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
+          },
           ctx,
         );
         return { content: [{ type: "text" as const, text: result.message }], details: result };
@@ -398,7 +410,11 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
       }),
       async execute(_toolCallId: string, params: any) {
         const result = await transferToArmy(
-          { fromArmyId: params.from_army_id, toArmyId: params.to_army_id, resources: params.resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })) },
+          {
+            fromArmyId: params.from_army_id,
+            toArmyId: params.to_army_id,
+            resources: params.resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
+          },
           ctx,
         );
         return { content: [{ type: "text" as const, text: result.message }], details: result };
@@ -409,8 +425,7 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
     {
       name: "apply_relic",
       label: "Apply Relic",
-      description:
-        "Apply a relic buff to an army, structure guards, or structure production. Costs Essence.",
+      description: "Apply a relic buff to an army, structure guards, or structure production. Costs Essence.",
       parameters: Type.Object({
         entity_id: Type.Number({ description: "Entity ID to buff" }),
         relic_resource_id: Type.Number({ description: "Relic resource ID" }),
@@ -418,7 +433,11 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
       }),
       async execute(_toolCallId: string, params: any) {
         const result = await applyRelic(
-          { entityId: params.entity_id, relicResourceId: params.relic_resource_id, recipientType: params.recipient_type },
+          {
+            entityId: params.entity_id,
+            relicResourceId: params.relic_resource_id,
+            recipientType: params.recipient_type,
+          },
           ctx,
         );
         return { content: [{ type: "text" as const, text: result.message }], details: result };
