@@ -10,24 +10,17 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-20",
-    title: "Factory Prize Settings",
+    title: "Factory V2 Launch Center",
     description:
-      "Blitz Factory launches now let you review and override the prize token and amount with human-readable values, so you can enter amounts like 500 or 0.00004 without manually converting them to raw token units.",
+      "The landing page now has a full Factory V2 flow for starting a game, checking progress, and recovering pending launches, with clearer status copy and a layout that holds up much better on mobile.",
     type: "feature",
   },
   {
     date: "2026-03-20",
-    title: "Desktop Factory Pickers Work",
+    title: "Factory Launch Controls",
     description:
-      "Factory start scheduling now keeps the real browser date and time pickers usable on desktop while preserving the tap-friendly mobile picker rows, so launch timing works properly on both device sizes.",
-    type: "fix",
-  },
-  {
-    date: "2026-03-19",
-    title: "Blitz Duration Profiles Landed",
-    description:
-      "Blitz Factory launches now treat 60-minute and 90-minute games as full balance profiles instead of just shorter or longer timers, so the official resource, building, realm, and starting-loadout tuning follows the selected game length automatically.",
-    type: "balance",
+      "Factory now lets you adjust prize token settings with human-readable amounts, use cleaner date and time controls, and work with clearer Blitz setup options without leaving the launch flow.",
+    type: "improvement",
   },
   {
     date: "2026-03-19",
