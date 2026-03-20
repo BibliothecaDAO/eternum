@@ -76,9 +76,11 @@ async function main() {
   try {
     const sql = client.sql as any;
     const baseUrl = sql.baseUrl ?? config.toriiUrl + "/sql";
-    const res = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`);
+    const res = await fetch(
+      `${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`,
+    );
     if (res.ok) {
-      const rows = await res.json() as any[];
+      const rows = (await res.json()) as any[];
       if (rows[0]?.map_center_offset != null) {
         mapCenter = BASE_MAP_CENTER - Number(rows[0].map_center_offset);
       }
@@ -101,8 +103,8 @@ async function main() {
   const baseGrid = gridIndexFromSnapshot(snapshot.gridIndex);
 
   // Inject synthetic tiles (same as move.ts does)
-  const start = { x: toContractX(1), y: toContractY(1) };    // army at (1,1) display
-  const end = { x: toContractX(14), y: toContractY(0) };      // adjacent to target — (14,0) display
+  const start = { x: toContractX(1), y: toContractY(1) }; // army at (1,1) display
+  const end = { x: toContractX(14), y: toContractY(0) }; // adjacent to target — (14,0) display
 
   console.log(`\nRaw coords: start=(${start.x},${start.y}), end=(${end.x},${end.y})`);
   console.log(`Display coords: start=(1,1), end=(14,0) (adjacent to Hyperstructure at 15,0)`);
@@ -198,7 +200,15 @@ async function main() {
 
   // Now run the same path but along y=0 road to compare
   console.log("\n=== Manual y=0 road cost comparison (Paladin) ===\n");
-  const roadTiles: Array<{ x: number; biomeId: number; biomeName: string; cost: number; isSynth: boolean; hasIt: boolean; occ: number }> = [];
+  const roadTiles: Array<{
+    x: number;
+    biomeId: number;
+    biomeName: string;
+    cost: number;
+    isSynth: boolean;
+    hasIt: boolean;
+    occ: number;
+  }> = [];
   for (let x = 2; x <= 14; x++) {
     const rawX = toContractX(x);
     const rawY = toContractY(0);
@@ -225,7 +235,8 @@ async function main() {
     const rawY = toContractY(0);
     const biomeId = augmentedGrid.getBiome(rawX, rawY);
     const biomeName = BiomeIdToType[biomeId] ?? "Unknown";
-    const cost = biomeId > 0 ? travelStaminaCostById(biomeId, TroopType.Paladin, staminaConfig) : staminaConfig.travelCost;
+    const cost =
+      biomeId > 0 ? travelStaminaCostById(biomeId, TroopType.Paladin, staminaConfig) : staminaConfig.travelCost;
     roadCum += cost;
     console.log(`(  1,  0) | ${biomeName.padEnd(28)} | cost ${cost} | cum ${roadCum}`);
   }
@@ -234,12 +245,16 @@ async function main() {
     roadCum += t.cost;
     const blocked = t.occ !== 0 ? ` BLOCKED(occ=${t.occ})` : "";
     const missing = !t.hasIt ? " MISSING" : "";
-    console.log(`(${String(t.x).padStart(3)},  0) | ${t.biomeName.padEnd(28)} | cost ${t.cost} | cum ${roadCum}${t.isSynth ? " SYNTH" : ""}${blocked}${missing}`);
+    console.log(
+      `(${String(t.x).padStart(3)},  0) | ${t.biomeName.padEnd(28)} | cost ${t.cost} | cum ${roadCum}${t.isSynth ? " SYNTH" : ""}${blocked}${missing}`,
+    );
   }
 
   console.log(`\nA* path total: ${result.staminaCost}`);
   console.log(`y=0 road total: ${roadCum}`);
-  console.log(`Difference: ${result.staminaCost - roadCum} (${result.staminaCost < roadCum ? "A* is cheaper" : result.staminaCost > roadCum ? "ROAD IS CHEAPER" : "same cost"})`);
+  console.log(
+    `Difference: ${result.staminaCost - roadCum} (${result.staminaCost < roadCum ? "A* is cheaper" : result.staminaCost > roadCum ? "ROAD IS CHEAPER" : "same cost"})`,
+  );
 }
 
 main().catch((err) => {

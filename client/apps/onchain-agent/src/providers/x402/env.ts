@@ -20,39 +20,39 @@ export type EnvSource = Record<string, string | undefined>;
 
 /** Options for {@link loadX402Env}. */
 export interface LoadX402EnvOptions {
-	/** When `true` (default), throw if `X402_PRIVATE_KEY` is missing. */
-	requirePrivateKey?: boolean;
+  /** When `true` (default), throw if `X402_PRIVATE_KEY` is missing. */
+  requirePrivateKey?: boolean;
 }
 
 function readTrimmed(env: EnvSource, key: string): string | undefined {
-	const value = env[key];
-	if (typeof value !== "string") return undefined;
-	const trimmed = value.trim();
-	return trimmed.length > 0 ? trimmed : undefined;
+  const value = env[key];
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 function normalizePrivateKey(privateKey: string): string {
-	if (!PRIVATE_KEY_REGEX.test(privateKey)) {
-		throw new Error("X402_PRIVATE_KEY must be a 0x-prefixed 64-byte hex string");
-	}
-	return privateKey.startsWith("0X") ? `0x${privateKey.slice(2)}` : privateKey;
+  if (!PRIVATE_KEY_REGEX.test(privateKey)) {
+    throw new Error("X402_PRIVATE_KEY must be a 0x-prefixed 64-byte hex string");
+  }
+  return privateKey.startsWith("0X") ? `0x${privateKey.slice(2)}` : privateKey;
 }
 
 function normalizeRouterUrl(routerUrl: string): string {
-	let parsed: URL;
-	try {
-		parsed = new URL(routerUrl);
-	} catch {
-		throw new Error("X402_ROUTER_URL must be a valid URL");
-	}
-	return parsed.origin;
+  let parsed: URL;
+  try {
+    parsed = new URL(routerUrl);
+  } catch {
+    throw new Error("X402_ROUTER_URL must be a valid URL");
+  }
+  return parsed.origin;
 }
 
 function normalizePermitCap(permitCap: string): string {
-	if (!POSITIVE_INTEGER_REGEX.test(permitCap)) {
-		throw new Error("X402_PERMIT_CAP must be a positive integer string");
-	}
-	return permitCap;
+  if (!POSITIVE_INTEGER_REGEX.test(permitCap)) {
+    throw new Error("X402_PERMIT_CAP must be a positive integer string");
+  }
+  return permitCap;
 }
 
 /**
@@ -64,26 +64,26 @@ function normalizePermitCap(permitCap: string): string {
  * @throws {Error} If required variables are missing or malformed.
  */
 export function loadX402Env(env: EnvSource = process.env, options: LoadX402EnvOptions = {}): X402EnvConfig {
-	const requirePrivateKey = options.requirePrivateKey ?? true;
-	const privateKeyRaw = readTrimmed(env, "X402_PRIVATE_KEY");
-	if (!privateKeyRaw && requirePrivateKey) {
-		throw new Error("X402_PRIVATE_KEY is required");
-	}
+  const requirePrivateKey = options.requirePrivateKey ?? true;
+  const privateKeyRaw = readTrimmed(env, "X402_PRIVATE_KEY");
+  if (!privateKeyRaw && requirePrivateKey) {
+    throw new Error("X402_PRIVATE_KEY is required");
+  }
 
-	const routerUrlRaw = readTrimmed(env, "X402_ROUTER_URL") ?? DEFAULT_ROUTER_URL;
-	const permitCapRaw = readTrimmed(env, "X402_PERMIT_CAP") ?? DEFAULT_PERMIT_CAP;
-	const network = readTrimmed(env, "X402_NETWORK") ?? DEFAULT_NETWORK;
-	const paymentHeader = readTrimmed(env, "X402_PAYMENT_HEADER") ?? DEFAULT_PAYMENT_HEADER;
-	const modelId = readTrimmed(env, "X402_MODEL_ID") ?? readTrimmed(env, "MODEL_ID") ?? DEFAULT_MODEL_ID;
-	const modelName = readTrimmed(env, "X402_MODEL_NAME") ?? DEFAULT_MODEL_NAME;
+  const routerUrlRaw = readTrimmed(env, "X402_ROUTER_URL") ?? DEFAULT_ROUTER_URL;
+  const permitCapRaw = readTrimmed(env, "X402_PERMIT_CAP") ?? DEFAULT_PERMIT_CAP;
+  const network = readTrimmed(env, "X402_NETWORK") ?? DEFAULT_NETWORK;
+  const paymentHeader = readTrimmed(env, "X402_PAYMENT_HEADER") ?? DEFAULT_PAYMENT_HEADER;
+  const modelId = readTrimmed(env, "X402_MODEL_ID") ?? readTrimmed(env, "MODEL_ID") ?? DEFAULT_MODEL_ID;
+  const modelName = readTrimmed(env, "X402_MODEL_NAME") ?? DEFAULT_MODEL_NAME;
 
-	return {
-		privateKey: privateKeyRaw ? normalizePrivateKey(privateKeyRaw) : undefined,
-		routerUrl: normalizeRouterUrl(routerUrlRaw),
-		network,
-		permitCap: normalizePermitCap(permitCapRaw),
-		paymentHeader,
-		modelId,
-		modelName,
-	};
+  return {
+    privateKey: privateKeyRaw ? normalizePrivateKey(privateKeyRaw) : undefined,
+    routerUrl: normalizeRouterUrl(routerUrlRaw),
+    network,
+    permitCap: normalizePermitCap(permitCapRaw),
+    paymentHeader,
+    modelId,
+    modelName,
+  };
 }

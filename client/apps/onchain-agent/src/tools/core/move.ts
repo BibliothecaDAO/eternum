@@ -63,10 +63,7 @@ export interface MoveArmyResult {
  * @param ctx - Shared tool context with client, provider, snapshot, config.
  * @returns Typed result with success flag, message, end position, and step counts.
  */
-export async function moveArmy(
-  input: MoveArmyInput,
-  ctx: ToolContext,
-): Promise<MoveArmyResult> {
+export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<MoveArmyResult> {
   const { armyId, targetX: dispX, targetY: dispY } = input;
 
   // Convert display coords to raw contract coords for all internal operations
@@ -202,18 +199,14 @@ export async function moveArmy(
     for (let i = 0; i < pathResult.directions.length; i++) {
       const stepPos = pathResult.path[i + 1];
       const stepKey = `${stepPos.x},${stepPos.y}`;
-      const isExplore = !(snapshotGrid.get(stepKey)?.biome);
-      const stepCost = isExplore
-        ? (staminaConfig.exploreCost || 30)
-        : (staminaConfig.travelCost || 20);
+      const isExplore = !snapshotGrid.get(stepKey)?.biome;
+      const stepCost = isExplore ? staminaConfig.exploreCost || 30 : staminaConfig.travelCost || 20;
       if (cost + stepCost > projectedStamina) break;
       cost += stepCost;
       truncateAt = i + 1;
     }
     if (truncateAt === 0) {
-      return fail(
-        `Not enough stamina (${projectedStamina}) for even 1 step. Need ${staminaConfig.exploreCost || 30}.`,
-      );
+      return fail(`Not enough stamina (${projectedStamina}) for even 1 step. Need ${staminaConfig.exploreCost || 30}.`);
     }
     pathResult = {
       ...pathResult,

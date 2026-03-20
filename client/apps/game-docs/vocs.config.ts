@@ -119,9 +119,7 @@ export default defineConfig({
           text: "Realms",
           collapsed: true,
           link: "/blitz/realms/realm",
-          items: [
-            { text: "Buildings", link: "/blitz/realms/buildings" },
-          ],
+          items: [{ text: "Buildings", link: "/blitz/realms/buildings" }],
         },
         {
           text: "Materials",
@@ -149,9 +147,7 @@ export default defineConfig({
           text: "World Map & Movement",
           collapsed: true,
           link: "/blitz/worldmap-movement/worldmap",
-          items: [
-            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
-          ],
+          items: [{ text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" }],
         },
         { text: "World Structures", link: "/blitz/world-structures" },
         { text: "Victory", link: "/blitz/victory" },

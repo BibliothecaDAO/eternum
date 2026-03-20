@@ -559,10 +559,7 @@ export function computeSmartWeights(
  * @param gameConfig - On-chain game configuration with resource factory recipes.
  * @returns Map of input resource ID -> units needed per 1 cycle of the target.
  */
-function computeTotalDemand(
-  targetId: number,
-  gameConfig: GameConfig,
-): Map<number, number> {
+function computeTotalDemand(targetId: number, gameConfig: GameConfig): Map<number, number> {
   const demand = new Map<number, number>();
 
   function walk(resourceId: number, multiplier: number, visited: Set<number>) {
@@ -656,12 +653,13 @@ export function computeOptimalWeights(
     // Check if we have a building for this resource
     // Resource buildings: resourceId + 2. Troop buildings: use TROOP_PATHS lookup.
     const resBuildingType = resourceId + RESOURCE_TO_BUILDING_OFFSET;
-    const isTroop =
-      resourceId === tp.t1 || resourceId === tp.t2 || resourceId === tp.t3;
+    const isTroop = resourceId === tp.t1 || resourceId === tp.t2 || resourceId === tp.t3;
     const troopBuildingType = isTroop
-      ? resourceId === tp.t1 ? tp.t1Building
-        : resourceId === tp.t2 ? tp.t2Building
-        : tp.t3Building
+      ? resourceId === tp.t1
+        ? tp.t1Building
+        : resourceId === tp.t2
+          ? tp.t2Building
+          : tp.t3Building
       : -1;
     const hasBuilding = has(resBuildingType) || has(troopBuildingType);
 

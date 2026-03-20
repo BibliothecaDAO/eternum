@@ -50,7 +50,6 @@ export const RESOURCE_BALANCE_COLUMNS: ReadonlyArray<{
   { column: "PALADIN_T3_BALANCE", resourceId: ResourcesIds.PaladinT3, name: "Paladin T3" },
 ];
 
-
 const BALANCE_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => c.column).join(", ");
 
 /** Production building_count column for each resource (dot-notation from Torii SQL). */

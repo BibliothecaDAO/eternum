@@ -246,20 +246,42 @@ function occupierKind(occupierType: number): OccupierSummary["kind"] {
 
 /** Lookup table: occupier type number to structure category label. */
 const STRUCTURE_TYPE_LABELS: Record<number, string> = {
-  1: "Realm", 2: "Realm", 3: "Realm", 4: "Realm",
-  5: "Wonder", 6: "Wonder", 7: "Wonder", 8: "Wonder",
-  9: "Hyperstructure", 10: "Hyperstructure", 11: "Hyperstructure",
-  12: "Fragment Mine", 13: "Village", 14: "Bank",
+  1: "Realm",
+  2: "Realm",
+  3: "Realm",
+  4: "Realm",
+  5: "Wonder",
+  6: "Wonder",
+  7: "Wonder",
+  8: "Wonder",
+  9: "Hyperstructure",
+  10: "Hyperstructure",
+  11: "Hyperstructure",
+  12: "Fragment Mine",
+  13: "Village",
+  14: "Bank",
 };
 
 /** Lookup table: occupier type number to explorer troop class label. */
 const EXPLORER_TYPE_LABELS: Record<number, string> = {
-  15: "Knight", 16: "Knight", 17: "Knight",
-  18: "Paladin", 19: "Paladin", 20: "Paladin",
-  21: "Crossbowman", 22: "Crossbowman", 23: "Crossbowman",
-  24: "Knight", 25: "Knight", 26: "Knight",
-  27: "Paladin", 28: "Paladin", 29: "Paladin",
-  30: "Crossbowman", 31: "Crossbowman", 32: "Crossbowman",
+  15: "Knight",
+  16: "Knight",
+  17: "Knight",
+  18: "Paladin",
+  19: "Paladin",
+  20: "Paladin",
+  21: "Crossbowman",
+  22: "Crossbowman",
+  23: "Crossbowman",
+  24: "Knight",
+  25: "Knight",
+  26: "Knight",
+  27: "Paladin",
+  28: "Paladin",
+  29: "Paladin",
+  30: "Crossbowman",
+  31: "Crossbowman",
+  32: "Crossbowman",
 };
 
 /**
@@ -368,7 +390,6 @@ export class MapProtocol {
   private toDisplayY(raw: number): number {
     return this.mapCenter ? -(raw - this.mapCenter) : raw;
   }
-
 
   /**
    * Convert a display X coordinate back to raw contract coordinate.
@@ -635,9 +656,7 @@ export class MapProtocol {
         detail = (await this.client.view.explorerInfo(entityId)) ?? undefined;
       }
       if (detail) {
-        const projected = this.staminaConfig
-          ? projectExplorerStamina(detail, this.staminaConfig)
-          : detail.stamina;
+        const projected = this.staminaConfig ? projectExplorerStamina(detail, this.staminaConfig) : detail.stamina;
         const strength = calculateStrength(detail.troopCount, detail.troopTier, detail.troopType, biome);
         base.explorer = {
           troopType: detail.troopType,
@@ -701,13 +720,11 @@ export class MapProtocol {
    * }
    * ```
    */
-  async find(
-    type: FindTargetType,
-    referencePos?: { x: number; y: number },
-    limit: number = 15,
-  ): Promise<FindResult[]> {
+  async find(type: FindTargetType, referencePos?: { x: number; y: number }, limit: number = 15): Promise<FindResult[]> {
     // Convert display ref to raw for distance calc
-    const rawRef = referencePos ? { x: this.toContractX(referencePos.x), y: this.toContractY(referencePos.y) } : undefined;
+    const rawRef = referencePos
+      ? { x: this.toContractX(referencePos.x), y: this.toContractY(referencePos.y) }
+      : undefined;
     const results: FindResult[] = [];
 
     for (const tile of this.snapshot.tiles) {
@@ -746,13 +763,14 @@ export class MapProtocol {
 
       if (!match) continue;
 
-      const label = kind === "structure"
-        ? (STRUCTURE_TYPE_LABELS[tile.occupierType] ?? "Structure")
-        : kind === "explorer"
-          ? (EXPLORER_TYPE_LABELS[tile.occupierType] ?? "Explorer")
-          : kind === "chest"
-            ? "Chest"
-            : kind;
+      const label =
+        kind === "structure"
+          ? (STRUCTURE_TYPE_LABELS[tile.occupierType] ?? "Structure")
+          : kind === "explorer"
+            ? (EXPLORER_TYPE_LABELS[tile.occupierType] ?? "Explorer")
+            : kind === "chest"
+              ? "Chest"
+              : kind;
 
       const entry: FindResult = {
         entityId: tile.occupierId,
@@ -919,9 +937,7 @@ export class MapProtocol {
       const detail = this.snapshot.explorerDetails.get(tile.occupierId);
       if (!detail) continue;
 
-      const stamina = this.staminaConfig
-        ? projectExplorerStamina(detail, this.staminaConfig)
-        : detail.stamina;
+      const stamina = this.staminaConfig ? projectExplorerStamina(detail, this.staminaConfig) : detail.stamina;
 
       if (stamina >= 80) {
         diags.push({
@@ -961,9 +977,7 @@ export class MapProtocol {
 
       const detail = this.snapshot.explorerDetails.get(tile.occupierId);
       if (detail) {
-        const stamina = this.staminaConfig
-          ? projectExplorerStamina(detail, this.staminaConfig)
-          : detail.stamina;
+        const stamina = this.staminaConfig ? projectExplorerStamina(detail, this.staminaConfig) : detail.stamina;
         const strength = calculateStrength(detail.troopCount, detail.troopTier, detail.troopType, tile.biome);
         const biome = biomeName(tile.biome);
         const dp = this.displayPos(tile.position);
@@ -989,9 +1003,10 @@ export class MapProtocol {
       if (detail) {
         const label = detail.category;
         const guards = detail.guards?.filter((g: GuardInfo) => g.count > 0) ?? [];
-        const guardStr = guards.length > 0
-          ? guards.map((g: GuardInfo) => `${g.count.toLocaleString()} ${g.troopType} ${g.troopTier}`).join(", ")
-          : "unguarded";
+        const guardStr =
+          guards.length > 0
+            ? guards.map((g: GuardInfo) => `${g.count.toLocaleString()} ${g.troopType} ${g.troopTier}`).join(", ")
+            : "unguarded";
         const dp = this.displayPos(tile.position);
         structures.push(
           `  ${tile.occupierId} | ${label} lv${detail.level} | armies ${detail.explorerCount}/${detail.maxExplorerCount} | guards: ${guardStr} | at (${dp.x},${dp.y})`,
@@ -1016,7 +1031,9 @@ export class MapProtocol {
       sections.push(`THREATS (${threats.length}):\n${threats.map((d) => `  ⚠ ${d.message}`).join("\n")}`);
     }
     if (opportunities.length > 0) {
-      sections.push(`OPPORTUNITIES (${opportunities.length}):\n${opportunities.map((d) => `  → ${d.message}`).join("\n")}`);
+      sections.push(
+        `OPPORTUNITIES (${opportunities.length}):\n${opportunities.map((d) => `  → ${d.message}`).join("\n")}`,
+      );
     }
     if (info.length > 0) {
       sections.push(`STATUS:\n${info.map((d) => `  ${d.message}`).join("\n")}`);

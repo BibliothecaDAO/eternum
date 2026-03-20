@@ -97,8 +97,10 @@ export function renderMap(
   }
 
   // Compute bounding box
-  let rawMinX = Infinity, rawMaxX = -Infinity;
-  let rawMinY = Infinity, rawMaxY = -Infinity;
+  let rawMinX = Infinity,
+    rawMaxX = -Infinity;
+  let rawMinY = Infinity,
+    rawMaxY = -Infinity;
   const grid = new Map<string, TileState>();
 
   for (const t of tiles) {

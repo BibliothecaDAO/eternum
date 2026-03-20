@@ -66,12 +66,7 @@ export async function createX402Model(envSource: EnvSource = process.env): Promi
     if (!env.privateKey) throw new Error("X402_PRIVATE_KEY is required");
 
     const routerConfig = await resolveRouterConfig();
-    const cached = permitCache.get(
-      routerConfig.network,
-      routerConfig.asset,
-      routerConfig.payTo,
-      env.permitCap,
-    );
+    const cached = permitCache.get(routerConfig.network, routerConfig.asset, routerConfig.payTo, env.permitCap);
     if (cached) return cached.paymentSig;
 
     console.log("[x402] Signing new USDC permit...");

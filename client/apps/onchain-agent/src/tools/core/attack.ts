@@ -50,10 +50,7 @@ export interface AttackTargetResult {
  * @param ctx   - Shared tool context (client, provider, signer, config, snapshot).
  * @returns Typed result with success flag, message, and combat details.
  */
-export async function attackTarget(
-  input: AttackTargetInput,
-  ctx: ToolContext,
-): Promise<AttackTargetResult> {
+export async function attackTarget(input: AttackTargetInput, ctx: ToolContext): Promise<AttackTargetResult> {
   const { armyId, targetX: dispX, targetY: dispY } = input;
   const targetRawX = toContractX(dispX, ctx.mapCenter);
   const targetRawY = toContractY(dispY, ctx.mapCenter);

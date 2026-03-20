@@ -35,15 +35,25 @@ const TROOP_IDX: Record<string, number> = { Knight: 0, Crossbowman: 1, Paladin: 
  */
 const BIOME_BONUS: Record<number, [number, number, number]> = {
   // Ocean/DeepOcean/Beach/Snow — Crossbowman +30%, Paladin -30%
-  1: [0, 0.3, -0.3], 2: [0, 0.3, -0.3], 4: [0, 0.3, -0.3],
+  1: [0, 0.3, -0.3],
+  2: [0, 0.3, -0.3],
+  4: [0, 0.3, -0.3],
   // Scorched/Bare — Crossbowman +30%
-  3: [-0.3, 0.3, 0], 7: [-0.3, 0.3, 0],
+  3: [-0.3, 0.3, 0],
+  7: [-0.3, 0.3, 0],
   // Grassland/TemperateDesert/SubtropicalDesert/Shrubland/Tundra/Bare — Paladin +30%
-  5: [0, -0.3, 0.3], 6: [0, -0.3, 0.3], 8: [0, -0.3, 0.3],
-  9: [0, -0.3, 0.3], 11: [0, -0.3, 0.3], 14: [0, -0.3, 0.3],
+  5: [0, -0.3, 0.3],
+  6: [0, -0.3, 0.3],
+  8: [0, -0.3, 0.3],
+  9: [0, -0.3, 0.3],
+  11: [0, -0.3, 0.3],
+  14: [0, -0.3, 0.3],
   // Taiga/TemperateDeciduous/TemperateRain/TropicalSeasonal/TropicalRain — Knight +30%
-  10: [0.3, 0, -0.3], 12: [0.3, 0, -0.3], 13: [0.3, 0, -0.3],
-  15: [0.3, 0, -0.3], 16: [0.3, 0, -0.3],
+  10: [0.3, 0, -0.3],
+  12: [0.3, 0, -0.3],
+  13: [0.3, 0, -0.3],
+  15: [0.3, 0, -0.3],
+  16: [0.3, 0, -0.3],
 };
 
 /**
@@ -165,11 +175,7 @@ export interface CombatResult {
  * // result.biomeAdvantage === "favors attacker (Knight +30%)"
  * ```
  */
-export function simulateCombat(
-  attacker: CombatInput,
-  defender: CombatInput,
-  biomeId: number,
-): CombatResult {
+export function simulateCombat(attacker: CombatInput, defender: CombatInput, biomeId: number): CombatResult {
   const now = Math.floor(Date.now() / 1000);
   const totalTroops = attacker.troopCount + defender.troopCount;
   const BETA_EFF = 0.2;
@@ -177,10 +183,14 @@ export function simulateCombat(
 
   if (totalTroops === 0) {
     return {
-      attackerDamage: 0, defenderDamage: 0,
-      attackerCasualties: 0, defenderCasualties: 0,
-      attackerSurviving: 0, defenderSurviving: 0,
-      winner: "draw", biomeAdvantage: "neutral",
+      attackerDamage: 0,
+      defenderDamage: 0,
+      attackerCasualties: 0,
+      defenderCasualties: 0,
+      attackerSurviving: 0,
+      defenderSurviving: 0,
+      winner: "draw",
+      biomeAdvantage: "neutral",
     };
   }
 
@@ -217,8 +227,10 @@ export function simulateCombat(
   else if (defenderSurviving > 0 && attackerSurviving <= 0) winner = "defender";
 
   let biomeAdvantage = "neutral";
-  if (atkBiome > defBiome) biomeAdvantage = `favors attacker (${attacker.troopType} +${Math.round((atkBiome - 1) * 100)}%)`;
-  else if (defBiome > atkBiome) biomeAdvantage = `favors defender (${defender.troopType} +${Math.round((defBiome - 1) * 100)}%)`;
+  if (atkBiome > defBiome)
+    biomeAdvantage = `favors attacker (${attacker.troopType} +${Math.round((atkBiome - 1) * 100)}%)`;
+  else if (defBiome > atkBiome)
+    biomeAdvantage = `favors defender (${defender.troopType} +${Math.round((defBiome - 1) * 100)}%)`;
 
   return {
     attackerDamage: Math.floor(attackerDamage),

@@ -27,10 +27,7 @@ describe("detectThreats", () => {
 
   it("skips already-alerted positions", () => {
     const ownedStructures = [makeTile(10, 10, 1, 1, true)];
-    const allTiles = [
-      makeTile(10, 10, 1, 1, true),
-      makeTile(11, 10, 99, 15, false),
-    ];
+    const allTiles = [makeTile(10, 10, 1, 1, true), makeTile(11, 10, 99, 15, false)];
     const recentAlerts = new Set(["11,10"]);
     const alerts = detectThreats(ownedStructures, allTiles, recentAlerts);
     expect(alerts).toHaveLength(0);
