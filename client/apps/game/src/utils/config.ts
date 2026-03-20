@@ -1,18 +1,51 @@
 import { ToriiSetting } from "@/types";
+import { ContractComponents, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Chain, GameType, getConfigFromNetwork } from "@config";
 import { env } from "./../../env";
 
-export const resolveConfigGameType = (
-  explicitGameType?: GameType,
-  envGameType?: GameType,
-): GameType => explicitGameType ?? envGameType ?? "blitz";
+type ConfigResolutionOptions = {
+  chain?: Chain;
+  gameType?: GameType;
+  components?: ContractComponents;
+};
 
-export const ETERNUM_CONFIG = (explicitGameType?: GameType) => {
-  const config = getConfigFromNetwork(
-    env.VITE_PUBLIC_CHAIN! as Chain,
-    resolveConfigGameType(explicitGameType, env.VITE_PUBLIC_FORCE_GAME_MODE_ID as GameType | undefined),
-  );
-  return config;
+const getForcedGameType = (): GameType | null => {
+  const forcedGameType = env.VITE_PUBLIC_FORCE_GAME_MODE_ID;
+  if (!forcedGameType) {
+    return null;
+  }
+
+  return forcedGameType;
+};
+
+const resolveGameTypeFromComponents = (components: ContractComponents): GameType => {
+  const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+  return worldConfig?.blitz_mode_on ? "blitz" : "eternum";
+};
+
+const resolveGameType = (options?: ConfigResolutionOptions): GameType => {
+  if (options?.gameType) {
+    return options.gameType;
+  }
+
+  const forcedGameType = getForcedGameType();
+  if (forcedGameType) {
+    return forcedGameType;
+  }
+
+  if (options?.components) {
+    return resolveGameTypeFromComponents(options.components);
+  }
+
+  return "eternum";
+};
+
+export const ETERNUM_CONFIG = (options: ConfigResolutionOptions = {}) => {
+  const chain = options.chain ?? (env.VITE_PUBLIC_CHAIN as Chain);
+  const gameType = resolveGameType(options);
+  return getConfigFromNetwork(chain, gameType);
 };
 
 export const TORII_SETTING = async (): Promise<string> => {

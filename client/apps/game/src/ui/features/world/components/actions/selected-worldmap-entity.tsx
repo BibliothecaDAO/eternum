@@ -4,12 +4,14 @@ import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
 } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
+import { FaithDevotionActionPanel } from "@/ui/features/world/components/actions/faith-devotion-action-panel";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
+import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { battleSimulation } from "@/ui/features/world/components/config";
-import { HexPosition, ID, TileOccupier } from "@bibliothecadao/types";
+import { HexPosition, ID, StructureType, TileOccupier } from "@bibliothecadao/types";
 import {
   Biome,
   Position,
@@ -60,7 +62,6 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const hasOccupier = !!tile && Number(tile.occupier_id) !== 0;
   const occupierType = tile?.occupier_type ?? 0;
   const isSpire = occupierType === TileOccupier.Spire;
-  const isHolySite = occupierType === TileOccupier.HolySite;
   const isStructure = Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
   const isChest = isTileOccupierChest(occupierType);
   const isQuest = isTileOccupierQuest(occupierType);
@@ -126,11 +127,11 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
             {...sharedDetailProps}
           />
           <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            {isHolySite ? (
-              <HolySiteDevotionPanel />
-            ) : (
-              <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-            )}
+            <SelectedStructureActionPanel
+              structureEntityId={occupierEntityId}
+              biome={biome}
+              onSimulateBattle={handleSimulateBattle}
+            />
           </EntityDetailSection>
         </div>
       ) : isChest ? (
@@ -159,6 +160,33 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
       )}
     </div>
   );
+};
+
+const SelectedStructureActionPanel = ({
+  structureEntityId,
+  biome,
+  onSimulateBattle,
+}: {
+  structureEntityId: ID;
+  biome: ReturnType<typeof Biome.getBiome>;
+  onSimulateBattle: () => void;
+}) => {
+  const { structure, isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
+
+  const structureCategory = structure?.base?.category;
+  const isFaithEligible =
+    structureCategory !== undefined &&
+    [StructureType.Realm, StructureType.Village].includes(Number(structureCategory) as StructureType);
+
+  if (isLoadingStructure) {
+    return <div className="flex h-full items-center justify-center text-xxs text-gold/70">Loading structure...</div>;
+  }
+
+  if (isFaithEligible) {
+    return <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="compact" />;
+  }
+
+  return <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />;
 };
 
 const RelicCrateSummaryPanel = ({ crateEntityId }: { crateEntityId: ID }) => {
@@ -190,27 +218,6 @@ const SpireTravelPanel = ({ onTravelToEtherealLayer }: { onTravelToEtherealLayer
         onClick={onTravelToEtherealLayer}
       >
         Travel to Ethereal Layer
-      </Button>
-    </div>
-  );
-};
-
-const HolySiteDevotionPanel = () => {
-  return (
-    <div className="flex h-full flex-col justify-between gap-3">
-      <div className="flex flex-col gap-1 text-left">
-        <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Holy Site</span>
-        <span className="text-sm font-semibold text-gold">Devotion</span>
-        <p className="text-xxs text-gold/70">Faith interactions are not enabled in this client build yet.</p>
-      </div>
-      <Button
-        size="xs"
-        variant="outline"
-        forceUppercase={false}
-        className="w-full border-gold/40 bg-gold/10 text-gold/80"
-        disabled
-      >
-        Devotion (Coming Soon)
       </Button>
     </div>
   );

@@ -14,6 +14,7 @@ export { Guilds } from "./guilds/guilds";
 // Player Interactions - Exports used externally
 export { PlayerList, type PlayerCustom } from "./player/player-list";
 export { PlayersPanel } from "./player/players-panel";
+export { FaithLeaderboardPanel } from "./faith";
 
 // Social Components - Exports used externally
 export { EndSeasonButton } from "./components/end-season-button";

@@ -88,21 +88,6 @@ const handleNoAccount = (modalContent: ReactNode) => {
   uiStore.setModal(modalContent, true);
 };
 
-const resolveWorldConfigGameType = async (toriiUrl: string): Promise<"blitz" | "eternum"> => {
-  try {
-    const query = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-    const response = await fetch(`${toriiUrl}/sql?query=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-      return "blitz";
-    }
-
-    const [row] = (await response.json()) as Array<{ blitz_mode_on?: unknown }>;
-    return row?.blitz_mode_on === false || row?.blitz_mode_on === 0 || row?.blitz_mode_on === "0" ? "eternum" : "blitz";
-  } catch {
-    return "blitz";
-  }
-};
-
 const runBootstrap = async (): Promise<BootstrapResult> => {
   const uiStore = useUIStore.getState();
   const syncingStore = useSyncStore.getState();
@@ -216,8 +201,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   console.log("[INITIAL SYNC COMPLETED]");
 
-  const resolvedGameType = await resolveWorldConfigGameType(toriiUrl);
-  configManager.setDojo(setupResult.components, ETERNUM_CONFIG(resolvedGameType));
+  configManager.setDojo(setupResult.components, ETERNUM_CONFIG({ chain, components: setupResult.components }));
 
   // Store the cleanup function so we can call it when navigating away
   gameRendererCleanup = await initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
