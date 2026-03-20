@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createFastTravelRenderAssets } from "./fast-travel-render-assets";
 import { createFastTravelSurfacePalette } from "./fast-travel-surface-material";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 describe("fast-travel render assets", () => {
   it("reuses shared geometries and materials across repeated mesh creation", () => {
@@ -37,5 +40,12 @@ describe("fast-travel render assets", () => {
     expect(edgeMaterialDisposeSpy).toHaveBeenCalledTimes(1);
     expect(armyGeometryDisposeSpy).toHaveBeenCalledTimes(1);
     expect(armyMaterialDisposeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps scene-level render asset ownership stable across refreshes", () => {
+    const currentDir = dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(resolve(currentDir, "fast-travel.ts"), "utf8");
+
+    expect(source.match(/createFastTravelRenderAssets\(\)/g)).toHaveLength(1);
   });
 });

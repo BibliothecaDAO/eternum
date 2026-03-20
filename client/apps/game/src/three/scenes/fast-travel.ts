@@ -2,7 +2,7 @@ import type { SetupResult } from "@bibliothecadao/dojo";
 import { PathRenderer } from "../managers/path-renderer";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
 import { SelectionPulseManager } from "../managers/selection-pulse-manager";
-import { Color, Group, Mesh, Raycaster, Vector2, Vector3 } from "three";
+import { Color, type Fog, type FogExp2, Group, Mesh, Raycaster, type Texture, Vector2, Vector3 } from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
 import type { SceneManager } from "../scene-manager";
@@ -47,6 +47,8 @@ export default class FastTravelScene extends WarpTravel {
   private pendingChunkRefreshForce = false;
   private hasCompletedSwitchOffCleanup = false;
   private hasDisposedFastTravelOwnedResources = false;
+  private savedBackground: Color | Texture | null = null;
+  private savedFog: Fog | FogExp2 | null = null;
   private readonly chunkRefreshDebounceMs = FAST_TRAVEL_CHUNK_POLICY.refreshDebounceMs;
   private handleFastTravelControlsChange = (): void => {
     if (this.isSwitchedOff || this.sceneManager.getCurrentScene() !== SceneName.FastTravel) {
@@ -72,6 +74,7 @@ export default class FastTravelScene extends WarpTravel {
     this.pathRenderer = new PathRenderer();
     this.renderAssets = createFastTravelRenderAssets();
     this.pathRenderer.initialize(this.scene);
+    this.pathRenderer.setVisibilityManager(this.visibilityManager);
     this.scene.add(this.travelSurfaceGroup);
     this.scene.add(this.travelContentGroup);
   }
@@ -107,6 +110,8 @@ export default class FastTravelScene extends WarpTravel {
     this.controls.enableZoom = true;
     this.interactiveHexManager.setSurfaceVisibility(false);
     this.interactiveHexManager.setHoverVisualMode("outline");
+    this.savedBackground = this.scene.background;
+    this.savedFog = this.scene.fog;
     this.scene.background = new Color("#000000");
     this.scene.fog = null;
   }
@@ -226,6 +231,7 @@ export default class FastTravelScene extends WarpTravel {
 
     this.runWarpTravelSwitchOffLifecycle();
     this.resetFastTravelRuntimeState();
+    this.restoreSavedSceneEnvironment();
     this.hasCompletedSwitchOffCleanup = true;
   }
 
@@ -593,6 +599,17 @@ export default class FastTravelScene extends WarpTravel {
     this.currentChunk = nextState.currentChunk;
     this.chunkRefreshTimeout = nextState.chunkRefreshTimeout;
     this.pendingChunkRefreshForce = nextState.pendingChunkRefreshForce;
+  }
+
+  private restoreSavedSceneEnvironment(): void {
+    if (this.savedBackground !== null) {
+      this.scene.background = this.savedBackground;
+      this.savedBackground = null;
+    }
+    if (this.savedFog !== null) {
+      this.scene.fog = this.savedFog;
+      this.savedFog = null;
+    }
   }
 
   private clearTravelVisualGroups(): void {

@@ -9,7 +9,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { PrizePanel } from "@/ui/features/prize";
 import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
+import { FaithLeaderboardPanel, GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
@@ -17,7 +17,7 @@ import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { Shapes, TrendingUp, Users } from "lucide-react";
+import { Shapes, Sparkles, TrendingUp, Users } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
@@ -218,6 +218,20 @@ export const Social = () => {
       });
     }
 
+    if (mode.id === "eternum") {
+      baseTabs.push({
+        key: "Faith",
+        label: (
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} />
+            <span>Faith</span>
+          </div>
+        ),
+        component: <FaithLeaderboardPanel />,
+        expandedContent: null,
+      });
+    }
+
     baseTabs.push({
       key: "Blitz Prize",
       label: (
@@ -271,48 +285,13 @@ export const Social = () => {
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
+  const { isSyncing } = useSyncLeaderboard({ auto: isOpen, skip: !isOpen });
 
   useEffect(() => {
     if (tabsLength > 0 && activeTabIndex !== selectedTab) {
       setSelectedTab(activeTabIndex);
     }
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
-
-  const SocialContent = () => {
-    const { isSyncing } = useSyncLeaderboard();
-    return isSyncing ? (
-      <LoadingAnimation />
-    ) : (
-      <Tabs
-        size="small"
-        selectedIndex={activeTabIndex}
-        onChange={(index: number) => {
-          setSelectedTab(index);
-          setIsExpanded(false);
-          setSelectedPlayer(0n);
-        }}
-        className="h-full mt-3"
-      >
-        <div className="flex flex-col h-full">
-          <Tabs.List className="">
-            {tabs.map((tab) => (
-              <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
-                {tab.label}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-
-          <Tabs.Panels className="overflow-hidden flex-1">
-            {tabs.map((tab) => (
-              <Tabs.Panel key={tab.key} className="h-full">
-                {tab.component}
-              </Tabs.Panel>
-            ))}
-          </Tabs.Panels>
-        </div>
-      </Tabs>
-    );
-  };
 
   return (
     <ExpandableOSWindow
@@ -326,7 +305,40 @@ export const Social = () => {
       childrenExpanded={tabs[activeTabIndex]?.expandedContent ?? null}
       isExpanded={isExpanded}
     >
-      {isOpen ? <SocialContent /> : null}
+      {isOpen ? (
+        isSyncing ? (
+          <LoadingAnimation />
+        ) : (
+          <Tabs
+            size="small"
+            selectedIndex={activeTabIndex}
+            onChange={(index: number) => {
+              setSelectedTab(index);
+              setIsExpanded(false);
+              setSelectedPlayer(0n);
+            }}
+            className="h-full mt-3"
+          >
+            <div className="flex flex-col h-full">
+              <Tabs.List className="">
+                {tabs.map((tab) => (
+                  <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
+                    {tab.label}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+
+              <Tabs.Panels className="overflow-hidden flex-1">
+                {tabs.map((tab) => (
+                  <Tabs.Panel key={tab.key} className="h-full">
+                    {tab.component}
+                  </Tabs.Panel>
+                ))}
+              </Tabs.Panels>
+            </div>
+          </Tabs>
+        )
+      ) : null}
     </ExpandableOSWindow>
   );
 };

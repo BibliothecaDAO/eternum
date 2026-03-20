@@ -186,8 +186,6 @@ export const TopHeader = memo(() => {
               )}
             </div>
 
-            <div className="h-6 w-px bg-gold/20" />
-
             <div className="flex flex-shrink-0 flex-nowrap items-center gap-3 text-xs md:text-base">
               <div className="cycle-selector flex justify-center md:justify-start gap-2 whitespace-nowrap">
                 <TickProgress />

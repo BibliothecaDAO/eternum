@@ -106,7 +106,7 @@ export class CentralizedVisibilityManager {
 
   // Registered chunks
   private chunkBounds: Map<string, ChunkBoundsData> = new Map();
-  private chunkRegistrationOrder: string[] = [];
+  private chunkRegistrationOrder: Set<string> = new Set();
 
   // Configuration
   private config: VisibilityManagerConfig;
@@ -221,7 +221,7 @@ export class CentralizedVisibilityManager {
    */
   registerChunk(chunkKey: string, bounds: ChunkBoundsData): void {
     if (!this.chunkBounds.has(chunkKey)) {
-      this.chunkRegistrationOrder.push(chunkKey);
+      this.chunkRegistrationOrder.add(chunkKey);
     }
 
     this.chunkBounds.set(chunkKey, {
@@ -242,10 +242,7 @@ export class CentralizedVisibilityManager {
   unregisterChunk(chunkKey: string): void {
     this.chunkBounds.delete(chunkKey);
     this.frameState.visibleChunks.delete(chunkKey);
-    const idx = this.chunkRegistrationOrder.indexOf(chunkKey);
-    if (idx !== -1) {
-      this.chunkRegistrationOrder.splice(idx, 1);
-    }
+    this.chunkRegistrationOrder.delete(chunkKey);
     this.isDirty = true;
 
     if (this.config.debug) {
@@ -553,11 +550,12 @@ export class CentralizedVisibilityManager {
       return;
     }
 
-    while (this.chunkRegistrationOrder.length > this.config.maxRegisteredChunks) {
-      const oldest = this.chunkRegistrationOrder.shift();
+    while (this.chunkRegistrationOrder.size > this.config.maxRegisteredChunks) {
+      const oldest = this.chunkRegistrationOrder.values().next().value;
       if (!oldest) {
         break;
       }
+      this.chunkRegistrationOrder.delete(oldest);
       this.chunkBounds.delete(oldest);
       this.frameState.visibleChunks.delete(oldest);
       if (this.config.debug) {

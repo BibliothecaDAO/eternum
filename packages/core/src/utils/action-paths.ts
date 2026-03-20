@@ -1,4 +1,5 @@
 import { BiomeType, HexPosition } from "@bibliothecadao/types";
+import { resolveActionHighlightDescriptors, type ActionHighlightDescriptor } from "./action-highlight-descriptors";
 import { FELT_CENTER } from "./utils";
 
 export type ActionPath = {
@@ -47,27 +48,15 @@ export class ActionPaths {
     return this.paths.values();
   }
 
+  getHighlightDescriptors(): ActionHighlightDescriptor[] {
+    return resolveActionHighlightDescriptors(this.paths.values(), this.FELT_CENTER);
+  }
+
   getHighlightedHexes(): ActionPath[] {
-    const seen = new Set<string>();
-    return Array.from(this.paths.values()).flatMap((path) => {
-      // Skip first element of each path
-      const remainingPath = path.slice(1);
-      return remainingPath
-        .map((hex) => {
-          const col = hex.hex.col - this.FELT_CENTER;
-          const row = hex.hex.row - this.FELT_CENTER;
-          const key = `${col},${row}`;
-          if (seen.has(key)) {
-            return null;
-          }
-          seen.add(key);
-          return {
-            hex: { col, row },
-            actionType: hex.actionType,
-          };
-        })
-        .filter((hex): hex is ActionPath => hex !== null);
-    });
+    return this.getHighlightDescriptors().map((descriptor) => ({
+      hex: descriptor.hex,
+      actionType: descriptor.actionType,
+    }));
   }
 
   isHighlighted(row: number, col: number): boolean {

@@ -5,24 +5,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Download from "lucide-react/dist/esm/icons/download";
 
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactorySeriesIndex, type FactorySeriesIndex } from "@/hooks/use-factory-series-index";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
-import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { useWorldsAvailability } from "@/hooks/use-world-availability";
-import {
-  claimGameReviewRewardsForPlayers,
-  fetchGameReviewUnclaimedPlayers,
-} from "@/services/review/game-review-service";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 import type { Chain } from "@contracts";
-import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import { SCORE_TO_BEAT_STATIC_GAMES } from "@/services/leaderboard/landing-leaderboard-service";
 import { useScoreToBeat } from "@/services/leaderboard/use-score-to-beat";
 
+const MAX_GAMES = 10;
 const DEFAULT_RUNS_TO_AGGREGATE = 3;
 const RUNS_TO_AGGREGATE_OPTIONS = [1, 2, 3, 4] as const;
 const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
@@ -45,16 +38,6 @@ const formatPoints = (points: number) =>
   Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(points ?? 0);
-
-const formatCount = (value: number) =>
-  Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Math.max(0, Math.floor(value ?? 0)));
-
-const formatLords = (value: number) =>
-  Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 2,
-  }).format(Math.max(0, value ?? 0));
 
 const getRelativeTimeLabel = (timestamp: number | null, fallback: string) => {
   if (!timestamp) {
@@ -197,33 +180,12 @@ const resolveSelectedGameNames = (
 const getSelectorCountLabel = (count: number, singular: string, plural: string): string =>
   `${count} ${count === 1 ? singular : plural}`;
 
-const getErrorMessage = (error: unknown): string => {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message?: unknown }).message === "string"
-  ) {
-    return (error as { message: string }).message;
-  }
-
-  return "Unknown error";
-};
-
-const buildClaimGameKey = (chain: Chain, gameName: string): string => `${chain}:${gameName}`;
-
 export const ScoreToBeatPanel = () => {
-  const queryClient = useQueryClient();
-  const account = useAccountStore((state) => state.account);
   const [selectedChain, setSelectedChain] = useState<Chain>(() => loadStoredChain() ?? "mainnet");
   const [selectedGames, setSelectedGames] = useState<string[]>(() => {
     const storedGames = loadStoredSelectedGames();
     const chainDefaultGames = selectedChain === "mainnet" ? [...SCORE_TO_BEAT_STATIC_GAMES] : [];
-    return storedGames ?? chainDefaultGames;
+    return (storedGames ?? chainDefaultGames).slice(0, MAX_GAMES);
   });
   const [selectedSeries, setSelectedSeries] = useState<string[]>(() => loadStoredSelectedSeries() ?? []);
   const [runsToAggregate, setRunsToAggregate] = useState<number>(
@@ -232,8 +194,6 @@ export const ScoreToBeatPanel = () => {
   const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(true);
   const [selectorMode, setSelectorMode] = useState<SelectorMode>("games");
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
-  const [activeClaimGame, setActiveClaimGame] = useState<string | null>(null);
-  const [optimisticClaimedByGame, setOptimisticClaimedByGame] = useState<Record<string, string[]>>({});
 
   // Fetch available games from factory
   const { worlds: factoryWorlds, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
@@ -280,25 +240,36 @@ export const ScoreToBeatPanel = () => {
     [availableSeries],
   );
 
-  const filteredSelectedGames = useMemo(
-    () => selectedGames.filter((gameName) => availableGameNamesSet.has(gameName)),
-    [selectedGames, availableGameNamesSet],
-  );
+  useEffect(() => {
+    setSelectedGames((current) => {
+      const filtered = current.filter((gameName) => availableGameNamesSet.has(gameName));
+      return filtered.length === current.length ? current : filtered;
+    });
+  }, [availableGameNamesSet]);
 
-  const filteredSelectedSeries = useMemo(
-    () => selectedSeries.filter((seriesName) => availableSeriesByName.has(seriesName)),
-    [selectedSeries, availableSeriesByName],
-  );
+  useEffect(() => {
+    setSelectedSeries((current) => {
+      const filtered = current.filter((seriesName) => availableSeriesByName.has(seriesName));
+      return filtered.length === current.length ? current : filtered;
+    });
+  }, [availableSeriesByName]);
 
   const resolvedSelectedGameNames = useMemo(
-    () => resolveSelectedGameNames(filteredSelectedGames, filteredSelectedSeries, availableSeriesByName),
-    [filteredSelectedGames, filteredSelectedSeries, availableSeriesByName],
+    () => resolveSelectedGameNames(selectedGames, selectedSeries, availableSeriesByName),
+    [selectedGames, selectedSeries, availableSeriesByName],
   );
+
+  const cappedSelectedGameNames = useMemo(
+    () => resolvedSelectedGameNames.slice(0, MAX_GAMES),
+    [resolvedSelectedGameNames],
+  );
+
+  const omittedSelectedGameCount = Math.max(0, resolvedSelectedGameNames.length - cappedSelectedGameNames.length);
 
   // Build endpoints from selected games and selected series games
   const resolvedEndpoints = useMemo(
-    () => resolvedSelectedGameNames.map((name) => buildToriiSqlUrl(name)),
-    [resolvedSelectedGameNames],
+    () => cappedSelectedGameNames.map((name) => buildToriiSqlUrl(name)),
+    [cappedSelectedGameNames],
   );
 
   // Persist preferences
@@ -310,15 +281,15 @@ export const ScoreToBeatPanel = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(SCORE_TO_BEAT_GAMES_STORAGE_KEY, JSON.stringify(filteredSelectedGames));
+      window.localStorage.setItem(SCORE_TO_BEAT_GAMES_STORAGE_KEY, JSON.stringify(selectedGames));
     }
-  }, [filteredSelectedGames]);
+  }, [selectedGames]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(SCORE_TO_BEAT_SERIES_STORAGE_KEY, JSON.stringify(filteredSelectedSeries));
+      window.localStorage.setItem(SCORE_TO_BEAT_SERIES_STORAGE_KEY, JSON.stringify(selectedSeries));
     }
-  }, [filteredSelectedSeries]);
+  }, [selectedSeries]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -337,128 +308,43 @@ export const ScoreToBeatPanel = () => {
     refresh,
   } = useScoreToBeat(resolvedEndpoints, runsToAggregate);
 
-  const claimStatusQueries = useQueries({
-    queries: resolvedSelectedGameNames.map((gameName) => ({
-      queryKey: ["gameReviewUnclaimedPlayers", selectedChain, gameName],
-      queryFn: () =>
-        fetchGameReviewUnclaimedPlayers({
-          worldName: gameName,
-          chain: selectedChain,
-        }),
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
-      retry: 1,
-    })),
-  });
+  const handleToggleGame = useCallback(
+    (gameName: string) => {
+      setSelectedGames((current) => {
+        if (current.includes(gameName)) {
+          return current.filter((name) => name !== gameName);
+        }
 
-  const claimStatusByGame = useMemo(() => {
-    const byGame = new Map<
-      string,
-      {
-        rankingFinalized: boolean;
-        totalRankedPlayers: number;
-        unclaimedPlayerAddresses: string[];
-        isLoading: boolean;
-        error: string | null;
-      }
-    >();
+        const next = [...current, gameName];
+        const projected = resolveSelectedGameNames(next, selectedSeries, availableSeriesByName);
+        if (projected.length > MAX_GAMES) {
+          return current;
+        }
 
-    resolvedSelectedGameNames.forEach((gameName, index) => {
-      const queryState = claimStatusQueries[index];
-      const data = queryState?.data;
-      byGame.set(gameName, {
-        rankingFinalized: data?.rankingFinalized ?? false,
-        totalRankedPlayers: data?.totalRankedPlayers ?? 0,
-        unclaimedPlayerAddresses: data?.unclaimedPlayers.map((player) => player.address) ?? [],
-        isLoading: queryState?.isLoading ?? false,
-        error: queryState?.error ? getErrorMessage(queryState.error) : null,
-      });
-    });
-
-    return byGame;
-  }, [claimStatusQueries, resolvedSelectedGameNames]);
-
-  const claimAllRewardsMutation = useMutation({
-    mutationFn: async ({ gameName, chain }: { gameName: string; chain: Chain }) => {
-      if (!account) {
-        throw new Error("Connect your wallet to claim rewards.");
-      }
-
-      const unclaimed = await fetchGameReviewUnclaimedPlayers({
-        worldName: gameName,
-        chain,
-      });
-
-      if (!unclaimed.rankingFinalized) {
-        throw new Error("Ranking is not finalized for this game yet.");
-      }
-
-      return claimGameReviewRewardsForPlayers({
-        worldName: gameName,
-        chain,
-        signer: account,
-        playerAddresses: unclaimed.unclaimedPlayers.map((player) => player.address),
+        return next;
       });
     },
-    onMutate: ({ gameName }) => {
-      setActiveClaimGame(gameName);
-    },
-    onSuccess: async (result, variables) => {
-      const claimKey = buildClaimGameKey(variables.chain, variables.gameName);
-      setOptimisticClaimedByGame((previous) => {
-        const existing = previous[claimKey] ?? [];
-        const merged = Array.from(new Set([...existing, ...result.playerAddresses]));
-        return {
-          ...previous,
-          [claimKey]: merged,
-        };
-      });
+    [selectedSeries, availableSeriesByName],
+  );
 
-      if (result.claimedPlayers > 0) {
-        toast.success(`Claimed ${result.claimedPlayers} player reward${result.claimedPlayers === 1 ? "" : "s"}.`, {
-          description: `${variables.gameName} updated in ${result.batchesSubmitted} batch${result.batchesSubmitted === 1 ? "" : "es"}.`,
-        });
-      } else {
-        toast("No unclaimed rewards left.", {
-          description: `${variables.gameName} is already fully claimed.`,
-        });
-      }
+  const handleToggleSeries = useCallback(
+    (seriesName: string) => {
+      setSelectedSeries((current) => {
+        if (current.includes(seriesName)) {
+          return current.filter((name) => name !== seriesName);
+        }
 
-      await queryClient.invalidateQueries({
-        queryKey: ["gameReviewUnclaimedPlayers", variables.chain, variables.gameName],
+        const next = [...current, seriesName];
+        const projected = resolveSelectedGameNames(selectedGames, next, availableSeriesByName);
+        if (projected.length > MAX_GAMES) {
+          return current;
+        }
+
+        return next;
       });
     },
-    onError: (error, variables) => {
-      toast.error(`Failed to claim rewards for ${variables.gameName}.`, {
-        description: getErrorMessage(error),
-      });
-    },
-    onSettled: () => {
-      setActiveClaimGame(null);
-    },
-  });
-
-  const handleToggleGame = useCallback((gameName: string) => {
-    setSelectedGames((current) => {
-      if (current.includes(gameName)) {
-        return current.filter((name) => name !== gameName);
-      }
-
-      const next = [...current, gameName];
-      return next;
-    });
-  }, []);
-
-  const handleToggleSeries = useCallback((seriesName: string) => {
-    setSelectedSeries((current) => {
-      if (current.includes(seriesName)) {
-        return current.filter((name) => name !== seriesName);
-      }
-
-      const next = [...current, seriesName];
-      return next;
-    });
-  }, []);
+    [selectedGames, availableSeriesByName],
+  );
 
   const handleClearSelected = useCallback(() => {
     setSelectedGames([]);
@@ -466,40 +352,24 @@ export const ScoreToBeatPanel = () => {
   }, []);
 
   const scoreToBeatRows = scoreToBeatEntries;
-  const scoreToBeatTopTen = scoreToBeatRows.slice(0, 10);
   const topScoreToBeat = scoreToBeatRows[0] ?? null;
   const scoreToBeatRuns = topScoreToBeat?.runs ?? [];
-  const scoreToBeatAddresses = scoreToBeatRows.map((entry) => entry.address);
-  const { data: avatarProfiles } = useAvatarProfiles(scoreToBeatAddresses);
-  const avatarMap = useMemo(() => {
-    const map = new Map<string, string>();
-    (avatarProfiles ?? []).forEach((profile) => {
-      const normalizedAddress = normalizeAvatarAddress(profile.playerAddress);
-      if (!normalizedAddress || !profile.avatarUrl) return;
-      map.set(normalizedAddress, profile.avatarUrl);
-    });
-    return map;
-  }, [avatarProfiles]);
   const topScoreToBeatLabel = topScoreToBeat
     ? (topScoreToBeat.displayName ?? displayAddress(topScoreToBeat.address))
-    : null;
-  const topScoreToBeatAddress = normalizeAvatarAddress(topScoreToBeat?.address ?? null);
-  const topScoreToBeatAvatarUrl = topScoreToBeatAddress
-    ? getAvatarUrl(topScoreToBeatAddress, avatarMap.get(topScoreToBeatAddress))
     : null;
 
   const updatedLabel = useMemo(() => getRelativeTimeLabel(lastUpdatedAt, "Awaiting sync"), [lastUpdatedAt]);
 
-  const totalGames = resolvedSelectedGameNames.length;
+  const totalGames = cappedSelectedGameNames.length;
   const failedGames = failedEndpoints.length;
   const activeSyncedGames = syncedEndpoints.length || totalGames;
   const syncedGames = Math.max(0, activeSyncedGames - failedGames);
   const gameLabel = totalGames > 0 ? `${syncedGames}/${totalGames} games selected` : "No games selected";
 
-  const hasSelections = filteredSelectedGames.length > 0 || filteredSelectedSeries.length > 0;
+  const hasSelections = selectedGames.length > 0 || selectedSeries.length > 0;
   const selectedSummary = [
-    getSelectorCountLabel(filteredSelectedGames.length, "game", "games"),
-    getSelectorCountLabel(filteredSelectedSeries.length, "series", "series"),
+    getSelectorCountLabel(selectedGames.length, "game", "games"),
+    getSelectorCountLabel(selectedSeries.length, "series", "series"),
   ].join(" + ");
 
   const isSelectorLoading = isLoadingGames || isCheckingWorlds || isLoadingSeries;
@@ -509,23 +379,10 @@ export const ScoreToBeatPanel = () => {
     if (scoreToBeatRows.length === 0 || typeof window === "undefined") return;
 
     const bestRunHeaders = Array.from({ length: runsToAggregate }, (_, index) => `Best run ${index + 1} score`);
-    const perGameHeaders = resolvedSelectedGameNames.flatMap((gameName) => [
-      `${gameName} score`,
-      `${gameName} chests`,
-      `${gameName} lords`,
-    ]);
+    const perGameHeaders = cappedSelectedGameNames.map((gameName) => `${gameName} score`);
 
     const rows = [
-      [
-        "Rank",
-        "Display name",
-        "Address",
-        "Combined score",
-        "Chests earned",
-        "Lords earned",
-        ...bestRunHeaders,
-        ...perGameHeaders,
-      ],
+      ["Rank", "Display name", "Address", "Combined score", ...bestRunHeaders, ...perGameHeaders],
       ...scoreToBeatRows.map((entry, index) => {
         const bestRunScores = Array.from({ length: runsToAggregate }, (_, runIndex) => {
           const run = entry.runs[runIndex];
@@ -533,20 +390,13 @@ export const ScoreToBeatPanel = () => {
         });
 
         const scoreByGame = new Map<string, number>();
-        const chestsByGame = new Map<string, number>();
-        const lordsByGame = new Map<string, number>();
         entry.allRuns.forEach((run) => {
-          const gameName = describeEndpoint(run.endpoint);
-          scoreByGame.set(gameName, run.points);
-          chestsByGame.set(gameName, run.chests);
-          lordsByGame.set(gameName, run.lords);
+          scoreByGame.set(describeEndpoint(run.endpoint), run.points);
         });
 
-        const perGameValues = resolvedSelectedGameNames.flatMap((gameName) => {
+        const perGameScores = cappedSelectedGameNames.map((gameName) => {
           const score = scoreByGame.get(gameName);
-          const chests = chestsByGame.get(gameName);
-          const lords = lordsByGame.get(gameName);
-          return [score == null ? "" : `${score}`, chests == null ? "" : `${chests}`, lords == null ? "" : `${lords}`];
+          return score == null ? "" : `${score}`;
         });
 
         return [
@@ -554,10 +404,8 @@ export const ScoreToBeatPanel = () => {
           entry.displayName ?? displayAddress(entry.address),
           entry.address,
           `${entry.combinedPoints ?? 0}`,
-          `${entry.combinedChests ?? 0}`,
-          `${entry.combinedLords ?? 0}`,
           ...bestRunScores,
-          ...perGameValues,
+          ...perGameScores,
         ];
       }),
     ];
@@ -593,17 +441,7 @@ export const ScoreToBeatPanel = () => {
                 {formatPoints(topScoreToBeat.combinedPoints)}
                 <span className="text-lg font-normal text-gold/60">pts</span>
               </p>
-              <div className="mt-2 flex items-center gap-2">
-                {topScoreToBeatAvatarUrl && (
-                  <img
-                    src={topScoreToBeatAvatarUrl}
-                    alt={`${topScoreToBeatLabel ?? "Player"} avatar`}
-                    className="h-7 w-7 rounded-full border border-gold/20 object-cover"
-                    loading="lazy"
-                  />
-                )}
-                <p className="text-sm text-gold/60">{(topScoreToBeatLabel ?? "Unknown").trim()} leads the pack</p>
-              </div>
+              <p className="mt-1 text-sm text-gold/60">{(topScoreToBeatLabel ?? "Unknown").trim()} leads the pack</p>
             </>
           ) : (
             <p className="mt-2 text-sm text-gold/60">
@@ -711,7 +549,11 @@ export const ScoreToBeatPanel = () => {
               <span className="text-gold/50">{selectedSummary}</span>
             </div>
 
-            <div className="text-xs text-gold/40">{resolvedSelectedGameNames.length} resolved games</div>
+            <div className="text-xs text-gold/40">
+              {cappedSelectedGameNames.length}/{MAX_GAMES} resolved games
+              {omittedSelectedGameCount > 0 &&
+                ` (using first ${MAX_GAMES}, ${omittedSelectedGameCount} omitted from selected series/games)`}
+            </div>
 
             {isSelectorLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -725,14 +567,23 @@ export const ScoreToBeatPanel = () => {
               ) : (
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                   {availableGameNames.map((gameName) => {
-                    const isSelected = filteredSelectedGames.includes(gameName);
+                    const isSelected = selectedGames.includes(gameName);
+                    const isDisabled =
+                      !isSelected &&
+                      resolveSelectedGameNames([...selectedGames, gameName], selectedSeries, availableSeriesByName)
+                        .length > MAX_GAMES;
                     return (
                       <button
                         key={gameName}
                         type="button"
                         onClick={() => handleToggleGame(gameName)}
+                        disabled={isDisabled}
                         className={`rounded-lg px-3 py-2 text-left text-sm transition ${
-                          isSelected ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                          isSelected
+                            ? "bg-gold/20 text-gold"
+                            : isDisabled
+                              ? "cursor-not-allowed text-gold/30"
+                              : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                         }`}
                       >
                         <span className="block truncate">{gameName}</span>
@@ -748,15 +599,24 @@ export const ScoreToBeatPanel = () => {
             ) : (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {availableSeries.map((series) => {
-                  const isSelected = filteredSelectedSeries.includes(series.name);
+                  const isSelected = selectedSeries.includes(series.name);
+                  const isDisabled =
+                    !isSelected &&
+                    resolveSelectedGameNames(selectedGames, [...selectedSeries, series.name], availableSeriesByName)
+                      .length > MAX_GAMES;
 
                   return (
                     <button
                       key={series.name}
                       type="button"
                       onClick={() => handleToggleSeries(series.name)}
+                      disabled={isDisabled}
                       className={`rounded-lg px-3 py-2 text-left text-sm transition ${
-                        isSelected ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                        isSelected
+                          ? "bg-gold/20 text-gold"
+                          : isDisabled
+                            ? "cursor-not-allowed text-gold/30"
+                            : "text-gold/60 hover:bg-gold/10 hover:text-gold"
                       }`}
                     >
                       <span className="block truncate font-medium">{series.name}</span>
@@ -775,7 +635,7 @@ export const ScoreToBeatPanel = () => {
                   Clear all
                 </button>
                 <span className="text-gold/30">|</span>
-                {filteredSelectedGames.map((name) => (
+                {selectedGames.map((name) => (
                   <span
                     key={`game:${name}`}
                     className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-1 text-xs text-gold"
@@ -790,7 +650,7 @@ export const ScoreToBeatPanel = () => {
                     </button>
                   </span>
                 ))}
-                {filteredSelectedSeries.map((name) => (
+                {selectedSeries.map((name) => (
                   <span
                     key={`series:${name}`}
                     className="inline-flex items-center gap-1 rounded-full bg-cyan-400/10 px-2 py-1 text-xs text-cyan-200"
@@ -810,75 +670,6 @@ export const ScoreToBeatPanel = () => {
           </div>
         )}
       </div>
-
-      {resolvedSelectedGameNames.length > 0 && (
-        <div className="rounded-xl border border-gold/15 bg-black/30 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-gold">Tournament Reward Claims</h3>
-            {!account && <span className="text-xs text-gold/60">Connect wallet to claim.</span>}
-          </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {resolvedSelectedGameNames.map((gameName) => {
-              const claimStatus = claimStatusByGame.get(gameName);
-              const rawUnclaimedPlayerAddresses = claimStatus?.unclaimedPlayerAddresses ?? [];
-              const optimisticClaimKey = buildClaimGameKey(selectedChain, gameName);
-              const optimisticClaimedAddresses = optimisticClaimedByGame[optimisticClaimKey] ?? [];
-              const optimisticClaimedAddressSet = new Set(optimisticClaimedAddresses);
-              const unclaimedPlayers = rawUnclaimedPlayerAddresses.filter(
-                (address) => !optimisticClaimedAddressSet.has(address),
-              ).length;
-              const totalRankedPlayers = claimStatus?.totalRankedPlayers ?? 0;
-              const claimedPlayers = Math.max(0, totalRankedPlayers - unclaimedPlayers);
-              const isLoadingStatus = claimStatus?.isLoading ?? false;
-              const statusError = claimStatus?.error;
-              const rankingFinalized = claimStatus?.rankingFinalized ?? false;
-              const isClaimingThisGame = claimAllRewardsMutation.isPending && activeClaimGame === gameName;
-
-              const claimDisabled =
-                isLoadingStatus ||
-                !account ||
-                !rankingFinalized ||
-                unclaimedPlayers === 0 ||
-                Boolean(statusError) ||
-                (claimAllRewardsMutation.isPending && activeClaimGame !== gameName);
-
-              return (
-                <div key={`claim:${gameName}`} className="rounded-lg border border-gold/15 bg-black/40 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-gold" title={gameName}>
-                      {gameName}
-                    </span>
-                    <span className="text-[11px] text-gold/60">
-                      {rankingFinalized
-                        ? `${claimedPlayers}/${totalRankedPlayers} claimed`
-                        : isLoadingStatus
-                          ? "Checking..."
-                          : "Ranking pending"}
-                    </span>
-                  </div>
-
-                  {statusError && <p className="mt-2 text-xs text-red-300">{statusError}</p>}
-
-                  <button
-                    type="button"
-                    onClick={() => claimAllRewardsMutation.mutate({ gameName, chain: selectedChain })}
-                    disabled={claimDisabled}
-                    className="mt-3 w-full rounded-lg border border-brilliance/40 bg-brilliance/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-brilliance transition hover:bg-brilliance/25 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isClaimingThisGame
-                      ? "Claiming..."
-                      : !rankingFinalized
-                        ? "Ranking Pending"
-                        : unclaimedPlayers > 0
-                          ? `Claim All (${unclaimedPlayers})`
-                          : "All Claimed"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Top score runs */}
       {scoreToBeatRuns.length > 0 && (
@@ -903,25 +694,12 @@ export const ScoreToBeatPanel = () => {
                   <th className="px-6 py-4 font-medium">Rank</th>
                   <th className="px-6 py-4 font-medium">Player</th>
                   <th className="px-6 py-4 text-right font-medium">Score</th>
-                  <th className="px-6 py-4 text-right font-medium">Chests earned</th>
-                  <th className="px-6 py-4 text-right font-medium">
-                    <span className="inline-flex items-center justify-end gap-1">
-                      <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
-                      <span>Lords earned</span>
-                    </span>
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gold/5">
                 {scoreToBeatRows.map((entry, index) => {
                   const rank = index + 1;
                   const isExpanded = activeExpandedAddress === entry.address;
-                  const normalizedAddress = normalizeAvatarAddress(entry.address);
-                  const avatarSeedAddress = normalizedAddress ?? entry.address;
-                  const avatarUrl = getAvatarUrl(
-                    avatarSeedAddress,
-                    normalizedAddress ? avatarMap.get(normalizedAddress) : undefined,
-                  );
 
                   return (
                     <tr
@@ -931,41 +709,26 @@ export const ScoreToBeatPanel = () => {
                     >
                       <td className="px-6 py-4 text-gold/50">#{rank}</td>
                       <td className="px-6 py-4">
-                        <div className="flex items-start gap-3">
-                          <img
-                            src={avatarUrl}
-                            alt={`${entry.displayName ?? displayAddress(entry.address)} avatar`}
-                            className="mt-0.5 h-8 w-8 rounded-full border border-gold/20 object-cover"
-                            loading="lazy"
-                          />
-                          <div className="flex flex-col">
-                            <span className="font-medium text-gold">
-                              {entry.displayName ?? displayAddress(entry.address)}
-                            </span>
-                            {entry.displayName && (
-                              <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
-                            )}
-                            {isExpanded && entry.runs.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {entry.runs.map((run, i) => (
-                                  <span key={i} className="rounded bg-gold/10 px-2 py-1 text-xs text-gold/70">
-                                    {describeEndpoint(run.endpoint)}: {formatPoints(run.points)}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gold">
+                            {entry.displayName ?? displayAddress(entry.address)}
+                          </span>
+                          {entry.displayName && (
+                            <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
+                          )}
+                          {isExpanded && entry.runs.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {entry.runs.map((run, i) => (
+                                <span key={i} className="rounded bg-gold/10 px-2 py-1 text-xs text-gold/70">
+                                  {describeEndpoint(run.endpoint)}: {formatPoints(run.points)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right text-lg font-semibold text-gold">
                         {formatPoints(entry.combinedPoints)}
-                      </td>
-                      <td className="px-6 py-4 text-right text-gold/80">{formatCount(entry.combinedChests)}</td>
-                      <td className="px-6 py-4 text-right text-gold/80">
-                        <span className="inline-flex items-center justify-end gap-1">
-                          <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
-                          <span>{formatLords(entry.combinedLords)}</span>
-                        </span>
                       </td>
                     </tr>
                   );
@@ -980,7 +743,7 @@ export const ScoreToBeatPanel = () => {
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center py-16 text-gold/50">
-          {resolvedSelectedGameNames.length === 0
+          {cappedSelectedGameNames.length === 0
             ? "Select games or series above to see the leaderboard"
             : "No scores found yet"}
         </div>

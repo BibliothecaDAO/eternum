@@ -11,6 +11,8 @@ export class InputManager {
   private currentDragListener: ((e: MouseEvent) => void) | null = null;
   private currentMouseUpListener: ((e: MouseEvent) => void) | null = null;
   private mouseDownHandler: (e: MouseEvent) => void;
+  private surface: HTMLElement | null = null;
+  private isActive = false;
   private isDestroyed = false;
 
   constructor(
@@ -21,7 +23,41 @@ export class InputManager {
     private camera: THREE.Camera,
   ) {
     this.mouseDownHandler = this.handleMouseDown.bind(this);
-    window.addEventListener("mousedown", this.mouseDownHandler);
+  }
+
+  setSurface(surface: HTMLElement): void {
+    if (this.surface === surface) {
+      return;
+    }
+
+    if (this.isActive) {
+      this.pauseListeners();
+    }
+
+    this.surface = surface;
+
+    if (this.isActive) {
+      this.restartListeners();
+    }
+  }
+
+  activate(): void {
+    if (this.isDestroyed || this.isActive) {
+      return;
+    }
+
+    this.isActive = true;
+    this.restartListeners();
+  }
+
+  deactivate(): void {
+    if (!this.isActive) {
+      return;
+    }
+
+    this.pauseListeners();
+    this.cleanupDragListeners();
+    this.isActive = false;
   }
 
   addListener(event: ListenerTypes, callback: (event: MouseEvent, raycaster: THREE.Raycaster) => void): void {
@@ -34,8 +70,14 @@ export class InputManager {
         e.preventDefault();
       }
 
-      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      const bounds = this.surface?.getBoundingClientRect();
+      const width = bounds?.width || window.innerWidth;
+      const height = bounds?.height || window.innerHeight;
+      const left = bounds?.left || 0;
+      const top = bounds?.top || 0;
+
+      this.mouse.x = ((e.clientX - left) / width) * 2 - 1;
+      this.mouse.y = -((e.clientY - top) / height) * 2 + 1;
       this.raycaster.setFromCamera(this.mouse, this.camera);
 
       if (event === "click") {
@@ -50,18 +92,29 @@ export class InputManager {
       }
     };
     this.listeners.push({ event, handler });
-    window.addEventListener(event, handler);
+    if (this.isActive && this.surface) {
+      this.surface.addEventListener(event, handler);
+    }
   }
 
   restartListeners(): void {
+    if (!this.surface) {
+      return;
+    }
+
+    this.surface.addEventListener("mousedown", this.mouseDownHandler);
     for (const listener of this.listeners) {
-      window.addEventListener(listener.event, listener.handler);
+      this.surface.addEventListener(listener.event, listener.handler);
     }
   }
 
   pauseListeners(): void {
+    if (this.surface) {
+      this.surface.removeEventListener("mousedown", this.mouseDownHandler);
+    }
+
     for (const listener of this.listeners) {
-      window.removeEventListener(listener.event, listener.handler);
+      this.surface?.removeEventListener(listener.event, listener.handler);
     }
   }
 
@@ -109,7 +162,7 @@ export class InputManager {
     this.isDestroyed = true;
 
     // Clean up main mousedown handler
-    window.removeEventListener("mousedown", this.mouseDownHandler);
+    this.deactivate();
 
     // Clean up any active drag listeners
     this.cleanupDragListeners();

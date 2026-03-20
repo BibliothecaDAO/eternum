@@ -1,42 +1,60 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-function readGameRendererSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const rendererPath = resolve(currentDir, "game-renderer.ts");
-  return readFileSync(rendererPath, "utf8");
-}
+import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
+import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
+import { SceneName } from "./types";
 
 describe("GameRenderer fast-travel bootstrap", () => {
-  it("registers a concrete fast-travel scene with the scene manager only when enabled", () => {
-    const source = readGameRendererSource();
-
-    expect(source).toMatch(/import FastTravelScene from ["']@\/three\/scenes\/fast-travel["']/);
-    expect(source).toMatch(/private fastTravelScene\?: FastTravelScene;/);
-    expect(source).toMatch(/private isFastTravelEnabled\(\): boolean/);
-    expect(source).toMatch(/if \(this\.isFastTravelEnabled\(\)\)/);
-    expect(source).toMatch(/this\.fastTravelScene = new FastTravelScene\(/);
-    expect(source).toMatch(/this\.sceneManager\.addScene\(SceneName\.FastTravel, this\.fastTravelScene\)/);
+  it("resolves the fast-travel slug to the FastTravel scene name", () => {
+    expect(resolveSceneNameFromRouteSegment(SceneName.FastTravel)).toBe(SceneName.FastTravel);
   });
 
-  it("routes URL scene resolution through the navigation boundary with fast-travel gating", () => {
-    const source = readGameRendererSource();
+  it("gates fast-travel scene activation through the navigation boundary", () => {
+    // When fast travel is enabled, the boundary resolves to FastTravel
+    expect(
+      resolveNavigationSceneTarget({
+        requestedScene: SceneName.FastTravel,
+        currentPath: "/play/map",
+        fastTravelEnabled: true,
+      }),
+    ).toBe(SceneName.FastTravel);
 
-    expect(source).toMatch(/resolveNavigationSceneTarget/);
-    expect(source).toMatch(/const fastTravelEnabled = this\.isFastTravelEnabled\(\);/);
-    expect(source).toMatch(/requestedScene:\s*resolveSceneNameFromRouteSegment\(sceneSlug\)/);
-    expect(source).toMatch(/fastTravelEnabled,/);
+    // When fast travel is disabled, the boundary falls back to WorldMap
+    expect(
+      resolveNavigationSceneTarget({
+        requestedScene: SceneName.FastTravel,
+        currentPath: "/play/map",
+        fastTravelEnabled: false,
+      }),
+    ).toBe(SceneName.WorldMap);
   });
 
-  it("updates and renders the fast-travel scene only when present and active", () => {
-    const source = readGameRendererSource();
+  it("does not affect non-fast-travel scenes when fast travel is disabled", () => {
+    expect(
+      resolveNavigationSceneTarget({
+        requestedScene: SceneName.WorldMap,
+        currentPath: "/play/map",
+        fastTravelEnabled: false,
+      }),
+    ).toBe(SceneName.WorldMap);
 
-    expect(source).toMatch(/this\.fastTravelScene\?\.setWeatherAtmosphereState\(weatherState\)/);
-    expect(source).toMatch(
-      /const isFastTravel = this\.sceneManager\?\.getCurrentScene\(\) === SceneName\.FastTravel && Boolean\(this\.fastTravelScene\)/,
-    );
-    expect(source).toMatch(/this\.fastTravelScene\?\.getScene\(\)/);
+    expect(
+      resolveNavigationSceneTarget({
+        requestedScene: SceneName.Hexception,
+        currentPath: "/play/hex",
+        fastTravelEnabled: false,
+      }),
+    ).toBe(SceneName.Hexception);
+  });
+
+  it("URL slug resolution feeds into navigation boundary correctly", () => {
+    // Simulate the full path: URL slug → scene name → navigation boundary
+    const resolved = resolveSceneNameFromRouteSegment("travel");
+    const target = resolveNavigationSceneTarget({
+      requestedScene: resolved,
+      currentPath: "/play/travel",
+      fastTravelEnabled: true,
+    });
+    expect(target).toBe(SceneName.FastTravel);
   });
 });

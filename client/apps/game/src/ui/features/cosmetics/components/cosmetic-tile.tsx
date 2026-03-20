@@ -1,4 +1,5 @@
 import { CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
+import { isDevPreviewSyntheticTokenId } from "@/ui/features/cosmetics/lib/dev-preview-cosmetics";
 import { useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
 import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 
@@ -8,19 +9,23 @@ interface CosmeticTileProps {
   item: CosmeticItem;
   active: boolean;
   onSelect: (id: string) => void;
+  loadoutScopeKey?: string;
 }
 
-export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
+export const CosmeticTile = ({ item, active, onSelect, loadoutScopeKey }: CosmeticTileProps) => {
   const attributes = item.attributes ?? item.metadata?.attributes ?? [];
   const rarity = attributes.find((attribute) => attribute.trait_type === "Rarity")?.value;
   const cosmeticType = attributes.find((attribute) => attribute.trait_type === "Type")?.value;
   const slotKey = item.slot ?? cosmeticType ?? null;
-  const isEquipped = useCosmeticLoadoutStore((state) => {
-    if (!slotKey || !item.tokenId) {
-      return false;
-    }
-    return state.selectedBySlot[slotKey] === item.tokenId;
-  });
+  const isEquipped = useCosmeticLoadoutStore(
+    (state) => {
+      if (!slotKey || !item.tokenId) {
+        return false;
+      }
+      return state.selectedBySlot[slotKey] === item.tokenId;
+    },
+    { scopeKey: loadoutScopeKey },
+  );
 
   const baseClass =
     "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-gold/5 p-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold";
@@ -57,7 +62,7 @@ export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
           </div>
         )}
         {/* Trade link - appears on hover */}
-        {item.tokenId && (
+        {item.tokenId && !isDevPreviewSyntheticTokenId(item.tokenId) && (
           <a
             href={`${TRADE_BASE_URL}/${item.tokenId}`}
             target="_blank"
@@ -75,6 +80,11 @@ export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
         <span className="text-sm font-medium text-gold">{item.name}</span>
         <span className="mt-1 line-clamp-2 text-xs text-gold/60">{item.description}</span>
         <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-gold/70">
+          {isDevPreviewSyntheticTokenId(item.tokenId) && (
+            <span className="rounded-full border border-amber-300/30 bg-amber-500/10 px-2 py-0.5 uppercase tracking-wide text-amber-100">
+              Dev Preview
+            </span>
+          )}
           {rarity && (
             <span className="rounded-full border border-gold/20 bg-black/40 px-2 py-0.5 uppercase tracking-wide">
               {rarity}

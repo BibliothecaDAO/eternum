@@ -34,9 +34,11 @@ export abstract class WarpTravel extends HexagonScene {
     sceneManager: SceneManager,
   ) {
     super(sceneName, controls, dojo, mouse, raycaster, sceneManager);
+    this.bootstrapSceneOwnership();
   }
 
   public async setup(): Promise<void> {
+    this.bootstrapSceneOwnership();
     const nextState = await runWarpTravelSetupLifecycle(
       this.getWarpTravelLifecycleState(),
       this.resolveWarpTravelLifecycleAdapter(),

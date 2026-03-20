@@ -19,6 +19,7 @@ describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
     ).toEqual({
       desiredAreaKeys: [],
       chunkKeysToEnqueue: [],
+      presentationChunkKeysToPrewarm: [],
       nextPrefetchedAhead: [],
     });
   });
@@ -43,6 +44,7 @@ describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
     expect(result).toEqual({
       desiredAreaKeys: ["96,24:area"],
       chunkKeysToEnqueue: [],
+      presentationChunkKeysToPrewarm: ["96,24"],
       nextPrefetchedAhead: ["96,24"],
     });
   });
@@ -67,7 +69,28 @@ describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
     expect(result).toEqual({
       desiredAreaKeys: ["48,24:area", "72,24:area"],
       chunkKeysToEnqueue: ["72,24"],
+      presentationChunkKeysToPrewarm: ["48,24", "72,24"],
       nextPrefetchedAhead: ["48,24", "72,24"],
     });
+  });
+
+  it("extends presentation prewarm across the full forward stride band", () => {
+    const result = resolveWarpTravelDirectionalPrefetchPlan({
+      anchor: {
+        forwardChunkKey: "48,24",
+        movementAxis: "z",
+        movementSign: 1,
+      },
+      chunkSize: 24,
+      forwardDepthStrides: 2,
+      sideRadiusStrides: 0,
+      pinnedChunkKeys: new Set(),
+      currentChunk: "24,24",
+      prefetchedAhead: [],
+      maxPrefetchedAhead: 4,
+      getRenderAreaKeyForChunk: (chunkKey) => `${chunkKey}:area`,
+    });
+
+    expect(result.presentationChunkKeysToPrewarm).toEqual(["48,24", "72,24", "96,24"]);
   });
 });

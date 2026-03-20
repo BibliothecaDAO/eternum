@@ -23,6 +23,55 @@ export const latestFeatures: LatestFeature[] = [
     type: "feature",
   },
   {
+    date: "2026-03-19",
+    title: "Stable Biome Chunk Refresh",
+    description:
+      "Fixed world map biome flicker during chunk refreshes and rapid traversal, so terrain updates stay visually stable while nearby tiles and managers catch up.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "FP Wallet Chip Removed",
+    description:
+      "Removed the experimental FP Wallet chip from the top header to keep entity and resource UI focused on core in-panel faith metrics.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Faith Panel Overflow Fix",
+    description:
+      "Adjusted Wonder faith cards in compact entity details so all key stats remain visible without clipping, and enabled scrolling in the full Faith tab when content is taller than the panel.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Wonder Faith Detail Views",
+    description:
+      "Wonders now have a dedicated faith detail view from both map tiles and the Faith leaderboard, with ownership, FP rates, and follower details in a dedicated modal panel.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-19",
+    title: "Auto World Mode Detection",
+    description:
+      "Fixed game startup so Blitz and Eternum mode are detected from each world's onchain config instead of requiring a forced environment mode flag.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Stable Leaderboard Refresh",
+    description:
+      "Fixed in-game leaderboard refresh behavior so standings no longer collapse and redraw during periodic sync updates.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Faith Total FP Estimation",
+    description:
+      "Faith leaderboard Total FP now includes estimated unclaimed points from each Wonder's current FP/sec, so rankings reflect live devotion growth between contract claims.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-18",
     title: "Village Militia Claim Action",
     description:
@@ -56,6 +105,27 @@ export const latestFeatures: LatestFeature[] = [
     description:
       "Village details now show militia unlock and raid-immunity timing, and troop create/transfer flows use consistent deployment-cap and army-strength readouts so military limits are clearer before action.",
     type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Wonder Devotion Actions",
+    description:
+      "Realm and Village panels now let you view current faith allegiance and devote to a Wonder directly in-game, including wonder FP/sec and follower stats before confirming.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-18",
+    title: "Faith Wonder Leaderboard Tab",
+    description:
+      "Added a new Faith tab to the in-game leaderboard that ranks all Wonders by accumulated Faith Points, including FP/sec, follower counts, and owner details.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-19",
+    title: "Blitz Research Lab Preview Fix",
+    description:
+      "Fixed Blitz construction previews so the Research Lab no longer appears in building options for Blitz games.",
+    type: "fix",
   },
   {
     date: "2026-03-18",
