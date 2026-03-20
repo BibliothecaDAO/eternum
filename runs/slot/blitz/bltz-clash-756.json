@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-clash-756/23362520454-1.json",
   "latestLaunchRequestId": "23362520454-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": "configure-world",
   "createdAt": "2026-03-20T21:05:55.106Z",
-  "updatedAt": "2026-03-20T21:07:52.215Z",
+  "updatedAt": "2026-03-20T21:07:56.366Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,10 +35,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting for game started",
-      "startedAt": "2026-03-20T21:07:52.215Z"
+      "latestEvent": "Waiting for game succeeded",
+      "startedAt": "2026-03-20T21:07:52.215Z",
+      "finishedAt": "2026-03-20T21:07:56.366Z"
     },
     {
       "id": "configure-world",
@@ -64,14 +65,7 @@
   ],
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-blitz-bltz-clash-756.json",
-    "createGameTxHash": "0x75c3015b6e1c0d3374172a57db11fd52881059b6615777c7e61062ea7e964a3"
-  },
-  "activeLease": {
-    "launchRequestId": "23362520454-1",
-    "workflowRunId": 23362520454,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-03-20T21:07:52.215Z",
-    "expiresAt": "2026-03-20T21:52:52.215Z"
+    "createGameTxHash": "0x75c3015b6e1c0d3374172a57db11fd52881059b6615777c7e61062ea7e964a3",
+    "worldAddress": "0x03c41de6cf8ecad9b903ad4757a88e3c31524c8d2a5807931a1c5eec2ef86c88"
   }
 }
