@@ -1668,6 +1668,26 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Claim the village army grant once its delay has passed
+   *
+   * @param props - Properties for claiming village army grant
+   * @param props.village_id - ID of the village to claim for
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async receive_army_grant(props: SystemProps.ReceiveArmyGrantProps) {
+    const { village_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-village_systems`),
+      entrypoint: "receive_army_grant",
+      calldata: [village_id],
+    });
+
+    return await this.promiseQueue.enqueue(call, TransactionType.CREATE);
+  }
+
+  /**
    * Create multiple realms at once
    *
    * @param props - Properties for creating realms

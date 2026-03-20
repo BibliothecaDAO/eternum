@@ -14,6 +14,10 @@ export interface CreateVillageProps extends SystemSigner {
   village_pass_address: string;
 }
 
+export interface ReceiveArmyGrantProps extends SystemSigner {
+  village_id: BigNumberish;
+}
+
 export interface MintAndSettleTestRealmProps extends SystemSigner {
   token_id: BigNumberish;
   realms_address: string;
