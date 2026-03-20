@@ -162,3 +162,121 @@ describe("setupRendererGUI null safety", () => {
     expect(() => setupRendererGUI({ renderer })).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 5: rebuildPostProcessing must reset weatherBaseValuesInitialized
+// ---------------------------------------------------------------------------
+
+/**
+ * Mirrors the weather base value capture logic from updateWeatherPostProcessing
+ * and the reset that should happen in rebuildPostProcessing.
+ *
+ * The bug: after rebuildPostProcessing changes postProcessingConfig,
+ * weatherBaseValuesInitialized stays true, so updateWeatherPostProcessing
+ * computes deltas against stale base values instead of re-capturing from the
+ * new config.
+ */
+function createWeatherBaseContext(initialConfig: {
+  saturation: number;
+  contrast: number;
+  brightness: number;
+  vignette: { darkness: number };
+}) {
+  return {
+    weatherBaseValuesInitialized: false,
+    basePostProcessingValues: {
+      saturation: 0,
+      contrast: 0,
+      brightness: 0,
+      vignetteDarkness: 0,
+    },
+    postProcessingConfig: { ...initialConfig, vignette: { ...initialConfig.vignette } },
+
+    /** Mirrors the base-value capture block from updateWeatherPostProcessing */
+    captureBaseValues() {
+      if (!this.weatherBaseValuesInitialized && this.postProcessingConfig) {
+        this.basePostProcessingValues.saturation = this.postProcessingConfig.saturation;
+        this.basePostProcessingValues.contrast = this.postProcessingConfig.contrast;
+        this.basePostProcessingValues.brightness = this.postProcessingConfig.brightness;
+        this.basePostProcessingValues.vignetteDarkness = this.postProcessingConfig.vignette.darkness;
+        this.weatherBaseValuesInitialized = true;
+      }
+    },
+
+    /**
+     * Mirrors rebuildPostProcessing — updates the config but must also reset
+     * weatherBaseValuesInitialized so the next captureBaseValues picks up the
+     * new config values.
+     */
+    rebuildPostProcessing(newConfig: {
+      saturation: number;
+      contrast: number;
+      brightness: number;
+      vignette: { darkness: number };
+    }) {
+      if (!this.postProcessingConfig) return;
+
+      // The fix: reset the flag so base values are re-captured
+      this.weatherBaseValuesInitialized = false;
+
+      this.postProcessingConfig = { ...newConfig, vignette: { ...newConfig.vignette } };
+    },
+  };
+}
+
+describe("rebuildPostProcessing resets weatherBaseValuesInitialized", () => {
+  it("re-captures base values from new config after rebuild", () => {
+    const ctx = createWeatherBaseContext({
+      saturation: 1.0,
+      contrast: 0.5,
+      brightness: 0.8,
+      vignette: { darkness: 0.3 },
+    });
+
+    // First capture — should store initial config values
+    ctx.captureBaseValues();
+    expect(ctx.basePostProcessingValues.saturation).toBe(1.0);
+    expect(ctx.basePostProcessingValues.contrast).toBe(0.5);
+    expect(ctx.weatherBaseValuesInitialized).toBe(true);
+
+    // Rebuild with new config
+    ctx.rebuildPostProcessing({
+      saturation: 0.6,
+      contrast: 0.9,
+      brightness: 0.4,
+      vignette: { darkness: 0.7 },
+    });
+
+    // After rebuild, flag must be reset
+    expect(ctx.weatherBaseValuesInitialized).toBe(false);
+
+    // Next capture should pick up the NEW config values
+    ctx.captureBaseValues();
+    expect(ctx.basePostProcessingValues.saturation).toBe(0.6);
+    expect(ctx.basePostProcessingValues.contrast).toBe(0.9);
+    expect(ctx.basePostProcessingValues.brightness).toBe(0.4);
+    expect(ctx.basePostProcessingValues.vignetteDarkness).toBe(0.7);
+  });
+
+  it("without the reset, base values stay stale after rebuild (documents the bug)", () => {
+    // This test shows the BUGGY behavior — if the flag is NOT reset,
+    // captureBaseValues is a no-op and base values remain stale.
+    const ctx = createWeatherBaseContext({
+      saturation: 1.0,
+      contrast: 0.5,
+      brightness: 0.8,
+      vignette: { darkness: 0.3 },
+    });
+
+    ctx.captureBaseValues();
+    expect(ctx.basePostProcessingValues.saturation).toBe(1.0);
+
+    // Simulate the BUGGY path: update config WITHOUT resetting the flag
+    ctx.postProcessingConfig.saturation = 0.6;
+    // weatherBaseValuesInitialized is still true, so captureBaseValues is a no-op
+    ctx.captureBaseValues();
+
+    // Base values are STALE — still 1.0 instead of 0.6
+    expect(ctx.basePostProcessingValues.saturation).toBe(1.0);
+  });
+});

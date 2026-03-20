@@ -1495,6 +1495,9 @@ export default class GameRenderer {
       return;
     }
 
+    // Reset so updateWeatherPostProcessing re-captures base values from the new config
+    this.weatherBaseValuesInitialized = false;
+
     const effectPlan = resolvePostProcessingEffectPlan({
       fxaa: features.fxaa,
       bloom: features.bloom,

@@ -134,7 +134,7 @@ export abstract class HexagonScene {
   private lastClipNear = 0;
   private lastClipFar = 0;
   private fogEnabledByQuality = false;
-  private fogEnabledByUser = false;
+  private fogEnabledByUser = true;
 
   // Performance tuning options (optimized defaults for better FPS)
   protected biomeShadowsEnabled = false;
@@ -211,7 +211,7 @@ export abstract class HexagonScene {
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
     this.fogEnabledByQuality = !IS_FLAT_MODE && GRAPHICS_SETTING !== GraphicsSettings.LOW;
-    this.fogEnabledByUser = false;
+    this.fogEnabledByUser = true;
     if (this.fogEnabledByQuality && this.fogEnabledByUser) {
       this.scene.fog = this.fog;
       const initialDistance = this.controls.object.position.distanceTo(this.controls.target);
@@ -1135,19 +1135,18 @@ export abstract class HexagonScene {
     }
 
     // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
+    // When day-night is enabled, read the pre-flicker baseline from the manager to avoid
+    // compounding drift (the live light value already includes previous flicker).
     const dayNightEnabled = this.dayNightCycleManager?.params?.enabled === true;
 
     const ambientBase = dayNightEnabled
-      ? this.ambientPurpleLight.intensity
-      : (this.stormAmbientBaseIntensity ?? this.ambientPurpleLight.intensity);
+      ? this.dayNightCycleManager!.getLastAmbientIntensity()
+      : (this.stormAmbientBaseIntensity ??= this.ambientPurpleLight.intensity);
     const hemisphereBase = dayNightEnabled
-      ? this.hemisphereLight.intensity
-      : (this.stormHemisphereBaseIntensity ?? this.hemisphereLight.intensity);
+      ? this.dayNightCycleManager!.getLastHemisphereIntensity()
+      : (this.stormHemisphereBaseIntensity ??= this.hemisphereLight.intensity);
 
-    if (dayNightEnabled) {
-      this.stormAmbientBaseIntensity = ambientBase;
-      this.stormHemisphereBaseIntensity = hemisphereBase;
-    } else {
+    if (!dayNightEnabled) {
       this.stormAmbientBaseIntensity ??= ambientBase;
       this.stormHemisphereBaseIntensity ??= hemisphereBase;
     }

@@ -31,13 +31,14 @@ describe("resolveWebgpuPostprocessPolicy", () => {
       resolveWebgpuPostprocessPolicy({
         activeMode: "webgpu",
         capabilities: createRendererBackendCapabilities({
+          supportsToneMappingControl: true,
         }),
       }),
     ).toEqual({
       bloomRouting: "deferred",
       mode: "native-webgpu-minimal",
       prewarmStrategy: "compile-async",
-      unsupportedFeatures: ["bloom", "chromaticAberration", "colorGrade", "environmentIbl", "toneMappingControl", "vignette"],
+      unsupportedFeatures: ["bloom", "chromaticAberration", "colorGrade", "environmentIbl", "vignette"],
     });
   });
 

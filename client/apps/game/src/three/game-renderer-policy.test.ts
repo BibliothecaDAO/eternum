@@ -533,6 +533,65 @@ describe("resolveCapabilityAwareRendererEffectPlan", () => {
       },
     });
   });
+
+  it("does not degrade tone mapping when supportsToneMappingControl is true", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "none",
+        bloomEnabled: false,
+        bloomIntensity: 0,
+        capabilities: createRendererBackendCapabilities({
+          supportsToneMappingControl: true,
+        }),
+        chromaticAberrationEnabled: false,
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        disabledReasons: {},
+        toneMapping: {
+          exposure: 1.2,
+          mode: "cineon",
+          whitePoint: 2,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      }),
+    ).toEqual({
+      degradations: [],
+      plan: {
+        antiAlias: "none",
+        bloom: {
+          enabled: false,
+          intensity: 0,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 1.2,
+          mode: "cineon",
+          whitePoint: 2,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      },
+    });
+  });
 });
 
 describe("resolveRendererEnvironmentPolicy", () => {

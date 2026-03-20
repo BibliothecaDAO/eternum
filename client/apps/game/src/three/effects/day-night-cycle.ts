@@ -66,6 +66,7 @@ export class DayNightCycleManager {
   private readonly lastUpdateSkyColor: Color = new Color();
   private lastUpdateDirIntensity: number = 0;
   private lastUpdateHemiIntensity: number = 0;
+  private lastUpdateAmbientIntensity: number = 0;
   private currentAngle: number = 0; // Track smoothed angular progress
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
@@ -218,6 +219,7 @@ export class DayNightCycleManager {
     this.lastUpdateSkyColor.copy(this.scene.background as Color);
     this.lastUpdateDirIntensity = this.directionalLight.intensity;
     this.lastUpdateHemiIntensity = this.hemisphereLight.intensity;
+    this.lastUpdateAmbientIntensity = this.ambientLight.intensity;
 
     // Update sun position (relative to camera target if provided)
     this.updateSunPosition(smoothedProgress, cameraTarget);
@@ -458,6 +460,24 @@ export class DayNightCycleManager {
 
     this.fog.color.copy(this.originalLightingState.fogColor);
     this.isProgressInitialized = false;
+  }
+
+  /**
+   * Return the ambient-light intensity set during the most recent updateLighting() call.
+   * Storm-flicker code should read this instead of the live light value to avoid
+   * compounding drift.
+   */
+  getLastAmbientIntensity(): number {
+    return this.lastUpdateAmbientIntensity;
+  }
+
+  /**
+   * Return the hemisphere-light intensity set during the most recent updateLighting() call.
+   * Storm-flicker code should read this instead of the live light value to avoid
+   * compounding drift.
+   */
+  getLastHemisphereIntensity(): number {
+    return this.lastUpdateHemiIntensity;
   }
 
   /**

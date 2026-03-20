@@ -146,6 +146,47 @@ describe("DayNightCycleManager", () => {
     expect(skyAfter).toBe(skyBefore);
   });
 
+  it("getLastAmbientIntensity and getLastHemisphereIntensity return values from most recent updateLighting", () => {
+    const fixture = createFixture();
+
+    // Before any update, getters return 0 (initial field value)
+    expect(fixture.manager.getLastAmbientIntensity()).toBe(0);
+    expect(fixture.manager.getLastHemisphereIntensity()).toBe(0);
+
+    // Update at day (progress 37.5) — should store the day-time intensities
+    fixture.manager.update(37.5);
+    const ambientAtDay = fixture.manager.getLastAmbientIntensity();
+    const hemisphereAtDay = fixture.manager.getLastHemisphereIntensity();
+
+    expect(ambientAtDay).toBeGreaterThan(0);
+    expect(hemisphereAtDay).toBeGreaterThan(0);
+
+    // The getter values should match the light objects (no flicker applied by the manager)
+    expect(fixture.ambientLight.intensity).toBeCloseTo(ambientAtDay);
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(hemisphereAtDay);
+
+    // Update at deep night (progress 0) — intensities should change
+    fixture.manager.update(0);
+    const ambientAtNight = fixture.manager.getLastAmbientIntensity();
+    const hemisphereAtNight = fixture.manager.getLastHemisphereIntensity();
+
+    expect(ambientAtNight).not.toBeCloseTo(ambientAtDay);
+    expect(hemisphereAtNight).not.toBeCloseTo(hemisphereAtDay);
+  });
+
+  it("getLastAmbientIntensity is stable across repeated reads (no drift)", () => {
+    const fixture = createFixture();
+
+    fixture.manager.update(37.5);
+    const first = fixture.manager.getLastAmbientIntensity();
+
+    // Simulate what storm flicker does: overwrite the light intensity
+    fixture.ambientLight.intensity = first * 1.06;
+
+    // Without calling update(), the getter should still return the pre-flicker value
+    expect(fixture.manager.getLastAmbientIntensity()).toBe(first);
+  });
+
   it("is idempotent on dispose", () => {
     const fixture = createFixture();
     const restoreSpy = vi.spyOn(fixture.manager as any, "restoreOriginalLighting");
