@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-thrum-817",
-    "launchRequestId": "23362644511-1",
+    "gameName": "bltz-zip-383",
+    "launchRequestId": "23362669982-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23362644511,
+    "workflowRunId": 23362669982,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "72d9ce00-efe6-477c-9a02-01dc82a6a91c"
+    "leaseId": "bd484f5a-cc7a-479e-9900-19abeb6a75b1"
   },
-  "acquiredAt": "2026-03-20T21:14:52.738Z",
-  "heartbeatAt": "2026-03-20T21:17:04.923Z",
-  "expiresAt": "2026-03-20T21:17:04.923Z",
-  "releasedAt": "2026-03-20T21:17:04.923Z"
+  "acquiredAt": "2026-03-20T21:17:13.781Z",
+  "heartbeatAt": "2026-03-20T21:17:13.781Z",
+  "expiresAt": "2026-03-20T21:27:13.781Z"
 }
