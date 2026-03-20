@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { ToriiStreamManager, type BoundsDescriptor, type BoundsModelConfig } from "@/dojo/torii-stream-manager";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -24,7 +25,17 @@ import { LeftView } from "@/types";
 import { Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
+import type { ToriiStreamManager as ToriiStreamManagerType } from "@/dojo/torii-stream-manager";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
+
+/**
+ * Module-level ref to the active spatial ToriiStreamManager.
+ * Used by ConnectionHealthMonitor to trigger spatial resubscription
+ * without exposing the full WorldmapScene internals.
+ */
+let activeSpatialStreamManager: ToriiStreamManagerType | null = null;
+
+export const getActiveSpatialStreamManager = (): ToriiStreamManagerType | null => activeSpatialStreamManager;
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -691,7 +702,13 @@ export default class WorldmapScene extends WarpTravel {
     this.dojo = dojoContext;
     const toriiClient = dojoContext.network?.toriiClient;
     if (toriiClient) {
-      this.toriiStreamManager = new ToriiStreamManager({ client: toriiClient, setup: dojoContext, logging: false });
+      this.toriiStreamManager = new ToriiStreamManager({
+        client: toriiClient,
+        setup: dojoContext,
+        logging: false,
+        onUpdate: () => useConnectionStore.getState().recordSpatialUpdate(),
+      });
+      activeSpatialStreamManager = this.toriiStreamManager;
       this.startToriiBoundsCounterLog();
     }
     this.fxManager = new FXManager(this.scene, 1);
@@ -6577,6 +6594,9 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovements.forEach((entityId) => this.clearPendingArmyMovement(entityId));
     this.pendingArmyMovements.clear();
     this.stopToriiBoundsCounterLog();
+    if (this.toriiStreamManager === activeSpatialStreamManager) {
+      activeSpatialStreamManager = null;
+    }
     this.toriiStreamManager?.shutdown();
     this.toriiBoundsAreaKey = null;
 

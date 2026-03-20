@@ -2,6 +2,7 @@ import type { AppStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { sqlApi } from "@/services/api";
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
@@ -221,6 +222,7 @@ export const syncEntitiesDebounced = async (
   setupResult: SetupResult,
   entityKeyClause: Clause | undefined | null,
   logging = true,
+  onUpdate?: () => void,
 ) => {
   if (logging) console.log("Starting syncEntities");
 
@@ -257,6 +259,7 @@ export const syncEntitiesDebounced = async (
   const queueUpdate = (data: ToriiEntity, origin: "entity" | "event") => {
     try {
       queueProcessor.queueUpdate(data.hashed_keys, data, origin);
+      onUpdate?.();
     } catch (error) {
       console.error("Error queuing entity update:", error);
     }
@@ -309,6 +312,7 @@ export const initialSync = async (
     setup,
     GLOBAL_STREAM_CLAUSE,
     logging,
+    () => useConnectionStore.getState().recordGlobalUpdate(),
   );
 
   const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];

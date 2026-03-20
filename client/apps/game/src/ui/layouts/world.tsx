@@ -1,6 +1,12 @@
+import { ConnectionHealthMonitor } from "@/dojo/connection-health-monitor";
+import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
+import { getActiveSpatialStreamManager } from "@/three/scenes/worldmap";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
+import { useDojo } from "@bibliothecadao/react";
 import { Leva } from "leva";
+import { useEffect } from "react";
 import { env } from "../../../env";
+import { useUIStore } from "../../hooks/store/use-ui-store";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
@@ -69,6 +75,7 @@ const BackgroundSystems = () => (
     <AutomationManager />
     <TransferAutomationManager />
     <ExplorationAutomationManager />
+    <ConnectionMonitor />
   </>
 );
 
@@ -122,6 +129,45 @@ const HUD = () => (
     </div>
   </>
 );
+
+/**
+ * Invisible component that monitors Torii connection health and triggers
+ * automatic resubscription when streams go stale (e.g. after tab sleep or
+ * network interruption).
+ */
+const ConnectionMonitor = () => {
+  const { setup } = useDojo();
+  const state = useUIStore.getState();
+
+  useEffect(() => {
+    const toriiBaseUrl = env.VITE_PUBLIC_TORII;
+
+    const monitor = new ConnectionHealthMonitor({
+      onReconnectSpatial: async () => {
+        const manager = getActiveSpatialStreamManager();
+        if (manager) {
+          await manager.resubscribe();
+        }
+      },
+      onReconnectGlobal: async () => {
+        cancelEntityStreamSubscription();
+        await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
+      },
+      healthCheckFn: async () => {
+        const response = await fetch(`${toriiBaseUrl}/health`, {
+          method: "GET",
+          signal: AbortSignal.timeout(5_000),
+        });
+        return response.ok;
+      },
+    });
+
+    monitor.start();
+    return () => monitor.dispose();
+  }, [setup, state]);
+
+  return null;
+};
 
 const VersionDisplay = () => (
   <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1">
