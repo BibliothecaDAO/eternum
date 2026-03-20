@@ -20,26 +20,26 @@ interface FactoryModeAppearance {
 const MODE_APPEARANCES: Record<FactoryGameMode, FactoryModeAppearance> = {
   eternum: {
     canvasClassName:
-      "border-[#d9c8ae] bg-[linear-gradient(180deg,rgba(246,239,227,0.98),rgba(241,232,217,0.98))] text-[#1d1712] shadow-[0_28px_80px_rgba(0,0,0,0.18)]",
+      "border-[#b6a07b] bg-[linear-gradient(180deg,rgba(221,205,178,0.98),rgba(185,160,123,0.98))] text-[#17110c] shadow-[0_28px_80px_rgba(0,0,0,0.22)]",
     backdropClassName:
-      "bg-[radial-gradient(circle_at_12%_14%,rgba(245,158,11,0.16),transparent_24%),radial-gradient(circle_at_82%_18%,rgba(180,83,9,0.12),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.18),transparent_48%)]",
-    sectionDividerClassName: "border-[#d8c7b0]",
-    accentTextClassName: "text-[#9a5807]",
+      "bg-[radial-gradient(circle_at_12%_14%,rgba(16,185,129,0.16),transparent_24%),radial-gradient(circle_at_82%_18%,rgba(120,113,28,0.2),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.06),transparent_46%)]",
+    sectionDividerClassName: "border-[rgba(81,60,34,0.18)]",
+    accentTextClassName: "text-[#6e5324]",
     mainSurfaceClassName:
-      "border border-[#e3d6c5] bg-[linear-gradient(180deg,rgba(255,252,247,0.95),rgba(248,239,226,0.92))] shadow-[0_24px_60px_rgba(81,54,24,0.08)]",
+      "border border-[#c4ab84] bg-[linear-gradient(180deg,rgba(243,235,222,0.95),rgba(214,191,154,0.92))] shadow-[0_24px_60px_rgba(70,44,20,0.11)]",
     featureSurfaceClassName:
-      "border border-[#e8d8c2] bg-[linear-gradient(180deg,rgba(255,249,241,0.98),rgba(249,237,219,0.9))] shadow-[0_18px_40px_rgba(81,54,24,0.08)]",
-    quietSurfaceClassName: "border border-[#ebdfcf] bg-[rgba(249,241,229,0.72)]",
+      "border border-[#ccb28c] bg-[linear-gradient(180deg,rgba(246,238,225,0.97),rgba(221,197,159,0.92))] shadow-[0_18px_40px_rgba(70,44,20,0.1)]",
+    quietSurfaceClassName: "border border-[#d0ba96] bg-[rgba(232,214,187,0.74)]",
     listItemClassName:
-      "border border-[#e8ddce] bg-[rgba(255,255,255,0.52)] transition-colors duration-200 hover:bg-[rgba(255,255,255,0.72)]",
+      "border border-[#d2bd9d] bg-[rgba(255,249,240,0.44)] transition-colors duration-200 hover:bg-[rgba(255,249,240,0.64)]",
     activeToggleClassName: "bg-[#1f1711] text-[#fff7ec] shadow-[0_8px_20px_rgba(31,23,17,0.12)]",
     inactiveToggleClassName: "text-[#5f5348] hover:bg-black/[0.04] hover:text-[#1f1711]",
     primaryButtonClassName: "bg-[#1f1711] text-[#fff7ec] hover:bg-[#2c221b]",
     secondaryButtonClassName:
-      "border border-[#d7c7b4] bg-[rgba(255,255,255,0.56)] text-[#36291f] hover:bg-[rgba(255,255,255,0.82)]",
-    artGlowClassName: "bg-[radial-gradient(circle,rgba(245,158,11,0.32),rgba(217,119,6,0.08),transparent_68%)]",
+      "border border-[#ccb693] bg-[rgba(255,249,240,0.5)] text-[#302116] hover:bg-[rgba(255,249,240,0.76)]",
+    artGlowClassName: "bg-[radial-gradient(circle,rgba(16,185,129,0.22),rgba(161,98,7,0.16),transparent_68%)]",
     artGridClassName:
-      "bg-[linear-gradient(rgba(145,83,4,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(145,83,4,0.06)_1px,transparent_1px)] bg-[size:28px_28px]",
+      "bg-[linear-gradient(rgba(86,63,39,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(86,63,39,0.08)_1px,transparent_1px)] bg-[size:28px_28px]",
   },
   blitz: {
     canvasClassName:

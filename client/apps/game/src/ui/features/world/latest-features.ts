@@ -12,7 +12,7 @@ export const latestFeatures: LatestFeature[] = [
     date: "2026-03-20",
     title: "Factory V2 Launch Center",
     description:
-      "The landing page now has a full Factory V2 flow for starting a game, checking progress, and recovering pending launches, with clearer status copy and a layout that holds up much better on mobile.",
+      "The landing page now has a full Factory V2 flow for starting a game, checking progress, and recovering pending launches, with Blitz opening first when Factory is idle, calmer progress states, and a layout that holds up much better on mobile.",
     type: "feature",
   },
   {

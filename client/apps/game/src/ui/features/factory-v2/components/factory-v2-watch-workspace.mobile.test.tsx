@@ -126,6 +126,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
     const gameNameInput = container.querySelector("#factory-watch-game") as HTMLInputElement | null;
     const currentProgressTrack = container.querySelector('[data-testid="factory-watch-current-progress-track"]');
+    const currentProgressFill = container.querySelector('[data-testid="factory-watch-current-progress-fill"]');
     const doneMoment = container.querySelector('[data-step-tone="done"]');
     const nowMoment = container.querySelector('[data-step-tone="now"]');
     const nextMoment = container.querySelector('[data-step-tone="next"]');
@@ -140,9 +141,11 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(selectedPanel?.textContent).toContain("Step 3 of 4");
     expect(gameNameInput?.className).toContain("text-center");
     expect(doneMoment?.className).toContain("opacity-45");
-    expect(nowMoment?.className).toContain("shadow-[0_20px_40px_rgba(157,107,36,0.14)]");
+    expect(nowMoment?.className).toContain("border-[#c6a777]/60");
     expect(nextMoment?.className).toContain("border-dashed");
     expect(nextMoment?.className).toContain("opacity-70");
+    expect(currentProgressTrack?.className).toContain("bg-[#d9cabd]");
+    expect(currentProgressFill?.className).toContain("bg-[#7a4b22]");
     expect(currentProgressTrack?.textContent).toBe("");
     expect(actionBar?.className).toContain("sticky");
   });

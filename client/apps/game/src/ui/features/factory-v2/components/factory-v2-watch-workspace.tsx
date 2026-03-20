@@ -410,6 +410,7 @@ const FactoryV2CurrentStepCard = ({
   const progress = resolveWatchProgressMetrics(timelineRun, currentStep);
   const isRunningStep = currentStep?.status === "running";
   const statusLabel = resolveCurrentStepStatusLabel(currentStep, timelineRun.status);
+  const progressFillClassName = resolveCurrentProgressFillClassName(isRunningStep, timelineRun.status);
 
   return (
     <div
@@ -423,13 +424,12 @@ const FactoryV2CurrentStepCard = ({
           className={cn(
             "inline-flex items-center gap-2 rounded-full border px-3 py-1",
             isRunningStep
-              ? "border-[#cfb48d]/85 bg-[rgba(255,249,239,0.95)] text-[#8a5416] shadow-[0_8px_18px_rgba(186,129,44,0.14)]"
+              ? "border-[#c4a173]/75 bg-[rgba(255,250,244,0.94)] text-[#6b4a24] shadow-[0_6px_16px_rgba(90,62,29,0.08)]"
               : "border-black/8 bg-white/60 text-black/44",
           )}
         >
           <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-            {isRunningStep ? <span className="absolute h-2.5 w-2.5 animate-ping rounded-full bg-[#d6a458]/55" /> : null}
-            <span className={cn("relative h-2.5 w-2.5 rounded-full", isRunningStep ? "bg-[#b9771f]" : "bg-black/28")} />
+            <span className={cn("relative h-2.5 w-2.5 rounded-full", isRunningStep ? "bg-[#8b5b2e]" : "bg-black/28")} />
           </span>
           {statusLabel}
         </span>
@@ -444,19 +444,16 @@ const FactoryV2CurrentStepCard = ({
         </div>
         <div
           data-testid="factory-watch-current-progress-track"
-          className="relative h-2.5 overflow-hidden rounded-full bg-black/8"
+          className="relative h-2 overflow-hidden rounded-full bg-[#d9cabd]"
         >
           <div
+            data-testid="factory-watch-current-progress-fill"
             className={cn(
-              "relative h-full rounded-full transition-[width] duration-300",
-              isRunningStep ? "bg-[linear-gradient(90deg,#b9771f_0%,#d6a458_58%,#edd9b3_100%)]" : "bg-black/26",
+              "absolute inset-y-0 left-0 rounded-full transition-[width] duration-300",
+              progressFillClassName,
             )}
             style={{ width: `${progress.completionPercent}%` }}
-          >
-            {isRunningStep ? (
-              <span className="absolute inset-y-0 right-0 w-12 -translate-x-1/2 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)] opacity-80" />
-            ) : null}
-          </div>
+          />
         </div>
       </div>
     </div>
@@ -807,14 +804,12 @@ function resolveStepMomentToneAppearance(tone: "done" | "now" | "next") {
       };
     case "now":
       return {
-        containerClassName:
-          "border-[#d4b487]/65 bg-[linear-gradient(180deg,rgba(255,253,249,0.98),rgba(245,235,219,0.98))] shadow-[0_20px_40px_rgba(157,107,36,0.14)]",
-        dotClassName: "bg-[#b9771f] shadow-[0_0_0_4px_rgba(255,248,236,0.92)]",
-        labelClassName: "text-[#8a5416]",
+        containerClassName: "border-[#c6a777]/60 bg-[rgba(255,250,243,0.96)] shadow-[0_16px_34px_rgba(90,62,29,0.1)]",
+        dotClassName: "bg-[#8b5b2e]",
+        labelClassName: "text-[#6b4a24]",
         stepLabelClassName: "font-semibold text-black",
-        accentBarClassName:
-          "bg-[linear-gradient(90deg,rgba(185,119,31,0.92),rgba(233,190,118,0.88),rgba(255,246,230,0.88))]",
-        pulseClassName: "animate-ping bg-[#d6a458]/45",
+        accentBarClassName: null,
+        pulseClassName: null,
       };
     case "next":
     default:
@@ -840,7 +835,7 @@ const FactoryV2SegmentedProgressTrack = ({ steps }: { steps: FactoryRun["steps"]
         )}
       >
         {step.status === "running" ? (
-          <span className="absolute inset-y-0 left-0 w-3/4 rounded-full bg-[linear-gradient(90deg,#b9771f_0%,#d6a458_60%,#f5e5c5_100%)]" />
+          <span className="absolute inset-y-0 left-0 w-3/4 rounded-full bg-[#8b5b2e]" />
         ) : null}
       </div>
     ))}
@@ -907,6 +902,22 @@ function resolveCurrentStepStatusLabel(
   }
 
   return "Up next";
+}
+
+function resolveCurrentProgressFillClassName(isRunningStep: boolean, runStatus: FactoryRun["status"]) {
+  if (isRunningStep) {
+    return "bg-[#7a4b22]";
+  }
+
+  if (runStatus === "complete") {
+    return "bg-[#1f1711]";
+  }
+
+  if (runStatus === "attention") {
+    return "bg-[#7a2f2f]";
+  }
+
+  return "bg-[#4e3d2f]";
 }
 
 const resolveMatchingRunByName = (runs: FactoryRun[], requestedName: string) => {

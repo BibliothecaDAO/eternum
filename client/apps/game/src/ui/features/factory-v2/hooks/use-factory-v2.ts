@@ -59,12 +59,12 @@ interface GuidedRecoveryState {
 }
 
 export const useFactoryV2 = () => {
-  const initialMode: FactoryGameMode = "eternum";
-  const initialEnvironmentId = getDefaultEnvironmentIdForMode(initialMode);
+  const initialSelection = useInitialFactorySelection();
+  const initialMode = initialSelection.mode;
   const initialPresetId = getDefaultPresetIdForModeSelection(initialMode);
   const initialPreset = getFactoryPresetById(initialPresetId);
   const [selectedMode, setSelectedMode] = useState<FactoryGameMode>(initialMode);
-  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState(initialEnvironmentId);
+  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState(initialSelection.environmentId);
   const [selectedPresetId, setSelectedPresetId] = useState(initialPresetId);
   const [runsByEnvironment, setRunsByEnvironment] = useState<Record<string, FactoryRun[]>>({});
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export const useFactoryV2 = () => {
   const [watcher, setWatcher] = useState<FactoryWatcherState | null>(null);
   const [acceptedRunState, setAcceptedRunState] = useState<AcceptedRunState | null>(null);
   const [guidedRecoveryState, setGuidedRecoveryState] = useState<GuidedRecoveryState | null>(null);
-  const [pendingLaunches, setPendingLaunches] = useState<FactoryPendingLaunch[]>(() => readFactoryPendingLaunches());
+  const [pendingLaunches, setPendingLaunches] = useState<FactoryPendingLaunch[]>(initialSelection.pendingLaunches);
   const [pollingState, setPollingState] = useState<FactoryPollingState>({
     status: "idle",
     detail: "Updates will show up here.",
@@ -1103,6 +1103,44 @@ async function loadEnvironmentRuns(environmentId: FactoryWorkerEnvironmentId, fa
 
 function resolveModeDefinition(mode: FactoryGameMode) {
   return factoryModeDefinitions.find((definition) => definition.id === mode) ?? factoryModeDefinitions[0];
+}
+
+interface InitialFactorySelection {
+  mode: FactoryGameMode;
+  environmentId: string;
+  pendingLaunches: FactoryPendingLaunch[];
+}
+
+function useInitialFactorySelection(): InitialFactorySelection {
+  const initialSelectionRef = useRef<InitialFactorySelection | null>(null);
+
+  if (initialSelectionRef.current === null) {
+    initialSelectionRef.current = resolveInitialFactorySelection();
+  }
+
+  return initialSelectionRef.current;
+}
+
+function resolveInitialFactorySelection(): InitialFactorySelection {
+  const pendingLaunches = readFactoryPendingLaunches();
+  const latestPendingLaunch = resolveLatestPendingLaunch(pendingLaunches);
+  const mode = latestPendingLaunch?.mode ?? "blitz";
+
+  return {
+    mode,
+    environmentId: latestPendingLaunch?.environmentId ?? getDefaultEnvironmentIdForMode(mode),
+    pendingLaunches,
+  };
+}
+
+function resolveLatestPendingLaunch(pendingLaunches: FactoryPendingLaunch[]) {
+  return pendingLaunches.reduce<FactoryPendingLaunch | null>((latestPendingLaunch, pendingLaunch) => {
+    if (latestPendingLaunch === null) {
+      return pendingLaunch;
+    }
+
+    return pendingLaunch.createdAt > latestPendingLaunch.createdAt ? pendingLaunch : latestPendingLaunch;
+  }, null);
 }
 
 function resolveIndexerRecoveryStepId(run: FactoryRun) {

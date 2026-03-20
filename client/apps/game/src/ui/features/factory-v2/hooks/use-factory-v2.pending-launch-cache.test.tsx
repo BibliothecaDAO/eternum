@@ -176,24 +176,23 @@ describe("useFactoryV2 pending launch cache", () => {
     await vi.waitFor(() => {
       expect(readFactoryPendingLaunches()).toEqual([
         {
-          environmentId: "slot.eternum",
-          gameName: "eternum-launch-1",
-          mode: "eternum",
+          environmentId: "slot.blitz",
+          gameName: "blitz-launch-1",
+          mode: "blitz",
           createdAt: expect.any(String),
         },
       ]);
     });
 
-    expect(getFactory().modeRuns[0]?.id).toBe("pending:slot.eternum:eternum-launch-1");
-    expect(getFactory().pendingRunName).toBe("eternum-launch-1");
+    expect(getFactory().selectedMode).toBe("blitz");
+    expect(getFactory().modeRuns[0]?.id).toBe("pending:slot.blitz:blitz-launch-1");
+    expect(getFactory().pendingRunName).toBe("blitz-launch-1");
     expect(getFactory().modeRuns[0]?.steps.map((step) => step.id)).toEqual([
       "launch-request",
       "create-world",
       "wait-for-factory-index",
       "configure-world",
       "grant-lootchest-role",
-      "grant-village-pass-role",
-      "create-banks",
       "create-indexer",
     ]);
   });
@@ -217,6 +216,8 @@ describe("useFactoryV2 pending launch cache", () => {
       expect(getFactory().modeRuns[0]?.id).toBe("pending:slot.eternum:cached-launch");
     });
 
+    expect(getFactory().selectedMode).toBe("eternum");
+    expect(getFactory().selectedEnvironmentId).toBe("slot.eternum");
     expect(getFactory().selectedRun?.id).toBe("pending:slot.eternum:cached-launch");
     expect(getFactory().pendingRunName).toBe("cached-launch");
   });
@@ -289,7 +290,9 @@ describe("useFactoryV2 pending launch cache", () => {
   it("clears the pending cache when a conflicting launch opens the real run", async () => {
     const realRun = buildRunRecord({
       runId: "run-conflict-1",
-      gameName: "eternum-launch-1",
+      environment: "slot.blitz",
+      gameType: "blitz",
+      gameName: "blitz-launch-1",
       updatedAt: "2026-03-19T11:30:00.000Z",
     });
 
@@ -352,9 +355,9 @@ describe("useFactoryV2 pending launch cache", () => {
     });
 
     await vi.waitFor(() => {
-      expect(getFactory().modeRuns[0]?.id).toBe("pending:slot.eternum:eternum-launch-1");
+      expect(getFactory().modeRuns[0]?.id).toBe("pending:slot.blitz:blitz-launch-1");
     });
 
-    expect(getFactory().pendingRunName).toBe("eternum-launch-1");
+    expect(getFactory().pendingRunName).toBe("blitz-launch-1");
   });
 });

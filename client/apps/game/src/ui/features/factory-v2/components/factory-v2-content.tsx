@@ -29,7 +29,9 @@ export const FactoryV2Content = () => {
       <div className={cn("pointer-events-none absolute inset-0", appearance.backdropClassName)} />
       <div className="relative mx-auto max-w-6xl space-y-4 pt-3 md:space-y-6 md:pt-0">
         <div className={cn("px-2 pb-4 md:border-b md:px-0 md:pb-6", appearance.sectionDividerClassName)}>
-          <div className="rounded-[30px] border border-black/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,248,240,0.55))] px-4 py-5 shadow-[0_20px_44px_rgba(30,20,10,0.08)] backdrop-blur-xl md:px-6 md:py-6">
+          <div
+            className={cn("rounded-[30px] px-4 py-5 backdrop-blur-xl md:px-6 md:py-6", appearance.mainSurfaceClassName)}
+          >
             <div className="mx-auto max-w-xl space-y-5">
               <FactoryV2ModeSwitch
                 modes={factoryModeDefinitions}
