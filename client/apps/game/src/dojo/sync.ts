@@ -166,6 +166,7 @@ const createMainThreadQueueProcessor = (
     queueUpdate: (entityId: string, data: ToriiEntity) => {
       updateQueue.push({ entityId, data });
       if (!isProcessing) {
+        if (pendingTimeoutId !== null) clearTimeout(pendingTimeoutId);
         pendingTimeoutId = setTimeout(processNextInQueue, 200);
       }
     },
@@ -230,7 +231,11 @@ export const syncEntitiesDebounced = async (
   const applyBatch = ({ upserts, deletions }: BatchPayload) => {
     if (deletions.length > 0) {
       deletions.forEach((entityId) => {
-        world.deleteEntity(entityId as Entity);
+        try {
+          world.deleteEntity(entityId as Entity);
+        } catch (error) {
+          console.error("[sync] failed to delete entity", entityId, error);
+        }
       });
     }
 
@@ -238,7 +243,11 @@ export const syncEntitiesDebounced = async (
       const modelsArray = upserts.map((value) => {
         return { hashed_keys: value.hashed_keys, models: value.models };
       });
-      setEntities(modelsArray, world.components, logging);
+      try {
+        setEntities(modelsArray, world.components, logging);
+      } catch (error) {
+        console.error("[sync] failed to apply entity upserts", error);
+      }
     }
   };
 
