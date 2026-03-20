@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-blink-441",
-    "launchRequestId": "23361954597-1",
+    "gameName": "bltz-chirp-544",
+    "launchRequestId": "23362001309-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23361954597,
+    "workflowRunId": 23362001309,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "2c9409b7-68e7-49d5-b924-9c1278c7567a"
+    "stepId": "create-world",
+    "leaseId": "ffaf90de-b841-445c-b7e9-9537c99ceed9"
   },
-  "acquiredAt": "2026-03-20T20:49:09.395Z",
-  "heartbeatAt": "2026-03-20T20:49:14.343Z",
-  "expiresAt": "2026-03-20T20:49:14.343Z",
-  "releasedAt": "2026-03-20T20:49:14.343Z"
+  "acquiredAt": "2026-03-20T20:50:34.322Z",
+  "heartbeatAt": "2026-03-20T20:50:34.322Z",
+  "expiresAt": "2026-03-20T21:00:34.322Z"
 }
