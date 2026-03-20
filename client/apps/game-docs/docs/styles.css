@@ -48,6 +48,12 @@ pre,
 .vocs_Sidebar {
   background-color: var(--realm-bg-void) !important;
   border-right-color: var(--realm-border-etched) !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.vocs_Sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .vocs_Sidebar a {
