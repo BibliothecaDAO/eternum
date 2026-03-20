@@ -181,6 +181,36 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(startTimePanel?.className).toContain("overflow-hidden");
   });
 
+  it("restores visible native date and time inputs on desktop", async () => {
+    await act(async () => {
+      root.render(
+        <FactoryV2StartWorkspace
+          {...buildProps({
+            mode: "eternum",
+            modeLabel: "Eternum",
+            presets: [createPreset("eternum")],
+            selectedPreset: createPreset("eternum"),
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const startDateInput = container.querySelector<HTMLInputElement>("#factory-start-date");
+    const startTimeInput = container.querySelector<HTMLInputElement>("#factory-start-time");
+    const startDateDisplay = container.querySelector('[data-testid="factory-start-date-display"]');
+    const startTimeDisplay = container.querySelector('[data-testid="factory-start-time-display"]');
+
+    expect(startDateInput?.className).toContain("sm:static");
+    expect(startDateInput?.className).toContain("sm:opacity-100");
+    expect(startDateInput?.className).toContain("sm:border");
+    expect(startTimeInput?.className).toContain("sm:static");
+    expect(startTimeInput?.className).toContain("sm:opacity-100");
+    expect(startTimeInput?.className).toContain("sm:border");
+    expect(startDateDisplay?.className).toContain("sm:hidden");
+    expect(startTimeDisplay?.className).toContain("sm:hidden");
+  });
+
   it("lets the blitz schedule keep the full row when duration is shown", async () => {
     await act(async () => {
       root.render(

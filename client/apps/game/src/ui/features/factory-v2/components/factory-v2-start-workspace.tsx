@@ -46,11 +46,16 @@ const FACTORY_SELECT_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} a
 const FACTORY_SCHEDULE_PANEL_CLASS_NAME =
   "block min-w-0 overflow-hidden rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)] transition-colors focus-within:border-black/16";
 
-const FACTORY_NATIVE_PICKER_INPUT_CLASS_NAME =
+const FACTORY_MOBILE_PICKER_INPUT_CLASS_NAME =
   "absolute inset-0 h-full w-full min-w-0 max-w-full cursor-pointer opacity-0";
 
+const FACTORY_DESKTOP_PICKER_INPUT_CLASS_NAME =
+  "sm:static sm:mt-2 sm:block sm:h-11 sm:w-full sm:min-w-0 sm:max-w-full sm:rounded-[18px] sm:border sm:border-black/10 sm:bg-white/78 sm:px-4 sm:text-left sm:text-sm sm:font-medium sm:text-black sm:opacity-100 sm:outline-none sm:transition-colors sm:focus:border-black/25 sm:[color-scheme:light]";
+
+const FACTORY_NATIVE_PICKER_INPUT_CLASS_NAME = `${FACTORY_MOBILE_PICKER_INPUT_CLASS_NAME} ${FACTORY_DESKTOP_PICKER_INPUT_CLASS_NAME}`;
+
 const FACTORY_SCHEDULE_VALUE_SURFACE_CLASS_NAME =
-  "pointer-events-none mt-2 flex h-11 items-center gap-3 rounded-[18px] border border-black/10 bg-white/78 px-4 text-left text-[13px] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] md:text-sm";
+  "pointer-events-none mt-2 flex h-11 items-center gap-3 rounded-[18px] border border-black/10 bg-white/78 px-4 text-left text-[13px] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] sm:hidden";
 
 export const FactoryV2StartWorkspace = ({
   mode,
