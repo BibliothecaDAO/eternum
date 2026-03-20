@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-spark-422",
-    "launchRequestId": "23363430908-1",
+    "gameName": "bltz-lilt-10000",
+    "launchRequestId": "23366152008-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23363430908,
+    "workflowRunId": 23366152008,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "cdbcadbf-cba9-4d98-93fa-4c8652f0dc8b"
+    "stepId": "create-world",
+    "leaseId": "d13c203c-1744-41ec-aa63-26e1b38a6c20"
   },
-  "acquiredAt": "2026-03-20T21:35:58.112Z",
-  "heartbeatAt": "2026-03-20T21:36:02.821Z",
-  "expiresAt": "2026-03-20T21:36:02.821Z",
-  "releasedAt": "2026-03-20T21:36:02.821Z"
+  "acquiredAt": "2026-03-20T23:09:00.272Z",
+  "heartbeatAt": "2026-03-20T23:09:00.272Z",
+  "expiresAt": "2026-03-20T23:19:00.272Z"
 }
