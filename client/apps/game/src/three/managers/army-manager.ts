@@ -180,6 +180,9 @@ export class ArmyManager {
   private deferredArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
+  // Armies that have been visually hidden but not yet fully removed — all rendering
+  // paths must skip these to prevent ghost units from reappearing during chunk transitions
+  private suppressedArmies: Set<ID> = new Set();
 
   // Path visualization
   private pathRenderer: PathRenderer;
@@ -1504,6 +1507,9 @@ export class ArmyManager {
             if (seenArmyIds.has(id)) {
               continue;
             }
+            if (this.suppressedArmies.has(id)) {
+              continue;
+            }
             const army = this.armies.get(id);
             // Double check visibility using the precise check
             if (army && this.isArmyVisible(army, bounds)) {
@@ -1549,7 +1555,9 @@ export class ArmyManager {
     const deferred = [...this.deferredArmyQueue];
     this.deferredArmyQueue.clear();
     for (const entityId of deferred) {
-      void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      if (!this.suppressedArmies.has(entityId)) {
+        void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      }
     }
   }
 
@@ -1560,6 +1568,10 @@ export class ArmyManager {
     }
 
     if (!isCommittedManagerChunk(this.currentChunkKey)) {
+      return false;
+    }
+
+    if (this.suppressedArmies.has(entityId)) {
       return false;
     }
 
@@ -1918,16 +1930,28 @@ export class ArmyManager {
    * so they don't render at stale positions during the freshness window.
    */
   public hideArmyVisual(entityId: ID): void {
+    this.suppressedArmies.add(entityId);
     const slot = this.visibleArmyIndices.get(entityId);
     if (slot !== undefined) {
       this.armyModel.hideInstanceSlot(slot);
     }
+    this.cleanupMovementSourceBucket(entityId);
+  }
+
+  public unsuppressArmy(entityId: ID): void {
+    this.suppressedArmies.delete(entityId);
+  }
+
+  public getSuppressedArmiesRef(): Set<ID> {
+    return this.suppressedArmies;
   }
 
   public removeArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
     const { playDefeatFx = true } = options;
 
     if (!this.armies.has(entityId)) return;
+
+    this.suppressedArmies.delete(entityId);
 
     const numericEntityId = this.toNumericId(entityId);
     if (this.activeArmyAttachmentEntities.has(numericEntityId)) {
@@ -3058,6 +3082,7 @@ ${
 
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
+    this.suppressedArmies.clear();
     this.chunkToArmies.clear();
     this.movementCompleteListeners.clear();
 

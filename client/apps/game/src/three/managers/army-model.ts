@@ -1966,6 +1966,10 @@ export class ArmyModel {
           mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
           mesh.instanceMatrix.needsUpdate = true;
         });
+        if (modelData.contactShadowMesh) {
+          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+        }
       }
     });
     this.cosmeticModels.forEach((modelData) => {
@@ -1974,6 +1978,10 @@ export class ArmyModel {
           mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
           mesh.instanceMatrix.needsUpdate = true;
         });
+        if (modelData.contactShadowMesh) {
+          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+        }
       }
     });
   }

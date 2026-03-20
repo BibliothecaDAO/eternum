@@ -2673,6 +2673,7 @@ export default class WorldmapScene extends WarpTravel {
       pendingArmyMovementStartedAt: this.pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts: this.pendingArmyMovementFallbackTimeouts,
       armyStructureOwners: this.armyStructureOwners,
+      suppressedArmies: this.armyManager.getSuppressedArmiesRef(),
       fetchedChunks: this.fetchedChunks,
       pendingChunks: this.pendingChunks,
       pinnedChunkKeys: this.pinnedChunkKeys,
@@ -2884,6 +2885,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyRemovals.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
     this.deferredChunkRemovals.delete(entityId);
+    this.armyManager.unsuppressArmy(entityId);
   }
 
   public deleteChest(entityId: ID) {
