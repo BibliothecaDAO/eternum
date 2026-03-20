@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23362001309-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-20T20:50:28.712Z",
-  "updatedAt": "2026-03-20T20:51:10.683Z",
+  "updatedAt": "2026-03-20T20:51:12.833Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-20T20:51:12.833Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -67,5 +68,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-chirp-544.json",
     "createGameTxHash": "0x5e3b4c577e5080bb09bad125e2871b3f8832a396c05e9e076495cabcb3d9057",
     "worldAddress": "0x00e5eef25329681ce47e3691056854ff065ea98af2c0e0b6e9ee8c42d2574f8a"
+  },
+  "activeLease": {
+    "launchRequestId": "23362001309-1",
+    "workflowRunId": 23362001309,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-20T20:51:12.833Z",
+    "expiresAt": "2026-03-20T21:36:12.833Z"
   }
 }
