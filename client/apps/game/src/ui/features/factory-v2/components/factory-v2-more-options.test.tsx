@@ -149,6 +149,38 @@ describe("FactoryV2MoreOptions", () => {
     expect(container.textContent).toContain("Token decimals");
   });
 
+  it("shows the active Blitz exploration reward table for the selected duration", async () => {
+    const draft = createFactoryMoreOptionsDraft("blitz", "slot", 60);
+
+    await act(async () => {
+      root.render(
+        <FactoryV2MoreOptions
+          {...buildProps({
+            mode: "blitz",
+            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "slot", 60),
+            draft,
+            errors: validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false }, 60).errors,
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const explorationRewardsButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Exploration rewards"),
+    );
+
+    await act(async () => {
+      (explorationRewardsButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Essence");
+    expect(container.textContent).toContain("35% chance");
+    expect(container.textContent).toContain("1,000");
+    expect(container.textContent).not.toContain("Knight");
+  });
+
   it("keeps Blitz player-cap controls out of the advanced drawer", async () => {
     const draft = createFactoryMoreOptionsDraft("blitz", "slot");
 

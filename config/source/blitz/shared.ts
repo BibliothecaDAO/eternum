@@ -1,5 +1,10 @@
 import { ResourcesIds } from "../../../packages/types/src/constants";
-import type { ResourceCost, ResourceInputs, ResourceOutputs } from "../../../packages/types/src/types/common";
+import type {
+  BlitzExplorationRewardProfileId,
+  ResourceCost,
+  ResourceInputs,
+  ResourceOutputs,
+} from "../../../packages/types/src/types/common";
 import {
   LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
@@ -11,7 +16,7 @@ import type { ConfigPatch } from "../common/merge-config";
 
 const REALM_DEPLOYED_START_TROOP_COUNT = 1_500;
 
-export type BlitzBalanceProfileId = "official-60" | "official-90";
+export type BlitzBalanceProfileId = BlitzExplorationRewardProfileId;
 export type BlitzBalanceProfile = ConfigPatch;
 
 function buildSimpleResourceRecipe(wheatAmount: number, laborAmount: number) {

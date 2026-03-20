@@ -43,6 +43,7 @@ type NativeConfigProvider = Pick<
   | "set_mmr_config"
   | "set_victory_points_config"
   | "set_discoverable_village_starting_resources_config"
+  | "set_blitz_exploration_config"
   | "set_blitz_registration_config"
 >;
 
@@ -760,6 +761,34 @@ export const setDiscoverableVillageSpawnResourcesConfig: NativeStep = async ({ a
   );
 };
 
+const BLITZ_EXPLORATION_REWARD_PROFILE_IDS = {
+  "official-60": 1,
+  "official-90": 2,
+} as const;
+
+function resolveBlitzExplorationRewardProfileId(config: NativeConfig) {
+  return BLITZ_EXPLORATION_REWARD_PROFILE_IDS[config.blitz.exploration.rewardProfileId];
+}
+
+function buildBlitzExplorationConfigPayload(config: NativeConfig) {
+  if (!config.blitz.mode.on) {
+    return null;
+  }
+
+  return {
+    reward_profile_id: resolveBlitzExplorationRewardProfileId(config),
+  };
+}
+
+export const setBlitzExplorationConfig: NativeStep = async ({ account, provider, config }) => {
+  const payload = buildBlitzExplorationConfigPayload(config);
+  if (!payload) {
+    return;
+  }
+
+  await provider.set_blitz_exploration_config(withSigner(account, payload));
+};
+
 function buildBlitzRegistrationConfigPayload(provider: NativeConfigProvider, config: NativeConfig) {
   if (!config.blitz.mode.on) {
     return null;
@@ -841,6 +870,7 @@ export const NATIVE_FACTORY_WORLD_CONFIG_IMPLEMENTATIONS = {
   setMMRConfig,
   setVictoryPointsConfig,
   setDiscoverableVillageSpawnResourcesConfig,
+  setBlitzExplorationConfig,
   setBlitzRegistrationParametersConfig,
   setBlitzSeasonConfig,
   setBlitzRegistrationConfig,

@@ -34,6 +34,7 @@ describe("Factory V2 map options", () => {
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
       "Prize token address",
     );
+    expect(blitzSections.find((section) => section.id === "explorationRewards")?.previewRows).toHaveLength(9);
   });
 
   it("exposes the Blitz max players field separately from advanced sections", () => {
@@ -102,6 +103,30 @@ describe("Factory V2 map options", () => {
     const customDurationDraft = createFactoryMoreOptionsDraft("blitz", "slot", 45);
 
     expect(customDurationDraft).toEqual(baseDraft);
+  });
+
+  it("switches the displayed Blitz exploration rewards when the duration changes", () => {
+    const sixtyMinuteRewards =
+      getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "slot", 60).find(
+        (section) => section.id === "explorationRewards",
+      )?.previewRows ?? [];
+    const ninetyMinuteRewards =
+      getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "slot", 90).find(
+        (section) => section.id === "explorationRewards",
+      )?.previewRows ?? [];
+
+    expect(sixtyMinuteRewards).toHaveLength(6);
+    expect(sixtyMinuteRewards[0]).toMatchObject({
+      label: "Essence",
+      amountLabel: "150",
+      probabilityLabel: "35%",
+    });
+    expect(ninetyMinuteRewards).toHaveLength(9);
+    expect(ninetyMinuteRewards[6]).toMatchObject({
+      label: "Knight",
+      amountLabel: "1,000",
+      probabilityLabel: "2%",
+    });
   });
 
   it("omits max player overrides when two-player mode hides the field", () => {

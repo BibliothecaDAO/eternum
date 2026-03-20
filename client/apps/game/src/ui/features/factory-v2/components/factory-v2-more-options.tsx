@@ -9,6 +9,21 @@ const buildInitialExpandedSectionIds = (sections: FactoryMoreOptionSection[]) =>
 const buildSectionIdSignature = (sections: FactoryMoreOptionSection[]) =>
   sections.map((section) => section.id).join("|");
 
+function describeSectionContents(section: FactoryMoreOptionSection) {
+  const fieldCount = section.fields.length;
+  const previewRowCount = section.previewRows?.length ?? 0;
+
+  if (fieldCount > 0 && previewRowCount > 0) {
+    return `${fieldCount} fields • ${previewRowCount} rewards`;
+  }
+
+  if (previewRowCount > 0) {
+    return `${previewRowCount} rewards`;
+  }
+
+  return `${fieldCount} fields`;
+}
+
 export const FactoryV2MoreOptions = ({
   mode,
   isOpen,
@@ -102,7 +117,7 @@ export const FactoryV2MoreOptions = ({
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-black/42">
                     <span>{section.description}</span>
                     <span>•</span>
-                    <span>{section.fields.length} fields</span>
+                    <span>{describeSectionContents(section)}</span>
                     {section.fields.some((field) => Boolean(errors[field.id])) ? (
                       <>
                         <span>•</span>
@@ -121,6 +136,18 @@ export const FactoryV2MoreOptions = ({
 
               {expandedSectionIds.includes(section.id) ? (
                 <div className="space-y-2 border-t border-black/8 px-3 py-2.5">
+                  {section.previewRows?.map((row) => (
+                    <div
+                      key={row.id}
+                      className="flex items-center justify-between gap-3 rounded-[16px] border border-black/8 bg-white/80 px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-medium leading-5 text-black/74">{row.label}</div>
+                        <div className="text-[11px] leading-4 text-black/38">{row.probabilityLabel} chance</div>
+                      </div>
+                      <div className="text-right text-[13px] font-semibold text-black/74">{row.amountLabel}</div>
+                    </div>
+                  ))}
                   {section.fields.map((field) => (
                     <label key={field.id} className="block rounded-[16px] border border-black/8 bg-white/80 px-3 py-2">
                       <div className="flex items-center gap-3">

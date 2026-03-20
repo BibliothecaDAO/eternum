@@ -39,6 +39,8 @@ describe("applyDeploymentConfigOverrides", () => {
     expect(result.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
     expect(result.realmUpgradeCosts[RealmLevels.Kingdom]?.[0]?.amount).toBe(720);
     expect(result.startingResources.find((resource) => resource.resource === ResourcesIds.Knight)?.amount).toBe(3_500);
+    expect(result.blitz.exploration.rewardProfileId).toBe("official-60");
+    expect(result.blitz.exploration.rewards).toHaveLength(6);
     expect(
       result.discoverableVillageStartingResources.find((resource) => resource.resource === ResourcesIds.Donkey)
         ?.min_amount,
@@ -60,6 +62,7 @@ describe("applyDeploymentConfigOverrides", () => {
     expect(result.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(
       baseConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount,
     );
+    expect(result.blitz.exploration.rewardProfileId).toBe("official-90");
   });
 
   test("applies validated map config overrides", () => {

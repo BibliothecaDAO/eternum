@@ -149,6 +149,76 @@
     "relicHexDistanceFromCenter": 10,
     "relicChestRelicsPerChest": 3
   },
+  "blitz": {
+    "exploration": {
+      "rewardProfileId": "official-90",
+      "rewards": [
+        {
+          "rewardId": 38,
+          "amount": 100,
+          "probabilityBps": 3000
+        },
+        {
+          "rewardId": 38,
+          "amount": 250,
+          "probabilityBps": 2000
+        },
+        {
+          "rewardId": 38,
+          "amount": 500,
+          "probabilityBps": 1500
+        },
+        {
+          "rewardId": 23,
+          "amount": 250,
+          "probabilityBps": 1500
+        },
+        {
+          "rewardId": 23,
+          "amount": 500,
+          "probabilityBps": 800
+        },
+        {
+          "rewardId": 25,
+          "amount": 100,
+          "probabilityBps": 600
+        },
+        {
+          "rewardId": 26,
+          "amount": 1000,
+          "probabilityBps": 200
+        },
+        {
+          "rewardId": 29,
+          "amount": 1000,
+          "probabilityBps": 200
+        },
+        {
+          "rewardId": 32,
+          "amount": 1000,
+          "probabilityBps": 200
+        }
+      ]
+    },
+    "mode": {
+      "on": true
+    },
+    "registration": {
+      "fee_token": "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+      "fee_recipient": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
+      "fee_amount": "250000000000000000000",
+      "registration_count_max": 24,
+      "registration_delay_seconds": 1,
+      "registration_period_seconds": 10800,
+      "entry_token_class_hash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
+      "entry_token_ipfs_cid": "Qm123idkmaybe",
+      "collectible_cosmetics_max_items": 5,
+      "collectible_cosmetics_address": "0x01f36515d7d307c9d3e41df48f29e9a6b4bbc445d0fbdbbce944a4678cd52b02",
+      "collectible_timelock_address": "0x70e7aea02752d5e57e78fd455caf9b6a412730ad604a2037d17118d93733711",
+      "collectibles_lootchest_address": "0x0572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
+      "collectibles_elitenft_address": "0x0"
+    }
+  },
   "resources": {
     "resourcePrecision": 1000000000,
     "productionByComplexRecipe": {
@@ -670,7 +740,10 @@
       "38": [],
       "57": []
     },
-    "productionBySimpleRecipeOutputs": [],
+    "productionBySimpleRecipeOutputs": {
+      "resource": 38,
+      "amount": 3
+    },
     "laborOutputPerResource": {
       "1": 0,
       "2": 0,
@@ -1597,26 +1670,6 @@
     "pointsForNonHyperstructureClaimAgainstBandits": "500000000",
     "pointsForTileExploration": "10000000",
     "pointsForRelicDiscovery": "1000000000"
-  },
-  "blitz": {
-    "mode": {
-      "on": true
-    },
-    "registration": {
-      "fee_token": "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
-      "fee_recipient": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-      "fee_amount": "250000000000000000000",
-      "registration_count_max": 24,
-      "registration_delay_seconds": 1,
-      "registration_period_seconds": 10800,
-      "entry_token_class_hash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
-      "entry_token_ipfs_cid": "Qm123idkmaybe",
-      "collectible_cosmetics_max_items": 5,
-      "collectible_cosmetics_address": "0x01f36515d7d307c9d3e41df48f29e9a6b4bbc445d0fbdbbce944a4678cd52b02",
-      "collectible_timelock_address": "0x70e7aea02752d5e57e78fd455caf9b6a412730ad604a2037d17118d93733711",
-      "collectibles_lootchest_address": "0x0572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
-      "collectibles_elitenft_address": "0x0"
-    }
   },
   "mmr": {
     "enabled": true,

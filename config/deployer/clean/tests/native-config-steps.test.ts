@@ -2,7 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { getGameManifest } from "../../../../contracts/utils/utils";
 import { FACTORY_WORLD_CONFIG_STEPS, resolveFactoryWorldConfigSteps } from "../config/steps";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
-import { setBlitzRegistrationParametersConfig, setFaithConfig, setSeasonConfig } from "../config/native-steps";
+import {
+  setBlitzExplorationConfig,
+  setBlitzRegistrationParametersConfig,
+  setFaithConfig,
+  setSeasonConfig,
+} from "../config/native-steps";
 
 describe("native config steps", () => {
   test("keeps the registry atomic instead of grouped", () => {
@@ -16,6 +21,7 @@ describe("native config steps", () => {
     expect(stepIds).toContain("quest");
     expect(stepIds).toContain("building-base");
     expect(stepIds).toContain("building-categories");
+    expect(stepIds).toContain("blitz-exploration");
     expect(stepIds).toContain("blitz-registration");
     expect(stepIds).toContain("season");
     expect(stepIds).toContain("faith");
@@ -42,6 +48,7 @@ describe("native config steps", () => {
     }).map((step) => step.id);
 
     expect(blitzStepIds).toContain("blitz-registration");
+    expect(blitzStepIds).toContain("blitz-exploration");
     expect(blitzStepIds).toContain("mmr");
     expect(blitzStepIds).not.toContain("faith");
     expect(blitzStepIds).not.toContain("trade");
@@ -54,8 +61,29 @@ describe("native config steps", () => {
     expect(eternumStepIds).toContain("bank");
     expect(eternumStepIds).not.toContain("mmr");
     expect(eternumStepIds).toContain("season");
+    expect(eternumStepIds).not.toContain("blitz-exploration");
     expect(eternumStepIds).not.toContain("blitz-registration");
     expect(eternumStepIds).not.toContain("blitz-season");
+  });
+
+  test("writes the inferred blitz exploration reward profile id", async () => {
+    const config = loadEnvironmentConfiguration("slot.blitz");
+    const capturedCalls: Array<Record<string, unknown>> = [];
+    const provider = {
+      manifest: getGameManifest("slot") as any,
+      set_blitz_exploration_config: async (payload: Record<string, unknown>) => {
+        capturedCalls.push(payload);
+        return { statusReceipt: "ok" };
+      },
+    };
+
+    await setBlitzExplorationConfig({
+      account: { address: "0x1" } as any,
+      provider: provider as any,
+      config,
+    });
+
+    expect(capturedCalls).toEqual([{ signer: expect.anything(), reward_profile_id: 2 }]);
   });
 
   test("applies faith config with the expected payload scaling", async () => {

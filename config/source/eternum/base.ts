@@ -25,6 +25,10 @@ const eternumBlitzModeConfig: ConfigPatch = {
     mode: {
       on: false,
     },
+    exploration: {
+      rewardProfileId: "official-90",
+      rewards: [],
+    },
     registration: {
       fee_token: "0x0",
       fee_recipient: "0x0",

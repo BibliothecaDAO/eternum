@@ -1,5 +1,11 @@
 import { getConfigFromNetwork, resolveBlitzConfigForDuration } from "@config";
-import type { Config, FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import { findResourceById } from "@bibliothecadao/types";
+import type {
+  BlitzExplorationReward,
+  Config,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import {
   DEFAULT_TOKEN_PRECISION,
   formatIntegerStringTokenAmount,
@@ -8,6 +14,7 @@ import {
 import type { FactoryGameMode, FactoryLaunchChain } from "./types";
 
 type ExplorationConfig = Config["exploration"];
+type BlitzExplorationConfig = Config["blitz"]["exploration"];
 type BlitzRegistrationConfig = Config["blitz"]["registration"];
 
 type PairOverrideKey =
@@ -50,7 +57,7 @@ export type FactoryMoreOptionFieldId =
   | "prizeAmount"
   | "prizePrecision";
 
-type FactoryMoreOptionSectionId = "discovery" | "hyperstructure" | "relic" | "players" | "prize";
+type FactoryMoreOptionSectionId = "discovery" | "hyperstructure" | "relic" | "players" | "prize" | "explorationRewards";
 type FactoryMoreOptionPlacement = "advanced" | "blitz-setup";
 type FactoryMoreOptionsVisibility = {
   twoPlayerMode?: boolean;
@@ -58,6 +65,7 @@ type FactoryMoreOptionsVisibility = {
 
 interface FactoryMoreOptionsConfigContext {
   explorationConfig: ExplorationConfig;
+  blitzExplorationConfig: BlitzExplorationConfig | null;
   blitzRegistrationConfig: BlitzRegistrationConfig;
 }
 
@@ -138,6 +146,14 @@ export interface FactoryMoreOptionSection {
   title: string;
   description: string;
   fields: FactoryMoreOptionField[];
+  previewRows?: FactoryMoreOptionPreviewRow[];
+}
+
+export interface FactoryMoreOptionPreviewRow {
+  id: string;
+  label: string;
+  amountLabel: string;
+  probabilityLabel: string;
 }
 
 export type FactoryMoreOptionsDraft = Record<FactoryMoreOptionFieldId, string>;
@@ -203,6 +219,10 @@ const SECTION_METADATA: Record<
   prize: {
     title: "Prize",
     description: "Token and amount",
+  },
+  explorationRewards: {
+    title: "Exploration rewards",
+    description: "Active Blitz reward table",
   },
 };
 
@@ -461,9 +481,36 @@ const resolveMoreOptionsConfigContext = (
 
   return {
     explorationConfig: config.exploration,
+    blitzExplorationConfig: mode === "blitz" ? config.blitz.exploration : null,
     blitzRegistrationConfig: config.blitz.registration,
   };
 };
+
+function formatProbabilityFromBps(probabilityBps: number): string {
+  const probabilityPercent = probabilityBps / 100;
+
+  if (Number.isInteger(probabilityPercent)) {
+    return `${probabilityPercent}%`;
+  }
+
+  return `${probabilityPercent.toFixed(2).replace(/\.?0+$/, "")}%`;
+}
+
+function resolveBlitzExplorationRewardLabel(reward: BlitzExplorationReward): string {
+  const resource = findResourceById(reward.rewardId);
+  return resource?.trait ?? String(reward.rewardId);
+}
+
+function buildBlitzExplorationRewardRows(
+  blitzExplorationConfig: BlitzExplorationConfig,
+): FactoryMoreOptionPreviewRow[] {
+  return blitzExplorationConfig.rewards.map((reward, index) => ({
+    id: `${blitzExplorationConfig.rewardProfileId}-${index}-${reward.rewardId}`,
+    label: resolveBlitzExplorationRewardLabel(reward),
+    amountLabel: `${reward.amount.toLocaleString()}`,
+    probabilityLabel: formatProbabilityFromBps(reward.probabilityBps),
+  }));
+}
 
 function buildBlitzPrizeFields(): FactoryMoreOptionField[] {
   return [
@@ -754,7 +801,10 @@ export const createFactoryMoreOptionsDraft = (
 export const getFactoryMoreOptionSections = (
   mode: FactoryGameMode,
   visibility: FactoryMoreOptionsVisibility = {},
+  chain: FactoryLaunchChain = "slot",
+  durationMinutes?: number | null,
 ): FactoryMoreOptionSection[] => {
+  const { blitzExplorationConfig } = resolveMoreOptionsConfigContext(mode, chain, durationMinutes);
   const sections = new Map<FactoryMoreOptionSectionId, FactoryMoreOptionField[]>();
 
   getFieldDefinitionsForPlacement(mode, visibility, "advanced").forEach((definition) => {
@@ -778,12 +828,27 @@ export const getFactoryMoreOptionSections = (
     sections.set("prize", buildBlitzPrizeFields());
   }
 
-  return Array.from(sections.entries()).map(([id, fields]) => ({
+  const advancedSections = Array.from(sections.entries()).map(([id, fields]) => ({
     id,
     title: SECTION_METADATA[id].title,
     description: SECTION_METADATA[id].description,
     fields,
   }));
+
+  if (!blitzExplorationConfig) {
+    return advancedSections;
+  }
+
+  return [
+    ...advancedSections,
+    {
+      id: "explorationRewards",
+      title: SECTION_METADATA.explorationRewards.title,
+      description: SECTION_METADATA.explorationRewards.description,
+      fields: [],
+      previewRows: buildBlitzExplorationRewardRows(blitzExplorationConfig),
+    },
+  ];
 };
 
 export const getFactoryMoreOptionField = (

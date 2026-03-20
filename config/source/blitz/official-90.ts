@@ -25,9 +25,27 @@ const official90BlitzStartingResources = buildBlitzStartingResources(
   3_000,
 );
 
+const official90BlitzExplorationRewards = [
+  { rewardId: ResourcesIds.Essence, amount: 100, probabilityBps: 3_000 },
+  { rewardId: ResourcesIds.Essence, amount: 250, probabilityBps: 2_000 },
+  { rewardId: ResourcesIds.Essence, amount: 500, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, amount: 250, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, amount: 500, probabilityBps: 800 },
+  { rewardId: ResourcesIds.Donkey, amount: 100, probabilityBps: 600 },
+  { rewardId: ResourcesIds.Knight, amount: 1_000, probabilityBps: 200 },
+  { rewardId: ResourcesIds.Crossbowman, amount: 1_000, probabilityBps: 200 },
+  { rewardId: ResourcesIds.Paladin, amount: 1_000, probabilityBps: 200 },
+] as const;
+
 export const official90BlitzProfile: BlitzBalanceProfile = {
   season: {
     durationSeconds: OFFICIAL_90_BLITZ_DURATION_SECONDS,
+  },
+  blitz: {
+    exploration: {
+      rewardProfileId: "official-90",
+      rewards: [...official90BlitzExplorationRewards],
+    },
   },
   resources: {
     productionByComplexRecipe: buildOfficialBlitzComplexRecipes(1),

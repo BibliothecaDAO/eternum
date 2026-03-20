@@ -5,6 +5,7 @@ import {
   setBattleConfig,
   setBankConfig,
   setBaseBuildingConfig,
+  setBlitzExplorationConfig,
   setBlitzRegistrationParametersConfig,
   setBuildingCategoryConfig,
   setCapacityConfig,
@@ -120,6 +121,9 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
   defineStep("game-mode", "Set game mode config", setGameModeConfig),
   defineStep("factory-address", "Set factory address", setFactoryAddress, {
     shouldRun: ({ config }) => hasFactoryAddress(config),
+  }),
+  defineStep("blitz-exploration", "Set blitz exploration config", setBlitzExplorationConfig, {
+    shouldRun: ({ config }) => isBlitzConfiguration(config),
   }),
   defineStep("mmr", "Set MMR config", setMMRConfig, {
     shouldRun: ({ config }) => isBlitzConfiguration(config) && hasMmrConfig(config),

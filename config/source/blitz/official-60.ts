@@ -58,11 +58,7 @@ const official60BlitzSimpleBuildingCosts = {
 
 const official60BlitzRealmUpgradeCosts = {
   [RealmLevels.Settlement]: [],
-  [RealmLevels.City]: [
-    { resource: ResourcesIds.Labor, amount: 180 },
-    { resource: ResourcesIds.Wheat, amount: 1_200 },
-    { resource: ResourcesIds.Essence, amount: 200 },
-  ],
+  [RealmLevels.City]: [],
   [RealmLevels.Kingdom]: [
     { resource: ResourcesIds.Labor, amount: 720 },
     { resource: ResourcesIds.Wheat, amount: 2_400 },
@@ -91,9 +87,24 @@ const official60BlitzStartingResources = buildBlitzStartingResources(
   5_000,
 );
 
+const official60BlitzExplorationRewards = [
+  { rewardId: ResourcesIds.Essence, amount: 150, probabilityBps: 3_500 },
+  { rewardId: ResourcesIds.Essence, amount: 300, probabilityBps: 2_500 },
+  { rewardId: ResourcesIds.Essence, amount: 600, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, amount: 500, probabilityBps: 1_500 },
+  { rewardId: ResourcesIds.Labor, amount: 1_000, probabilityBps: 500 },
+  { rewardId: ResourcesIds.Donkey, amount: 500, probabilityBps: 500 },
+] as const;
+
 export const official60BlitzProfile: BlitzBalanceProfile = {
   season: {
     durationSeconds: OFFICIAL_60_BLITZ_DURATION_SECONDS,
+  },
+  blitz: {
+    exploration: {
+      rewardProfileId: "official-60",
+      rewards: [...official60BlitzExplorationRewards],
+    },
   },
   resources: {
     productionByComplexRecipe: buildOfficialBlitzComplexRecipes(2),

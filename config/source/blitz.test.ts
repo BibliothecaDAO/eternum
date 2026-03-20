@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { BuildingType, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, test } from "bun:test";
 import {
@@ -19,6 +20,45 @@ function findDiscoverableVillageResourceAmount(
   resourceId: ResourcesIds,
 ): { min_amount: number; max_amount: number } | undefined {
   return resources.find((resource) => resource.resource === resourceId);
+}
+
+function findBlitzExplorationReward(
+  rewards: Array<{ rewardId: ResourcesIds; amount: number; probabilityBps: number }>,
+  rewardId: ResourcesIds,
+  amount: number,
+) {
+  return rewards.find((reward) => reward.rewardId === rewardId && reward.amount === amount);
+}
+
+function extractContractRewardRows(functionName: string) {
+  const contractSource = readFileSync(
+    new URL("../../contracts/game/src/systems/utils/blitz_exploration.cairo", import.meta.url),
+    "utf8",
+  );
+  const functionMatch = contractSource.match(
+    new RegExp(`fn ${functionName}\\([^)]*\\) -> Span<\\(u8, u128, u128\\)> \\{([\\s\\S]*?)\\n    \\}`, "m"),
+  );
+
+  if (!functionMatch) {
+    throw new Error(`Could not find ${functionName} in blitz_exploration.cairo`);
+  }
+
+  const resourceIdByContractName = {
+    ESSENCE: ResourcesIds.Essence,
+    LABOR: ResourcesIds.Labor,
+    DONKEY: ResourcesIds.Donkey,
+    KNIGHT_T1: ResourcesIds.Knight,
+    CROSSBOWMAN_T1: ResourcesIds.Crossbowman,
+    PALADIN_T1: ResourcesIds.Paladin,
+  } as const;
+
+  return Array.from(functionMatch[1].matchAll(/\(ResourceTypes::([A-Z0-9_]+), ([0-9_]+), ([0-9_]+)\)/g)).map(
+    ([, rewardName, amount, probabilityBps]) => ({
+      rewardId: resourceIdByContractName[rewardName as keyof typeof resourceIdByContractName],
+      amount: Number(amount.replaceAll("_", "")),
+      probabilityBps: Number(probabilityBps.replaceAll("_", "")),
+    }),
+  );
 }
 
 describe("Blitz balance profiles", () => {
@@ -48,6 +88,17 @@ describe("Blitz balance profiles", () => {
       min_amount: 5_000,
       max_amount: 5_000,
     });
+    expect(profiledConfig.blitz.exploration.rewardProfileId).toBe("official-60");
+    expect(findBlitzExplorationReward(profiledConfig.blitz.exploration.rewards, ResourcesIds.Essence, 150)).toEqual({
+      rewardId: ResourcesIds.Essence,
+      amount: 150,
+      probabilityBps: 3_500,
+    });
+    expect(findBlitzExplorationReward(profiledConfig.blitz.exploration.rewards, ResourcesIds.Donkey, 500)).toEqual({
+      rewardId: ResourcesIds.Donkey,
+      amount: 500,
+      probabilityBps: 500,
+    });
     expect(profiledConfig.hyperstructures.hyperstructureConstructionCost).toEqual([]);
     expect(profiledConfig.exploration.relicDiscoveryIntervalSeconds).toBe(
       baseConfig.exploration.relicDiscoveryIntervalSeconds,
@@ -65,6 +116,8 @@ describe("Blitz balance profiles", () => {
     expect(resolvedConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(
       baseConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount,
     );
+    expect(resolvedConfig.blitz.exploration.rewardProfileId).toBe("official-90");
+    expect(resolvedConfig.blitz.exploration.rewards).toEqual(baseConfig.blitz.exploration.rewards);
   });
 
   test("resolves the official 90-minute blitz config from duration", () => {
@@ -73,5 +126,28 @@ describe("Blitz balance profiles", () => {
     expect(resolvedConfig.season.durationSeconds).toBe(5_400);
     expect(resolvedConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(1);
     expect(findStartingResourceAmount(resolvedConfig.startingResources, ResourcesIds.Knight)).toBe(1_500);
+    expect(resolvedConfig.blitz.exploration.rewardProfileId).toBe("official-90");
+    expect(findBlitzExplorationReward(resolvedConfig.blitz.exploration.rewards, ResourcesIds.Essence, 100)).toEqual({
+      rewardId: ResourcesIds.Essence,
+      amount: 100,
+      probabilityBps: 3_000,
+    });
+    expect(findBlitzExplorationReward(resolvedConfig.blitz.exploration.rewards, ResourcesIds.Paladin, 1_000)).toEqual({
+      rewardId: ResourcesIds.Paladin,
+      amount: 1_000,
+      probabilityBps: 200,
+    });
+  });
+
+  test("keeps the TypeScript official reward tables aligned with the baked Cairo tables", () => {
+    const official60Config = applyBlitzBalanceProfile(getConfigFromNetwork("slot", "blitz"), "official-60");
+    const official90Config = applyBlitzBalanceProfile(getConfigFromNetwork("slot", "blitz"), "official-90");
+
+    expect(official60Config.blitz.exploration.rewards).toEqual(
+      extractContractRewardRows("get_official_60_blitz_exploration_rewards"),
+    );
+    expect(official90Config.blitz.exploration.rewards).toEqual(
+      extractContractRewardRows("get_official_90_blitz_exploration_rewards"),
+    );
   });
 });

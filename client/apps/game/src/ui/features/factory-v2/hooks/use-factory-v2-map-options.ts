@@ -36,7 +36,7 @@ export const useFactoryV2MoreOptions = ({
 
   return {
     isOpen,
-    sections: getFactoryMoreOptionSections(mode, visibility),
+    sections: getFactoryMoreOptionSections(mode, visibility, chain, durationMinutes),
     draft,
     errors: validation.errors,
     launchDisabledReason: validation.firstError,

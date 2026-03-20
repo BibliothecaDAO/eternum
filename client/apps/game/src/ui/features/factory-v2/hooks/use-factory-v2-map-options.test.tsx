@@ -70,6 +70,9 @@ describe("useFactoryV2MoreOptions", () => {
     });
 
     expect(latestHookValue?.draft).toEqual(createFactoryMoreOptionsDraft("blitz", "slot", 90));
+    expect(latestHookValue?.sections.find((section) => section.id === "explorationRewards")?.previewRows).toHaveLength(
+      9,
+    );
   });
 
   it("keeps edited values when switching between custom Blitz durations", async () => {
@@ -89,5 +92,33 @@ describe("useFactoryV2MoreOptions", () => {
     });
 
     expect(latestHookValue?.draft.relicDiscoveryInterval).toBe("12");
+  });
+
+  it("updates the Blitz exploration reward preview when the duration changes", async () => {
+    await act(async () => {
+      root.render(<HookHarness {...buildProps({ durationMinutes: 60 })} />);
+      await waitForAsyncWork();
+    });
+
+    expect(
+      latestHookValue?.sections.find((section) => section.id === "explorationRewards")?.previewRows?.[0],
+    ).toMatchObject({
+      label: "Essence",
+      amountLabel: "150",
+      probabilityLabel: "35%",
+    });
+
+    await act(async () => {
+      root.render(<HookHarness {...buildProps({ durationMinutes: 90 })} />);
+      await waitForAsyncWork();
+    });
+
+    expect(
+      latestHookValue?.sections.find((section) => section.id === "explorationRewards")?.previewRows?.[0],
+    ).toMatchObject({
+      label: "Essence",
+      amountLabel: "100",
+      probabilityLabel: "30%",
+    });
   });
 });

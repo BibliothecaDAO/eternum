@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-20",
+    title: "Blitz Reward Preview",
+    description:
+      "Factory V2 now shows the active Blitz exploration reward table for the selected duration, so you can see the exact reward mix before you launch.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-20",
     title: "Factory V2 Launch Center",
     description:
       "The landing page now has a full Factory V2 flow for starting a game, checking progress, and recovering pending launches, with Blitz opening first when Factory is idle, calmer progress states, and a layout that holds up much better on mobile.",

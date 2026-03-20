@@ -32,6 +32,7 @@ pub struct WorldConfig {
     pub blitz_settlement_config: BlitzSettlementConfig,
     pub blitz_hypers_settlement_config: BlitzHypersSettlementConfig,
     pub blitz_registration_config: BlitzRegistrationConfig,
+    pub blitz_exploration_config: BlitzExplorationConfig,
     pub tick_config: TickConfig,
     pub bank_config: BankConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
@@ -229,6 +230,11 @@ pub impl WorldConfigUtilImpl of WorldConfigTrait {
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct TradeConfig {
     pub max_count: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzExplorationConfig {
+    pub reward_profile_id: u8,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -1261,4 +1267,3 @@ pub struct BlitzCosmeticAttrsRegister {
     pub player: ContractAddress,
     pub attrs: Span<u128>,
 }
-

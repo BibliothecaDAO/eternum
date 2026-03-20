@@ -26,6 +26,8 @@ describe("buildConfig", () => {
     expect(slotBlitz.battle.regularImmunityTicks).toBe(0);
     expect(slotBlitz.season.durationSeconds).toBe(5_400);
     expect(slotBlitz.blitz.mode.on).toBe(true);
+    expect(slotBlitz.blitz.exploration.rewardProfileId).toBe("official-90");
+    expect(slotBlitz.blitz.exploration.rewards).toHaveLength(9);
     expect(slotBlitz.hyperstructures.hyperstructureConstructionCost).toEqual([]);
 
     expect(slotEternum.blitz.mode.on).toBe(false);
@@ -60,10 +62,13 @@ describe("buildConfig", () => {
     expect(sixtyMinuteConfig.season.durationSeconds).toBe(3_600);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(2);
     expect(sixtyMinuteConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
+    expect(sixtyMinuteConfig.blitz.exploration.rewardProfileId).toBe("official-60");
+    expect(sixtyMinuteConfig.blitz.exploration.rewards).toHaveLength(6);
 
     expect(customDurationConfig.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
     expect(customDurationConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(
       baseConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood],
     );
+    expect(customDurationConfig.blitz.exploration.rewardProfileId).toBe(baseConfig.blitz.exploration.rewardProfileId);
   });
 });

@@ -433,6 +433,14 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
+export type BlitzExplorationRewardProfileId = "official-60" | "official-90";
+
+export interface BlitzExplorationReward {
+  rewardId: ResourcesIds;
+  amount: number;
+  probabilityBps: number;
+}
+
 export interface Config {
   agent: {
     controller_address: string;
@@ -648,6 +656,10 @@ export interface Config {
   blitz: {
     mode: {
       on: boolean;
+    };
+    exploration: {
+      rewardProfileId: BlitzExplorationRewardProfileId;
+      rewards: BlitzExplorationReward[];
     };
     registration: {
       fee_token: string;

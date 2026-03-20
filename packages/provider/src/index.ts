@@ -3270,6 +3270,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_blitz_exploration_config(props: SystemProps.SetBlitzExplorationConfigProps) {
+    const { reward_profile_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_blitz_exploration_config",
+      calldata: [reward_profile_id],
+    });
+  }
+
   public async set_victory_points_config(props: SystemProps.SetVictoryPointsConfigProps) {
     const {
       points_for_win,
