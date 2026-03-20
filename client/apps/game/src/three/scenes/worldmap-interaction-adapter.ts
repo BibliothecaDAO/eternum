@@ -70,11 +70,7 @@ export function createWorldmapInteractionAdapter({
       }
     },
 
-    openOwnedStructureContextMenu(input: {
-      event: MouseEvent;
-      hexCoords: HexPosition;
-      structure: HexEntityInfo;
-    }) {
+    openOwnedStructureContextMenu(input: { event: MouseEvent; hexCoords: HexPosition; structure: HexEntityInfo }) {
       if (!dojoComponents) {
         return;
       }
@@ -86,10 +82,7 @@ export function createWorldmapInteractionAdapter({
       });
     },
 
-    openArmyCreation(input: {
-      direction: number;
-      structureId: ID;
-    }) {
+    openArmyCreation(input: { direction: number; structureId: ID }) {
       state.openArmyCreationPopup({
         structureId: input.structureId,
         isExplorer: true,

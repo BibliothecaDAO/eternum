@@ -87,11 +87,7 @@ describe("resolveWebgpuPostprocessPolicy", () => {
 
     const renderer = new FakeRenderer();
 
-    await requestRendererScenePrewarm(
-      renderer as never,
-      { id: "scene" } as never,
-      { id: "camera" } as never,
-    );
+    await requestRendererScenePrewarm(renderer as never, { id: "scene" } as never, { id: "camera" } as never);
 
     expect(renderer.compileAsync).toHaveBeenCalledOnce();
     expect(renderer.compileAsync).toHaveBeenCalledWith({ id: "scene" }, { id: "camera" });

@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  resolveChunkKeyFromHex,
-  resolveWorldmapChunkFromWorldPosition,
-} from "./worldmap-chunk-selection-policy";
+import { resolveChunkKeyFromHex, resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
 
 const HORIZ_DIST = Math.sqrt(3);
 const VERT_DIST = 1.5;

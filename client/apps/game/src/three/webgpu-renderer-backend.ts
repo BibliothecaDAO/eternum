@@ -1,5 +1,11 @@
 import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
-import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, NeutralToneMapping, ReinhardToneMapping } from "three";
+import {
+  ACESFilmicToneMapping,
+  CineonToneMapping,
+  LinearToneMapping,
+  NeutralToneMapping,
+  ReinhardToneMapping,
+} from "three";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
@@ -72,14 +78,8 @@ async function createDefaultWebGPURenderer(input: {
     import("three/webgpu"),
   ]);
 
-  const {
-    ACESFilmicToneMapping,
-    HalfFloatType,
-    PCFShadowMap,
-    PCFSoftShadowMap,
-    UnsignedByteType,
-    WebGPURenderer,
-  } = threeWebGPUModule as typeof import("three/webgpu");
+  const { ACESFilmicToneMapping, HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
+    threeWebGPUModule as typeof import("three/webgpu");
 
   const renderer = new WebGPURenderer({
     forceWebGL: input.forceWebGL,

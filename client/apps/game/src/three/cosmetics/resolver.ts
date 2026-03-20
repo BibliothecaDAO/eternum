@@ -209,7 +209,10 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
 export function resolveStructureCosmetic(params: StructureCosmeticParams): CosmeticResolutionResult {
   const owner = normalizeOwner(params.owner);
   const target = formatStructureCosmeticTarget(params.structureType, params.stage);
-  const fallbackEntry = findFallbackEntry("structure-skin", [formatStructureCosmeticTarget(params.structureType), target]);
+  const fallbackEntry = findFallbackEntry("structure-skin", [
+    formatStructureCosmeticTarget(params.structureType),
+    target,
+  ]);
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
   const eligibleCosmeticIds = snapshot?.ownership.eligibleCosmeticIds ?? [];

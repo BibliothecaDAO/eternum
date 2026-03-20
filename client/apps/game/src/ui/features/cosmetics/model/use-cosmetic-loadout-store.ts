@@ -131,9 +131,8 @@ export const useCosmeticLoadoutStore = <T>(
   const scopeKey = options?.scopeKey ?? "cosmetics:default";
   const fallbackScopeKeys = useMemo(() => options?.fallbackScopeKeys ?? [], [options?.fallbackScopeKeys]);
   const maxSelections = options?.maxSelections ?? DEFAULT_MAX_SELECTIONS;
-  const draft = useSyncExternalStore(
-    playerCosmeticsStore.subscribe.bind(playerCosmeticsStore),
-    () => resolveDraft(address ?? undefined, scopeKey, fallbackScopeKeys),
+  const draft = useSyncExternalStore(playerCosmeticsStore.subscribe.bind(playerCosmeticsStore), () =>
+    resolveDraft(address ?? undefined, scopeKey, fallbackScopeKeys),
   );
 
   const viewState = useMemo(

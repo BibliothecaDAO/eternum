@@ -23,7 +23,9 @@ describe("Three.js typing policy", () => {
   });
 
   it("keeps a dedicated WebGPU typing guard script", () => {
-    expect(readGamePackageJson().scripts?.["test:three:types"]).toBe("tsc --noEmit --pretty false -p tsconfig.three-types.json");
+    expect(readGamePackageJson().scripts?.["test:three:types"]).toBe(
+      "tsc --noEmit --pretty false -p tsconfig.three-types.json",
+    );
   });
 
   it("does not mask the WebGPU renderer surface behind any-typed ambient declarations", () => {

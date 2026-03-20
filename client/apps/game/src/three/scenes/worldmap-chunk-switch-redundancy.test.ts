@@ -28,10 +28,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
-    const prepareTerrainChunk = createControlledAsyncCall<
-      [number, number, number, number],
-      { chunkKey: string }
-    >();
+    const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
     // We use real async functions for structure drain and prewarm to test
     // concurrency behavior at the integration boundary.
@@ -99,10 +96,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
     const prewarmChunkAssets = createControlledAsyncCall<[string], void>();
-    const prepareTerrainChunk = createControlledAsyncCall<
-      [number, number, number, number],
-      { chunkKey: string }
-    >();
+    const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
     hydrateWarpTravelChunk({
       chunkKey: "24,24",
@@ -142,10 +136,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
-    const prepareTerrainChunk = createControlledAsyncCall<
-      [number, number, number, number],
-      { chunkKey: string }
-    >();
+    const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
     const structureDrainDeferred = createDeferred<void>();
 
@@ -194,10 +185,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
-    const prepareTerrainChunk = createControlledAsyncCall<
-      [number, number, number, number],
-      { chunkKey: string }
-    >();
+    const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
     const structureDrainDeferred = createDeferred<void>();
     const prewarmDeferred = createDeferred<void>();
@@ -258,7 +246,11 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
 });
 
 // Helper — inline deferred to avoid depending on test harness internals
-function createDeferred<T>(): { promise: Promise<T>; resolve: (value: T | PromiseLike<T>) => void; reject: (reason?: unknown) => void } {
+function createDeferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: unknown) => void;
+} {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
   const promise = new Promise<T>((res, rej) => {

@@ -331,9 +331,7 @@ export function resolvePendingChunkRefreshUiReason(input: PendingChunkRefreshUiR
  * Keep shortcut selection protection alive until known chunk work has drained,
  * otherwise a late-running refresh can still clear the freshly-tabbed selection.
  */
-export function shouldHoldShortcutArmySelectionProtection(
-  input: ShortcutArmySelectionProtectionHoldInput,
-): boolean {
+export function shouldHoldShortcutArmySelectionProtection(input: ShortcutArmySelectionProtectionHoldInput): boolean {
   return input.hasPendingChunkRefreshTimer || input.isChunkRefreshRunning || input.hasGlobalChunkSwitchPromise;
 }
 

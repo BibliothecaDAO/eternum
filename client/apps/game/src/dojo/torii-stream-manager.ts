@@ -96,7 +96,13 @@ export class ToriiStreamManager {
   private currentSignature: string | null = null;
   private lastDescriptor: BoundsDescriptor | null = null;
 
-  constructor({ client, setup, logging = false, clauseBuilder = defaultClauseBuilder, onUpdate }: ToriiStreamManagerConfig) {
+  constructor({
+    client,
+    setup,
+    logging = false,
+    clauseBuilder = defaultClauseBuilder,
+    onUpdate,
+  }: ToriiStreamManagerConfig) {
     this.client = client;
     this.setup = setup;
     this.logging = logging;

@@ -80,7 +80,10 @@ describe("InteractiveHexManager pickHexFromRaycaster", () => {
       resolveHexFromPoint,
       pickHexFromRaycast: vi.fn(() => null),
     };
-    const callable = Object.assign(Object.create(InteractiveHexManager.prototype), subject) as PickHexFromRaycasterCallable;
+    const callable = Object.assign(
+      Object.create(InteractiveHexManager.prototype),
+      subject,
+    ) as PickHexFromRaycasterCallable;
     const raycaster = {
       ray: new THREE.Ray(new THREE.Vector3(6, 10, -2), new THREE.Vector3(-0.3, -1, 0.4).normalize()),
       intersectObject: vi.fn(),

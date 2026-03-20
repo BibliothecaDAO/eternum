@@ -78,7 +78,9 @@ const mockLocalStorage = {
   setItem: (k: string, v: string) => storage.set(k, v),
   removeItem: (k: string) => storage.delete(k),
   clear: () => storage.clear(),
-  get length() { return storage.size; },
+  get length() {
+    return storage.size;
+  },
   key: () => null,
 };
 
@@ -90,29 +92,75 @@ vi.stubGlobal("sessionStorage", mockLocalStorage);
 vi.stubGlobal("requestAnimationFrame", (cb: () => void) => setTimeout(cb, 0));
 vi.stubGlobal("cancelAnimationFrame", clearTimeout);
 vi.stubGlobal("matchMedia", () => ({ matches: false, addListener: vi.fn(), removeListener: vi.fn() }));
-vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
-vi.stubGlobal("IntersectionObserver", class { observe() {} unobserve() {} disconnect() {} });
-vi.stubGlobal("MutationObserver", class { observe() {} disconnect() {} });
+vi.stubGlobal(
+  "ResizeObserver",
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+);
+vi.stubGlobal(
+  "IntersectionObserver",
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+);
+vi.stubGlobal(
+  "MutationObserver",
+  class {
+    observe() {}
+    disconnect() {}
+  },
+);
 vi.stubGlobal("performance", { now: () => Date.now(), mark: vi.fn(), measure: vi.fn() });
 
 class MockGUI {
   domElement = createMockElement("div");
-  add() { return this; }
-  addFolder() { return new MockGUI(); }
-  addColor() { return this; }
+  add() {
+    return this;
+  }
+  addFolder() {
+    return new MockGUI();
+  }
+  addColor() {
+    return this;
+  }
   close() {}
   open() {}
   destroy() {}
-  onChange() { return this; }
-  onFinishChange() { return this; }
-  name() { return this; }
-  min() { return this; }
-  max() { return this; }
-  step() { return this; }
-  listen() { return this; }
-  title() { return this; }
-  show() { return this; }
-  hide() { return this; }
+  onChange() {
+    return this;
+  }
+  onFinishChange() {
+    return this;
+  }
+  name() {
+    return this;
+  }
+  min() {
+    return this;
+  }
+  max() {
+    return this;
+  }
+  step() {
+    return this;
+  }
+  listen() {
+    return this;
+  }
+  title() {
+    return this;
+  }
+  show() {
+    return this;
+  }
+  hide() {
+    return this;
+  }
 }
 vi.mock("lil-gui", () => ({
   default: MockGUI,

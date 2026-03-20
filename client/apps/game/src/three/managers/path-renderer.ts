@@ -1,4 +1,14 @@
-import { Box3, BufferGeometry, Color, Float32BufferAttribute, Group, LineBasicMaterial, LineSegments, Scene, Vector3 } from "three";
+import {
+  Box3,
+  BufferGeometry,
+  Color,
+  Float32BufferAttribute,
+  Group,
+  LineBasicMaterial,
+  LineSegments,
+  Scene,
+  Vector3,
+} from "three";
 import {
   incrementWorldmapRenderCounter,
   recordWorldmapRenderDuration,

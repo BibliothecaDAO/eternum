@@ -382,7 +382,11 @@ export class ArmyModel {
   private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry;
     const pooledMaterial = createPooledInstancedMaterial(mesh.material);
-    const instancedMesh = new InstancedMesh(geometry, pooledMaterial.material, this.INITIAL_INSTANCE_CAPACITY) as AnimatedInstancedMesh;
+    const instancedMesh = new InstancedMesh(
+      geometry,
+      pooledMaterial.material,
+      this.INITIAL_INSTANCE_CAPACITY,
+    ) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
     instancedMesh.castShadow = true;
@@ -682,7 +686,14 @@ export class ArmyModel {
 
     this.takeFreedSlot(newSlot);
     const wasWalking = this.animationStates[previousSlot] === ANIMATION_STATE_MOVING;
-    this.updateInstance(entityId, newSlot, instanceData.position, instanceData.scale, instanceData.rotation, instanceData.color);
+    this.updateInstance(
+      entityId,
+      newSlot,
+      instanceData.position,
+      instanceData.scale,
+      instanceData.rotation,
+      instanceData.color,
+    );
     this.setAnimationState(newSlot, wasWalking);
     this.clearInstanceSlot(previousSlot);
     this.matrixIndexOwners.delete(previousSlot);

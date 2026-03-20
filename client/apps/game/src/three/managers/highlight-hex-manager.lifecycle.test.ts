@@ -133,7 +133,9 @@ describe("HighlightHexManager lifecycle", () => {
     expect(instancedMaterials.every((material) => material instanceof THREE.MeshBasicMaterial)).toBe(true);
     expect(launchGlowMaterials).not.toHaveLength(0);
     expect(launchGlowMaterials.every((material) => material instanceof THREE.MeshBasicMaterial)).toBe(true);
-    expect([...instancedMaterials, ...launchGlowMaterials].some((material) => material instanceof THREE.ShaderMaterial)).toBe(false);
+    expect(
+      [...instancedMaterials, ...launchGlowMaterials].some((material) => material instanceof THREE.ShaderMaterial),
+    ).toBe(false);
   });
 
   it("keeps layered scene ownership stable across repeated updates and clears", () => {
@@ -222,7 +224,9 @@ describe("HighlightHexManager lifecycle", () => {
     manager.setCameraView(3);
 
     expect(manager.getDebugState().cameraView).toBe(3);
-    expect((manager as any).frontierLayer.material.opacity).toBeGreaterThan((manager as any).routeLayer.material.opacity);
+    expect((manager as any).frontierLayer.material.opacity).toBeGreaterThan(
+      (manager as any).routeLayer.material.opacity,
+    );
     expect((manager as any).frontierLayer.mesh.count).toBe(1);
   });
 

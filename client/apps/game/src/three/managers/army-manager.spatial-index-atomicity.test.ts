@@ -64,9 +64,7 @@ describe("ArmyManager atomic spatial index", () => {
     const source = readSource("./army-manager.ts");
 
     // Find the method signature
-    const methodSignatureMatch = source.match(
-      /(?:private|public|protected)\s+(async\s+)?atomicSpatialTransfer\(/,
-    );
+    const methodSignatureMatch = source.match(/(?:private|public|protected)\s+(async\s+)?atomicSpatialTransfer\(/);
     expect(methodSignatureMatch).not.toBeNull();
 
     // The async capture group should be undefined (no async keyword)

@@ -1,13 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  AnimationClip,
-  BoxGeometry,
-  Group,
-  Mesh,
-  MeshBasicMaterial,
-  Scene,
-  Vector3,
-} from "three";
+import { AnimationClip, BoxGeometry, Group, Mesh, MeshBasicMaterial, Scene, Vector3 } from "three";
 
 import { ModelType } from "@/three/types/army";
 import { ArmyModel } from "./army-model";

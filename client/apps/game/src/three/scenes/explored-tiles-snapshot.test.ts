@@ -41,9 +41,7 @@ describe("snapshotExploredTilesRegion", () => {
   });
 
   it("returns a frozen copy immune to mutations on the source", () => {
-    const tiles = makeTiles([
-      [5, 5, BiomeType.Beach],
-    ]);
+    const tiles = makeTiles([[5, 5, BiomeType.Beach]]);
 
     const snapshot = snapshotExploredTilesRegion(tiles, {
       centerCol: 5,
@@ -76,7 +74,7 @@ describe("snapshotExploredTilesRegion", () => {
   it("includes boundary hexes exactly at halfCols/halfRows distance", () => {
     const tiles = makeTiles([
       [3, 3, BiomeType.Taiga], // at boundary
-      [4, 4, BiomeType.Snow],  // outside boundary
+      [4, 4, BiomeType.Snow], // outside boundary
     ]);
 
     const snapshot = snapshotExploredTilesRegion(tiles, {

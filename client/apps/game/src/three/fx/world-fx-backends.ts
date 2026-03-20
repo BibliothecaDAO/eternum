@@ -420,7 +420,10 @@ abstract class BaseWorldFxBackend implements WorldFxBackend {
   public abstract readonly kind: WorldFxBackendKind;
   protected readonly activeEffects = new Set<ManagedWorldFxEffect>();
 
-  constructor(protected readonly scene: THREE.Scene, protected readonly capabilities: RendererFxCapabilities) {}
+  constructor(
+    protected readonly scene: THREE.Scene,
+    protected readonly capabilities: RendererFxCapabilities,
+  ) {}
 
   public update(deltaTime: number): void {
     if (this.activeEffects.size === 0) {
@@ -506,7 +509,9 @@ class WebGpuBillboardWorldFxBackend extends BaseWorldFxBackend {
       return createNoopWorldFxHandle();
     }
 
-    return this.registerEffect(new WebGpuBillboardWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx));
+    return this.registerEffect(
+      new WebGpuBillboardWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx),
+    );
   }
 }
 

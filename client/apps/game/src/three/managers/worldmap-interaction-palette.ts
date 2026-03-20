@@ -79,7 +79,9 @@ const SELECTION_PULSE_PALETTES: Record<WorldmapSelectionVisualRole, PulseVisualP
   },
 };
 
-export function resolveHighlightLayerPalette(actionType: ActionType | string | null | undefined): HighlightLayerPalette {
+export function resolveHighlightLayerPalette(
+  actionType: ActionType | string | null | undefined,
+): HighlightLayerPalette {
   return HIGHLIGHT_LAYER_PALETTES[actionType ?? "create_army"] ?? HIGHLIGHT_LAYER_PALETTES.create_army;
 }
 

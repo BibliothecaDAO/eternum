@@ -85,9 +85,7 @@ describe("waitForLabelRendererElement lifecycle safety", () => {
     // Fire the queued rAF callback
     rafCallbacks[0]();
 
-    await expect(promise).rejects.toThrow(
-      "GameRenderer destroyed while waiting for label renderer element",
-    );
+    await expect(promise).rejects.toThrow("GameRenderer destroyed while waiting for label renderer element");
   });
 
   it("resolves normally when element exists and isDestroyed is false", async () => {

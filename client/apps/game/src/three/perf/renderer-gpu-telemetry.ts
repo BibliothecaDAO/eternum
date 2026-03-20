@@ -48,10 +48,7 @@ function recordRendererUploadBytes(label: string, bytes: number): void {
   };
 }
 
-export function recordRendererInitTelemetry(input: {
-  activeMode: RendererActiveMode;
-  initTimeMs: number;
-}): void {
+export function recordRendererInitTelemetry(input: { activeMode: RendererActiveMode; initTimeMs: number }): void {
   rendererGpuTelemetryState = {
     ...rendererGpuTelemetryState,
     activeMode: input.activeMode,

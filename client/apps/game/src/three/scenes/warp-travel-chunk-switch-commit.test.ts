@@ -113,10 +113,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
   });
 
   it("commits prepared terrain before deferred manager catch-up completes", async () => {
-    const managerCatchUp = createControlledAsyncCall<
-      [string, { force: boolean; transitionToken: number }],
-      void
-    >();
+    const managerCatchUp = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
     const phaseOrder: string[] = [];
     const applyPreparedTerrain = vi.fn(() => {
       phaseOrder.push("terrain");

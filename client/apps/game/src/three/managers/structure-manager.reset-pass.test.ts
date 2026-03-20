@@ -13,6 +13,8 @@ describe("StructureManager reset pass", () => {
     const source = readSource("./structure-manager.ts");
 
     expect(source).toMatch(/previouslyActiveStructureModels/);
-    expect(source).not.toMatch(/this\.structureModels\.forEach\(\(models\) => \{\s*models\.forEach\(\(model\) => model\.setCount\(0\)\);\s*\}\);/);
+    expect(source).not.toMatch(
+      /this\.structureModels\.forEach\(\(models\) => \{\s*models\.forEach\(\(model\) => model\.setCount\(0\)\);\s*\}\);/,
+    );
   });
 });

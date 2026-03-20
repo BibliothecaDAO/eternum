@@ -28,8 +28,7 @@ export const buildBlitzRegisterCalls = ({
     });
   }
 
-  const cosmeticCalldata =
-    cosmeticTokenIds.length > 0 ? [String(cosmeticTokenIds.length), ...cosmeticTokenIds] : ["0"];
+  const cosmeticCalldata = cosmeticTokenIds.length > 0 ? [String(cosmeticTokenIds.length), ...cosmeticTokenIds] : ["0"];
 
   calls.push({
     contractAddress: blitzSystemsAddress,

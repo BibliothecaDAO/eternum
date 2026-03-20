@@ -45,8 +45,6 @@ describe("resolveEligibleCosmeticIds", () => {
   });
 
   it("normalizes duplicate attrs deterministically", () => {
-    expect(resolveEligibleCosmeticIds(["0x04050301", "4050301", "0x4050301"])).toEqual([
-      "attachment:army:aura-legacy",
-    ]);
+    expect(resolveEligibleCosmeticIds(["0x04050301", "4050301", "0x4050301"])).toEqual(["attachment:army:aura-legacy"]);
   });
 });

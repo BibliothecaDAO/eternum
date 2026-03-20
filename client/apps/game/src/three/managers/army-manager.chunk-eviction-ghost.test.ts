@@ -21,9 +21,7 @@ describe("chunk-eviction ghosting prevention", () => {
       // Must check matrixIndex before calling getEntityWorldPosition
       expect(methodBody).toContain("army.matrixIndex !== undefined");
       // Must NOT call getEntityWorldPosition unconditionally
-      const unconditionalCall = methodBody.indexOf(
-        "this.armyModel.getEntityWorldPosition(entityIdNumber);\n",
-      );
+      const unconditionalCall = methodBody.indexOf("this.armyModel.getEntityWorldPosition(entityIdNumber);\n");
       // The call should be conditional (gated by isActivelyRendered)
       expect(methodBody).toContain("isActivelyRendered");
     });

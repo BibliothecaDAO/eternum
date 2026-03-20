@@ -84,7 +84,7 @@ describe("evaluateSceneSmokeResult", () => {
       reasons: [
         "landed on unexpected route",
         "main canvas was not present",
-        "\"Unable to Start\" was visible",
+        '"Unable to Start" was visible',
         "browser reported runtime errors",
       ],
     });

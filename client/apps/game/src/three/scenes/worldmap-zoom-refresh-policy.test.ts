@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  flushDeferredWorldmapZoomRefresh,
-  resolveWorldmapZoomRefreshPlan,
-} from "./worldmap-zoom-refresh-policy";
+import { flushDeferredWorldmapZoomRefresh, resolveWorldmapZoomRefreshPlan } from "./worldmap-zoom-refresh-policy";
 
 describe("resolveWorldmapZoomRefreshPlan", () => {
   it("defers expensive chunk refresh during scripted zoom when chunk does not change", () => {

@@ -1,4 +1,9 @@
-import type { RendererBackendV2, RendererFramePipeline, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
+import type {
+  RendererBackendV2,
+  RendererFramePipeline,
+  RendererPostProcessController,
+  RendererPostProcessPlan,
+} from "./renderer-backend-v2";
 import type { RendererEnvironmentTargets, RendererSurfaceLike } from "./renderer-backend";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 
@@ -49,10 +54,7 @@ export function resizeRendererBackend(backend: CompatibleRendererBackend, width:
   backend.renderer.setSize(width, height);
 }
 
-export function renderRendererBackendFrame(
-  backend: CompatibleRendererBackend,
-  pipeline: RendererFramePipeline,
-): void {
+export function renderRendererBackendFrame(backend: CompatibleRendererBackend, pipeline: RendererFramePipeline): void {
   if (backend.renderFrame) {
     backend.renderFrame(pipeline);
     return;

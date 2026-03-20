@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createTerrainCacheGeneration,
-  isTerrainCacheStale,
-} from "./terrain-cache-generation";
+import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
 
 describe("createTerrainCacheGeneration", () => {
   it("starts at generation 0", () => {

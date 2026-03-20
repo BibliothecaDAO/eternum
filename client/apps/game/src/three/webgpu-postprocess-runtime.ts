@@ -1,4 +1,12 @@
-import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, NeutralToneMapping, ReinhardToneMapping, type Camera, type Scene } from "three";
+import {
+  ACESFilmicToneMapping,
+  CineonToneMapping,
+  LinearToneMapping,
+  NeutralToneMapping,
+  ReinhardToneMapping,
+  type Camera,
+  type Scene,
+} from "three";
 import { PostProcessing } from "three/webgpu";
 import { pass, emissive, mrt, output } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";

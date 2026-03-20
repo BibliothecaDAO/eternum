@@ -1,10 +1,6 @@
 import type { HexPosition } from "@bibliothecadao/types";
 import * as THREE from "three";
-import {
-  createWorldFxBackend,
-  type WorldFxBackend,
-  type WorldFxHandle,
-} from "../fx/world-fx-backends";
+import { createWorldFxBackend, type WorldFxBackend, type WorldFxHandle } from "../fx/world-fx-backends";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 
@@ -143,17 +139,10 @@ export class ResourceFXManager {
   ): Promise<void> {
     const { getWorldPositionForHex } = await import("../utils/utils");
     const position = getWorldPositionForHex({ col, row } as HexPosition);
-    return this.playResourceFxAtCoords(
-      resourceId,
-      amount,
-      position.x,
-      position.y + 2.5,
-      position.z,
-      {
-        ...options,
-        labelText: text ?? options.labelText,
-      },
-    );
+    return this.playResourceFxAtCoords(resourceId, amount, position.x, position.y + 2.5, position.z, {
+      ...options,
+      labelText: text ?? options.labelText,
+    });
   }
 
   public async playMultipleResourceFx(

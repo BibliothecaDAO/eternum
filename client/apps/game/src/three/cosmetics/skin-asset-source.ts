@@ -20,10 +20,7 @@ const loadGltfFromPath = async (assetPath: string): Promise<GLTF> =>
     gltfLoader.load(assetPath, resolve, undefined, reject);
   });
 
-export const resolveAllSkinGltfs = async ({
-  assetPaths,
-  registryEntry,
-}: ResolveSkinGltfsParams): Promise<GLTF[]> => {
+export const resolveAllSkinGltfs = async ({ assetPaths, registryEntry }: ResolveSkinGltfsParams): Promise<GLTF[]> => {
   if (registryEntry) {
     const payload = await loadCosmeticAsset(registryEntry);
     if (payload.gltfs.length > 0) {

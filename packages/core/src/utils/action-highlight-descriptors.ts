@@ -1,13 +1,6 @@
 import type { ActionPath } from "./action-paths";
 
-export type ActionHighlightKind =
-  | "route"
-  | "destination"
-  | "frontier"
-  | "support"
-  | "attack"
-  | "chest"
-  | "create-army";
+export type ActionHighlightKind = "route" | "destination" | "frontier" | "support" | "attack" | "chest" | "create-army";
 
 export interface ActionHighlightDescriptor {
   hex: { col: number; row: number };

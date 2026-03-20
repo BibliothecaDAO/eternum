@@ -75,8 +75,7 @@ describe("ArmyManager chunk-transition guard", () => {
     const source = readSource("./army-manager.ts");
 
     // Check for Set-based declaration
-    const setDeclaration =
-      source.includes("deferredArmyQueue: Set<") || source.includes("deferredArmyQueue = new Set");
+    const setDeclaration = source.includes("deferredArmyQueue: Set<") || source.includes("deferredArmyQueue = new Set");
 
     expect(setDeclaration).toBe(true);
   });

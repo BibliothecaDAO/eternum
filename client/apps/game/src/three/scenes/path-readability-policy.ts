@@ -16,10 +16,7 @@ const BASE_PATH_OPACITY: Record<PathDisplayState, number> = {
   preview: 0.3,
 };
 
-export function resolvePathReadabilityPolicy(input: {
-  displayState: PathDisplayState;
-  view: PathReadabilityView;
-}): {
+export function resolvePathReadabilityPolicy(input: { displayState: PathDisplayState; view: PathReadabilityView }): {
   endpointEmphasis: boolean;
   opacity: number;
 } {

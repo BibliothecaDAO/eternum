@@ -95,9 +95,24 @@ describe("PathRenderer lifecycle", () => {
     const subject = new PathRenderer({ maxSegments: 4 });
     subject.initialize(scene);
 
-    subject.createPath(1, [new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(2, 0, 0)], new THREE.Color("#fff"), "moving");
-    subject.createPath(2, [new THREE.Vector3(3, 0, 0), new THREE.Vector3(4, 0, 0), new THREE.Vector3(5, 0, 0)], new THREE.Color("#fff"), "moving");
-    subject.createPath(3, [new THREE.Vector3(6, 0, 0), new THREE.Vector3(7, 0, 0)], new THREE.Color("#fff"), "selected");
+    subject.createPath(
+      1,
+      [new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(2, 0, 0)],
+      new THREE.Color("#fff"),
+      "moving",
+    );
+    subject.createPath(
+      2,
+      [new THREE.Vector3(3, 0, 0), new THREE.Vector3(4, 0, 0), new THREE.Vector3(5, 0, 0)],
+      new THREE.Color("#fff"),
+      "moving",
+    );
+    subject.createPath(
+      3,
+      [new THREE.Vector3(6, 0, 0), new THREE.Vector3(7, 0, 0)],
+      new THREE.Color("#fff"),
+      "selected",
+    );
 
     // Flush the deferred rebuild.
     subject.update(0);
@@ -291,7 +306,11 @@ describe("PathRenderer deferred batch rebuild (Stage 1)", () => {
     const subject = new PathRenderer();
     subject.initialize(scene);
 
-    subject.createPath(1, [new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(2, 0, 0)], new THREE.Color("#f00"));
+    subject.createPath(
+      1,
+      [new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(2, 0, 0)],
+      new THREE.Color("#f00"),
+    );
 
     // Before flush, stats should reflect active paths but zero batches.
     const statsBefore = subject.getStats();

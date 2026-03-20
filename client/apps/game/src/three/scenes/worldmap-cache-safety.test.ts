@@ -152,6 +152,8 @@ describe("padded bounds prevent incorrect cache replay rejection", () => {
   it("worldmap cache replay does not early-return on cached bounds invisibility", () => {
     const source = readWorldmapSource();
 
-    expect(source).not.toMatch(/if\s*\(bounds\?\.box\s*&&\s*!this\.visibilityManager\.isBoxVisible\(bounds\.box\)\)\s*\{\s*return false;\s*\}/s);
+    expect(source).not.toMatch(
+      /if\s*\(bounds\?\.box\s*&&\s*!this\.visibilityManager\.isBoxVisible\(bounds\.box\)\)\s*\{\s*return false;\s*\}/s,
+    );
   });
 });

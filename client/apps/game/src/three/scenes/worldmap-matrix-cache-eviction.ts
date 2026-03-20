@@ -69,8 +69,7 @@ export function computeMatrixCacheEvictions(
     evictedKeys.push(key);
   }
 
-  const limitedByPinning =
-    originalLength - evictedKeys.length > maxMatrixCacheSize;
+  const limitedByPinning = originalLength - evictedKeys.length > maxMatrixCacheSize;
 
   return { evictedKeys, limitedByPinning };
 }

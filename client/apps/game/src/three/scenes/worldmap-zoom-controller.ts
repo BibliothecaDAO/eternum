@@ -34,7 +34,9 @@ function stepWorldmapCameraView(view: CameraView, zoomOut: boolean): CameraView 
   return Math.max(CameraView.Close, view - 1) as CameraView;
 }
 
-export function createWorldmapZoomControllerState(targetView: CameraView = CameraView.Medium): WorldmapZoomControllerState {
+export function createWorldmapZoomControllerState(
+  targetView: CameraView = CameraView.Medium,
+): WorldmapZoomControllerState {
   return {
     targetView,
     wheelAccumulator: 0,

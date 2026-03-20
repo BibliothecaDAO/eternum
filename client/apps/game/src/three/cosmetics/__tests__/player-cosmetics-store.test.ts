@@ -89,10 +89,7 @@ describe("playerCosmeticsStore.hydrateFromBlitzComponent", () => {
 
     const result = playerCosmeticsStore.hydrateFromBlitzComponent({} as ClientComponents, "0x123");
 
-    expect(result?.ownership.eligibleCosmeticIds).toEqual([
-      "attachment:army:aura-legacy",
-      "army:Knight:T3:legacy",
-    ]);
+    expect(result?.ownership.eligibleCosmeticIds).toEqual(["attachment:army:aura-legacy", "army:Knight:T3:legacy"]);
   });
 
   it("applies army, structure, and global attachment selection without dropping prior state", () => {

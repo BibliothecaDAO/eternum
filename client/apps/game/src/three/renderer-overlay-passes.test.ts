@@ -17,9 +17,6 @@ describe("renderer overlay passes", () => {
   });
 
   it("returns an empty list when no overlays are configured", () => {
-    expect(
-      getRendererOverlayPasses({
-      }),
-    ).toEqual([]);
+    expect(getRendererOverlayPasses({})).toEqual([]);
   });
 });

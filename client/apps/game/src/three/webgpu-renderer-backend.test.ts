@@ -1,6 +1,10 @@
 import { ACESFilmicToneMapping, CineonToneMapping, NeutralToneMapping, ReinhardToneMapping } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetRendererDiagnostics, snapshotRendererDiagnostics, syncRendererBackendDiagnostics } from "./renderer-diagnostics";
+import {
+  resetRendererDiagnostics,
+  snapshotRendererDiagnostics,
+  syncRendererBackendDiagnostics,
+} from "./renderer-diagnostics";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 
 beforeEach(() => {
@@ -114,7 +118,10 @@ describe("createWebGPURendererBackend", () => {
           },
           renderer,
         })),
-        now: vi.fn(() => 10).mockReturnValueOnce(10).mockReturnValueOnce(15),
+        now: vi
+          .fn(() => 10)
+          .mockReturnValueOnce(10)
+          .mockReturnValueOnce(15),
       },
     );
 
@@ -150,7 +157,10 @@ describe("createWebGPURendererBackend", () => {
           activeMode: forceWebGL ? ("webgl2-fallback" as const) : ("webgpu" as const),
           renderer: Object.assign(renderer, { init }),
         })),
-        now: vi.fn(() => 100).mockReturnValueOnce(100).mockReturnValueOnce(124),
+        now: vi
+          .fn(() => 100)
+          .mockReturnValueOnce(100)
+          .mockReturnValueOnce(124),
       },
     );
 
@@ -183,7 +193,10 @@ describe("createWebGPURendererBackend", () => {
             init: vi.fn(async () => {}),
           }),
         })),
-        now: vi.fn(() => 50).mockReturnValueOnce(50).mockReturnValueOnce(55),
+        now: vi
+          .fn(() => 50)
+          .mockReturnValueOnce(50)
+          .mockReturnValueOnce(55),
       },
     );
 

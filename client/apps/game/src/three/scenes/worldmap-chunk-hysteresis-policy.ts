@@ -30,9 +30,7 @@ interface WorldmapChunkHysteresisDecision {
 
 // ── main entry point ────────────────────────────────────────────────────────
 
-export function resolveWorldmapChunkHysteresis(
-  input: WorldmapChunkHysteresisInput,
-): WorldmapChunkHysteresisDecision {
+export function resolveWorldmapChunkHysteresis(input: WorldmapChunkHysteresisInput): WorldmapChunkHysteresisDecision {
   const holdBandFraction = input.holdBandFraction ?? 0.25;
 
   // Compute the render bounds of the current chunk

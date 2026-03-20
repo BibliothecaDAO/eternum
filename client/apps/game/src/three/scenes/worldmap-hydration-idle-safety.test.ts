@@ -66,17 +66,11 @@ async function waitForHydrationIdleIterative(
 describe("waitForStructureHydrationIdle (iterative)", () => {
   it("resolves immediately when state is already settled", async () => {
     const state: HydrationState = { fetchSettled: true, pendingCount: 0, waiters: [] };
-    await waitForHydrationIdleIterative(
-      () => state,
-      flushWaiters,
-    );
+    await waitForHydrationIdleIterative(() => state, flushWaiters);
   });
 
   it("resolves immediately when no state exists", async () => {
-    await waitForHydrationIdleIterative(
-      () => undefined,
-      flushWaiters,
-    );
+    await waitForHydrationIdleIterative(() => undefined, flushWaiters);
   });
 
   it("resolves without stack growth when hydration state oscillates N times", async () => {
@@ -106,17 +100,11 @@ describe("waitForStructureHydrationIdle (iterative)", () => {
 describe("waitForTileHydrationIdle (iterative)", () => {
   it("resolves immediately when state is already settled", async () => {
     const state: HydrationState = { fetchSettled: true, pendingCount: 0, waiters: [] };
-    await waitForHydrationIdleIterative(
-      () => state,
-      flushWaiters,
-    );
+    await waitForHydrationIdleIterative(() => state, flushWaiters);
   });
 
   it("resolves immediately when no state exists", async () => {
-    await waitForHydrationIdleIterative(
-      () => undefined,
-      flushWaiters,
-    );
+    await waitForHydrationIdleIterative(() => undefined, flushWaiters);
   });
 
   it("resolves without stack growth when hydration state oscillates N times", async () => {

@@ -154,7 +154,7 @@ describe("hover hex material factory", () => {
     const subject = createHoverHexMaterial();
     const texture = subject.material.map as THREE.DataTexture;
     const size = texture.image.width as number;
-    const centerIndex = ((Math.floor(size / 2) * size) + Math.floor(size / 2)) * 4 + 3;
+    const centerIndex = (Math.floor(size / 2) * size + Math.floor(size / 2)) * 4 + 3;
     const centerAlpha = (texture.image.data as Uint8Array)[centerIndex];
 
     expect(centerAlpha).toBe(0);

@@ -480,7 +480,9 @@ export class ThunderBoltManager {
     randomHexes.forEach((hex, index) => {
       const timeoutId = setTimeout(
         () => {
-          this.scheduledSpawnTimeouts = this.scheduledSpawnTimeouts.filter((scheduledTimeoutId) => scheduledTimeoutId !== timeoutId);
+          this.scheduledSpawnTimeouts = this.scheduledSpawnTimeouts.filter(
+            (scheduledTimeoutId) => scheduledTimeoutId !== timeoutId,
+          );
           this.createThunderBolt(hex);
         },
         index * spawnInterval + Math.random() * 10,

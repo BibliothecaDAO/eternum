@@ -153,7 +153,10 @@ export const SecondaryMenuItems = () => {
         />
         {/* Connection health indicator - only visible when unhealthy */}
         {connectionStatus !== "connected" && (
-          <div className="relative self-center" title={connectionStatus === "degraded" ? "Connection Degraded" : "Disconnected"}>
+          <div
+            className="relative self-center"
+            title={connectionStatus === "degraded" ? "Connection Degraded" : "Disconnected"}
+          >
             <div
               className={`w-3 h-3 rounded-full animate-pulse border border-dark-brown
                           ${connectionStatus === "degraded" ? "bg-orange" : ""}

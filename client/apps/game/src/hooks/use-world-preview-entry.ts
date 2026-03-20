@@ -4,10 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
 import type { BlitzGameLoadoutDraft } from "@/three/cosmetics/types";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
-import {
-  useDevPreviewEntryStore,
-  type DevPreviewEntryStateRecord,
-} from "./store/use-dev-preview-entry-store";
+import { useDevPreviewEntryStore, type DevPreviewEntryStateRecord } from "./store/use-dev-preview-entry-store";
 
 export type { DevPreviewEntryStateRecord } from "./store/use-dev-preview-entry-store";
 
@@ -77,14 +74,8 @@ export const createWorldPreviewEntryController = ({
     }
 
     if (cosmeticsStore && normalizedAddress) {
-      const worldDraft = cosmeticsStore.getPendingBlitzLoadout(
-        worldLoadoutKey,
-        normalizedAddress,
-      );
-      const fallbackDraft = cosmeticsStore.getPendingBlitzLoadout(
-        fallbackLoadoutKey,
-        normalizedAddress,
-      );
+      const worldDraft = cosmeticsStore.getPendingBlitzLoadout(worldLoadoutKey, normalizedAddress);
+      const fallbackDraft = cosmeticsStore.getPendingBlitzLoadout(fallbackLoadoutKey, normalizedAddress);
 
       if (fallbackDraft != null && !arePreviewDraftsEqual(worldDraft, fallbackDraft)) {
         cosmeticsStore.setPendingBlitzLoadout(worldLoadoutKey, normalizedAddress, fallbackDraft);
@@ -139,7 +130,7 @@ const useWorldPreviewEntry = ({ worldName, chain, enabled = true }: UseWorldPrev
 
   const previewEntry = useDevPreviewEntryStore(
     useCallback(
-      (state) => (controller.previewWorldKey ? state.entries[controller.previewWorldKey] ?? null : null),
+      (state) => (controller.previewWorldKey ? (state.entries[controller.previewWorldKey] ?? null) : null),
       [controller.previewWorldKey],
     ),
   );

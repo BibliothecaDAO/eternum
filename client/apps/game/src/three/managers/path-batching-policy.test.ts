@@ -28,11 +28,7 @@ function createPath(entityId: number, segmentCount: number, displayState: ArmyPa
 describe("resolvePathBatches", () => {
   it("groups multiple paths into a bounded number of display-state batches", () => {
     const result = resolvePathBatches(
-      [
-        createPath(1, 3, "moving"),
-        createPath(2, 2, "moving"),
-        createPath(3, 1, "selected"),
-      ],
+      [createPath(1, 3, "moving"), createPath(2, 2, "moving"), createPath(3, 1, "selected")],
       4,
     );
 

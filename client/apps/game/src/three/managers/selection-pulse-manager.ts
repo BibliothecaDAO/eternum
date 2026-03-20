@@ -72,10 +72,7 @@ export class SelectionPulseManager {
 
   private createRingGeometry(outerRadius: number, innerRadius: number): THREE.ShapeGeometry {
     const outer = createHexagonShape(outerRadius);
-    const innerPoints = createHexagonShape(innerRadius)
-      .getPoints()
-      .slice()
-      .reverse();
+    const innerPoints = createHexagonShape(innerRadius).getPoints().slice().reverse();
 
     outer.holes.push(new THREE.Path(innerPoints));
     return new THREE.ShapeGeometry(outer);

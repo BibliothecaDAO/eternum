@@ -12,9 +12,7 @@ type RendererFxCapabilitiesInput = {
   activeMode: RendererActiveMode | null;
 };
 
-export function resolveRendererFxCapabilities(
-  input: RendererFxCapabilitiesInput | null,
-): RendererFxCapabilities {
+export function resolveRendererFxCapabilities(input: RendererFxCapabilitiesInput | null): RendererFxCapabilities {
   const activeMode = input?.activeMode ?? null;
   const supportsSpriteSceneFx = activeMode === "legacy-webgl" || activeMode === "webgl2-fallback";
 

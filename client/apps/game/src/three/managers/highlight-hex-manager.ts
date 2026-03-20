@@ -48,7 +48,11 @@ interface HighlightRenderLayer {
 const createColorForAction = (actionType: ActionType): Color =>
   new Color(resolveHighlightLayerPalette(actionType).routeColor);
 
-const createMesh = (geometry: InstancedMesh["geometry"], material: MeshBasicMaterial, renderOrder: number): InstancedMesh => {
+const createMesh = (
+  geometry: InstancedMesh["geometry"],
+  material: MeshBasicMaterial,
+  renderOrder: number,
+): InstancedMesh => {
   const mesh = new InstancedMesh(geometry, material, MAX_HIGHLIGHTS);
   mesh.count = 0;
   mesh.frustumCulled = true;

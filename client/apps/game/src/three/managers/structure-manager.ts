@@ -2,10 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
-import {
-  recordWorldmapRenderDuration,
-  setWorldmapRenderGauge,
-} from "@/three/perf/worldmap-render-diagnostics";
+import { recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
@@ -987,17 +984,16 @@ export class StructureManager {
 
     const isCurrentlyVisible = this.isInCurrentChunk(normalizedCoord);
     const visibleUpdateInput = {
-      previous:
-        existingStructure && {
-          hexCoords: existingStructure.hexCoords,
-          structureType: existingStructure.structureType,
-          stage: existingStructure.stage,
-          level: existingStructure.level,
-          isMine: existingStructure.isMine,
-          isAlly: existingStructure.isAlly,
-          cosmeticId: existingStructure.cosmeticId,
-          attachmentSignature: existingAttachmentSignature,
-        },
+      previous: existingStructure && {
+        hexCoords: existingStructure.hexCoords,
+        structureType: existingStructure.structureType,
+        stage: existingStructure.stage,
+        level: existingStructure.level,
+        isMine: existingStructure.isMine,
+        isAlly: existingStructure.isAlly,
+        cosmeticId: existingStructure.cosmeticId,
+        attachmentSignature: existingAttachmentSignature,
+      },
       next: {
         hexCoords: normalizedCoord,
         structureType: key,
@@ -1018,10 +1014,7 @@ export class StructureManager {
       return;
     }
 
-    if (
-      visibleUpdateMode === "rebuild" ||
-      shouldRebuildVisibleStructuresForStructureUpdate(visibleUpdateInput)
-    ) {
+    if (visibleUpdateMode === "rebuild" || shouldRebuildVisibleStructuresForStructureUpdate(visibleUpdateInput)) {
       this.updateVisibleStructures();
     }
   }
@@ -1145,7 +1138,11 @@ export class StructureManager {
 
   public refreshCosmeticsForOwner(owner: string | bigint): void {
     const normalizedOwner =
-      typeof owner === "bigint" ? `0x${owner.toString(16)}` : owner.toLowerCase().startsWith("0x") ? owner.toLowerCase() : owner;
+      typeof owner === "bigint"
+        ? `0x${owner.toString(16)}`
+        : owner.toLowerCase().startsWith("0x")
+          ? owner.toLowerCase()
+          : owner;
 
     let shouldRefreshVisibleStructures = false;
     const allStructures = this.structures.getStructures();
@@ -1420,281 +1417,281 @@ export class StructureManager {
         Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
       }
 
-    for (const [structureType, structures] of structuresByType) {
-      const models = this.structureModels.get(structureType);
+      for (const [structureType, structures] of structuresByType) {
+        const models = this.structureModels.get(structureType);
 
-      if (!models || models.length === 0) {
-        continue;
-      }
-
-      if (!this.entityIdMaps.has(structureType)) {
-        this.entityIdMaps.set(structureType, new Map());
-      }
-
-      structures.forEach((structure) => {
-        visibleStructureIds.add(structure.entityId);
-        // Use scratch vector to avoid allocation
-        const { col, row } = structure.hexCoords;
-        getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-        this.scratchPosition.y += 0.05;
-
-        const existingLabel = this.entityIdLabels.get(structure.entityId);
-        if (existingLabel) {
-          this.updateStructureLabelData(structure, existingLabel);
-          // Use scratch vector for label position
-          getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-          this.scratchLabelPosition.y += 2;
-          existingLabel.position.copy(this.scratchLabelPosition);
+        if (!models || models.length === 0) {
+          continue;
         }
 
-        this.dummy.position.copy(this.scratchPosition);
+        if (!this.entityIdMaps.has(structureType)) {
+          this.entityIdMaps.set(structureType, new Map());
+        }
 
-        if (structureType === StructureType.Bank) {
-          this.dummy.rotation.y = (4 * Math.PI) / 6;
-        } else {
+        structures.forEach((structure) => {
+          visibleStructureIds.add(structure.entityId);
+          // Use scratch vector to avoid allocation
+          const { col, row } = structure.hexCoords;
+          getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
+          this.scratchPosition.y += 0.05;
+
+          const existingLabel = this.entityIdLabels.get(structure.entityId);
+          if (existingLabel) {
+            this.updateStructureLabelData(structure, existingLabel);
+            // Use scratch vector for label position
+            getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
+            this.scratchLabelPosition.y += 2;
+            existingLabel.position.copy(this.scratchLabelPosition);
+          }
+
+          this.dummy.position.copy(this.scratchPosition);
+
+          if (structureType === StructureType.Bank) {
+            this.dummy.rotation.y = (4 * Math.PI) / 6;
+          } else {
+            const rotationSeed = hashCoordinates(col, row);
+            const rotationIndex = Math.floor(rotationSeed * 6);
+            const randomRotation = (rotationIndex * Math.PI) / 3;
+            this.dummy.rotation.y = randomRotation;
+          }
+          this.dummy.updateMatrix();
+
+          // Add point icon for this structure (always visible)
+          if (this.pointsRenderers) {
+            // Use scratch vector for icon position
+            this.scratchIconPosition.copy(this.scratchPosition);
+            this.scratchIconPosition.y += 2; // Match CSS2D label height
+
+            const renderer = this.getRendererForStructure(structure);
+            if (renderer) {
+              renderer.setPoint({
+                entityId: structure.entityId,
+                position: this.scratchIconPosition,
+              });
+            }
+          }
+
+          const entityNumericId = Number(structure.entityId);
+          const templates = this.resolveStructureAttachmentsForRender(structure);
+          if (templates.length > 0) {
+            attachmentRetain.add(entityNumericId);
+            const signature = this.getAttachmentSignature(templates);
+            const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
+            if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
+              this.attachmentManager.spawnAttachments(entityNumericId, templates);
+              this.structureAttachmentSignatures.set(entityNumericId, signature);
+              this.activeStructureAttachmentEntities.add(entityNumericId);
+            }
+
+            this.tempCosmeticPosition.copy(this.scratchPosition);
+            this.tempCosmeticRotation.copy(this.dummy.rotation);
+
+            const baseTransform = {
+              position: this.tempCosmeticPosition,
+              rotation: this.tempCosmeticRotation,
+              scale: this.dummy.scale,
+            };
+
+            const mountTransforms = resolveStructureMountTransforms(
+              structure.structureType,
+              baseTransform,
+              this.structureAttachmentTransformScratch,
+            );
+
+            this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
+          } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
+            this.attachmentManager.removeAttachments(entityNumericId);
+            this.activeStructureAttachmentEntities.delete(entityNumericId);
+            this.structureAttachmentSignatures.delete(entityNumericId);
+          }
+
+          let modelType = models[structure.stage];
+          if (structureType === StructureType.Realm) {
+            modelType = models[structure.level];
+
+            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+            const currentCount = modelInstanceCounts.get(modelType) ?? 0;
+            modelType.setMatrixAt(currentCount, this.dummy.matrix);
+            modelInstanceCounts.set(modelType, currentCount + 1);
+            nextActiveStructureModels.add(modelType);
+            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+
+            if (structure.hasWonder) {
+              const wonderModel = models[WONDER_MODEL_INDEX];
+              const wonderCount = modelInstanceCounts.get(wonderModel) ?? 0;
+              wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
+              modelInstanceCounts.set(wonderModel, wonderCount + 1);
+              nextActiveStructureModels.add(wonderModel);
+              this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
+            }
+          } else {
+            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+            const currentCount = modelInstanceCounts.get(modelType) ?? 0;
+            modelType.setMatrixAt(currentCount, this.dummy.matrix);
+            modelInstanceCounts.set(modelType, currentCount + 1);
+            nextActiveStructureModels.add(modelType);
+            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+          }
+        });
+
+        // Note: setCount will be called once per model after all structures are processed
+      }
+
+      // Render structures with cosmetic skins
+      for (const [cosmeticId, structures] of structuresByCosmeticId) {
+        const models = this.cosmeticStructureModels.get(cosmeticId);
+
+        if (!models || models.length === 0) {
+          continue;
+        }
+
+        if (!this.cosmeticEntityIdMaps.has(cosmeticId)) {
+          this.cosmeticEntityIdMaps.set(cosmeticId, new Map());
+        }
+
+        structures.forEach((structure) => {
+          visibleStructureIds.add(structure.entityId);
+          // Use scratch vector to avoid allocation
+          const { col, row } = structure.hexCoords;
+          getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
+          this.scratchPosition.y += 0.05;
+
+          const existingLabel = this.entityIdLabels.get(structure.entityId);
+          if (existingLabel) {
+            this.updateStructureLabelData(structure, existingLabel);
+            // Use scratch vector for label position
+            getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
+            this.scratchLabelPosition.y += 2;
+            existingLabel.position.copy(this.scratchLabelPosition);
+          }
+
+          this.dummy.position.copy(this.scratchPosition);
+
           const rotationSeed = hashCoordinates(col, row);
           const rotationIndex = Math.floor(rotationSeed * 6);
           const randomRotation = (rotationIndex * Math.PI) / 3;
           this.dummy.rotation.y = randomRotation;
-        }
-        this.dummy.updateMatrix();
+          this.dummy.updateMatrix();
 
-        // Add point icon for this structure (always visible)
-        if (this.pointsRenderers) {
-          // Use scratch vector for icon position
-          this.scratchIconPosition.copy(this.scratchPosition);
-          this.scratchIconPosition.y += 2; // Match CSS2D label height
+          // Add point icon for this structure
+          if (this.pointsRenderers) {
+            // Use scratch vector for icon position
+            this.scratchIconPosition.copy(this.scratchPosition);
+            this.scratchIconPosition.y += 2;
 
-          const renderer = this.getRendererForStructure(structure);
-          if (renderer) {
-            renderer.setPoint({
-              entityId: structure.entityId,
-              position: this.scratchIconPosition,
-            });
-          }
-        }
-
-        const entityNumericId = Number(structure.entityId);
-        const templates = this.resolveStructureAttachmentsForRender(structure);
-        if (templates.length > 0) {
-          attachmentRetain.add(entityNumericId);
-          const signature = this.getAttachmentSignature(templates);
-          const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
-          if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
-            this.attachmentManager.spawnAttachments(entityNumericId, templates);
-            this.structureAttachmentSignatures.set(entityNumericId, signature);
-            this.activeStructureAttachmentEntities.add(entityNumericId);
-          }
-
-          this.tempCosmeticPosition.copy(this.scratchPosition);
-          this.tempCosmeticRotation.copy(this.dummy.rotation);
-
-          const baseTransform = {
-            position: this.tempCosmeticPosition,
-            rotation: this.tempCosmeticRotation,
-            scale: this.dummy.scale,
-          };
-
-          const mountTransforms = resolveStructureMountTransforms(
-            structure.structureType,
-            baseTransform,
-            this.structureAttachmentTransformScratch,
-          );
-
-          this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-        } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-          this.attachmentManager.removeAttachments(entityNumericId);
-          this.activeStructureAttachmentEntities.delete(entityNumericId);
-          this.structureAttachmentSignatures.delete(entityNumericId);
-        }
-
-        let modelType = models[structure.stage];
-        if (structureType === StructureType.Realm) {
-          modelType = models[structure.level];
-
-          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-          const currentCount = modelInstanceCounts.get(modelType) ?? 0;
-          modelType.setMatrixAt(currentCount, this.dummy.matrix);
-          modelInstanceCounts.set(modelType, currentCount + 1);
-          nextActiveStructureModels.add(modelType);
-          this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
-
-          if (structure.hasWonder) {
-            const wonderModel = models[WONDER_MODEL_INDEX];
-            const wonderCount = modelInstanceCounts.get(wonderModel) ?? 0;
-            wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
-            modelInstanceCounts.set(wonderModel, wonderCount + 1);
-            nextActiveStructureModels.add(wonderModel);
-            this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
-          }
-        } else {
-          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-          const currentCount = modelInstanceCounts.get(modelType) ?? 0;
-          modelType.setMatrixAt(currentCount, this.dummy.matrix);
-          modelInstanceCounts.set(modelType, currentCount + 1);
-          nextActiveStructureModels.add(modelType);
-          this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
-        }
-      });
-
-      // Note: setCount will be called once per model after all structures are processed
-    }
-
-    // Render structures with cosmetic skins
-    for (const [cosmeticId, structures] of structuresByCosmeticId) {
-      const models = this.cosmeticStructureModels.get(cosmeticId);
-
-      if (!models || models.length === 0) {
-        continue;
-      }
-
-      if (!this.cosmeticEntityIdMaps.has(cosmeticId)) {
-        this.cosmeticEntityIdMaps.set(cosmeticId, new Map());
-      }
-
-      structures.forEach((structure) => {
-        visibleStructureIds.add(structure.entityId);
-        // Use scratch vector to avoid allocation
-        const { col, row } = structure.hexCoords;
-        getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-        this.scratchPosition.y += 0.05;
-
-        const existingLabel = this.entityIdLabels.get(structure.entityId);
-        if (existingLabel) {
-          this.updateStructureLabelData(structure, existingLabel);
-          // Use scratch vector for label position
-          getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-          this.scratchLabelPosition.y += 2;
-          existingLabel.position.copy(this.scratchLabelPosition);
-        }
-
-        this.dummy.position.copy(this.scratchPosition);
-
-        const rotationSeed = hashCoordinates(col, row);
-        const rotationIndex = Math.floor(rotationSeed * 6);
-        const randomRotation = (rotationIndex * Math.PI) / 3;
-        this.dummy.rotation.y = randomRotation;
-        this.dummy.updateMatrix();
-
-        // Add point icon for this structure
-        if (this.pointsRenderers) {
-          // Use scratch vector for icon position
-          this.scratchIconPosition.copy(this.scratchPosition);
-          this.scratchIconPosition.y += 2;
-
-          const renderer = this.getRendererForStructure(structure);
-          if (renderer) {
-            renderer.setPoint({
-              entityId: structure.entityId,
-              position: this.scratchIconPosition,
-            });
-          }
-        }
-
-        // Handle attachments
-        const entityNumericId = Number(structure.entityId);
-        const templates = this.resolveStructureAttachmentsForRender(structure);
-        if (templates.length > 0) {
-          attachmentRetain.add(entityNumericId);
-          const signature = this.getAttachmentSignature(templates);
-          const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
-          if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
-            this.attachmentManager.spawnAttachments(entityNumericId, templates);
-            this.structureAttachmentSignatures.set(entityNumericId, signature);
-            this.activeStructureAttachmentEntities.add(entityNumericId);
-          }
-
-          this.tempCosmeticPosition.copy(this.scratchPosition);
-          this.tempCosmeticRotation.copy(this.dummy.rotation);
-
-          const baseTransform = {
-            position: this.tempCosmeticPosition,
-            rotation: this.tempCosmeticRotation,
-            scale: this.dummy.scale,
-          };
-
-          const mountTransforms = resolveStructureMountTransforms(
-            structure.structureType,
-            baseTransform,
-            this.structureAttachmentTransformScratch,
-          );
-
-          this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-        } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-          this.attachmentManager.removeAttachments(entityNumericId);
-          this.activeStructureAttachmentEntities.delete(entityNumericId);
-          this.structureAttachmentSignatures.delete(entityNumericId);
-        }
-
-        // Cosmetic skins typically have a single model (index 0)
-        const model = models[0];
-        if (model) {
-          // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-          const currentCount = modelInstanceCounts.get(model) ?? 0;
-          model.setMatrixAt(currentCount, this.dummy.matrix);
-          modelInstanceCounts.set(model, currentCount + 1);
-          nextActiveCosmeticStructureModels.add(model);
-          this.cosmeticEntityIdMaps.get(cosmeticId)!.set(currentCount, structure.entityId);
-        }
-      });
-
-      // Note: setCount will be called once per model after all structures are processed
-    }
-
-    // Batch update: call setCount once per model that was used (triggers needsUpdate + computeBoundingSphere once)
-    for (const [model, count] of modelInstanceCounts) {
-      model.setCount(count);
-    }
-    this.previouslyActiveStructureModels = nextActiveStructureModels;
-    this.previouslyActiveCosmeticStructureModels = nextActiveCosmeticStructureModels;
-
-    // Apply deferred worldBounds now that instance data matches the new chunk
-    this.applyPendingModelBounds();
-
-    // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
-    if (this.pointsRenderers) {
-      Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
-    }
-
-    if (this.activeStructureAttachmentEntities.size > 0) {
-      const toRemove: number[] = [];
-      this.activeStructureAttachmentEntities.forEach((entityId) => {
-        if (!attachmentRetain.has(entityId)) {
-          toRemove.push(entityId);
-        }
-      });
-
-      toRemove.forEach((entityId) => {
-        this.attachmentManager.removeAttachments(entityId);
-        this.activeStructureAttachmentEntities.delete(entityId);
-        this.structureAttachmentSignatures.delete(entityId);
-      });
-    }
-
-    const labelsToRemove: ID[] = [];
-    for (const entityId of this.entityIdLabels.keys()) {
-      if (!visibleStructureIds.has(entityId)) {
-        labelsToRemove.push(entityId);
-      }
-    }
-
-    labelsToRemove.forEach((entityId) => {
-      this.removeEntityIdLabel(entityId);
-    });
-
-    // Remove points for structures no longer visible (diff-based: O(previously_visible) instead of O(all_structures))
-    if (this.pointsRenderers) {
-      for (const entityId of this.previousVisibleIds) {
-        if (!visibleStructureIds.has(entityId)) {
-          // Structure was visible last frame but not anymore - remove its point
-          const structure = this.structures.getStructureByEntityId(entityId);
-          if (structure) {
             const renderer = this.getRendererForStructure(structure);
-            renderer?.removePoint(entityId);
+            if (renderer) {
+              renderer.setPoint({
+                entityId: structure.entityId,
+                position: this.scratchIconPosition,
+              });
+            }
+          }
+
+          // Handle attachments
+          const entityNumericId = Number(structure.entityId);
+          const templates = this.resolveStructureAttachmentsForRender(structure);
+          if (templates.length > 0) {
+            attachmentRetain.add(entityNumericId);
+            const signature = this.getAttachmentSignature(templates);
+            const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
+            if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
+              this.attachmentManager.spawnAttachments(entityNumericId, templates);
+              this.structureAttachmentSignatures.set(entityNumericId, signature);
+              this.activeStructureAttachmentEntities.add(entityNumericId);
+            }
+
+            this.tempCosmeticPosition.copy(this.scratchPosition);
+            this.tempCosmeticRotation.copy(this.dummy.rotation);
+
+            const baseTransform = {
+              position: this.tempCosmeticPosition,
+              rotation: this.tempCosmeticRotation,
+              scale: this.dummy.scale,
+            };
+
+            const mountTransforms = resolveStructureMountTransforms(
+              structure.structureType,
+              baseTransform,
+              this.structureAttachmentTransformScratch,
+            );
+
+            this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
+          } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
+            this.attachmentManager.removeAttachments(entityNumericId);
+            this.activeStructureAttachmentEntities.delete(entityNumericId);
+            this.structureAttachmentSignatures.delete(entityNumericId);
+          }
+
+          // Cosmetic skins typically have a single model (index 0)
+          const model = models[0];
+          if (model) {
+            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
+            const currentCount = modelInstanceCounts.get(model) ?? 0;
+            model.setMatrixAt(currentCount, this.dummy.matrix);
+            modelInstanceCounts.set(model, currentCount + 1);
+            nextActiveCosmeticStructureModels.add(model);
+            this.cosmeticEntityIdMaps.get(cosmeticId)!.set(currentCount, structure.entityId);
+          }
+        });
+
+        // Note: setCount will be called once per model after all structures are processed
+      }
+
+      // Batch update: call setCount once per model that was used (triggers needsUpdate + computeBoundingSphere once)
+      for (const [model, count] of modelInstanceCounts) {
+        model.setCount(count);
+      }
+      this.previouslyActiveStructureModels = nextActiveStructureModels;
+      this.previouslyActiveCosmeticStructureModels = nextActiveCosmeticStructureModels;
+
+      // Apply deferred worldBounds now that instance data matches the new chunk
+      this.applyPendingModelBounds();
+
+      // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
+      if (this.pointsRenderers) {
+        Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
+      }
+
+      if (this.activeStructureAttachmentEntities.size > 0) {
+        const toRemove: number[] = [];
+        this.activeStructureAttachmentEntities.forEach((entityId) => {
+          if (!attachmentRetain.has(entityId)) {
+            toRemove.push(entityId);
+          }
+        });
+
+        toRemove.forEach((entityId) => {
+          this.attachmentManager.removeAttachments(entityId);
+          this.activeStructureAttachmentEntities.delete(entityId);
+          this.structureAttachmentSignatures.delete(entityId);
+        });
+      }
+
+      const labelsToRemove: ID[] = [];
+      for (const entityId of this.entityIdLabels.keys()) {
+        if (!visibleStructureIds.has(entityId)) {
+          labelsToRemove.push(entityId);
+        }
+      }
+
+      labelsToRemove.forEach((entityId) => {
+        this.removeEntityIdLabel(entityId);
+      });
+
+      // Remove points for structures no longer visible (diff-based: O(previously_visible) instead of O(all_structures))
+      if (this.pointsRenderers) {
+        for (const entityId of this.previousVisibleIds) {
+          if (!visibleStructureIds.has(entityId)) {
+            // Structure was visible last frame but not anymore - remove its point
+            const structure = this.structures.getStructureByEntityId(entityId);
+            if (structure) {
+              const renderer = this.getRendererForStructure(structure);
+              renderer?.removePoint(entityId);
+            }
           }
         }
       }
-    }
 
       // Update tracking for next frame's diff
       this.previousVisibleIds = visibleStructureIds;

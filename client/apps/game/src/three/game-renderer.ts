@@ -72,11 +72,7 @@ import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } fro
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
-import {
-  createWebGLRendererBackend,
-  type RendererBackendFactory,
-  type RendererSurfaceLike,
-} from "./renderer-backend";
+import { createWebGLRendererBackend, type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
 import { requestRendererScenePrewarm, resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
@@ -941,7 +937,9 @@ export default class GameRenderer {
       })
       .onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
 
-    folder.add(config.toneMapping, "exposure", 0.0, 2.0, 0.01).onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
+    folder
+      .add(config.toneMapping, "exposure", 0.0, 2.0, 0.01)
+      .onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
 
     folder
       .add(config.toneMapping, "whitePoint", 0.0, 2.0, 0.01)
@@ -1487,7 +1485,6 @@ export default class GameRenderer {
     this.worldmapScene?.applyQualityFeatures(features);
     this.fastTravelScene?.applyQualityFeatures(features);
     this.hexceptionScene?.applyQualityFeatures(features);
-
   }
 
   private rebuildPostProcessing(features: QualityFeatures): void {
@@ -1567,9 +1564,7 @@ export default class GameRenderer {
     }
   }
 
-  private resolveRendererToneMappingMode(
-    mode: ToneMappingMode,
-  ): RendererPostProcessPlan["toneMapping"]["mode"] {
+  private resolveRendererToneMappingMode(mode: ToneMappingMode): RendererPostProcessPlan["toneMapping"]["mode"] {
     switch (mode) {
       case ToneMappingMode.ACES_FILMIC:
         return "aces-filmic";

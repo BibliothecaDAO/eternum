@@ -999,7 +999,9 @@ export class ArmyManager {
       army.attachments = cosmetic.attachments;
     }
 
-    const hasCosmeticSkin = Boolean(cosmeticId && cosmeticAssetPaths && cosmeticAssetPaths.length > 0 && !usesFallbackCosmeticSkin);
+    const hasCosmeticSkin = Boolean(
+      cosmeticId && cosmeticAssetPaths && cosmeticAssetPaths.length > 0 && !usesFallbackCosmeticSkin,
+    );
 
     if (hasCosmeticSkin) {
       this.armyModel.assignCosmeticToEntity(numericId, {
@@ -2098,7 +2100,11 @@ export class ArmyManager {
 
   public refreshCosmeticsForOwner(owner: string | bigint): void {
     const normalizedOwner =
-      typeof owner === "bigint" ? `0x${owner.toString(16)}` : owner.toLowerCase().startsWith("0x") ? owner.toLowerCase() : owner;
+      typeof owner === "bigint"
+        ? `0x${owner.toString(16)}`
+        : owner.toLowerCase().startsWith("0x")
+          ? owner.toLowerCase()
+          : owner;
 
     this.armies.forEach((army, entityId) => {
       const armyOwner = `0x${army.owner.address.toString(16)}`;

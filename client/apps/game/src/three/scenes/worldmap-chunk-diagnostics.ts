@@ -172,10 +172,7 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
   };
 }
 
-function recordDurationSample(
-  samples: number[],
-  durationMs: number,
-): number[] {
+function recordDurationSample(samples: number[], durationMs: number): number[] {
   samples.push(durationMs);
   if (samples.length > MAX_DURATION_SAMPLES) {
     samples.shift();

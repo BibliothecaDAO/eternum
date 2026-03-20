@@ -165,10 +165,7 @@ import {
   resolveWorldmapChunkRefreshSchedule,
   shouldDelayWorldmapChunkSwitch,
 } from "./worldmap-chunk-switch-delay-policy";
-import {
-  classifyWorldmapUploadWork,
-  resolveWorldmapPostCommitWorkAction,
-} from "./worldmap-upload-budget-policy";
+import { classifyWorldmapUploadWork, resolveWorldmapPostCommitWorkAction } from "./worldmap-upload-budget-policy";
 import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 import {
   applyWorldmapSwitchOffRuntimeState,
@@ -210,10 +207,7 @@ import {
 } from "../perf/worldmap-render-diagnostics";
 import { recordRendererColorUploadBytes, recordRendererMatrixUploadBytes } from "../perf/renderer-gpu-telemetry";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
-import {
-  buildVisibleTerrainMembership,
-  type VisibleTerrainInstanceRef,
-} from "./worldmap-visible-terrain-membership";
+import { buildVisibleTerrainMembership, type VisibleTerrainInstanceRef } from "./worldmap-visible-terrain-membership";
 import { resolveVisibleTerrainReconcileMode } from "./worldmap-visible-terrain-reconcile-policy";
 import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
 import {
@@ -246,10 +240,7 @@ import {
 } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
-import {
-  prepareWorldmapChunkPresentation,
-  prewarmWorldmapChunkPresentation,
-} from "./worldmap-chunk-presentation";
+import { prepareWorldmapChunkPresentation, prewarmWorldmapChunkPresentation } from "./worldmap-chunk-presentation";
 import { resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
 import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
@@ -893,7 +884,9 @@ export default class WorldmapScene extends WarpTravel {
         // This fixes the bug where newly spawned armies can't see movement options
         const spawnResult = resolveArmySpawnBiome(
           this.exploredTiles,
-          normalizedPos.x, normalizedPos.y, BiomeType.Grassland,
+          normalizedPos.x,
+          normalizedPos.y,
+          BiomeType.Grassland,
         );
         if (spawnResult.action === "write_provisional") {
           if (!this.exploredTiles.has(normalizedPos.x)) {
@@ -1679,7 +1672,9 @@ export default class WorldmapScene extends WarpTravel {
     const position = this.armiesPositions.get(entityId);
     if (!position) return null;
     if (import.meta.env.DEV) {
-      console.warn(`[Selection Fallback] Hex picking failed but army raycast hit entity ${entityId} at (${position.col}, ${position.row})`);
+      console.warn(
+        `[Selection Fallback] Hex picking failed but army raycast hit entity ${entityId} at (${position.col}, ${position.row})`,
+      );
     }
     return position;
   }
@@ -1689,7 +1684,9 @@ export default class WorldmapScene extends WarpTravel {
     const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");
     const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
-    const { army, structure, chest } = hexCoords ? this.getHexagonEntity(hexCoords) : { army: undefined, structure: undefined, chest: undefined };
+    const { army, structure, chest } = hexCoords
+      ? this.getHexagonEntity(hexCoords)
+      : { army: undefined, structure: undefined, chest: undefined };
     const clickPlan = resolveWorldmapHexClickPlan({
       hasBlockingOverlay: Boolean(overlay && !overlayClick),
       hexCoords,
@@ -1879,7 +1876,11 @@ export default class WorldmapScene extends WarpTravel {
         };
         cleanup = () => {
           if (cleaned) return;
-          const delayMs = getMinEffectCleanupDelayMs(effectStartedAtMs, performance.now(), MIN_TRAVEL_EFFECT_VISIBLE_MS);
+          const delayMs = getMinEffectCleanupDelayMs(
+            effectStartedAtMs,
+            performance.now(),
+            MIN_TRAVEL_EFFECT_VISIBLE_MS,
+          );
           if (delayMs === 0) {
             runCleanupNow();
             return;
@@ -2386,7 +2387,9 @@ export default class WorldmapScene extends WarpTravel {
       return undefined;
     }
 
-    const actionPath = this.state.entityActions.actionPaths.get(`${hexCoords.col + FELT_CENTER()},${hexCoords.row + FELT_CENTER()}`);
+    const actionPath = this.state.entityActions.actionPaths.get(
+      `${hexCoords.col + FELT_CENTER()},${hexCoords.row + FELT_CENTER()}`,
+    );
     return actionPath ? ActionPaths.getActionType(actionPath) : undefined;
   }
 
@@ -3623,7 +3626,8 @@ export default class WorldmapScene extends WarpTravel {
             prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
               this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
           }),
-        cachePreparedTerrain: (preparedTerrain) => this.cachePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk),
+        cachePreparedTerrain: (preparedTerrain) =>
+          this.cachePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk),
       });
     } finally {
       this.activeDirectionalPresentationPrewarms.delete(chunkKey);
@@ -3646,7 +3650,9 @@ export default class WorldmapScene extends WarpTravel {
 
     const uploadWork = classifyWorldmapUploadWork({
       matrixInstanceCount:
-        this.armyManager.getVisibleCount() + this.structureManager.getVisibleCount() + this.chestManager.getVisibleCount(),
+        this.armyManager.getVisibleCount() +
+        this.structureManager.getVisibleCount() +
+        this.chestManager.getVisibleCount(),
       colorInstanceCount: 0,
       isCachedReplay: false,
       stage: "visible_commit",
@@ -3724,12 +3730,11 @@ export default class WorldmapScene extends WarpTravel {
           console.error("[WorldMap] Deferred manager catch-up failed:", error);
         }
       }
-    })()
-      .finally(() => {
-        if (this.postCommitManagerCatchUpQueue.length > 0) {
-          this.schedulePostCommitManagerCatchUpDrain();
-        }
-      });
+    })().finally(() => {
+      if (this.postCommitManagerCatchUpQueue.length > 0) {
+        this.schedulePostCommitManagerCatchUpDrain();
+      }
+    });
   }
 
   private clearStreamingWorkState(): void {
@@ -3824,8 +3829,7 @@ export default class WorldmapScene extends WarpTravel {
     const interactiveStartRow = chunkCenterRow - Math.floor(normalizedHeight / 2);
     const interactiveStartCol = chunkCenterCol - Math.floor(normalizedWidth / 2);
 
-    const nextInteractiveHexWindowKey =
-      `${interactiveStartRow}:${interactiveStartCol}:${normalizedWidth}:${normalizedHeight}`;
+    const nextInteractiveHexWindowKey = `${interactiveStartRow}:${interactiveStartCol}:${normalizedWidth}:${normalizedHeight}`;
 
     if (this.interactiveHexWindowKey !== nextInteractiveHexWindowKey) {
       // Keep interaction state bounded to the active rendered window.
@@ -3879,7 +3883,10 @@ export default class WorldmapScene extends WarpTravel {
     const halfCols = cols / 2;
     const { row: snapshotCenterRow, col: snapshotCenterCol } = this.getChunkCenter(startRow, startCol);
     const exploredTilesSnapshot = snapshotExploredTilesRegion(this.exploredTiles, {
-      centerCol: snapshotCenterCol, centerRow: snapshotCenterRow, halfCols, halfRows,
+      centerCol: snapshotCenterCol,
+      centerRow: snapshotCenterRow,
+      halfCols,
+      halfRows,
     });
     const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
     const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
@@ -4225,7 +4232,10 @@ export default class WorldmapScene extends WarpTravel {
     const prepHalfCols = cols / 2;
     const prepHalfRows = rows / 2;
     const prepSnapshot = snapshotExploredTilesRegion(this.exploredTiles, {
-      centerCol: prepCenterCol, centerRow: prepCenterRow, halfCols: prepHalfCols, halfRows: prepHalfRows,
+      centerCol: prepCenterCol,
+      centerRow: prepCenterRow,
+      halfCols: prepHalfCols,
+      halfRows: prepHalfRows,
     });
     await Promise.all(this.modelLoadPromises);
 
@@ -4471,7 +4481,12 @@ export default class WorldmapScene extends WarpTravel {
 
     this.cachePreparedTerrainChunk(preparedTerrain);
     this.setVisibleTerrainMembership(preparedTerrain.visibleTerrainOwnership);
-    this.computeInteractiveHexes(preparedTerrain.startRow, preparedTerrain.startCol, this.renderChunkSize.width, this.renderChunkSize.height);
+    this.computeInteractiveHexes(
+      preparedTerrain.startRow,
+      preparedTerrain.startCol,
+      this.renderChunkSize.width,
+      this.renderChunkSize.height,
+    );
   }
 
   private updatePinnedChunks(newChunkKeys: string[]): void {
@@ -4866,10 +4881,7 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private trackStructureHydrationUpdate(
-    update: { hexCoords: HexPosition },
-    work: Promise<void>,
-  ): Promise<void> {
+  private trackStructureHydrationUpdate(update: { hexCoords: HexPosition }, work: Promise<void>): Promise<void> {
     const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
     const matchedFetchKeys: string[] = [];
 
@@ -5127,7 +5139,9 @@ export default class WorldmapScene extends WarpTravel {
     startCol: number,
     expectedExploredTerrainInstances: number,
     terrainFingerprint: string = this.getTerrainFingerprintForChunk(startRow, startCol),
-    visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = Array.from(this.visibleTerrainMembership.entries()),
+    visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = Array.from(
+      this.visibleTerrainMembership.entries(),
+    ),
   ) {
     const chunkKey = `${startRow},${startCol}`;
     if (!this.cachedMatrices.has(chunkKey)) {
@@ -5240,11 +5254,15 @@ export default class WorldmapScene extends WarpTravel {
 
       const cachedMetadata = cachedMatrices.get("__meta__");
       const expectedExploredTerrainInstances =
-        cachedMetadata?.expectedExploredTerrainInstances ?? this.getExpectedExploredTerrainInstances(startRow, startCol);
+        cachedMetadata?.expectedExploredTerrainInstances ??
+        this.getExpectedExploredTerrainInstances(startRow, startCol);
       const terrainFingerprint = this.getTerrainFingerprintForChunk(startRow, startCol);
       if (
         this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
-        this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances) ||
+        this.shouldRejectExploredTerrainCacheSnapshot(
+          cachedExploredTerrainInstances,
+          expectedExploredTerrainInstances,
+        ) ||
         shouldRejectCachedTerrainFingerprintMismatch({
           cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
           currentTerrainFingerprint: terrainFingerprint,
@@ -5779,197 +5797,202 @@ export default class WorldmapScene extends WarpTravel {
         this.clearEntitySelection();
       }
 
-    const oldChunk = this.currentChunk;
-    const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
-      previousSwitchPosition: this.lastChunkSwitchPosition
-        ? {
-            x: this.lastChunkSwitchPosition.x,
-            z: this.lastChunkSwitchPosition.z,
-          }
-        : null,
-      nextSwitchPosition: switchPosition
-        ? {
-            x: switchPosition.x,
-            z: switchPosition.z,
-          }
-        : null,
-      previousMovementVector: this.lastChunkSwitchMovement,
-      minMovementDistance: 0.001,
-    });
-    const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
-    const effectiveForce = force || shouldAggressiveReversalRefresh;
-    const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
-    const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
-    const hasFiniteOldChunkCoordinates =
-      oldChunkCoordinates !== null &&
-      Number.isFinite(oldChunkCoordinates[0]) &&
-      Number.isFinite(oldChunkCoordinates[1]);
-    prepareWarpTravelChunkBounds({
-      targetChunkKey: chunkKey,
-      startRow,
-      startCol,
-      hasFiniteOldChunkCoordinates,
-      oldChunkCoordinates:
-        hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
-          ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+      const oldChunk = this.currentChunk;
+      const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
+        previousSwitchPosition: this.lastChunkSwitchPosition
+          ? {
+              x: this.lastChunkSwitchPosition.x,
+              z: this.lastChunkSwitchPosition.z,
+            }
           : null,
-      computeChunkBounds: (targetStartRow, targetStartCol) => this.computeChunkBounds(targetStartRow, targetStartCol),
-      registerChunk: (targetChunkKey, bounds) => this.visibilityManager?.registerChunk(targetChunkKey, bounds),
-      combineChunkBounds: (previousBounds, nextBounds) => this.combineChunkBounds(previousBounds, nextBounds),
-      applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
-    });
-
-    // Load surrounding pinned chunks for better UX.
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-    if (shouldAggressiveReversalRefresh) {
-      this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
-        includeSurroundingChunks: surroundingChunks,
-        invalidateFetchAreas: true,
+        nextSwitchPosition: switchPosition
+          ? {
+              x: switchPosition.x,
+              z: switchPosition.z,
+            }
+          : null,
+        previousMovementVector: this.lastChunkSwitchMovement,
+        minMovementDistance: 0.001,
       });
-    } else if (effectiveForce) {
-      this.removeCachedMatricesForChunk(startRow, startCol);
-    }
+      const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
+      const effectiveForce = force || shouldAggressiveReversalRefresh;
+      const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
+      const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
+      const hasFiniteOldChunkCoordinates =
+        oldChunkCoordinates !== null &&
+        Number.isFinite(oldChunkCoordinates[0]) &&
+        Number.isFinite(oldChunkCoordinates[1]);
+      prepareWarpTravelChunkBounds({
+        targetChunkKey: chunkKey,
+        startRow,
+        startCol,
+        hasFiniteOldChunkCoordinates,
+        oldChunkCoordinates:
+          hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
+            ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+            : null,
+        computeChunkBounds: (targetStartRow, targetStartCol) => this.computeChunkBounds(targetStartRow, targetStartCol),
+        registerChunk: (targetChunkKey, bounds) => this.visibilityManager?.registerChunk(targetChunkKey, bounds),
+        combineChunkBounds: (previousBounds, nextBounds) => this.combineChunkBounds(previousBounds, nextBounds),
+        applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
+      });
+
+      // Load surrounding pinned chunks for better UX.
+      const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+      if (shouldAggressiveReversalRefresh) {
+        this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
+          includeSurroundingChunks: surroundingChunks,
+          invalidateFetchAreas: true,
+        });
+      } else if (effectiveForce) {
+        this.removeCachedMatricesForChunk(startRow, startCol);
+      }
 
       const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
-      chunkKey,
-      startRow,
-      startCol,
-      surroundingChunks,
-      transitionToken,
-      renderSize: this.renderChunkSize,
-      computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
-      updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
-      updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
-        this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-      waitForTileHydrationIdle: async (targetChunkKey) => {
-        const startedAt = performance.now();
-        await this.waitForTileHydrationIdle(targetChunkKey);
-        presentationPhaseDurations.tileHydrationDrainMs = performance.now() - startedAt;
-        recordWorldmapRenderDuration("tileHydrationDrainMs", presentationPhaseDurations.tileHydrationDrainMs);
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
-      },
-      waitForStructureHydrationIdle: async (targetChunkKey) => {
-        const startedAt = performance.now();
-        await this.waitForStructureHydrationIdle(targetChunkKey);
-        presentationPhaseDurations.structureHydrationDrainMs = performance.now() - startedAt;
-        recordWorldmapRenderDuration(
-          "structureHydrationDrainMs",
-          presentationPhaseDurations.structureHydrationDrainMs,
-        );
-      },
-      prewarmChunkAssets: async (targetChunkKey) => {
-        const startedAt = performance.now();
-        await this.structureManager.prewarmChunkAssets(targetChunkKey);
-        presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
-        recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
-      },
-      prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
-        const startedAt = performance.now();
-        const preparedChunk = await this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width);
-        presentationPhaseDurations.terrainPreparedMs = performance.now() - startedAt;
-        recordWorldmapRenderDuration("terrainPreparedMs", presentationPhaseDurations.terrainPreparedMs);
-        return preparedChunk;
-      },
-      onChunkHydrated: (hydratedChunkKey) => {
-        this.hydratedChunkRefreshes.delete(hydratedChunkKey);
-      },
-    });
-
-    if (tileFetchSucceeded && preparedTerrain) {
-      const terrainReadyDurationMs = performance.now() - chunkSwitchStartedAt;
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_ready_duration_recorded", {
-        durationMs: terrainReadyDurationMs,
-      });
-      recordWorldmapRenderDuration("chunkTerrainReadyMs", terrainReadyDurationMs);
-    }
-
-    let managerCatchUpPromise: Promise<void> | null = null;
-    const finalizeResult = await finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: tileFetchSucceeded,
-      isCurrentTransition: transitionToken === this.chunkTransitionToken,
-      targetChunk: chunkKey,
-      previousChunk: oldChunk,
-      currentChunk: this.currentChunk,
-      previousPinnedChunks,
-      hasFiniteOldChunkCoordinates,
-      oldChunkCoordinates:
-        hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
-          ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
-          : null,
-      startRow,
-      startCol,
-      force: effectiveForce,
-      transitionToken,
-      preparedTerrain,
-      applyPreparedTerrain: (nextPreparedTerrain) => {
-        const terrainCommitStartedAt = performance.now();
-        this.applyPreparedTerrainChunk(nextPreparedTerrain as PreparedTerrainChunk);
-        const commitCompletedAt = performance.now();
-        const terrainCommitDurationMs = commitCompletedAt - terrainCommitStartedAt;
-        const firstVisibleCommitDurationMs = commitCompletedAt - chunkSwitchStartedAt;
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_commit_duration_recorded", {
-          durationMs: terrainCommitDurationMs,
-        });
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "first_visible_commit_duration_recorded", {
-          durationMs: firstVisibleCommitDurationMs,
-        });
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_visible_commit");
-        recordWorldmapRenderDuration("chunkTerrainCommitMs", terrainCommitDurationMs);
-        recordWorldmapRenderDuration("presentationCommittedMs", firstVisibleCommitDurationMs);
-        incrementWorldmapRenderCounter("terrainVisibleCommits");
-        const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
-        if (readinessDurations.length > 0) {
+        chunkKey,
+        startRow,
+        startCol,
+        surroundingChunks,
+        transitionToken,
+        renderSize: this.renderChunkSize,
+        computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
+        updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+        updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
+          this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
+        waitForTileHydrationIdle: async (targetChunkKey) => {
+          const startedAt = performance.now();
+          await this.waitForTileHydrationIdle(targetChunkKey);
+          presentationPhaseDurations.tileHydrationDrainMs = performance.now() - startedAt;
+          recordWorldmapRenderDuration("tileHydrationDrainMs", presentationPhaseDurations.tileHydrationDrainMs);
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+        },
+        waitForStructureHydrationIdle: async (targetChunkKey) => {
+          const startedAt = performance.now();
+          await this.waitForStructureHydrationIdle(targetChunkKey);
+          presentationPhaseDurations.structureHydrationDrainMs = performance.now() - startedAt;
           recordWorldmapRenderDuration(
-            "presentationSkewMs",
-            Math.max(...readinessDurations) - Math.min(...readinessDurations),
+            "structureHydrationDrainMs",
+            presentationPhaseDurations.structureHydrationDrainMs,
           );
-        }
-      },
-      setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
-      updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
-      unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
-      restorePreviousChunkVisuals: (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) =>
-        this.restorePreviousChunkVisualsAfterRollback(oldStartRow, oldStartCol, previousChunk, previousTransitionToken),
-      clearSceneChunkBounds: () => this.clearSceneChunkBounds(),
-      forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
-      updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
-        this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
-      scheduleManagerCatchUp: (targetChunkKey, managerOptions) => {
-        if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
-          this.deferManagerCatchUpForChunk(targetChunkKey, managerOptions);
-          return;
-        }
+        },
+        prewarmChunkAssets: async (targetChunkKey) => {
+          const startedAt = performance.now();
+          await this.structureManager.prewarmChunkAssets(targetChunkKey);
+          presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
+          recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+        },
+        prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
+          const startedAt = performance.now();
+          const preparedChunk = await this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width);
+          presentationPhaseDurations.terrainPreparedMs = performance.now() - startedAt;
+          recordWorldmapRenderDuration("terrainPreparedMs", presentationPhaseDurations.terrainPreparedMs);
+          return preparedChunk;
+        },
+        onChunkHydrated: (hydratedChunkKey) => {
+          this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+        },
+      });
 
-        managerCatchUpPromise = this.updateManagersForChunk(targetChunkKey, managerOptions);
-      },
-      unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
-    });
-
-    if (finalizeResult.status === "rolled_back") {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
-      return;
-    }
-
-    if (finalizeResult.status === "stale_dropped") {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
-      return;
-    }
-
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
-
-    if (managerCatchUpPromise) {
-      await managerCatchUpPromise;
-    }
-
-    // Track memory usage after chunk switch
-    if (memoryMonitor) {
-      const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
-      if (preChunkStats && postChunkStats) {
-        const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        // Memory monitoring hooks - intentionally silent unless threshold exceeded
-        void memoryDelta;
+      if (tileFetchSucceeded && preparedTerrain) {
+        const terrainReadyDurationMs = performance.now() - chunkSwitchStartedAt;
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_ready_duration_recorded", {
+          durationMs: terrainReadyDurationMs,
+        });
+        recordWorldmapRenderDuration("chunkTerrainReadyMs", terrainReadyDurationMs);
       }
-    }
+
+      let managerCatchUpPromise: Promise<void> | null = null;
+      const finalizeResult = await finalizeWarpTravelChunkSwitch({
+        fetchSucceeded: tileFetchSucceeded,
+        isCurrentTransition: transitionToken === this.chunkTransitionToken,
+        targetChunk: chunkKey,
+        previousChunk: oldChunk,
+        currentChunk: this.currentChunk,
+        previousPinnedChunks,
+        hasFiniteOldChunkCoordinates,
+        oldChunkCoordinates:
+          hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
+            ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+            : null,
+        startRow,
+        startCol,
+        force: effectiveForce,
+        transitionToken,
+        preparedTerrain,
+        applyPreparedTerrain: (nextPreparedTerrain) => {
+          const terrainCommitStartedAt = performance.now();
+          this.applyPreparedTerrainChunk(nextPreparedTerrain as PreparedTerrainChunk);
+          const commitCompletedAt = performance.now();
+          const terrainCommitDurationMs = commitCompletedAt - terrainCommitStartedAt;
+          const firstVisibleCommitDurationMs = commitCompletedAt - chunkSwitchStartedAt;
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_commit_duration_recorded", {
+            durationMs: terrainCommitDurationMs,
+          });
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "first_visible_commit_duration_recorded", {
+            durationMs: firstVisibleCommitDurationMs,
+          });
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_visible_commit");
+          recordWorldmapRenderDuration("chunkTerrainCommitMs", terrainCommitDurationMs);
+          recordWorldmapRenderDuration("presentationCommittedMs", firstVisibleCommitDurationMs);
+          incrementWorldmapRenderCounter("terrainVisibleCommits");
+          const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
+          if (readinessDurations.length > 0) {
+            recordWorldmapRenderDuration(
+              "presentationSkewMs",
+              Math.max(...readinessDurations) - Math.min(...readinessDurations),
+            );
+          }
+        },
+        setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
+        updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+        unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
+        restorePreviousChunkVisuals: (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) =>
+          this.restorePreviousChunkVisualsAfterRollback(
+            oldStartRow,
+            oldStartCol,
+            previousChunk,
+            previousTransitionToken,
+          ),
+        clearSceneChunkBounds: () => this.clearSceneChunkBounds(),
+        forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
+        updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
+          this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
+        scheduleManagerCatchUp: (targetChunkKey, managerOptions) => {
+          if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
+            this.deferManagerCatchUpForChunk(targetChunkKey, managerOptions);
+            return;
+          }
+
+          managerCatchUpPromise = this.updateManagersForChunk(targetChunkKey, managerOptions);
+        },
+        unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
+      });
+
+      if (finalizeResult.status === "rolled_back") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
+        return;
+      }
+
+      if (finalizeResult.status === "stale_dropped") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
+        return;
+      }
+
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
+
+      if (managerCatchUpPromise) {
+        await managerCatchUpPromise;
+      }
+
+      // Track memory usage after chunk switch
+      if (memoryMonitor) {
+        const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
+        if (preChunkStats && postChunkStats) {
+          const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
+          // Memory monitoring hooks - intentionally silent unless threshold exceeded
+          void memoryDelta;
+        }
+      }
 
       if (switchPosition) {
         this.lastChunkSwitchPosition = switchPosition;

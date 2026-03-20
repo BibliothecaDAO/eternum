@@ -219,7 +219,9 @@ describe("createWebGPUPostProcessRuntime", () => {
     });
 
     expect(scenePass.setMRT).toHaveBeenCalledWith(mrtNode);
-    expect(scenePass.setMRT.mock.invocationCallOrder[0]).toBeLessThan(scenePass.getTextureNode.mock.invocationCallOrder[0]);
+    expect(scenePass.setMRT.mock.invocationCallOrder[0]).toBeLessThan(
+      scenePass.getTextureNode.mock.invocationCallOrder[0],
+    );
     expect(scenePass.getTextureNode).toHaveBeenCalledWith("emissive");
     expect(createBloom).toHaveBeenCalledWith(emissiveNode, 0.4);
     expect(sceneColorNode.add).toHaveBeenCalledWith(bloomNode);

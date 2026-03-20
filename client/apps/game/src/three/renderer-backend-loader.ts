@@ -17,7 +17,9 @@ interface InitializedRendererBackend {
 }
 
 export async function initializeSelectedRendererBackend(input: {
-  experimentalFactory: (options: { requestedMode: Exclude<RendererBuildMode, "legacy-webgl"> }) => Promise<InitializedRendererBackend>;
+  experimentalFactory: (options: {
+    requestedMode: Exclude<RendererBuildMode, "legacy-webgl">;
+  }) => Promise<InitializedRendererBackend>;
   legacyFactory: () => Promise<InitializedRendererBackend>;
   options: {
     envBuildMode: RendererBuildMode;

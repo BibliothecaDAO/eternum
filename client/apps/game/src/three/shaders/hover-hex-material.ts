@@ -94,16 +94,12 @@ function redrawHoverTexture(texture: THREE.DataTexture, uniforms: HoverHexMateri
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const index = (y * size + x) * 4;
-      const localX = (((x + 0.5) / size) - 0.5) * 2;
-      const localY = (((y + 0.5) / size) - 0.5) * 2;
+      const localX = ((x + 0.5) / size - 0.5) * 2;
+      const localY = ((y + 0.5) / size - 0.5) * 2;
       const edgeDistance = sdHexagon(localX, localY, HOVER_HEX_TEXTURE_RADIUS);
-      const normalizedDepth = clamp01((-edgeDistance) / HOVER_HEX_TEXTURE_RADIUS);
+      const normalizedDepth = clamp01(-edgeDistance / HOVER_HEX_TEXTURE_RADIUS);
       const outerRim = smoothstep(borderThickness, 0, Math.abs(edgeDistance));
-      const innerRing = smoothstep(
-        innerRingThickness,
-        0,
-        Math.abs(edgeDistance + HOVER_HEX_TEXTURE_RADIUS * 0.18),
-      );
+      const innerRing = smoothstep(innerRingThickness, 0, Math.abs(edgeDistance + HOVER_HEX_TEXTURE_RADIUS * 0.18));
       const edgeHalo = smoothstep(borderThickness * 2, 0, Math.abs(edgeDistance - HOVER_HEX_TEXTURE_RADIUS * 0.03));
       const alpha = clamp01(outerRim * 0.22 + innerRing * 0.04 + edgeHalo * 0.18) * intensity;
       const accentMix = clamp01(outerRim * 0.18 + innerRing * 0.04 + edgeHalo * 0.16);

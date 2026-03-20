@@ -135,7 +135,6 @@ describe("Bug 0b – ground mesh texture disposal", () => {
     expect(geometryDispose).toHaveBeenCalledTimes(1);
     expect(state.groundMeshTexture).toBeNull();
   });
-
 });
 
 // ---------------------------------------------------------------------------
@@ -148,10 +147,7 @@ describe("Bug 0c – no console.log in getHexagonCoordinates", () => {
     const fs = await import("fs");
     const path = await import("path");
 
-    const sourcePath = path.resolve(
-      __dirname,
-      "hexagon-scene.ts",
-    );
+    const sourcePath = path.resolve(__dirname, "hexagon-scene.ts");
     const source = fs.readFileSync(sourcePath, "utf-8");
 
     // Find the getHexagonCoordinates method body

@@ -320,6 +320,5 @@ export class HoverHexManager {
     this.hoverOutlineMaterial.opacity = Math.min(1, 0.88 + this.hoverIntensity * 0.12 + pulse * 0.03);
   }
 
-  private applyViewTuning(): void {
-  }
+  private applyViewTuning(): void {}
 }

@@ -75,9 +75,10 @@ export function isHexWithinTerrainPresentationBounds(
   return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
 }
 
-export function resolveTerrainPresentationWorldBounds(
-  input: TerrainPresentationBoundsInput,
-): { box: Box3; sphere: Sphere } {
+export function resolveTerrainPresentationWorldBounds(input: TerrainPresentationBoundsInput): {
+  box: Box3;
+  sphere: Sphere;
+} {
   const hexBounds = resolveTerrainPresentationBounds(input);
   const corners = [
     getTerrainWorldPosition(hexBounds.minCol, hexBounds.minRow),

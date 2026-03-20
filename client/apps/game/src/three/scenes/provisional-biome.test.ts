@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createProvisionalBiomeTracker,
-  resolveArmySpawnBiome,
-} from "./provisional-biome";
+import { createProvisionalBiomeTracker, resolveArmySpawnBiome } from "./provisional-biome";
 
 // Inline BiomeType values to avoid transitive import issues
 const BiomeType = {

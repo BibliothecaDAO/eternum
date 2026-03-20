@@ -13,9 +13,7 @@ describe("StructureManager deferred bounds", () => {
     const source = readSource("./structure-manager.ts");
 
     // Extract the setChunkBounds method body
-    const setChunkBoundsMatch = source.match(
-      /public setChunkBounds\([^)]*\)\s*\{([\s\S]*?)\n  \}/,
-    );
+    const setChunkBoundsMatch = source.match(/public setChunkBounds\([^)]*\)\s*\{([\s\S]*?)\n  \}/);
     expect(setChunkBoundsMatch).not.toBeNull();
     const methodBody = setChunkBoundsMatch![1];
 

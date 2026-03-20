@@ -113,7 +113,11 @@ class PlayerCosmeticsStore {
     });
   }
 
-  setPendingBlitzLoadout(worldKey: string, owner: ContractAddress | string | bigint, draft: BlitzGameLoadoutDraft): void {
+  setPendingBlitzLoadout(
+    worldKey: string,
+    owner: ContractAddress | string | bigint,
+    draft: BlitzGameLoadoutDraft,
+  ): void {
     const ownerKey = toHexString(toBigInt(owner));
     const snapshot = this.getSnapshot(ownerKey) ?? createEmptySnapshot(ownerKey);
     const selectedCosmeticIds = Object.values(draft.selectedBySlot ?? {}).flatMap((selection) => selection.cosmeticIds);

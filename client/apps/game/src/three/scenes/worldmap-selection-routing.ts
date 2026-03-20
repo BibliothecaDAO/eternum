@@ -23,10 +23,7 @@ type WorldmapHexClickPlan =
   | {
       kind: "select";
       isMine: boolean;
-      selection:
-        | { type: "army"; entityId: ID }
-        | { type: "structure"; entityId: ID }
-        | { type: "clear" };
+      selection: { type: "army"; entityId: ID } | { type: "structure"; entityId: ID } | { type: "clear" };
     };
 
 export function resolveWorldmapHexClickPlan({
@@ -41,7 +38,8 @@ export function resolveWorldmapHexClickPlan({
     return { kind: "ignore" };
   }
 
-  const isMine = accountAddress !== undefined && (army?.owner === accountAddress || structure?.owner === accountAddress);
+  const isMine =
+    accountAddress !== undefined && (army?.owner === accountAddress || structure?.owner === accountAddress);
 
   if (army && army.owner === accountAddress) {
     return {

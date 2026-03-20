@@ -20,10 +20,7 @@ export function createTerrainCacheGeneration(): TerrainCacheGeneration {
   };
 }
 
-export function isTerrainCacheStale(
-  cachedGeneration: number | undefined,
-  currentGeneration: number,
-): boolean {
+export function isTerrainCacheStale(cachedGeneration: number | undefined, currentGeneration: number): boolean {
   if (cachedGeneration === undefined) return true;
   return cachedGeneration !== currentGeneration;
 }

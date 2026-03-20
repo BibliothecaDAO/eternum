@@ -55,7 +55,7 @@ describe("useDevPreviewEntryStore", () => {
     useDevPreviewEntryStore.getState().setPreviewEntry("slot:alpha:0x123", alphaEntry);
 
     const persisted = window.sessionStorage.getItem(DEV_PREVIEW_ENTRY_STORAGE_KEY);
-    expect(persisted).toContain("\"slot:alpha:0x123\"");
+    expect(persisted).toContain('"slot:alpha:0x123"');
     expect(JSON.parse(persisted ?? "{}")).toMatchObject({
       state: {
         entries: {

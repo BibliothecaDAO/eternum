@@ -5,7 +5,11 @@ import type { RendererSurfaceLike } from "./renderer-backend";
 
 export interface WebgpuPostprocessPolicy {
   bloomRouting: "deferred" | "mrt-emissive" | "none";
-  mode: "legacy-webgl-postprocess" | "native-webgpu-minimal" | "native-webgpu-postprocess" | "webgl2-fallback-postprocess";
+  mode:
+    | "legacy-webgl-postprocess"
+    | "native-webgpu-minimal"
+    | "native-webgpu-postprocess"
+    | "webgl2-fallback-postprocess";
   prewarmStrategy: "compile-async" | "none";
   unsupportedFeatures: RendererCapabilityFeature[];
 }
@@ -73,9 +77,11 @@ export async function requestRendererScenePrewarm(
   scene: Object3D,
   camera: Camera,
 ): Promise<void> {
-  const rendererWithCompile = renderer as RendererSurfaceLike & {
-    compileAsync?: (scene: Object3D, camera: Camera) => Promise<void>;
-  } | undefined;
+  const rendererWithCompile = renderer as
+    | (RendererSurfaceLike & {
+        compileAsync?: (scene: Object3D, camera: Camera) => Promise<void>;
+      })
+    | undefined;
 
   if (typeof rendererWithCompile?.compileAsync !== "function") {
     return;
