@@ -6,21 +6,21 @@
   "gameType": "blitz",
   "gameName": "bltz-fast-800",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/bltz-fast-800/23343843130-1.json",
-  "latestLaunchRequestId": "23343843130-1",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "configure-world",
+  "inputPath": "inputs/slot/blitz/bltz-fast-800/23344005457-1.json",
+  "latestLaunchRequestId": "23344005457-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-20T12:58:52.937Z",
-  "updatedAt": "2026-03-20T13:00:24.000Z",
+  "updatedAt": "2026-03-20T13:03:22.512Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23343843130,
+    "workflowRunId": 23344005457,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23343843130",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23344005457",
     "ref": "credence0x/factory-v2-polish",
-    "sha": "6c337c9da619617f3e97ba4e334f06339e945d27"
+    "sha": "9df1ab805444e59aed62ba5439a55688a3b9bcf5"
   },
   "steps": [
     {
