@@ -5,15 +5,14 @@
   "owner": {
     "environment": "slot.blitz",
     "gameName": "bltz-fast-800",
-    "launchRequestId": "23343843130-1",
+    "launchRequestId": "23344005457-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23343843130,
+    "workflowRunId": 23344005457,
     "workflowRunAttempt": 1,
     "stepId": "configure-world",
-    "leaseId": "41e334e6-5431-411c-9ce6-cf79b87d966b"
+    "leaseId": "3435efbd-43bc-4e07-a470-b94b4e769d41"
   },
-  "acquiredAt": "2026-03-20T13:00:16.382Z",
-  "heartbeatAt": "2026-03-20T13:00:21.686Z",
-  "expiresAt": "2026-03-20T13:00:21.686Z",
-  "releasedAt": "2026-03-20T13:00:21.686Z"
+  "acquiredAt": "2026-03-20T13:03:27.740Z",
+  "heartbeatAt": "2026-03-20T13:03:27.740Z",
+  "expiresAt": "2026-03-20T13:13:27.740Z"
 }
