@@ -48,7 +48,7 @@ const ANIMATION_BUCKETS = 16;
 export default class InstancedModel {
   public group: Group;
   public instancedMeshes: AnimatedInstancedMesh[] = [];
-  private biomeMeshes: any[] = [];
+  private biomeMeshes: Mesh[] = [];
   private count: number = 0;
   private capacity: number;
   private mixer: AnimationMixer | null = null;
@@ -296,12 +296,20 @@ export default class InstancedModel {
   needsUpdate() {
     this.instancedMeshes.forEach((mesh) => {
       mesh.instanceMatrix.needsUpdate = true;
+      if (this.worldBounds) {
+        this.applyWorldBounds(mesh);
+        return;
+      }
       mesh.computeBoundingSphere();
       this.applyWorldBounds(mesh);
     });
 
     if (this.contactShadowMesh) {
       this.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      if (this.worldBounds) {
+        this.applyWorldBounds(this.contactShadowMesh);
+        return;
+      }
       this.contactShadowMesh.computeBoundingSphere();
       this.applyWorldBounds(this.contactShadowMesh);
     }

@@ -1,31 +1,9 @@
 import { createSqlApi, sqlApi } from "@/services/api";
-import { SqlApi, buildApiUrl, fetchWithErrorHandling, type PlayerLeaderboardRow } from "@bibliothecadao/torii";
+import { SqlApi, type PlayerLeaderboardRow } from "@bibliothecadao/torii";
 
 const DEFAULT_LIMIT = 20;
 const REGISTERED_POINTS_PRECISION = 1_000_000;
 const SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS = 10_000;
-const GAME_REWARD_CHEST_POINTS_THRESHOLD = 500;
-const LORDS_TOKEN_DECIMALS = 18;
-const SCORE_TO_BEAT_GAME_CHEST_REWARD_QUERY = `
-  SELECT
-    allocated_chests
-  FROM "s1_eternum-GameChestReward"
-  LIMIT 1;
-`;
-const SCORE_TO_BEAT_SEASON_PRIZE_QUERY = `
-  SELECT
-    total_registered_points
-  FROM "s1_eternum-SeasonPrize"
-  LIMIT 1;
-`;
-const SCORE_TO_BEAT_PLAYERS_RANK_FINAL_QUERY = `
-  SELECT
-    trial_id
-  FROM "s1_eternum-PlayersRankFinal"
-  WHERE trial_id > 0
-  ORDER BY trial_id DESC
-  LIMIT 1;
-`;
 
 export interface PlayerLeaderboardData {
   rank: number;
@@ -61,8 +39,6 @@ export type LandingLeaderboardEntry = PlayerLeaderboardData;
 export interface ScoreToBeatRun {
   endpoint: string;
   points: number;
-  chests: number;
-  lords: number;
   rank: number;
 }
 
@@ -79,8 +55,6 @@ export interface ScoreToBeatEntrySummary {
   address: string;
   displayName: string | null;
   combinedPoints: number;
-  combinedChests: number;
-  combinedLords: number;
   /** All endpoint runs for the player, sorted desc by points. */
   allRuns: ScoreToBeatRun[];
   /** Best N runs used for combined score. */
@@ -107,24 +81,6 @@ interface ScoreToBeatStaticRow {
   address: string;
   points: [number, number, number, number];
   chests: [number, number, number, number];
-}
-
-interface ScoreToBeatGameChestRewardRow {
-  allocated_chests?: unknown;
-}
-
-interface ScoreToBeatSeasonPrizeRow {
-  total_registered_points?: unknown;
-}
-
-interface ScoreToBeatPlayersRankFinalRow {
-  trial_id?: unknown;
-}
-
-interface ScoreToBeatRankPrizeRow {
-  rank?: unknown;
-  total_players_same_rank_count?: unknown;
-  total_prize_amount?: unknown;
 }
 
 const SCORE_TO_BEAT_STATIC_ENDPOINT_BY_GAME: Record<ScoreToBeatStaticGame, string> = {
@@ -438,21 +394,6 @@ const buildStaticGameBreakdown = (address: string): ScoreToBeatStaticGameBreakdo
   });
 };
 
-const getStaticGameChestCountForRun = (address: string, endpoint: string): number | null => {
-  const staticGame = SCORE_TO_BEAT_STATIC_ENDPOINT_TO_GAME.get(endpoint);
-  if (!staticGame) {
-    return null;
-  }
-
-  const gameIndex = SCORE_TO_BEAT_STATIC_GAME_INDEX.get(staticGame);
-  if (gameIndex == null) {
-    return 0;
-  }
-
-  const row = SCORE_TO_BEAT_STATIC_ROW_BY_ADDRESS.get(address.toLowerCase());
-  return row?.chests[gameIndex] ?? 0;
-};
-
 const buildMockLeaderboardEntries = (
   game: ScoreToBeatStaticGame,
   limit: number,
@@ -482,7 +423,9 @@ const buildMockLeaderboardEntries = (
   }));
 };
 
-const parseNumeric = (value: unknown): number => {
+type NumericLike = string | number | bigint | null | undefined;
+
+const parseNumeric = (value: NumericLike): number => {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : 0;
   }
@@ -510,51 +453,6 @@ const parseNumeric = (value: unknown): number => {
   }
 
   return 0;
-};
-
-const parseBigInt = (value: unknown): bigint | null => {
-  if (typeof value === "bigint") {
-    return value;
-  }
-
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) {
-      return null;
-    }
-    return BigInt(Math.trunc(value));
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed.length) {
-      return null;
-    }
-
-    try {
-      return BigInt(trimmed);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-};
-
-const parseInteger = (value: unknown): number | null => {
-  const parsed = parseNumeric(value);
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-
-  return Math.trunc(parsed);
-};
-
-const bigintToDecimal = (value: bigint, decimals: number): number => {
-  const safeDecimals = Math.max(0, Math.trunc(decimals));
-  const divisor = 10n ** BigInt(safeDecimals);
-  const whole = value / divisor;
-  const fraction = value % divisor;
-  return Number(whole) + Number(fraction) / Number(divisor);
 };
 
 const normaliseAddress = (value: string | null): string | null => {
@@ -763,33 +661,9 @@ const sanitiseToriiEndpoints = (endpoints: string[]): string[] => {
   return sanitized;
 };
 
-const buildTrialIdMatchCondition = (columnName: string, trialId: bigint): string => {
-  const trialIdDecimal = trialId.toString();
-  const trialIdHexNoPrefix = trialId.toString(16).toLowerCase();
-
-  return `(
-    CAST(${columnName} AS TEXT) = '${trialIdDecimal}'
-    OR ltrim(lower(CAST(${columnName} AS TEXT)), '0x') = '${trialIdHexNoPrefix}'
-  )`;
-};
-
-const buildScoreToBeatRankPrizeQuery = (trialId: bigint): string => `
-  SELECT
-    rank,
-    total_players_same_rank_count,
-    total_prize_amount
-  FROM "s1_eternum-RankPrize"
-  WHERE ${buildTrialIdMatchCondition("trial_id", trialId)}
-`;
-
 type EndpointSnapshot = {
   endpoint: string;
   entries: PlayerLeaderboardData[];
-};
-
-type EndpointChestRewardSnapshot = {
-  allocatedChests: number;
-  totalRegisteredPoints: number;
 };
 
 const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> => {
@@ -833,122 +707,6 @@ const fetchLeaderboardForEndpoint = async (
   };
 };
 
-const fetchChestRewardSnapshotForEndpoint = async (endpoint: string): Promise<EndpointChestRewardSnapshot | null> => {
-  if (SCORE_TO_BEAT_STATIC_ENDPOINT_TO_GAME.has(endpoint)) {
-    return null;
-  }
-
-  try {
-    const [chestRows, seasonRows] = await withTimeout(
-      Promise.all([
-        fetchWithErrorHandling<ScoreToBeatGameChestRewardRow>(
-          buildApiUrl(endpoint, SCORE_TO_BEAT_GAME_CHEST_REWARD_QUERY),
-          `Failed to fetch chest reward state for ${endpoint}`,
-        ),
-        fetchWithErrorHandling<ScoreToBeatSeasonPrizeRow>(
-          buildApiUrl(endpoint, SCORE_TO_BEAT_SEASON_PRIZE_QUERY),
-          `Failed to fetch season prize state for ${endpoint}`,
-        ),
-      ]),
-      SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS,
-      `Score to beat chest reward request timed out for ${endpoint}`,
-    );
-
-    return {
-      allocatedChests: Math.max(0, Math.trunc(parseNumeric(chestRows[0]?.allocated_chests))),
-      totalRegisteredPoints: Math.max(
-        0,
-        parseNumeric(seasonRows[0]?.total_registered_points) / REGISTERED_POINTS_PRECISION,
-      ),
-    };
-  } catch (error) {
-    console.warn("Failed to fetch Torii chest rewards", endpoint, error);
-    return null;
-  }
-};
-
-const fetchLordsRewardsByRankForEndpoint = async (endpoint: string): Promise<Map<number, number>> => {
-  if (SCORE_TO_BEAT_STATIC_ENDPOINT_TO_GAME.has(endpoint)) {
-    return new Map();
-  }
-
-  try {
-    const finalRows = await withTimeout(
-      fetchWithErrorHandling<ScoreToBeatPlayersRankFinalRow>(
-        buildApiUrl(endpoint, SCORE_TO_BEAT_PLAYERS_RANK_FINAL_QUERY),
-        `Failed to fetch finalized trial for ${endpoint}`,
-      ),
-      SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS,
-      `Score to beat finalized trial request timed out for ${endpoint}`,
-    );
-
-    const finalTrialId = parseBigInt(finalRows[0]?.trial_id);
-    if (finalTrialId == null || finalTrialId <= 0n) {
-      return new Map();
-    }
-
-    const rankPrizeRows = await withTimeout(
-      fetchWithErrorHandling<ScoreToBeatRankPrizeRow>(
-        buildApiUrl(endpoint, buildScoreToBeatRankPrizeQuery(finalTrialId)),
-        `Failed to fetch rank prize state for ${endpoint}`,
-      ),
-      SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS,
-      `Score to beat rank prize request timed out for ${endpoint}`,
-    );
-
-    const lordsByRank = new Map<number, number>();
-    rankPrizeRows.forEach((row) => {
-      const rank = parseInteger(row.rank);
-      const totalPlayersAtRank = parseBigInt(row.total_players_same_rank_count);
-      const totalPrizeAmountRaw = parseBigInt(row.total_prize_amount);
-
-      if (
-        rank == null ||
-        rank <= 0 ||
-        totalPlayersAtRank == null ||
-        totalPlayersAtRank <= 0n ||
-        totalPrizeAmountRaw == null ||
-        totalPrizeAmountRaw <= 0n
-      ) {
-        return;
-      }
-
-      const lordsShareRaw = totalPrizeAmountRaw / totalPlayersAtRank;
-      const lordsShare = bigintToDecimal(lordsShareRaw, LORDS_TOKEN_DECIMALS);
-      if (!Number.isFinite(lordsShare) || lordsShare <= 0) {
-        return;
-      }
-
-      lordsByRank.set(rank, lordsShare);
-    });
-
-    return lordsByRank;
-  } catch (error) {
-    console.warn("Failed to fetch Torii Lords rewards", endpoint, error);
-    return new Map();
-  }
-};
-
-const estimateEarnedChests = (
-  registeredPoints: number,
-  endpointChestRewardSnapshot: EndpointChestRewardSnapshot | null,
-): number => {
-  const safeRegisteredPoints = Number.isFinite(registeredPoints) ? Math.max(0, registeredPoints) : 0;
-  const guaranteedChestBonus = safeRegisteredPoints >= GAME_REWARD_CHEST_POINTS_THRESHOLD ? 1 : 0;
-
-  if (!endpointChestRewardSnapshot) {
-    return guaranteedChestBonus;
-  }
-
-  const { allocatedChests, totalRegisteredPoints } = endpointChestRewardSnapshot;
-  if (allocatedChests <= 0 || totalRegisteredPoints <= 0) {
-    return guaranteedChestBonus;
-  }
-
-  const proportionalChestShare = Math.floor((allocatedChests * safeRegisteredPoints) / totalRegisteredPoints);
-  return Math.max(0, guaranteedChestBonus + Math.max(0, proportionalChestShare));
-};
-
 export const fetchScoreToBeatAcrossEndpoints = async (
   toriiEndpoints: string[],
   { perEndpointLimit = 50, runsToAggregate = 2, maxPlayers }: ScoreToBeatOptions = {},
@@ -985,19 +743,6 @@ export const fetchScoreToBeatAcrossEndpoints = async (
     }
   });
 
-  const endpointChestRewardsByEndpoint = new Map<string, EndpointChestRewardSnapshot | null>();
-  const endpointLordsRewardsByEndpoint = new Map<string, Map<number, number>>();
-  await Promise.all(
-    successfulSnapshots.map(async ({ endpoint }) => {
-      const [endpointChestRewards, endpointLordsRewards] = await Promise.all([
-        fetchChestRewardSnapshotForEndpoint(endpoint),
-        fetchLordsRewardsByRankForEndpoint(endpoint),
-      ]);
-      endpointChestRewardsByEndpoint.set(endpoint, endpointChestRewards);
-      endpointLordsRewardsByEndpoint.set(endpoint, endpointLordsRewards);
-    }),
-  );
-
   const perPlayer = new Map<string, { address: string; displayName: string | null; runs: ScoreToBeatRun[] }>();
 
   successfulSnapshots.forEach(({ endpoint, entries }) => {
@@ -1013,13 +758,7 @@ export const fetchScoreToBeatAcrossEndpoints = async (
         snapshot.displayName = entry.displayName;
       }
 
-      const staticRunChests = getStaticGameChestCountForRun(entry.address, endpoint);
-      const runChests =
-        staticRunChests ??
-        estimateEarnedChests(entry.registeredPoints ?? 0, endpointChestRewardsByEndpoint.get(endpoint) ?? null);
-      const runLords = endpointLordsRewardsByEndpoint.get(endpoint)?.get(entry.rank) ?? 0;
-
-      snapshot.runs.push({ endpoint, points: entry.points, chests: runChests, lords: runLords, rank: entry.rank });
+      snapshot.runs.push({ endpoint, points: entry.points, rank: entry.rank });
       perPlayer.set(key, snapshot);
     });
   });
@@ -1029,15 +768,11 @@ export const fetchScoreToBeatAcrossEndpoints = async (
       const allRuns = player.runs.toSorted((a, b) => b.points - a.points);
       const bestRuns = allRuns.slice(0, safeRunsToAggregate);
       const combinedPoints = bestRuns.reduce((sum, run) => sum + run.points, 0);
-      const combinedChests = bestRuns.reduce((sum, run) => sum + run.chests, 0);
-      const combinedLords = bestRuns.reduce((sum, run) => sum + run.lords, 0);
 
       return {
         address: player.address,
         displayName: player.displayName,
         combinedPoints,
-        combinedChests,
-        combinedLords,
         allRuns,
         runs: bestRuns,
         totalRuns: player.runs.length,
@@ -1045,17 +780,7 @@ export const fetchScoreToBeatAcrossEndpoints = async (
       } satisfies ScoreToBeatEntrySummary;
     })
     .filter((entry) => entry.runs.length > 0)
-    .toSorted((a, b) => {
-      if (a.combinedPoints !== b.combinedPoints) {
-        return b.combinedPoints - a.combinedPoints;
-      }
-
-      if (a.combinedChests !== b.combinedChests) {
-        return b.combinedChests - a.combinedChests;
-      }
-
-      return b.combinedLords - a.combinedLords;
-    });
+    .toSorted((a, b) => b.combinedPoints - a.combinedPoints);
 
   return {
     entries: safeMaxPlayers === null ? aggregatedEntries : aggregatedEntries.slice(0, safeMaxPlayers),

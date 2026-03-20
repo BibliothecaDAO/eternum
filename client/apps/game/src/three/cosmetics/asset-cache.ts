@@ -146,6 +146,11 @@ function startAssetLoad(handle: CosmeticAssetHandle): Promise<CosmeticAssetPaylo
   return handle.promise;
 }
 
+function disposeCosmeticPayload(payload: CosmeticAssetPayload) {
+  payload.textures.forEach((texture) => texture.dispose?.());
+  payload.materials.forEach((material) => materialPool.releaseMaterial(material));
+}
+
 interface PreloadOptions {
   onProgress?: (details: { id: string; loaded: number; total: number }) => void;
   quiet?: boolean;
@@ -199,5 +204,8 @@ export function getCosmeticAsset(id: string): CosmeticAssetHandle | undefined {
 }
 
 export function clearCosmeticAssetCache() {
+  assetCache.forEach((handle) => {
+    disposeCosmeticPayload(handle.payload);
+  });
   assetCache.clear();
 }

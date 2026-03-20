@@ -309,12 +309,20 @@ CosmeticsDebug.help()                    - Show this help
     const attachments = [...(skinEntry?.attachments ?? []), ...(attachmentEntry?.attachments ?? [])];
 
     return {
+      skin: {
+        cosmeticId: skinEntry?.id ?? attachmentEntry?.id ?? "debug-override",
+        assetPaths: skinEntry?.assetPaths ?? attachmentEntry?.assetPaths ?? [],
+        isFallback: false,
+        modelKey: skinEntry?.id ?? params.target,
+        modelType: (skinEntry?.metadata?.baseModelType as any) ?? undefined,
+        registryEntry: skinEntry,
+      },
+      attachments,
+      metadata: skinEntry?.metadata,
       cosmeticId: skinEntry?.id ?? attachmentEntry?.id ?? "debug-override",
       modelKey: skinEntry?.id ?? params.target,
       modelType: (skinEntry?.metadata?.baseModelType as any) ?? undefined,
-      attachments,
       registryEntry: skinEntry,
-      metadata: skinEntry?.metadata,
     };
   }
 }

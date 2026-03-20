@@ -19,10 +19,12 @@ import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-s
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
+  findCosmeticById,
   playerCosmeticsStore,
   resolveStructureCosmetic,
   resolveStructureMountTransforms,
 } from "../cosmetics";
+import { resolveAllSkinGltfs } from "../cosmetics/skin-asset-source";
 import { StructureInfo } from "../types";
 import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
@@ -34,6 +36,7 @@ import { FrustumManager } from "../utils/frustum-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
+import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { FXManager } from "./fx-manager";
 import {
   createCoalescedAsyncUpdateRunner,
@@ -43,6 +46,7 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
+import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import {
   resolveVisibleStructureUpdateMode,
@@ -163,12 +167,16 @@ export class StructureManager {
   private labelVisibilityIntervalMs = 66;
   private visibilityManager?: CentralizedVisibilityManager;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
+  private chunkAssetPrewarmPromises: Map<string, Promise<void>> = new Map();
   private unsubscribeFrustum?: () => void;
   private unsubscribeVisibility?: () => void;
   private chunkStride: number;
   private needsSpatialReindex = false;
+  private hasPendingModelBounds = false;
   private visibleStructureCount = 0;
   private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
+  private previouslyActiveStructureModels: Set<InstancedModel> = new Set();
+  private previouslyActiveCosmeticStructureModels: Set<InstancedModel> = new Set();
   private isDestroyed = false;
   private pruneTransitionChunkHistory(): void {
     this.transitionChunkByToken.forEach((_, token) => {
@@ -328,13 +336,13 @@ export class StructureManager {
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.colorSpace = THREE.SRGBColorSpace;
-          texture.flipY = false;
+          texture.flipY = resolvePointLabelTextureFlipY(snapshotRendererDiagnostics().activeMode);
 
           loadedTextures[key as keyof typeof texturePaths] = texture;
           loadedCount++;
 
           if (loadedCount === totalTextures) {
-            const scaledPointSize = 5 * 0.5;
+            const scaledPointSize = 40;
             this.pointsRenderers = {
               myVillage: new PointsLabelRenderer(
                 this.scene,
@@ -343,8 +351,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               enemyVillage: new PointsLabelRenderer(
                 this.scene,
@@ -353,8 +362,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               allyVillage: new PointsLabelRenderer(
                 this.scene,
@@ -363,8 +373,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               myRealm: new PointsLabelRenderer(
                 this.scene,
@@ -373,8 +384,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               enemyRealm: new PointsLabelRenderer(
                 this.scene,
@@ -383,8 +395,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               allyRealm: new PointsLabelRenderer(
                 this.scene,
@@ -393,8 +406,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               hyperstructure: new PointsLabelRenderer(
                 this.scene,
@@ -403,8 +417,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               bank: new PointsLabelRenderer(
                 this.scene,
@@ -413,8 +428,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
               fragmentMine: new PointsLabelRenderer(
                 this.scene,
@@ -423,8 +439,9 @@ export class StructureManager {
                 scaledPointSize,
                 0,
                 1.3,
-                true,
+                false,
                 this.frustumManager,
+                this.visibilityManager,
               ),
             };
 
@@ -586,6 +603,49 @@ export class StructureManager {
     return Array.from(this.structures.getStructures().values()).reduce((acc, structures) => acc + structures.size, 0);
   }
 
+  public prewarmChunkAssets(chunkKey: string): Promise<void> {
+    const existing = this.chunkAssetPrewarmPromises.get(chunkKey);
+    if (existing) {
+      return existing;
+    }
+
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+      return Promise.resolve();
+    }
+
+    const prewarmPromise = (async () => {
+      const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
+      const structureTypes = new Set<StructureType>();
+      const cosmeticAssets = new Map<string, string[]>();
+
+      visibleStructures.forEach((structure) => {
+        if (this.hasCosmeticSkin(structure)) {
+          const cosmeticId = structure.cosmeticId ?? "";
+          const assetPaths = structure.cosmeticAssetPaths ?? [];
+          if (cosmeticId && assetPaths.length > 0 && !cosmeticAssets.has(cosmeticId)) {
+            cosmeticAssets.set(cosmeticId, assetPaths);
+          }
+          return;
+        }
+
+        structureTypes.add(structure.structureType);
+      });
+
+      await Promise.all([
+        ...Array.from(structureTypes, (structureType) => this.ensureStructureModels(structureType)),
+        ...Array.from(cosmeticAssets.entries(), ([cosmeticId, assetPaths]) =>
+          this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
+        ),
+      ]);
+    })().finally(() => {
+      this.chunkAssetPrewarmPromises.delete(chunkKey);
+    });
+
+    this.chunkAssetPrewarmPromises.set(chunkKey, prewarmPromise);
+    return prewarmPromise;
+  }
+
   private async ensureStructureModels(structureType: StructureType): Promise<InstancedModel[]> {
     if (this.structureModels.has(structureType)) {
       return this.structureModels.get(structureType)!;
@@ -669,7 +729,7 @@ export class StructureManager {
       return empty;
     }
 
-    pending = Promise.all(assetPaths.map((modelPath) => this.loadCosmeticStructureModel(cosmeticId, modelPath)))
+    pending = this.loadCosmeticStructureModels(cosmeticId, assetPaths)
       .then((models) => {
         this.cosmeticStructureModels.set(cosmeticId, models);
         models.forEach((model) => {
@@ -694,25 +754,14 @@ export class StructureManager {
     return pending;
   }
 
-  private loadCosmeticStructureModel(cosmeticId: string, modelPath: string): Promise<InstancedModel> {
-    return new Promise((resolve, reject) => {
-      gltfLoader.load(
-        modelPath,
-        (gltf) => {
-          try {
-            const instancedModel = new InstancedModel(gltf, INITIAL_STRUCTURE_CAPACITY, false, cosmeticId);
-            resolve(instancedModel);
-          } catch (error) {
-            reject(error);
-          }
-        },
-        undefined,
-        (error) => {
-          console.error(`[StructureManager] Failed to load cosmetic model ${modelPath}:`, error);
-          reject(error);
-        },
-      );
+  private async loadCosmeticStructureModels(cosmeticId: string, assetPaths: string[]): Promise<InstancedModel[]> {
+    const gltfs = await resolveAllSkinGltfs({
+      cosmeticId,
+      assetPaths,
+      registryEntry: findCosmeticById(cosmeticId),
     });
+
+    return gltfs.map((gltf) => new InstancedModel(gltf, INITIAL_STRUCTURE_CAPACITY, false, cosmeticId));
   }
 
   async onUpdate(update: StructureTileSystemUpdate) {
@@ -919,8 +968,9 @@ export class StructureManager {
 
     const structureRecord = this.structures.getStructureByEntityId(entityId);
     if (structureRecord) {
-      structureRecord.cosmeticId = cosmetic.cosmeticId;
-      structureRecord.cosmeticAssetPaths = cosmetic.registryEntry?.assetPaths;
+      structureRecord.cosmeticId = cosmetic.skin.cosmeticId;
+      structureRecord.cosmeticAssetPaths = cosmetic.skin.assetPaths;
+      structureRecord.usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
       structureRecord.attachments = cosmetic.attachments;
     }
 
@@ -951,7 +1001,7 @@ export class StructureManager {
         level,
         isMine: structureRecord?.isMine ?? false,
         isAlly: structureRecord?.isAlly ?? false,
-        cosmeticId: cosmetic.cosmeticId,
+        cosmeticId: cosmetic.skin.cosmeticId,
         attachmentSignature: this.getAttachmentSignature(cosmetic.attachments),
       },
       wasVisible: existingWasVisible,
@@ -974,6 +1024,10 @@ export class StructureManager {
   }
 
   async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+    if (this.isDestroyed) {
+      return;
+    }
+
     const force = options?.force ?? false;
     const transitionToken = options?.transitionToken;
     if (
@@ -1007,6 +1061,10 @@ export class StructureManager {
       } catch (error) {
         console.warn(`Previous structure chunk switch failed:`, error);
       }
+    }
+
+    if (this.isDestroyed) {
+      return;
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
@@ -1078,7 +1136,54 @@ export class StructureManager {
     return this.visibleStructureCount;
   }
 
+  public refreshCosmeticsForOwner(owner: string | bigint): void {
+    const normalizedOwner =
+      typeof owner === "bigint"
+        ? `0x${owner.toString(16)}`
+        : owner.toLowerCase().startsWith("0x")
+          ? owner.toLowerCase()
+          : owner;
+
+    let shouldRefreshVisibleStructures = false;
+    const allStructures = this.structures.getStructures();
+
+    allStructures.forEach((structuresByHex) => {
+      structuresByHex.forEach((structure) => {
+        const structureOwner = `0x${structure.owner.address.toString(16)}`;
+        if (structureOwner !== normalizedOwner) {
+          return;
+        }
+
+        const enumName = StructureType[structure.structureType as unknown as keyof typeof StructureType];
+        const defaultModelKey = typeof enumName === "string" ? enumName : String(structure.structureType);
+        const cosmetic = resolveStructureCosmetic({
+          owner: structure.owner.address,
+          structureType: structure.structureType,
+          stage: structure.stage,
+          defaultModelKey,
+        });
+
+        structure.cosmeticId = cosmetic.skin.cosmeticId;
+        structure.cosmeticAssetPaths = cosmetic.skin.assetPaths;
+        structure.usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
+        structure.attachments = cosmetic.attachments;
+
+        if (this.isInCurrentChunk(structure.hexCoords)) {
+          shouldRefreshVisibleStructures = true;
+        }
+      });
+    });
+
+    if (shouldRefreshVisibleStructures) {
+      void this.updateVisibleStructures();
+    }
+  }
+
   private updateVisibleStructures(): Promise<void> {
+    if (this.isDestroyed) {
+      return Promise.resolve();
+    }
+
     if (!isCommittedManagerChunk(this.currentChunk)) {
       return Promise.resolve();
     }
@@ -1099,8 +1204,7 @@ export class StructureManager {
     if (!structure.cosmeticId || !structure.cosmeticAssetPaths?.length) {
       return false;
     }
-    // Default cosmetics end with ":base" and use the standard model paths
-    return !structure.cosmeticId.endsWith(":base");
+    return !structure.usesFallbackCosmeticSkin;
   }
 
   private getModelForStructure(structure: StructureInfo): InstancedModel | undefined {
@@ -1225,6 +1329,10 @@ export class StructureManager {
   }
 
   private async performVisibleStructuresUpdate(): Promise<void> {
+    if (this.isDestroyed) {
+      return;
+    }
+
     const updateStartedAt = performance.now();
     if (!isCommittedManagerChunk(this.currentChunk)) {
       this.visibleStructureCount = 0;
@@ -1286,21 +1394,23 @@ export class StructureManager {
         }
       }
 
+      if (this.isDestroyed) {
+        return;
+      }
+
       this.wonderEntityIdMaps.clear();
 
-      // Reset all model counts - use a batched approach to avoid repeated needsUpdate/computeBoundingSphere
-      // We'll track counts per model and call setCount once at the end
-      this.structureModels.forEach((models) => {
-        models.forEach((model) => model.setCount(0));
-      });
-      this.cosmeticStructureModels.forEach((models) => {
-        models.forEach((model) => model.setCount(0));
-      });
+      this.previouslyActiveStructureModels.forEach((model) => model.setCount(0));
+      this.previouslyActiveCosmeticStructureModels.forEach((model) => model.setCount(0));
+      this.previouslyActiveStructureModels.clear();
+      this.previouslyActiveCosmeticStructureModels.clear();
       this.entityIdMaps.clear();
       this.cosmeticEntityIdMaps.clear();
 
       // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
       const modelInstanceCounts = new Map<InstancedModel, number>();
+      const nextActiveStructureModels = new Set<InstancedModel>();
+      const nextActiveCosmeticStructureModels = new Set<InstancedModel>();
 
       // Begin batch mode for all point renderers (avoids computeBoundingSphere per setPoint)
       if (this.pointsRenderers) {
@@ -1403,6 +1513,7 @@ export class StructureManager {
             const currentCount = modelInstanceCounts.get(modelType) ?? 0;
             modelType.setMatrixAt(currentCount, this.dummy.matrix);
             modelInstanceCounts.set(modelType, currentCount + 1);
+            nextActiveStructureModels.add(modelType);
             this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
 
             if (structure.hasWonder) {
@@ -1410,6 +1521,7 @@ export class StructureManager {
               const wonderCount = modelInstanceCounts.get(wonderModel) ?? 0;
               wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
               modelInstanceCounts.set(wonderModel, wonderCount + 1);
+              nextActiveStructureModels.add(wonderModel);
               this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
             }
           } else {
@@ -1417,6 +1529,7 @@ export class StructureManager {
             const currentCount = modelInstanceCounts.get(modelType) ?? 0;
             modelType.setMatrixAt(currentCount, this.dummy.matrix);
             modelInstanceCounts.set(modelType, currentCount + 1);
+            nextActiveStructureModels.add(modelType);
             this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
           }
         });
@@ -1517,6 +1630,7 @@ export class StructureManager {
             const currentCount = modelInstanceCounts.get(model) ?? 0;
             model.setMatrixAt(currentCount, this.dummy.matrix);
             modelInstanceCounts.set(model, currentCount + 1);
+            nextActiveCosmeticStructureModels.add(model);
             this.cosmeticEntityIdMaps.get(cosmeticId)!.set(currentCount, structure.entityId);
           }
         });
@@ -1528,6 +1642,11 @@ export class StructureManager {
       for (const [model, count] of modelInstanceCounts) {
         model.setCount(count);
       }
+      this.previouslyActiveStructureModels = nextActiveStructureModels;
+      this.previouslyActiveCosmeticStructureModels = nextActiveCosmeticStructureModels;
+
+      // Apply deferred worldBounds now that instance data matches the new chunk
+      this.applyPendingModelBounds();
 
       // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
       if (this.pointsRenderers) {
@@ -1742,6 +1861,18 @@ export class StructureManager {
 
   public setChunkBounds(bounds?: { box: Box3; sphere: Sphere }) {
     this.currentChunkBounds = bounds ?? undefined;
+    // Model worldBounds are NOT applied here — they are deferred to
+    // applyPendingModelBounds() which runs after instance data is rebuilt
+    // in performVisibleStructuresUpdate. Applying bounds before instance
+    // data is updated causes ghosting at chunk edges (old instances pass
+    // frustum culling with new chunk bounds).
+    this.hasPendingModelBounds = true;
+  }
+
+  private applyPendingModelBounds() {
+    if (!this.hasPendingModelBounds) return;
+    this.hasPendingModelBounds = false;
+    const bounds = this.currentChunkBounds;
     this.structureModels.forEach((models) => {
       models.forEach((model) => model.setWorldBounds(bounds));
     });

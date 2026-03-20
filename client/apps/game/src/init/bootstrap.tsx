@@ -12,6 +12,7 @@ import {
   normalizeRpcUrl,
   patchManifestWithFactory,
   resolveChain,
+  type WorldProfile,
 } from "@/runtime/world";
 import { buildWorldProfile } from "@/runtime/world/profile-builder";
 import { setSqlApiBaseUrl } from "@/services/api";
@@ -38,6 +39,12 @@ let bootstrappedWorldName: string | null = null;
 let bootstrappedChain: string | null = null;
 let cachedSetupResult: BootstrapResult | null = null;
 let gameRendererCleanup: (() => void) | null = null;
+
+type MutableDojoConfig = typeof dojoConfig & {
+  toriiUrl?: string;
+  rpcUrl?: string;
+  manifest?: unknown;
+};
 
 /**
  * Get the cached setup result if bootstrap has already completed.
@@ -91,7 +98,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   const chain = resolveChain(env.VITE_PUBLIC_CHAIN! as Chain);
   const pathWorld = deriveWorldFromPath();
 
-  let profile: any = null;
+  let profile: WorldProfile | null = null;
   if (pathWorld) {
     try {
       profile = await buildWorldProfile(chain, pathWorld);
@@ -103,33 +110,34 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   if (!profile) profile = getActiveWorld();
   let shouldReloadAfterProfileRefresh = false;
   if (profile) {
-    const previousRpcUrl = profile.rpcUrl;
-    const previousChain = profile.chain;
-    const shouldRefreshProfile = () => {
-      if (profile.chain && profile.chain !== chain) return true;
-      if (!profile.rpcUrl) return true;
+    const existingProfile = profile;
+    const previousRpcUrl = existingProfile.rpcUrl;
+    const previousChain = existingProfile.chain;
+    const shouldRefreshProfile = (candidate: WorldProfile) => {
+      if (candidate.chain && candidate.chain !== chain) return true;
+      if (!candidate.rpcUrl) return true;
       const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
       if (canUseEnvRpc) {
-        if (!profile.rpcUrl) return true;
-        const normalizedProfileRpc = normalizeRpcUrl(profile.rpcUrl);
+        if (!candidate.rpcUrl) return true;
+        const normalizedProfileRpc = normalizeRpcUrl(candidate.rpcUrl);
         const normalizedEnvRpc = normalizeRpcUrl(env.VITE_PUBLIC_NODE_URL);
-        if (normalizedProfileRpc !== normalizedEnvRpc && normalizedProfileRpc.includes(`/x/${profile.name}/katana`)) {
+        if (normalizedProfileRpc !== normalizedEnvRpc && normalizedProfileRpc.includes(`/x/${candidate.name}/katana`)) {
           return true;
         }
         return false;
       }
       if (chain === "slot" || chain === "slottest") {
-        return !profile.rpcUrl.includes(`/x/${profile.name}/katana`);
+        return !candidate.rpcUrl.includes(`/x/${candidate.name}/katana`);
       }
       if (chain === "mainnet" || chain === "sepolia") {
-        return profile.rpcUrl.includes("/katana") || !profile.rpcUrl.includes(`/x/starknet/${chain}`);
+        return candidate.rpcUrl.includes("/katana") || !candidate.rpcUrl.includes(`/x/starknet/${chain}`);
       }
       return false;
     };
 
-    if (shouldRefreshProfile()) {
+    if (shouldRefreshProfile(existingProfile)) {
       try {
-        profile = await buildWorldProfile(chain, profile.name);
+        profile = await buildWorldProfile(chain, existingProfile.name);
         shouldReloadAfterProfileRefresh =
           !profile ||
           !previousRpcUrl ||
@@ -147,23 +155,20 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   // 1) Patch manifest with factory-provided addresses and world address
   const baseManifest = getGameManifest(chain);
-  const patchedManifest = patchManifestWithFactory(
-    baseManifest as any,
-    profile.worldAddress,
-    profile.contractsBySelector,
-  );
+  const patchedManifest = patchManifestWithFactory(baseManifest, profile.worldAddress, profile.contractsBySelector);
+  const mutableDojoConfig = dojoConfig as MutableDojoConfig;
 
   // 2) Update global dojoConfig in place (shared object reference)
   //    - Torii base URL and manifest are used by setup() downstream
   //    - For local chain, use environment variables directly
   if (chain === "local") {
-    (dojoConfig as any).toriiUrl = env.VITE_PUBLIC_TORII;
-    (dojoConfig as any).rpcUrl = env.VITE_PUBLIC_NODE_URL;
+    mutableDojoConfig.toriiUrl = env.VITE_PUBLIC_TORII;
+    mutableDojoConfig.rpcUrl = env.VITE_PUBLIC_NODE_URL;
   } else {
-    (dojoConfig as any).toriiUrl = profile.toriiBaseUrl;
-    (dojoConfig as any).rpcUrl = profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
+    mutableDojoConfig.toriiUrl = profile.toriiBaseUrl;
+    mutableDojoConfig.rpcUrl = profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
   }
-  (dojoConfig as any).manifest = patchedManifest;
+  mutableDojoConfig.manifest = patchedManifest;
 
   // 3) Point SQL API to the active world's Torii
   const toriiUrl = chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
@@ -199,7 +204,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   configManager.setDojo(setupResult.components, ETERNUM_CONFIG({ chain, components: setupResult.components }));
 
   // Store the cleanup function so we can call it when navigating away
-  gameRendererCleanup = initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
+  gameRendererCleanup = await initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
 
   inject();
 

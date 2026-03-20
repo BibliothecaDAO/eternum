@@ -9,6 +9,7 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>
   pendingArmyMovementStartedAt: Map<TEntityId, number>;
   pendingArmyMovementFallbackTimeouts: Map<TEntityId, TTimeout>;
   armyStructureOwners: Map<TEntityId, unknown>;
+  suppressedArmies?: Set<TEntityId>;
   fetchedChunks: Set<string>;
   pendingChunks: Map<string, TPendingChunk>;
   pinnedChunkKeys: Set<string>;
@@ -18,6 +19,7 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>
   nextSceneName?: SceneName;
   clearTimeout: (timeoutId: TTimeout) => void;
   clearPendingArmyMovement: (entityId: TEntityId) => void;
+  clearStreamingWork: () => void;
   clearQueuedPrefetchState: () => void;
   releaseInactiveResources: () => void;
   invalidatePendingFetches: () => void;
@@ -64,6 +66,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   pendingArmyMovementStartedAt,
   pendingArmyMovementFallbackTimeouts,
   armyStructureOwners,
+  suppressedArmies,
   fetchedChunks,
   pendingChunks,
   pinnedChunkKeys,
@@ -73,6 +76,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   nextSceneName,
   clearTimeout,
   clearPendingArmyMovement,
+  clearStreamingWork,
   clearQueuedPrefetchState,
   releaseInactiveResources,
   invalidatePendingFetches,
@@ -85,9 +89,12 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   pendingArmyMovements.forEach((entityId) => clearPendingArmyMovement(entityId));
   pendingArmyMovements.clear();
   pendingArmyMovementStartedAt.clear();
+  pendingArmyMovementFallbackTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
   pendingArmyMovementFallbackTimeouts.clear();
   armyStructureOwners.clear();
+  suppressedArmies?.clear();
 
+  clearStreamingWork();
   clearQueuedPrefetchState();
   invalidatePendingFetches();
   fetchedChunks.clear();

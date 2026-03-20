@@ -63,6 +63,10 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
+  VITE_PUBLIC_RENDERER_BUILD_MODE: z
+    .enum(["legacy-webgl", "experimental-webgpu-auto", "experimental-webgpu-force-webgl"])
+    .optional()
+    .default("experimental-webgpu-auto"),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]).optional().default("local"), // Add other chains as needed
@@ -165,6 +169,11 @@ const envSchema = z.object({
     .optional()
     .default("true"),
   VITE_PUBLIC_TORII_BOUNDS_DEBUG: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+  VITE_PUBLIC_WORLDMAP_STREAMING_STAGED: z
     .string()
     .transform((v) => v === "true")
     .optional()

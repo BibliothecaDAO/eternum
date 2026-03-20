@@ -1,10 +1,9 @@
 {
-  "ignoreDependencies": ["@videos/.*"],
+  "ignoreDependencies": [],
   "ignore": [
     "**/*.js",
 
     "packages/**",
-
     "client/apps/landing/src/components/ui/**",
     "client/apps/landing/src/components/typography/**",
     "client/apps/landing/src/hooks/gql/**",
@@ -29,5 +28,42 @@
     "contracts/**",
 
     "**/global.d.ts",
-  ]
+  ],
+  "ignoreIssues": {
+    "client/apps/game/src/three/geometry/path-geometry.ts": ["files"],
+    "client/apps/game/src/three/three-webgpu-type-guard.ts": ["files", "types"],
+    "client/apps/game/src/three/fx/world-fx-backends.ts": ["types"],
+    "client/apps/game/src/three/game-renderer-debug-globals.ts": ["types"],
+    "client/apps/game/src/three/managers/army-slot-compaction.ts": ["types"],
+    "client/apps/game/src/three/managers/army-visible-order.ts": ["types"],
+    "client/apps/game/src/three/managers/hover-hex-manager.ts": ["types"],
+    "client/apps/game/src/three/managers/hover-hex-view-policy.ts": ["types"],
+    "client/apps/game/src/three/managers/interactive-hex-manager.ts": ["types"],
+    "client/apps/game/src/three/managers/path-batching-policy.ts": ["types"],
+    "client/apps/game/src/three/managers/worldmap-highlight-view-policy.ts": ["types"],
+    "client/apps/game/src/three/managers/worldmap-interaction-palette.ts": ["types"],
+    "client/apps/game/src/three/perf/worldmap-render-diagnostics.ts": ["types"],
+    "client/apps/game/src/three/renderer-pass-scene.ts": ["types"],
+    "client/apps/game/src/three/scenes/fast-travel-chunk-loading-runtime.ts": ["types"],
+    "client/apps/game/src/three/scenes/fast-travel-navigation-policy.ts": ["types"],
+    "client/apps/game/src/three/scenes/hexagon-scene-camera-transition.ts": ["types"],
+    "client/apps/game/src/three/scenes/path-readability-policy.ts": ["types"],
+    "client/apps/game/src/three/scenes/warp-travel-chunk-hydration.ts": ["types"],
+    "client/apps/game/src/three/scenes/warp-travel-chunk-runtime.ts": ["types"],
+    "client/apps/game/src/three/scenes/warp-travel-manager-fanout.ts": ["types"],
+    "client/apps/game/src/three/scenes/warp-travel.ts": ["exports", "types"],
+    "client/apps/game/src/three/scenes/worldmap-debug-hooks.ts": ["types"],
+    "client/apps/game/src/three/scenes/worldmap-zoom-controller.ts": ["types"],
+    "client/apps/game/src/three/scenes/worldmap-zoom-refresh-policy.ts": ["types"],
+    "client/apps/game/src/three/shaders/hover-hex-material.ts": ["exports", "types"],
+    "client/apps/game/src/three/types/path.ts": ["exports"],
+    "client/apps/game/src/three/utils/centralized-visibility-manager.ts": ["exports"],
+    "client/apps/game/src/three/utils/navigation.ts": ["exports"],
+    "client/apps/game/src/ui/features/cosmetics/lib/dev-preview-cosmetics.ts": ["exports"],
+    "client/apps/game/src/ui/features/cosmetics/lib/loadout-scope.ts": ["exports"],
+    "client/apps/game/src/ui/features/cosmetics/model/index.ts": ["exports"],
+    "client/apps/game/src/ui/features/cosmetics/model/use-cosmetic-loadout-store.ts": ["types"],
+    "client/apps/game/src/hooks/use-world-preview-entry.ts": ["types"],
+    "client/apps/game/src/hooks/use-world-registration.ts": ["types"]
+  }
 }

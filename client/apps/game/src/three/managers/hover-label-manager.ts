@@ -100,6 +100,13 @@ export class HoverLabelManager {
     return Object.keys(this.activeLabels).length;
   }
 
+  /**
+   * Release all held label references. Safe to call multiple times.
+   */
+  dispose(): void {
+    this.onHexLeave();
+  }
+
   private toggleLabel(type: HoverLabelType, entityId?: ID): void {
     const controller = this.controllers[type];
     if (!controller) {

@@ -13,6 +13,8 @@ interface FinalizeWarpTravelChunkSwitchInput {
   startCol: number;
   force: boolean;
   transitionToken: number;
+  preparedTerrain: unknown;
+  applyPreparedTerrain: (preparedTerrain: unknown) => void;
   setCurrentChunk: (chunkKey: string) => void;
   updatePinnedChunks: (chunkKeys: string[]) => void;
   unregisterChunk: (chunkKey: string) => void;
@@ -25,7 +27,7 @@ interface FinalizeWarpTravelChunkSwitchInput {
   clearSceneChunkBounds: () => void;
   forceVisibilityUpdate: () => void;
   updateCurrentChunkBounds: (startRow: number, startCol: number) => void;
-  updateManagersForChunk: (chunkKey: string, options: { force: boolean; transitionToken: number }) => Promise<void>;
+  scheduleManagerCatchUp: (chunkKey: string, options: { force: boolean; transitionToken: number }) => void;
   unregisterPreviousChunkOnNextFrame: (chunkKey: string) => void;
 }
 
@@ -77,9 +79,12 @@ export async function finalizeWarpTravelChunkSwitch(
   }
 
   input.setCurrentChunk(input.targetChunk);
+  if (input.preparedTerrain !== null && input.preparedTerrain !== undefined) {
+    input.applyPreparedTerrain(input.preparedTerrain);
+  }
   input.updateCurrentChunkBounds(input.startRow, input.startCol);
   input.forceVisibilityUpdate();
-  await input.updateManagersForChunk(input.targetChunk, {
+  input.scheduleManagerCatchUp(input.targetChunk, {
     force: input.force,
     transitionToken: input.transitionToken,
   });

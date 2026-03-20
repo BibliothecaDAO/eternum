@@ -82,7 +82,7 @@ const doAliveCheck = async (url: string) => {
   try {
     const aliveCheck = await fetch(url);
     return aliveCheck.ok && aliveCheck.status === 200;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

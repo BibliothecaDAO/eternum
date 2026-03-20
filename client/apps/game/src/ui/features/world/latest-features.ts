@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-19",
+    title: "Stable Biome Chunk Refresh",
+    description:
+      "Fixed world map biome flicker during chunk refreshes and rapid traversal, so terrain updates stay visually stable while nearby tiles and managers catch up.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
     title: "FP Wallet Chip Removed",
     description:
       "Removed the experimental FP Wallet chip from the top header to keep entity and resource UI focused on core in-panel faith metrics.",

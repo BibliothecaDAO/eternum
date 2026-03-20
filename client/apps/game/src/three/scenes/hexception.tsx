@@ -157,6 +157,7 @@ export default class HexceptionScene extends HexagonScene {
   private playerStructures: Structure[] = [];
   private mode: GameModeConfig;
   private structureUpdateSubscription: any | null = null;
+  private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
   private lastRealmKey?: string;
   // Store Zustand unsubscribe functions to clean up on destroy
@@ -187,6 +188,8 @@ export default class HexceptionScene extends HexagonScene {
 
     this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
+    // Keep the initial local-view grid boot eager so the entry overlay receives
+    // the first hexception:grid-ready event during player handoff.
     this.setup();
 
     this.inputManager.addListener("contextmenu", (raycaster) => {
@@ -276,6 +279,10 @@ export default class HexceptionScene extends HexagonScene {
               this.highlights.map((hex) => ({
                 hex: { col: hex.col, row: hex.row },
                 actionType: ActionType.Build,
+                kind: "destination",
+                isEndpoint: true,
+                isSharedRoute: false,
+                pathDepth: 1,
               })),
             );
           } else {
@@ -402,6 +409,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
+    this.bootstrapSceneOwnership();
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
     const contractPosition = new Position({ x: col, y: row }).getContract();
@@ -440,8 +448,11 @@ export default class HexceptionScene extends HexagonScene {
       // clear all animation mixers
       this.buildingMixers.clear();
 
+      // Unsubscribe previous building update listener before re-registering
+      this.buildingUpdateUnsubscribe?.();
+
       // subscribe to building updates (create and destroy)
-      this.worldUpdateListener.Buildings.onBuildingUpdate(
+      this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
         { col: this.centerColRow[0], row: this.centerColRow[1] },
         (update: BuildingSystemUpdate) => {
           const { innerCol, innerRow, buildingType } = update;
@@ -498,6 +509,11 @@ export default class HexceptionScene extends HexagonScene {
 
   destroy() {
     this.clearHoverLabel();
+    this.hoverLabelManager.dispose();
+
+    // Clean up building update subscription
+    this.buildingUpdateUnsubscribe?.();
+    this.buildingUpdateUnsubscribe = null;
 
     // CRITICAL: Clean up all Zustand store subscriptions to prevent memory leaks
     console.log("🧹 Cleaning up Zustand subscriptions:", this.storeUnsubscribes.length);

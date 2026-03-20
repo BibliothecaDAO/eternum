@@ -63,6 +63,10 @@ export class DayNightCycleManager {
   private readonly tempColor1: Color = new Color();
   private readonly tempColor2: Color = new Color();
   private readonly stormTint: Color = new Color(0x606880);
+  private readonly lastUpdateSkyColor: Color = new Color();
+  private lastUpdateDirIntensity: number = 0;
+  private lastUpdateHemiIntensity: number = 0;
+  private lastUpdateAmbientIntensity: number = 0;
   private currentAngle: number = 0; // Track smoothed angular progress
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
@@ -80,8 +84,6 @@ export class DayNightCycleManager {
     ambientIntensity: number;
     sceneBackground: Color;
     fogColor: Color;
-    fogNear: number;
-    fogFar: number;
   };
 
   // Color stops for different times of day
@@ -179,8 +181,6 @@ export class DayNightCycleManager {
       ambientIntensity: this.ambientLight.intensity,
       sceneBackground: (this.scene.background as Color).clone(),
       fogColor: this.fog.color.clone(),
-      fogNear: this.fog.near,
-      fogFar: this.fog.far,
     };
   }
 
@@ -214,6 +214,12 @@ export class DayNightCycleManager {
 
     // Update lighting with smoothed colors
     this.updateLighting(this.currentColors);
+
+    // Store baseline values so applyWeatherModulation can darken non-destructively
+    this.lastUpdateSkyColor.copy(this.scene.background as Color);
+    this.lastUpdateDirIntensity = this.directionalLight.intensity;
+    this.lastUpdateHemiIntensity = this.hemisphereLight.intensity;
+    this.lastUpdateAmbientIntensity = this.ambientLight.intensity;
 
     // Update sun position (relative to camera target if provided)
     this.updateSunPosition(smoothedProgress, cameraTarget);
@@ -336,8 +342,6 @@ export class DayNightCycleManager {
 
     // Update fog
     this.fog.color.setHex(timeColors.fogColor);
-    this.fog.near = timeColors.fogNear;
-    this.fog.far = timeColors.fogFar;
   }
 
   /**
@@ -403,27 +407,22 @@ export class DayNightCycleManager {
   applyWeatherModulation(skyDarkness: number, fogDensity: number, sunOcclusion: number = 0): void {
     if (!this.params.enabled) return;
 
-    // Darken sky color based on weather
+    // Darken sky color based on weather — apply to baseline from update(), not current value
     if (skyDarkness > 0) {
-      const currentSky = this.scene.background as Color;
       const darkenFactor = 1 - skyDarkness * 0.5; // Max 50% darkening
-      currentSky.multiplyScalar(darkenFactor);
+      (this.scene.background as Color).copy(this.lastUpdateSkyColor).multiplyScalar(darkenFactor);
     }
 
-    // Reduce sun intensity (clouds blocking light)
+    // Reduce sun intensity (clouds blocking light) — apply to baseline from update()
     if (sunOcclusion > 0) {
       const reductionFactor = 1 - sunOcclusion * 0.4; // Max 40% reduction
-      this.directionalLight.intensity *= reductionFactor;
+      this.directionalLight.intensity = this.lastUpdateDirIntensity * reductionFactor;
       // Also soften shadows by reducing contrast
-      this.hemisphereLight.intensity *= 1 + sunOcclusion * 0.3; // Increase ambient to fill shadows
+      this.hemisphereLight.intensity = this.lastUpdateHemiIntensity * (1 + sunOcclusion * 0.3); // Increase ambient to fill shadows
     }
 
     // Increase fog density for storm atmosphere
     if (fogDensity > 0) {
-      const fogIncrease = fogDensity * 0.4; // Max 40% closer fog
-      this.fog.near *= 1 - fogIncrease;
-      this.fog.far *= 1 - fogIncrease * 0.5;
-
       // Tint fog slightly gray-blue during storms
       this.fog.color.lerp(this.stormTint, fogDensity * 0.3);
     }
@@ -460,9 +459,25 @@ export class DayNightCycleManager {
     (this.scene.background as Color).copy(this.originalLightingState.sceneBackground);
 
     this.fog.color.copy(this.originalLightingState.fogColor);
-    this.fog.near = this.originalLightingState.fogNear;
-    this.fog.far = this.originalLightingState.fogFar;
     this.isProgressInitialized = false;
+  }
+
+  /**
+   * Return the ambient-light intensity set during the most recent updateLighting() call.
+   * Storm-flicker code should read this instead of the live light value to avoid
+   * compounding drift.
+   */
+  getLastAmbientIntensity(): number {
+    return this.lastUpdateAmbientIntensity;
+  }
+
+  /**
+   * Return the hemisphere-light intensity set during the most recent updateLighting() call.
+   * Storm-flicker code should read this instead of the live light value to avoid
+   * compounding drift.
+   */
+  getLastHemisphereIntensity(): number {
+    return this.lastUpdateHemiIntensity;
   }
 
   /**
