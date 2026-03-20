@@ -41,7 +41,7 @@ describe("army suppression gate", () => {
     const methodStart = src.indexOf("private getVisibleArmiesForChunk(");
     expect(methodStart).toBeGreaterThan(-1);
 
-    const methodBody = src.slice(methodStart, methodStart + 1000);
+    const methodBody = src.slice(methodStart, methodStart + 2000);
 
     const seenCheck = methodBody.indexOf("seenArmyIds.has(id)");
     const suppressedCheck = methodBody.indexOf("this.suppressedArmies.has(id)");

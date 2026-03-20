@@ -1084,6 +1084,10 @@ export class ArmyManager {
       this.armyAttachmentSignatures.delete(numericId);
     }
 
+    // Clean up movement source bucket before freeing the slot, since
+    // freeInstanceSlot kills the movement callback that would normally do this
+    this.cleanupMovementSourceBucket(entityId);
+
     this.armyModel.freeInstanceSlot(numericId, slot);
     return slot;
   }
@@ -1341,10 +1345,15 @@ export class ArmyManager {
 
   private isArmyVisible(army: ArmyData, bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }) {
     const entityIdNumber = this.toNumericId(army.entityId);
-    const worldPos = this.armyModel.getEntityWorldPosition(entityIdNumber);
 
     let x: number;
     let y: number;
+
+    // Only trust instanceData world position if the army is actively rendered
+    // (has a matrixIndex). After chunk eviction, instanceData.position is stale
+    // (frozen at mid-movement) and would poison the visibility decision.
+    const isActivelyRendered = army.matrixIndex !== undefined;
+    const worldPos = isActivelyRendered ? this.armyModel.getEntityWorldPosition(entityIdNumber) : undefined;
 
     if (worldPos) {
       this.recordLastKnownHexFromWorld(army.entityId, worldPos);
