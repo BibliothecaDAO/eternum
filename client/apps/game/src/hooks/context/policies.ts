@@ -297,6 +297,34 @@ export const buildPolicies = (manifest: any) =>
           },
         ],
       },
+      [getContractByName(manifest, "s1_eternum", "faith_systems").address]: {
+        methods: [
+          {
+            name: "pledge_faith",
+            entrypoint: "pledge_faith",
+          },
+          {
+            name: "remove_faith",
+            entrypoint: "remove_faith",
+          },
+          {
+            name: "update_wonder_ownership",
+            entrypoint: "update_wonder_ownership",
+          },
+          {
+            name: "update_structure_ownership",
+            entrypoint: "update_structure_ownership",
+          },
+          {
+            name: "dojo_name",
+            entrypoint: "dojo_name",
+          },
+          {
+            name: "world_dispatcher",
+            entrypoint: "world_dispatcher",
+          },
+        ],
+      },
       [getContractByName(manifest, "s1_eternum", "hyperstructure_systems").address]: {
         methods: [
           {

@@ -20,4 +20,4 @@ export const setSqlApiBaseUrl = (baseUrl: string) => {
   sqlApi = createSqlApi(currentBaseUrl);
 };
 
-const getSqlApiBaseUrl = () => currentBaseUrl;
+export const getSqlApiBaseUrl = () => currentBaseUrl;

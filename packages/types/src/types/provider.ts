@@ -364,6 +364,23 @@ export interface ClaimWonderProductionBonusProps extends SystemSigner {
   wonder_structure_id: BigNumberish;
 }
 
+export interface PledgeFaithProps extends SystemSigner {
+  structure_id: BigNumberish;
+  wonder_id: BigNumberish;
+}
+
+export interface RemoveFaithProps extends SystemSigner {
+  structure_id: BigNumberish;
+}
+
+export interface UpdateWonderOwnershipProps extends SystemSigner {
+  wonder_id: BigNumberish;
+}
+
+export interface UpdateStructureOwnershipProps extends SystemSigner {
+  structure_id: BigNumberish;
+}
+
 export interface MintStartingResources extends SystemSigner {
   config_ids: BigNumberish[];
   realm_entity_id: BigNumberish;
