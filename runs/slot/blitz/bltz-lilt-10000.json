@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23366152008-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-20T23:08:54.328Z",
-  "updatedAt": "2026-03-20T23:10:41.969Z",
+  "updatedAt": "2026-03-20T23:10:44.357Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-20T23:10:44.357Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -67,5 +68,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-lilt-10000.json",
     "createGameTxHash": "0x64643d3467a01564431a8a27ecb20d7ea3719105b33429df3ea068591f267dc",
     "worldAddress": "0x036ceb150cdadf34bdb7b5f0cabb7cc1252de452195c7163ae5d35df81c55540"
+  },
+  "activeLease": {
+    "launchRequestId": "23366152008-1",
+    "workflowRunId": 23366152008,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-20T23:10:44.357Z",
+    "expiresAt": "2026-03-20T23:55:44.357Z"
   }
 }
