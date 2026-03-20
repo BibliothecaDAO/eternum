@@ -1,16 +1,16 @@
 /**
- * MCP server exposing the full Eternum agent toolkit.
+ * MCP server exposing the full Eternum agent toolkit (22 tools).
  *
- * Connects to Torii, authenticates with Cartridge, starts the map loop,
- * and exposes all game tools + map protocol as native MCP tools that
- * Claude Code can call directly.
+ * Architecture: register tools → connect stdio transport (instant handshake)
+ * → bootstrap in background (discover world → authenticate → load config →
+ * start map loop) → tools become operational.
  *
  * Setup:
- *   claude mcp add eternum -- npx tsx client/apps/onchain-agent/dev/scripts/mcp-server.ts
+ *   `claude mcp add eternum -- npx tsx client/apps/onchain-agent/dev/scripts/mcp-server.ts`
  *
- * Requires .env in client/apps/onchain-agent/ with at minimum:
- *   CHAIN=slot
- *   WORLD_NAME=<world>
+ * Requires `.env` in `client/apps/onchain-agent/` with at minimum:
+ *   `CHAIN=slot`
+ *   `WORLD_NAME=<world>`
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -86,15 +86,9 @@ import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
 const log = (msg: string) => process.stderr.write(`[eternum-mcp] ${msg}\n`);
 
 /**
- * Main entry point. Registers all MCP tools, connects the stdio transport
- * (completing the handshake immediately), then bootstraps the game connection
- * in the background. Tools return "not ready" until bootstrap completes.
- *
- * Architecture:
- *   1. Register tools (with readiness gates)
- *   2. Connect MCP transport (handshake completes instantly)
- *   3. Bootstrap: discover world → authenticate → load config → start map loop
- *   4. Tools become operational
+ * Register all MCP tools, connect the stdio transport (instant handshake),
+ * then bootstrap the game connection in the background. Tools return
+ * "not ready" until bootstrap completes.
  */
 async function main() {
   log("Starting...");

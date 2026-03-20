@@ -1,8 +1,6 @@
 /**
- * Automation status formatter — converts per-realm tick results into a human-readable report.
- *
- * Returns a formatted string. The caller (automation loop) is responsible for
- * writing it to disk.
+ * Automation status formatter — converts per-realm tick results into a
+ * human-readable report string. The caller (automation loop) writes it to disk.
  */
 import type { TickResult } from "./executor.js";
 

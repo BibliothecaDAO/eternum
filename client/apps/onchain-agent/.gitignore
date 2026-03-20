@@ -9,3 +9,4 @@ release/
 .claude
 .cartridge
 .DS_Store
+dist

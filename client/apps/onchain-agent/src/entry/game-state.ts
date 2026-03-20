@@ -1,18 +1,54 @@
+/**
+ * Game state block builder — assembles a structured XML snapshot of
+ * structures, armies, automation status, and recent tool errors for
+ * injection into the agent's per-tick context.
+ *
+ * @module
+ */
+
 import type { MapContext } from "../map/context.js";
 import type { AutomationStatusMap } from "../automation/status.js";
 
+/**
+ * A tool invocation that failed during an agent turn.
+ *
+ * Collected by the main loop's event subscriber and surfaced in the
+ * `<tool_errors>` section of the game state block so the agent can
+ * avoid repeating the same mistake.
+ */
 export interface ToolError {
+  /** Name of the tool that failed (e.g. `"move_army"`). */
   tool: string;
+  /** Truncated error message returned by the tool. */
   error: string;
+  /** Tick number when the error occurred. */
   tick: number;
 }
 
+/**
+ * Format a numeric balance as a compact human-readable string.
+ *
+ * @param n - Raw balance value.
+ * @returns Compact string: e.g. `"1.2M"`, `"45K"`, or `"800"`.
+ */
 function formatBalance(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
   return String(Math.floor(n));
 }
 
+/**
+ * Build an XML-structured game state block for the agent's context window.
+ *
+ * Sections: `<structures>` (level, build progress, wheat/essence),
+ * `<armies>` (troops, stamina), `<automation>` (last tick actions),
+ * and `<tool_errors>` (grouped by tool name with counts).
+ *
+ * @param mapCtx - Map context holding the latest snapshot with explorer details.
+ * @param automationStatus - Per-realm automation status from the most recent tick.
+ * @param toolErrors - Recent tool failures to surface to the agent.
+ * @returns A multi-line XML string suitable for direct injection into the system prompt.
+ */
 export function buildGameStateBlock(
   mapCtx: MapContext,
   automationStatus: AutomationStatusMap,

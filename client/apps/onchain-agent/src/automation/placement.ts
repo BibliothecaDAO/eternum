@@ -1,6 +1,6 @@
 /**
- * Building placement — finds open hex slots on a realm's inner grid and computes
- * BFS direction paths from the center tile to each slot.
+ * Building placement — finds open hex slots on a realm's inner grid and
+ * computes BFS direction paths from the center tile (10,10) to each slot.
  */
 import { getNeighborHexes, Direction } from "@bibliothecadao/types";
 

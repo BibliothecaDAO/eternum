@@ -1,12 +1,10 @@
 /**
- * reinforce_army — add troops to an existing army from an adjacent source.
+ * `reinforce_army` tool — add troops to an existing army from an adjacent source.
  *
- * Source is auto-detected:
- *   - Adjacent owned structure → pull troops from reserves (explorer_add)
- *   - Adjacent owned army (same type/tier) → merge troops (explorer_explorer_swap),
- *     deleting the source only when all available troops are transferred
- *
- * Structures are preferred over armies.
+ * Source is auto-detected (structures preferred over armies):
+ *   - Adjacent owned structure → pull troops from reserves (`explorer_add`)
+ *   - Adjacent owned army of same type/tier → merge troops (`explorer_explorer_swap`),
+ *     deleting the source only when all troops are transferred
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";

@@ -8,7 +8,7 @@
  * passes the JS imports to the WASM module.
  *
  * Usage:
- *   bun run build.ts
+ *   bun run dev/scripts/build.ts
  */
 
 import type { BunPlugin } from "bun";

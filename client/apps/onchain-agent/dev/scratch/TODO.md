@@ -2,7 +2,9 @@
 
 ## Tool Unification
 
-The MCP server tools (`dev/scripts/mcp-server.ts`) are the source of truth for game logic. The PI agent tools (`src/tools/`) are an older implementation with less coverage and missing improvements (combat simulation, coordinate conversion, explore injection, partial move reporting, etc.).
+The MCP server tools (`dev/scripts/mcp-server.ts`) are the source of truth for game logic. The PI agent tools
+(`src/tools/`) are an older implementation with less coverage and missing improvements (combat simulation, coordinate
+conversion, explore injection, partial move reporting, etc.).
 
 ### Goal
 
@@ -25,7 +27,7 @@ src/tools/*.ts               ← thin wrapper: AgentTool interface + pi-agent re
 ### What MCP tools have that PI tools don't
 
 - Combat simulation before/instead of attacking
-- Native offset hex A* pathfinding (no H3 bugs)
+- Native offset hex A\* pathfinding (no H3 bugs)
 - Explore injection for routing through unexplored tiles
 - Partial move reporting (explore/travel breakdown, stamina-truncated paths)
 - Display coordinate system (positive Y = north)

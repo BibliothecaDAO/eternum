@@ -1,12 +1,11 @@
 /**
  * Occupier type classification for hex tiles.
  *
- * Occupier type IDs are assigned by the on-chain world contract:
- *   - 1–14:  Structures (cities, mines, etc.)
- *   - 15–32: Explorers (player-controlled armies)
- *   - 34:    Chest (loot drop)
- *
- * A value of 0 means the tile is unoccupied.
+ * Type IDs assigned by the on-chain world contract:
+ *   - `0`:     Unoccupied
+ *   - `1–14`:  Structures (realms, mines, villages, etc.)
+ *   - `15–32`: Explorers (player-controlled armies)
+ *   - `34`:    Chest (loot drop)
  */
 
 /**

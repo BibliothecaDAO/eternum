@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "NODE_OPTIONS='--experimental-wasm-modules --disable-warning=ExperimentalWarning' tsx src/entry/index.ts",
     "build": "tsc --noEmit",
-    "build:binary": "bun run build.ts",
+    "build:binary": "bun run dev/scripts/build.ts",
     "test": "vitest --run",
     "test:watch": "vitest"
   },

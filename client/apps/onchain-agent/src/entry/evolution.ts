@@ -1,6 +1,7 @@
 /**
- * Evolution engine: asks a language model to analyze the agent's current soul
- * and task lists, then writes the suggested improvements to disk.
+ * Evolution engine — asks a language model to compare before/after game state
+ * snapshots, analyze the agent's performance, and write concrete soul and
+ * task-list improvements to disk.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -13,35 +14,25 @@ import { loadSoul, loadTaskLists } from "./soul.js";
 // Types
 // ---------------------------------------------------------------------------
 
-/**
- * A single improvement proposed by the evolution model.
- *
- * @property target    - Artifact to modify: the agent's soul, a named task list,
- *                       or a named skill.
- * @property domain    - Required when `target` is `"task_list"` or `"skill"`;
- *                       identifies the file by domain name. Suggestions missing
- *                       this field for those targets are silently skipped.
- * @property action    - Whether to overwrite an existing file (`"update"`) or
- *                       create a new one (`"create"`).
- * @property content   - Full replacement content for the target file.
- * @property reasoning - Human-readable explanation of why the change helps.
- */
+/** A single improvement proposed by the evolution model. */
 interface EvolutionSuggestion {
+  /** Artifact to modify: the agent's soul, a named task list, or a named skill. */
   target: "soul" | "task_list" | "skill";
+  /** Required for `"task_list"` and `"skill"` targets; identifies the file by domain name. Silently skipped if missing. */
   domain?: string;
+  /** Whether to overwrite an existing file (`"update"`) or create a new one (`"create"`). */
   action: "update" | "create";
+  /** Full replacement content for the target file. */
   content: string;
+  /** One-sentence explanation of why the change helps. */
   reasoning: string;
 }
 
-/**
- * Structured output of a single evolution cycle.
- *
- * @property suggestions - Concrete file changes to apply (may be empty).
- * @property analysis    - Free-form analysis text preceding the suggestions.
- */
+/** Structured output of a single evolution cycle. */
 interface EvolutionResult {
+  /** Concrete file changes to apply (may be empty if the model finds nothing to improve). */
   suggestions: EvolutionSuggestion[];
+  /** Free-form analysis text the model generated before producing suggestions. */
   analysis: string;
 }
 
@@ -49,13 +40,19 @@ interface EvolutionResult {
 // Build prompt
 // ---------------------------------------------------------------------------
 
-/** Compact snapshot of game state for evolution before/after comparison. */
+/** Compact snapshot of game state used for before/after comparison in an evolution cycle. */
 export interface EvolutionSnapshot {
+  /** ASCII map text from the current {@link MapSnapshot}. */
   map: string;
+  /** Multi-line summary of owned structures (name, level, build progress, resources). */
   structures: string;
+  /** Multi-line summary of owned armies (entity ID, troop count, type, tier). */
   armies: string;
+  /** Newline-separated tool error strings accumulated since the last evolution. */
   toolErrors: string;
+  /** Recent agent messages (last ~30) for the model to review actions taken. */
   recentMessages?: any[];
+  /** Unix timestamp in milliseconds when the snapshot was captured. */
   timestamp: number;
 }
 
@@ -243,14 +240,17 @@ function applyEvolution(suggestions: EvolutionSuggestion[], dataDir: string): st
 // ---------------------------------------------------------------------------
 
 /**
- * Run a full evolution cycle: build a prompt from the current soul and task
- * lists, ask `model` for improvement suggestions, write accepted suggestions
- * to disk, and return the structured result.
+ * Run a full evolution cycle.
  *
- * @param model   - Language model used to generate suggestions.
+ * Builds a prompt from the current soul, task lists, and before/after game
+ * state snapshots, asks `model` for improvement suggestions, writes accepted
+ * suggestions to disk, and returns the structured result.
+ *
+ * @param model - Language model used to generate suggestions.
  * @param dataDir - Root path of the agent's world data directory.
- * @returns The parsed {@link EvolutionResult} with the analysis text and all
- *          validated suggestions (a subset may have been written to disk).
+ * @param currentSnapshot - Current game state snapshot (becomes the "after"
+ *   in the comparison; the previous call's snapshot is reused as "before").
+ * @returns Parsed {@link EvolutionResult} with analysis and validated suggestions.
  */
 let previousSnapshot: EvolutionSnapshot | null = null;
 

@@ -1,9 +1,9 @@
 /**
- * Essence & food pulse check — the only base-status the agent needs.
+ * Essence and food pulse check — the only base-status the agent cares about.
  *
- * Answers two questions:
- * 1. "Am I blocked on essence?" → go capture a Fragment Mine
- * 2. "Can my armies move?" → wheat is the fuel for army movement
+ * Two questions:
+ *   1. "Am I blocked on essence?" → capture a Fragment Mine
+ *   2. "Can my armies move?" → wheat fuels army movement
  *
  * Everything else (building, production) is handled by background automation.
  */

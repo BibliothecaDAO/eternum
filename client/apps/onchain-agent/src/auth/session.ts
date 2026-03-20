@@ -1,9 +1,10 @@
 /**
- * Cartridge Controller session management for the on-chain agent.
+ * Cartridge Controller session management — manages a singleton
+ * {@link SessionProvider} and exposes {@link getAccount} to return an
+ * authenticated StarkNet `WalletAccount`.
  *
- * Manages a singleton {@link SessionProvider} and exposes {@link getAccount} to
- * return an authenticated Starknet WalletAccount. On first use the provider
- * prints a browser auth URL; subsequent calls reuse the persisted session.
+ * On first use the provider prints a browser auth URL; subsequent calls
+ * reuse the persisted session.
  */
 
 import SessionProvider from "@cartridge/controller/session/node";

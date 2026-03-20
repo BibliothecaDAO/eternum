@@ -1,7 +1,14 @@
+/**
+ * ERC-2612 permit signer — creates time-limited USDC spend permits using
+ * viem's `signTypedData`. The resulting base64 payload is sent as an HTTP
+ * header on every model request.
+ */
+
 import { createPublicClient, http, isAddress, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { SignPermit } from "./types.js";
 
+/** Default permit lifetime: 5 minutes. */
 const DEFAULT_PERMIT_TTL_SECONDS = 5 * 60;
 const DEFAULT_X402_VERSION = 2;
 const ERC2612_NONCES_ABI = parseAbi(["function nonces(address owner) view returns (uint256)"]);
@@ -12,10 +19,15 @@ const DEFAULT_RPC_URLS: Record<number, string> = {
 	84532: "https://sepolia.base.org",
 };
 
+/** Options for {@link createViemSigner}. All fields have sensible defaults. */
 export interface CreateViemSignerOptions {
+	/** Clock function returning current time in ms (default: `Date.now`). */
 	now?: () => number;
+	/** Permit lifetime in seconds (default: 300 / 5 min). */
 	ttlSeconds?: number;
+	/** Custom nonce resolver; defaults to reading `nonces(owner)` on-chain via public RPC. */
 	resolveNonce?: (params: { chainId: number; asset: `0x${string}`; owner: `0x${string}` }) => Promise<string>;
+	/** x402 protocol version included in the payment payload (default: 2). */
 	x402Version?: number;
 }
 
@@ -60,6 +72,16 @@ async function resolveErc2612Nonce(params: {
 	return nonce.toString();
 }
 
+/**
+ * Create a {@link SignPermit} function backed by viem's `signTypedData`.
+ *
+ * Resolves the ERC-2612 nonce on-chain, constructs a Permit typed-data
+ * message, signs it with the provided private key, and returns a
+ * base64-encoded payment payload ready for the `PAYMENT-SIGNATURE` header.
+ *
+ * @param options - Optional overrides for TTL, nonce resolution, and clock.
+ * @returns A {@link SignPermit} function.
+ */
 export function createViemSigner(options: CreateViemSignerOptions = {}): SignPermit {
 	const now = options.now ?? (() => Date.now());
 	const ttlSeconds = options.ttlSeconds ?? DEFAULT_PERMIT_TTL_SECONDS;

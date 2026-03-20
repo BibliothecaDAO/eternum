@@ -1,3 +1,9 @@
+/**
+ * Router config normalizer — parses the raw JSON response from the x402
+ * router's `/v1/config` endpoint into a typed {@link RouterConfig}, filling
+ * in sensible defaults for missing fields.
+ */
+
 import type { RouterConfig, RouterConfigResponse } from "./types.js";
 
 const DEFAULT_NETWORK = "eip155:8453";
@@ -5,6 +11,7 @@ const DEFAULT_PAYMENT_HEADER = "PAYMENT-SIGNATURE";
 const DEFAULT_TOKEN_NAME = "USD Coin";
 const DEFAULT_TOKEN_VERSION = "2";
 
+/** Well-known USDC contract addresses keyed by CAIP-2 network identifier. */
 const USDC_ADDRESSES: Record<string, string> = {
 	"eip155:8453": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 	"eip155:84532": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
@@ -58,6 +65,16 @@ function defaultAssetForNetwork(network: string): string {
 	return USDC_ADDRESSES[network] ?? USDC_ADDRESSES[DEFAULT_NETWORK];
 }
 
+/**
+ * Normalize a raw router config response into a typed {@link RouterConfig}.
+ *
+ * Selects the first active network, resolves the USDC address, and fills
+ * in EIP-712 domain defaults for any missing fields.
+ *
+ * @param value - Raw JSON payload from the router's `/v1/config` endpoint.
+ * @param defaults - Fallback network and payment header values.
+ * @returns A fully populated {@link RouterConfig}.
+ */
 export function normalizeRouterConfig(
 	value: unknown,
 	defaults: { network?: string; paymentHeader?: string } = {},

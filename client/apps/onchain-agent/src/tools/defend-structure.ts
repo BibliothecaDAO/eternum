@@ -1,11 +1,11 @@
 /**
- * defend_structure — assign guard troops to one of your structures.
+ * `defend_structure` tool — assign guard troops to one of your structures.
  *
- * Mode is auto-detected:
- *   - from_army_row/col provided → transfer troops from that adjacent army (explorer_guard_swap)
- *   - Omitted → draw troops from the structure's own reserves (guard_add)
+ * Two modes (auto-detected):
+ *   - `from_army_id` provided → transfer troops from an adjacent army (`explorer_guard_swap`)
+ *   - Omitted → draw troops from the structure's own reserves (`guard_add`)
  *
- * Fills the first available guard slot. Up to 4 slots per structure.
+ * Fills the first available guard slot (up to 4: Alpha, Bravo, Charlie, Delta).
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
