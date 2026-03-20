@@ -1,9 +1,9 @@
 /**
  * Embedded manifest and address data for standalone binary builds.
  *
- * JSON files are imported directly so Bun's bundler includes them in the
- * compiled binary. At runtime, {@link getManifest} and {@link getAddresses}
- * return the pre-loaded objects — no filesystem access required.
+ * JSON files are imported directly so Bun's bundler includes them in
+ * the compiled binary. At runtime, {@link getManifest} and
+ * {@link getAddresses} return pre-loaded objects — no filesystem access.
  */
 
 import type { Chain } from "./policies.js";

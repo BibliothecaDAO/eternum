@@ -1,13 +1,11 @@
 /**
- * attack tool — attack a target adjacent to one of your armies.
+ * `attack_target` tool — attack or claim a target adjacent to one of your armies.
  *
- * Takes an army entity ID and a target world hex coordinate.
- * The army must be 1 hex from the target.
+ * Requires the army to be exactly 1 hex from the target.
+ * Handles both explorer-vs-explorer and explorer-vs-guard combat.
+ * Unguarded structures are captured for free.
  *
- * Output answers:
- * - Did I win?
- * - What's left of my army?
- * - Use inspect_tile to check the outcome.
+ * Output: outcome (victory/defeat/draw), troops remaining, stamina after.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";

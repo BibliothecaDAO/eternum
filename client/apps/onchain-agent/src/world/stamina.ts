@@ -1,8 +1,8 @@
 /**
- * Stamina projection — mirrors the on-chain Stamina::refill logic.
+ * Stamina projection — mirrors the on-chain `Stamina::refill` logic.
  *
- * Does not account for boosts (TroopBoosts) — the agent doesn't
- * have access to boost data. This is a conservative underestimate.
+ * Does not account for `TroopBoosts` — the agent lacks boost data,
+ * so projections are conservative underestimates.
  */
 
 import type { StaminaConfig } from "@bibliothecadao/torii";

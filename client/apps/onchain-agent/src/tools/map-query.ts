@@ -1,17 +1,14 @@
 /**
- * map_query tool — structured queries over the game world.
+ * `map_query` tool — structured queries over the game world.
  *
- * Single tool, multiple operations — mirrors LSP's shape:
+ * One tool, four operations (mirrors LSP):
  *
- *   LSP                             map_query
- *   ────────────────────────        ────────────────────────────
- *   hover(file, line, col)       →  tile_info(x, y)
- *   findReferences(symbol)       →  nearby(x, y, radius?)
- *   goToDefinition(symbol)       →  entity_info(entity_id)
- *   workspaceSymbol(query)       →  find(type, ref_x?, ref_y?)
+ *   `tile_info(x, y)`              — What's at this position?
+ *   `nearby(x, y, radius?)`        — What's around here? (grouped by category)
+ *   `entity_info(entity_id)`       — Full details on any entity
+ *   `find(type, ref_x?, ref_y?)`   — Find all entities of a type, sorted by distance
  *
- * Diagnostics (threats, opportunities) are pushed automatically each
- * tick — the agent doesn't need to query for them.
+ * Threats and opportunities are pushed automatically each tick.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";

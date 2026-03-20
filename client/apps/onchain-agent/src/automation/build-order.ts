@@ -1,15 +1,13 @@
 /**
- * Hardcoded build orders driven by realm biome.
+ * Biome-driven build orders — maps each realm's biome to its optimal troop
+ * specialization and a complete building sequence.
  *
- * Biome → best troop type → T2/T3 resource path → entire build order.
  * WorkersHuts are omitted — the runner auto-injects them when population
- * capacity is the bottleneck (see runner.ts resolvePlan).
- * The automation walks the list each tick, finds the first un-built step,
- * and builds it.
+ * capacity is the bottleneck (see {@link resolvePlan} in `runner.ts`).
  *
  * Build order is structured around realm level slot gates:
- *   Settlement (6 slots) → City (18 slots) → Kingdom (36 slots) → Empire (60 slots)
- * Actual slot usage per tier will be higher due to auto-injected WorkersHuts.
+ *   Settlement (6) → City (18) → Kingdom (36) → Empire (60).
+ * Actual slot usage is higher due to auto-injected WorkersHuts.
  */
 
 /**

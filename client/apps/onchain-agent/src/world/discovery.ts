@@ -1,9 +1,10 @@
 /**
- * World discovery — resolves a chain + world name into all the config
- * the agent needs (torii URL, world address, RPC URL, contract addresses).
+ * World discovery — resolves a chain + world name into the full connection
+ * config the agent needs: Torii URL, world address, RPC URL, and contract
+ * addresses.
  *
- * Reuses shared factory utilities from @bibliothecadao/torii and
- * common/factory/endpoints so the agent stays in sync with the game client.
+ * Reuses shared factory utilities from `@bibliothecadao/torii` and
+ * `common/factory/endpoints` so the agent stays in sync with the game client.
  */
 
 import { FACTORY_QUERIES, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";

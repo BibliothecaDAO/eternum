@@ -1,22 +1,13 @@
 /**
  * Production planner — budget-capped, dependency-ordered.
  *
- * Given resource balances, building counts, and game config,
- * calculates how many production cycles to run for each resource
- * THIS tick. Inputs are consumed from a shared budget (90% of
- * balance) so downstream recipes see reduced availability.
+ * Calculates how many production cycles to run for each resource this tick.
+ * Inputs are consumed from a shared budget (90% of balance) so downstream
+ * recipes see reduced availability.
  *
- * Processing order:
- *   1. T1 resources (Wood, Coal, Copper)
- *   2. Donkeys
- *   3. T2 resources (path-specific: ColdIron / Ironwood / Gold)
- *   4. T3 resources (path-specific: Mithral / Adamantine / Dragonhide)
- *   5. T1 troops
- *   6. T2 troops (if building exists)
- *   7. T3 troops (if building exists)
- *
- * Each resource gets both complex and simple targets (if recipes
- * exist), so both methods run in a single pass.
+ * Processing order: T1 resources → Donkeys → T2 resources → T3 resources
+ * → T1 troops → T2 troops → T3 troops. Each resource gets both complex
+ * (resource-to-resource) and simple (labor-only) targets in a single pass.
  */
 
 import type { GameConfig } from "@bibliothecadao/torii";

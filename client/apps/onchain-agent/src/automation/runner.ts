@@ -1,11 +1,10 @@
 /**
- * Automation runner — dry-run only.
+ * Automation runner — dry-run planning only, no transaction execution.
  *
- * Each tick, the runner inspects the realm's current buildings and level,
- * walks the biome-driven build order in a repeating cycle, checks both
- * slot availability and population capacity, and returns all actions
- * that can be taken this tick (not just one).
- * Does not execute transactions.
+ * Each tick, inspects the realm's buildings and level, walks the biome-driven
+ * build order in a repeating cycle, checks slot availability and population
+ * capacity, and returns all actionable builds for this tick (not just one).
+ * The executor handles actual on-chain submission.
  */
 
 import { type BuildOrder, type BuildStep, buildOrderForBiome } from "./build-order.js";

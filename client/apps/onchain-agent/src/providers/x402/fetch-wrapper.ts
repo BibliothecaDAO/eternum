@@ -1,3 +1,9 @@
+/**
+ * x402 fetch wrapper — intercepts outgoing requests to the router URL,
+ * injects a signed USDC permit header, and retries once on 401/402 with
+ * a fresh permit if the previous one was invalidated.
+ */
+
 import { type PermitCache, shouldInvalidatePermit } from "./cache.js";
 import {
 	applyPaymentRequirement,
@@ -7,13 +13,21 @@ import {
 } from "./payment-required.js";
 import type { CachedPermit, RouterConfig, SignPermit } from "./types.js";
 
+/** Configuration for {@link createX402Fetch}. */
 interface X402FetchOptions {
+	/** Underlying fetch to delegate non-x402 requests to (default: global `fetch`). */
 	baseFetch?: typeof fetch;
+	/** Resolves the router config (payment target, EIP-712 domain). */
 	resolveRouterConfig: (signal?: AbortSignal) => Promise<RouterConfig>;
+	/** Cache for signed permits. */
 	permitCache: PermitCache;
+	/** Maximum USDC value to authorize per permit. */
 	permitCap: string;
+	/** 0x-prefixed private key for permit signing. */
 	privateKey: string;
+	/** Base URL of the x402 router. */
 	routerUrl: string;
+	/** Function that signs a new ERC-2612 permit. */
 	signer: SignPermit;
 }
 
@@ -65,6 +79,16 @@ async function extractErrorResponse(response: Response) {
 	}
 }
 
+/**
+ * Create a `fetch` drop-in replacement that auto-injects x402 payment headers.
+ *
+ * Requests to the router origin get a signed permit header. On a 401/402
+ * response indicating an invalid permit, the cache is cleared and the
+ * request is retried with a fresh permit. Non-router requests pass through.
+ *
+ * @param options - Router URL, signer, cache, and permit configuration.
+ * @returns A `fetch`-compatible function.
+ */
 export function createX402Fetch(options: X402FetchOptions): typeof fetch {
 	const baseFetch = options.baseFetch ?? fetch;
 	const routerOrigin = normalizeRouterOrigin(options.routerUrl);

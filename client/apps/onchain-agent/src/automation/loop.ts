@@ -1,9 +1,10 @@
 /**
  * Automation loop — periodic tick scheduler for multi-realm on-chain automation.
  *
- * Each tick discovers owned realms, fetches their state, plans buildings and
- * production, executes transactions, offloads resource arrivals, and writes a
- * status file. The loop runs on a fixed interval and silently retries failures.
+ * Each tick: discover owned realms → fetch balances/buildings → plan builds
+ * and production → execute transactions → offload arrivals → claim
+ * hyperstructure points → write status file. Failures are silently retried
+ * on the next interval.
  */
 import { writeFileSync } from "fs";
 import { join } from "path";

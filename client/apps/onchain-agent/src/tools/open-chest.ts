@@ -1,9 +1,9 @@
 /**
- * open_chest tool — open a relic chest adjacent to one of your armies.
+ * `open_chest` tool — open a relic chest adjacent to one of your armies.
  *
- * Takes an army entity ID and the chest's world hex coordinates.
- * The army must be 1 hex from the chest.
- * Opening grants relics and victory points.
+ * The army must be exactly 1 hex from the chest. Opening grants relics
+ * and victory points. Tracks opened chests to prevent double-opens
+ * before Torii indexes the change.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";

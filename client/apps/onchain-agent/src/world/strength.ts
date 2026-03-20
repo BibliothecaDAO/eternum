@@ -1,12 +1,11 @@
 /**
- * Combat strength calculation.
+ * Combat strength calculation — a universal number for any army or guard slot.
  *
- * Universal strength number for any army or guard slot.
- * Factors: troop count × tier multiplier.
- * Biome modifier shown separately as context.
+ * Formula: `troop count × tier multiplier`. Biome modifier is resolved but
+ * returned separately as display context, not baked into the base value.
  *
- * Tier values match the combat simulator:
- *   T1 = 100, T2 = 250 (2.5×), T3 = 700 (7×)
+ * Tier values match the on-chain combat simulator:
+ *   T1 = 100, T2 = 250 (2.5x), T3 = 700 (7x)
  */
 
 // ── Tier multipliers ─────────────────────────────────────────────────

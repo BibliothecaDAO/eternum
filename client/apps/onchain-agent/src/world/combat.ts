@@ -1,8 +1,8 @@
 /**
- * Standalone combat simulator — same math as the Cairo contracts and
- * packages/core CombatSimulator, but with zero Dojo ECS dependencies.
+ * Standalone combat simulator — identical math to the Cairo contracts and
+ * `packages/core` CombatSimulator, but with zero Dojo ECS dependencies.
  *
- * Takes plain numbers in, returns plain numbers out.
+ * Pure function: plain numbers in, deterministic result out.
  */
 
 // ── Tier damage values (match on-chain t1_damage_value / multipliers) ──

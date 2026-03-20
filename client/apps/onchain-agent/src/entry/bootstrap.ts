@@ -1,6 +1,7 @@
 /**
- * Bootstrap utilities: seed a world data directory with default agent files
- * on first run without overwriting any files that already exist.
+ * Bootstrap utilities — seed a world data directory with default agent files
+ * on first run. Existing files are never overwritten, so operator edits
+ * survive restarts.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";

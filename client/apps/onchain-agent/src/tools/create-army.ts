@@ -1,9 +1,9 @@
 /**
- * create_army — create an army at a realm you own.
+ * `create_army` tool — create an army at an owned realm.
  *
- * Pick the realm (row:col), troop type, and tier.
- * Deploys all available troops of that type/tier (up to 10K).
- * Auto-selects the spawn direction (first open adjacent hex).
+ * Deploys troops of the chosen type/tier (up to 10K, defaulting to all
+ * available). Auto-selects the biome-optimal troop type when omitted.
+ * Spawns at the first open adjacent hex.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";

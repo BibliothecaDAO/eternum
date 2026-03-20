@@ -1,9 +1,13 @@
 /**
  * Entry point for the Eternum autonomous agent.
  *
- * Wires config loading, world discovery, Cartridge auth, EternumClient/Provider,
- * all game tools, the map loop, the automation loop, context pruning, and the
- * tick-driven agent loop. Uses pi-agent-core directly (no game-agent framework).
+ * Orchestrates the full startup and run sequence: config → world discovery →
+ * Cartridge auth → EternumClient/Provider → game tools → map loop →
+ * automation loop → context pruning → tick-driven agent loop.
+ *
+ * Uses pi-agent-core directly (no game-agent framework).
+ *
+ * @module
  */
 
 import { Agent } from "@mariozechner/pi-agent-core";
@@ -61,16 +65,15 @@ import { createMapQueryTool } from "../tools/map-query.js";
 import type { ToolError } from "./game-state.js";
 import type { AutomationStatusMap } from "../automation/status.js";
 
-// ---------------------------------------------------------------------------
-// Context pruning — when messages exceed a caller-provided threshold, drops
-// older messages and uses the agent's model to summarize what was lost.
-// ---------------------------------------------------------------------------
+// ── Context pruning ─────────────────────────────────────────────────
+// When messages exceed a character threshold, older messages are dropped
+// and summarized by the agent's model to preserve situational awareness.
 
 /**
- * Estimate the total character count across all messages in the context window.
+ * Estimate total character count across all messages.
  *
  * @param messages - Current agent message history.
- * @returns Approximate total character count.
+ * @returns Approximate character count (text blocks only).
  */
 function estimateChars(messages: AgentMessage[]): number {
   let total = 0;
@@ -88,13 +91,12 @@ function estimateChars(messages: AgentMessage[]): number {
 }
 
 /**
- * Partition a message array into oldest messages to discard and most recent
- * messages to retain, targeting at most `PRUNE_TARGET_CHARS` characters in
- * the kept slice.
+ * Split messages into `dropped` (oldest) and `kept` (most recent) slices,
+ * keeping at most `target` characters in the retained portion.
  *
  * @param messages - Full message history, oldest first.
- * @returns An object with `dropped` (oldest messages) and `kept` (most recent
- *          messages that fit within the target character budget).
+ * @param target - Maximum characters to retain (default 200 000).
+ * @returns `{ dropped, kept }` — oldest messages to summarize and newest to preserve.
  */
 function splitMessages(
   messages: AgentMessage[],
@@ -127,14 +129,17 @@ function splitMessages(
 }
 
 /**
- * Prune the message history when it exceeds `MAX_CONTEXT_CHARS`.
+ * Prune message history when it exceeds `maxChars`.
  *
- * Summarizes dropped messages using the agent's own model and prepends the
- * summary as a synthetic `"user"` message so the agent retains situational
- * awareness. Falls back to a short placeholder if summarization fails.
+ * Drops the oldest messages, summarizes them via `model`, and prepends
+ * the summary as a synthetic `"user"` message so the agent retains
+ * situational awareness. Falls back to a short placeholder if
+ * summarization fails.
  *
  * @param messages - Current message history to potentially compact.
- * @param model    - Language model used to generate the compaction summary.
+ * @param model - Language model used to generate the compaction summary.
+ * @param maxChars - Trigger threshold; no pruning if total characters are below this.
+ * @param pruneTarget - Character budget for the retained portion after pruning.
  * @returns The (possibly pruned and prepended) message array.
  */
 async function pruneMessages(
@@ -200,17 +205,16 @@ async function pruneMessages(
   return kept;
 }
 
-// ---------------------------------------------------------------------------
-// Tick prompt builder
-// ---------------------------------------------------------------------------
+// ── Tick prompt builder ─────────────────────────────────────────────
 
 /**
- * Build the per-tick user prompt sent to the agent at the start of each turn,
- * embedding the current map snapshot.
+ * Build the per-tick user prompt sent to the agent at the start of each turn.
  *
- * @param mapCtx - Shared map context holding the latest tile snapshot.
- * @returns The formatted tick prompt, including the rendered map text and
- *          strategic instructions for the turn.
+ * Embeds the protocol briefing (armies, structures, threats, opportunities)
+ * and reminds the agent of its available actions.
+ *
+ * @param mapCtx - Shared map context holding the latest protocol and snapshot.
+ * @returns Formatted tick prompt ready to pass to `agent.prompt()`.
  */
 function buildTickPrompt(mapCtx: MapContext): string {
   const briefing = mapCtx.protocol?.briefing() ?? "Map not yet loaded.";
@@ -225,24 +229,22 @@ function buildTickPrompt(mapCtx: MapContext): string {
   ].join("\n");
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
+// ── Main ────────────────────────────────────────────────────────────
 
 /**
  * Bootstrap and run the Eternum autonomous agent.
  *
- * Runs the full startup sequence: load config, optionally discover the world
- * via the factory, authenticate with Cartridge, create `EternumClient` and
- * `EternumProvider`, wire all game tools, start the background map and
- * automation loops, then enter the tick loop on a fixed interval. Opens an
- * interactive stdin readline interface so an operator can message the agent at
- * runtime. Registers `SIGINT`/`SIGTERM` handlers for graceful shutdown.
+ * Startup sequence:
+ * 1. Load config and optionally discover the world via the factory.
+ * 2. Authenticate with Cartridge and create `EternumClient` / `EternumProvider`.
+ * 3. Wire all game tools (inspect, move, attack, create army, etc.).
+ * 4. Start the background map and automation loops.
+ * 5. Enter the tick-driven agent loop on a fixed interval.
+ * 6. Open an interactive stdin readline for operator messages.
+ * 7. Register `SIGINT`/`SIGTERM` handlers for graceful shutdown.
  *
- * @throws If config is invalid (missing `WORLD_NAME` and explicit URL pair),
- *         world discovery fails (network/factory error), the manifest file is
- *         missing for the chain, Cartridge authentication fails or times out,
- *         or the Torii client/game config cannot be initialized.
+ * @throws {Error} If config is invalid, world discovery fails, the manifest
+ *   is missing, Cartridge auth times out, or the Torii client cannot initialize.
  */
 export async function main() {
   const config = loadConfig();

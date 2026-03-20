@@ -1,12 +1,16 @@
 /**
- * Shared transaction context for all tools that execute on-chain writes.
+ * Shared transaction context and error extraction for all tools that
+ * execute on-chain writes.
  */
 
 import type { EternumProvider } from "@bibliothecadao/provider";
 import type { AccountInterface } from "starknet";
 
+/** Provider + signer pair threaded through every tool that submits transactions. */
 export interface TxContext {
+  /** Eternum provider for building and submitting StarkNet transactions. */
   provider: EternumProvider;
+  /** Authenticated account used to sign transactions. */
   signer: AccountInterface;
 }
 

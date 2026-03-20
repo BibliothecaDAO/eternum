@@ -1,9 +1,9 @@
 /**
- * inspect_tile tool — fetch detailed information about any tile on the map.
+ * `inspect_tile` tool — deep drill-down on any tile by world hex coordinate.
  *
- * Supports structures (guards, resources, level), explorers (troops, strength, stamina),
- * chests (open/unopened), quests, spires, and empty explored tiles. Returns a
- * human-readable summary the agent can act on immediately.
+ * Returns a human-readable summary covering structures (guards, resources,
+ * level), explorers (troops, strength, stamina), chests (open/unopened),
+ * quests, spires, and empty explored tiles.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";

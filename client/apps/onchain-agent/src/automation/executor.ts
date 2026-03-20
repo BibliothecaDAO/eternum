@@ -1,8 +1,10 @@
 /**
- * Realm tick executor — submits on-chain transactions for a single automation cycle.
+ * Realm tick executor — submits on-chain transactions for a single
+ * automation cycle.
  *
- * Handles buildings, upgrades, and production in a fixed priority order to prevent
- * resource costs from being double-spent across concurrent operations.
+ * Priority order: buildings (sequential) → upgrade → production.
+ * Buildings run first to prevent resource costs from being consumed
+ * by parallel production burns.
  */
 import type { EternumProvider } from "@bibliothecadao/provider";
 import type { SlotResult } from "./placement.js";

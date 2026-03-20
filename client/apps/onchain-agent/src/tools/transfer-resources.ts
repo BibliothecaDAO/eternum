@@ -1,11 +1,12 @@
 /**
- * transfer_resources — send resources from one of your structures to another.
+ * `transfer_resources` tool — send resources between owned structures via
+ * donkey caravan.
  *
- * Delivers resources by donkey caravan. Donkeys are consumed based on total weight.
- * Travel time scales with distance.
+ * Donkeys are consumed based on total cargo weight. Travel time scales
+ * with hex distance. Resources auto-offload on arrival.
  *
- * Weights: standard resources ~1kg, troops ~5kg, wheat/fish/essence/ancient fragment ~0.1kg,
- * donkeys and lords 0kg. Each donkey carries 50kg.
+ * Weights: standard ~1kg, troops ~5kg, wheat/fish/essence ~0.1kg,
+ * donkeys/lords 0kg. Each donkey carries 50kg.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";

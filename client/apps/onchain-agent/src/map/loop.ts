@@ -1,10 +1,8 @@
 /**
- * Background map refresh loop.
- *
- * Fetches all tiles from Torii every `intervalMs` (default 10 s),
- * re-renders the ASCII map, updates `MapContext.snapshot`, and writes the
- * result to `ctx.filePath` (typically `<dataDir>/map.txt`). Skips disk
- * writes when `filePath` is null (e.g. in tests).
+ * Background map refresh loop — fetches all tiles from Torii every
+ * `intervalMs` (default 10s), re-renders the ASCII map, updates
+ * {@link MapContext}, and writes the result to disk. Skips disk writes
+ * when `filePath` is null (e.g. in tests).
  */
 
 import { writeFileSync } from "fs";

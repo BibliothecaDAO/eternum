@@ -1,14 +1,11 @@
 /**
- * move_army tool — move one of your explorers to a target tile.
+ * `move_army` tool — move one of your explorers to a target tile.
  *
- * Takes an army entity ID and a target world hex coordinate.
- * Uses A* pathfinding over explored tiles, converts to a direction array,
- * and executes via the provider's explorer_travel.
+ * Pathfinds via A* over explored tiles, splits the route into travel
+ * (explored) and explore (unexplored) segments, and executes each
+ * via the provider's `explorer_travel` / `explorer_explore`.
  *
- * Output answers:
- * - Did the move succeed?
- * - Where am I now?
- * - How much stamina do I have left?
+ * Output: success/failure, new position, stamina remaining, adjacent tiles.
  */
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";

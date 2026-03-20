@@ -1,6 +1,9 @@
 /**
- * Agent configuration: reads environment variables (plus an optional `.env`
- * file in the current working directory) and assembles an {@link AgentConfig}.
+ * Agent configuration — reads environment variables (plus an optional `.env`
+ * in the current working directory) and assembles an {@link AgentConfig}.
+ *
+ * Supports two modes: `WORLD_NAME` auto-discovery or explicit
+ * `TORII_URL` + `WORLD_ADDRESS`.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -32,43 +35,39 @@ function loadDotenv() {
 }
 
 /**
- * All configuration values the agent needs to connect to an Eternum world and
- * drive the tick loop.
- *
- * @property chain              - Target network (`"mainnet"`, `"sepolia"`, `"slot"`, `"slottest"`, or `"local"`).
- *                                Read from `CHAIN` env var; defaults to `"mainnet"`.
- * @property worldName          - Cartridge world slug (e.g. `"xbt5"`). When set, `toriiUrl`
- *                                and `worldAddress` are resolved automatically via `discoverWorld()`.
- * @property rpcUrl             - Starknet RPC endpoint. Falls back to per-chain Cartridge defaults.
- * @property toriiUrl           - Torii indexer URL. Empty string in `worldName` auto-discovery
- *                                mode; populated by `discoverWorld()` at startup.
- * @property worldAddress       - 0x-prefixed 64-hex-digit world contract address. Empty string
- *                                in `worldName` auto-discovery mode; populated by `discoverWorld()`.
- * @property chainId            - Starknet chain identifier (e.g. `"SN_MAIN"`). Falls back to
- *                                per-chain defaults.
- * @property modelProvider      - LLM provider name (default `"anthropic"`).
- * @property modelId            - Model identifier (default `"claude-sonnet-4-20250514"`).
- * @property tickIntervalMs     - Milliseconds between agent ticks (default 60 000).
- * @property dataDir            - Local directory for soul, tasks, map, and session data.
- *                                Set to `~/.axis/worlds/<worldAddress>`, or
- *                                `~/.axis/worlds/_pending` before discovery resolves.
- * @property vrfProviderAddress - Starknet address of the VRF provider contract. Uses a
- *                                hardcoded default; override via `VRF_PROVIDER_ADDRESS` env var.
+ * All configuration values the agent needs to connect to an Eternum world
+ * and drive the tick loop.
  */
 interface AgentConfig {
-  // World connection
+  // ── World connection ──
+
+  /** Target network. Read from `CHAIN` env var; defaults to `"mainnet"`. */
   chain: Chain;
+  /** Cartridge world slug (e.g. `"xbt5"`). When set, `toriiUrl` and `worldAddress` are resolved via `discoverWorld()`. */
   worldName?: string;
+  /** Starknet RPC endpoint. Falls back to per-chain Cartridge defaults. */
   rpcUrl: string;
+  /** Torii indexer URL. Empty before `discoverWorld()` resolves in auto-discovery mode. */
   toriiUrl: string;
+  /** 0x-prefixed 64-hex-digit world contract address. Empty before `discoverWorld()` resolves. */
   worldAddress: string;
+  /** Starknet chain identifier (e.g. `"SN_MAIN"`). Falls back to per-chain defaults. */
   chainId: string;
-  // Agent
+
+  // ── Agent ──
+
+  /** LLM provider name (default `"anthropic"`). */
   modelProvider: string;
+  /** Model identifier (default `"claude-sonnet-4-20250514"`). */
   modelId: string;
+  /** Milliseconds between agent ticks (default 60 000). */
   tickIntervalMs: number;
+  /** Local directory for soul, tasks, map, and session data. Resolves to `~/.axis/worlds/<worldAddress>`. */
   dataDir: string;
-  // VRF
+
+  // ── VRF ──
+
+  /** Starknet address of the VRF provider contract. Override via `VRF_PROVIDER_ADDRESS` env var. */
   vrfProviderAddress: string;
 }
 
@@ -100,16 +99,11 @@ const DEFAULT_CHAIN_ID: Record<string, string> = {
 };
 
 /**
- * Load the agent configuration from environment variables (and `.env` if present).
+ * Load agent configuration from environment variables and an optional `.env` file.
  *
- * Supports two modes:
- * 1. `WORLD_NAME` only — `toriiUrl` and `worldAddress` are left empty and
- *    resolved later via `discoverWorld()` in `main()`.
- * 2. `TORII_URL` + `WORLD_ADDRESS` — explicit values; skips discovery.
- *
- * @returns An {@link AgentConfig} with all fields populated. In `WORLD_NAME`-only
- *          mode, `toriiUrl` and `worldAddress` are empty until `discoverWorld()` runs.
- * @throws If neither `WORLD_NAME` nor the `TORII_URL`/`WORLD_ADDRESS` pair is set.
+ * @returns A fully populated {@link AgentConfig}. In `WORLD_NAME`-only mode,
+ *   `toriiUrl` and `worldAddress` are empty strings until `discoverWorld()` resolves them.
+ * @throws {Error} If neither `WORLD_NAME` nor the `TORII_URL`/`WORLD_ADDRESS` pair is set.
  */
 export function loadConfig(): AgentConfig {
   loadDotenv();

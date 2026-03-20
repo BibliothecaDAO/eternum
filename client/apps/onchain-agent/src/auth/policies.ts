@@ -1,10 +1,10 @@
 /**
- * Cartridge Controller session policy builder for the Eternum on-chain game.
+ * Cartridge Controller session policy builder — reads the Dojo manifest and
+ * chain-specific address files to build the complete set of contract method
+ * policies for an authenticated agent session.
  *
- * Reads the Dojo deployment manifest and chain-specific address files to build
- * the complete set of contract method policies for an authenticated agent
- * session. Supports mainnet, Sepolia, Slot, Slottest, and local deployments
- * via the {@link Chain} discriminant.
+ * Supports mainnet, Sepolia, Slot, Slottest, and local deployments via
+ * the {@link Chain} discriminant.
  */
 
 import { getManifest, getAddresses } from "./embedded-data.js";

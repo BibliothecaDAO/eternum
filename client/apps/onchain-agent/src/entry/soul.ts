@@ -1,6 +1,6 @@
 /**
- * Utilities for loading the agent's soul and task lists from the data directory
- * and assembling them into a system prompt.
+ * Soul and task-list loader — reads Markdown files from the data directory,
+ * strips YAML frontmatter, and assembles the agent's system prompt.
  */
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";

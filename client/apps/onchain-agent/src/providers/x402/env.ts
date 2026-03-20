@@ -1,3 +1,8 @@
+/**
+ * Environment loader — validates and normalizes `X402_*` env vars into
+ * a typed {@link X402EnvConfig}.
+ */
+
 import type { X402EnvConfig } from "./types.js";
 
 const PRIVATE_KEY_REGEX = /^0[xX][0-9a-fA-F]{64}$/;
@@ -10,8 +15,12 @@ const DEFAULT_PAYMENT_HEADER = "PAYMENT-SIGNATURE";
 const DEFAULT_MODEL_ID = "kimi-k2.5";
 const DEFAULT_MODEL_NAME = "Kimi K2.5";
 
+/** Any object that provides string-keyed environment variables. */
 export type EnvSource = Record<string, string | undefined>;
+
+/** Options for {@link loadX402Env}. */
 export interface LoadX402EnvOptions {
+	/** When `true` (default), throw if `X402_PRIVATE_KEY` is missing. */
 	requirePrivateKey?: boolean;
 }
 
@@ -46,6 +55,14 @@ function normalizePermitCap(permitCap: string): string {
 	return permitCap;
 }
 
+/**
+ * Load and validate x402 configuration from environment variables.
+ *
+ * @param env - Environment source (defaults to `process.env`).
+ * @param options - Validation options (e.g. whether to require the private key).
+ * @returns Validated {@link X402EnvConfig}.
+ * @throws {Error} If required variables are missing or malformed.
+ */
 export function loadX402Env(env: EnvSource = process.env, options: LoadX402EnvOptions = {}): X402EnvConfig {
 	const requirePrivateKey = options.requirePrivateKey ?? true;
 	const privateKeyRaw = readTrimmed(env, "X402_PRIVATE_KEY");

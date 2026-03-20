@@ -1,8 +1,10 @@
 /**
- * Snapshot parser — converts raw SQL balance+production rows into typed maps.
+ * Snapshot parser — converts raw SQL balance and production rows into
+ * typed maps.
  *
- * Produces both raw on-chain balances (safe for spending/budget) and projected
- * balances (includes unharvested production — useful for prioritisation).
+ * Produces two balance sets:
+ *   - **Raw** (on-chain) — safe for spending decisions and budget caps.
+ *   - **Projected** — includes unharvested production, useful for prioritization only.
  */
 import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
