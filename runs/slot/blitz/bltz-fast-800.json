@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23343843130-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-20T12:58:52.937Z",
-  "updatedAt": "2026-03-20T13:00:11.810Z",
+  "updatedAt": "2026-03-20T13:00:14.143Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-20T13:00:14.143Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -67,5 +68,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-fast-800.json",
     "createGameTxHash": "0x44acc97aa8af9a2c180b10c5e1734ea058ec265b64b006d330cf1e9e545ba0c",
     "worldAddress": "0x027789b19962ee296428846bcec2dc23bc305d933b732f07c32dc05eb4eedb9d"
+  },
+  "activeLease": {
+    "launchRequestId": "23343843130-1",
+    "workflowRunId": 23343843130,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-20T13:00:14.143Z",
+    "expiresAt": "2026-03-20T13:45:14.143Z"
   }
 }
