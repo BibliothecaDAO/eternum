@@ -417,6 +417,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.create_village(props);
   };
 
+  const receive_army_grant = async (
+    props: SystemProps.ReceiveArmyGrantProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.receive_army_grant(props);
+  };
+
   const open_loot_chest = async (props: SystemProps.OpenLootChestProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.open_loot_chest(props);
   };
@@ -454,6 +460,26 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     props: SystemProps.ClaimWonderProductionBonusProps,
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.claim_wonder_production_bonus(props);
+  };
+
+  const pledge_faith = async (props: SystemProps.PledgeFaithProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.pledge_faith(props);
+  };
+
+  const remove_faith = async (props: SystemProps.RemoveFaithProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.remove_faith(props);
+  };
+
+  const update_wonder_ownership = async (
+    props: SystemProps.UpdateWonderOwnershipProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.update_wonder_ownership(props);
+  };
+
+  const update_structure_ownership = async (
+    props: SystemProps.UpdateStructureOwnershipProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.update_structure_ownership(props);
   };
 
   const start_quest = async (props: SystemProps.StartQuestProps): Promise<GetTransactionReceiptResponse> => {
@@ -523,12 +549,17 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
     create_village: withAuth(create_village),
+    receive_army_grant: withAuth(receive_army_grant),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
     execute_realm_production_plan: withAuth(execute_realm_production_plan),
     create_building: withAuth(create_building),
     claim_wonder_production_bonus: withAuth(claim_wonder_production_bonus),
+    pledge_faith: withAuth(pledge_faith),
+    remove_faith: withAuth(remove_faith),
+    update_wonder_ownership: withAuth(update_wonder_ownership),
+    update_structure_ownership: withAuth(update_structure_ownership),
 
     uuid: uuid,
 

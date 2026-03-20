@@ -14,6 +14,10 @@ export interface CreateVillageProps extends SystemSigner {
   village_pass_address: string;
 }
 
+export interface ReceiveArmyGrantProps extends SystemSigner {
+  village_id: BigNumberish;
+}
+
 export interface MintAndSettleTestRealmProps extends SystemSigner {
   token_id: BigNumberish;
   realms_address: string;
@@ -362,6 +366,23 @@ export interface RemovePlayerFromWhitelist extends SystemSigner {
 export interface ClaimWonderProductionBonusProps extends SystemSigner {
   structure_id: BigNumberish;
   wonder_structure_id: BigNumberish;
+}
+
+export interface PledgeFaithProps extends SystemSigner {
+  structure_id: BigNumberish;
+  wonder_id: BigNumberish;
+}
+
+export interface RemoveFaithProps extends SystemSigner {
+  structure_id: BigNumberish;
+}
+
+export interface UpdateWonderOwnershipProps extends SystemSigner {
+  wonder_id: BigNumberish;
+}
+
+export interface UpdateStructureOwnershipProps extends SystemSigner {
+  structure_id: BigNumberish;
 }
 
 export interface MintStartingResources extends SystemSigner {

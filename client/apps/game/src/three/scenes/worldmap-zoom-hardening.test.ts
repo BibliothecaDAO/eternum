@@ -224,4 +224,40 @@ describe("evaluateChunkVisibilityAnomaly", () => {
     expect(final.offscreenChunkFrames).toBe(threshold);
     expect(final.shouldTriggerRecovery).toBe(true);
   });
+
+  it("does not trigger offscreen recovery while current padded terrain bounds remain visible", () => {
+    // When the current chunk IS visible (e.g. padded terrain bounds include it),
+    // recovery must not trigger regardless of accumulated offscreen frames.
+    const result = evaluateChunkVisibilityAnomaly({
+      isCurrentChunkVisible: true,
+      offscreenChunkFrames: 100, // high accumulated count
+      offscreenChunkFrameThreshold: 3,
+    });
+
+    expect(result.offscreenChunkFrames).toBe(0);
+    expect(result.shouldTriggerRecovery).toBe(false);
+  });
+});
+
+describe("terrain recovery requires sustained evidence, not instantaneous bounds", () => {
+  it("does not trigger terrain self-heal when terrain counts are stable but coarse bounds disagree", () => {
+    // Scenario: terrain instance count is healthy relative to reference,
+    // so even if hypothetical coarse bounds might suggest something is wrong,
+    // the frame-based anomaly detector should NOT trigger recovery.
+    const result = evaluateTerrainVisibilityAnomaly({
+      terrainInstances: 450, // healthy count
+      terrainReferenceInstances: 500, // close to current
+      zeroTerrainFrames: 0,
+      lowTerrainFrames: 0,
+      zeroTerrainFrameThreshold: 4,
+      lowTerrainFrameThreshold: 4,
+      minRetainedTerrainFraction: 0.45,
+      minReferenceTerrainInstances: 100,
+    });
+
+    expect(result.shouldTriggerRecovery).toBe(false);
+    expect(result.recoveryReason).toBeNull();
+    expect(result.zeroTerrainFrames).toBe(0);
+    expect(result.lowTerrainFrames).toBe(0);
+  });
 });

@@ -1,73 +1,72 @@
-import { Box3, Color, InstancedBufferGeometry, Mesh, Scene, ShaderMaterial, Vector3 } from "three";
-import { createPathInstancedGeometry, PathInstanceBuffers } from "../geometry/path-geometry";
+import {
+  Box3,
+  BufferGeometry,
+  Color,
+  Float32BufferAttribute,
+  Group,
+  LineBasicMaterial,
+  LineSegments,
+  Scene,
+  Vector3,
+} from "three";
 import {
   incrementWorldmapRenderCounter,
   recordWorldmapRenderDuration,
   setWorldmapRenderGauge,
 } from "../perf/worldmap-render-diagnostics";
-import {
-  getPathLineMaterial,
-  updatePathLineMaterial,
-  updatePathLineResolution,
-  disposePathLineMaterial,
-  updatePathLineProgress,
-} from "../shaders/path-line-material";
+import type { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import {
   ArmyPath,
   calculatePathLength,
   computePathBounds,
   createPathSegments,
   DEFAULT_PATH_CONFIG,
-  PATH_OPACITY,
   PathDisplayState,
   PathRenderConfig,
 } from "../types/path";
-import { getVisibilityManager } from "../utils/centralized-visibility-manager";
+import { resolvePathReadabilityPolicy } from "../scenes/path-readability-policy";
+import { resolvePathBatches } from "./path-batching-policy";
+
+interface PathBatchObject {
+  boundingBox: Box3;
+  entityIds: Set<number>;
+  line: LineSegments;
+}
 
 /**
  * PathRenderer - scene-owned manager for rendering army movement paths
  *
- * Uses instanced rendering to draw all paths with a single draw call.
- * Paths are visualized as animated dashed lines showing movement direction.
+ * Phase 3 simplification: use stock line materials so experimental WebGPU
+ * scenes no longer depend on custom path shaders while the higher-fidelity
+ * material rewrite is still pending.
  */
 export class PathRenderer {
   private scene: Scene | null = null;
-  private mesh: Mesh | null = null;
-  private material: ShaderMaterial | null = null;
-  private buffers: PathInstanceBuffers;
+  private mesh: Group | null = null;
+  private readonly batchObjects: PathBatchObject[] = [];
   private config: PathRenderConfig;
 
   // Active paths indexed by entity ID
   private activePaths: Map<number, ArmyPath> = new Map();
 
-  // Segment allocation tracking
-  private nextSegmentIndex = 0;
-  private freeSegmentRanges: Array<{ start: number; count: number }> = [];
-
   // Currently selected/highlighted path
   private selectedEntityId: number | null = null;
-
-  // Reusable vectors to avoid allocations
-  private readonly _tempVec3 = new Vector3();
-  private readonly _tempColor = new Color();
-
-  // Resize handler reference for cleanup
-  private resizeHandler: (() => void) | null = null;
 
   // Frustum culling tracking
   private culledPaths: Set<number> = new Set();
   private lastCullFrame = 0;
   private cullCheckInterval = 3; // Check every N frames for performance
+  private visibilityManager?: Pick<CentralizedVisibilityManager, "isBoxVisible">;
 
-  // Compaction tracking
-  private fragmentationThreshold = 0.3; // Compact when 30%+ of buffer is fragmented
-  private lastCompactTime = 0;
-  private compactCooldown = 5000; // Min ms between compactions
   private isDisposed = false;
+
+  // Dirty-flag deferred rebuild: coalesce multiple state changes into a single
+  // rebuildPathBatches call on the next animation frame.
+  private _batchesDirty = false;
+  private _rebuildFrameHandle: number | null = null;
 
   constructor(config: Partial<PathRenderConfig> = {}) {
     this.config = { ...DEFAULT_PATH_CONFIG, ...config };
-    this.buffers = new PathInstanceBuffers(this.config.maxSegments);
   }
 
   /**
@@ -82,31 +81,18 @@ export class PathRenderer {
 
     this.scene = scene;
 
-    // Create the instanced mesh
-    const geometry = createPathInstancedGeometry(this.buffers);
-    this.material = getPathLineMaterial();
-
-    // Set initial instance count to 0 to avoid drawing until we have data
-    geometry.instanceCount = 0;
-
-    this.mesh = new Mesh(geometry, this.material);
-    this.mesh.frustumCulled = false; // We handle culling ourselves
-    this.mesh.renderOrder = 10; // Render after terrain but before UI
-    this.mesh.visible = false; // Hidden until we have paths
-
-    // Don't add to scene yet - will be added when first path is created
-    // this.scene.add(this.mesh);
-
-    // Set initial resolution and add resize listener
-    if (typeof window !== "undefined") {
-      updatePathLineResolution(this.material, window.innerWidth, window.innerHeight);
-
-      // Add resize listener
-      this.resizeHandler = () => {
-        updatePathLineResolution(this.material, window.innerWidth, window.innerHeight);
-      };
-      window.addEventListener("resize", this.resizeHandler);
+    if (!this.mesh) {
+      this.mesh = new Group();
+      this.mesh.visible = false;
     }
+
+    if (!this.mesh.parent) {
+      this.scene.add(this.mesh);
+    }
+  }
+
+  public setVisibilityManager(visibilityManager?: Pick<CentralizedVisibilityManager, "isBoxVisible">): void {
+    this.visibilityManager = visibilityManager;
   }
 
   /**
@@ -123,52 +109,32 @@ export class PathRenderer {
     displayState: PathDisplayState = "selected",
   ): void {
     const createStartedAt = performance.now();
-    // Remove existing path for this entity
+
     if (this.activePaths.has(entityId)) {
       this.removePath(entityId);
     }
 
-    // Create segments from positions
     const segments = createPathSegments(positions);
     if (segments.length === 0) {
       return;
     }
 
-    // Allocate segment slots
-    const startIndex = this.allocateSegments(segments.length);
-    if (startIndex === -1) {
-      console.warn("[PathRenderer] No space for path segments");
-      return;
-    }
-
-    // Use provided color
-    const opacity = PATH_OPACITY[displayState];
-
-    // Calculate path metrics
-    const totalLength = calculatePathLength(segments);
-    const boundingBox = computePathBounds(segments);
-
-    // Create path data
     const path: ArmyPath = {
       entityId,
       segments,
-      totalLength,
+      totalLength: calculatePathLength(segments),
       displayState,
       progress: 0,
-      color: color.clone(), // Clone to avoid reference issues
-      boundingBox,
-      startIndex,
+      color: color.clone(),
+      boundingBox: computePathBounds(segments),
+      startIndex: 0,
       segmentCount: segments.length,
     };
 
-    // Write segment data to buffers
-    this.writeSegmentsToBuffers(path);
-
-    // Store path
     this.activePaths.set(entityId, path);
+    this.culledPaths.delete(entityId);
+    this.markBatchesDirty();
 
-    // Update instance count
-    this.updateInstanceCount();
     incrementWorldmapRenderCounter("pathCreateCalls");
     recordWorldmapRenderDuration("createPath", performance.now() - createStartedAt);
     setWorldmapRenderGauge("activePaths", this.activePaths.size);
@@ -182,18 +148,12 @@ export class PathRenderer {
     if (!path) return;
 
     path.progress = Math.max(0, Math.min(1, progress));
-
-    // Update the global progress uniform for the selected path
-    if (entityId === this.selectedEntityId) {
-      updatePathLineProgress(this.material, path.progress);
-    }
   }
 
   /**
    * Set the selected/highlighted path
    */
   public setSelectedPath(entityId: number | null): void {
-    // Hide previous selection
     if (this.selectedEntityId !== null && this.selectedEntityId !== entityId) {
       const prevPath = this.activePaths.get(this.selectedEntityId);
       if (prevPath && prevPath.displayState === "selected") {
@@ -203,15 +163,11 @@ export class PathRenderer {
 
     this.selectedEntityId = entityId;
 
-    // Show new selection
     if (entityId !== null) {
       const path = this.activePaths.get(entityId);
       if (path) {
         this.setPathDisplayState(entityId, "selected");
-        updatePathLineProgress(this.material, path.progress);
       }
-    } else {
-      updatePathLineProgress(this.material, 0);
     }
   }
 
@@ -223,11 +179,8 @@ export class PathRenderer {
     if (!path) return;
 
     path.displayState = state;
-    const opacity = PATH_OPACITY[state];
 
-    // Update opacity in buffer
-    this.buffers.setOpacityRange(path.startIndex, path.segmentCount, opacity);
-    this.buffers.markOpacityNeedsUpdate();
+    this.markBatchesDirty();
   }
 
   /**
@@ -237,31 +190,16 @@ export class PathRenderer {
     const path = this.activePaths.get(entityId);
     if (!path) return;
 
-    // Clear segment data (set opacity to 0)
-    for (let i = 0; i < path.segmentCount; i++) {
-      this.buffers.clearSegment(path.startIndex + i);
-    }
-    this.buffers.markOpacityNeedsUpdate();
-
-    // Return segments to free pool
-    this.freeSegments(path.startIndex, path.segmentCount);
-
-    // Remove from active paths and culled set
     this.activePaths.delete(entityId);
     this.culledPaths.delete(entityId);
 
-    // Clear selection if this was selected
     if (this.selectedEntityId === entityId) {
       this.selectedEntityId = null;
     }
 
-    this.updateInstanceCount();
-    setWorldmapRenderGauge("activePaths", this.activePaths.size);
+    this.markBatchesDirty();
 
-    // Auto-compact if fragmentation is high
-    if (this.shouldCompact()) {
-      this.compact();
-    }
+    setWorldmapRenderGauge("activePaths", this.activePaths.size);
   }
 
   /**
@@ -281,10 +219,9 @@ export class PathRenderer {
   /**
    * Update animation and frustum culling (call each frame)
    */
-  public update(deltaTime: number): void {
-    updatePathLineMaterial(this.material, deltaTime);
+  public update(_deltaTime: number): void {
+    this.flushDirtyBatches();
 
-    // Perform frustum culling periodically
     this.lastCullFrame++;
     if (this.lastCullFrame >= this.cullCheckInterval) {
       this.lastCullFrame = 0;
@@ -298,48 +235,37 @@ export class PathRenderer {
   private updateFrustumCulling(): void {
     if (this.activePaths.size === 0) return;
 
-    const visibilityManager = getVisibilityManager();
-    let needsUpdate = false;
+    if (!this.visibilityManager) {
+      this.culledPaths.clear();
+      this.batchObjects.forEach((batch) => {
+        batch.line.visible = true;
+      });
+      return;
+    }
 
-    for (const [entityId, path] of this.activePaths) {
-      const isVisible = visibilityManager.isBoxVisible(path.boundingBox);
-      const wasCulled = this.culledPaths.has(entityId);
-
-      if (!isVisible && !wasCulled) {
-        // Path just became culled - set opacity to 0
-        this.culledPaths.add(entityId);
-        this.buffers.setOpacityRange(path.startIndex, path.segmentCount, 0);
-        needsUpdate = true;
-      } else if (isVisible && wasCulled) {
-        // Path just became visible - restore opacity
-        this.culledPaths.delete(entityId);
-        const opacity = PATH_OPACITY[path.displayState];
-        this.buffers.setOpacityRange(path.startIndex, path.segmentCount, opacity);
-        needsUpdate = true;
+    this.culledPaths.clear();
+    this.batchObjects.forEach((batch) => {
+      const isVisible = this.visibilityManager!.isBoxVisible(batch.boundingBox);
+      batch.line.visible = isVisible;
+      if (!isVisible) {
+        batch.entityIds.forEach((entityId) => this.culledPaths.add(entityId));
       }
-    }
-
-    if (needsUpdate) {
-      this.buffers.markOpacityNeedsUpdate();
-    }
+    });
   }
 
   /**
    * Handle window resize
    */
-  public onResize(width: number, height: number): void {
-    updatePathLineResolution(this.material, width, height);
-  }
+  public onResize(_width: number, _height: number): void {}
 
   /**
    * Clear all paths
    */
   public clearAll(): void {
-    for (const entityId of this.activePaths.keys()) {
+    for (const entityId of Array.from(this.activePaths.keys())) {
       this.removePath(entityId);
     }
-    this.nextSegmentIndex = 0;
-    this.freeSegmentRanges = [];
+    this.selectedEntityId = null;
     this.culledPaths.clear();
     setWorldmapRenderGauge("activePaths", 0);
   }
@@ -354,252 +280,30 @@ export class PathRenderer {
     }
     this.isDisposed = true;
 
-    this.clearAll();
-
-    // Remove resize listener
-    if (this.resizeHandler && typeof window !== "undefined") {
-      window.removeEventListener("resize", this.resizeHandler);
-      this.resizeHandler = null;
+    // Cancel any pending deferred rebuild before clearAll re-marks dirty.
+    if (this._rebuildFrameHandle !== null) {
+      cancelAnimationFrame(this._rebuildFrameHandle);
+      this._rebuildFrameHandle = null;
     }
 
+    this.clearAll();
+
+    // clearAll -> removePath -> markBatchesDirty sets the flag again.
+    // Flush synchronously so geometry/materials are disposed immediately.
+    this.flushDirtyBatches();
+
     if (this.mesh) {
-      if (this.mesh.parent) {
-        this.mesh.parent.remove(this.mesh);
-      }
-      this.mesh.geometry.dispose();
+      this.mesh.parent?.remove(this.mesh);
       this.mesh = null;
     }
 
-    disposePathLineMaterial(this.material);
-    this.material = null;
-    this.buffers.dispose();
     this.scene = null;
   }
 
-  // === Private Methods ===
+  public compact(): void {}
 
-  /**
-   * Allocate segment slots, returns start index or -1 if no space
-   */
-  private allocateSegments(count: number): number {
-    // First, try to find a free range that fits
-    for (let i = 0; i < this.freeSegmentRanges.length; i++) {
-      const range = this.freeSegmentRanges[i];
-      if (range.count >= count) {
-        const startIndex = range.start;
-
-        if (range.count === count) {
-          // Exact fit, remove range
-          this.freeSegmentRanges.splice(i, 1);
-        } else {
-          // Partial fit, shrink range
-          range.start += count;
-          range.count -= count;
-        }
-
-        return startIndex;
-      }
-    }
-
-    // No free range found, allocate from end
-    if (this.nextSegmentIndex + count <= this.config.maxSegments) {
-      const startIndex = this.nextSegmentIndex;
-      this.nextSegmentIndex += count;
-      return startIndex;
-    }
-
-    // No space available
-    return -1;
-  }
-
-  /**
-   * Return segment slots to free pool with adjacent range merging
-   */
-  private freeSegments(startIndex: number, count: number): void {
-    const newRange = { start: startIndex, count };
-
-    // Try to merge with existing ranges
-    let merged = false;
-    for (let i = 0; i < this.freeSegmentRanges.length; i++) {
-      const range = this.freeSegmentRanges[i];
-
-      // Check if new range is immediately before this range
-      if (newRange.start + newRange.count === range.start) {
-        range.start = newRange.start;
-        range.count += newRange.count;
-        merged = true;
-        this.tryMergeRanges(i);
-        break;
-      }
-
-      // Check if new range is immediately after this range
-      if (range.start + range.count === newRange.start) {
-        range.count += newRange.count;
-        merged = true;
-        this.tryMergeRanges(i);
-        break;
-      }
-    }
-
-    if (!merged) {
-      this.freeSegmentRanges.push(newRange);
-    }
-
-    // Sort ranges by start index for better allocation
-    this.freeSegmentRanges = this.freeSegmentRanges.toSorted((a, b) => a.start - b.start);
-  }
-
-  /**
-   * Try to merge a range with its neighbors
-   */
-  private tryMergeRanges(index: number): void {
-    if (index >= this.freeSegmentRanges.length) return;
-
-    const range = this.freeSegmentRanges[index];
-
-    // Try merge with next range
-    if (index + 1 < this.freeSegmentRanges.length) {
-      const next = this.freeSegmentRanges[index + 1];
-      if (range.start + range.count === next.start) {
-        range.count += next.count;
-        this.freeSegmentRanges.splice(index + 1, 1);
-      }
-    }
-
-    // Try merge with previous range
-    if (index > 0) {
-      const prev = this.freeSegmentRanges[index - 1];
-      if (prev.start + prev.count === range.start) {
-        prev.count += range.count;
-        this.freeSegmentRanges.splice(index, 1);
-      }
-    }
-  }
-
-  /**
-   * Compact the buffer by moving all paths to eliminate fragmentation
-   */
-  public compact(): void {
-    const now = performance.now();
-    if (now - this.lastCompactTime < this.compactCooldown) {
-      return; // Respect cooldown
-    }
-
-    if (this.activePaths.size === 0) {
-      this.nextSegmentIndex = 0;
-      this.freeSegmentRanges = [];
-      return;
-    }
-
-    // Collect all paths and sort by current start index
-    const paths = Array.from(this.activePaths.values()).toSorted((a, b) => a.startIndex - b.startIndex);
-
-    // Rewrite all paths contiguously
-    let newIndex = 0;
-    for (const path of paths) {
-      if (path.startIndex !== newIndex) {
-        // Move this path's data
-        path.startIndex = newIndex;
-        this.writeSegmentsToBuffers(path);
-      }
-      newIndex += path.segmentCount;
-    }
-
-    // Reset allocation tracking
-    this.nextSegmentIndex = newIndex;
-    this.freeSegmentRanges = [];
-    this.lastCompactTime = now;
-
-    // Update instance count
-    this.updateInstanceCount();
-  }
-
-  /**
-   * Check if compaction is needed based on fragmentation
-   */
   public shouldCompact(): boolean {
-    if (this.activePaths.size === 0) return false;
-
-    const totalFreeSegments = this.freeSegmentRanges.reduce((sum, r) => sum + r.count, 0);
-    const usedSegments = this.nextSegmentIndex - totalFreeSegments;
-
-    if (usedSegments === 0) return false;
-
-    const fragmentation = totalFreeSegments / this.nextSegmentIndex;
-    return fragmentation > this.fragmentationThreshold;
-  }
-
-  /**
-   * Write path segment data to instance buffers
-   */
-  private writeSegmentsToBuffers(path: ArmyPath): void {
-    const { segments, startIndex, color, displayState, totalLength } = path;
-    const opacity = PATH_OPACITY[displayState];
-
-    let cumulativeLength = 0;
-
-    for (let i = 0; i < segments.length; i++) {
-      const segment = segments[i];
-      const bufferIndex = startIndex + i;
-
-      // Calculate cumulative progress (0-1 along full path)
-      const progressStart = cumulativeLength / totalLength;
-      cumulativeLength += segment.length;
-
-      this.buffers.setSegment(
-        bufferIndex,
-        segment.start.x,
-        segment.start.y + 0.3, // Slight Y offset to render above terrain
-        segment.start.z,
-        segment.end.x,
-        segment.end.y + 0.3,
-        segment.end.z,
-        segment.length,
-        progressStart,
-        color.r,
-        color.g,
-        color.b,
-        opacity,
-      );
-    }
-
-    this.buffers.markNeedsUpdate();
-  }
-
-  /**
-   * Update the instance count on the geometry
-   */
-  private updateInstanceCount(): void {
-    if (!this.mesh) return;
-
-    // Count active segments (use highest index + 1, not sum)
-    let maxIndex = 0;
-    for (const path of this.activePaths.values()) {
-      const pathEnd = path.startIndex + path.segmentCount;
-      if (pathEnd > maxIndex) {
-        maxIndex = pathEnd;
-      }
-    }
-
-    // Update buffer count
-    this.buffers.setCount(maxIndex);
-
-    // Set instance count on geometry - this is critical for rendering!
-    const geometry = this.mesh.geometry as InstancedBufferGeometry;
-    geometry.instanceCount = maxIndex;
-
-    // Add to scene when we have paths, remove when empty
-    if (maxIndex > 0) {
-      this.mesh.visible = true;
-      if (this.scene && !this.mesh.parent) {
-        this.scene.add(this.mesh);
-      }
-    } else {
-      this.mesh.visible = false;
-      if (this.mesh.parent) {
-        this.mesh.parent.remove(this.mesh);
-      }
-    }
+    return false;
   }
 
   /**
@@ -607,6 +311,7 @@ export class PathRenderer {
    */
   public getStats(): {
     activePaths: number;
+    batches: number;
     visiblePaths: number;
     culledPaths: number;
     totalSegments: number;
@@ -623,25 +328,139 @@ export class PathRenderer {
       totalSegments += path.segmentCount;
     }
 
-    const freeSegments = this.freeSegmentRanges.reduce((sum, r) => sum + r.count, 0);
-    const allocatedSegments = this.nextSegmentIndex;
-    const fragmentation = allocatedSegments > 0 ? freeSegments / allocatedSegments : 0;
-
-    // Estimate memory usage (128 bytes per segment as per design)
-    const memoryUsageKB = (allocatedSegments * 128) / 1024;
+    const memoryUsageKB = Math.round((totalSegments * 24) / 1024);
 
     return {
       activePaths: this.activePaths.size,
+      batches: this.batchObjects.length,
       visiblePaths: this.activePaths.size - this.culledPaths.size,
       culledPaths: this.culledPaths.size,
       totalSegments,
-      allocatedSegments,
-      freeSegments,
+      allocatedSegments: totalSegments,
+      freeSegments: 0,
       maxSegments: this.config.maxSegments,
-      fragmentation: Math.round(fragmentation * 100) / 100,
-      freeRanges: this.freeSegmentRanges.length,
+      fragmentation: 0,
+      freeRanges: 0,
       selectedEntityId: this.selectedEntityId,
-      memoryUsageKB: Math.round(memoryUsageKB),
+      memoryUsageKB,
+    };
+  }
+
+  /**
+   * Mark batches as dirty and schedule a deferred rebuild via rAF.
+   * Multiple calls within the same frame are coalesced into a single rebuild.
+   */
+  private markBatchesDirty(): void {
+    this._batchesDirty = true;
+
+    if (this._rebuildFrameHandle === null && typeof requestAnimationFrame !== "undefined") {
+      this._rebuildFrameHandle = requestAnimationFrame(() => {
+        this._rebuildFrameHandle = null;
+        this.flushDirtyBatches();
+      });
+    }
+  }
+
+  /**
+   * If batches are dirty, perform the rebuild and reset the flag.
+   * Called from update() and from the rAF callback.
+   */
+  private flushDirtyBatches(): void {
+    if (!this._batchesDirty) return;
+    this._batchesDirty = false;
+
+    // Cancel any pending rAF since we are rebuilding now
+    if (this._rebuildFrameHandle !== null) {
+      cancelAnimationFrame(this._rebuildFrameHandle);
+      this._rebuildFrameHandle = null;
+    }
+
+    this.rebuildPathBatches();
+  }
+
+  private rebuildPathBatches(): void {
+    this.disposeBatchObjects();
+    this.culledPaths.clear();
+
+    if (!this.mesh) {
+      return;
+    }
+
+    const batchPlans = resolvePathBatches(Array.from(this.activePaths.values()), this.config.maxSegments);
+
+    batchPlans.forEach((batchPlan) => {
+      const batchPaths = batchPlan.entityIds
+        .map((entityId) => this.activePaths.get(entityId))
+        .filter((path): path is ArmyPath => Boolean(path));
+      const batch = this.createBatchObject(batchPaths, batchPlan.displayState);
+      this.batchObjects.push(batch);
+      this.mesh!.add(batch.line);
+    });
+
+    this.mesh.visible = this.batchObjects.length > 0;
+  }
+
+  private disposeBatchObjects(): void {
+    this.batchObjects.forEach((batch) => {
+      batch.line.parent?.remove(batch.line);
+      batch.line.geometry.dispose();
+      (batch.line.material as LineBasicMaterial).dispose();
+    });
+    this.batchObjects.length = 0;
+  }
+
+  private createBatchObject(paths: ArmyPath[], displayState: PathDisplayState): PathBatchObject {
+    const totalSegments = paths.reduce((sum, path) => sum + path.segmentCount, 0);
+    const positions = new Float32Array(totalSegments * 2 * 3);
+    const colors = new Float32Array(totalSegments * 2 * 3);
+    const boundingBox = new Box3();
+
+    let segmentOffset = 0;
+    paths.forEach((path) => {
+      boundingBox.union(path.boundingBox);
+      path.segments.forEach((segment) => {
+        const index = segmentOffset * 6;
+
+        positions[index] = segment.start.x;
+        positions[index + 1] = segment.start.y + 0.3;
+        positions[index + 2] = segment.start.z;
+        positions[index + 3] = segment.end.x;
+        positions[index + 4] = segment.end.y + 0.3;
+        positions[index + 5] = segment.end.z;
+
+        for (let vertex = 0; vertex < 2; vertex += 1) {
+          const colorIndex = index + vertex * 3;
+          colors[colorIndex] = path.color.r;
+          colors[colorIndex + 1] = path.color.g;
+          colors[colorIndex + 2] = path.color.b;
+        }
+
+        segmentOffset += 1;
+      });
+    });
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
+
+    const material = new LineBasicMaterial({
+      transparent: true,
+      opacity: resolvePathReadabilityPolicy({
+        displayState,
+        view: "medium",
+      }).opacity,
+      depthWrite: false,
+      vertexColors: true,
+    });
+
+    const line = new LineSegments(geometry, material);
+    line.frustumCulled = false;
+    line.renderOrder = 10;
+
+    return {
+      boundingBox,
+      entityIds: new Set(paths.map((path) => path.entityId)),
+      line,
     };
   }
 }

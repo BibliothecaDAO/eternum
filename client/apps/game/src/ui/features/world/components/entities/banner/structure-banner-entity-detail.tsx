@@ -3,6 +3,7 @@ import Coins from "lucide-react/dist/esm/icons/coins";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import Shield from "lucide-react/dist/esm/icons/shield";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useCallback, useMemo } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -11,10 +12,12 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { EntityType, ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
-import { toHexString } from "@bibliothecadao/eternum";
+import { formatTime, toHexString } from "@bibliothecadao/eternum";
 import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
@@ -22,6 +25,7 @@ import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 import { StructureProductionPanel } from "../structure-production-panel";
+import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -35,6 +39,13 @@ interface StructureBannerEntityDetailProps {
 interface StructureBannerEntityDetailContentProps extends Omit<StructureBannerEntityDetailProps, "layoutVariant"> {
   variant: EntityDetailLayoutVariant;
 }
+
+const VillageTimerChip = ({ label, value, title }: { label: string; value: string; title?: string }) => (
+  <div className="rounded border border-gold/15 bg-black/25 px-1.5 py-1" title={title}>
+    <div className="text-[9px] uppercase tracking-[0.06em] leading-tight text-gold/65">{label}</div>
+    <div className="mt-0.5 text-xs font-semibold leading-none text-gold">{value}</div>
+  </div>
+);
 
 const StructureBannerEntityDetailContent = memo(
   ({
@@ -59,6 +70,7 @@ const StructureBannerEntityDetailContent = memo(
       isLoadingStructure,
     } = useStructureEntityDetail({ structureEntityId });
     const mode = useGameModeConfig();
+    const { currentBlockTimestamp } = useBlockTimestamp();
     const openPopup = useUIStore((state) => state.openPopup);
     const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
@@ -98,16 +110,42 @@ const StructureBannerEntityDetailContent = memo(
     if (!structure || !structureDetails) return null;
     const defenseDisplayVariant: EntityDetailLayoutVariant = variant === "banner" || compact ? "banner" : "default";
     const structureName = mode.structure.getName(structure).name;
-    const structureCategory = rawCategory === undefined ? undefined : (rawCategory as StructureType);
-    const isFragmentMine = Number(rawCategory) === StructureType.FragmentMine;
-    const isCamp = [StructureType.Village, StructureType.Camp].includes(Number(rawCategory) as StructureType);
+    const structureCategory =
+      rawCategory === undefined || rawCategory === null ? undefined : (Number(rawCategory) as StructureType);
+    const shouldRenderVillageTimers = structureCategory === StructureType.Village;
+    const villageTimerSummary = shouldRenderVillageTimers
+      ? buildVillageTimerSummary({
+          createdAtTimestamp: structure.base?.created_at,
+          currentBlockTimestamp,
+        })
+      : null;
+    const militiaUnlockLabel = villageTimerSummary
+      ? villageTimerSummary.militiaUnlockRemainingSeconds > 0
+        ? formatTime(villageTimerSummary.militiaUnlockRemainingSeconds)
+        : "Ready"
+      : "—";
+    const settlementImmunityLabel = villageTimerSummary
+      ? villageTimerSummary.settlementImmunityRemainingSeconds > 0
+        ? formatTime(villageTimerSummary.settlementImmunityRemainingSeconds)
+        : "Expired"
+      : "—";
+    const postRaidWindowLabel = villageTimerSummary
+      ? villageTimerSummary.postRaidImmunityWindowSeconds > 0
+        ? formatTime(villageTimerSummary.postRaidImmunityWindowSeconds)
+        : "Unavailable"
+      : "—";
+    const isFragmentMine = structureCategory === StructureType.FragmentMine;
+    const isCamp = [StructureType.Village, StructureType.Camp].includes(structureCategory as StructureType);
     const showBalanceInline = isFragmentMine || isCamp;
     const showProductionTab = structureCategory !== StructureType.Hyperstructure && !isFragmentMine;
+    const showFaithTab =
+      rawCategory !== undefined &&
+      [StructureType.Realm, StructureType.Village].includes(Number(rawCategory) as StructureType);
     const canOpenTransferPopup =
       isMine &&
-      rawCategory !== undefined &&
+      structureCategory !== undefined &&
       [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.FragmentMine].includes(
-        Number(rawCategory) as StructureType,
+        structureCategory as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
     const inventoryLimit = compact && variant === "banner" ? Math.min(maxInventory, 10) : maxInventory;
@@ -159,6 +197,25 @@ const StructureBannerEntityDetailContent = memo(
 
         {relicEffects.length > 0 && (
           <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
+        )}
+
+        {shouldRenderVillageTimers && (
+          <div className="rounded border border-gold/15 bg-black/30 px-2 py-1.5">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-gold/65">Village Intel</div>
+            <div className="mt-1 grid grid-cols-3 gap-1">
+              <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
+              <VillageTimerChip
+                label="Raid immunity"
+                value={settlementImmunityLabel}
+                title="Settlement raid immunity timer"
+              />
+              <VillageTimerChip
+                label="Post-raid"
+                value={postRaidWindowLabel}
+                title="Post-raid resource immunity window"
+              />
+            </div>
+          </div>
         )}
 
         <Tabs variant="inventory" className="flex min-h-0 flex-1 flex-col gap-2">
@@ -226,6 +283,12 @@ const StructureBannerEntityDetailContent = memo(
               </Tabs.Panel>
             )}
 
+            {showFaithTab && (
+              <Tabs.Panel scrollable={true} className="flex h-full min-h-0 flex-col gap-1.5 pt-1">
+                <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
+              </Tabs.Panel>
+            )}
+
             {!showBalanceInline && (
               <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5">
                 {resources ? (
@@ -253,6 +316,11 @@ const StructureBannerEntityDetailContent = memo(
             {showProductionTab && (
               <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
                 <Factory className="h-4 w-4 text-gold" />
+              </Tabs.Tab>
+            )}
+            {showFaithTab && (
+              <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
+                <Sparkles className="h-4 w-4 text-gold" />
               </Tabs.Tab>
             )}
             {!showBalanceInline && (

@@ -1357,7 +1357,7 @@ export const fetchGameReviewClaimSummary = async ({
   };
 };
 
-export const fetchGameReviewUnclaimedPlayers = async ({
+const fetchGameReviewUnclaimedPlayers = async ({
   worldName,
   chain,
 }: {
@@ -1560,7 +1560,7 @@ export const claimGameReviewRewards = async ({
   };
 };
 
-export const claimGameReviewRewardsForPlayers = async ({
+const claimGameReviewRewardsForPlayers = async ({
   worldName,
   chain,
   signer,

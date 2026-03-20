@@ -15,10 +15,11 @@ function readWorldmapSource(): string {
 describe("finalizeWarpTravelChunkSwitch", () => {
   it("rolls back to the previous chunk authority and restores visuals when hydration failed", async () => {
     const restorePreviousChunkVisuals = createControlledAsyncCall<[number, number, string, number], void>();
-    const updateManagersForChunk = createControlledAsyncCall<
+    const scheduleManagerCatchUp = createControlledAsyncCall<
       [string, { force: boolean; transitionToken: number }],
       void
     >();
+    const applyPreparedTerrain = vi.fn();
     const updatePinnedChunks = vi.fn();
     const unregisterChunk = vi.fn();
     const clearSceneChunkBounds = vi.fn();
@@ -39,6 +40,8 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 11,
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain,
       setCurrentChunk: vi.fn(),
       updatePinnedChunks,
       unregisterChunk,
@@ -46,7 +49,8 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds,
       forceVisibilityUpdate,
       updateCurrentChunkBounds,
-      updateManagersForChunk: updateManagersForChunk.fn,
+
+      scheduleManagerCatchUp: scheduleManagerCatchUp.fn,
       unregisterPreviousChunkOnNextFrame,
     });
 
@@ -59,16 +63,18 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     expect(result).toEqual({
       status: "rolled_back",
     });
+    expect(applyPreparedTerrain).not.toHaveBeenCalled();
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
-    expect(updateManagersForChunk.calls).toEqual([]);
+    expect(scheduleManagerCatchUp.calls).toEqual([]);
     expect(clearSceneChunkBounds).not.toHaveBeenCalled();
   });
 
   it("drops stale prepared chunks without committing manager updates", async () => {
-    const updateManagersForChunk = createControlledAsyncCall<
+    const scheduleManagerCatchUp = createControlledAsyncCall<
       [string, { force: boolean; transitionToken: number }],
       void
     >();
+    const applyPreparedTerrain = vi.fn();
     const unregisterChunk = vi.fn();
 
     const result = await finalizeWarpTravelChunkSwitch({
@@ -84,6 +90,8 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 13,
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain,
       setCurrentChunk: vi.fn(),
       updatePinnedChunks: vi.fn(),
       unregisterChunk,
@@ -91,25 +99,32 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds: vi.fn(),
       forceVisibilityUpdate: vi.fn(),
       updateCurrentChunkBounds: vi.fn(),
-      updateManagersForChunk: updateManagersForChunk.fn,
+
+      scheduleManagerCatchUp: scheduleManagerCatchUp.fn,
       unregisterPreviousChunkOnNextFrame: vi.fn(),
     });
 
     expect(result).toEqual({
       status: "stale_dropped",
     });
+    expect(applyPreparedTerrain).not.toHaveBeenCalled();
     expect(unregisterChunk).toHaveBeenCalledWith("24,24");
-    expect(updateManagersForChunk.calls).toEqual([]);
+    expect(scheduleManagerCatchUp.calls).toEqual([]);
   });
 
-  it("commits the hydrated chunk, refreshes bounds, and fans out manager updates", async () => {
-    const updateManagersForChunk = createControlledAsyncCall<
-      [string, { force: boolean; transitionToken: number }],
-      void
-    >();
+  it("commits prepared terrain before deferred manager catch-up completes", async () => {
+    const managerCatchUp = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
+    const phaseOrder: string[] = [];
+    const applyPreparedTerrain = vi.fn(() => {
+      phaseOrder.push("terrain");
+    });
     const updateCurrentChunkBounds = vi.fn();
     const forceVisibilityUpdate = vi.fn();
     const unregisterPreviousChunkOnNextFrame = vi.fn();
+    const scheduleManagerCatchUp = vi.fn((chunkKey: string, options: { force: boolean; transitionToken: number }) => {
+      phaseOrder.push("manager-scheduled");
+      void managerCatchUp.fn(chunkKey, options);
+    });
 
     const resultPromise = finalizeWarpTravelChunkSwitch({
       fetchSucceeded: true,
@@ -124,26 +139,38 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: true,
       transitionToken: 17,
-      setCurrentChunk: vi.fn(),
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain,
+      setCurrentChunk: vi.fn(() => {
+        phaseOrder.push("authority");
+      }),
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),
       restorePreviousChunkVisuals: async () => undefined,
       clearSceneChunkBounds: vi.fn(),
-      forceVisibilityUpdate,
-      updateCurrentChunkBounds,
-      updateManagersForChunk: updateManagersForChunk.fn,
+      forceVisibilityUpdate: vi.fn(() => {
+        phaseOrder.push("visibility");
+        forceVisibilityUpdate();
+      }),
+      updateCurrentChunkBounds: vi.fn((startRow: number, startCol: number) => {
+        phaseOrder.push(`bounds:${startRow},${startCol}`);
+        updateCurrentChunkBounds(startRow, startCol);
+      }),
+      scheduleManagerCatchUp,
       unregisterPreviousChunkOnNextFrame,
     });
 
     expect(updateCurrentChunkBounds).toHaveBeenCalledWith(24, 24);
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
-    expect(updateManagersForChunk.calls).toEqual([["24,24", { force: true, transitionToken: 17 }]]);
-    updateManagersForChunk.resolveNext();
-
-    const result = await resultPromise;
-    expect(result).toEqual({
+    expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", { force: true, transitionToken: 17 });
+    expect(managerCatchUp.calls).toEqual([["24,24", { force: true, transitionToken: 17 }]]);
+    expect(phaseOrder).toEqual(["authority", "terrain", "bounds:24,24", "visibility", "manager-scheduled"]);
+    await expect(resultPromise).resolves.toEqual({
       status: "committed",
     });
+
+    managerCatchUp.resolveNext();
+    await Promise.resolve();
     expect(unregisterPreviousChunkOnNextFrame).toHaveBeenCalledWith("0,0");
   });
 
@@ -152,7 +179,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const setCurrentChunk = vi.fn((chunkKey: string) => {
       currentChunk = chunkKey;
     });
-    const updateManagersForChunk = vi.fn(async (chunkKey: string) => {
+    const scheduleManagerCatchUp = vi.fn(async (chunkKey: string) => {
       expect(currentChunk).toBe(chunkKey);
     });
 
@@ -169,6 +196,8 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       startCol: 24,
       force: false,
       transitionToken: 19,
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain: vi.fn(),
       setCurrentChunk,
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),
@@ -176,11 +205,12 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds: vi.fn(),
       forceVisibilityUpdate: vi.fn(),
       updateCurrentChunkBounds: vi.fn(),
-      updateManagersForChunk,
+
+      scheduleManagerCatchUp,
       unregisterPreviousChunkOnNextFrame: vi.fn(),
     });
 
-    expect(updateManagersForChunk).toHaveBeenCalledWith("24,24", {
+    expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", {
       force: false,
       transitionToken: 19,
     });

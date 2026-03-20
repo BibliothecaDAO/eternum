@@ -8,7 +8,7 @@
  * - Manager-specific memory usage
  */
 
-import { WebGLRenderer } from "three";
+import type { RendererSurfaceLike } from "../renderer-backend";
 
 interface MemoryStats {
   // Browser Memory
@@ -157,7 +157,7 @@ export class MemoryMonitor {
   /**
    * Update renderer reference for better resource tracking
    */
-  public setRenderer(renderer: WebGLRenderer): void {
+  public setRenderer(renderer: RendererSurfaceLike): void {
     (window as any).__memoryMonitorRenderer = renderer;
   }
 

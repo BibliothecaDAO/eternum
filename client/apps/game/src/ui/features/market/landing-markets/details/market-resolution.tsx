@@ -27,22 +27,6 @@ const chunk = <T,>(arr: T[], size: number) => {
 
 const TX_TIMEOUT_MS = 120_000;
 const TX_CONFIRM_TIMEOUT_MS = 25_000;
-type BigNumberish = string | number | bigint;
-type Uint256Like = { low: BigNumberish; high: BigNumberish };
-type RegisteredPlayerRow = { playerAddress?: unknown; player_address?: unknown; address?: unknown };
-type FactoryWorldRow = { name?: unknown; data?: { name?: unknown }; "data.name"?: unknown };
-type ManifestContractEntry = { tag?: string; address?: unknown };
-type ManifestLike = { contracts?: ManifestContractEntry[] };
-
-const hasUint256Shape = (value: unknown): value is Uint256Like =>
-  Boolean(
-    value &&
-    typeof value === "object" &&
-    "low" in value &&
-    "high" in value &&
-    (value as { low?: unknown; high?: unknown }).low !== undefined &&
-    (value as { low?: unknown; high?: unknown }).high !== undefined,
-  );
 
 const withTxTimeout = async <T,>(promise: Promise<T>, label: string, timeoutMs: number = TX_TIMEOUT_MS): Promise<T> => {
   return await new Promise<T>((resolve, reject) => {
@@ -104,7 +88,7 @@ const waitForTxConfirmationIfAvailable = async (
   try {
     await withTxTimeout(waitFn(txHash), `${label} confirmation`, TX_CONFIRM_TIMEOUT_MS);
     return true;
-  } catch {
+  } catch (error) {
     // Keep UX responsive when providers fail to report confirmation despite successful execution.
     // The tx is already submitted at this point.
     toast.message("Transaction submitted. Confirmation is delayed in wallet RPC; data may update after refresh.");
@@ -115,14 +99,14 @@ const waitForTxConfirmationIfAvailable = async (
 const randomTrialId = () =>
   BigInt("0x" + (globalThis.crypto?.randomUUID?.().replace(/-/g, "") || Date.now().toString(16)));
 
-const toAddressHex = (value: unknown): string | null => {
+const toAddressHex = (value: any): string | null => {
   try {
-    if (hasUint256Shape(value)) {
-      const low = BigInt(value.low);
-      const high = BigInt(value.high);
+    if (value && typeof value === "object" && "low" in value && "high" in value) {
+      const low = BigInt((value as any).low);
+      const high = BigInt((value as any).high);
       return `0x${((high << 128n) | low).toString(16)}`;
     }
-    return `0x${BigInt(value as BigNumberish).toString(16)}`;
+    return `0x${BigInt(value).toString(16)}`;
   } catch {
     return null;
   }
@@ -130,11 +114,10 @@ const toAddressHex = (value: unknown): string | null => {
 
 const derivePlayersFromMarket = (market: MarketClass): string[] => {
   try {
-    const marketWithCategorical = market as MarketClass & { typCategoricalValueEq?: () => unknown };
-    const valueEq = marketWithCategorical.typCategoricalValueEq?.();
+    const valueEq = (market as any).typCategoricalValueEq?.() ?? market.typCategoricalValueEq?.();
     if (!valueEq || !Array.isArray(valueEq)) return [];
     const addresses = valueEq
-      .map((entry) => toAddressHex(entry))
+      .map((entry: any) => toAddressHex(entry))
       .filter((addr): addr is string => Boolean(addr))
       .filter((addr) => addr !== "0x0");
     return Array.from(new Set(addresses));
@@ -143,10 +126,10 @@ const derivePlayersFromMarket = (market: MarketClass): string[] => {
   }
 };
 
-const normalizeAddressString = (value: unknown): string | null => {
+const normalizeAddressString = (value: any): string | null => {
   try {
     if (typeof value === "string" && value.startsWith("0x")) return `0x${BigInt(value).toString(16)}`;
-    return `0x${BigInt(value as BigNumberish).toString(16)}`;
+    return `0x${BigInt(value).toString(16)}`;
   } catch {
     return null;
   }
@@ -155,14 +138,14 @@ const normalizeAddressString = (value: unknown): string | null => {
 const fetchRegisteredPlayers = async (toriiBaseUrl: string, limit: number): Promise<string[]> => {
   const client = new SqlApi(`${toriiBaseUrl}/sql`);
   const rows = await client.fetchRegisteredPlayerPoints(limit, 0);
-  return (rows as RegisteredPlayerRow[])
-    .map((row) => normalizeAddressString(row.playerAddress ?? row.player_address ?? row.address))
+  return rows
+    .map((row: any) => normalizeAddressString(row.playerAddress ?? row.player_address ?? row.address))
     .filter((addr): addr is string => Boolean(addr));
 };
 
-const normalizeHex = (value: unknown): string | null => {
+const normalizeHex = (value: any): string | null => {
   try {
-    const hex = typeof value === "string" ? value : `0x${BigInt(value as BigNumberish).toString(16)}`;
+    const hex = typeof value === "string" ? value : `0x${BigInt(value).toString(16)}`;
     const normalized = hex.startsWith("0x") ? hex.toLowerCase() : `0x${hex.toLowerCase()}`;
     return normalized;
   } catch {
@@ -171,8 +154,7 @@ const normalizeHex = (value: unknown): string | null => {
 };
 
 const extractPrizeDistributionAddress = (market: MarketClass): string | null => {
-  const marketWithOracle = market as MarketClass & { oracle_params?: unknown[] };
-  const params = Array.isArray(marketWithOracle.oracle_params) ? marketWithOracle.oracle_params : [];
+  const params: any[] = (market as any).oracle_params || [];
   if (!params || params.length < 2) return null;
   return normalizeHex(params[1]);
 };
@@ -254,13 +236,12 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
         const queryUrl = `${factorySqlBaseUrl}?query=${encodeURIComponent("SELECT name FROM [wf-WorldDeployed] LIMIT 300;")}`;
         const res = await fetch(queryUrl);
         if (!res.ok) throw new Error(`Factory query failed: ${res.statusText}`);
-        const rawRows = (await res.json()) as unknown;
-        const rows = Array.isArray(rawRows) ? (rawRows as FactoryWorldRow[]) : [];
+        const rows = (await res.json()) as any[];
 
         const names = rows
           .map((row) => row?.name || row?.["data.name"] || row?.data?.name)
           .filter(Boolean)
-          .map((felt) => decodePaddedFeltAscii(String(felt)))
+          .map((felt: string) => decodePaddedFeltAscii(String(felt)))
           .filter((name: string, idx: number, arr: string[]) => Boolean(name) && arr.indexOf(name) === idx);
 
         const chainManifest = getGameManifest(chain);
@@ -276,13 +257,12 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
             try {
               const profile = await buildWorldProfile(chain, name);
               const patched = patchManifestWithFactory(
-                chainManifest as Parameters<typeof patchManifestWithFactory>[0],
+                chainManifest as any,
                 profile.worldAddress,
                 profile.contractsBySelector,
               );
-              const patchedManifest = patched as ManifestLike;
               const prizeAddress = normalizeHex(
-                patchedManifest.contracts?.find((contract) => contract.tag === "s1_eternum-prize_distribution_systems")
+                (patched as any)?.contracts?.find((c: any) => c.tag === "s1_eternum-prize_distribution_systems")
                   ?.address,
               );
               if (prizeAddress && prizeAddress === target) {
@@ -482,15 +462,11 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
         const profile = await buildWorldProfile(chain, serverName);
         const baseManifest = getGameManifest(chain);
         const patchedManifest = patchManifestWithFactory(
-          baseManifest as Parameters<typeof patchManifestWithFactory>[0],
+          baseManifest as any,
           profile.worldAddress,
           profile.contractsBySelector,
         );
-        const prizeContract = getContractByName(
-          patchedManifest as Parameters<typeof getContractByName>[0],
-          "s1_eternum",
-          "prize_distribution_systems",
-        );
+        const prizeContract = getContractByName(patchedManifest as any, "s1_eternum", "prize_distribution_systems");
         if (!prizeContract?.address) {
           setComputeStatus(null);
           if (!suppressErrorToast) {
@@ -614,7 +590,7 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
     } finally {
       setIsResolvingWithCompute(false);
     }
-  }, [hasFinalRanking, isSubmittingTx, onComputeScores, onResolve]);
+  }, [hasFinalRanking, isSubmittingTx, market.market_id, onComputeScores, onResolve]);
 
   const canComputeScores =
     market.isEnded() && hasRankedPlayers && !playersLoading && serverLookupStatus === "done" && !hasFinalRanking;
@@ -720,25 +696,25 @@ export const MarketResolutionView = ({ resolution }: { resolution: MarketResolut
           </div>
         )}
         {hasFinalRanking ? (
-          <div className="w-full rounded-md border border-gold/15 bg-brown/45 p-3">
+          <div className="w-full rounded-md border border-white/10 bg-white/5 p-3">
             <div className="flex items-center justify-between text-sm text-gold/80">
-              <span className="text-lightest font-semibold">Final ranking</span>
+              <span className="text-white font-semibold">Final ranking</span>
             </div>
             {ranksLoading ? <p className="mt-2 text-xs text-gold/60">Loading ranking...</p> : null}
             {ranksError ? <p className="mt-2 text-xs text-danger">{ranksError}</p> : null}
             {!ranksLoading && !ranksError ? (
               playerRanks.length > 0 ? (
-                <ol className="mt-3 space-y-2 text-sm text-lightest">
+                <ol className="mt-3 space-y-2 text-sm text-white">
                   {playerRanks.map((entry) => (
                     <li
                       key={`${entry.player}-${entry.rank}`}
-                      className="flex items-center justify-between gap-2 rounded-md border border-gold/10 bg-brown/45 px-3 py-2"
+                      className="flex items-center justify-between gap-2 rounded-md border border-white/5 bg-white/5 px-3 py-2"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-gold/10 px-2 py-[2px] text-[11px] font-semibold uppercase text-gold/70">
+                        <span className="rounded-full bg-white/10 px-2 py-[2px] text-[11px] font-semibold uppercase text-gold/70">
                           #{entry.rank}
                         </span>
-                        <MaybeController address={entry.player} className="text-lightest" />
+                        <MaybeController address={entry.player} className="text-white" />
                       </div>
                     </li>
                   ))}

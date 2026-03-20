@@ -35,6 +35,7 @@ import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { TransferDirection } from "./help-container";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
+import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 
 interface TransferTroopsContainerProps {
   selectedEntityId: ID;
@@ -158,6 +159,20 @@ export const TransferTroopsContainer = ({
     const level = targetStructure?.base?.level ?? targetExplorerConnectedStructure?.base?.level ?? 0;
     return configManager.getMaxArmySize(level, tier) || null;
   }, [targetExplorerTroops?.troops?.tier, targetStructure?.base?.level, targetExplorerConnectedStructure?.base?.level]);
+
+  const targetStructureLevel = useMemo(() => {
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      return targetStructure?.base?.level ?? null;
+    }
+    return targetStructure?.base?.level ?? targetExplorerConnectedStructure?.base?.level ?? null;
+  }, [targetExplorerConnectedStructure?.base?.level, targetStructure?.base?.level, transferDirection]);
+
+  const targetTierForSummary = useMemo(() => {
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      return selectedExplorerTroops?.troops?.tier as TroopTier | undefined;
+    }
+    return targetExplorerTroops?.troops?.tier as TroopTier | undefined;
+  }, [selectedExplorerTroops?.troops?.tier, targetExplorerTroops?.troops?.tier, transferDirection]);
 
   const directionLabel = useMemo(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
@@ -473,6 +488,22 @@ export const TransferTroopsContainer = ({
       ? Math.max(0, capacityRemainingTarget - effectiveTroopAmount)
       : null;
 
+  const selectedTargetGuardCount = useMemo(() => {
+    if (typeof guardSlot !== "number") {
+      return 0;
+    }
+    const targetGuard = targetGuards.find((guard) => guard.slot === guardSlot);
+    const targetGuardCountValue = Number(targetGuard?.troops.count ?? 0);
+    return Number.isFinite(targetGuardCountValue) ? targetGuardCountValue : 0;
+  }, [guardSlot, targetGuards]);
+
+  const projectedTargetTroopCount = useMemo(() => {
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      return selectedTargetGuardCount + effectiveTroopAmount;
+    }
+    return targetExplorerCount + effectiveTroopAmount;
+  }, [effectiveTroopAmount, selectedTargetGuardCount, targetExplorerCount, transferDirection]);
+
   const capacityBlockedMessage = useMemo(() => {
     if (troopCapacityLimit === null || !capacityBlocked) {
       return null;
@@ -481,10 +512,10 @@ export const TransferTroopsContainer = ({
     const limitText = troopCapacityLimit.toLocaleString();
 
     if (capacityBlocked.type === "guard" && typeof capacityBlocked.slotIndex === "number") {
-      return `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[capacityBlocked.slotIndex as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} is at maximum capacity (${limitText} troops).`;
+      return `Deployment cap reached for guard slot ${DISPLAYED_SLOT_NUMBER_MAP[capacityBlocked.slotIndex as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} (${limitText} troops for this tier).`;
     }
 
-    return `Target explorer is at maximum capacity (${limitText} troops).`;
+    return `Deployment cap reached for destination explorer (${limitText} troops for this tier).`;
   }, [capacityBlocked, troopCapacityLimit]);
 
   const capacityNotice = useMemo(() => {
@@ -509,13 +540,13 @@ export const TransferTroopsContainer = ({
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
         return {
           tone: "danger" as const,
-          message: `Destination explorer will be at maximum capacity (${limitText} troops) after this transfer.`,
+          message: `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`,
         };
       }
 
       return {
         tone: "muted" as const,
-        message: `Explorer capacity after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max ${limitText})`,
+        message: `Deployment cap remaining after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max troops: ${limitText})`,
       };
     }
 
@@ -526,13 +557,13 @@ export const TransferTroopsContainer = ({
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
         return {
           tone: "danger" as const,
-          message: `${guardName} will be at maximum capacity (${limitText} troops) after this transfer.`,
+          message: `${guardName} will hit its deployment cap (${limitText} troops for this tier).`,
         };
       }
 
       return {
         tone: "muted" as const,
-        message: `${guardName} capacity after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max ${limitText})`,
+        message: `${guardName} cap remaining after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max troops: ${limitText})`,
       };
     }
 
@@ -540,13 +571,13 @@ export const TransferTroopsContainer = ({
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
         return {
           tone: "danger" as const,
-          message: `Destination explorer will be at maximum capacity (${limitText} troops) after this transfer.`,
+          message: `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`,
         };
       }
 
       return {
         tone: "muted" as const,
-        message: `Explorer capacity after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max ${limitText})`,
+        message: `Deployment cap remaining after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max troops: ${limitText})`,
       };
     }
 
@@ -1282,6 +1313,16 @@ export const TransferTroopsContainer = ({
                       {capacityNotice.message}
                     </div>
                   )}
+                  {targetTierForSummary !== undefined &&
+                    (transferDirection !== TransferDirection.ExplorerToStructure || typeof guardSlot === "number") && (
+                      <DeploymentStrengthSummary
+                        structureLevel={targetStructureLevel}
+                        troopTier={targetTierForSummary}
+                        troopCount={projectedTargetTroopCount}
+                        maxTroopSize={troopCapacityLimit}
+                        capacityRemaining={capacityRemainingAfterTransfer ?? capacityRemainingTarget}
+                      />
+                    )}
                   {quickAmountOptions.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs text-gold/60">Quick set:</span>

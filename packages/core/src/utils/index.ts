@@ -1,4 +1,5 @@
 export * from "./action-paths";
+export * from "./action-highlight-descriptors";
 export * from "./army";
 export * from "./banks";
 export * from "./biome";

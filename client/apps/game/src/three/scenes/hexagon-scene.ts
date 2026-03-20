@@ -51,19 +51,26 @@ import {
 } from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
+import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import { CameraView } from "./camera-view";
+import {
+  createCameraTransitionState,
+  publishCameraTransitionFrame,
+  resolveCameraTransitionCompletion,
+  resolveCameraTransitionStart,
+} from "./hexagon-scene-camera-transition";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
+import { resolveWorldmapViewFromDistance } from "./worldmap-zoom-controller";
 
-export enum CameraView {
-  Close = 1,
-  Medium = 2,
-  Far = 3,
-}
+export { CameraView } from "./camera-view";
+type CameraTransitionStatus = "idle" | "transitioning";
 
 export abstract class HexagonScene {
   protected scene!: Scene;
+  protected interactionOverlayScene!: Scene;
   protected camera!: PerspectiveCamera;
   protected inputManager!: InputManager;
   protected shortcutManager!: SceneShortcutManager;
@@ -92,14 +99,17 @@ export abstract class HexagonScene {
   private weatherAtmosphereState?: Pick<WeatherState, "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">;
 
   private groundMesh!: Mesh;
+  private groundMeshTexture: Texture | null = null;
   private uiStateUnsubscribe?: () => void;
   private lightningEndTime: number = 0;
   private originalLightningIntensity: number = 0;
   private originalLightningColor: number = 0;
   private originalStormLightningIntensity: number = 0;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
+  private cameraTransitionListeners: Set<(status: CameraTransitionStatus) => void> = new Set();
   private lastLightningTriggerProgress: number = -1;
   private lightningSequenceTimeout: NodeJS.Timeout | null = null;
+  private lightningTriggerTimeout: ReturnType<typeof setTimeout> | null = null;
   private currentStrikeIndex: number = 0;
   private lightningStrikes: Array<{ delay: number; duration: number }> = [
     { delay: 0, duration: 80 },
@@ -111,15 +121,20 @@ export abstract class HexagonScene {
   protected cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
   protected cameraAngle = CAMERA_CONFIG.defaultAngle;
   protected currentCameraView = CameraView.Medium; // Track current camera view position
+  protected targetCameraView = CameraView.Medium;
   private animationCameraTarget: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
+  private cameraTransitionState = createCameraTransitionState();
+  private cameraTransitionTimeline: gsap.core.Timeline | null = null;
+  private cameraTransitionStatus: CameraTransitionStatus = "idle";
   protected shadowsEnabledByQuality = true;
   protected shadowMapSizeByQuality = 2048;
+  private sceneOwnershipBootstrapped = false;
   private lastClipNear = 0;
   private lastClipFar = 0;
   private fogEnabledByQuality = false;
-  private fogEnabledByUser = false;
+  private fogEnabledByUser = true;
 
   // Performance tuning options (optimized defaults for better FPS)
   protected biomeShadowsEnabled = false;
@@ -137,45 +152,66 @@ export abstract class HexagonScene {
     protected sceneManager: SceneManager,
   ) {
     this.initializeScene();
+  }
+
+  protected bootstrapSceneOwnership(): void {
+    if (this.sceneOwnershipBootstrapped) {
+      return;
+    }
+
     this.frustumManager = new FrustumManager(this.camera, this.controls);
-    // Initialize centralized visibility manager (singleton)
     this.visibilityManager = getVisibilityManager({
       debug: false,
       animationMaxDistance: this.animationVisibilityDistance,
     });
     this.visibilityManager.initialize(this.camera, this.controls);
     this.setupLighting();
+    this.applyResolvedCameraView(this.currentCameraView);
+    this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
     this.setupInputHandlers();
     this.setupGUI();
     if (this.shouldCreateGroundMesh()) {
       this.createGroundMesh();
     }
+
+    this.sceneOwnershipBootstrapped = true;
   }
 
   private notifyControlsChanged(): void {
-    this.controls.update();
-    const distance = this.controls.object.position.distanceTo(this.controls.target);
-    this.updateCameraClipPlanesForDistance(distance);
-    this.updateFogForDistance(distance);
-    this.updateOutlineOpacityForDistance(distance);
-    this.controls.dispatchEvent({ type: "change" });
-    this.visibilityManager?.markDirty();
+    publishCameraTransitionFrame({
+      updateControls: () => this.controls.update(),
+      syncDistanceVisuals: () => {
+        const distance = this.controls.object.position.distanceTo(this.controls.target);
+        this.updateCameraClipPlanesForDistance(distance);
+        this.updateFogForDistance(distance);
+        this.updateOutlineOpacityForDistance(distance);
+        this.syncResolvedCameraViewFromDistance(distance);
+      },
+      emitFallbackChange: () => {
+        this.controls.dispatchEvent({ type: "change" });
+      },
+      markVisibilityDirty: () => {
+        incrementWorldmapRenderCounter("controlsChangeEvents");
+        this.visibilityManager?.markDirty();
+      },
+    });
   }
 
   private initializeScene(): void {
     this.scene = new Scene();
+    this.interactionOverlayScene = new Scene();
     this.camera = this.controls.object as PerspectiveCamera;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
-    this.highlightHexManager = new HighlightHexManager(this.scene);
+    this.highlightHexManager = new HighlightHexManager(this.interactionOverlayScene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
     this.fogEnabledByQuality = !IS_FLAT_MODE && GRAPHICS_SETTING !== GraphicsSettings.LOW;
-    this.fogEnabledByUser = false;
+    this.fogEnabledByUser = true;
     if (this.fogEnabledByQuality && this.fogEnabledByUser) {
       this.scene.fog = this.fog;
       const initialDistance = this.controls.object.position.distanceTo(this.controls.target);
@@ -279,6 +315,18 @@ export abstract class HexagonScene {
     this.inputManager.addListener("contextmenu", this.handleRightClick.bind(this));
   }
 
+  public setInputSurface(surface: HTMLElement): void {
+    this.inputManager.setSurface(surface);
+  }
+
+  public activateInputSurface(): void {
+    this.inputManager.activate();
+  }
+
+  public deactivateInputSurface(): void {
+    this.inputManager.deactivate();
+  }
+
   private handleMouseMove(_event: MouseEvent, raycaster: Raycaster): void {
     const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
     if (hoveredHex) {
@@ -302,7 +350,9 @@ export abstract class HexagonScene {
     if (clickedHex) {
       this.onHexagonClick(clickedHex.hexCoords);
     } else {
-      this.onHexagonClick(null);
+      // Fallback: try direct army model raycasting when hex picking fails
+      const fallbackHex = this.tryArmyRaycastFallback(raycaster);
+      this.onHexagonClick(fallbackHex);
     }
   }
 
@@ -636,6 +686,10 @@ export abstract class HexagonScene {
     return this.scene;
   }
 
+  public getInteractionOverlayScene() {
+    return this.interactionOverlayScene;
+  }
+
   public getCamera() {
     return this.camera;
   }
@@ -724,8 +778,6 @@ export abstract class HexagonScene {
 
     const { row, col } = this.getHexFromWorldPosition(position);
 
-    console.log("row", row, col);
-
     // Release matrix back to pool
     matrixPool.releaseMatrix(matrix);
 
@@ -742,29 +794,49 @@ export abstract class HexagonScene {
   cameraAnimate(newPosition: Vector3, newTarget: Vector3, transitionDuration: number, onFinish?: () => void) {
     const camera = this.controls.object;
     const target = this.controls.target;
+    const transitionStart = resolveCameraTransitionStart(this.cameraTransitionState);
+    this.cameraTransitionState = transitionStart.nextState;
+    if (transitionStart.cancelledToken !== null) {
+      incrementWorldmapRenderCounter("zoomTransitionsCancelled");
+    }
+    this.cameraTransitionTimeline?.kill();
+    this.cameraTransitionTimeline = null;
     gsap.killTweensOf(camera.position);
     gsap.killTweensOf(target);
 
     const duration = transitionDuration || 2;
+    const transitionToken = this.cameraTransitionState.activeToken;
+    if (transitionToken === null) {
+      return;
+    }
+    this.setCameraTransitionStatus("transitioning");
 
-    const onUpdate = () => {
-      this.notifyControlsChanged();
-    };
-
-    gsap.timeline().to(camera.position, {
-      duration,
-      repeat: 0,
-      x: newPosition.x,
-      y: newPosition.y,
-      z: newPosition.z,
-      ease: "power3.inOut",
-      onUpdate,
+    this.cameraTransitionTimeline = gsap.timeline({
+      onUpdate: () => {
+        this.notifyControlsChanged();
+      },
       onComplete: () => {
+        this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
+        this.cameraTransitionTimeline = null;
+        this.setCameraTransitionStatus("idle");
         onFinish?.();
       },
     });
 
-    gsap.timeline().to(
+    this.cameraTransitionTimeline.to(
+      camera.position,
+      {
+        duration,
+        repeat: 0,
+        x: newPosition.x,
+        y: newPosition.y,
+        z: newPosition.z,
+        ease: "power3.inOut",
+      },
+      0,
+    );
+
+    this.cameraTransitionTimeline.to(
       target,
       {
         duration,
@@ -773,9 +845,8 @@ export abstract class HexagonScene {
         y: newTarget.y,
         z: newTarget.z,
         ease: "power3.inOut",
-        onUpdate,
       },
-      "<",
+      0,
     );
   }
 
@@ -893,6 +964,7 @@ export abstract class HexagonScene {
 
     this.scene.add(mesh);
     this.groundMesh = mesh;
+    this.groundMeshTexture = texture;
     this.setupGroundMeshGUI();
   }
 
@@ -1063,19 +1135,18 @@ export abstract class HexagonScene {
     }
 
     // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
+    // When day-night is enabled, read the pre-flicker baseline from the manager to avoid
+    // compounding drift (the live light value already includes previous flicker).
     const dayNightEnabled = this.dayNightCycleManager?.params?.enabled === true;
 
     const ambientBase = dayNightEnabled
-      ? this.ambientPurpleLight.intensity
-      : (this.stormAmbientBaseIntensity ?? this.ambientPurpleLight.intensity);
+      ? this.dayNightCycleManager!.getLastAmbientIntensity()
+      : (this.stormAmbientBaseIntensity ??= this.ambientPurpleLight.intensity);
     const hemisphereBase = dayNightEnabled
-      ? this.hemisphereLight.intensity
-      : (this.stormHemisphereBaseIntensity ?? this.hemisphereLight.intensity);
+      ? this.dayNightCycleManager!.getLastHemisphereIntensity()
+      : (this.stormHemisphereBaseIntensity ??= this.hemisphereLight.intensity);
 
-    if (dayNightEnabled) {
-      this.stormAmbientBaseIntensity = ambientBase;
-      this.stormHemisphereBaseIntensity = hemisphereBase;
-    } else {
+    if (!dayNightEnabled) {
       this.stormAmbientBaseIntensity ??= ambientBase;
       this.stormHemisphereBaseIntensity ??= hemisphereBase;
     }
@@ -1152,7 +1223,7 @@ export abstract class HexagonScene {
     if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
       this.lastLightningTriggerProgress = 0;
       // Add 0.5 second delay before starting lightning sequence
-      setTimeout(() => {
+      this.lightningTriggerTimeout = setTimeout(() => {
         this.startLightningSequence();
       }, 2000);
       return false; // Don't trigger immediately
@@ -1177,6 +1248,10 @@ export abstract class HexagonScene {
 
   // Cleanup method for lightning sequence
   protected cleanupLightning(): void {
+    if (this.lightningTriggerTimeout) {
+      clearTimeout(this.lightningTriggerTimeout);
+      this.lightningTriggerTimeout = null;
+    }
     if (this.lightningSequenceTimeout) {
       clearTimeout(this.lightningSequenceTimeout);
       this.lightningSequenceTimeout = null;
@@ -1213,6 +1288,12 @@ export abstract class HexagonScene {
       }
       // @ts-ignore
       this.groundMesh = null;
+    }
+
+    // Dispose of ground mesh texture (MeshStandardMaterial.dispose() does NOT auto-dispose textures)
+    if (this.groundMeshTexture) {
+      this.groundMeshTexture.dispose();
+      this.groundMeshTexture = null;
     }
 
     // Clean up managers
@@ -1278,12 +1359,14 @@ export abstract class HexagonScene {
 
     // Clear listeners
     this.cameraViewListeners.clear();
+    this.cameraTransitionListeners.clear();
 
     // Clean up any pending promises or model loading
     this.modelLoadPromises = [];
 
     // Finally, clear the scene
     this.scene.clear();
+    this.interactionOverlayScene.clear();
 
     console.log(`[HexagonScene] Destroyed ${this.sceneName}`);
   }
@@ -1297,6 +1380,14 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition | null): void;
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
+
+  /**
+   * Fallback selection path when hex-based ground plane picking fails.
+   * Override in subclasses to try direct army model raycasting.
+   */
+  protected tryArmyRaycastFallback(_raycaster: Raycaster): HexPosition | null {
+    return null;
+  }
   public abstract setup(): void | Promise<void>;
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(nextSceneName?: SceneName): void;
@@ -1320,31 +1411,24 @@ export abstract class HexagonScene {
     this.cameraViewListeners.delete(listener);
   }
 
-  public changeCameraView(position: CameraView) {
-    console.log("HexagonScene changeCameraView:", this.currentCameraView, "->", position);
-    const previousView = this.currentCameraView;
-    const target = this.controls.target;
-    this.currentCameraView = position;
+  public addCameraTransitionListener(listener: (status: CameraTransitionStatus) => void) {
+    this.cameraTransitionListeners.add(listener);
+    listener(this.cameraTransitionStatus);
+  }
 
-    switch (position) {
-      case CameraView.Close: // Close view
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-        this.mainDirectionalLight.shadow.bias = -0.02;
-        this.cameraDistance = 10;
-        this.cameraAngle = Math.PI / 6; // 30 degrees
-        break;
-      case CameraView.Medium: // Medium view
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-        this.mainDirectionalLight.shadow.bias = -0.015;
-        this.cameraDistance = 20;
-        this.cameraAngle = Math.PI / 3; // 60 degrees
-        break;
-      case CameraView.Far: // Far view
-        this.mainDirectionalLight.castShadow = false;
-        this.cameraDistance = 40;
-        this.cameraAngle = (50 * Math.PI) / 180; // 50 degrees
-        break;
+  public removeCameraTransitionListener(listener: (status: CameraTransitionStatus) => void) {
+    this.cameraTransitionListeners.delete(listener);
+  }
+
+  public changeCameraView(position: CameraView) {
+    console.log("HexagonScene changeCameraView:", this.targetCameraView, "->", position);
+    const previousView = this.targetCameraView;
+    const target = this.controls.target;
+    if (position !== previousView) {
+      incrementWorldmapRenderCounter("zoomTransitionsStarted");
     }
+    this.targetCameraView = position;
+    this.applyTargetCameraView(position);
 
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
@@ -1352,13 +1436,12 @@ export abstract class HexagonScene {
     const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
     const viewDelta = Math.abs(position - previousView);
     const duration = viewDelta > 0 ? 0.6 + viewDelta * 0.4 : 0.6;
-    this.updateOutlineOpacityForDistance(this.cameraDistance);
-    this.updateCameraClipPlanesForDistance(this.cameraDistance);
-    this.updateFogForDistance(this.cameraDistance);
-    this.cameraAnimate(newPosition, target, duration);
-
-    // Notify all listeners of the camera view change
-    this.cameraViewListeners.forEach((listener) => listener(position));
+    this.cameraAnimate(newPosition, target, duration, () => {
+      if (position !== previousView) {
+        incrementWorldmapRenderCounter("zoomTransitionsCompleted");
+      }
+      this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
+    });
   }
 
   private updateCameraClipPlanesForDistance(distance: number): void {
@@ -1409,5 +1492,65 @@ export abstract class HexagonScene {
     this.fog.far = desiredFar;
     this.lastFogNear = desiredNear;
     this.lastFogFar = desiredFar;
+  }
+
+  private applyTargetCameraView(position: CameraView): void {
+    switch (position) {
+      case CameraView.Close:
+        this.cameraDistance = 10;
+        this.cameraAngle = Math.PI / 6;
+        break;
+      case CameraView.Medium:
+        this.cameraDistance = 20;
+        this.cameraAngle = Math.PI / 3;
+        break;
+      case CameraView.Far:
+        this.cameraDistance = 40;
+        this.cameraAngle = (50 * Math.PI) / 180;
+        break;
+    }
+  }
+
+  private applyResolvedCameraView(view: CameraView): void {
+    if (!this.mainDirectionalLight) {
+      return;
+    }
+
+    switch (view) {
+      case CameraView.Close:
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+        this.mainDirectionalLight.shadow.bias = -0.02;
+        break;
+      case CameraView.Medium:
+        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+        this.mainDirectionalLight.shadow.bias = -0.015;
+        break;
+      case CameraView.Far:
+        this.mainDirectionalLight.castShadow = false;
+        break;
+    }
+  }
+
+  private syncResolvedCameraViewFromDistance(distance: number): void {
+    const nextView = resolveWorldmapViewFromDistance({
+      currentView: this.currentCameraView,
+      distance,
+    });
+    if (nextView === this.currentCameraView) {
+      return;
+    }
+
+    this.currentCameraView = nextView;
+    this.applyResolvedCameraView(nextView);
+    this.cameraViewListeners.forEach((listener) => listener(nextView));
+  }
+
+  private setCameraTransitionStatus(status: CameraTransitionStatus): void {
+    if (this.cameraTransitionStatus === status) {
+      return;
+    }
+
+    this.cameraTransitionStatus = status;
+    this.cameraTransitionListeners.forEach((listener) => listener(status));
   }
 }

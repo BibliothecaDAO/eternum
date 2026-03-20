@@ -31,6 +31,7 @@ interface ToriiStreamManagerConfig {
   setup: SetupResult;
   logging?: boolean;
   clauseBuilder?: (descriptor: BoundsDescriptor) => Clause | null;
+  onUpdate?: () => void;
 }
 
 export interface GlobalModelStreamConfig {
@@ -86,18 +87,27 @@ export class ToriiStreamManager {
   private readonly client: ToriiClient;
   private readonly setup: SetupResult;
   private readonly logging: boolean;
+  private readonly onUpdate?: () => void;
   private currentSubscription: { cancel: () => void } | null = null;
   private pendingSwitch: Promise<BoundsSwitchResult> | null = null;
   private switchQueue: Promise<unknown> = Promise.resolve();
   private latestSwitchRequestId = 0;
   private clauseBuilder: (descriptor: BoundsDescriptor) => Clause | null;
   private currentSignature: string | null = null;
+  private lastDescriptor: BoundsDescriptor | null = null;
 
-  constructor({ client, setup, logging = false, clauseBuilder = defaultClauseBuilder }: ToriiStreamManagerConfig) {
+  constructor({
+    client,
+    setup,
+    logging = false,
+    clauseBuilder = defaultClauseBuilder,
+    onUpdate,
+  }: ToriiStreamManagerConfig) {
     this.client = client;
     this.setup = setup;
     this.logging = logging;
     this.clauseBuilder = clauseBuilder;
+    this.onUpdate = onUpdate;
   }
 
   async start(descriptor: BoundsDescriptor): Promise<BoundsSwitchResult> {
@@ -105,6 +115,8 @@ export class ToriiStreamManager {
   }
 
   async switchBounds(descriptor: BoundsDescriptor): Promise<BoundsSwitchResult> {
+    this.lastDescriptor = descriptor;
+
     const signature = JSON.stringify({
       minCol: descriptor.minCol,
       maxCol: descriptor.maxCol,
@@ -123,7 +135,7 @@ export class ToriiStreamManager {
     const requestId = ++this.latestSwitchRequestId;
 
     const task = this.switchQueue.then(async (): Promise<BoundsSwitchResult> => {
-      const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging);
+      const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging, this.onUpdate);
 
       // A newer request superseded this one while it was in flight; drop the stale subscription.
       if (requestId !== this.latestSwitchRequestId) {
@@ -168,6 +180,14 @@ export class ToriiStreamManager {
 
   shutdown() {
     this.cancelCurrentSubscription();
+  }
+
+  async resubscribe(): Promise<BoundsSwitchResult | null> {
+    this.currentSignature = null;
+    if (this.lastDescriptor) {
+      return this.switchBounds(this.lastDescriptor);
+    }
+    return null;
   }
 }
 

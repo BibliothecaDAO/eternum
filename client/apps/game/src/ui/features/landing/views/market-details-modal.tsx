@@ -1,35 +1,36 @@
-import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { formatUnits } from "@/pm/utils";
+import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
+import { TokenIcon } from "@/ui/features/market/landing-markets/token-icon";
+import { useAccount } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
+import { MarketsProviders } from "@/ui/features/market/markets-providers";
+import { MarketOdds } from "@/ui/features/market/landing-markets/market-odds";
+import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
+import { MarketTimeline } from "@/ui/features/market/landing-markets/market-timeline";
 import { MarketActivity } from "@/ui/features/market/landing-markets/details/market-activity";
 import { MarketFees } from "@/ui/features/market/landing-markets/details/market-fees";
 import { MarketHistory } from "@/ui/features/market/landing-markets/details/market-history";
 import { MarketPositions } from "@/ui/features/market/landing-markets/details/market-positions";
 import {
   MarketResolutionView,
-  useMarketResolutionController,
   type MarketResolutionController,
+  useMarketResolutionController,
 } from "@/ui/features/market/landing-markets/details/market-resolution";
 import { MarketResolved } from "@/ui/features/market/landing-markets/details/market-resolved";
 import { MarketTrade } from "@/ui/features/market/landing-markets/details/market-trade";
 import { MarketVaultFees } from "@/ui/features/market/landing-markets/details/market-vault-fees";
-import { MarketOdds } from "@/ui/features/market/landing-markets/market-odds";
-import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
-import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
-import { TokenIcon } from "@/ui/features/market/landing-markets/token-icon";
 import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
 import { useMarketWatch } from "@/ui/features/market/landing-markets/use-market-watch";
-import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import { getContractByName } from "@dojoengine/core";
 import { useMarket } from "@pm/sdk";
-import { useAccount } from "@starknet-react/core";
-import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Loader2, Play, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addAddressPadding } from "starknet";
+import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 
 interface MarketDetailsModalProps {
   market: MarketClass;
@@ -45,7 +46,7 @@ type MarketDetailsTabKey = "terms" | "activity" | "positions" | "vault-fees" | "
 const MARKET_DETAIL_TABS: Array<{ key: MarketDetailsTabKey; label: string }> = [
   { key: "terms", label: "Terms" },
   { key: "activity", label: "Activity" },
-  { key: "positions", label: "Positions" },
+  { key: "positions", label: "My Positions" },
   { key: "vault-fees", label: "Vault Fees" },
   { key: "resolution", label: "Resolution" },
 ];
@@ -106,9 +107,9 @@ const renderTabContent = (
 ) => {
   if (tab === "terms") {
     return market.terms ? (
-      <div className="text-sm leading-relaxed text-gold/80" dangerouslySetInnerHTML={{ __html: market.terms }} />
+      <div className="text-sm leading-relaxed text-white/80" dangerouslySetInnerHTML={{ __html: market.terms }} />
     ) : (
-      <p className="text-sm text-gold/60">No terms provided.</p>
+      <p className="text-sm text-white/60">No terms provided.</p>
     );
   }
 
@@ -137,7 +138,7 @@ const MarketDetailsTabs = ({
   const [mobileOpenTab, setMobileOpenTab] = useState<MarketDetailsTabKey>("terms");
 
   return (
-    <div className="rounded-xl border border-gold/15 bg-black/45 p-3 md:p-4">
+    <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
       <div className="hidden md:block">
         <div className="mb-3 flex flex-nowrap items-center gap-1.5">
           {MARKET_DETAIL_TABS.map((tab) => (
@@ -146,8 +147,8 @@ const MarketDetailsTabs = ({
               className={cx(
                 "whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold tracking-[0.06em] leading-none transition-colors",
                 activeTab === tab.key
-                  ? "border-gold/70 bg-gold/15 text-gold"
-                  : "border-gold/20 bg-black/35 text-gold/70 hover:border-gold/40 hover:bg-gold/10",
+                  ? "border-orange/70 bg-orange/20 text-orange"
+                  : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10",
               )}
               onClick={() => setActiveTab(tab.key)}
               type="button"
@@ -157,7 +158,7 @@ const MarketDetailsTabs = ({
           ))}
         </div>
 
-        <div className="rounded-lg border border-gold/15 bg-black/40 p-4">
+        <div className="rounded-lg border border-white/10 bg-black/35 p-4">
           {renderTabContent(activeTab, market, refreshKey, chain, address, resolution)}
         </div>
       </div>
@@ -167,19 +168,19 @@ const MarketDetailsTabs = ({
           const isOpen = mobileOpenTab === tab.key;
 
           return (
-            <div key={tab.key} className="rounded-lg border border-gold/15 bg-black/40">
+            <div key={tab.key} className="rounded-lg border border-white/10 bg-black/35">
               <button
                 type="button"
                 className="flex w-full items-center justify-between px-3 py-2.5 text-left"
                 onClick={() => setMobileOpenTab(tab.key)}
                 aria-expanded={isOpen}
               >
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-gold/80">{tab.label}</span>
-                <ChevronDown className={cx("h-4 w-4 text-gold/60 transition-transform", isOpen && "rotate-180")} />
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-white/80">{tab.label}</span>
+                <ChevronDown className={cx("h-4 w-4 text-white/60 transition-transform", isOpen && "rotate-180")} />
               </button>
 
               {isOpen ? (
-                <div className="border-t border-gold/15 p-3">
+                <div className="border-t border-white/10 p-3">
                   {renderTabContent(tab.key, market, refreshKey, chain, address, resolution)}
                 </div>
               ) : null}
@@ -329,10 +330,6 @@ const MarketDetailsModalContent = ({
     () => formatCompactAmount(allTimeVolumeRaw, Number(market.collateralToken?.decimals ?? 18)),
     [allTimeVolumeRaw, market.collateralToken?.decimals],
   );
-  const isLordsCollateral = useMemo(
-    () => (market.collateralToken?.symbol ?? "").toLowerCase() === "lords",
-    [market.collateralToken?.symbol],
-  );
   const liquidityDisplay = useMemo(() => market.getTvl() || "0", [market]);
   const holdersCount = useMemo(() => {
     if (!vaultPositionsAddress || positionIds.length === 0) return holdersFromBuysCount;
@@ -451,8 +448,8 @@ const MarketDetailsModalContent = ({
   }, [handleRefresh, redeem]);
 
   return (
-    <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-gold/15 bg-black/95 shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
-      <div className="border-b border-gold/15 px-4 py-4 md:px-6 md:py-5">
+    <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-white/10 bg-[#04060b] shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
+      <div className="border-b border-white/10 px-4 py-4 md:px-6 md:py-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -463,22 +460,22 @@ const MarketDetailsModalContent = ({
                 className={cx(
                   "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]",
                   chainLabel === "Mainnet"
-                    ? "border-gold/35 bg-gold/10 text-gold/90"
-                    : "border-brilliance/45 bg-brilliance/10 text-brilliance/95",
+                    ? "border-blue-400/40 bg-blue-500/10 text-blue-300"
+                    : "border-emerald-400/40 bg-emerald-500/10 text-emerald-300",
                 )}
               >
                 {chainLabel}
               </span>
               <MarketStatusBadge market={market} />
             </div>
-            <p className="mt-1 text-sm text-gold/70">
+            <p className="mt-1 text-sm text-white/70">
               Created by <MaybeController address={market.creator} />
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             {isTradeSyncing ? (
-              <span className="rounded-full border border-brilliance/45 bg-brilliance/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-brilliance">
+              <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-200">
                 Syncing...
               </span>
             ) : null}
@@ -488,10 +485,10 @@ const MarketDetailsModalContent = ({
                 onClick={() => void handleResolveOneClick()}
                 disabled={resolveOneClickDisabled}
                 className={cx(
-                  "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+                  "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#04060b]",
                   resolveOneClickDisabled
-                    ? "cursor-not-allowed border-gold/15 bg-black/35 text-gold/35"
-                    : "border-gold/70 bg-gold/20 text-gold shadow-[0_0_16px_rgba(223,170,84,0.22)] hover:border-gold hover:bg-gold/30",
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
+                    : "border-orange/80 bg-orange/20 text-orange shadow-[0_0_16px_rgba(251,146,60,0.22)] hover:border-orange hover:bg-orange/30",
                 )}
                 title={resolveOneClickTitle}
                 aria-label={resolveOneClickAriaLabel}
@@ -513,8 +510,8 @@ const MarketDetailsModalContent = ({
                 className={cx(
                   "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
                   claimDisabled
-                    ? "cursor-not-allowed border-gold/15 bg-black/35 text-gold/35"
-                    : "border-brilliance/45 bg-brilliance/10 text-brilliance hover:border-brilliance/70 hover:bg-brilliance/15",
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
+                    : "border-emerald-400/60 bg-emerald-500/15 text-emerald-300 hover:border-emerald-300 hover:bg-emerald-500/25",
                 )}
               >
                 {isRedeeming ? "Claiming..." : `Claim ${claimableDisplay}`}
@@ -527,8 +524,8 @@ const MarketDetailsModalContent = ({
                 className={cx(
                   "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
                   isLoading || isTradeSyncing
-                    ? "cursor-not-allowed border-gold/15 bg-black/35 text-gold/35"
-                    : "border-gold/70 bg-gold/15 text-gold hover:border-gold hover:bg-gold/25",
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
+                    : "border-orange/70 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25",
                 )}
                 title="Refresh market data"
                 aria-label="Refresh market data"
@@ -542,7 +539,7 @@ const MarketDetailsModalContent = ({
                 type="button"
                 onClick={() => void handleRefresh()}
                 disabled={isLoading || isTradeSyncing}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gold/20 bg-black/35 text-gold/75 transition-colors hover:border-gold/40 hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/75 transition-colors hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 title="Refresh market data"
                 aria-label="Refresh market data"
               >
@@ -558,8 +555,8 @@ const MarketDetailsModalContent = ({
                 className={cx(
                   "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
                   watchDisabled
-                    ? "cursor-not-allowed border-gold/15 bg-black/35 text-gold/35"
-                    : "border-gold/20 bg-black/35 text-gold/75 hover:border-gold/40 hover:bg-gold/10",
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
+                    : "border-white/15 bg-white/5 text-white/75 hover:border-white/30 hover:bg-white/10",
                 )}
                 title="Watch game"
                 aria-label="Watch game"
@@ -571,7 +568,7 @@ const MarketDetailsModalContent = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-2 text-gold/60 transition-colors hover:bg-gold/10 hover:text-gold"
+              className="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
               aria-label="Close"
             >
               <X className="h-5 w-5" />
@@ -580,51 +577,53 @@ const MarketDetailsModalContent = ({
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-5">
-          <div className="rounded-lg border border-gold/25 bg-gold/10 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-gold/80">All-time Volume</p>
-            <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-gold">
-              {isLordsCollateral ? (
-                <img src="/tokens/lords.png" alt="LORDS" className="h-3.5 w-3.5 rounded-full object-contain" />
-              ) : (
-                <TokenIcon token={market.collateralToken} size={13} />
-              )}
-              {volumeDisplay}
+          <div className="rounded-lg border border-orange/40 bg-orange/10 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-orange/80">All-time Volume</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-orange">
+              {volumeDisplay} {market.collateralToken?.symbol || ""}
+              <TokenIcon token={market.collateralToken} size={13} />
             </p>
           </div>
 
-          <div className="rounded-lg border border-gold/15 bg-black/35 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-gold/45">Liquidity</p>
-            <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-lightest">
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Liquidity</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-white">
               {liquidityDisplay}
               <TokenIcon token={market.collateralToken} size={13} />
             </p>
           </div>
 
-          <div className="rounded-lg border border-gold/15 bg-black/35 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-gold/45">Holders</p>
-            <p className="mt-1 text-sm font-semibold text-lightest">{holdersCount != null ? holdersCount : "--"}</p>
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Holders</p>
+            <p className="mt-1 text-sm font-semibold text-white">{holdersCount != null ? holdersCount : "--"}</p>
           </div>
 
-          <div className="rounded-lg border border-gold/15 bg-black/35 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-gold/45">Trading Ends</p>
-            <p className="mt-1 text-sm font-semibold text-lightest">{endLabel}</p>
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Trading Ends</p>
+            <p className="mt-1 text-sm font-semibold text-white">{endLabel}</p>
           </div>
 
-          <div className="rounded-lg border border-gold/15 bg-black/35 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-gold/45">Resolves In</p>
-            <p className="mt-1 text-sm font-semibold text-lightest">{resolveLabel}</p>
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">Resolves In</p>
+            <p className="mt-1 text-sm font-semibold text-white">{resolveLabel}</p>
           </div>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-hide px-4 py-4 md:px-6 md:py-5 lg:overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 py-4 md:px-6 md:py-5 lg:overflow-hidden">
         <div className="flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:overflow-hidden">
           <div className="min-h-0 scrollbar-hide lg:h-full lg:flex-1 lg:overflow-y-auto lg:pr-1">
             <div className="space-y-4">
+              <div className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
+                <MarketTimeline market={market} />
+              </div>
+
               <MarketHistory market={market} refreshKey={refreshKey} />
 
-              <section className="rounded-xl border border-gold/15 bg-black/45 p-3 md:p-4">
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-gold/55">Outcomes & Odds</h3>
+              <section className="rounded-xl border border-white/10 bg-[#070b12]/85 p-3 md:p-4">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/55">
+                  Outcomes & Odds
+                </h3>
                 <MarketOdds
                   market={market}
                   selectable
@@ -632,8 +631,6 @@ const MarketDetailsModalContent = ({
                   onSelect={(outcome) => setSelectedOutcome(outcome)}
                   maxVisible={4}
                   collapsible
-                  showPlayerMeta
-                  variant="list"
                 />
               </section>
 
@@ -664,33 +661,12 @@ const MarketDetailsModalContent = ({
   );
 };
 
-const MarketDetailsModalLoadingFallback = ({ onClose }: { onClose: () => void }) => (
-  <div className="relative mx-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-gold/15 bg-black/95 shadow-2xl md:h-[90vh] md:max-h-[90vh] md:rounded-2xl">
-    <div className="flex items-center justify-end border-b border-gold/15 px-4 py-4 md:px-6 md:py-5">
-      <button
-        type="button"
-        onClick={onClose}
-        className="rounded-lg p-2 text-gold/60 transition-colors hover:bg-gold/10 hover:text-gold"
-        aria-label="Close"
-      >
-        <X className="h-5 w-5" />
-      </button>
-    </div>
-    <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-8">
-      <div className="flex items-center gap-3 rounded-xl border border-gold/25 bg-black/40 px-4 py-3 text-sm text-gold/85">
-        <Loader2 className="h-4 w-4 animate-spin text-gold" />
-        <span>Loading market data...</span>
-      </div>
-    </div>
-  </div>
-);
-
 /**
  * Modal wrapper that provides the necessary context providers
  */
 export const MarketDetailsModal = ({ market, chain, initialOutcomeIndex, onClose }: MarketDetailsModalProps) => {
   return (
-    <MarketsProviders chain={chain} loadingFallback={<MarketDetailsModalLoadingFallback onClose={onClose} />}>
+    <MarketsProviders chain={chain}>
       <MarketDetailsModalContent
         initialMarket={market}
         chain={chain}

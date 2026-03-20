@@ -152,10 +152,13 @@ export class WorldUpdateListener {
     callback: (value: T) => void,
     getUpdate: (update: any) => T | Promise<T | undefined>,
     runOnInit = true,
-  ) {
+  ): () => void {
+    let active = true;
+
     const handleUpdate = async (update: any) => {
+      if (!active) return;
       const value = await getUpdate(update);
-      if (value) {
+      if (value && active) {
         // Add console log for every update before calling the callback
         // console.log(`[WorldUpdateListener] [${component?.metadata?.name ?? "<unknown>"}] update:`, value);
         callback(value);
@@ -165,6 +168,10 @@ export class WorldUpdateListener {
     defineComponentSystem(this.setup.network.world, component, handleUpdate, {
       runOnInit,
     });
+
+    return () => {
+      active = false;
+    };
   }
 
   public get Army() {
@@ -699,8 +706,8 @@ export class WorldUpdateListener {
 
   public get Buildings() {
     return {
-      onBuildingUpdate: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
-        this.setupSystem(
+      onBuildingUpdate: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void): (() => void) => {
+        return this.setupSystem(
           this.setup.components.Building,
           callback,
           async (update: any) => {

@@ -74,7 +74,7 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
     <div className="military-panel-selector p-3 space-y-3">
       <div className="grid grid-cols-2 gap-2 rounded-md border border-gold/15 bg-black/40 p-2 text-center">
         <div>
-          <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Attack Armies</div>
+          <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Field Armies</div>
           <div className="text-sm font-semibold text-gold">
             {totalExplorersCount} / {structure.base.troop_max_explorer_count}
           </div>
@@ -110,8 +110,8 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
               disabled={!isRealmOrVillage || totalExplorersCount >= structure.base.troop_max_explorer_count}
               className="px-3 py-2 flex items-center gap-2"
               onClick={handleCreateAttack}
-              aria-label="Create attack army"
-              title="Create attack army"
+              aria-label="Create field army"
+              title="Create field army"
             >
               <Sword className="h-4 w-4" />
             </Button>
@@ -169,7 +169,7 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xxs uppercase tracking-[0.12em] text-gold/60">
-            <span>Attack Armies</span>
+            <span>Field Armies</span>
             <span className="text-gold/70">
               {totalExplorersCount}/{structure.base.troop_max_explorer_count}
             </span>

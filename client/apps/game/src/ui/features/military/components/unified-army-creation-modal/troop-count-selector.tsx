@@ -72,18 +72,18 @@ export const TroopCountSelector = ({
 
         <div className="flex justify-between items-center text-xs">
           <span className="text-gold/60">
-            Available: <span className="text-gold font-bold">{maxAffordable.toLocaleString()}</span>
+            Available troops: <span className="text-gold font-bold">{maxAffordable.toLocaleString()}</span>
           </span>
           {shouldShowCapacityInfo && capacityLimitDisplay !== null && (
             <span className="text-gold/60">
-              Capacity: <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span>
+              Cap remaining: <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span>
             </span>
           )}
         </div>
 
         {isAtCapacity && maxCapacity !== null && (
           <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 text-xxs text-danger font-semibold">
-            Max capacity: {maxCapacity.toLocaleString()}
+            Deployment cap reached: {maxCapacity.toLocaleString()} troops
           </div>
         )}
 

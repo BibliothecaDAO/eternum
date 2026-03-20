@@ -29,6 +29,7 @@ describe("worldmap runtime lifecycle", () => {
     const clearTimeoutSpy = vi.fn();
     const clearPendingArmyMovementSpy = vi.fn();
     const clearQueuedPrefetchStateSpy = vi.fn();
+    const clearStreamingWorkSpy = vi.fn();
     const invalidatePendingFetchesSpy = vi.fn();
     const releaseInactiveResourcesSpy = vi.fn();
 
@@ -49,15 +50,18 @@ describe("worldmap runtime lifecycle", () => {
       hydratedRefreshSuppressionAreaKeys: new Set(),
       clearTimeout: clearTimeoutSpy,
       clearPendingArmyMovement: clearPendingArmyMovementSpy,
+      clearStreamingWork: clearStreamingWorkSpy,
       clearQueuedPrefetchState: clearQueuedPrefetchStateSpy,
       releaseInactiveResources: releaseInactiveResourcesSpy,
       invalidatePendingFetches: invalidatePendingFetchesSpy,
     });
 
-    expect(clearTimeoutSpy).toHaveBeenCalledTimes(2);
+    expect(clearTimeoutSpy).toHaveBeenCalledTimes(3);
+    expect(clearTimeoutSpy).toHaveBeenCalledWith("fallback-timeout");
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledTimes(2);
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(101);
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(202);
+    expect(clearStreamingWorkSpy).toHaveBeenCalledTimes(1);
     expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
     expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
     expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
@@ -87,6 +91,7 @@ describe("worldmap runtime lifecycle", () => {
     const clearTimeoutSpy = vi.fn();
     const clearPendingArmyMovementSpy = vi.fn();
     const clearQueuedPrefetchStateSpy = vi.fn();
+    const clearStreamingWorkSpy = vi.fn();
     const invalidatePendingFetchesSpy = vi.fn();
     const releaseInactiveResourcesSpy = vi.fn();
 
@@ -107,6 +112,7 @@ describe("worldmap runtime lifecycle", () => {
       hydratedRefreshSuppressionAreaKeys: new Set(),
       clearTimeout: clearTimeoutSpy,
       clearPendingArmyMovement: clearPendingArmyMovementSpy,
+      clearStreamingWork: clearStreamingWorkSpy,
       clearQueuedPrefetchState: clearQueuedPrefetchStateSpy,
       releaseInactiveResources: releaseInactiveResourcesSpy,
       invalidatePendingFetches: invalidatePendingFetchesSpy,
@@ -114,6 +120,7 @@ describe("worldmap runtime lifecycle", () => {
 
     expect(clearTimeoutSpy).not.toHaveBeenCalled();
     expect(clearPendingArmyMovementSpy).not.toHaveBeenCalled();
+    expect(clearStreamingWorkSpy).toHaveBeenCalledTimes(1);
     expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
     expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
     expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
@@ -183,6 +190,7 @@ describe("worldmap runtime lifecycle", () => {
       nextSceneName: SceneName.FastTravel,
       clearTimeout: vi.fn(),
       clearPendingArmyMovement: vi.fn(),
+      clearStreamingWork: vi.fn(),
       clearQueuedPrefetchState: vi.fn(),
       releaseInactiveResources: releaseInactiveResourcesSpy,
       invalidatePendingFetches: invalidatePendingFetchesSpy,
@@ -192,6 +200,36 @@ describe("worldmap runtime lifecycle", () => {
     expect(hydratedRefreshSuppressionAreaKeys.size).toBe(0);
     expect(releaseInactiveResourcesSpy).toHaveBeenCalledTimes(1);
     expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears suppressedArmies when provided", () => {
+    const suppressedArmies = new Set<number>([101, 202]);
+
+    applyWorldmapSwitchOffRuntimeState({
+      pendingArmyRemovals: new Map(),
+      pendingArmyRemovalMeta: new Map(),
+      deferredChunkRemovals: new Map(),
+      armyLastUpdateAt: new Map(),
+      pendingArmyMovements: new Set(),
+      pendingArmyMovementStartedAt: new Map(),
+      pendingArmyMovementFallbackTimeouts: new Map(),
+      armyStructureOwners: new Map(),
+      suppressedArmies,
+      fetchedChunks: new Set(),
+      pendingChunks: new Map(),
+      pinnedChunkKeys: new Set(),
+      pinnedRenderAreas: new Set(),
+      hydratedChunkRefreshes: new Set(),
+      hydratedRefreshSuppressionAreaKeys: new Set(),
+      clearTimeout: vi.fn(),
+      clearPendingArmyMovement: vi.fn(),
+      clearStreamingWork: vi.fn(),
+      clearQueuedPrefetchState: vi.fn(),
+      releaseInactiveResources: vi.fn(),
+      invalidatePendingFetches: vi.fn(),
+    });
+
+    expect(suppressedArmies.size).toBe(0);
   });
 
   it("invalidates stale fetch generations after switch-off", () => {
