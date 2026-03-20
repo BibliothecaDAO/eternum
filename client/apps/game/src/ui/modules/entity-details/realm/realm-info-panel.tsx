@@ -9,9 +9,12 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
+import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
+import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { inferRealmPreset } from "@/utils/automation-presets";
 import {
   Position,
+  formatTime,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
@@ -31,6 +34,7 @@ import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Shield from "lucide-react/dist/esm/icons/shield";
 import Sword from "lucide-react/dist/esm/icons/sword";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 const ProductionStatusPill = ({ statusLabel }: { statusLabel: string }) => (
   <span className="rounded-full border border-gold/30 bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/80">
@@ -112,7 +116,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
   const automationRealms = useAutomationStore((state) => state.realms);
-  const { setup, account } = useDojo();
+  const { setup, account, network } = useDojo();
   const components = setup.components as ClientComponents;
   const { isMapView } = useQuery();
   const goToStructure = useGoToStructure(setup);
@@ -126,6 +130,10 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     components.Resource,
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   ) as ComponentValue<ClientComponents["Resource"]["schema"]> | null;
+  const villageTroop = useComponentValue(
+    components.VillageTroop,
+    structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
+  ) as ComponentValue<ClientComponents["VillageTroop"]["schema"]> | null;
 
   const isRealm = structure?.base?.category === StructureType.Realm;
   const isVillage = structure?.base?.category === StructureType.Village;
@@ -174,7 +182,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   );
 
-  const { currentArmiesTick } = useBlockTimestamp();
+  const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
 
   const relicEffects = useMemo(() => {
     if (!structure) return [];
@@ -204,6 +212,56 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structure?.base?.troop_max_explorer_count !== undefined ? Number(structure.base.troop_max_explorer_count) : null;
   const maxGuardArmies =
     structure?.base?.troop_max_guard_count !== undefined ? Number(structure.base.troop_max_guard_count) : null;
+  const shouldRenderVillageUi = isVillage;
+  const isVillageMilitiaClaimed = Boolean(villageTroop?.claimed);
+  const [isClaimingVillageMilitia, setIsClaimingVillageMilitia] = useState(false);
+
+  const villageTimerSummary = useMemo(() => {
+    if (!shouldRenderVillageUi || !structure || !currentBlockTimestamp) {
+      return null;
+    }
+
+    return buildVillageTimerSummary({
+      createdAtTimestamp: structure.base?.created_at,
+      currentBlockTimestamp,
+    });
+  }, [currentBlockTimestamp, shouldRenderVillageUi, structure]);
+
+  const isMilitiaClaimActionVisible = isVillage && isOwned;
+  const isMilitiaClaimReady = (villageTimerSummary?.militiaUnlockRemainingSeconds ?? 1) <= 0;
+  const canClaimVillageMilitia = isMilitiaClaimActionVisible && isMilitiaClaimReady && !isVillageMilitiaClaimed;
+  const shouldRenderMilitiaClaimCard = isMilitiaClaimActionVisible;
+
+  const handleClaimVillageMilitia = useCallback(async () => {
+    if (!canClaimVillageMilitia || !structureEntityId) {
+      return;
+    }
+
+    setIsClaimingVillageMilitia(true);
+    try {
+      const claimResult = await setup.systemCalls.receive_army_grant({
+        signer: account.account,
+        village_id: Number(structureEntityId),
+      });
+
+      const txHash = extractTransactionHash(claimResult);
+      if (txHash) {
+        await waitForTransactionConfirmation({
+          txHash,
+          provider: network.provider as { waitForTransactionWithCheck?: (hash: string) => Promise<unknown> },
+          account: account.account as { waitForTransaction?: (hash: string) => Promise<unknown> },
+          label: "village militia claim",
+        });
+      }
+
+      toast.success("Village militia claimed.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to claim village militia.";
+      toast.error(message);
+    } finally {
+      setIsClaimingVillageMilitia(false);
+    }
+  }, [account.account, canClaimVillageMilitia, network.provider, setup.systemCalls, structureEntityId]);
 
   if (!structure || (!isRealm && !isVillage && !canShowBalanceOnly)) {
     return (
@@ -282,6 +340,70 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
         <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
       )}
 
+      {shouldRenderVillageUi && (
+        <div className="rounded border border-gold/20 bg-black/50 p-2">
+          <div className="text-xxs uppercase tracking-[0.2em] text-gold/60">Village Timers</div>
+          {villageTimerSummary ? (
+            <div className="mt-2 space-y-1 text-xxs text-gold/80">
+              <div className="flex items-center justify-between gap-2 rounded border border-gold/10 bg-black/20 px-2 py-1">
+                <span>Militia unlock</span>
+                <span className="font-semibold text-gold">
+                  {villageTimerSummary.militiaUnlockRemainingSeconds > 0
+                    ? formatTime(villageTimerSummary.militiaUnlockRemainingSeconds)
+                    : "Ready"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 rounded border border-gold/10 bg-black/20 px-2 py-1">
+                <span>Settlement raid immunity</span>
+                <span className="font-semibold text-gold">
+                  {villageTimerSummary.settlementImmunityRemainingSeconds > 0
+                    ? formatTime(villageTimerSummary.settlementImmunityRemainingSeconds)
+                    : "Expired"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 rounded border border-gold/10 bg-black/20 px-2 py-1">
+                <span>Post-raid resource immunity window</span>
+                <span className="font-semibold text-gold">
+                  {villageTimerSummary.postRaidImmunityWindowSeconds > 0
+                    ? formatTime(villageTimerSummary.postRaidImmunityWindowSeconds)
+                    : "Unavailable"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-2 text-xxs text-gold/60 italic">Village timer data unavailable.</p>
+          )}
+          {shouldRenderMilitiaClaimCard && (
+            <div className="mt-2 rounded border border-gold/15 bg-black/20 p-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void handleClaimVillageMilitia();
+                }}
+                disabled={!canClaimVillageMilitia || isClaimingVillageMilitia}
+                className={cn(
+                  "w-full rounded border px-2 py-1 text-xxs font-semibold uppercase tracking-[0.12em] transition",
+                  canClaimVillageMilitia && !isClaimingVillageMilitia
+                    ? "border-gold/70 bg-gold/15 text-gold hover:bg-gold/25"
+                    : "cursor-not-allowed border-gold/25 bg-black/30 text-gold/50",
+                )}
+              >
+                {isClaimingVillageMilitia
+                  ? "Claiming Militia..."
+                  : isVillageMilitiaClaimed
+                    ? "Militia Claimed"
+                    : canClaimVillageMilitia
+                      ? "Claim Militia (Onchain)"
+                      : "Militia Locked"}
+              </button>
+              {!isVillageMilitiaClaimed && !canClaimVillageMilitia && (
+                <p className="mt-1 text-[10px] text-gold/65">Militia claim unlocks after the timer reaches ready.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {(isRealm || isVillage) && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">
           <div className="flex items-center justify-between gap-2">
@@ -304,8 +426,8 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                   });
                 }}
                 disabled={!isOwned || !structureEntityId}
-                aria-label="Create attack army"
-                title="Create attack army"
+                aria-label="Create field army"
+                title="Create field army"
               >
                 <Sword className="h-4 w-4" />
               </button>
@@ -337,7 +459,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <div className="rounded border border-gold/10 bg-[#1b140f]/80 p-2">
-              <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Attack Armies</div>
+              <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Field Armies</div>
               <div className="mt-1 text-sm font-semibold text-gold">
                 {attackArmyCount}
                 {maxAttackArmies !== null ? ` / ${maxAttackArmies}` : ""}

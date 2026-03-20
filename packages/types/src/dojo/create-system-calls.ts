@@ -417,6 +417,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.create_village(props);
   };
 
+  const receive_army_grant = async (
+    props: SystemProps.ReceiveArmyGrantProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.receive_army_grant(props);
+  };
+
   const open_loot_chest = async (props: SystemProps.OpenLootChestProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.open_loot_chest(props);
   };
@@ -523,6 +529,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
     create_village: withAuth(create_village),
+    receive_army_grant: withAuth(receive_army_grant),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),

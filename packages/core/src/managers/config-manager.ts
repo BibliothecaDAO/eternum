@@ -653,6 +653,26 @@ export class ClientConfigManager {
     }, 0);
   }
 
+  getVillageSettlementImmunityTickCount() {
+    return this.getValueOrDefault(() => {
+      const battleConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.battle_config;
+      return Number(battleConfig?.village_immunity_ticks ?? 0);
+    }, 0);
+  }
+
+  getVillagePostRaidImmunityTickCount() {
+    return this.getValueOrDefault(() => {
+      const battleConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.battle_config;
+      return Number(battleConfig?.village_raid_immunity_ticks ?? 0);
+    }, 0);
+  }
+
   getMinTravelStaminaCost() {
     return this.getValueOrDefault(() => {
       const staminaConfig = getComponentValue(

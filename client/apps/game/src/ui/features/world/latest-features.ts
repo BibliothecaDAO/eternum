@@ -9,6 +9,55 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-20",
+    title: "Removed Village Preview Mode",
+    description:
+      "Village timer and militia claim panels now render only for real villages, removing the mock preview mode from owned realms.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Village Pass Distributor Transfer",
+    description:
+      "Village settlement now shows the distributor wallet pass balance, adds a one-click transfer to your connected wallet, and limits village placement realm choices to settled realms that still have free village slots.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-18",
+    title: "Village Militia Claim Action",
+    description:
+      "Owned village timer panels now include an onchain claim button for militia grants once the unlock timer is ready, matching contract-required `receive_army_grant` flow.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-18",
+    title: "No-Scroll Village Timer Grid",
+    description:
+      "Village intel in selected-tile details now uses a fixed three-cell micro-grid on small screens, so militia and immunity timings stay visible without horizontal scrolling.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Compact Village Intel Ribbon",
+    description:
+      "Selected-tile village timer info now uses a compact chip ribbon, preserving room for defense, production, and balance tabs while keeping militia and immunity timing visible.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Public Village Timer Intel",
+    description:
+      "Village militia unlock and raid-immunity timers now appear in selected-tile structure details, so any player can inspect village vulnerability windows without owning that structure.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Village Timers and Cap Readouts",
+    description:
+      "Village details now show militia unlock and raid-immunity timing, and troop create/transfer flows use consistent deployment-cap and army-strength readouts so military limits are clearer before action.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-18",
     title: "1v1 Capacity Display Fix",
     description:
