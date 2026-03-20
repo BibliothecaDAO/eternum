@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-lilt-10000",
-    "launchRequestId": "23366152008-1",
+    "gameName": "bltz-lilt-20000",
+    "launchRequestId": "23366386004-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23366152008,
+    "workflowRunId": 23366386004,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "6d4a431e-6810-4c98-9ff5-c9629aa64d2d"
+    "stepId": "create-world",
+    "leaseId": "9a3397e5-4bc2-4bc3-a026-bd434dcda4f1"
   },
-  "acquiredAt": "2026-03-20T23:11:50.232Z",
-  "heartbeatAt": "2026-03-20T23:11:54.342Z",
-  "expiresAt": "2026-03-20T23:11:54.342Z",
-  "releasedAt": "2026-03-20T23:11:54.342Z"
+  "acquiredAt": "2026-03-20T23:18:22.226Z",
+  "heartbeatAt": "2026-03-20T23:18:22.226Z",
+  "expiresAt": "2026-03-20T23:28:22.226Z"
 }
