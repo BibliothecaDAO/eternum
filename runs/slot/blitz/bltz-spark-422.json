@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23363430908-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-20T21:33:06.240Z",
-  "updatedAt": "2026-03-20T21:35:42.366Z",
+  "updatedAt": "2026-03-20T21:35:49.549Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,9 +35,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-03-20T21:35:49.549Z"
     },
     {
       "id": "configure-world",
@@ -64,5 +65,13 @@
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-blitz-bltz-spark-422.json",
     "createGameTxHash": "0x221e8a1227b1d97e4f860636790a4bfe104f095868ee5c8947a3517517db6f1"
+  },
+  "activeLease": {
+    "launchRequestId": "23363430908-1",
+    "workflowRunId": 23363430908,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-20T21:35:49.549Z",
+    "expiresAt": "2026-03-20T22:20:49.549Z"
   }
 }
