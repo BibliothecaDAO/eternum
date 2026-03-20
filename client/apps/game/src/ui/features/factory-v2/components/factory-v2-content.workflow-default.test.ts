@@ -4,15 +4,14 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("FactoryV2Content workflow default", () => {
-  it("keeps the workflow selection stable when the game type changes", () => {
+  it("defaults to the restored run instead of forcing the start panel", () => {
     const source = readFileSync(
       resolve(process.cwd(), "src/ui/features/factory-v2/components/factory-v2-content.tsx"),
       "utf8",
     );
 
-    expect(source).toContain('useState<FactoryWorkflowView>("start")');
+    expect(source).toContain("resolveInitialFactoryWorkflow(factory.selectedRun)");
+    expect(source).toContain('return selectedRun ? "watch" : "start";');
     expect(source).not.toContain('setSelectedWorkflow("start");');
-    expect(source).not.toContain("shouldAutoOpenWatch");
-    expect(source).not.toContain("dismissedWatchSessionKey");
   });
 });

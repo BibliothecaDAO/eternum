@@ -11,7 +11,9 @@ import { FactoryV2WorkflowSwitch, type FactoryWorkflowView } from "./factory-v2-
 export const FactoryV2Content = () => {
   const factory = useFactoryV2();
   const appearance = resolveFactoryModeAppearance(factory.selectedMode);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<FactoryWorkflowView>("start");
+  const [selectedWorkflow, setSelectedWorkflow] = useState<FactoryWorkflowView>(() =>
+    resolveInitialFactoryWorkflow(factory.selectedRun),
+  );
 
   const launchSelectedPreset = async () => {
     setSelectedWorkflow("watch");
@@ -127,3 +129,9 @@ export const FactoryV2Content = () => {
     </section>
   );
 };
+
+function resolveInitialFactoryWorkflow(
+  selectedRun: ReturnType<typeof useFactoryV2>["selectedRun"],
+): FactoryWorkflowView {
+  return selectedRun ? "watch" : "start";
+}

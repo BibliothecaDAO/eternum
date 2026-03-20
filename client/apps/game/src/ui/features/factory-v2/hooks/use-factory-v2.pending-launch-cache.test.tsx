@@ -160,6 +160,79 @@ describe("useFactoryV2 pending launch cache", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
+  it("writes the pending cache before the existing-run preflight resolves", async () => {
+    vi.mocked(readFactoryRunIfPresent).mockImplementation(() => new Promise(() => {}));
+
+    await act(async () => {
+      root.render(<HookHarness />);
+      await waitForAsyncWork();
+    });
+
+    await act(async () => {
+      void getFactory().launchSelectedPreset();
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(readFactoryPendingLaunches()).toEqual([
+        {
+          environmentId: "slot.blitz",
+          gameName: "blitz-launch-1",
+          mode: "blitz",
+          createdAt: expect.any(String),
+        },
+      ]);
+    });
+
+    expect(getFactory().selectedRun?.id).toBe("pending:slot.blitz:blitz-launch-1");
+    expect(getFactory().pendingRunName).toBe("blitz-launch-1");
+  });
+
+  it("rehydrates a just-started pending launch after remount while preflight is still unresolved", async () => {
+    vi.mocked(readFactoryRunIfPresent).mockImplementation(() => new Promise(() => {}));
+
+    await act(async () => {
+      root.render(<HookHarness />);
+      await waitForAsyncWork();
+    });
+
+    await act(async () => {
+      void getFactory().launchSelectedPreset();
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(readFactoryPendingLaunches()).toEqual([
+        {
+          environmentId: "slot.blitz",
+          gameName: "blitz-launch-1",
+          mode: "blitz",
+          createdAt: expect.any(String),
+        },
+      ]);
+    });
+
+    await act(async () => {
+      root.unmount();
+      await waitForAsyncWork();
+    });
+
+    root = createRoot(container);
+
+    await act(async () => {
+      root.render(<HookHarness />);
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(getFactory().selectedRun?.id).toBe("pending:slot.blitz:blitz-launch-1");
+    });
+
+    expect(getFactory().selectedMode).toBe("blitz");
+    expect(getFactory().selectedEnvironmentId).toBe("slot.blitz");
+    expect(getFactory().pendingRunName).toBe("blitz-launch-1");
+  });
+
   it("writes a pending cache entry as soon as launch begins", async () => {
     vi.mocked(createFactoryRun).mockImplementation(() => new Promise(() => {}));
 

@@ -499,29 +499,20 @@ export const useFactoryV2 = () => {
       return false;
     }
 
+    beginPendingLaunch(environmentId, requestedGameName);
+
     try {
       const existingRun = await openExistingRunIfPresent(environmentId, requestedGameName);
       if (existingRun) {
+        cancelPendingLaunch(environmentId, requestedGameName);
         setNotice(EXISTING_GAME_NOTICE);
         return true;
       }
     } catch (error) {
+      cancelPendingLaunch(environmentId, requestedGameName);
       setNotice(resolveWorkerErrorMessage(error));
       return false;
     }
-
-    rememberPendingLaunch({
-      environmentId,
-      gameName: requestedGameName,
-      mode: selectedMode,
-      createdAt: new Date().toISOString(),
-    });
-    setSelectedRunId(buildPendingRunId(environmentId, requestedGameName));
-    setPollingState({
-      status: "checking",
-      detail: FIRST_UPDATE_WAIT_MESSAGE,
-      lastCheckedAt: Date.now(),
-    });
 
     const launched = await runWatchedAction(
       {
@@ -561,7 +552,7 @@ export const useFactoryV2 = () => {
     );
 
     if (!launched) {
-      forgetPendingLaunch(environmentId, requestedGameName);
+      cancelPendingLaunch(environmentId, requestedGameName);
     }
 
     return launched;
@@ -1054,6 +1045,28 @@ export const useFactoryV2 = () => {
     pendingLaunchesRef.current = nextPendingLaunches;
     setPendingLaunches(nextPendingLaunches);
     writeFactoryPendingLaunches(nextPendingLaunches);
+  }
+
+  function beginPendingLaunch(environmentId: FactoryWorkerEnvironmentId, gameName: string) {
+    rememberPendingLaunch({
+      environmentId,
+      gameName,
+      mode: selectedMode,
+      createdAt: new Date().toISOString(),
+    });
+    setSelectedRunId(buildPendingRunId(environmentId, gameName));
+    setPollingState({
+      status: "checking",
+      detail: FIRST_UPDATE_WAIT_MESSAGE,
+      lastCheckedAt: Date.now(),
+    });
+  }
+
+  function cancelPendingLaunch(environmentId: FactoryWorkerEnvironmentId, gameName: string) {
+    forgetPendingLaunch(environmentId, gameName);
+    setSelectedRunId((currentRunId) =>
+      currentRunId === buildPendingRunId(environmentId, gameName) ? null : currentRunId,
+    );
   }
 
   function updatePendingLaunches(

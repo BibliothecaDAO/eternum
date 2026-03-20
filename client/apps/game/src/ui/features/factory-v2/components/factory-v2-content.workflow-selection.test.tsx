@@ -145,13 +145,7 @@ describe("FactoryV2Content workflow selection", () => {
   });
 
   it("keeps the start panel selected when an active run refreshes", async () => {
-    vi.mocked(useFactoryV2).mockReturnValue(
-      buildFactoryState({
-        activeRunName: "etrn-sunrise-01",
-        matchingRun: { id: "run-1", name: "etrn-sunrise-01" },
-        selectedRun: { id: "run-1", name: "etrn-sunrise-01", environment: "slot.eternum", status: "running" },
-      }) as unknown as ReturnType<typeof useFactoryV2>,
-    );
+    vi.mocked(useFactoryV2).mockReturnValue(buildFactoryState({}) as unknown as ReturnType<typeof useFactoryV2>);
 
     await act(async () => {
       root.render(<FactoryV2Content />);
@@ -182,6 +176,29 @@ describe("FactoryV2Content workflow selection", () => {
     expect(container.textContent).toContain("Start workspace");
     expect(container.textContent).not.toContain("Watch workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
+  });
+
+  it("opens the watch panel on first render when a run is already restored", async () => {
+    vi.mocked(useFactoryV2).mockReturnValue(
+      buildFactoryState({
+        activeRunName: "etrn-sunrise-01",
+        selectedRun: {
+          id: "pending:slot.eternum:etrn-sunrise-01",
+          name: "etrn-sunrise-01",
+          environment: "slot.eternum",
+          status: "running",
+        },
+      }) as unknown as ReturnType<typeof useFactoryV2>,
+    );
+
+    await act(async () => {
+      root.render(<FactoryV2Content />);
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Watch workspace");
+    expect(container.textContent).not.toContain("Start workspace");
+    expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");
   });
 
   it("keeps the start panel selected when the mode changes to one with an active deployment", async () => {
