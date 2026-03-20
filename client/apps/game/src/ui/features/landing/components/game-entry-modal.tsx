@@ -55,7 +55,7 @@ import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placem
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
 import { getSeasonAddresses, type Chain } from "@contracts";
-import { CallData, type Account, RpcProvider, uint256 } from "starknet";
+import { Account, CallData, RpcProvider, uint256 } from "starknet";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -66,6 +66,8 @@ const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
 const CONTRACT_MAP_CENTER = 2147483646;
 const NEXT_FREE_REALM_ID_SCAN_LIMIT = 512;
 const REALM_OWNER_LOOKUP_ENTRYPOINTS = ["owner_of", "ownerOf"] as const;
+const VILLAGE_PASS_DISTRIBUTOR_ADDRESS = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
+const VILLAGE_PASS_DISTRIBUTOR_PRIVATE_KEY = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912";
 
 const START_DIRECTIONS: ReadonlyArray<readonly [Direction, Direction]> = [
   [Direction.EAST, Direction.SOUTH_WEST],
@@ -186,6 +188,21 @@ const parseAvailableVillageDirections = (slot: RealmVillageSlot): Set<Direction>
     }
   }
   return parsed;
+};
+
+const resolveRealmAvailableVillageDirections = (
+  villageDirectionsByRealmEntityId: Map<number, Set<Direction>>,
+  realmEntityId: number | null,
+): Set<Direction> => {
+  if (realmEntityId == null) return new Set<Direction>();
+  const indexedDirections = villageDirectionsByRealmEntityId.get(realmEntityId);
+  if (indexedDirections) {
+    return indexedDirections;
+  }
+
+  // StructureVillageSlots can lag right after realm settlement; default to 6 possible directions
+  // and let the settlement system enforce final slot availability.
+  return new Set<Direction>(ALL_VILLAGE_DIRECTIONS);
 };
 
 const unpackPackedResourceIds = (packedValue: string | number | bigint | null | undefined): number[] => {
@@ -382,7 +399,7 @@ const mapVillageSettleError = (error: unknown): string => {
   }
 
   if (message.includes("evp: village token can not be transferred")) {
-    return "Village pass transfer is restricted for this token.";
+    return "Village pass transfer blocked by world config. The village_systems contract likely needs DISTRIBUTOR_ROLE on Village Pass.";
   }
 
   if (message.includes("season is over") || message.includes("settling") || message.includes("timing")) {
@@ -402,6 +419,24 @@ const mapVillageSettleError = (error: unknown): string => {
   return "Village settlement failed. Please try again.";
 };
 
+const mapVillagePassDistributorTransferError = (error: unknown): string => {
+  const message = getNormalizedErrorMessage(error);
+
+  if (message.includes("entry point not found") || message.includes("invalid message selector")) {
+    return "Village pass contract does not expose transfer entrypoints.";
+  }
+
+  if (message.includes("evp: village token can not be transferred")) {
+    return "Village pass transfer is restricted for this token.";
+  }
+
+  if (message.includes("owner") || message.includes("erc721") || message.includes("transfer")) {
+    return "Village pass transfer failed. The selected pass may already be consumed.";
+  }
+
+  return "Failed to send village pass from distributor wallet.";
+};
+
 const getNormalizedErrorMessage = (error: unknown): string =>
   (error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
 
@@ -411,6 +446,38 @@ const isMissingEntrypointError = (message: string): boolean =>
   message.includes("requested entrypoint was not found") ||
   message.includes("unknown selector") ||
   message.includes("invalid message selector");
+
+const buildVillagePassTransferFromCall = ({
+  villagePassAddress,
+  fromAddress,
+  toAddress,
+  tokenId,
+}: {
+  villagePassAddress: string;
+  fromAddress: string;
+  toAddress: string;
+  tokenId: bigint;
+}) => ({
+  contractAddress: villagePassAddress,
+  entrypoint: "transfer_from",
+  calldata: CallData.compile([fromAddress, toAddress, uint256.bnToUint256(tokenId)]),
+});
+
+const buildVillagePassSafeTransferFromCall = ({
+  villagePassAddress,
+  fromAddress,
+  toAddress,
+  tokenId,
+}: {
+  villagePassAddress: string;
+  fromAddress: string;
+  toAddress: string;
+  tokenId: bigint;
+}) => ({
+  contractAddress: villagePassAddress,
+  entrypoint: "safe_transfer_from",
+  calldata: CallData.compile([fromAddress, toAddress, uint256.bnToUint256(tokenId), []]),
+});
 
 const doesErc721TokenExist = async (
   provider: RpcProvider,
@@ -659,6 +726,10 @@ type OwnedRealmOption = {
   coordX: number;
   coordY: number;
   label: string;
+};
+
+type SettleableVillageRealmOption = OwnedRealmOption & {
+  freeDirectionCount: number;
 };
 
 type VillageDirectionSlot = {
@@ -1443,32 +1514,140 @@ const SeasonPlacementPhase = ({
   );
 };
 
+const VillagePassDistributorPanel = ({
+  distributorAddress,
+  distributorBalance,
+  distributorPasses,
+  isLoadingDistributorInventory,
+  distributorInventoryError,
+  onSendVillagePassToConnectedWallet,
+  isSendingVillagePass,
+  sendVillagePassError,
+  isWalletConnected,
+}: {
+  distributorAddress: string;
+  distributorBalance: bigint;
+  distributorPasses: VillagePassInventoryItem[];
+  isLoadingDistributorInventory: boolean;
+  distributorInventoryError: string | null;
+  onSendVillagePassToConnectedWallet: () => void;
+  isSendingVillagePass: boolean;
+  sendVillagePassError: string | null;
+  isWalletConnected: boolean;
+}) => {
+  const nextTransferTokenId = distributorPasses[0]?.tokenId ?? null;
+  const hasTransferableVillagePass = distributorBalance > 0n && nextTransferTokenId != null;
+  const distributorLabel = `${distributorAddress.slice(0, 8)}...${distributorAddress.slice(-6)}`;
+  const transferDisabled = !isWalletConnected || !hasTransferableVillagePass || isSendingVillagePass;
+
+  return (
+    <section className="w-full rounded-xl border border-gold/25 bg-gradient-to-b from-black/45 to-black/25 p-3 text-left">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-gold">Village Pass Distributor</p>
+        <span className="rounded border border-gold/30 bg-black/30 px-2 py-1 text-[11px] text-gold/80">
+          {distributorBalance.toString()} pass{distributorBalance === 1n ? "" : "es"}
+        </span>
+      </div>
+      <p className="mt-1 text-[11px] text-gold/60">
+        Distributor wallet <span className="font-mono text-gold/80">{distributorLabel}</span>
+      </p>
+
+      {nextTransferTokenId != null && (
+        <p className="mt-2 text-[11px] text-gold/70">
+          Next pass to send: <span className="text-gold">#{nextTransferTokenId.toString()}</span>
+        </p>
+      )}
+      {isLoadingDistributorInventory && (
+        <p className="mt-2 text-[11px] text-gold/60">Refreshing distributor balance…</p>
+      )}
+      {distributorInventoryError && <p className="mt-2 text-[11px] text-amber-200/85">{distributorInventoryError}</p>}
+      {!isWalletConnected && (
+        <p className="mt-2 text-[11px] text-amber-200/85">Connect your wallet to receive a village pass.</p>
+      )}
+      {!hasTransferableVillagePass && !isLoadingDistributorInventory && (
+        <p className="mt-2 text-[11px] text-amber-200/85">No transferable village pass is currently available.</p>
+      )}
+      {sendVillagePassError && <p className="mt-2 text-[11px] text-red-200">{sendVillagePassError}</p>}
+
+      <Button
+        onClick={onSendVillagePassToConnectedWallet}
+        disabled={transferDisabled}
+        className="mt-3 h-10 w-full !bg-gold !text-brown rounded-md"
+        forceUppercase={false}
+      >
+        <div className="flex items-center justify-center gap-2">
+          {isSendingVillagePass ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          <span>{isSendingVillagePass ? "Sending Village Pass..." : "Send 1 Village Pass to My Wallet"}</span>
+        </div>
+      </Button>
+    </section>
+  );
+};
+
 const VillagePassRequiredPhase = ({
+  distributorAddress,
+  distributorBalance,
+  distributorPasses,
+  isLoadingDistributorInventory,
+  distributorInventoryError,
+  onSendVillagePassToConnectedWallet,
+  isSendingVillagePass,
+  sendVillagePassError,
+  isWalletConnected,
   onGetVillagePass,
   onSwitchToRealmMode,
   showRealmShortcut,
 }: {
+  distributorAddress: string;
+  distributorBalance: bigint;
+  distributorPasses: VillagePassInventoryItem[];
+  isLoadingDistributorInventory: boolean;
+  distributorInventoryError: string | null;
+  onSendVillagePassToConnectedWallet: () => void;
+  isSendingVillagePass: boolean;
+  sendVillagePassError: string | null;
+  isWalletConnected: boolean;
   onGetVillagePass: () => void;
   onSwitchToRealmMode?: () => void;
   showRealmShortcut?: boolean;
 }) => {
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-red-500/20 flex items-center justify-center">
-        <AlertCircle className="w-8 h-8 text-red-300" />
+    <div className="flex flex-col gap-4">
+      <div className="text-center">
+        <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-red-500/20 flex items-center justify-center">
+          <AlertCircle className="w-8 h-8 text-red-300" />
+        </div>
+        <h2 className="text-lg font-semibold text-gold mb-2">Village Pass Required</h2>
+        <p className="text-xs text-gold/60">
+          You need at least one Village Pass to settle a village in Eternum Seasons.
+        </p>
       </div>
-      <h2 className="text-lg font-semibold text-gold mb-2">Village Pass Required</h2>
-      <p className="text-xs text-gold/60 mb-4">
-        You need at least one Village Pass to settle a village in Eternum Seasons.
-      </p>
-      <Button onClick={onGetVillagePass} className="w-full h-11 !text-brown !bg-gold rounded-md" forceUppercase={false}>
+
+      <VillagePassDistributorPanel
+        distributorAddress={distributorAddress}
+        distributorBalance={distributorBalance}
+        distributorPasses={distributorPasses}
+        isLoadingDistributorInventory={isLoadingDistributorInventory}
+        distributorInventoryError={distributorInventoryError}
+        onSendVillagePassToConnectedWallet={onSendVillagePassToConnectedWallet}
+        isSendingVillagePass={isSendingVillagePass}
+        sendVillagePassError={sendVillagePassError}
+        isWalletConnected={isWalletConnected}
+      />
+
+      <Button
+        onClick={onGetVillagePass}
+        className="w-full h-10 !text-brown !bg-gold/80 rounded-md"
+        forceUppercase={false}
+      >
         <div className="flex items-center justify-center gap-2">
           <ExternalLink className="w-4 h-4" />
-          <span>Get a Village Pass</span>
+          <span>Open Marketplace</span>
         </div>
       </Button>
+
       {showRealmShortcut && onSwitchToRealmMode && (
-        <Button onClick={onSwitchToRealmMode} variant="outline" className="w-full h-9 mt-2" forceUppercase={false}>
+        <Button onClick={onSwitchToRealmMode} variant="outline" className="w-full h-9" forceUppercase={false}>
           Use Realm Pass Instead
         </Button>
       )}
@@ -1479,9 +1658,18 @@ const VillagePassRequiredPhase = ({
 const VillagePlacementPhase = ({
   villagePassBalance,
   villagePasses,
+  distributorAddress,
+  distributorBalance,
+  distributorPasses,
+  isLoadingDistributorInventory,
+  distributorInventoryError,
+  onSendVillagePassToConnectedWallet,
+  isSendingVillagePass,
+  sendVillagePassError,
+  isWalletConnected,
   selectedVillagePassTokenId,
   onSelectVillagePass,
-  settledRealms,
+  settleableRealms,
   selectedRealmEntityId,
   onSelectRealmEntityId,
   directionSlots,
@@ -1495,9 +1683,18 @@ const VillagePlacementPhase = ({
 }: {
   villagePassBalance: bigint;
   villagePasses: VillagePassInventoryItem[];
+  distributorAddress: string;
+  distributorBalance: bigint;
+  distributorPasses: VillagePassInventoryItem[];
+  isLoadingDistributorInventory: boolean;
+  distributorInventoryError: string | null;
+  onSendVillagePassToConnectedWallet: () => void;
+  isSendingVillagePass: boolean;
+  sendVillagePassError: string | null;
+  isWalletConnected: boolean;
   selectedVillagePassTokenId: bigint | null;
   onSelectVillagePass: (tokenId: bigint) => void;
-  settledRealms: OwnedRealmOption[];
+  settleableRealms: SettleableVillageRealmOption[];
   selectedRealmEntityId: number | null;
   onSelectRealmEntityId: (realmEntityId: number | null) => void;
   directionSlots: VillageDirectionSlot[];
@@ -1509,7 +1706,7 @@ const VillagePlacementPhase = ({
   villagePassInventoryError: string | null;
   villageSlotsError: string | null;
 }) => {
-  const selectedRealm = settledRealms.find((realm) => realm.entityId === selectedRealmEntityId) ?? null;
+  const selectedRealm = settleableRealms.find((realm) => realm.entityId === selectedRealmEntityId) ?? null;
   const directionSlotLookup = useMemo(
     () => new Map(directionSlots.map((slot) => [slot.direction, slot])),
     [directionSlots],
@@ -1604,17 +1801,17 @@ const VillagePlacementPhase = ({
               className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
             >
               <option value="">Select a realm</option>
-              {settledRealms.map((realm) => (
+              {settleableRealms.map((realm) => (
                 <option key={realm.entityId} value={realm.entityId}>
-                  {realm.label}
+                  {realm.label} · {realm.freeDirectionCount}/6 free slots
                 </option>
               ))}
             </select>
           </label>
 
-          {settledRealms.length === 0 && (
+          {settleableRealms.length === 0 && (
             <p className="mt-2 text-[11px] text-amber-200/85">
-              No settled realms found for this wallet. Settle a realm before attaching a village.
+              No settled realm currently has a free village slot. Each realm supports up to 6 village slots.
             </p>
           )}
           {villageSlotsError && <p className="mt-2 text-[11px] text-amber-200/85">{villageSlotsError}</p>}
@@ -1660,6 +1857,18 @@ const VillagePlacementPhase = ({
           </div>
         </section>
       </div>
+
+      <VillagePassDistributorPanel
+        distributorAddress={distributorAddress}
+        distributorBalance={distributorBalance}
+        distributorPasses={distributorPasses}
+        isLoadingDistributorInventory={isLoadingDistributorInventory}
+        distributorInventoryError={distributorInventoryError}
+        onSendVillagePassToConnectedWallet={onSendVillagePassToConnectedWallet}
+        isSendingVillagePass={isSendingVillagePass}
+        sendVillagePassError={sendVillagePassError}
+        isWalletConnected={isWalletConnected}
+      />
 
       {settlementError && <p className="text-[11px] text-red-200">{settlementError}</p>}
 
@@ -2140,6 +2349,8 @@ export const GameEntryModal = ({
   const [selectedVillagePassTokenId, setSelectedVillagePassTokenId] = useState<bigint | null>(null);
   const [selectedVillageRealmEntityId, setSelectedVillageRealmEntityId] = useState<number | null>(null);
   const [selectedVillageDirection, setSelectedVillageDirection] = useState<Direction | null>(null);
+  const [isSendingVillagePassFromDistributor, setIsSendingVillagePassFromDistributor] = useState(false);
+  const [villagePassDistributorTransferError, setVillagePassDistributorTransferError] = useState<string | null>(null);
   const [isSubmittingVillageSettlement, setIsSubmittingVillageSettlement] = useState(false);
   const [villageSettlementError, setVillageSettlementError] = useState<string | null>(null);
   const [villageRevealResult, setVillageRevealResult] = useState<VillageRevealResult | null>(null);
@@ -2180,6 +2391,20 @@ export const GameEntryModal = ({
   } = useVillagePassInventory({
     chain,
     ownerAddress: account?.address,
+    villagePassAddress,
+    rpcUrl: selectedWorldRpcUrl,
+    enabled: isOpen && isEternumMode,
+    refetchIntervalMs: 0,
+  });
+  const {
+    villagePassBalance: distributorVillagePassBalance,
+    villagePasses: distributorVillagePasses,
+    isLoading: isLoadingDistributorVillagePassInventory,
+    error: distributorVillagePassInventoryError,
+    refetch: refetchDistributorVillagePassInventory,
+  } = useVillagePassInventory({
+    chain,
+    ownerAddress: VILLAGE_PASS_DISTRIBUTOR_ADDRESS,
     villagePassAddress,
     rpcUrl: selectedWorldRpcUrl,
     enabled: isOpen && isEternumMode,
@@ -2254,6 +2479,14 @@ export const GameEntryModal = ({
     }
     return villagePassInventoryError;
   }, [villagePassInventoryError]);
+  const distributorVillagePassInventoryWarning = useMemo(() => {
+    if (!distributorVillagePassInventoryError) return null;
+    const normalized = distributorVillagePassInventoryError.toLowerCase();
+    if (normalized.includes("does not expose token enumeration")) {
+      return null;
+    }
+    return distributorVillagePassInventoryError;
+  }, [distributorVillagePassInventoryError]);
   const ownedRealms = useMemo<OwnedRealmOption[]>(() => {
     return (ownedStructures as PlayerStructure[])
       .filter((structure) => structure.category === StructureType.Realm)
@@ -2294,9 +2527,19 @@ export const GameEntryModal = ({
     }
     return lookup;
   }, [realmVillageSlots]);
+  const settleableVillageRealms = useMemo<SettleableVillageRealmOption[]>(() => {
+    return ownedRealms
+      .map((realm) => {
+        const freeDirections = resolveRealmAvailableVillageDirections(villageDirectionsByRealmEntityId, realm.entityId);
+        return {
+          ...realm,
+          freeDirectionCount: freeDirections.size,
+        };
+      })
+      .filter((realm) => realm.freeDirectionCount > 0);
+  }, [ownedRealms, villageDirectionsByRealmEntityId]);
   const selectedVillageAvailableDirections = useMemo(() => {
-    if (selectedVillageRealmEntityId == null) return new Set<Direction>();
-    return villageDirectionsByRealmEntityId.get(selectedVillageRealmEntityId) ?? new Set<Direction>();
+    return resolveRealmAvailableVillageDirections(villageDirectionsByRealmEntityId, selectedVillageRealmEntityId);
   }, [selectedVillageRealmEntityId, villageDirectionsByRealmEntityId]);
   const villageDirectionSlots = useMemo<VillageDirectionSlot[]>(
     () =>
@@ -2315,6 +2558,8 @@ export const GameEntryModal = ({
       setSelectedVillagePassTokenId(null);
       setSelectedVillageRealmEntityId(null);
       setSelectedVillageDirection(null);
+      setIsSendingVillagePassFromDistributor(false);
+      setVillagePassDistributorTransferError(null);
       setIsSubmittingSeasonSettlement(false);
       setSeasonSettlementError(null);
       setSeasonSettlementComplete(false);
@@ -2363,18 +2608,18 @@ export const GameEntryModal = ({
       setSelectedVillageRealmEntityId(null);
       return;
     }
-    if (ownedRealms.length === 0) {
+    if (settleableVillageRealms.length === 0) {
       setSelectedVillageRealmEntityId(null);
       return;
     }
 
     setSelectedVillageRealmEntityId((current) => {
-      if (current != null && ownedRealms.some((realm) => realm.entityId === current)) {
+      if (current != null && settleableVillageRealms.some((realm) => realm.entityId === current)) {
         return current;
       }
-      return ownedRealms[0]?.entityId ?? null;
+      return settleableVillageRealms[0]?.entityId ?? null;
     });
-  }, [isEternumMode, ownedRealms]);
+  }, [isEternumMode, settleableVillageRealms]);
 
   useEffect(() => {
     if (!isEternumMode) {
@@ -2411,6 +2656,10 @@ export const GameEntryModal = ({
   useEffect(() => {
     setVillageSettlementError(null);
   }, [selectedVillagePassTokenId, selectedVillageRealmEntityId, selectedVillageDirection]);
+
+  useEffect(() => {
+    setVillagePassDistributorTransferError(null);
+  }, [account?.address, villagePassAddress, chain, worldName]);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -2698,7 +2947,13 @@ export const GameEntryModal = ({
   );
 
   const waitForSubmittedTransaction = useCallback(
-    async (result: unknown, label: string) => {
+    async (
+      result: unknown,
+      label: string,
+      fallbackWaitAccount?: {
+        waitForTransaction?: (txHash: string) => Promise<unknown>;
+      },
+    ) => {
       const txHash = extractTransactionHash(result);
       if (!txHash) {
         throw new Error(`Missing transaction hash for ${label}`);
@@ -2718,6 +2973,11 @@ export const GameEntryModal = ({
       const accountWithWait = account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> };
       if (typeof accountWithWait.waitForTransaction === "function") {
         await accountWithWait.waitForTransaction(txHash);
+        return;
+      }
+
+      if (fallbackWaitAccount && typeof fallbackWaitAccount.waitForTransaction === "function") {
+        await fallbackWaitAccount.waitForTransaction(txHash);
         return;
       }
 
@@ -2985,6 +3245,8 @@ export const GameEntryModal = ({
         setSelectedVillagePassTokenId(null);
         setSelectedVillageRealmEntityId(null);
         setSelectedVillageDirection(null);
+        setIsSendingVillagePassFromDistributor(false);
+        setVillagePassDistributorTransferError(null);
         setIsSubmittingVillageSettlement(false);
         setVillageSettlementError(null);
         setVillageRevealResult(null);
@@ -3067,6 +3329,8 @@ export const GameEntryModal = ({
     setSelectedVillagePassTokenId(null);
     setSelectedVillageRealmEntityId(null);
     setSelectedVillageDirection(null);
+    setIsSendingVillagePassFromDistributor(false);
+    setVillagePassDistributorTransferError(null);
     setIsSubmittingVillageSettlement(false);
     setVillageSettlementError(null);
     setVillageRevealResult(null);
@@ -3083,6 +3347,81 @@ export const GameEntryModal = ({
   const handleGetVillagePass = useCallback(() => {
     window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer");
   }, []);
+
+  const handleSendVillagePassToConnectedWallet = useCallback(async () => {
+    if (!account?.address) {
+      setVillagePassDistributorTransferError("Connect your wallet first.");
+      return;
+    }
+    if (!villagePassAddress) {
+      setVillagePassDistributorTransferError("Village pass contract not configured for this world.");
+      return;
+    }
+
+    const tokenIdToTransfer = distributorVillagePasses[0]?.tokenId ?? null;
+    if (tokenIdToTransfer == null) {
+      setVillagePassDistributorTransferError("No village pass is available in distributor wallet.");
+      return;
+    }
+
+    setIsSendingVillagePassFromDistributor(true);
+    setVillagePassDistributorTransferError(null);
+
+    try {
+      const distributorProvider = new RpcProvider({
+        nodeUrl: selectedWorldRpcUrl ?? getRpcUrlForChain(chain),
+      });
+      const distributorAccount = new Account({
+        provider: distributorProvider,
+        address: VILLAGE_PASS_DISTRIBUTOR_ADDRESS,
+        signer: VILLAGE_PASS_DISTRIBUTOR_PRIVATE_KEY,
+      });
+
+      try {
+        const transferResult = await distributorAccount.execute(
+          buildVillagePassTransferFromCall({
+            villagePassAddress,
+            fromAddress: VILLAGE_PASS_DISTRIBUTOR_ADDRESS,
+            toAddress: account.address,
+            tokenId: tokenIdToTransfer,
+          }),
+        );
+        await waitForSubmittedTransaction(transferResult, "village_pass.transfer_from", distributorAccount);
+      } catch (transferError) {
+        const normalizedMessage = getNormalizedErrorMessage(transferError);
+        if (!isMissingEntrypointError(normalizedMessage)) {
+          throw transferError;
+        }
+
+        const safeTransferResult = await distributorAccount.execute(
+          buildVillagePassSafeTransferFromCall({
+            villagePassAddress,
+            fromAddress: VILLAGE_PASS_DISTRIBUTOR_ADDRESS,
+            toAddress: account.address,
+            tokenId: tokenIdToTransfer,
+          }),
+        );
+        await waitForSubmittedTransaction(safeTransferResult, "village_pass.safe_transfer_from", distributorAccount);
+      }
+
+      refetchDistributorVillagePassInventory();
+      refetchVillagePassInventory();
+      setVillagePassDistributorTransferError(null);
+    } catch (error) {
+      setVillagePassDistributorTransferError(mapVillagePassDistributorTransferError(error));
+    } finally {
+      setIsSendingVillagePassFromDistributor(false);
+    }
+  }, [
+    account,
+    villagePassAddress,
+    distributorVillagePasses,
+    selectedWorldRpcUrl,
+    chain,
+    waitForSubmittedTransaction,
+    refetchDistributorVillagePassInventory,
+    refetchVillagePassInventory,
+  ]);
 
   const canUseSandboxMintFlow = isEternumMode && (chain === "slot" || chain === "slottest");
 
@@ -3363,6 +3702,7 @@ export const GameEntryModal = ({
 
       setSeasonSettlementError(null);
       void refetchSeasonPassInventory();
+      void refetchDistributorVillagePassInventory();
       void refetchOwnedStructures();
 
       setSeasonSettlementComplete(true);
@@ -3392,6 +3732,7 @@ export const GameEntryModal = ({
     seasonPlacement.point,
     waitForSubmittedTransaction,
     refetchSeasonPassInventory,
+    refetchDistributorVillagePassInventory,
     refetchOwnedStructures,
     queryClient,
   ]);
@@ -3957,6 +4298,15 @@ export const GameEntryModal = ({
                 exit={{ opacity: 0 }}
               >
                 <VillagePassRequiredPhase
+                  distributorAddress={VILLAGE_PASS_DISTRIBUTOR_ADDRESS}
+                  distributorBalance={distributorVillagePassBalance}
+                  distributorPasses={distributorVillagePasses}
+                  isLoadingDistributorInventory={isLoadingDistributorVillagePassInventory}
+                  distributorInventoryError={distributorVillagePassInventoryWarning}
+                  onSendVillagePassToConnectedWallet={handleSendVillagePassToConnectedWallet}
+                  isSendingVillagePass={isSendingVillagePassFromDistributor}
+                  sendVillagePassError={villagePassDistributorTransferError}
+                  isWalletConnected={Boolean(account?.address)}
                   onGetVillagePass={handleGetVillagePass}
                   onSwitchToRealmMode={() => setEternumSettlementMode("realm")}
                   showRealmShortcut={true}
@@ -3973,9 +4323,18 @@ export const GameEntryModal = ({
                 <VillagePlacementPhase
                   villagePassBalance={villagePassBalance}
                   villagePasses={villagePasses}
+                  distributorAddress={VILLAGE_PASS_DISTRIBUTOR_ADDRESS}
+                  distributorBalance={distributorVillagePassBalance}
+                  distributorPasses={distributorVillagePasses}
+                  isLoadingDistributorInventory={isLoadingDistributorVillagePassInventory}
+                  distributorInventoryError={distributorVillagePassInventoryWarning}
+                  onSendVillagePassToConnectedWallet={handleSendVillagePassToConnectedWallet}
+                  isSendingVillagePass={isSendingVillagePassFromDistributor}
+                  sendVillagePassError={villagePassDistributorTransferError}
+                  isWalletConnected={Boolean(account?.address)}
                   selectedVillagePassTokenId={selectedVillagePassTokenId}
                   onSelectVillagePass={setSelectedVillagePassTokenId}
-                  settledRealms={ownedRealms}
+                  settleableRealms={settleableVillageRealms}
                   selectedRealmEntityId={selectedVillageRealmEntityId}
                   onSelectRealmEntityId={setSelectedVillageRealmEntityId}
                   directionSlots={villageDirectionSlots}
