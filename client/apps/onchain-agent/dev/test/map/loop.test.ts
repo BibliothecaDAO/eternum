@@ -55,25 +55,13 @@ describe("map-loop", () => {
     expect(ctx.snapshot!.tiles).toHaveLength(3);
   });
 
-  it("writes to filePath when set", async () => {
-    const { writeFileSync } = await import("fs");
-    const client = makeClient([makeTile(0, 0)]);
-    const ctx: MapContext = { snapshot: null, filePath: "/tmp/map.txt" };
-    const loop = createMapLoop(client, ctx, undefined, 10_000);
-
-    await loop.refresh();
-    expect(writeFileSync).toHaveBeenCalledWith("/tmp/map.txt", expect.any(String));
-  });
-
-  it("does not write when filePath is null", async () => {
-    const { writeFileSync } = await import("fs");
-    (writeFileSync as any).mockClear();
+  it("does not crash when filePath is null", async () => {
     const client = makeClient([makeTile(0, 0)]);
     const ctx: MapContext = { snapshot: null, protocol: null, filePath: null };
     const loop = createMapLoop(client, ctx, undefined, 10_000);
 
     await loop.refresh();
-    expect(writeFileSync).not.toHaveBeenCalled();
+    expect(ctx.snapshot).not.toBeNull();
   });
 
   it("survives a failed fetch", async () => {

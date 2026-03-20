@@ -52,18 +52,16 @@ import { createX402Model } from "../providers/x402/index.js";
 import { createMapLoop } from "../map/loop.js";
 import { createAutomationLoop } from "../automation/loop.js";
 import type { MapContext } from "../map/context.js";
-import type { TxContext } from "../tools/tx-context.js";
-import { createInspectTool } from "../tools/inspect.js";
-import { createMoveTool } from "../tools/move.js";
-import { createAttackTool } from "../tools/attack.js";
-import { createCreateArmyTool } from "../tools/create-army.js";
-import { createReinforceArmyTool } from "../tools/reinforce-army.js";
-import { createDefendStructureTool } from "../tools/defend-structure.js";
-import { createTransferResourcesTool } from "../tools/transfer-resources.js";
-import { createOpenChestTool } from "../tools/open-chest.js";
-import { createMapQueryTool } from "../tools/map-query.js";
-import type { ToolError } from "./game-state.js";
+import { createCoreTools } from "../tools/pi-tools.js";
+import type { ToolContext } from "../tools/core/context.js";
 import type { AutomationStatusMap } from "../automation/status.js";
+
+/** A tool invocation that failed during an agent turn. */
+interface ToolError {
+  tool: string;
+  error: string;
+  tick: number;
+}
 
 // ── Context pruning ─────────────────────────────────────────────────
 // When messages exceed a character threshold, older messages are dropped
@@ -313,22 +311,39 @@ export async function main() {
   // 3. Shared contexts
   const mapFilePath = join(config.dataDir, "map.txt");
   const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: mapFilePath };
-  const txCtx: TxContext = { provider, signer: account };
   const automationStatus: AutomationStatusMap = new Map();
   const toolErrors: ToolError[] = [];
 
-  // 4. Tools — game-specific + read/grep/find/ls scoped to dataDir
+  // Query map_center_offset for display coordinate conversion
+  const BASE_MAP_CENTER = 2147483646;
+  let mapCenter = BASE_MAP_CENTER;
+  try {
+    const sql = client.sql as any;
+    const baseUrl = sql.baseUrl ?? config.toriiUrl + "/sql";
+    const res = await fetch(`${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`);
+    if (res.ok) {
+      const rows = await res.json() as any[];
+      if (rows[0]?.map_center_offset != null) {
+        mapCenter = BASE_MAP_CENTER - Number(rows[0].map_center_offset);
+      }
+    }
+  } catch { /* non-critical — coords will use raw values */ }
+
+  // Build the shared ToolContext — snapshot is mutable, updated each map tick
+  const toolCtx: ToolContext = {
+    client,
+    provider,
+    signer: account,
+    playerAddress: account.address,
+    gameConfig,
+    snapshot: null as any, // set once map loop produces the first snapshot
+    mapCenter,
+  };
+
+  // 4. Tools — core tools + read/grep/find/ls scoped to dataDir
   const tools: AgentTool[] = [
     ...createReadOnlyTools(config.dataDir),
-    createInspectTool(client, mapCtx, account.address),
-    createMoveTool(client, mapCtx, account.address, txCtx, gameConfig),
-    createAttackTool(client, mapCtx, account.address, txCtx, gameConfig),
-    createCreateArmyTool(client, mapCtx, account.address, txCtx),
-    createReinforceArmyTool(client, mapCtx, account.address, txCtx),
-    createDefendStructureTool(client, mapCtx, account.address, txCtx),
-    createTransferResourcesTool(client, mapCtx, account.address, txCtx),
-    createOpenChestTool(client, mapCtx, account.address, txCtx),
-    createMapQueryTool(mapCtx),
+    ...createCoreTools(toolCtx, mapCtx),
   ];
 
   // 5. System prompt
@@ -350,6 +365,8 @@ export async function main() {
     convertToLlm,
     followUpMode: "one-at-a-time",
     transformContext: async (messages) => {
+      // Keep toolCtx.snapshot in sync with the latest map data each tick
+      if (mapCtx.snapshot) toolCtx.snapshot = mapCtx.snapshot;
       const briefing = mapCtx.protocol?.briefing() ?? "";
       const errorBlock = toolErrors.length > 0
         ? "\n<tool_errors>\n" + toolErrors.map((e) => `  ${e.tool}: ${e.error}`).join("\n") + "\n</tool_errors>"
@@ -416,9 +433,13 @@ export async function main() {
   let onThreatCallback: ((alerts: any[]) => void) | null = null;
   const mapLoop = createMapLoop(client, mapCtx, account.address, undefined, gameConfig.stamina, (alerts) => {
     if (onThreatCallback) onThreatCallback(alerts);
-  });
+  }, mapCenter);
   mapLoop.start();
-  mapCtx.refresh = () => mapLoop.refresh();
+  mapCtx.refresh = async () => {
+    await mapLoop.refresh();
+    // Keep toolCtx.snapshot in sync with the latest map data
+    if (mapCtx.snapshot) toolCtx.snapshot = mapCtx.snapshot;
+  };
 
   // Wire threat detection — agent.steer() pushes urgent defensive alerts
   onThreatCallback = (alerts) => {
@@ -443,6 +464,7 @@ export async function main() {
     await new Promise((r) => setTimeout(r, 1000));
   }
   if (mapCtx.snapshot) {
+    toolCtx.snapshot = mapCtx.snapshot;
     console.log(
       `  Map loaded: ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols, ${mapCtx.snapshot.tiles.length} tiles`,
     );
@@ -496,7 +518,7 @@ export async function main() {
     if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
       evolving = true;
       evolve(model, config.dataDir, {
-            map: mapCtx.snapshot?.text ?? "Map not loaded",
+            map: mapCtx.protocol?.briefing() ?? "Map not loaded",
             structures: [...automationStatus.values()]
               .map((s) => `${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}`)
               .join("\n") || "No structures",

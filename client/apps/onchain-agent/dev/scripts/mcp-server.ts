@@ -53,17 +53,15 @@ import { createMapLoop } from "../../src/map/loop.js";
 import { createAutomationLoop } from "../../src/automation/loop.js";
 import type { AutomationStatusMap } from "../../src/automation/status.js";
 import type { MapContext } from "../../src/map/context.js";
-import type { TxContext } from "../../src/tools/tx-context.js";
-import { extractTxError, addressesEqual } from "../../src/tools/tx-context.js";
-import { directionBetween } from "../../src/world/pathfinding.js";
-import { findPathNative, gridIndexFromSnapshot, buildH3TileIndex, applyMapOverlays } from "../../src/world/pathfinding_v2.js";
-import { isExplorer, isStructure, isChest } from "../../src/world/occupier.js";
-import { calculateStrength, calculateGuardStrength } from "../../src/world/strength.js";
-import { projectExplorerStamina } from "../../src/world/stamina.js";
-import { simulateCombat } from "../../src/world/combat.js";
 import { createMapProtocol } from "../../src/map/protocol.js";
-import { packTileSeed, getNeighborHexes, Direction, BiomeIdToType, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import type { GameConfig, StaminaConfig } from "@bibliothecadao/torii";
+import type { ToolContext } from "../../src/tools/core/context.js";
+import {
+  moveArmy, attackTarget, createArmy, simulateAttack,
+  guardFromStorage, guardFromArmy, unguardToArmy,
+  openChest, attackFromGuard, raidTarget, reinforceArmy, applyRelic,
+  sendResources, transferToStructure, transferToArmy, transferTroops,
+} from "../../src/tools/core/index.js";
+import type { GameConfig } from "@bibliothecadao/torii";
 
 // ── Redirect ALL console output to stderr ──
 // MCP protocol owns stdout. Any stray console.log (e.g. Cartridge SDK
@@ -104,17 +102,6 @@ async function main() {
   let donkeyCapacityGrams = 50_000; // updated during bootstrap
   const resourceWeightGrams = new Map<number, number>(); // resource ID → grams per unit
 
-  /** Convert raw contract X coordinate to small display coordinate. */
-  const toDisplayX = (raw: number) => raw - mapCenter;
-  /** Convert raw contract Y coordinate to small display coordinate (negated: positive = north). */
-  const toDisplayY = (raw: number) => -(raw - mapCenter);
-  /** Convert small display X coordinate to raw contract coordinate. */
-  const toContractX = (display: number) => display + mapCenter;
-  /** Convert small display Y coordinate to raw contract coordinate (negated back). */
-  const toContractY = (display: number) => -display + mapCenter;
-  /** Shorthand for action tools that convert display input to raw. */
-  const toContract = toContractX;
-  const toDisplay = toDisplayX;
   const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: null };
   const automationStatus: AutomationStatusMap = new Map();
   let automationLoop: ReturnType<typeof createAutomationLoop> | null = null;
@@ -132,6 +119,32 @@ async function main() {
       return `Server is ${bootstrapPhase}. Please wait a moment and retry.`;
     }
     return null;
+  };
+
+  /** Build a ToolContext from the mutable bootstrap state, or null if not ready. */
+  const getCtx = (): ToolContext | null => {
+    if (!client || !provider || !account || !gameConfig || !mapCtx.snapshot) return null;
+    return {
+      client, provider, signer: account, playerAddress, gameConfig,
+      snapshot: mapCtx.snapshot, mapCenter, donkeyCapacityGrams, resourceWeightGrams,
+    };
+  };
+
+  /** Thin MCP adapter: readiness check -> build context -> call core -> format response. */
+  const mcpCall = async <I, R extends { success: boolean; message: string }>(
+    fn: (input: I, ctx: ToolContext) => Promise<R>,
+    input: I,
+  ): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> => {
+    const err = notReady();
+    if (err) return { content: [{ type: "text", text: err }], isError: true };
+    const ctx = getCtx();
+    if (!ctx) return { content: [{ type: "text", text: "Map not loaded yet." }], isError: true };
+    try {
+      const result = await fn(input, ctx);
+      return { content: [{ type: "text", text: result.message }], isError: !result.success };
+    } catch (e: any) {
+      return { content: [{ type: "text", text: e.message ?? String(e) }], isError: true };
+    }
   };
 
   // ── MCP Server + Tool Registration ──
@@ -293,220 +306,8 @@ async function main() {
       target_x: z.coerce.number().describe("Target map X"),
       target_y: z.coerce.number().describe("Target map Y"),
     },
-    async ({ army_id, target_x: dispX, target_y: dispY }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-      if (!mapCtx.snapshot) return { content: [{ type: "text", text: "Map not loaded yet." }], isError: true };
-
-      // Convert display coords to raw for all internal operations
-      const target_x = toContractX(dispX);
-      const target_y = toContractY(dispY);
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-      if (!addressesEqual(explorer.ownerAddress ?? "", playerAddress)) {
-        return { content: [{ type: "text", text: `Army ${army_id} is not yours.` }], isError: true };
-      }
-
-      const target = { x: target_x, y: target_y };
-      const start = explorer.position;
-      if (start.x === target.x && start.y === target.y) {
-        return { content: [{ type: "text", text: `Already at (${dispX},${dispY}).` }], isError: true };
-      }
-
-      const projectedStamina = projectExplorerStamina(explorer, gameConfig!.stamina);
-      if (projectedStamina <= 0) {
-        return { content: [{ type: "text", text: `No stamina (${projectedStamina}). Wait for regen.` }], isError: true };
-      }
-
-      // Build grid index from snapshot + inject unexplored tiles toward target.
-      // Uses native offset hex A* — no H3 dependency, guaranteed correct adjacency.
-      const snapshotGrid = mapCtx.snapshot.gridIndex;
-      const syntheticTiles = new Map<string, number>(); // "x,y" → biome (1 = generic explored)
-
-      // Inject unexplored tiles: BFS outward from explored frontier toward target
-      {
-        const explored = new Set<string>();
-        for (const t of mapCtx.snapshot.tiles) {
-          if (t.biome !== 0) explored.add(`${t.position.x},${t.position.y}`);
-        }
-        const { getNeighborHexes: getNbrs } = await import("@bibliothecadao/types");
-        const maxDist = Math.abs(target_x - start.x) + Math.abs(target_y - start.y) + 5;
-        const frontier = [...explored];
-        for (let wave = 0; wave < maxDist && frontier.length > 0; wave++) {
-          const next: string[] = [];
-          for (const key of frontier) {
-            const [fx, fy] = key.split(",").map(Number);
-            for (const n of getNbrs(fx, fy)) {
-              const nk = `${n.col},${n.row}`;
-              if (explored.has(nk) || syntheticTiles.has(nk)) continue;
-              syntheticTiles.set(nk, 1);
-              next.push(nk);
-            }
-          }
-          frontier.length = 0;
-          frontier.push(...next);
-          if (syntheticTiles.has(`${target_x},${target_y}`)) break;
-        }
-      }
-
-      // Wrap snapshot + synthetic tiles into GridIndex
-      const grid = gridIndexFromSnapshot(snapshotGrid);
-      const augmentedGrid = {
-        getBiome: (x: number, y: number) => {
-          const b = grid.getBiome(x, y);
-          if (b > 0) return b;
-          return syntheticTiles.get(`${x},${y}`) ?? 0;
-        },
-        getOccupier: (x: number, y: number) => grid.getOccupier(x, y),
-        has: (x: number, y: number) => grid.has(x, y) || syntheticTiles.has(`${x},${y}`),
-        isSynthetic: (x: number, y: number) => syntheticTiles.has(`${x},${y}`),
-      };
-      // Unblock self position
-      const selfKey = `${start.x},${start.y}`;
-      const selfOccupier = grid.getOccupier(start.x, start.y);
-      const gridForPath = {
-        ...augmentedGrid,
-        getOccupier: (x: number, y: number) => {
-          if (x === start.x && y === start.y) return 0;
-          return augmentedGrid.getOccupier(x, y);
-        },
-      };
-
-      const staminaConfig = {
-        gainPerTick: gameConfig!.stamina.gainPerTick,
-        travelCost: gameConfig!.stamina.travelCost,
-        exploreCost: gameConfig!.stamina.exploreCost,
-        bonusValue: gameConfig!.stamina.bonusValue,
-        maxKnight: gameConfig!.stamina.knightMaxStamina,
-        maxPaladin: gameConfig!.stamina.paladinMaxStamina,
-        maxCrossbowman: gameConfig!.stamina.crossbowmanMaxStamina,
-      };
-
-      const pathOptions = { troop: explorer.troopType as any, maxStamina: projectedStamina, staminaConfig };
-
-      // Check if target is occupied — pathfind to adjacent instead
-      const targetTile = snapshotGrid.get(`${target_x},${target_y}`);
-      const targetIsOccupied = targetTile && targetTile.occupierType !== 0;
-
-      let pathResult: any = null;
-      if (targetIsOccupied) {
-        const { getNeighborHexes: getNbrs } = await import("@bibliothecadao/types");
-        const neighbors = getNbrs(target_x, target_y);
-        for (const n of neighbors) {
-          const adjKey = `${n.col},${n.row}`;
-          const adjTile = snapshotGrid.get(adjKey);
-          const inSynthetic = syntheticTiles.has(adjKey);
-          if (!adjTile && !inSynthetic) continue;
-          if (adjTile && adjTile.occupierType !== 0) continue;
-          const candidate = findPathNative(start, { x: n.col, y: n.row }, gridForPath, pathOptions);
-          if (candidate) {
-            if (!pathResult || candidate.staminaCost < pathResult.staminaCost) pathResult = candidate;
-          }
-        }
-        if (!pathResult) return { content: [{ type: "text", text: `No path to any tile adjacent to (${dispX},${dispY}).` }], isError: true };
-      } else {
-        pathResult = findPathNative(start, target, gridForPath, pathOptions);
-      }
-
-      if (!pathResult) return { content: [{ type: "text", text: `No path to (${dispX},${dispY}).` }], isError: true };
-
-      // If path exceeds stamina budget, truncate to what we can afford
-      if (pathResult.reachedLimit && projectedStamina > 0) {
-        let cost = 0;
-        let truncateAt = 0;
-        for (let i = 0; i < pathResult.directions.length; i++) {
-          const stepPos = pathResult.path[i + 1];
-          const stepKey = `${stepPos.x},${stepPos.y}`;
-          const isExplore = !(mapCtx.snapshot.gridIndex.get(stepKey)?.biome);
-          const stepCost = isExplore ? (staminaConfig.exploreCost || 30) : (staminaConfig.travelCost || 20);
-          if (cost + stepCost > projectedStamina) break;
-          cost += stepCost;
-          truncateAt = i + 1;
-        }
-        if (truncateAt === 0) {
-          return { content: [{ type: "text", text: `Not enough stamina (${projectedStamina}) for even 1 step. Need ${staminaConfig.exploreCost || 30}.` }], isError: true };
-        }
-        pathResult = {
-          ...pathResult,
-          path: pathResult.path.slice(0, truncateAt + 1),
-          directions: pathResult.directions.slice(0, truncateAt),
-          distance: truncateAt,
-          staminaCost: cost,
-          reachedLimit: true,
-        };
-      }
-
-      // Build explored set for segment splitting
-      const explored = new Set<string>();
-      for (const t of mapCtx.snapshot.tiles) { if (t.biome !== 0) explored.add(`${t.position.x},${t.position.y}`); }
-
-      // Execute movement segments — track progress so partial moves report correctly
-      let exploreCount = 0;
-      let travelCount = 0;
-      let lastReachedIdx = 0; // index into pathResult.path of last confirmed position
-      let stoppedEarly = false;
-      let stopReason = "";
-
-      let segStart = 0;
-      while (segStart < pathResult.directions.length) {
-        const nextPos = pathResult.path[segStart + 1];
-        const nextKey = `${nextPos.x},${nextPos.y}`;
-        const isUnexplored = !explored.has(nextKey);
-
-        try {
-          if (!isUnexplored) {
-            let segEnd = segStart + 1;
-            while (segEnd < pathResult.directions.length) {
-              const futurePos = pathResult.path[segEnd + 1];
-              if (!explored.has(`${futurePos.x},${futurePos.y}`)) break;
-              segEnd++;
-            }
-            await provider!.explorer_travel({ explorer_id: army_id, directions: pathResult.directions.slice(segStart, segEnd), signer: account });
-            travelCount += segEnd - segStart;
-            lastReachedIdx = segEnd;
-            segStart = segEnd;
-          } else {
-            const dir = pathResult.directions[segStart];
-            const vrf_source_salt = packTileSeed({ alt: false, col: nextPos.x, row: nextPos.y });
-            try {
-              await provider!.explorer_explore({ explorer_id: army_id, directions: [dir], signer: account, vrf_source_salt });
-              exploreCount++;
-            } catch (err: any) {
-              if (extractTxError(err).includes("already explored")) {
-                await provider!.explorer_travel({ explorer_id: army_id, directions: [dir], signer: account });
-                travelCount++;
-              } else throw err;
-            }
-            lastReachedIdx = segStart + 1;
-            segStart++;
-          }
-        } catch (err: any) {
-          stoppedEarly = true;
-          stopReason = extractTxError(err);
-          break;
-        }
-      }
-
-      const totalSteps = exploreCount + travelCount;
-      const endPos = pathResult.path[lastReachedIdx];
-      const stepsDetail = exploreCount > 0 && travelCount > 0
-        ? `${totalSteps} steps (${exploreCount} explored, ${travelCount} traveled)`
-        : exploreCount > 0
-        ? `${totalSteps} steps (all explored)`
-        : `${totalSteps} steps (all traveled)`;
-
-      if (totalSteps === 0 && stoppedEarly) {
-        return { content: [{ type: "text", text: `Move failed: ${stopReason}` }], isError: true };
-      }
-
-      let msg = `Moved ${stepsDetail} to (${toDisplayX(endPos.x)},${toDisplayY(endPos.y)}).`;
-      if (stoppedEarly) {
-        const remaining = pathResult.directions.length - lastReachedIdx;
-        msg += ` Ran out of stamina — ${remaining} steps remaining to target.`;
-      }
-      return { content: [{ type: "text", text: msg }] };
-    },
+    async ({ army_id, target_x, target_y }) =>
+      mcpCall(moveArmy, { armyId: army_id, targetX: target_x, targetY: target_y }),
   );
 
   // ── Combat Tools ──
@@ -521,68 +322,8 @@ async function main() {
       target_x: z.coerce.number().describe("Target map X"),
       target_y: z.coerce.number().describe("Target map Y"),
     },
-    async ({ army_id, target_x: dispX, target_y: dispY }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      const target_x = toContractX(dispX);
-      const target_y = toContractY(dispY);
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-
-      const projectedStamina = projectExplorerStamina(explorer, gameConfig!.stamina);
-      const tile = mapCtx.snapshot?.gridIndex.get(`${target_x},${target_y}`);
-      if (!tile || tile.occupierType === 0) {
-        return { content: [{ type: "text", text: `Nothing to attack at (${dispX},${dispY}).` }], isError: true };
-      }
-
-      const attackerInput = {
-        troopCount: explorer.troopCount,
-        troopType: explorer.troopType,
-        troopTier: explorer.troopTier,
-        stamina: projectedStamina,
-      };
-
-      let defenderInput: { troopCount: number; troopType: string; troopTier: string; stamina: number } | null = null;
-      let defenderLabel = "target";
-
-      if (isExplorer(tile.occupierType)) {
-        const defExplorer = await client!.view.explorerInfo(tile.occupierId);
-        if (defExplorer) {
-          const defStamina = projectExplorerStamina(defExplorer, gameConfig!.stamina);
-          defenderInput = { troopCount: defExplorer.troopCount, troopType: defExplorer.troopType, troopTier: defExplorer.troopTier, stamina: defStamina };
-          defenderLabel = `${defExplorer.troopCount.toLocaleString()} ${defExplorer.troopType} ${defExplorer.troopTier}`;
-        }
-      } else if (isStructure(tile.occupierType)) {
-        const structure = await client!.view.structureAt(target_x, target_y);
-        if (structure) {
-          const guard = structure.guards?.find((g: any) => g.count > 0);
-          if (guard) {
-            defenderInput = { troopCount: guard.count, troopType: guard.troopType, troopTier: guard.troopTier, stamina: 100 };
-            defenderLabel = `${guard.count.toLocaleString()} ${guard.troopType} ${guard.troopTier}`;
-          } else {
-            return { content: [{ type: "text", text: `${structure.category} at (${dispX},${dispY}) is unguarded — free capture.` }] };
-          }
-        }
-      }
-
-      if (!defenderInput || defenderInput.troopCount <= 0) {
-        return { content: [{ type: "text", text: `No troops to fight at (${dispX},${dispY}).` }] };
-      }
-
-      const simResult = simulateCombat(attackerInput, defenderInput, tile.biome);
-
-      const lines = [
-        `SIMULATION — ${simResult.winner === "attacker" ? "YOU WIN" : simResult.winner === "defender" ? "YOU LOSE" : "DRAW"}`,
-        `  Your ${explorer.troopCount.toLocaleString()} ${explorer.troopType} ${explorer.troopTier} vs ${defenderLabel}`,
-        `  Biome: ${simResult.biomeAdvantage}`,
-        `  Your casualties: ${simResult.attackerCasualties.toLocaleString()} | Surviving: ${simResult.attackerSurviving.toLocaleString()}`,
-        `  Enemy casualties: ${simResult.defenderCasualties.toLocaleString()} | Surviving: ${simResult.defenderSurviving.toLocaleString()}`,
-      ];
-
-      return { content: [{ type: "text", text: lines.join("\n") }] };
-    },
+    async ({ army_id, target_x, target_y }) =>
+      mcpCall(simulateAttack, { armyId: army_id, targetX: target_x, targetY: target_y }),
   );
 
   server.tool(
@@ -595,100 +336,8 @@ async function main() {
       target_x: z.coerce.number().describe("Target map X"),
       target_y: z.coerce.number().describe("Target map Y"),
     },
-    async ({ army_id, target_x: dispX, target_y: dispY }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      const target_x = toContractX(dispX);
-      const target_y = toContractY(dispY);
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-      if (!addressesEqual(explorer.ownerAddress ?? "", playerAddress)) {
-        return { content: [{ type: "text", text: `Army ${army_id} is not yours.` }], isError: true };
-      }
-
-      const projectedStamina = projectExplorerStamina(explorer, gameConfig!.stamina);
-      const targetHex = { x: target_x, y: target_y };
-      const direction = directionBetween(explorer.position, targetHex);
-      if (direction === null) {
-        return { content: [{ type: "text", text: `Army not adjacent to (${dispX},${dispY}). Move first.` }], isError: true };
-      }
-
-      const tile = mapCtx.snapshot?.gridIndex.get(`${target_x},${target_y}`);
-      if (!tile || tile.occupierType === 0) {
-        return { content: [{ type: "text", text: `Nothing to attack at (${dispX},${dispY}).` }], isError: true };
-      }
-
-      // Build attacker input for simulation
-      const attackerInput = {
-        troopCount: explorer.troopCount,
-        troopType: explorer.troopType,
-        troopTier: explorer.troopTier,
-        stamina: projectedStamina,
-      };
-
-      // Build defender input — explorer or structure guard
-      let defenderInput: { troopCount: number; troopType: string; troopTier: string; stamina: number } | null = null;
-      let isStructureTarget = false;
-
-      if (isExplorer(tile.occupierType)) {
-        const defExplorer = await client!.view.explorerInfo(tile.occupierId);
-        if (defExplorer) {
-          const defStamina = projectExplorerStamina(defExplorer, gameConfig!.stamina);
-          defenderInput = { troopCount: defExplorer.troopCount, troopType: defExplorer.troopType, troopTier: defExplorer.troopTier, stamina: defStamina };
-        }
-      } else if (isStructure(tile.occupierType)) {
-        isStructureTarget = true;
-        const structure = await client!.view.structureAt(target_x, target_y);
-        if (structure) {
-          const guard = structure.guards?.find((g: any) => g.count > 0);
-          if (guard) {
-            defenderInput = { troopCount: guard.count, troopType: guard.troopType, troopTier: guard.troopTier, stamina: 100 };
-          }
-        }
-      }
-
-      // Simulate the battle
-      let simResult: ReturnType<typeof simulateCombat> | null = null;
-      if (defenderInput && defenderInput.troopCount > 0) {
-        simResult = simulateCombat(attackerInput, defenderInput, tile.biome);
-      }
-
-      // Execute the attack
-      try {
-        if (isExplorer(tile.occupierType)) {
-          await provider!.attack_explorer_vs_explorer({ aggressor_id: army_id, defender_id: tile.occupierId, defender_direction: direction, steal_resources: [], signer: account });
-        } else if (isStructureTarget) {
-          const structure = await client!.view.structureAt(target_x, target_y);
-          if (!structure) return { content: [{ type: "text", text: "Structure not found." }], isError: true };
-          await provider!.attack_explorer_vs_guard({ explorer_id: army_id, structure_id: structure.entityId, structure_direction: direction, signer: account });
-        }
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Attack failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      // Report outcome from simulation (deterministic — matches on-chain)
-      if (!simResult) {
-        // Unguarded — free capture
-        return { content: [{ type: "text", text: `Captured unguarded ${isStructureTarget ? "structure" : "target"} at (${dispX},${dispY}). ${explorer.troopCount.toLocaleString()} troops intact.` }] };
-      }
-
-      const lines = [
-        `Battle at (${dispX},${dispY}) — ${simResult.winner === "attacker" ? "VICTORY" : simResult.winner === "defender" ? "DEFEAT" : "DRAW"}`,
-        `  Your ${explorer.troopCount.toLocaleString()} ${explorer.troopType} ${explorer.troopTier} vs ${defenderInput!.troopCount.toLocaleString()} ${defenderInput!.troopType} ${defenderInput!.troopTier}`,
-        `  Biome: ${simResult.biomeAdvantage}`,
-        `  Your casualties: ${simResult.attackerCasualties.toLocaleString()} | Surviving: ${simResult.attackerSurviving.toLocaleString()}`,
-        `  Enemy casualties: ${simResult.defenderCasualties.toLocaleString()} | Surviving: ${simResult.defenderSurviving.toLocaleString()}`,
-      ];
-      if (simResult.winner === "attacker" && isStructureTarget && simResult.defenderSurviving <= 0) {
-        lines.push(`  Structure captured!`);
-      }
-      if (simResult.winner === "defender") {
-        lines.push(`  Your army was destroyed.`);
-      }
-      return { content: [{ type: "text", text: lines.join("\n") }] };
-    },
+    async ({ army_id, target_x, target_y }) =>
+      mcpCall(attackTarget, { armyId: army_id, targetX: target_x, targetY: target_y }),
   );
 
   server.tool(
@@ -700,66 +349,8 @@ async function main() {
       slot: z.coerce.number().min(0).max(3).describe("Guard slot to attack with (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
       target_army_id: z.coerce.number().describe("Entity ID of the enemy army to attack"),
     },
-    async ({ structure_id, slot, target_army_id }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      // Find structure position
-      let structPos: { x: number; y: number } | null = null;
-      for (const t of mapCtx.snapshot?.tiles ?? []) {
-        if (t.occupierId === structure_id) { structPos = t.position; break; }
-      }
-      if (!structPos) return { content: [{ type: "text", text: `Structure ${structure_id} not found.` }], isError: true };
-
-      const targetExplorer = await client!.view.explorerInfo(target_army_id);
-      if (!targetExplorer) return { content: [{ type: "text", text: `Enemy army ${target_army_id} not found.` }], isError: true };
-
-      const direction = directionBetween(structPos, targetExplorer.position);
-      if (direction === null) {
-        return { content: [{ type: "text", text: `Enemy army is not adjacent to structure. ` }], isError: true };
-      }
-
-      // Simulate: get guard info for this slot
-      const structInfo = await client!.view.structureAt(structPos.x, structPos.y);
-      const slotNames = ["Alpha", "Bravo", "Charlie", "Delta"];
-      const guard = structInfo?.guards?.find((g: any) => g.slot === slotNames[slot]);
-      const tile = mapCtx.snapshot?.gridIndex.get(`${structPos.x},${structPos.y}`);
-      const biome = tile?.biome ?? 0;
-
-      let simResult: ReturnType<typeof simulateCombat> | null = null;
-      if (guard && guard.count > 0) {
-        const defStamina = projectExplorerStamina(targetExplorer, gameConfig!.stamina);
-        simResult = simulateCombat(
-          { troopCount: guard.count, troopType: guard.troopType, troopTier: guard.troopTier, stamina: 100 },
-          { troopCount: targetExplorer.troopCount, troopType: targetExplorer.troopType, troopTier: targetExplorer.troopTier, stamina: defStamina },
-          biome,
-        );
-      }
-
-      try {
-        await provider!.attack_guard_vs_explorer({
-          structure_id,
-          structure_guard_slot: slot,
-          explorer_id: target_army_id,
-          explorer_direction: direction,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Attack failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      if (!simResult) {
-        return { content: [{ type: "text", text: `Attacked enemy army ${target_army_id} from ${slotNames[slot]} guard.` }] };
-      }
-
-      const lines = [
-        `Guard attack — ${simResult.winner === "attacker" ? "VICTORY" : simResult.winner === "defender" ? "DEFEAT" : "DRAW"}`,
-        `  Your ${guard!.count.toLocaleString()} ${guard!.troopType} ${guard!.troopTier} (${slotNames[slot]}) vs ${targetExplorer.troopCount.toLocaleString()} ${targetExplorer.troopType} ${targetExplorer.troopTier}`,
-        `  Your casualties: ${simResult.attackerCasualties.toLocaleString()} | Surviving: ${simResult.attackerSurviving.toLocaleString()}`,
-        `  Enemy casualties: ${simResult.defenderCasualties.toLocaleString()} | Surviving: ${simResult.defenderSurviving.toLocaleString()}`,
-      ];
-      return { content: [{ type: "text", text: lines.join("\n") }] };
-    },
+    async ({ structure_id, slot, target_army_id }) =>
+      mcpCall(attackFromGuard, { structureId: structure_id, slot, targetArmyId: target_army_id }),
   );
 
   server.tool(
@@ -776,52 +367,11 @@ async function main() {
         amount: z.coerce.number().describe("Amount to steal (human-readable)"),
       })).optional().default([]).describe("Resources to steal on success"),
     },
-    async ({ army_id, target_x: dispX, target_y: dispY, steal_resources: stealList }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      const target_x = toContractX(dispX);
-      const target_y = toContractY(dispY);
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-
-      const targetHex = { x: target_x, y: target_y };
-      const direction = directionBetween(explorer.position, targetHex);
-      if (direction === null) {
-        return { content: [{ type: "text", text: `Army not adjacent to (${dispX},${dispY}). Move first.` }], isError: true };
-      }
-
-      const tile = mapCtx.snapshot?.gridIndex.get(`${target_x},${target_y}`);
-      if (!tile || !isStructure(tile.occupierType)) {
-        return { content: [{ type: "text", text: `No structure at (${dispX},${dispY}). Raids only work on structures.` }], isError: true };
-      }
-
-      const structure = await client!.view.structureAt(target_x, target_y);
-      if (!structure) return { content: [{ type: "text", text: "Structure not found." }], isError: true };
-
-      const scaledSteal = stealList.map((r) => ({
-        resourceId: r.resource_id,
-        amount: Math.floor(r.amount * RESOURCE_PRECISION),
-      }));
-
-      try {
-        await provider!.raid_explorer_vs_guard({
-          explorer_id: army_id,
-          structure_id: structure.entityId,
-          structure_direction: direction,
-          steal_resources: scaledSteal,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Raid failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      const stealSummary = stealList.length > 0
-        ? ` Attempted to steal: ${stealList.map((r) => `${r.amount} of resource ${r.resource_id}`).join(", ")}.`
-        : "";
-      return { content: [{ type: "text", text: `Raided structure at (${dispX},${dispY}). 10% damage dealt to guards.${stealSummary}` }] };
-    },
+    async ({ army_id, target_x, target_y, steal_resources }) =>
+      mcpCall(raidTarget, {
+        armyId: army_id, targetX: target_x, targetY: target_y,
+        stealResources: steal_resources?.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })) ?? [],
+      }),
   );
 
   // ── Army Management Tools ──
@@ -836,52 +386,8 @@ async function main() {
       tier: z.coerce.number().min(1).max(3).optional().default(1).describe("Troop tier (1-3)"),
       amount: z.coerce.number().optional().describe("Number of troops (default: all available, max 10000)"),
     },
-    async ({ structure_id, troop_type, tier, amount: requestedAmount }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      // Find tile by entity ID
-      let structTile = null as any;
-      for (const t of mapCtx.snapshot?.tiles ?? []) {
-        if (t.occupierId === structure_id) { structTile = t; break; }
-      }
-      if (!structTile) return { content: [{ type: "text", text: `Structure ${structure_id} not found.` }], isError: true };
-
-      const info = await client!.view.structureAt(structTile.position.x, structTile.position.y);
-      if (!info) return { content: [{ type: "text", text: `Structure ${structure_id} not found.` }], isError: true };
-      if (info.category !== "Realm") return { content: [{ type: "text", text: `${info.category} is not a realm.` }], isError: true };
-      if (!addressesEqual(info.ownerAddress, playerAddress)) return { content: [{ type: "text", text: "Not yours." }], isError: true };
-
-      const BIOME_BEST: Record<number, string> = { 1:"Crossbowman",2:"Crossbowman",3:"Crossbowman",4:"Crossbowman",7:"Crossbowman",5:"Paladin",6:"Paladin",8:"Paladin",9:"Paladin",11:"Paladin",14:"Paladin",10:"Knight",12:"Knight",13:"Knight",15:"Knight",16:"Knight" };
-      const troopName = troop_type ?? BIOME_BEST[structTile.biome] ?? "Knight";
-      const category = { Knight: 0, Paladin: 1, Crossbowman: 2 }[troopName] ?? 0;
-      const tierValue = (tier ?? 1) - 1;
-      const tierSuffix = ["T1", "T2", "T3"][tierValue];
-      const resName = `${troopName} ${tierSuffix}`;
-      const available = info.resources.find((r) => r.name === resName)?.amount ?? 0;
-      if (available <= 0) return { content: [{ type: "text", text: `No ${resName} available. Resources: ${info.resources.filter(r => r.amount > 0).map(r => `${r.amount.toLocaleString()} ${r.name}`).join(", ")}` }], isError: true };
-
-      const troopCount = requestedAmount ?? Math.min(10_000, available);
-      if (troopCount > available) return { content: [{ type: "text", text: `Only ${available.toLocaleString()} ${resName} available, requested ${troopCount.toLocaleString()}.` }], isError: true };
-      const amount = Math.floor(troopCount * RESOURCE_PRECISION);
-
-      // Find open spawn hex
-      const neighbors = getNeighborHexes(structTile.position.x, structTile.position.y);
-      let spawnDir: number | null = null;
-      for (const n of neighbors) {
-        const nt = mapCtx.snapshot?.gridIndex.get(`${n.col},${n.row}`);
-        if (nt && nt.occupierType === 0) { spawnDir = n.direction; break; }
-      }
-      if (spawnDir === null) return { content: [{ type: "text", text: "No open spawn hex." }], isError: true };
-
-      try {
-        await provider!.explorer_create({ for_structure_id: structure_id, category, tier: tierValue, amount, spawn_direction: spawnDir, signer: account });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Create failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      return { content: [{ type: "text", text: `Army created: ${troopCount.toLocaleString()} ${resName} at ${Direction[spawnDir]} of realm. Armies: ${info.explorerCount + 1}/${info.maxExplorerCount}` }] };
-    },
+    async ({ structure_id, troop_type, tier, amount }) =>
+      mcpCall(createArmy, { structureId: structure_id, troopType: troop_type, tier, amount }),
   );
 
   server.tool(
@@ -892,28 +398,8 @@ async function main() {
       chest_x: z.coerce.number().describe("Chest map X"),
       chest_y: z.coerce.number().describe("Chest map Y"),
     },
-    async ({ army_id, chest_x: dispCX, chest_y: dispCY }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      const chest_x = toContractX(dispCX);
-      const chest_y = toContractY(dispCY);
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-
-      const chestHex = { x: chest_x, y: chest_y };
-      const direction = directionBetween(explorer.position, chestHex);
-      if (direction === null) return { content: [{ type: "text", text: "Army not adjacent to chest." }], isError: true };
-
-      try {
-        await provider!.open_chest({ explorer_id: army_id, chest_coord: { alt: false, x: chest_x, y: chest_y }, signer: account });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Open chest failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      return { content: [{ type: "text", text: `Opened chest at (${dispCX},${dispCY}). Relics granted!` }] };
-    },
+    async ({ army_id, chest_x, chest_y }) =>
+      mcpCall(openChest, { armyId: army_id, chestX: chest_x, chestY: chest_y }),
   );
 
   // ── Resource Transfer Tools ──
@@ -931,93 +417,11 @@ async function main() {
         amount: z.coerce.number().describe("Amount to send (human-readable, not precision-scaled)"),
       })).describe("Resources to send"),
     },
-    async ({ from_structure_id, to_structure_id, resources: resourceList }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      if (from_structure_id === to_structure_id) {
-        return { content: [{ type: "text", text: "Cannot send to the same structure." }], isError: true };
-      }
-      if (resourceList.length === 0) {
-        return { content: [{ type: "text", text: "No resources specified." }], isError: true };
-      }
-
-      const scaledResources = resourceList.map((r) => ({
-        resource: r.resource_id,
-        amount: Math.floor(r.amount * RESOURCE_PRECISION),
-      }));
-
-      // Calculate donkey cost from resource weights
-      let totalWeightGrams = 0;
-      for (const r of resourceList) {
-        const weightPerUnit = resourceWeightGrams.get(r.resource_id) ?? 0;
-        totalWeightGrams += r.amount * weightPerUnit;
-      }
-      const donkeysNeeded = donkeyCapacityGrams > 0 ? Math.ceil(totalWeightGrams / donkeyCapacityGrams) : 0;
-
-      // Check donkey balance on both structures to decide send vs pickup
-      let senderDonkeys = 0;
-      let recipientDonkeys = 0;
-      try {
-        for (const t of mapCtx.snapshot?.tiles ?? []) {
-          if (t.occupierId === from_structure_id) {
-            const info = await client!.view.structureAt(t.position.x, t.position.y);
-            senderDonkeys = info?.resources.find((r) => r.name === "Donkey")?.amount ?? 0;
-            break;
-          }
-        }
-        for (const t of mapCtx.snapshot?.tiles ?? []) {
-          if (t.occupierId === to_structure_id) {
-            const info = await client!.view.structureAt(t.position.x, t.position.y);
-            recipientDonkeys = info?.resources.find((r) => r.name === "Donkey")?.amount ?? 0;
-            break;
-          }
-        }
-      } catch { /* non-critical — will try send first */ }
-
-      // Check if either side has enough donkeys
-      if (donkeysNeeded > 0 && senderDonkeys < donkeysNeeded && recipientDonkeys < donkeysNeeded) {
-        return { content: [{ type: "text", text: `Need ${donkeysNeeded} donkeys but sender has ${senderDonkeys} and recipient has ${recipientDonkeys}. Produce more donkeys first.` }], isError: true };
-      }
-
-      const summary = resourceList.map((r) => `${r.amount.toLocaleString()} of resource ${r.resource_id}`).join(", ");
-      const donkeyNote = donkeysNeeded > 0 ? ` (${donkeysNeeded} donkeys burned)` : "";
-
-      // Use sender's donkeys if available, otherwise pickup with recipient's
-      if (senderDonkeys >= donkeysNeeded) {
-        try {
-          await provider!.send_resources({
-            sender_entity_id: from_structure_id,
-            recipient_entity_id: to_structure_id,
-            resources: scaledResources,
-            signer: account,
-          });
-          return { content: [{ type: "text", text: `Sent ${summary} from ${from_structure_id} → ${to_structure_id}${donkeyNote}. Sender's donkeys dispatched.` }] };
-        } catch (err: any) {
-          const msg = extractTxError(err);
-          if (!msg.toLowerCase().includes("donkey")) {
-            return { content: [{ type: "text", text: `Send failed: ${msg}` }], isError: true };
-          }
-        }
-      }
-
-      // Pickup mode — recipient's donkeys fetch the resources
-      if (recipientDonkeys >= donkeysNeeded) {
-        try {
-          await provider!.pickup_resources({
-            recipient_entity_id: to_structure_id,
-            owner_entity_id: from_structure_id,
-            resources: scaledResources,
-            signer: account,
-          });
-          return { content: [{ type: "text", text: `Picking up ${summary} from ${from_structure_id} → ${to_structure_id}${donkeyNote}. Recipient's donkeys dispatched.` }] };
-        } catch (err: any) {
-          return { content: [{ type: "text", text: `Pickup failed: ${extractTxError(err)}` }], isError: true };
-        }
-      }
-
-      return { content: [{ type: "text", text: `Neither structure has enough donkeys (need ${donkeysNeeded}). Sender: ${senderDonkeys}, Recipient: ${recipientDonkeys}.` }], isError: true };
-    },
+    async ({ from_structure_id, to_structure_id, resources }) =>
+      mcpCall(sendResources, {
+        fromStructureId: from_structure_id, toStructureId: to_structure_id,
+        resources: resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
+      }),
   );
 
   // ── Guard & Troop Transfer Tools ──
@@ -1035,31 +439,8 @@ async function main() {
       tier: z.coerce.number().min(1).max(3).default(1).describe("Troop tier (1-3)"),
       amount: z.coerce.number().describe("Number of troops to assign as guards"),
     },
-    async ({ structure_id, slot, troop_type, tier, amount: troopAmount }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      const category = { Knight: 0, Paladin: 1, Crossbowman: 2 }[troop_type] ?? 0;
-      const tierValue = (tier ?? 1) - 1;
-      const amount = Math.floor(troopAmount * RESOURCE_PRECISION);
-      const slotNames = ["Alpha", "Bravo", "Charlie", "Delta"];
-      const tierSuffix = ["T1", "T2", "T3"][tierValue];
-
-      try {
-        await provider!.guard_add({
-          for_structure_id: structure_id,
-          slot,
-          category,
-          tier: tierValue,
-          amount,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Guard failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      return { content: [{ type: "text", text: `Added ${troopAmount.toLocaleString()} ${troop_type} ${tierSuffix} to ${slotNames[slot] ?? `slot ${slot}`} guard on structure ${structure_id}.` }] };
-    },
+    async ({ structure_id, slot, troop_type, tier, amount }) =>
+      mcpCall(guardFromStorage, { structureId: structure_id, slot, troopType: troop_type, tier, amount }),
   );
 
   server.tool(
@@ -1073,50 +454,8 @@ async function main() {
       slot: z.coerce.number().min(0).max(3).describe("Guard slot (0=Alpha, 1=Bravo, 2=Charlie, 3=Delta)"),
       amount: z.coerce.number().describe("Number of troops to move into the guard slot"),
     },
-    async ({ army_id, structure_id, slot, amount: troopAmount }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      // Find structure position for adjacency check
-      let structPos: { x: number; y: number } | null = null;
-      for (const t of mapCtx.snapshot?.tiles ?? []) {
-        if (t.occupierId === structure_id) { structPos = t.position; break; }
-      }
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-
-      if (structPos) {
-        const direction = directionBetween(explorer.position, structPos);
-        if (direction === null) {
-          return { content: [{ type: "text", text: `Army ${army_id} is not adjacent to structure ${structure_id}. Move first.` }], isError: true };
-        }
-      }
-
-      const scaledAmount = Math.floor(troopAmount * RESOURCE_PRECISION);
-      const direction = structPos ? directionBetween(explorer.position, structPos) : null;
-
-      if (direction === null) {
-        return { content: [{ type: "text", text: `Cannot determine direction to structure.` }], isError: true };
-      }
-
-      const slotNames = ["Alpha", "Bravo", "Charlie", "Delta"];
-
-      try {
-        await provider!.explorer_guard_swap({
-          from_explorer_id: army_id,
-          to_structure_id: structure_id,
-          to_structure_direction: direction,
-          to_guard_slot: slot,
-          count: scaledAmount,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Garrison failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      return { content: [{ type: "text", text: `Garrisoned ${troopAmount.toLocaleString()} troops from army ${army_id} into ${slotNames[slot] ?? `slot ${slot}`} on structure ${structure_id}.` }] };
-    },
+    async ({ army_id, structure_id, slot, amount }) =>
+      mcpCall(guardFromArmy, { armyId: army_id, structureId: structure_id, slot, amount }),
   );
 
   server.tool(
@@ -1128,55 +467,8 @@ async function main() {
       army_id: z.coerce.number().describe("Entity ID of the army to reinforce"),
       amount: z.coerce.number().describe("Number of troops to add"),
     },
-    async ({ army_id, amount: troopAmount }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-
-      // Find the home structure — the explorer's owner field is the structure entity ID
-      const ownerStructureId = explorer.entityId; // explorer.owner is the structure
-      let homePos: { x: number; y: number } | null = null;
-      for (const t of mapCtx.snapshot?.tiles ?? []) {
-        // The owner of the explorer is stored differently — look for structures adjacent to the army
-        if (t.occupierId > 0 && t.occupierType >= 1 && t.occupierType <= 14) {
-          const dir = directionBetween(explorer.position, t.position);
-          if (dir !== null) {
-            // Check if this structure owns this explorer
-            const structInfo = await client!.view.structureAt(t.position.x, t.position.y);
-            if (structInfo && addressesEqual(structInfo.ownerAddress, playerAddress)) {
-              homePos = t.position;
-              break;
-            }
-          }
-        }
-      }
-
-      if (!homePos) {
-        return { content: [{ type: "text", text: `Army ${army_id} is not adjacent to any of your structures. Move it home first.` }], isError: true };
-      }
-
-      const homeDirection = directionBetween(explorer.position, homePos);
-      if (homeDirection === null) {
-        return { content: [{ type: "text", text: `Cannot determine direction to home structure.` }], isError: true };
-      }
-
-      const scaledAmount = Math.floor(troopAmount * RESOURCE_PRECISION);
-
-      try {
-        await provider!.explorer_add({
-          to_explorer_id: army_id,
-          amount: scaledAmount,
-          home_direction: homeDirection,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Reinforce failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      return { content: [{ type: "text", text: `Reinforced army ${army_id} with ${troopAmount.toLocaleString()} troops.` }] };
-    },
+    async ({ army_id, amount }) =>
+      mcpCall(reinforceArmy, { armyId: army_id, amount }),
   );
 
   server.tool(
@@ -1188,37 +480,8 @@ async function main() {
       to_army_id: z.coerce.number().describe("Entity ID of the army receiving troops"),
       amount: z.coerce.number().describe("Number of troops to transfer"),
     },
-    async ({ from_army_id, to_army_id, amount: troopAmount }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      const fromExplorer = await client!.view.explorerInfo(from_army_id);
-      if (!fromExplorer) return { content: [{ type: "text", text: `Army ${from_army_id} not found.` }], isError: true };
-
-      const toExplorer = await client!.view.explorerInfo(to_army_id);
-      if (!toExplorer) return { content: [{ type: "text", text: `Army ${to_army_id} not found.` }], isError: true };
-
-      const direction = directionBetween(fromExplorer.position, toExplorer.position);
-      if (direction === null) {
-        return { content: [{ type: "text", text: `Armies are not adjacent. Move them next to each other first.` }], isError: true };
-      }
-
-      const scaledAmount = Math.floor(troopAmount * RESOURCE_PRECISION);
-
-      try {
-        await provider!.explorer_explorer_swap({
-          from_explorer_id: from_army_id,
-          to_explorer_id: to_army_id,
-          to_explorer_direction: direction,
-          count: scaledAmount,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Transfer failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      return { content: [{ type: "text", text: `Transferred ${troopAmount.toLocaleString()} troops from army ${from_army_id} to army ${to_army_id}.` }] };
-    },
+    async ({ from_army_id, to_army_id, amount }) =>
+      mcpCall(transferTroops, { fromArmyId: from_army_id, toArmyId: to_army_id, amount }),
   );
 
   server.tool(
@@ -1231,46 +494,8 @@ async function main() {
       army_id: z.coerce.number().describe("Entity ID of the receiving army"),
       amount: z.coerce.number().describe("Number of troops to move out of the guard slot"),
     },
-    async ({ structure_id, slot, army_id, amount: troopAmount }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      // Find structure position
-      let structPos: { x: number; y: number } | null = null;
-      for (const t of mapCtx.snapshot?.tiles ?? []) {
-        if (t.occupierId === structure_id) { structPos = t.position; break; }
-      }
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-
-      if (!structPos) {
-        return { content: [{ type: "text", text: `Structure ${structure_id} not found on map.` }], isError: true };
-      }
-
-      const direction = directionBetween(structPos, explorer.position);
-      if (direction === null) {
-        return { content: [{ type: "text", text: `Army ${army_id} is not adjacent to structure ${structure_id}. Move first.` }], isError: true };
-      }
-
-      const scaledAmount = Math.floor(troopAmount * RESOURCE_PRECISION);
-      const slotNames = ["Alpha", "Bravo", "Charlie", "Delta"];
-
-      try {
-        await provider!.guard_explorer_swap({
-          from_structure_id: structure_id,
-          from_guard_slot: slot,
-          to_explorer_id: army_id,
-          to_explorer_direction: direction,
-          count: scaledAmount,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Unguard failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      return { content: [{ type: "text", text: `Moved ${troopAmount.toLocaleString()} troops from ${slotNames[slot] ?? `slot ${slot}`} on structure ${structure_id} to army ${army_id}.` }] };
-    },
+    async ({ structure_id, slot, army_id, amount }) =>
+      mcpCall(unguardToArmy, { structureId: structure_id, slot, armyId: army_id, amount }),
   );
 
   server.tool(
@@ -1285,44 +510,11 @@ async function main() {
         amount: z.coerce.number().describe("Amount to transfer (human-readable)"),
       })).describe("Resources to transfer"),
     },
-    async ({ army_id, structure_id, resources: resourceList }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-      if (resourceList.length === 0) return { content: [{ type: "text", text: "No resources specified." }], isError: true };
-
-      const explorer = await client!.view.explorerInfo(army_id);
-      if (!explorer) return { content: [{ type: "text", text: `Army ${army_id} not found.` }], isError: true };
-
-      let structPos: { x: number; y: number } | null = null;
-      for (const t of mapCtx.snapshot?.tiles ?? []) {
-        if (t.occupierId === structure_id) { structPos = t.position; break; }
-      }
-      if (!structPos) return { content: [{ type: "text", text: `Structure ${structure_id} not found.` }], isError: true };
-
-      const direction = directionBetween(explorer.position, structPos);
-      if (direction === null) {
-        return { content: [{ type: "text", text: `Army not adjacent to structure. Move first.` }], isError: true };
-      }
-
-      const scaledResources = resourceList.map((r) => ({
-        resourceId: r.resource_id,
-        amount: Math.floor(r.amount * RESOURCE_PRECISION),
-      }));
-
-      try {
-        await provider!.troop_structure_adjacent_transfer({
-          from_explorer_id: army_id,
-          to_structure_id: structure_id,
-          resources: scaledResources,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Transfer failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      const summary = resourceList.map((r) => `${r.amount.toLocaleString()} of resource ${r.resource_id}`).join(", ");
-      return { content: [{ type: "text", text: `Transferred ${summary} from army ${army_id} to structure ${structure_id}.` }] };
-    },
+    async ({ army_id, structure_id, resources }) =>
+      mcpCall(transferToStructure, {
+        armyId: army_id, structureId: structure_id,
+        resources: resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
+      }),
   );
 
   server.tool(
@@ -1336,41 +528,11 @@ async function main() {
         amount: z.coerce.number().describe("Amount to transfer (human-readable)"),
       })).describe("Resources to transfer"),
     },
-    async ({ from_army_id, to_army_id, resources: resourceList }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-      if (resourceList.length === 0) return { content: [{ type: "text", text: "No resources specified." }], isError: true };
-
-      const fromExplorer = await client!.view.explorerInfo(from_army_id);
-      if (!fromExplorer) return { content: [{ type: "text", text: `Army ${from_army_id} not found.` }], isError: true };
-
-      const toExplorer = await client!.view.explorerInfo(to_army_id);
-      if (!toExplorer) return { content: [{ type: "text", text: `Army ${to_army_id} not found.` }], isError: true };
-
-      const direction = directionBetween(fromExplorer.position, toExplorer.position);
-      if (direction === null) {
-        return { content: [{ type: "text", text: `Armies are not adjacent. Move them next to each other first.` }], isError: true };
-      }
-
-      const scaledResources = resourceList.map((r) => ({
-        resourceId: r.resource_id,
-        amount: Math.floor(r.amount * RESOURCE_PRECISION),
-      }));
-
-      try {
-        await provider!.troop_troop_adjacent_transfer({
-          from_troop_id: from_army_id,
-          to_troop_id: to_army_id,
-          resources: scaledResources,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Transfer failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      const summary = resourceList.map((r) => `${r.amount.toLocaleString()} of resource ${r.resource_id}`).join(", ");
-      return { content: [{ type: "text", text: `Transferred ${summary} from army ${from_army_id} to army ${to_army_id}.` }] };
-    },
+    async ({ from_army_id, to_army_id, resources }) =>
+      mcpCall(transferToArmy, {
+        fromArmyId: from_army_id, toArmyId: to_army_id,
+        resources: resources.map((r: any) => ({ resourceId: r.resource_id, amount: r.amount })),
+      }),
   );
 
   // ── Buff Tools ──
@@ -1385,25 +547,8 @@ async function main() {
       relic_resource_id: z.coerce.number().describe("Resource ID of the relic to apply"),
       recipient_type: z.coerce.number().min(0).max(2).describe("0=Explorer, 1=StructureGuard, 2=StructureProduction"),
     },
-    async ({ entity_id, relic_resource_id, recipient_type }) => {
-      const err = notReady();
-      if (err) return { content: [{ type: "text", text: err }], isError: true };
-
-      const recipientNames = ["Explorer (army)", "Structure Guard", "Structure Production"];
-
-      try {
-        await provider!.apply_relic({
-          entity_id,
-          relic_resource_id,
-          recipient_type,
-          signer: account,
-        });
-      } catch (err: any) {
-        return { content: [{ type: "text", text: `Apply relic failed: ${extractTxError(err)}` }], isError: true };
-      }
-
-      return { content: [{ type: "text", text: `Applied relic ${relic_resource_id} to entity ${entity_id} as ${recipientNames[recipient_type] ?? `type ${recipient_type}`}.` }] };
-    },
+    async ({ entity_id, relic_resource_id, recipient_type }) =>
+      mcpCall(applyRelic, { entityId: entity_id, relicResourceId: relic_resource_id, recipientType: recipient_type }),
   );
 
   // ── Connect transport FIRST so the MCP handshake completes immediately ──
