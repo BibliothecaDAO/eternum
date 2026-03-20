@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-fast-688",
-    "launchRequestId": "23342889151-1",
+    "gameName": "bltz-fast-800",
+    "launchRequestId": "23343843130-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23342889151,
+    "workflowRunId": 23343843130,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "7b6a1422-2fce-4f24-a1f7-1da54b799d37"
+    "stepId": "create-world",
+    "leaseId": "63b1af93-d9ae-4e72-a90b-d7e864164293"
   },
-  "acquiredAt": "2026-03-20T12:34:47.334Z",
-  "heartbeatAt": "2026-03-20T12:34:51.807Z",
-  "expiresAt": "2026-03-20T12:34:51.807Z",
-  "releasedAt": "2026-03-20T12:34:51.807Z"
+  "acquiredAt": "2026-03-20T12:58:58.203Z",
+  "heartbeatAt": "2026-03-20T12:58:58.203Z",
+  "expiresAt": "2026-03-20T13:08:58.203Z"
 }
