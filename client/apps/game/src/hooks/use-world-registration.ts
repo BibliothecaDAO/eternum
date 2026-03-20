@@ -20,7 +20,7 @@ import type { WorldConfigMeta } from "./use-world-availability";
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
 const REALM_SYSTEMS_SELECTOR = "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2";
 
-export interface SeasonRegistrationParams {
+interface SeasonRegistrationParams {
   realmId?: number;
   ownerAddress?: string;
   frontendAddress?: string;

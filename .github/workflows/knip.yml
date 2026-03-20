@@ -6,7 +6,6 @@ on:
       - "eliza/**"
       - "contracts/**"
       - "**/manifest.json"
-      - "config/**"
       - ".github/**"
       - "pnpm-lock.yaml"
 

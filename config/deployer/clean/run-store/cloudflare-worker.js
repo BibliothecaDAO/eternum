@@ -445,7 +445,47 @@ function validateMapConfigOverrides(value) {
 }
 
 function validateBlitzRegistrationOverrides(value) {
-  validateNumericOverrideObject(value, "blitzRegistrationOverrides");
+  if (value === undefined) {
+    return;
+  }
+
+  validateBlitzRegistrationOverrideObject(value);
+
+  for (const [key, entryValue] of Object.entries(value)) {
+    validateBlitzRegistrationOverrideEntry(key, entryValue);
+  }
+}
+
+function validateBlitzRegistrationOverrideObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new HttpError(400, "blitzRegistrationOverrides must be an object");
+  }
+}
+
+function validateBlitzRegistrationOverrideEntry(key, value) {
+  switch (key) {
+    case "registration_count_max":
+      validateBlitzRegistrationCountMax(value);
+      return;
+    case "fee_token":
+    case "fee_amount":
+      validateBlitzRegistrationStringValue(key, value);
+      return;
+    default:
+      throw new HttpError(400, `Unsupported blitzRegistrationOverrides.${key}`);
+  }
+}
+
+function validateBlitzRegistrationCountMax(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new HttpError(400, "blitzRegistrationOverrides.registration_count_max must be a finite number");
+  }
+}
+
+function validateBlitzRegistrationStringValue(key, value) {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new HttpError(400, `blitzRegistrationOverrides.${key} must be a non-empty string`);
+  }
 }
 
 function validateNumericOverrideObject(value, label) {

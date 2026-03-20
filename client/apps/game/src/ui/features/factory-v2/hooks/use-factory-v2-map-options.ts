@@ -1,3 +1,4 @@
+import { resolveBlitzBalanceProfileIdFromDurationMinutes } from "@config";
 import { useEffect, useState } from "react";
 import {
   createFactoryMoreOptionsDraft,
@@ -12,22 +13,26 @@ export const useFactoryV2MoreOptions = ({
   chain,
   presetId,
   twoPlayerMode,
+  durationMinutes,
 }: {
   mode: FactoryGameMode;
   chain: FactoryLaunchChain;
   presetId: string | null;
   twoPlayerMode: boolean;
+  durationMinutes: number | null;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [draft, setDraft] = useState(() => createFactoryMoreOptionsDraft(mode, chain));
+  const blitzBalanceProfileId =
+    mode === "blitz" ? resolveBlitzBalanceProfileIdFromDurationMinutes(durationMinutes) : null;
+  const [draft, setDraft] = useState(() => createFactoryMoreOptionsDraft(mode, chain, durationMinutes));
   const visibility = { twoPlayerMode };
 
   useEffect(() => {
     setIsOpen(false);
-    setDraft(createFactoryMoreOptionsDraft(mode, chain));
-  }, [chain, mode, presetId]);
+    setDraft(createFactoryMoreOptionsDraft(mode, chain, durationMinutes));
+  }, [blitzBalanceProfileId, chain, mode, presetId]);
 
-  const validation = validateFactoryMoreOptions(mode, chain, draft, visibility);
+  const validation = validateFactoryMoreOptions(mode, chain, draft, visibility, durationMinutes);
 
   return {
     isOpen,

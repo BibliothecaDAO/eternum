@@ -698,9 +698,6 @@ export interface Config {
     addresses: SeasonAddresses;
     manifest: Manifest;
   };
-
-  // Previous prize distribution systems address (carried between runs)
-  prev_prize_distribution_address?: string | null;
 }
 
 export type FactoryMapConfigOverrides = Partial<
@@ -726,9 +723,11 @@ export type FactoryMapConfigOverrides = Partial<
   >
 >;
 
-export type FactoryBlitzRegistrationOverrides = Partial<
-  Pick<Config["blitz"]["registration"], "registration_count_max">
->;
+export interface FactoryBlitzRegistrationOverrides {
+  registration_count_max?: number;
+  fee_token?: string;
+  fee_amount?: string;
+}
 
 export interface RealmInfo {
   realmId: ID;

@@ -505,7 +505,7 @@ const FactoryV2InlineOptionField = ({
       >
         <input
           type="number"
-          inputMode={field.inputMode === "percentage" ? "decimal" : "numeric"}
+          inputMode={field.inputMode}
           min={field.min}
           max={field.max}
           step={field.step}

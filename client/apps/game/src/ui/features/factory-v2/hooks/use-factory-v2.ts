@@ -122,6 +122,7 @@ export const useFactoryV2 = () => {
     chain: selectedEnvironment?.chain ?? "slot",
     presetId: selectedPreset?.id ?? null,
     twoPlayerMode,
+    durationMinutes: draftDurationMinutes,
   });
 
   useEffect(() => {

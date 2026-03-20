@@ -50,6 +50,14 @@ function hasFactoryAddress(config: EternumConfig): boolean {
   return Boolean((config as EternumConfig & { factory_address?: string }).factory_address);
 }
 
+function isBlitzConfiguration(config: EternumConfig): boolean {
+  return Boolean(config.blitz?.mode?.on);
+}
+
+function isEternumConfiguration(config: EternumConfig): boolean {
+  return !isBlitzConfiguration(config);
+}
+
 function hasMmrConfig(config: EternumConfig): boolean {
   return Boolean((config as EternumConfig & { mmr?: unknown }).mmr);
 }
@@ -114,7 +122,7 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
     shouldRun: ({ config }) => hasFactoryAddress(config),
   }),
   defineStep("mmr", "Set MMR config", setMMRConfig, {
-    shouldRun: ({ config }) => hasMmrConfig(config),
+    shouldRun: ({ config }) => isBlitzConfiguration(config) && hasMmrConfig(config),
   }),
   defineStep("victory-points", "Set victory points config", setVictoryPointsConfig),
   defineStep(
@@ -126,13 +134,19 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
     environments: ["slot.blitz"],
   }),
   defineStep("agent", "Set agent config", setAgentConfig),
-  defineStep("village-controllers", "Set village controllers config", setVillageControllersConfig),
-  defineStep("trade", "Set trade config", setTradeConfig),
+  defineStep("village-controllers", "Set village controllers config", setVillageControllersConfig, {
+    shouldRun: ({ config }) => isEternumConfiguration(config),
+  }),
+  defineStep("trade", "Set trade config", setTradeConfig, {
+    shouldRun: ({ config }) => isEternumConfiguration(config),
+  }),
   defineStep("season", "Set season config", setSeasonConfig),
   defineStep("resource-bridge-fees", "Set resource bridge fees config", setResourceBridgeFeesConfig),
   defineStep("battle", "Set battle config", setBattleConfig),
   defineStep("structure-max-level", "Set structure max level config", setStructureMaxLevelConfig),
-  defineStep("bank", "Set bank config", setBankConfig),
+  defineStep("bank", "Set bank config", setBankConfig, {
+    shouldRun: ({ config }) => isEternumConfiguration(config),
+  }),
   defineStep("tick", "Set tick config", setTickConfig),
   defineStep("map", "Set map config", setMapConfig),
   defineStep("quest", "Set quest config", setQuestConfig),
@@ -141,7 +155,7 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
   defineStep("hyperstructure", "Set hyperstructure config", setHyperstructureConfig),
   defineStep("settlement", "Set settlement config", setSettlementConfig),
   defineStep("faith", "Set faith config", setFaithConfig, {
-    shouldRun: ({ config }) => hasFaithConfig(config),
+    shouldRun: ({ config }) => isEternumConfiguration(config) && hasFaithConfig(config),
   }),
   defineStep("starting-resources", "Set starting resources config", setStartingResourcesConfig),
   defineStep("weight", "Set weight config", setWeightConfig),

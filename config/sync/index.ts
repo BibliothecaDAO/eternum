@@ -1,22 +1,41 @@
-import { saveConfigJsonFromConfigTsFile, type GameType, type NetworkType } from "../utils/environment";
+import { saveResolvedConfigJson, type GameType, type NetworkType } from "../utils/environment";
 
+const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "slot", "slottest"];
 const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
-const gameType = process.argv[2] as GameType;
-if (!gameType || !VALID_GAME_TYPES.includes(gameType)) {
-  console.error(`Usage: bun run ./sync/index.ts <game_type>`);
+
+function printSyncUsage(): void {
+  console.error(`Usage: bun run ./sync/index.ts <network> <game_type>`);
+  console.error(`  network must be one of: ${VALID_NETWORKS.join(", ")}`);
+}
+
+function printGameTypeUsage(): void {
+  console.error(`Usage: bun run ./sync/index.ts <network> <game_type>`);
   console.error(`  game_type must be one of: ${VALID_GAME_TYPES.join(", ")}`);
-  process.exit(1);
 }
 
-const { VITE_PUBLIC_CHAIN } = process.env;
+function resolveSyncTarget(argv: string[]): { gameType: GameType; network: NetworkType } {
+  const network = argv[2] as NetworkType;
+  const gameType = argv[3] as GameType;
 
-if (!VITE_PUBLIC_CHAIN) {
-  console.error("Error: VITE_PUBLIC_CHAIN environment variable is not set");
-  process.exit(1);
+  if (!network || !VALID_NETWORKS.includes(network)) {
+    printSyncUsage();
+    process.exit(1);
+  }
+
+  if (!gameType || !VALID_GAME_TYPES.includes(gameType)) {
+    printGameTypeUsage();
+    process.exit(1);
+  }
+
+  return { gameType, network };
 }
 
-console.log(`\n🔄 Syncing ${gameType} configuration JSON for ${VITE_PUBLIC_CHAIN}...\n`);
+async function runConfigSync(): Promise<void> {
+  const { gameType, network } = resolveSyncTarget(process.argv);
 
-await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN as NetworkType, gameType);
+  console.log(`\n🔄 Syncing ${gameType} configuration JSON for ${network}...\n`);
+  await saveResolvedConfigJson(network, gameType);
+  console.log(`✅ Configuration JSON updated successfully for ${gameType} on ${network}\n`);
+}
 
-console.log(`✅ Configuration JSON updated successfully for ${gameType} on ${VITE_PUBLIC_CHAIN}\n`);
+await runConfigSync();

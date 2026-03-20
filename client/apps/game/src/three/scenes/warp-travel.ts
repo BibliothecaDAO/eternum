@@ -12,12 +12,7 @@ import {
   type WarpTravelLifecycleState,
 } from "./warp-travel-lifecycle";
 
-export {
-  runWarpTravelSetupLifecycle,
-  runWarpTravelSwitchOffLifecycle,
-  type WarpTravelLifecycleAdapter,
-  type WarpTravelLifecycleState,
-} from "./warp-travel-lifecycle";
+export { type WarpTravelLifecycleAdapter } from "./warp-travel-lifecycle";
 
 export abstract class WarpTravel extends HexagonScene {
   protected isSwitchedOff = false;

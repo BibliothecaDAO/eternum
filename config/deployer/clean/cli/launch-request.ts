@@ -58,7 +58,7 @@ function resolveOptionalNumber(value: string | undefined, label: string): number
   return parsed;
 }
 
-function resolveNumericOverrideObject(value: string | undefined, label: string): Record<string, number> | undefined {
+function resolveJsonOverrideObject(value: string | undefined, label: string): Record<string, unknown> | undefined {
   if (!value) {
     return undefined;
   }
@@ -75,13 +75,21 @@ function resolveNumericOverrideObject(value: string | undefined, label: string):
     throw new Error(`${label} must be a JSON object`);
   }
 
-  const overrides = parsedValue as Record<string, unknown>;
+  return parsedValue as Record<string, unknown>;
+}
 
-  Object.entries(overrides).forEach(([key, entryValue]) => {
+function resolveNumericOverrideObject(value: string | undefined, label: string): Record<string, number> | undefined {
+  const overrides = resolveJsonOverrideObject(value, label);
+
+  if (!overrides) {
+    return undefined;
+  }
+
+  for (const [key, entryValue] of Object.entries(overrides)) {
     if (typeof entryValue !== "number" || !Number.isFinite(entryValue)) {
       throw new Error(`${label} entry "${key}" must be a finite number`);
     }
-  });
+  }
 
   return overrides as Record<string, number>;
 }
@@ -91,9 +99,47 @@ function resolveMapConfigOverrides(value?: string): FactoryMapConfigOverrides | 
 }
 
 function resolveBlitzRegistrationOverrides(value?: string): FactoryBlitzRegistrationOverrides | undefined {
-  return resolveNumericOverrideObject(value, "blitz registration overrides") as
-    | FactoryBlitzRegistrationOverrides
-    | undefined;
+  const overrides = resolveJsonOverrideObject(value, "blitz registration overrides");
+
+  if (!overrides) {
+    return undefined;
+  }
+
+  validateBlitzRegistrationOverrideEntries(overrides);
+
+  return overrides as FactoryBlitzRegistrationOverrides;
+}
+
+function validateBlitzRegistrationOverrideEntries(overrides: Record<string, unknown>): void {
+  for (const [key, value] of Object.entries(overrides)) {
+    validateBlitzRegistrationOverrideEntry(key, value);
+  }
+}
+
+function validateBlitzRegistrationOverrideEntry(key: string, value: unknown): void {
+  switch (key) {
+    case "registration_count_max":
+      validateBlitzRegistrationCountOverride(value);
+      return;
+    case "fee_token":
+    case "fee_amount":
+      validateBlitzRegistrationStringOverride(key, value);
+      return;
+    default:
+      throw new Error(`Unsupported blitz registration overrides entry "${key}"`);
+  }
+}
+
+function validateBlitzRegistrationCountOverride(value: unknown): void {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error('blitz registration overrides entry "registration_count_max" must be a finite number');
+  }
+}
+
+function validateBlitzRegistrationStringOverride(key: string, value: unknown): void {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`blitz registration overrides entry "${key}" must be a non-empty string`);
+  }
 }
 
 function requireLaunchArgs(args: Args): {

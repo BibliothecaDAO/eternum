@@ -156,7 +156,6 @@ export type {
   DirectMessageReadReceipt,
   DirectMessageThread,
   DirectMessageTyping,
-  WorldChatHistoryQuery,
   WorldChatMessage,
   WorldChatPublishPayload,
 } from "@bibliothecadao/types";

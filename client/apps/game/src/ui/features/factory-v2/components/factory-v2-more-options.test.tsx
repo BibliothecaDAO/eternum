@@ -3,9 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createFactoryMoreOptionsDraft,
-  getFactoryMapOptionSections,
   getFactoryMoreOptionSections,
-  validateFactoryMapOptions,
   validateFactoryMoreOptions,
 } from "../map-options";
 import { FactoryV2MoreOptions } from "./factory-v2-more-options";
@@ -25,9 +23,9 @@ const buildProps = (overrides: Record<string, unknown> = {}) => {
   return {
     mode: "eternum" as const,
     isOpen: true,
-    sections: getFactoryMapOptionSections("eternum"),
+    sections: getFactoryMoreOptionSections("eternum"),
     draft,
-    errors: validateFactoryMapOptions("eternum", "slot", draft).errors,
+    errors: validateFactoryMoreOptions("eternum", "slot", draft).errors,
     invalidReason: null,
     onToggle: vi.fn(),
     onValueChange: vi.fn(),
@@ -118,6 +116,37 @@ describe("FactoryV2MoreOptions", () => {
     expect(container.textContent).toContain("Relic discovery interval");
     expect(container.textContent).toContain("Minutes between relic discovery checks.");
     expect(container.textContent).toContain("min");
+  });
+
+  it("shows the blitz prize section with token and amount fields", async () => {
+    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+
+    await act(async () => {
+      root.render(
+        <FactoryV2MoreOptions
+          {...buildProps({
+            mode: "blitz",
+            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
+            draft,
+            errors: validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false }).errors,
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const prizeButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Prize") && button.textContent?.includes("Token and amount"),
+    );
+
+    await act(async () => {
+      (prizeButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Prize token address");
+    expect(container.textContent).toContain("Prize amount");
+    expect(container.textContent).toContain("Token decimals");
   });
 
   it("keeps Blitz player-cap controls out of the advanced drawer", async () => {

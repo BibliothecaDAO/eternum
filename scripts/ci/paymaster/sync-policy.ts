@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { spawnSync } from "node:child_process";
 import { getFactorySqlBaseUrl } from "../../../common/factory/endpoints.ts";
+import { getConfigFromNetwork, type Chain } from "../../../config/utils/utils.ts";
 
 interface FactoryContractRow {
   contract_address: string;
@@ -238,15 +239,23 @@ function buildPaymasterActions(manifest: GameManifestLike, vrfProviderAddress?: 
   return Array.from(actionsMap.values());
 }
 
-function resolveVrfProviderAddress(chain: string): string | undefined {
-  try {
-    const config = loadJsonFile<{ configuration?: { vrf?: { vrfProviderAddress?: string } } }>(
-      `config/environments/data/${chain}.json`,
-    );
-    return config?.configuration?.vrf?.vrfProviderAddress;
-  } catch {
-    return undefined;
+function resolveSupportedChain(chain: string): Chain {
+  switch (chain) {
+    case "local":
+    case "mainnet":
+    case "sepolia":
+    case "slot":
+    case "slottest":
+      return chain;
+    default:
+      throw new Error(`Unsupported chain "${chain}"`);
   }
+}
+
+function resolveVrfProviderAddress(chain: string): string | undefined {
+  const supportedChain = resolveSupportedChain(chain);
+  const config = getConfigFromNetwork(supportedChain, "eternum") as { vrf?: { vrfProviderAddress?: string } };
+  return config.vrf?.vrfProviderAddress;
 }
 
 function formatOutputFilename(chain: string, gameName: string): string {

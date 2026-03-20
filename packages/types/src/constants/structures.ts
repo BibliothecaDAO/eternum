@@ -1,5 +1,5 @@
 import { CairoCustomEnum } from "starknet";
-import { ResourcesIds } from "../constants";
+import { ResourcesIds } from "./resource-ids";
 
 // Knip ignore tag
 /** @public */
