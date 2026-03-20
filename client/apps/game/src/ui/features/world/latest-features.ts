@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-19",
+    title: "Blitz Research Lab Preview Fix",
+    description:
+      "Fixed Blitz construction previews so the Research Lab no longer appears in building options for Blitz games.",
+    type: "fix",
+  },
+  {
     date: "2026-03-18",
     title: "1v1 Capacity Display Fix",
     description:
