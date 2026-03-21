@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import { getConfigFromNetwork, type Chain } from "../../../utils/utils";
 import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
 import { patchManifestWithFactory, resolveFactoryWorldProfile } from "../factory/discovery";
@@ -48,6 +48,7 @@ export interface SyncPaymasterPolicyResult {
 }
 
 const PAYMASTER_OUTPUT_DIRECTORY = ".context/paymaster";
+const SLOT_COMMAND_MAX_BUFFER_BYTES = 10 * 1024 * 1024;
 
 const strip0x = (value: string) => (value.startsWith("0x") || value.startsWith("0X") ? value.slice(2) : value);
 
@@ -178,10 +179,47 @@ function writePaymasterActionsFile(chain: Chain, gameName: string, actions: Paym
   return outputPath;
 }
 
-function executeSlotPaymasterPolicyUpdate(paymasterName: string, filePath: string): void {
-  const result = spawnSync("slot", ["paymaster", paymasterName, "policy", "add-from-json", "--file", filePath], {
-    stdio: "inherit",
+function runSlotPaymasterPolicyCommand(paymasterName: string, filePath: string): SpawnSyncReturns<string> {
+  return spawnSync("slot", ["paymaster", paymasterName, "policy", "add-from-json", "--file", filePath], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: SLOT_COMMAND_MAX_BUFFER_BYTES,
   });
+}
+
+function normalizeCapturedOutput(output: string | null | undefined): string {
+  return `${output || ""}`.trim();
+}
+
+function writeCapturedOutput(stream: NodeJS.WriteStream, output: string | null | undefined): void {
+  const normalizedOutput = normalizeCapturedOutput(output);
+  if (!normalizedOutput) {
+    return;
+  }
+
+  stream.write(`${normalizedOutput}\n`);
+}
+
+function relaySlotCommandOutput(result: SpawnSyncReturns<string>): void {
+  writeCapturedOutput(process.stdout, result.stdout);
+  writeCapturedOutput(process.stderr, result.stderr);
+}
+
+function buildSlotCommandFailureMessage(result: SpawnSyncReturns<string>): string {
+  const exitCode = result.status ?? 1;
+  const output = [normalizeCapturedOutput(result.stderr), normalizeCapturedOutput(result.stdout)]
+    .filter(Boolean)
+    .join("\n");
+
+  if (!output) {
+    return `slot command failed with exit code ${exitCode}`;
+  }
+
+  return `slot command failed with exit code ${exitCode}: ${output}`;
+}
+
+function executeSlotPaymasterPolicyUpdate(paymasterName: string, filePath: string): void {
+  const result = runSlotPaymasterPolicyCommand(paymasterName, filePath);
 
   if (result.error) {
     throw new Error(`Failed to execute slot CLI: ${result.error.message}`);
@@ -189,8 +227,10 @@ function executeSlotPaymasterPolicyUpdate(paymasterName: string, filePath: strin
 
   const exitCode = result.status ?? 1;
   if (exitCode !== 0) {
-    throw new Error(`slot command failed with exit code ${exitCode}`);
+    throw new Error(buildSlotCommandFailureMessage(result));
   }
+
+  relaySlotCommandOutput(result);
 }
 
 export async function syncPaymasterPolicy(options: SyncPaymasterPolicyOptions): Promise<SyncPaymasterPolicyResult> {

@@ -1,17 +1,38 @@
 import * as fs from "node:fs";
-import { afterEach, describe, expect, test } from "bun:test";
-import { syncPaymasterPolicy } from "../paymaster";
+import { afterAll, afterEach, describe, expect, mock, test } from "bun:test";
 import { resolveRepoPath } from "../shared/repo";
 
+const spawnSyncMock = mock(() => ({
+  status: 0,
+  stdout: "",
+  stderr: "",
+  error: undefined,
+}));
+
+mock.module("node:child_process", () => ({
+  spawnSync: spawnSyncMock,
+}));
+
+const { syncPaymasterPolicy } = await import("../paymaster");
+
 const originalFetch = globalThis.fetch;
+const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+const originalStderrWrite = process.stderr.write.bind(process.stderr);
 const outputPath = resolveRepoPath(".context/paymaster/eternum-actions-mainnet-alpha.json");
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  process.stdout.write = originalStdoutWrite as typeof process.stdout.write;
+  process.stderr.write = originalStderrWrite as typeof process.stderr.write;
+  spawnSyncMock.mockClear();
 
   if (fs.existsSync(outputPath)) {
     fs.unlinkSync(outputPath);
   }
+});
+
+afterAll(() => {
+  mock.restore();
 });
 
 describe("syncPaymasterPolicy", () => {
@@ -102,5 +123,68 @@ describe("syncPaymasterPolicy", () => {
         filePath: outputPath,
       },
     ]);
+  });
+
+  test("captures slot CLI output instead of inheriting workflow stdio", async () => {
+    const stdoutWrites: string[] = [];
+    const stderrWrites: string[] = [];
+
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      stdoutWrites.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      stderrWrites.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stdout: "slot ok",
+      stderr: "slot warning",
+      error: undefined,
+    });
+
+    globalThis.fetch = async (url) => {
+      const decodedUrl = decodeURIComponent(String(url));
+
+      if (decodedUrl.includes("[wf-WorldContract]")) {
+        return Response.json([
+          {
+            contract_address: "0x123",
+            contract_selector: "0x1",
+          },
+        ]);
+      }
+
+      if (decodedUrl.includes("[wf-WorldDeployed]")) {
+        return Response.json([
+          {
+            world_address: "0xworld",
+          },
+        ]);
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    await syncPaymasterPolicy({
+      chain: "mainnet",
+      gameName: "alpha",
+      vrfProviderAddress: "0x456",
+    });
+
+    expect(spawnSyncMock).toHaveBeenCalledTimes(1);
+    expect(spawnSyncMock.mock.calls[0]).toEqual([
+      "slot",
+      ["paymaster", "empire", "policy", "add-from-json", "--file", outputPath],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    ]);
+    expect(stdoutWrites).toEqual(["slot ok\n"]);
+    expect(stderrWrites).toEqual(["slot warning\n"]);
   });
 });
