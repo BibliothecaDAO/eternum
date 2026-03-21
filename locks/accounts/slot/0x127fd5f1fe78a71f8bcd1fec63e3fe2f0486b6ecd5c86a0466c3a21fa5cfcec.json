@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "sg-61",
-    "launchRequestId": "23380774179-1",
+    "gameName": "sg-62",
+    "launchRequestId": "23383871976-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23380774179,
+    "workflowRunId": 23383871976,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "d6ab5bfe-b983-479f-82ed-71f796f7d93f"
+    "stepId": "create-world",
+    "leaseId": "dd20ab4f-352f-4cc7-a700-9b31094a6998"
   },
-  "acquiredAt": "2026-03-21T13:35:24.197Z",
-  "heartbeatAt": "2026-03-21T13:35:28.259Z",
-  "expiresAt": "2026-03-21T13:35:28.259Z",
-  "releasedAt": "2026-03-21T13:35:28.259Z"
+  "acquiredAt": "2026-03-21T16:33:04.671Z",
+  "heartbeatAt": "2026-03-21T16:33:04.671Z",
+  "expiresAt": "2026-03-21T16:43:04.671Z"
 }
