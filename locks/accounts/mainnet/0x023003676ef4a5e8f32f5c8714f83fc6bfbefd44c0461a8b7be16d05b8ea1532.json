@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "bltz-vibe-171-mainnet4",
-    "launchRequestId": "23371296187-1",
+    "launchRequestId": "23371600510-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23371296187,
+    "workflowRunId": 23371600510,
     "workflowRunAttempt": 1,
     "stepId": "configure-world",
-    "leaseId": "4488c16c-0e4f-44d0-9a8e-24d55f2f8eab"
+    "leaseId": "98ba5a43-dc22-4187-a7e5-90efbcb5eafd"
   },
-  "acquiredAt": "2026-03-21T03:45:30.424Z",
-  "heartbeatAt": "2026-03-21T03:45:39.744Z",
-  "expiresAt": "2026-03-21T03:45:39.744Z",
-  "releasedAt": "2026-03-21T03:45:39.744Z"
+  "acquiredAt": "2026-03-21T04:04:21.356Z",
+  "heartbeatAt": "2026-03-21T04:04:21.356Z",
+  "expiresAt": "2026-03-21T04:14:21.356Z"
 }
