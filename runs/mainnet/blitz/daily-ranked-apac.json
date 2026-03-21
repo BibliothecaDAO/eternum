@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/daily-ranked-apac/23378392387-1.json",
   "latestLaunchRequestId": "23378392387-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-21T11:11:49.055Z",
-  "updatedAt": "2026-03-21T11:11:52.466Z",
+  "updatedAt": "2026-03-21T11:12:56.426Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -26,10 +26,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-03-21T11:11:52.466Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-03-21T11:11:52.466Z",
+      "finishedAt": "2026-03-21T11:12:56.426Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -67,13 +68,8 @@
       "latestEvent": "Waiting to run"
     }
   ],
-  "artifacts": {},
-  "activeLease": {
-    "launchRequestId": "23378392387-1",
-    "workflowRunId": 23378392387,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-03-21T11:11:52.466Z",
-    "expiresAt": "2026-03-21T11:56:52.466Z"
+  "artifacts": {
+    "summaryPath": ".context/game-launch/mainnet-blitz-daily-ranked-apac.json",
+    "createGameTxHash": "0x360f9f978bcf152d3b8fc23382492d26e476e1048af2edff7d14cfc95951d09"
   }
 }
