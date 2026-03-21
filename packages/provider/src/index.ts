@@ -30,7 +30,8 @@ export { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory 
 export { BatchedTransactionDetail, TransactionType } from "./types";
 export type { VrfSource } from "./vrf";
 
-const MIN_V3_L2_GAS_MAX_AMOUNT = 1_500_000_000n;
+// Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
+const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
 const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
 const HUNDRED_PERCENT = 100n;
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
@@ -326,7 +327,7 @@ const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN 
   const currentMaxAmount = resourceBounds.l2_gas.max_amount;
   const paddedMaxAmount =
     (currentMaxAmount * (HUNDRED_PERCENT + V3_L2_GAS_OVERHEAD_PERCENT) + (HUNDRED_PERCENT - 1n)) / HUNDRED_PERCENT;
-  const nextMaxAmount = paddedMaxAmount > MIN_V3_L2_GAS_MAX_AMOUNT ? paddedMaxAmount : MIN_V3_L2_GAS_MAX_AMOUNT;
+  const nextMaxAmount = paddedMaxAmount > MAX_V3_L2_GAS_MAX_AMOUNT ? MAX_V3_L2_GAS_MAX_AMOUNT : paddedMaxAmount;
 
   if (nextMaxAmount === currentMaxAmount) {
     return resourceBounds;

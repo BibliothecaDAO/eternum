@@ -561,7 +561,7 @@ async function executeWorldConfig(params: {
   );
 }
 
-function shouldRetryWorldConfigInTwoBatches(params: {
+function shouldRetryWorldConfigInSmallerBatches(params: {
   runtime: LaunchRuntime;
   mode: NonNullable<LaunchGameRequest["executionMode"]>;
   configSteps: LaunchConfigSteps;
@@ -631,37 +631,83 @@ async function splitConfigStepsForRetry(params: {
   return [params.configSteps.slice(0, splitIndex), params.configSteps.slice(splitIndex)];
 }
 
-async function retryWorldConfigInTwoBatches(params: {
+function describeConfigRetryBatch(batchPath: number[]): string {
+  return batchPath.length === 0 ? "full batched submission" : `batch ${batchPath.join(".")}`;
+}
+
+function buildConfigRetryBatchStartMessage(configSteps: LaunchConfigSteps, batchPath: number[]): string {
+  return `Applying ${configSteps.length} config steps in batched mode (${describeConfigRetryBatch(batchPath)})`;
+}
+
+function buildConfigRetryBatchSuccessLabel(batchPath: number[]): string {
+  return `World configuration ${describeConfigRetryBatch(batchPath)} completed`;
+}
+
+async function retryWorldConfigInSmallerBatches(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
   deploymentConfig: LaunchConfig;
   configSteps: LaunchConfigSteps;
   account: Account;
   patchedProvider: EternumProvider;
+  batchPath: number[];
 }): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
   const [firstBatchSteps, secondBatchSteps] = await splitConfigStepsForRetry(params);
-  params.runtime.progress.log("Retrying world configuration in two batched submissions after batched mainnet failure");
+  const failedBatchLabel = describeConfigRetryBatch(params.batchPath);
+  params.runtime.progress.log(`Retrying ${failedBatchLabel} as smaller batched submissions`);
 
-  const firstBatch = await executeWorldConfig({
+  const firstBatch = await executeWorldConfigWithAdaptiveRetries({
     ...params,
     configSteps: firstBatchSteps,
-    mode: "batched",
-    startMessage: `Applying ${firstBatchSteps.length} config steps in batched mode (retry batch 1/2)`,
-    successLabel: "World configuration batch 1/2 completed",
+    batchPath: [...params.batchPath, 1],
   });
 
-  const secondBatch = await executeWorldConfig({
+  const secondBatch = await executeWorldConfigWithAdaptiveRetries({
     ...params,
     configSteps: secondBatchSteps,
-    mode: "batched",
-    startMessage: `Applying ${secondBatchSteps.length} config steps in batched mode (retry batch 2/2)`,
-    successLabel: "World configuration batch 2/2 completed",
+    batchPath: [...params.batchPath, 2],
   });
 
   return {
     transactionHash: secondBatch.transactionHash || firstBatch.transactionHash,
     steps: [...firstBatch.steps, ...secondBatch.steps],
   };
+}
+
+async function executeWorldConfigWithAdaptiveRetries(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+  batchPath: number[];
+}): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
+  try {
+    const result = await executeWorldConfig({
+      ...params,
+      mode: "batched",
+      startMessage: buildConfigRetryBatchStartMessage(params.configSteps, params.batchPath),
+      successLabel: buildConfigRetryBatchSuccessLabel(params.batchPath),
+    });
+
+    return {
+      transactionHash: result.transactionHash,
+      steps: result.steps,
+    };
+  } catch (error) {
+    if (
+      !shouldRetryWorldConfigInSmallerBatches({
+        runtime: params.runtime,
+        mode: "batched",
+        configSteps: params.configSteps,
+      })
+    ) {
+      throw error;
+    }
+
+    return retryWorldConfigInSmallerBatches(params);
+  }
 }
 
 async function configureWorld(params: {
@@ -684,7 +730,7 @@ async function configureWorld(params: {
     };
   } catch (error) {
     if (
-      !shouldRetryWorldConfigInTwoBatches({
+      !shouldRetryWorldConfigInSmallerBatches({
         runtime: params.runtime,
         mode: params.runtime.executionMode,
         configSteps: params.configSteps,
@@ -693,7 +739,13 @@ async function configureWorld(params: {
       throw error;
     }
 
-    return retryWorldConfigInTwoBatches(params);
+    params.runtime.progress.log(
+      "Retrying world configuration in smaller batched submissions after batched mainnet failure",
+    );
+    return retryWorldConfigInSmallerBatches({
+      ...params,
+      batchPath: [],
+    });
   }
 }
 

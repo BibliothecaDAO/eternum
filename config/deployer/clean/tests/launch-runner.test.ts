@@ -340,7 +340,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(summary.worldAddress).toBe("0xworld");
   });
 
-  test("retries configure-world as two batched submissions after a batched mainnet failure", async () => {
+  test("keeps subdividing configure-world batches after another batched mainnet failure", async () => {
     resolveFactoryWorldConfigStepsMock.mockImplementation(() => [
       buildQueuedConfigStep("world-admin", 2),
       buildQueuedConfigStep("tick", 3),
@@ -352,7 +352,11 @@ describe("runLaunchStep mainnet launch steps", () => {
     executeConfigStepsMock.mockImplementation(
       async ({ mode, steps }: { mode?: string; steps?: Array<{ id: string }> }) => {
         invocationCount += 1;
-        if (invocationCount === 1) {
+        const stepIds = (steps || []).map((step) => step.id);
+        if (
+          invocationCount === 1 ||
+          (stepIds.length === 2 && stepIds[0] === "map" && stepIds[1] === "resource-factory")
+        ) {
           throw new Error("RPC: starknet_addInvokeTransaction failed");
         }
 
@@ -384,9 +388,11 @@ describe("runLaunchStep mainnet launch steps", () => {
       { mode: "batched", stepIds: ["world-admin", "tick", "map", "resource-factory"] },
       { mode: "batched", stepIds: ["world-admin", "tick"] },
       { mode: "batched", stepIds: ["map", "resource-factory"] },
+      { mode: "batched", stepIds: ["map"] },
+      { mode: "batched", stepIds: ["resource-factory"] },
     ]);
     expect(summary.configMode).toBe("batched");
-    expect(summary.configureTxHash).toBe("0xconfigure3");
+    expect(summary.configureTxHash).toBe("0xconfigure5");
     expect(summary.configSteps).toEqual([
       { id: "world-admin", description: "world-admin" },
       { id: "tick", description: "tick" },
