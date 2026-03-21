@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-froth-584",
-    "launchRequestId": "23372765802-1",
+    "gameName": "sg-59",
+    "launchRequestId": "23374873168-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23372765802,
+    "workflowRunId": 23374873168,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "8f7986e7-2de1-4f5a-beee-49015c660b98"
+    "stepId": "create-world",
+    "leaseId": "664fffc0-f80e-4966-97cd-259774c65462"
   },
-  "acquiredAt": "2026-03-21T05:21:04.566Z",
-  "heartbeatAt": "2026-03-21T05:21:08.568Z",
-  "expiresAt": "2026-03-21T05:21:08.568Z",
-  "releasedAt": "2026-03-21T05:21:08.568Z"
+  "acquiredAt": "2026-03-21T07:33:04.880Z",
+  "heartbeatAt": "2026-03-21T07:33:04.880Z",
+  "expiresAt": "2026-03-21T07:43:04.880Z"
 }
