@@ -10,6 +10,20 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-21",
+    title: "Factory Dev Panel Polish",
+    description:
+      "Factory V2 developer tools now put contract lookup first, keep factory config multicalls much more compact, and prompt for a wallet network switch before sending config on the wrong chain.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Config Multicall",
+    description:
+      "Factory V2 now hides a developer factory-config panel that lets you batch selected set_factory calls into one wallet multicall, so advanced setup changes are faster and easier to manage.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-21",
     title: "Factory Mainnet Launch Recovery",
     description:
       "Factory V2 now supports mainnet launch workflows again and automatically turns on gas coverage after mainnet game setup, so new worlds can come online without a separate paymaster sync.",

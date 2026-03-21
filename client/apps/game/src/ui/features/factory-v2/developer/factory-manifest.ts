@@ -1,7 +1,8 @@
-import { getGameManifest } from "@contracts";
+import { getFactoryConfigManifest } from "@/ui/features/factory/shared/factory-metadata";
 
 import type { FactoryLaunchChain } from "../types";
 
-export const getFactoryLookupManifest = (chain: FactoryLaunchChain) => {
-  return getGameManifest(chain) as unknown as Record<string, unknown>;
-};
+type FactoryLookupManifest = Record<string, unknown>;
+
+export const getFactoryLookupManifest = (chain: FactoryLaunchChain): FactoryLookupManifest =>
+  getFactoryConfigManifest(chain) as unknown as FactoryLookupManifest;

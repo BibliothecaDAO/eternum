@@ -18,22 +18,6 @@ const DEV_TOOLS_TAP_WINDOW_MS = 2_000;
 const DEV_TOOLS_TAP_COUNT = 5;
 const COPY_STATUS_RESET_MS = 1_500;
 
-function readDeveloperToolsVisibility(): boolean {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return window.localStorage.getItem(DEV_TOOLS_STORAGE_KEY) === "true";
-}
-
-function writeDeveloperToolsVisibility(isVisible: boolean) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(DEV_TOOLS_STORAGE_KEY, String(isVisible));
-}
-
 function resolveDeveloperLookupGameNameSeed(selectedRunName: string | null, draftGameName: string): string {
   return selectedRunName?.trim() || draftGameName.trim();
 }
@@ -48,7 +32,6 @@ export const useFactoryV2DeveloperLookup = ({
   selectedRunName: string | null;
 }) => {
   const initialGameName = resolveDeveloperLookupGameNameSeed(selectedRunName, draftGameName);
-  const [isVisible, setIsVisible] = useState(readDeveloperToolsVisibility);
   const [gameName, setGameName] = useState(initialGameName);
   const [selectedTargetId, setSelectedTargetId] = useState<FactoryDeveloperContractTargetId>(
     DEFAULT_FACTORY_DEVELOPER_CONTRACT_TARGET_ID,
@@ -58,7 +41,6 @@ export const useFactoryV2DeveloperLookup = ({
   const [lookupResult, setLookupResult] = useState<FactoryManifestContractLookupSuccess | null>(null);
   const [lookupFailure, setLookupFailure] = useState<FactoryManifestContractLookupFailure | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
-  const revealTapTimestampsRef = useRef<number[]>([]);
   const lastGameNameSeedRef = useRef(initialGameName);
   const copyResetTimeoutRef = useRef<number | null>(null);
 
@@ -88,23 +70,6 @@ export const useFactoryV2DeveloperLookup = ({
   const usesCustomContractInput = selectedTarget.allowsCustomInput;
   const contractName = selectedTarget.manifestTag ?? (usesCustomContractInput ? customContractName.trim() : "");
   const canSubmit = gameName.trim().length > 0 && contractName.trim().length > 0 && !isSubmitting;
-
-  const registerRevealTap = () => {
-    const now = Date.now();
-    const recentTapTimestamps = [...revealTapTimestampsRef.current, now].filter(
-      (timestamp) => now - timestamp <= DEV_TOOLS_TAP_WINDOW_MS,
-    );
-
-    if (recentTapTimestamps.length < DEV_TOOLS_TAP_COUNT) {
-      revealTapTimestampsRef.current = recentTapTimestamps;
-      return;
-    }
-
-    const nextVisibility = !isVisible;
-    revealTapTimestampsRef.current = [];
-    setIsVisible(nextVisibility);
-    writeDeveloperToolsVisibility(nextVisibility);
-  };
 
   const runLookup = async (nextGameName: string, nextContractName: string) => {
     setIsSubmitting(true);
@@ -182,7 +147,6 @@ export const useFactoryV2DeveloperLookup = ({
   };
 
   return {
-    isVisible,
     gameName,
     selectedTargetId,
     selectedTarget,
@@ -194,7 +158,6 @@ export const useFactoryV2DeveloperLookup = ({
     lookupFailure,
     copyStatus,
     targetOptions: FACTORY_DEVELOPER_CONTRACT_TARGETS,
-    registerRevealTap,
     setGameName,
     setSelectedTargetId,
     setCustomContractName,

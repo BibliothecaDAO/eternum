@@ -5,6 +5,7 @@ import {
   resolveWorldContracts,
   resolveWorldDeploymentFromFactory,
 } from "@/runtime/world";
+import { DEFAULT_FACTORY_NAMESPACE } from "@/ui/features/factory/shared/factory-metadata";
 import type { FactoryIndexedWorld } from "@/runtime/world";
 import { getFactoryLookupManifest } from "./factory-manifest";
 import type {
@@ -27,7 +28,6 @@ type NormalizedLookupRequest = {
   manifestTag: string;
 };
 
-const DEFAULT_NAMESPACE = "s1_eternum";
 const MAX_WORLD_SUGGESTIONS = 5;
 const MAX_CONTRACT_SUGGESTIONS = 5;
 
@@ -47,7 +47,7 @@ function normalizeFactoryManifestContractName(value: string): string {
     return "";
   }
 
-  return normalizedValue.includes("-") ? normalizedValue : `${DEFAULT_NAMESPACE}-${normalizedValue}`;
+  return normalizedValue.includes("-") ? normalizedValue : `${DEFAULT_FACTORY_NAMESPACE}-${normalizedValue}`;
 }
 
 function normalizeLookupRequest(request: FactoryManifestContractLookupRequest): NormalizedLookupRequest | null {
