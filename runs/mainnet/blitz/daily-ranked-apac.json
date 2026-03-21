@@ -5,14 +5,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "daily-ranked-apac",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/daily-ranked-apac/23378392387-1.json",
   "latestLaunchRequestId": "23378392387-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-03-21T11:11:49.055Z",
-  "updatedAt": "2026-03-21T11:15:36.114Z",
+  "updatedAt": "2026-03-21T11:15:41.314Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -71,10 +71,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-03-21T11:15:36.114Z"
+      "latestEvent": "Setting up gas coverage succeeded",
+      "startedAt": "2026-03-21T11:15:36.114Z",
+      "finishedAt": "2026-03-21T11:15:41.314Z"
     }
   ],
   "artifacts": {
@@ -91,14 +92,8 @@
       "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23378457948",
       "status": "completed",
       "conclusion": "success"
-    }
+    },
+    "paymasterSynced": true
   },
-  "activeLease": {
-    "launchRequestId": "23378392387-1",
-    "workflowRunId": 23378392387,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-03-21T11:15:36.114Z",
-    "expiresAt": "2026-03-21T12:00:36.114Z"
-  }
+  "completedAt": "2026-03-21T11:15:41.314Z"
 }
