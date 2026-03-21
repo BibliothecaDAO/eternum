@@ -9,11 +9,10 @@
     "workflowName": "Game Launch",
     "workflowRunId": 23380774179,
     "workflowRunAttempt": 1,
-    "stepId": "grant-village-pass-role",
-    "leaseId": "328e9b38-c3bd-41ce-a378-710e69e14906"
+    "stepId": "create-banks",
+    "leaseId": "d6ab5bfe-b983-479f-82ed-71f796f7d93f"
   },
-  "acquiredAt": "2026-03-21T13:35:08.124Z",
-  "heartbeatAt": "2026-03-21T13:35:12.130Z",
-  "expiresAt": "2026-03-21T13:35:12.130Z",
-  "releasedAt": "2026-03-21T13:35:12.130Z"
+  "acquiredAt": "2026-03-21T13:35:24.197Z",
+  "heartbeatAt": "2026-03-21T13:35:24.197Z",
+  "expiresAt": "2026-03-21T13:45:24.197Z"
 }
