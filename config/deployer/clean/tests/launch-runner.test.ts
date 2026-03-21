@@ -41,12 +41,58 @@ const waitForFactoryWorldProfileMock = mock(async () => ({
   contractsBySelector: {},
 }));
 const writeLaunchSummaryMock = mock(() => "/tmp/launch-summary.json");
+const resolveFactoryWorldConfigStepsMock = mock(() => []);
+const executeConfigStepsMock = mock(async ({ mode }: { mode?: string }) => ({
+  mode: mode || "batched",
+  steps: [],
+  transactionHash: mode === "batched" ? "0xconfigure" : undefined,
+}));
+
+function buildQueuedConfigStep(id: string, queuedCallCount: number) {
+  return {
+    id,
+    description: id,
+    execute: async (context: {
+      account: unknown;
+      provider: { executeAndCheckTransaction: (signer: unknown, details: unknown[]) => Promise<unknown> };
+    }) => {
+      await context.provider.executeAndCheckTransaction(
+        context.account,
+        Array.from({ length: queuedCallCount }, (_value, index) => ({
+          contractAddress: "0xconfig",
+          entrypoint: `${id}-${index}`,
+          calldata: [],
+        })),
+      );
+    },
+  };
+}
 
 mock.module("@bibliothecadao/provider", () => ({
   EternumProvider: class EternumProvider {
     provider = {};
+    private queuedBatchCallCount = 0;
 
     constructor(_manifest: unknown, _rpcUrl: string, _vrfProviderAddress: string) {}
+
+    beginBatch() {
+      this.queuedBatchCallCount = 0;
+    }
+
+    async endBatch() {
+      this.queuedBatchCallCount = 0;
+      return { transaction_hash: "0xbatch" };
+    }
+
+    getQueuedBatchCallCount() {
+      return this.queuedBatchCallCount;
+    }
+
+    async executeAndCheckTransaction(_signer: unknown, details: unknown) {
+      const calls = Array.isArray(details) ? details : [details];
+      this.queuedBatchCallCount += calls.length;
+      return { statusReceipt: "QUEUED_FOR_BATCH" };
+    }
 
     async grant_collectible_minter_role() {
       return { transaction_hash: "0xloot" };
@@ -89,8 +135,12 @@ mock.module("../config/config-loader", () => ({
   loadEnvironmentConfiguration: () => ({}),
 }));
 
+mock.module("../config/executor", () => ({
+  executeConfigSteps: executeConfigStepsMock,
+}));
+
 mock.module("../config/steps", () => ({
-  resolveFactoryWorldConfigSteps: () => [],
+  resolveFactoryWorldConfigSteps: resolveFactoryWorldConfigStepsMock,
 }));
 
 mock.module("../eternum", () => ({
@@ -153,6 +203,14 @@ describe("runLaunchStep mainnet launch steps", () => {
     createBanksMock.mockClear();
     waitForFactoryWorldProfileMock.mockClear();
     writeLaunchSummaryMock.mockClear();
+    resolveFactoryWorldConfigStepsMock.mockClear();
+    resolveFactoryWorldConfigStepsMock.mockImplementation(() => []);
+    executeConfigStepsMock.mockClear();
+    executeConfigStepsMock.mockImplementation(async ({ mode }: { mode?: string }) => ({
+      mode: mode || "batched",
+      steps: [],
+      transactionHash: mode === "batched" ? "0xconfigure" : undefined,
+    }));
   });
 
   afterAll(() => {
@@ -280,6 +338,61 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(createBanksMock).not.toHaveBeenCalled();
     expect(summary.createBanksTxHash).toBeUndefined();
     expect(summary.worldAddress).toBe("0xworld");
+  });
+
+  test("retries configure-world as two batched submissions after a batched mainnet failure", async () => {
+    resolveFactoryWorldConfigStepsMock.mockImplementation(() => [
+      buildQueuedConfigStep("world-admin", 2),
+      buildQueuedConfigStep("tick", 3),
+      buildQueuedConfigStep("map", 2),
+      buildQueuedConfigStep("resource-factory", 3),
+    ]);
+
+    let invocationCount = 0;
+    executeConfigStepsMock.mockImplementation(
+      async ({ mode, steps }: { mode?: string; steps?: Array<{ id: string }> }) => {
+        invocationCount += 1;
+        if (invocationCount === 1) {
+          throw new Error("RPC: starknet_addInvokeTransaction failed");
+        }
+
+        return {
+          mode: mode || "batched",
+          steps: (steps || []).map((step) => ({ id: step.id, description: step.id })),
+          transactionHash: `0xconfigure${invocationCount}`,
+        };
+      },
+    );
+
+    const summary = await runLaunchStep({
+      environmentId: "mainnet.blitz",
+      stepId: "configure-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(
+      executeConfigStepsMock.mock.calls.map(([input]) => ({
+        mode: input.mode,
+        stepIds: input.steps.map((step: { id: string }) => step.id),
+      })),
+    ).toEqual([
+      { mode: "batched", stepIds: ["world-admin", "tick", "map", "resource-factory"] },
+      { mode: "batched", stepIds: ["world-admin", "tick"] },
+      { mode: "batched", stepIds: ["map", "resource-factory"] },
+    ]);
+    expect(summary.configMode).toBe("batched");
+    expect(summary.configureTxHash).toBe("0xconfigure3");
+    expect(summary.configSteps).toEqual([
+      { id: "world-admin", description: "world-admin" },
+      { id: "tick", description: "tick" },
+      { id: "map", description: "map" },
+      { id: "resource-factory", description: "resource-factory" },
+    ]);
   });
 
   test("syncs paymaster only for mainnet environments", async () => {

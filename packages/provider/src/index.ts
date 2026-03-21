@@ -866,6 +866,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     return Array.isArray(this._batchCalls);
   }
 
+  public getQueuedBatchCallCount(): number {
+    return this._batchCalls?.length ?? 0;
+  }
+
   public markImmediateEntrypoints(entrypoints: string | string[]): void {
     if (!this._batchImmediate) return;
     const list = Array.isArray(entrypoints) ? entrypoints : [entrypoints];

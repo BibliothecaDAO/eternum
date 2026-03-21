@@ -51,6 +51,7 @@ type LaunchConfig = ReturnType<typeof applyDeploymentConfigOverrides>;
 type LaunchConfigSteps = ReturnType<typeof resolveFactoryWorldConfigSteps>;
 type ConfiguredWorldProvider = Pick<EternumProvider, "grant_collectible_minter_role" | "create_banks"> &
   EternumProvider;
+type SilentConfigLogger = { log: () => void; info: () => void };
 
 interface LaunchRuntime {
   progress: LaunchProgress;
@@ -91,6 +92,11 @@ interface ConfiguredLaunchDependencies {
   accountContext: LaunchAccountContext;
   worldContext: ConfiguredWorldContext;
 }
+
+const SILENT_CONFIG_LOGGER: SilentConfigLogger = {
+  log: () => undefined,
+  info: () => undefined,
+};
 
 function asProviderSigner(account: Account): ProviderSigner {
   return account as unknown as ProviderSigner;
@@ -508,6 +514,156 @@ function buildConfigExecutionHooks(progress: LaunchProgress): ConfigStepHooks<Et
   };
 }
 
+function buildConfigExecutionContext(params: {
+  deploymentConfig: LaunchConfig;
+  account: Account;
+  patchedProvider: EternumProvider;
+  logger?: SilentConfigLogger | typeof console;
+}) {
+  return {
+    account: params.account,
+    provider: params.patchedProvider,
+    config: params.deploymentConfig,
+    logger: params.logger || console,
+  };
+}
+
+async function executeWorldConfig(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+  mode: NonNullable<LaunchGameRequest["executionMode"]>;
+  startMessage?: string;
+  successLabel?: string;
+}) {
+  return params.runtime.progress.run(
+    "configure world",
+    () =>
+      executeConfigSteps({
+        context: buildConfigExecutionContext(params),
+        steps: params.configSteps,
+        mode: params.mode,
+        suppressStepLogs: params.request.verboseConfigLogs !== true,
+        hooks: buildConfigExecutionHooks(params.runtime.progress),
+      }),
+    {
+      start: params.startMessage || `Applying ${params.configSteps.length} config steps in ${params.mode} mode`,
+      success: (executionResult, elapsedMs) =>
+        executionResult.transactionHash
+          ? `${params.successLabel || "World configuration completed"} in ${formatDuration(elapsedMs)} (${shortenHash(
+              executionResult.transactionHash,
+            )})`
+          : `${params.successLabel || "World configuration completed"} in ${formatDuration(elapsedMs)}`,
+    },
+  );
+}
+
+function shouldRetryWorldConfigInTwoBatches(params: {
+  runtime: LaunchRuntime;
+  mode: NonNullable<LaunchGameRequest["executionMode"]>;
+  configSteps: LaunchConfigSteps;
+}): boolean {
+  return (
+    params.mode === "batched" &&
+    isMainnetDeploymentEnvironment(params.runtime.environment) &&
+    params.configSteps.length > 1
+  );
+}
+
+async function measureConfigStepBatchCallCounts(params: {
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+}): Promise<number[]> {
+  params.patchedProvider.beginBatch({ signer: params.account });
+  const callCounts: number[] = [];
+  let previousQueuedCallCount = 0;
+
+  try {
+    for (const step of params.configSteps) {
+      await step.execute(
+        buildConfigExecutionContext({
+          ...params,
+          logger: SILENT_CONFIG_LOGGER,
+        }),
+      );
+      const queuedCallCount = params.patchedProvider.getQueuedBatchCallCount();
+      callCounts.push(Math.max(queuedCallCount - previousQueuedCallCount, 1));
+      previousQueuedCallCount = queuedCallCount;
+    }
+  } finally {
+    await params.patchedProvider.endBatch({ flush: false });
+  }
+
+  return callCounts;
+}
+
+function resolveConfigRetrySplitIndex(stepCallCounts: number[]): number {
+  const targetCallCount = stepCallCounts.reduce((total, count) => total + count, 0) / 2;
+  let bestIndex = 1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  let runningCallCount = 0;
+
+  for (let index = 1; index < stepCallCounts.length; index += 1) {
+    runningCallCount += stepCallCounts[index - 1] || 0;
+    const distance = Math.abs(targetCallCount - runningCallCount);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  }
+
+  return bestIndex;
+}
+
+async function splitConfigStepsForRetry(params: {
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+}): Promise<[LaunchConfigSteps, LaunchConfigSteps]> {
+  const stepCallCounts = await measureConfigStepBatchCallCounts(params);
+  const splitIndex = resolveConfigRetrySplitIndex(stepCallCounts);
+  return [params.configSteps.slice(0, splitIndex), params.configSteps.slice(splitIndex)];
+}
+
+async function retryWorldConfigInTwoBatches(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+}): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
+  const [firstBatchSteps, secondBatchSteps] = await splitConfigStepsForRetry(params);
+  params.runtime.progress.log("Retrying world configuration in two batched submissions after batched mainnet failure");
+
+  const firstBatch = await executeWorldConfig({
+    ...params,
+    configSteps: firstBatchSteps,
+    mode: "batched",
+    startMessage: `Applying ${firstBatchSteps.length} config steps in batched mode (retry batch 1/2)`,
+    successLabel: "World configuration batch 1/2 completed",
+  });
+
+  const secondBatch = await executeWorldConfig({
+    ...params,
+    configSteps: secondBatchSteps,
+    mode: "batched",
+    startMessage: `Applying ${secondBatchSteps.length} config steps in batched mode (retry batch 2/2)`,
+    successLabel: "World configuration batch 2/2 completed",
+  });
+
+  return {
+    transactionHash: secondBatch.transactionHash || firstBatch.transactionHash,
+    steps: [...firstBatch.steps, ...secondBatch.steps],
+  };
+}
+
 async function configureWorld(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
@@ -516,34 +672,29 @@ async function configureWorld(params: {
   account: Account;
   patchedProvider: EternumProvider;
 }): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
-  const result = await params.runtime.progress.run(
-    "configure world",
-    () =>
-      executeConfigSteps({
-        context: {
-          account: params.account,
-          provider: params.patchedProvider,
-          config: params.deploymentConfig,
-          logger: console,
-        },
-        steps: params.configSteps,
-        mode: params.runtime.executionMode,
-        suppressStepLogs: params.request.verboseConfigLogs !== true,
-        hooks: buildConfigExecutionHooks(params.runtime.progress),
-      }),
-    {
-      start: `Applying ${params.configSteps.length} config steps in ${params.runtime.executionMode} mode`,
-      success: (executionResult, elapsedMs) =>
-        executionResult.transactionHash
-          ? `World configuration completed in ${formatDuration(elapsedMs)} (${shortenHash(executionResult.transactionHash)})`
-          : `World configuration completed in ${formatDuration(elapsedMs)}`,
-    },
-  );
+  try {
+    const result = await executeWorldConfig({
+      ...params,
+      mode: params.runtime.executionMode,
+    });
 
-  return {
-    transactionHash: result.transactionHash,
-    steps: result.steps,
-  };
+    return {
+      transactionHash: result.transactionHash,
+      steps: result.steps,
+    };
+  } catch (error) {
+    if (
+      !shouldRetryWorldConfigInTwoBatches({
+        runtime: params.runtime,
+        mode: params.runtime.executionMode,
+        configSteps: params.configSteps,
+      })
+    ) {
+      throw error;
+    }
+
+    return retryWorldConfigInTwoBatches(params);
+  }
 }
 
 function resolveLootChestAddress(chain: Chain, config: LaunchConfig): string | undefined {
