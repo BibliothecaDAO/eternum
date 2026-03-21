@@ -152,6 +152,8 @@ export interface ExecuteRealmProductionPlanProps extends SystemSigner {
   realm_entity_id: BigNumberish;
   resource_to_resource?: ProductionPlanInstruction[];
   labor_to_resource?: ProductionPlanInstruction[];
+  /** Bypass the PromiseQueue so this call gets its own transaction instead of being batched. */
+  skipQueue?: boolean;
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {

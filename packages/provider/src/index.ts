@@ -2285,6 +2285,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
+
+    if (props.skipQueue) {
+      return await this.executeAndCheckTransaction(signer, callArgs, undefined, {
+        waitForConfirmation: false,
+        transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+      });
+    }
+
     const call = this.createProviderCall(signer, callArgs);
     return await this.promiseQueue.enqueue(call, TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION);
   }
