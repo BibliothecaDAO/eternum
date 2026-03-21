@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "runId": "mainnet.blitz:bltz-vibe-171-mainnet3",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "bltz-vibe-171-mainnet3",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/mainnet/blitz/bltz-vibe-171-mainnet3/23370309407-1.json",
+  "latestLaunchRequestId": "23370309407-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-03-21T02:42:55.237Z",
+  "updatedAt": "2026-03-21T02:42:55.237Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23370309407,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23370309407",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "bc912169ef75dfc56bac49b2f34a13aa4c642241"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "sync-paymaster",
+      "title": "Setting up gas coverage",
+      "status": "pending",
+      "workflowStepName": "Setting up gas coverage",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {}
+}
