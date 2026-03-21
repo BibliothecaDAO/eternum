@@ -10,9 +10,9 @@
   "requestedLaunchStep": "grant-lootchest-role",
   "inputPath": "inputs/slot/blitz/bltz-ping-532/23371224864-1.json",
   "latestLaunchRequestId": "23371224864-1",
-  "currentStepId": "grant-lootchest-role",
+  "currentStepId": "create-indexer",
   "createdAt": "2026-03-21T03:27:03.565Z",
-  "updatedAt": "2026-03-21T03:41:05.884Z",
+  "updatedAt": "2026-03-21T03:41:15.562Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -53,10 +53,11 @@
     {
       "id": "grant-lootchest-role",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-03-21T03:41:05.884Z"
+      "latestEvent": "Setting up loot chests succeeded",
+      "startedAt": "2026-03-21T03:41:05.884Z",
+      "finishedAt": "2026-03-21T03:41:15.562Z"
     },
     {
       "id": "create-indexer",
@@ -70,14 +71,7 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-ping-532.json",
     "createGameTxHash": "0x5cc6eafd305166e8cc590956a0b4cc41f37d375c199bb0d9386667c4c4b1a5b",
     "worldAddress": "0x035c2649cf724f42885cdb7e2cd43ebd61ce00085a0a830473b0420a4524ed4f",
-    "configureTxHash": "0x5e012b442f9a54e7c5a61efea046d3c2e4f4da5de0ab051b605b25fa8cf4695"
-  },
-  "activeLease": {
-    "launchRequestId": "23371224864-1",
-    "workflowRunId": 23371224864,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "acquiredAt": "2026-03-21T03:41:05.884Z",
-    "expiresAt": "2026-03-21T04:26:05.884Z"
+    "configureTxHash": "0x5e012b442f9a54e7c5a61efea046d3c2e4f4da5de0ab051b605b25fa8cf4695",
+    "lootChestRoleTxHash": "0xfc7269512b2b16b0bfc13ee209e9fe5860ef8e82d5bdc3694c812e29314f76"
   }
 }
