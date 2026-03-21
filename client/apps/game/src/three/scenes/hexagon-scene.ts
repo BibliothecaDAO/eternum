@@ -1138,7 +1138,6 @@ export abstract class HexagonScene {
     this.hemisphereLight.intensity = hemisphereBase * hemisphereFlicker;
   }
 
-
   protected shouldEnableStormEffects(): boolean {
     // Override this method in child classes to control storm effects
     return true;

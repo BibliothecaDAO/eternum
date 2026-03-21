@@ -74,11 +74,7 @@ export class LightningEffectSystem {
     this.shouldTriggerLightningAtCycleProgress(params.cycleProgress);
 
     // Position storm light to follow camera
-    this.stormLight.position.set(
-      params.cameraTargetX,
-      params.cameraTargetY + 25,
-      params.cameraTargetZ + 5,
-    );
+    this.stormLight.position.set(params.cameraTargetX, params.cameraTargetY + 25, params.cameraTargetZ + 5);
 
     // Update storm light intensity when lightning is not active
     if (this.lightningEndTime === 0) {

@@ -1,4 +1,4 @@
-export interface StatsRecordingSample {
+interface StatsRecordingSample {
   timestamp: number;
   elapsedMs: number;
   fps: number;

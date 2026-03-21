@@ -43,7 +43,7 @@ const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
   } as Record<StructureType, string>,
 });
 
-export interface StructureLabelData extends LabelData {
+interface StructureLabelData extends LabelData {
   structureType: StructureType;
   stage: number;
   initialized: boolean;

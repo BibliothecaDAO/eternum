@@ -7,18 +7,6 @@ import { createLabelBase } from "./label-shared";
 import { ArmyLabelType, type ArmyLabelData } from "./army-label-type";
 import { StructureLabelType, convertStructureInfo, type StructureInfoCompat } from "./structure-label-type";
 
-// Re-export shared utilities for use by label type modules
-export { attachDirectionIndicators, createLabelBase } from "./label-shared";
-
-// Re-export types and functions from split modules
-export { ArmyLabelType, type ArmyLabelData } from "./army-label-type";
-export {
-  StructureLabelType,
-  convertStructureInfo,
-  type StructureLabelData,
-  type StructureInfoCompat,
-} from "./structure-label-type";
-
 /**
  * Chest label data
  */
