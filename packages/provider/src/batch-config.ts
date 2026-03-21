@@ -5,7 +5,7 @@ import { TransactionType } from "./types";
  * Transactions in the same category can be batched together.
  */
 export enum TransactionCostCategory {
-  HIGH = "HIGH", // VRF, combat, complex operations - max 3
+  HIGH = "HIGH", // VRF, combat, complex operations - max 6
   MEDIUM = "MEDIUM", // State writes, resource transfers - max 5
   LOW = "LOW", // Simple state changes - max 10
 }
