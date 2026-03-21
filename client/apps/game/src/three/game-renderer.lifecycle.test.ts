@@ -289,12 +289,17 @@ function createGameRendererSubject() {
   subject.statsDomElement = statsDomElement;
   subject.labelRenderer = { domElement: document.createElement("div") };
   subject.labelRendererElement = labelRendererElement;
-  subject.statsRecordingIndicator = statsRecordingIndicator;
+  subject.statsRecorder = {
+    destroy: vi.fn(() => {
+      statsRecordingIndicator.remove();
+      pulseStyle.remove();
+      window.removeEventListener("keydown", keyHandler);
+    }),
+  };
   subject.handleURLChange = vi.fn();
   subject.handleWindowResize = vi.fn();
   subject.handleDocumentFocus = vi.fn();
   subject.handleDocumentBlur = vi.fn();
-  subject._statsRecordingKeyHandler = keyHandler;
 
   return {
     subject,
@@ -356,8 +361,8 @@ describe("GameRenderer destroy lifecycle", () => {
     expect(fixture.subject.statsDomElement).toBeUndefined();
     expect(fixture.subject.labelRenderer).toBeUndefined();
     expect(fixture.subject.labelRendererElement).toBeUndefined();
+    expect(fixture.subject.statsRecorder.destroy).toHaveBeenCalledTimes(1);
     expect(document.getElementById("stats-recording-pulse")).toBeNull();
-    expect(fixture.subject.statsRecordingIndicator.isConnected).toBe(false);
   });
 
   it("is idempotent and skips cleanup work after the first destroy call", () => {
