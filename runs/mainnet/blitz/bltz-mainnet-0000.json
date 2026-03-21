@@ -8,19 +8,19 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "sync-paymaster",
-  "inputPath": "inputs/mainnet/blitz/bltz-mainnet-0000/23371802146-1.json",
-  "latestLaunchRequestId": "23371802146-1",
+  "inputPath": "inputs/mainnet/blitz/bltz-mainnet-0000/23371959059-1.json",
+  "latestLaunchRequestId": "23371959059-1",
   "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-21T04:08:53.911Z",
-  "updatedAt": "2026-03-21T04:17:19.449Z",
+  "updatedAt": "2026-03-21T04:27:03.425Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23371802146,
+    "workflowRunId": 23371959059,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23371802146",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23371959059",
     "ref": "credence0x/factory-v2-polish",
-    "sha": "ab645903adbce7bc563e6767357cdfea81a4b281"
+    "sha": "d8189ea5792f92c5a73792593e4f65213c23c797"
   },
   "steps": [
     {
