@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23372425984-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-21T04:56:27.020Z",
-  "updatedAt": "2026-03-21T04:58:29.671Z",
+  "updatedAt": "2026-03-21T04:58:36.856Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -79,5 +79,13 @@
     "createGameTxHash": "0x5e460820cf3a2885e998ceea1b4e86c55d00889c336e2228099e5a481d49155",
     "worldAddress": "0x0638535781d17322a833d50758d180236e877e1890531fbd42f281ed0053b67a",
     "configureTxHash": "0x10f153e8b45d8804a5e344fcb36cd314a3ba6ee55cd35dc39aa4ea6bc43c823"
+  },
+  "activeLease": {
+    "launchRequestId": "23372425984-1",
+    "workflowRunId": 23372425984,
+    "workflowRunAttempt": 1,
+    "stepId": "create-banks",
+    "acquiredAt": "2026-03-21T04:58:36.856Z",
+    "expiresAt": "2026-03-21T05:43:36.856Z"
   }
 }
