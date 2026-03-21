@@ -84,7 +84,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
   {
     id: "blitz-open",
     mode: "blitz",
-    name: "Open",
+    name: "Regular Normal (1h:30m)",
     description: "A standard 90-minute game.",
     defaults: {
       startRule: "next_hour",
@@ -95,28 +95,28 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     },
   },
   {
-    id: "blitz-duel",
-    mode: "blitz",
-    name: "Duel",
-    description: "A standard 90-minute head-to-head game.",
-    defaults: {
-      startRule: "next_hour",
-      durationMinutes: 90,
-      devMode: false,
-      twoPlayerMode: true,
-      singleRealmMode: false,
-    },
-  },
-  {
     id: "blitz-fast",
     mode: "blitz",
-    name: "Fast",
+    name: "Regular Fast (1h)",
     description: "A shorter one-hour game.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: MINUTES_PER_HOUR,
       devMode: false,
       twoPlayerMode: false,
+      singleRealmMode: false,
+    },
+  },
+  {
+    id: "blitz-duel",
+    mode: "blitz",
+    name: "Duel (2 player)",
+    description: "A standard 90-minute head-to-head game.",
+    defaults: {
+      startRule: "next_hour",
+      durationMinutes: 90,
+      devMode: false,
+      twoPlayerMode: true,
       singleRealmMode: false,
     },
   },

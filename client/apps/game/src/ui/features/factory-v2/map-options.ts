@@ -1,16 +1,16 @@
-import { getConfigFromNetwork, resolveBlitzConfigForDuration } from "@config";
-import { findResourceById } from "@bibliothecadao/types";
+import {
+  DEFAULT_TOKEN_PRECISION,
+  formatIntegerStringTokenAmount,
+  parseTokenAmountToIntegerString,
+} from "@/ui/utils/token-amount";
 import type {
   BlitzExplorationReward,
   Config,
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
-import {
-  DEFAULT_TOKEN_PRECISION,
-  formatIntegerStringTokenAmount,
-  parseTokenAmountToIntegerString,
-} from "@/ui/utils/token-amount";
+import { findResourceById } from "@bibliothecadao/types";
+import { getConfigFromNetwork, resolveBlitzConfigForDuration } from "@config";
 import type { FactoryGameMode, FactoryLaunchChain } from "./types";
 
 type ExplorationConfig = Config["exploration"];
@@ -172,8 +172,8 @@ const PERCENTAGE_PAIR_SUM_U16 = 65_535;
 const PERCENTAGE_PAIR_SUM_HYPERSTRUCTURE = 100_000;
 const RELIC_DISCOVERY_INTERVAL_SECONDS_PER_MINUTE = 60;
 const BLITZ_MAX_PLAYERS_MIN = 1;
-const BLITZ_PRIZE_DEFAULT_AMOUNT_LABEL = "Prize amount";
-const BLITZ_PRIZE_DEFAULT_TOKEN_LABEL = "Prize token address";
+const BLITZ_PRIZE_DEFAULT_AMOUNT_LABEL = "Entry cost";
+const BLITZ_PRIZE_DEFAULT_TOKEN_LABEL = "Entry ticket payment token address";
 const BLITZ_PRIZE_DEFAULT_PRECISION_LABEL = "Token decimals";
 const STARKNET_ADDRESS_PATTERN = /^0x[0-9a-fA-F]+$/;
 const EMPTY_MORE_OPTIONS_DRAFT: FactoryMoreOptionsDraft = {
@@ -217,7 +217,7 @@ const SECTION_METADATA: Record<
     description: "Blitz registration cap",
   },
   prize: {
-    title: "Prize",
+    title: "Entry Ticket",
     description: "Token and amount",
   },
   explorationRewards: {
@@ -625,12 +625,12 @@ function validateBlitzPrizeOverrides(
   let parsedAmount: string | null = null;
 
   if (!draft.prizeAmount.trim()) {
-    errors.prizeAmount = "Prize amount is required.";
+    errors.prizeAmount = "Entry amount is required.";
   } else if (precision !== null) {
     try {
       parsedAmount = parseTokenAmountToIntegerString(draft.prizeAmount, precision, BLITZ_PRIZE_DEFAULT_AMOUNT_LABEL);
     } catch (error) {
-      errors.prizeAmount = error instanceof Error ? error.message : "Prize amount is invalid.";
+      errors.prizeAmount = error instanceof Error ? error.message : "Entry amount is invalid.";
     }
   }
 
