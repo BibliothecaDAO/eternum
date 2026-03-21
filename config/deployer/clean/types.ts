@@ -19,6 +19,12 @@ export type LaunchGameStepId =
   | "create-indexer"
   | "sync-paymaster";
 
+export interface CreateGameDefaults {
+  maxActions: number;
+  submissionCount: number;
+  retryDelayMs: number;
+}
+
 export interface DeploymentEnvironment {
   id: DeploymentEnvironmentId;
   chain: DeploymentChain;
@@ -29,6 +35,7 @@ export interface DeploymentEnvironment {
   rpcUrl: string;
   accountAddress?: string;
   privateKey?: string;
+  createGame: CreateGameDefaults;
 }
 
 export interface ConfigLogger {

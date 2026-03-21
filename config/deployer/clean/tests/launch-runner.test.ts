@@ -1,5 +1,16 @@
 import { afterAll, afterEach, describe, expect, mock, test } from "bun:test";
 
+const createGameTransactionHashes = ["0xcreate1", "0xcreate2", "0xcreate3"];
+const createGameDelayMock = mock(async (_delayMs: number) => undefined);
+let createGameExecuteCount = 0;
+const createGameExecuteMock = mock(async () => {
+  const transactionHash =
+    createGameTransactionHashes[createGameExecuteCount] || `0xcreate${createGameExecuteCount + 1}`;
+  createGameExecuteCount += 1;
+
+  return { transaction_hash: transactionHash };
+});
+const waitForTransactionMock = mock(async () => ({ execution_status: "SUCCEEDED" }));
 const grantVillagePassRolesToWorldSystemsMock = mock(async (options: { chain: string; gameName: string }) => ({
   chain: options.chain,
   network: options.chain.split(".")[0],
@@ -50,6 +61,27 @@ mock.module("@bibliothecadao/provider", () => ({
 mock.module("@contracts", () => ({
   getGameManifest: () => ({}),
   getSeasonAddresses: () => ({}),
+}));
+
+mock.module("node:timers/promises", () => ({
+  setTimeout: createGameDelayMock,
+}));
+
+mock.module("starknet", () => ({
+  Account: class Account {
+    constructor(_options: unknown) {}
+
+    async execute(call: unknown) {
+      return createGameExecuteMock(call);
+    }
+
+    async waitForTransaction(transactionHash: string) {
+      return waitForTransactionMock(transactionHash);
+    }
+  },
+  shortString: {
+    encodeShortString: (value: string) => `felt:${value}`,
+  },
 }));
 
 mock.module("../config/config-loader", () => ({
@@ -112,6 +144,10 @@ describe("runLaunchStep mainnet launch steps", () => {
   const factoryAddress = "0xfactory";
 
   afterEach(() => {
+    createGameDelayMock.mockClear();
+    createGameExecuteMock.mockClear();
+    createGameExecuteCount = 0;
+    waitForTransactionMock.mockClear();
     grantVillagePassRolesToWorldSystemsMock.mockClear();
     syncPaymasterPolicyMock.mockClear();
     createBanksMock.mockClear();
@@ -121,6 +157,52 @@ describe("runLaunchStep mainnet launch steps", () => {
 
   afterAll(() => {
     mock.restore();
+  });
+
+  test("submits create_game three times on mainnet with the legacy action budget and nonce delay", async () => {
+    const summary = await runLaunchStep({
+      environmentId: "mainnet.blitz",
+      stepId: "create-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(createGameExecuteMock).toHaveBeenCalledTimes(3);
+    expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
+      contractAddress: factoryAddress,
+      entrypoint: "create_game",
+      calldata: ["felt:alpha", 70, "180", "0x0", 0],
+    });
+    expect(waitForTransactionMock.mock.calls).toEqual([["0xcreate1"], ["0xcreate2"], ["0xcreate3"]]);
+    expect(createGameDelayMock.mock.calls).toEqual([[10000], [10000]]);
+    expect(summary.createGameTxHash).toBe("0xcreate3");
+  });
+
+  test("submits create_game once on slot with the slot action budget", async () => {
+    const summary = await runLaunchStep({
+      environmentId: "slot.blitz",
+      stepId: "create-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
+    expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
+      contractAddress: factoryAddress,
+      entrypoint: "create_game",
+      calldata: ["felt:alpha", 300, "180", "0x0", 0],
+    });
+    expect(waitForTransactionMock.mock.calls).toEqual([["0xcreate1"]]);
+    expect(createGameDelayMock).not.toHaveBeenCalled();
+    expect(summary.createGameTxHash).toBe("0xcreate1");
   });
 
   test("runs the village pass role bundle for mainnet eternum and stores one tx hash", async () => {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { buildLaunchGameRequest, parseArgs } from "./launch-request";
-import { DEFAULT_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
+import { DEFAULT_MAINNET_MAX_ACTIONS, DEFAULT_SLOT_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
 import { launchGame } from "../launch/runner";
 
 function usage(): void {
@@ -35,7 +35,7 @@ function usage(): void {
       "  BLITZ_REGISTRATION_OVERRIDES_JSON=<json> / --blitz-registration-overrides-json <json>",
       "  --mode <batched|sequential>",
       `  --version <felt>              default: ${DEFAULT_VERSION}`,
-      `  --max-actions <number>        default: ${DEFAULT_MAX_ACTIONS}`,
+      `  --max-actions <number>        default: slot ${DEFAULT_SLOT_MAX_ACTIONS}, mainnet ${DEFAULT_MAINNET_MAX_ACTIONS}`,
       "  --factory-address <0x...>     override the environment default",
       "  --series-name <value>",
       "  --series-game-number <number>",

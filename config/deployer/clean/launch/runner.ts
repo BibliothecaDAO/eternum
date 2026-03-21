@@ -1,5 +1,6 @@
 import { EternumProvider } from "@bibliothecadao/provider";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
+import { setTimeout as sleep } from "node:timers/promises";
 import { Account, shortString } from "starknet";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import { executeConfigSteps } from "../config/executor";
@@ -8,7 +9,6 @@ import {
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
   DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
-  DEFAULT_MAX_ACTIONS,
   DEFAULT_NAMESPACE,
   DEFAULT_VERSION,
   DEFAULT_VRF_PROVIDER_ADDRESS,
@@ -31,6 +31,7 @@ import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
 import type {
   ConfigStepHooks,
+  CreateGameDefaults,
   DeploymentEnvironment,
   FactoryWorldProfile,
   IndexerRequest,
@@ -62,7 +63,7 @@ interface LaunchRuntime {
   vrfProviderAddress: string;
   executionMode: NonNullable<LaunchGameRequest["executionMode"]>;
   version: string;
-  maxActions: number;
+  createGame: CreateGameDefaults;
 }
 
 interface LaunchAccountContext {
@@ -125,6 +126,13 @@ function resolveLaunchFactoryAddress(request: LaunchGameRequest, environment: De
   throw new Error(`Factory address is required for ${environment.id}. Set FACTORY_ADDRESS or pass --factory-address.`);
 }
 
+function resolveCreateGameSettings(request: LaunchGameRequest, environment: DeploymentEnvironment): CreateGameDefaults {
+  return {
+    ...environment.createGame,
+    maxActions: request.maxActions ?? environment.createGame.maxActions,
+  };
+}
+
 function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgress): LaunchRuntime {
   const environment = resolveDeploymentEnvironment(request.environmentId);
 
@@ -139,7 +147,7 @@ function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgres
     vrfProviderAddress: request.vrfProviderAddress || DEFAULT_VRF_PROVIDER_ADDRESS,
     executionMode: request.executionMode || "batched",
     version: request.version || DEFAULT_VERSION,
-    maxActions: request.maxActions ?? DEFAULT_MAX_ACTIONS,
+    createGame: resolveCreateGameSettings(request, environment),
   };
 }
 
@@ -336,16 +344,31 @@ async function resolveConfiguredLaunchDependencies(
 function buildCreateGameCalldata(runtime: LaunchRuntime, request: LaunchGameRequest): Array<string | number> {
   return [
     shortString.encodeShortString(request.gameName),
-    runtime.maxActions,
+    runtime.createGame.maxActions,
     runtime.version,
     request.seriesName ? shortString.encodeShortString(request.seriesName) : "0x0",
     request.seriesGameNumber ?? 0,
   ];
 }
 
-async function createGame(runtime: LaunchRuntime, request: LaunchGameRequest, account: Account): Promise<string> {
+function buildCreateGameAttemptLabel(attemptNumber: number, totalAttempts: number): string {
+  if (totalAttempts === 1) {
+    return "create_game";
+  }
+
+  return `create_game (${attemptNumber}/${totalAttempts})`;
+}
+
+async function submitCreateGameAttempt(
+  runtime: LaunchRuntime,
+  request: LaunchGameRequest,
+  account: Account,
+  attemptNumber: number,
+  totalAttempts: number,
+): Promise<string> {
+  const attemptLabel = buildCreateGameAttemptLabel(attemptNumber, totalAttempts);
   const result = await runtime.progress.run(
-    "create_game",
+    attemptLabel,
     () =>
       account.execute({
         contractAddress: runtime.factoryAddress,
@@ -353,9 +376,14 @@ async function createGame(runtime: LaunchRuntime, request: LaunchGameRequest, ac
         calldata: buildCreateGameCalldata(runtime, request),
       }),
     {
-      start: `Submitting create_game via ${shortenHash(runtime.factoryAddress)}`,
+      start:
+        totalAttempts === 1
+          ? `Submitting create_game via ${shortenHash(runtime.factoryAddress)}`
+          : `Submitting create_game attempt ${attemptNumber}/${totalAttempts} via ${shortenHash(runtime.factoryAddress)}`,
       success: (receipt, elapsedMs) =>
-        `create_game submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`,
+        totalAttempts === 1
+          ? `create_game submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`
+          : `create_game attempt ${attemptNumber}/${totalAttempts} submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`,
     },
   );
 
@@ -366,11 +394,65 @@ async function waitForCreateGameConfirmation(
   progress: LaunchProgress,
   account: Account,
   transactionHash: string,
+  attemptNumber: number,
+  totalAttempts: number,
 ): Promise<void> {
-  await progress.run("wait for create_game confirmation", () => account.waitForTransaction(transactionHash), {
-    start: `Waiting for create_game confirmation (${shortenHash(transactionHash)})`,
-    success: (_, elapsedMs) => `create_game confirmed in ${formatDuration(elapsedMs)}`,
-  });
+  await progress.run(
+    buildCreateGameAttemptLabel(attemptNumber, totalAttempts),
+    () => account.waitForTransaction(transactionHash),
+    {
+      start:
+        totalAttempts === 1
+          ? `Waiting for create_game confirmation (${shortenHash(transactionHash)})`
+          : `Waiting for create_game attempt ${attemptNumber}/${totalAttempts} confirmation (${shortenHash(transactionHash)})`,
+      success: (_, elapsedMs) =>
+        totalAttempts === 1
+          ? `create_game confirmed in ${formatDuration(elapsedMs)}`
+          : `create_game attempt ${attemptNumber}/${totalAttempts} confirmed in ${formatDuration(elapsedMs)}`,
+    },
+  );
+}
+
+function shouldWaitBeforeNextCreateGameAttempt(
+  attemptNumber: number,
+  totalAttempts: number,
+  retryDelayMs: number,
+): boolean {
+  return retryDelayMs > 0 && attemptNumber < totalAttempts;
+}
+
+async function waitBeforeNextCreateGameAttempt(
+  progress: LaunchProgress,
+  attemptNumber: number,
+  totalAttempts: number,
+  retryDelayMs: number,
+): Promise<void> {
+  if (!shouldWaitBeforeNextCreateGameAttempt(attemptNumber, totalAttempts, retryDelayMs)) {
+    return;
+  }
+
+  progress.log(
+    `Waiting ${formatDuration(retryDelayMs)} before create_game attempt ${attemptNumber + 1}/${totalAttempts} to avoid nonce issues`,
+  );
+  await sleep(retryDelayMs);
+}
+
+async function submitCreateGameAttempts(
+  runtime: LaunchRuntime,
+  request: LaunchGameRequest,
+  account: Account,
+): Promise<string> {
+  const totalAttempts = runtime.createGame.submissionCount;
+  const retryDelayMs = runtime.createGame.retryDelayMs;
+  let lastTransactionHash = "";
+
+  for (let attemptNumber = 1; attemptNumber <= totalAttempts; attemptNumber += 1) {
+    lastTransactionHash = await submitCreateGameAttempt(runtime, request, account, attemptNumber, totalAttempts);
+    await waitForCreateGameConfirmation(runtime.progress, account, lastTransactionHash, attemptNumber, totalAttempts);
+    await waitBeforeNextCreateGameAttempt(runtime.progress, attemptNumber, totalAttempts, retryDelayMs);
+  }
+
+  return lastTransactionHash;
 }
 
 async function waitForIndexedWorld(runtime: LaunchRuntime, request: LaunchGameRequest): Promise<FactoryWorldProfile> {
@@ -665,11 +747,10 @@ async function runCreateWorldStep(
   execution: PreparedLaunchExecution,
   accountContext = resolveLaunchAccountContext(execution.runtime, execution.request),
 ): Promise<LaunchAccountContext> {
-  execution.summary.createGameTxHash = await createGame(execution.runtime, execution.request, accountContext.account);
-  await waitForCreateGameConfirmation(
-    execution.runtime.progress,
+  execution.summary.createGameTxHash = await submitCreateGameAttempts(
+    execution.runtime,
+    execution.request,
     accountContext.account,
-    execution.summary.createGameTxHash,
   );
 
   return accountContext;

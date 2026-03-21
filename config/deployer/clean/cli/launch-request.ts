@@ -2,10 +2,10 @@ import {
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
   DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
-  DEFAULT_MAX_ACTIONS,
   DEFAULT_NAMESPACE,
   DEFAULT_VERSION,
 } from "../constants";
+import { resolveDeploymentEnvironment } from "../environment";
 import type { ExecutionMode, LaunchGameRequest, LaunchGameStepId } from "../types";
 import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
 import type { FactoryRunRequestContext, LaunchWorkflowScope } from "../run-store";
@@ -164,6 +164,7 @@ function requireLaunchArgs(args: Args): {
 
 export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
   const requiredArgs = requireLaunchArgs(args);
+  const environment = resolveDeploymentEnvironment(requiredArgs.environmentId);
 
   return {
     environmentId: requiredArgs.environmentId,
@@ -202,7 +203,7 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     executionMode: resolveExecutionMode(args.mode),
     verboseConfigLogs: args["verbose-config-logs"] === "true" || process.env.VERBOSE_CONFIG_LOGS === "true",
     version: args.version || DEFAULT_VERSION,
-    maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? DEFAULT_MAX_ACTIONS,
+    maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,
     seriesName: args["series-name"],
     seriesGameNumber: resolveOptionalNumber(args["series-game-number"], "series game number"),
     waitForFactoryIndexTimeoutMs:

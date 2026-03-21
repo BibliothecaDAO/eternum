@@ -38,6 +38,7 @@ Optional env or flags:
 - `TWO_PLAYER_MODE=true|false` or `--two-player-mode true|false`
 - `DURATION_SECONDS=<integer>` or `--duration-seconds <integer>`
 - `--mode batched|sequential`
+- `--max-actions <integer>` to override the environment default (`slot`: `300`, `mainnet`: `70`)
 - `--skip-indexer`
 - `--skip-lootchest-role-grant`
 - `--skip-banks`
@@ -54,6 +55,12 @@ Mainnet environments now use the shared factory default
 `0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da`. You can still override it with `FACTORY_ADDRESS` or
 `--factory-address` if needed. Mainnet deployer credentials are still expected from GitHub Environment vars/secrets or
 explicit CLI flags.
+
+The launcher also inherits the legacy factory v1 `create_game` defaults by chain:
+
+- `slot.*`: one `create_game` submission with `max_actions=300`
+- `mainnet.*`: three `create_game` submissions with `max_actions=70`, waiting ten seconds between submissions to avoid
+  nonce issues
 
 GitHub Actions credentials are selected through GitHub Environments:
 

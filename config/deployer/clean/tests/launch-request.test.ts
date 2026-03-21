@@ -40,6 +40,24 @@ describe("launch request helpers", () => {
     });
   });
 
+  test("defaults max actions from the selected environment", () => {
+    expect(
+      buildLaunchGameRequest({
+        environment: "mainnet.blitz",
+        game: "bltz-test-1",
+        "start-time": "2026-03-18T10:00:00Z",
+      }).maxActions,
+    ).toBe(70);
+
+    expect(
+      buildLaunchGameRequest({
+        environment: "slot.blitz",
+        game: "bltz-test-2",
+        "start-time": "2026-03-18T10:00:00Z",
+      }).maxActions,
+    ).toBe(300);
+  });
+
   test("resolves supported launch step ids", () => {
     expect(resolveLaunchGameStepId("create-world")).toBe("create-world");
     expect(resolveLaunchGameStepId("configure-world")).toBe("configure-world");

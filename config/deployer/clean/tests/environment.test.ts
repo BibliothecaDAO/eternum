@@ -10,6 +10,11 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.rpcUrl).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
     expect(environment.accountAddress).toBe("0x6677fe62ee39c7b07401f754138502bab7fac99d2d3c5d37df7d1c6fab10819");
     expect(environment.privateKey).toBe("0x3e3979c1ed728490308054fe357a9f49cf67f80f9721f44cc57235129e090f4");
+    expect(environment.createGame).toEqual({
+      maxActions: 300,
+      submissionCount: 1,
+      retryDelayMs: 0,
+    });
   });
 
   test("accepts mainnet.eternum with the shared mainnet factory default", () => {
@@ -21,6 +26,11 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.rpcUrl).toBe("https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9");
     expect(environment.accountAddress).toBeUndefined();
     expect(environment.privateKey).toBeUndefined();
+    expect(environment.createGame).toEqual({
+      maxActions: 70,
+      submissionCount: 3,
+      retryDelayMs: 10000,
+    });
   });
 
   test("rejects unsupported environments", () => {

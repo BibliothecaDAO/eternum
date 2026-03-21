@@ -2,7 +2,10 @@ import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 
 export const DEFAULT_NAMESPACE = "s1_eternum";
 export const DEFAULT_VERSION = "180";
-export const DEFAULT_MAX_ACTIONS = 300;
+export const DEFAULT_SLOT_MAX_ACTIONS = 300;
+export const DEFAULT_MAINNET_MAX_ACTIONS = 70;
+export const DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT = 3;
+export const DEFAULT_CREATE_GAME_RETRY_DELAY_MS = 10_000;
 export const DEFAULT_GAME_LAUNCH_WORKFLOW_FILE = "game-launch.yml";
 export const DEFAULT_FACTORY_RUN_STORE_BRANCH = "factory-runs";
 export const DEFAULT_FACTORY_RUN_LEASE_DURATION_MS = 45 * 60 * 1000;
@@ -45,6 +48,21 @@ const SLOT_DEFAULTS = {
   rpcUrl: DEFAULT_SLOT_RPC_URL,
   accountAddress: DEFAULT_SLOT_ACCOUNT_ADDRESS,
   privateKey: DEFAULT_SLOT_PRIVATE_KEY,
+  createGame: {
+    maxActions: DEFAULT_SLOT_MAX_ACTIONS,
+    submissionCount: 1,
+    retryDelayMs: 0,
+  },
+};
+
+const MAINNET_DEFAULTS = {
+  factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
+  rpcUrl: DEFAULT_MAINNET_RPC_URL,
+  createGame: {
+    maxActions: DEFAULT_MAINNET_MAX_ACTIONS,
+    submissionCount: DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT,
+    retryDelayMs: DEFAULT_CREATE_GAME_RETRY_DELAY_MS,
+  },
 };
 
 export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, DeploymentEnvironment> = {
@@ -54,8 +72,7 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     gameType: "blitz",
     toriiEnv: "mainnet",
     configPath: "config/generated/blitz.mainnet.json",
-    factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
-    rpcUrl: DEFAULT_MAINNET_RPC_URL,
+    ...MAINNET_DEFAULTS,
   },
   "mainnet.eternum": {
     id: "mainnet.eternum",
@@ -63,8 +80,7 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     gameType: "eternum",
     toriiEnv: "mainnet",
     configPath: "config/generated/eternum.mainnet.json",
-    factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
-    rpcUrl: DEFAULT_MAINNET_RPC_URL,
+    ...MAINNET_DEFAULTS,
   },
   "slot.blitz": {
     id: "slot.blitz",
