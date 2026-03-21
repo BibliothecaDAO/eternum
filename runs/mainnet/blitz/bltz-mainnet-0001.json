@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-mainnet-0001/23371991368-1.json",
   "latestLaunchRequestId": "23371991368-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-21T04:29:03.748Z",
-  "updatedAt": "2026-03-21T04:31:34.753Z",
+  "updatedAt": "2026-03-21T04:32:43.695Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,10 +62,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-21T04:31:34.753Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-21T04:31:34.753Z",
+      "finishedAt": "2026-03-21T04:32:43.695Z"
     },
     {
       "id": "sync-paymaster",
@@ -79,14 +80,16 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-mainnet-0001.json",
     "createGameTxHash": "0x39648813a02d660a528f2d295ec768697decc300418b314ecbf0343c78d0dac",
     "worldAddress": "0x05453c8f2a255b9479332caadd4917422f68c2793513519f228e6afbaa663cc9",
-    "configureTxHash": "0x7e13f9b40c994b2f5d9b06a2c938eb72c4f614204aaef9c95a6904e38d33abc"
-  },
-  "activeLease": {
-    "launchRequestId": "23371991368-1",
-    "workflowRunId": 23371991368,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-21T04:31:34.753Z",
-    "expiresAt": "2026-03-21T05:16:34.753Z"
+    "configureTxHash": "0x7e13f9b40c994b2f5d9b06a2c938eb72c4f614204aaef9c95a6904e38d33abc",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "credence0x/factory-v2-polish",
+      "runId": 23372052295,
+      "runNumber": 785,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23372052295",
+      "status": "completed",
+      "conclusion": "success"
+    }
   }
 }
