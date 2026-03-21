@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "runId": "mainnet.blitz:bltz-blip-555",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "bltz-blip-555",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/mainnet/blitz/bltz-blip-555/23372921802-1.json",
+  "latestLaunchRequestId": "23372921802-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-03-21T05:27:46.523Z",
+  "updatedAt": "2026-03-21T05:27:46.523Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23372921802,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23372921802",
+    "ref": "next",
+    "sha": "195558d3e30f9b27010d94ccb46f838b98d803a5"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "sync-paymaster",
+      "title": "Setting up gas coverage",
+      "status": "pending",
+      "workflowStepName": "Setting up gas coverage",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {}
+}
