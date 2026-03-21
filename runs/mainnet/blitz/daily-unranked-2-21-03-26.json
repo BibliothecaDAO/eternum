@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/daily-unranked-2-21-03-26/23381319954-1.json",
   "latestLaunchRequestId": "23381319954-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-21T14:05:40.536Z",
-  "updatedAt": "2026-03-21T14:08:06.675Z",
+  "updatedAt": "2026-03-21T14:09:20.015Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,10 +62,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-21T14:08:06.675Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-21T14:08:06.675Z",
+      "finishedAt": "2026-03-21T14:09:20.015Z"
     },
     {
       "id": "sync-paymaster",
@@ -79,14 +80,16 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-daily-unranked-2-21-03-26.json",
     "createGameTxHash": "0x68e54ffb69c49b98261f36e2872182ec2354688214cf2ad824ba8b32b5629f7",
     "worldAddress": "0x01d6a5d00f086ae1d79558c23a0a1e5d782ebf5b5c79623ac6e7e5330cfceeb4",
-    "configureTxHash": "0x355dc28d0af45e5a11e416f9948a126629622f57f1bc05874e0b98053dd666e"
-  },
-  "activeLease": {
-    "launchRequestId": "23381319954-1",
-    "workflowRunId": 23381319954,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-21T14:08:06.675Z",
-    "expiresAt": "2026-03-21T14:53:06.675Z"
+    "configureTxHash": "0x355dc28d0af45e5a11e416f9948a126629622f57f1bc05874e0b98053dd666e",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "next",
+      "runId": 23381383633,
+      "runNumber": 800,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23381383633",
+      "status": "completed",
+      "conclusion": "success"
+    }
   }
 }
