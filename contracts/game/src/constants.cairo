@@ -49,7 +49,9 @@ pub fn all_resource_ids() -> Array<u8> {
         31, 32, 33, 34, 35, 36, 37, // Essence
         38, // Relics
         39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53,
-        54, 55, 56,
+        54, 55, 56, // Research
+        57, // Bitcoin Mine Resources
+        58,
     ]
 }
 
@@ -122,7 +124,16 @@ pub mod ResourceTypes {
     pub const RELIC_E16: u8 = 54;
     pub const RELIC_E17: u8 = 55;
     pub const RELIC_E18: u8 = 56;
+    // Research
+    pub const RESEARCH: u8 = 57;
+
+    // Bitcoin Mine Resources
+    pub const SATOSHI: u8 = 58;
 }
+
+// Bitcoin Mine constants
+pub const MAX_FUTURE_PHASES: u64 = 30;
+pub const MAX_ROLLOVER_PHASES: u64 = 6;
 
 
 pub fn resource_type_name(resource_type: u8) -> ByteArray {
@@ -238,6 +249,10 @@ pub fn resource_type_name(resource_type: u8) -> ByteArray {
         "RELIC E17"
     } else if resource_type == 56 {
         "RELIC E18"
+    } else if resource_type == 57 {
+        "RESEARCH"
+    } else if resource_type == 58 {
+        "SATOSHI"
     } else {
         format!("{} (unknown resource name)", resource_type)
     }
@@ -393,35 +408,6 @@ pub fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
     return (resource_types.span(), resource_probabilities.span());
 }
 
-
-pub fn get_blitz_exploration_reward() -> Span<(u8, u128, u128)> {
-    return array![
-        (ResourceTypes::ESSENCE, 100, 3_000), (ResourceTypes::ESSENCE, 250, 2_000),
-        (ResourceTypes::ESSENCE, 500, 1_500), (ResourceTypes::LABOR, 250, 1_500), (ResourceTypes::LABOR, 500, 800),
-        (ResourceTypes::DONKEY, 100, 600), (ResourceTypes::KNIGHT_T1, 1_000, 200),
-        (ResourceTypes::CROSSBOWMAN_T1, 1_000, 200), (ResourceTypes::PALADIN_T1, 1_000, 200),
-    ]
-        .span();
-}
-
-pub fn split_blitz_exploration_reward_and_probs() -> (Span<(u8, u128)>, Span<u128>) {
-    let mut zipped = get_blitz_exploration_reward();
-    let mut resources = array![];
-    let mut resource_probabilities = array![];
-    loop {
-        match zipped.pop_front() {
-            Option::Some((
-                resource_type, resource_amount, probability,
-            )) => {
-                resources.append((*resource_type, *resource_amount));
-                resource_probabilities.append(*probability);
-            },
-            Option::None => { break; },
-        }
-    }
-
-    return (resources.span(), resource_probabilities.span());
-}
 
 pub mod LevelIndex {
     pub const FOOD: u8 = 1;

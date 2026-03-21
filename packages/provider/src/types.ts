@@ -114,6 +114,10 @@ export enum TransactionType {
   CLAIM_SHARE_POINTS = "claim_share_points",
   ALLOCATE_SHARES = "allocate_shares",
   CLAIM_WONDER_PRODUCTION_BONUS = "claim_wonder_production_bonus",
+  PLEDGE_FAITH = "pledge_faith",
+  REMOVE_FAITH = "remove_faith",
+  UPDATE_WONDER_OWNERSHIP = "update_wonder_ownership",
+  UPDATE_STRUCTURE_OWNERSHIP = "update_structure_ownership",
 
   // Realms & Settlement
   SETTLE_REALMS = "settle_realms",
@@ -121,6 +125,7 @@ export enum TransactionType {
   OBTAIN_ENTRY_TOKEN = "obtain_entry_token",
   REGISTER = "register",
   TOKEN_LOCK = "token_lock",
+  MAKE_SPIRES = "make_spires",
 
   // Lords & Approvals
   ATTACH_LORDS = "attach_lords",
@@ -196,6 +201,7 @@ export enum TransactionType {
   SET_STAMINA_CONFIG = "set_stamina_config",
   SET_STAMINA_REFILL_CONFIG = "set_stamina_refill_config",
   SET_SETTLEMENT_CONFIG = "set_settlement_config",
+  SET_BLITZ_EXPLORATION_CONFIG = "set_blitz_exploration_config",
   SET_BLITZ_REGISTRATION_CONFIG = "set_blitz_registration_config",
   SET_QUEST_CONFIG = "set_quest_config",
 

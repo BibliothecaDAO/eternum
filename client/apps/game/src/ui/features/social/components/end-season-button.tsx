@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
+import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
 import { OSWindow } from "@/ui/features/world";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
@@ -24,8 +25,10 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
   const seasonWinner = useUIStore((state) => state.gameWinner);
+  const hasFiniteGameEnd = useMemo(() => hasFiniteSeasonEnd(gameEndAt), [gameEndAt]);
 
   const isSeasonOver = Boolean(seasonWinner);
 
@@ -43,7 +46,7 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   }, [percentageOfPoints]);
 
   const endGame = useCallback(async () => {
-    if (!hasReachedFinalPoints || isSeasonOver) {
+    if (!hasFiniteGameEnd || !hasReachedFinalPoints || isSeasonOver) {
       return;
     }
     setIsLoading(true);
@@ -56,7 +59,11 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, [hasReachedFinalPoints, isSeasonOver]);
+  }, [hasFiniteGameEnd, hasReachedFinalPoints, isSeasonOver]);
+
+  if (!hasFiniteGameEnd) {
+    return null;
+  }
 
   return (
     <>

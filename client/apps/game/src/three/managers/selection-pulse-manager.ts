@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
-import { selectionPulseMaterial, updateSelectionPulseMaterial } from "@/three/shaders/selection-pulse-material";
+import { type PulseVisualPalette, resolveSelectionPulsePalette } from "./worldmap-interaction-palette";
 
 /**
  * Manages pulsing selection effects for armies and structures
@@ -19,27 +19,47 @@ export class SelectionPulseManager {
 
   // Shared material for ownership pulses (separate from main selection)
   // All ownership pulses animate together so they can share one material
-  private readonly sharedOwnershipMaterial: THREE.ShaderMaterial;
+  private readonly sharedOwnershipMaterial: THREE.MeshBasicMaterial;
+  private readonly primaryPulseMaterial: THREE.MeshBasicMaterial;
+  private readonly primaryBaseColor = new THREE.Color();
+  private readonly primaryPulseColor = new THREE.Color();
+  private readonly ownershipBaseColor = new THREE.Color(0.2, 0.8, 1.0);
+  private readonly ownershipPulseColor = new THREE.Color(1.0, 1.0, 0.8);
+  private primaryPulseIntensity = 0.28;
+  private ownershipPulseIntensity = 0.5;
+  private primaryPulseTime = 0;
+  private ownershipPulseTime = 0;
+  private readonly animatedPrimaryColor = new THREE.Color();
+  private readonly animatedOwnershipColor = new THREE.Color();
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    const defaultPulsePalette = resolveSelectionPulsePalette("army");
+    this.primaryBaseColor.setHex(defaultPulsePalette.baseColor);
+    this.primaryPulseColor.setHex(defaultPulsePalette.pulseColor);
+    this.primaryPulseIntensity = defaultPulsePalette.intensity;
 
     // Pre-create shared geometry for ownership pulses
-    const hexShape = createHexagonShape(HEX_SIZE * 1.1);
-    this.sharedOwnershipGeometry = new THREE.ShapeGeometry(hexShape);
+    this.sharedOwnershipGeometry = this.createRingGeometry(HEX_SIZE * 1.12, HEX_SIZE * 0.86);
 
-    // Create shared material for ownership pulses (cloned once from prototype)
-    this.sharedOwnershipMaterial = selectionPulseMaterial.clone();
+    this.primaryPulseMaterial = new THREE.MeshBasicMaterial({
+      color: this.primaryBaseColor.clone(),
+      opacity: this.primaryPulseIntensity,
+      transparent: true,
+    });
+    this.sharedOwnershipMaterial = new THREE.MeshBasicMaterial({
+      color: this.ownershipBaseColor.clone(),
+      opacity: this.ownershipPulseIntensity,
+      transparent: true,
+    });
 
     this.createPulseMesh();
   }
 
   private createPulseMesh(): void {
-    // Create hexagon shape and convert to BufferGeometry
-    const hexShape = createHexagonShape(HEX_SIZE * 1.1); // Slightly larger than normal hex
-    const geometry = new THREE.ShapeGeometry(hexShape);
+    const geometry = this.createRingGeometry(HEX_SIZE * 1.16, HEX_SIZE * 0.82);
 
-    this.pulseMesh = new THREE.Mesh(geometry, selectionPulseMaterial);
+    this.pulseMesh = new THREE.Mesh(geometry, this.primaryPulseMaterial);
     this.pulseMesh.position.y = 0.5; // Much higher above ground for visibility
     this.pulseMesh.rotation.x = -Math.PI / 2; // Rotate to face ground plane
     this.pulseMesh.renderOrder = 100; // Very high render order to ensure visibility
@@ -48,6 +68,14 @@ export class SelectionPulseManager {
 
     // Add to scene once on creation
     this.scene.add(this.pulseMesh);
+  }
+
+  private createRingGeometry(outerRadius: number, innerRadius: number): THREE.ShapeGeometry {
+    const outer = createHexagonShape(outerRadius);
+    const innerPoints = createHexagonShape(innerRadius).getPoints().slice().reverse();
+
+    outer.holes.push(new THREE.Path(innerPoints));
+    return new THREE.ShapeGeometry(outer);
   }
 
   private shouldAnimate(): boolean {
@@ -67,12 +95,26 @@ export class SelectionPulseManager {
       return;
     }
 
-    updateSelectionPulseMaterial(deltaTime);
-
-    // Update shared ownership material time (all ownership pulses animate together)
-    if (this.sharedOwnershipMaterial.uniforms.time) {
-      this.sharedOwnershipMaterial.uniforms.time.value += deltaTime;
-    }
+    this.primaryPulseTime += deltaTime;
+    this.ownershipPulseTime += deltaTime;
+    this.applyMaterialState(
+      this.primaryPulseMaterial,
+      this.primaryBaseColor,
+      this.primaryPulseColor,
+      this.primaryPulseIntensity,
+      this.primaryPulseTime,
+      this.animatedPrimaryColor,
+      this.isVisible,
+    );
+    this.applyMaterialState(
+      this.sharedOwnershipMaterial,
+      this.ownershipBaseColor,
+      this.ownershipPulseColor,
+      this.ownershipPulseIntensity,
+      this.ownershipPulseTime,
+      this.animatedOwnershipColor,
+      this.ownershipPulseMeshes.some((mesh) => mesh.visible),
+    );
   }
 
   /**
@@ -111,10 +153,18 @@ export class SelectionPulseManager {
     baseColor: THREE.Color,
     pulseColor: THREE.Color,
   ): void {
-    // Update shared material colors (all ownership pulses use same colors)
-    this.sharedOwnershipMaterial.uniforms.color.value.copy(baseColor);
-    this.sharedOwnershipMaterial.uniforms.pulseColor.value.copy(pulseColor);
-    this.sharedOwnershipMaterial.uniforms.time.value = 0;
+    this.ownershipBaseColor.copy(baseColor);
+    this.ownershipPulseColor.copy(pulseColor);
+    this.ownershipPulseTime = 0;
+    this.applyMaterialState(
+      this.sharedOwnershipMaterial,
+      this.ownershipBaseColor,
+      this.ownershipPulseColor,
+      this.ownershipPulseIntensity,
+      this.ownershipPulseTime,
+      this.animatedOwnershipColor,
+      positions.length > 0,
+    );
 
     // Lazy-create ownership meshes up to required count using shared resources
     positions.forEach((pos, index) => {
@@ -168,23 +218,55 @@ export class SelectionPulseManager {
    * Update pulse colors - can be used for different entity types
    */
   public setPulseColor(baseColor: THREE.Color, pulseColor: THREE.Color): void {
-    selectionPulseMaterial.uniforms.color.value.copy(baseColor);
-    selectionPulseMaterial.uniforms.pulseColor.value.copy(pulseColor);
+    this.primaryBaseColor.copy(baseColor);
+    this.primaryPulseColor.copy(pulseColor);
+    this.applyMaterialState(
+      this.primaryPulseMaterial,
+      this.primaryBaseColor,
+      this.primaryPulseColor,
+      this.primaryPulseIntensity,
+      this.primaryPulseTime,
+      this.animatedPrimaryColor,
+      this.isVisible,
+    );
+  }
+
+  public applyPulsePalette(palette: PulseVisualPalette): void {
+    this.primaryBaseColor.setHex(palette.baseColor);
+    this.primaryPulseColor.setHex(palette.pulseColor);
+    this.primaryPulseIntensity = palette.intensity;
+    this.applyMaterialState(
+      this.primaryPulseMaterial,
+      this.primaryBaseColor,
+      this.primaryPulseColor,
+      this.primaryPulseIntensity,
+      this.primaryPulseTime,
+      this.animatedPrimaryColor,
+      this.isVisible,
+    );
   }
 
   /**
    * Set pulse intensity (0.0 to 1.0)
    */
   public setPulseIntensity(intensity: number): void {
-    selectionPulseMaterial.uniforms.opacity.value = intensity;
-    selectionPulseMaterial.uniforms.pulseStrength.value = intensity;
+    this.primaryPulseIntensity = intensity;
+    this.applyMaterialState(
+      this.primaryPulseMaterial,
+      this.primaryBaseColor,
+      this.primaryPulseColor,
+      this.primaryPulseIntensity,
+      this.primaryPulseTime,
+      this.animatedPrimaryColor,
+      this.isVisible,
+    );
   }
 
   /**
    * Set pulse speed multiplier
    */
   public setPulseSpeed(speed: number): void {
-    selectionPulseMaterial.uniforms.speed.value = speed;
+    this.primaryPulseTime *= Math.max(speed, 0.1);
   }
 
   /**
@@ -194,6 +276,7 @@ export class SelectionPulseManager {
     if (this.pulseMesh) {
       this.scene.remove(this.pulseMesh);
       this.pulseMesh.geometry.dispose();
+      this.primaryPulseMaterial.dispose();
       this.pulseMesh = null;
     }
 
@@ -209,5 +292,26 @@ export class SelectionPulseManager {
 
     this.isVisible = false;
     this.selectedEntityId = null;
+  }
+
+  private applyMaterialState(
+    material: THREE.MeshBasicMaterial,
+    baseColor: THREE.Color,
+    pulseColor: THREE.Color,
+    intensity: number,
+    time: number,
+    animatedColor: THREE.Color,
+    animate: boolean,
+  ): void {
+    if (!animate) {
+      material.color.copy(baseColor);
+      material.opacity = intensity;
+      return;
+    }
+
+    const pulse = 0.5 + 0.5 * Math.sin(time * 4.0);
+    animatedColor.copy(baseColor).lerp(pulseColor, 0.35 * pulse);
+    material.color.copy(animatedColor);
+    material.opacity = intensity * (0.65 + 0.35 * pulse);
   }
 }

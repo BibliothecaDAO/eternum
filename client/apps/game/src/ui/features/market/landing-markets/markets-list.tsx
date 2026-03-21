@@ -10,6 +10,7 @@ import type { TokenBalance } from "@dojoengine/torii-wasm";
 
 import Panel from "@/ui/design-system/atoms/panel";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
+import { PM_PAGINATION_BUTTON_CLASS } from "@/ui/features/market/pm-theme";
 import { MarketImage } from "./market-image";
 import { MarketQuickStats } from "./market-quick-stats";
 import { MarketStatusBadge } from "./market-status-badge";
@@ -59,7 +60,7 @@ const MarketCard = memo(function MarketCard({
       radius="lg"
       border="subtle"
       isInteractive
-      className="group flex h-full flex-col overflow-hidden animate-fade-in-up"
+      className="group relative flex h-full flex-col overflow-hidden border-gold/20 animate-fade-in-up transition-all duration-200 hover:border-gold/45 hover:shadow-[0_16px_30px_-22px_rgba(223,170,84,0.3)]"
       style={{ animationDelay: `${animationDelay}ms` }}
     >
       {/* Header: Image + Title + Status */}
@@ -92,18 +93,18 @@ const MarketCard = memo(function MarketCard({
       </div>
 
       {/* Quick Stats Row */}
-      <div className="border-t border-gold/10 px-4 py-2">
+      <div className="border-t border-gold/15 bg-brown/30 px-4 py-2">
         <MarketQuickStats market={market} balances={allBalances} />
       </div>
 
       {/* Odds Bar Chart */}
-      <div className="flex-1 border-t border-gold/10 px-4 py-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gold/50">Current Odds</p>
+      <div className="flex-1 border-t border-gold/15 bg-brown/45 px-4 py-3">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gold/55">Current Odds</p>
         <OddsBarChart market={market} maxVisible={4} animated />
       </div>
 
       {/* Timeline Footer */}
-      <div className="border-t border-gold/10 px-4 py-3">
+      <div className="border-t border-gold/15 bg-brown/35 px-4 py-3">
         <MarketTimeline market={market} />
       </div>
 
@@ -113,16 +114,16 @@ const MarketCard = memo(function MarketCard({
           <button
             type="button"
             onClick={handleClick}
-            className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-gold/20 to-transparent px-4 py-3 text-center text-sm font-semibold text-gold opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
+            className="absolute inset-x-0 bottom-0 translate-y-full border-t border-gold/25 bg-gradient-to-t from-gold/20 via-gold/10 to-transparent px-4 py-3 text-center text-sm font-semibold text-gold opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
           >
-            View Market
+            Trade Market
           </button>
         ) : (
           <Link
             to={href}
-            className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-gold/20 to-transparent px-4 py-3 text-center text-sm font-semibold text-gold opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
+            className="absolute inset-x-0 bottom-0 translate-y-full border-t border-gold/25 bg-gradient-to-t from-gold/20 via-gold/10 to-transparent px-4 py-3 text-center text-sm font-semibold text-gold opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
           >
-            View Market
+            Trade Market
           </Link>
         ))}
     </Panel>
@@ -188,7 +189,7 @@ export function MarketsList({
   if (sortedMarkets.length === 0 && !isFetching) {
     if (emptyState) {
       return (
-        <div className="rounded-2xl border border-gold/20 bg-black/40 p-6 text-center">
+        <div className="rounded-2xl border border-gold/20 bg-dark-wood p-6 text-center">
           <p className="font-cinzel text-lg text-gold">{emptyState.title}</p>
           {emptyState.description ? <p className="mt-2 text-sm text-gold/70">{emptyState.description}</p> : null}
           {emptyState.actionLabel && emptyState.onAction ? (
@@ -226,7 +227,7 @@ export function MarketsList({
       </div>
 
       {/* Markets grid */}
-      <div className="4xl:grid-cols-4 relative grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="4xl:grid-cols-4 relative grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
         {sortedMarkets.map((market, index) => (
           <MarketCard
             key={market.market_id?.toString() ?? `market-${index}`}
@@ -250,7 +251,7 @@ export function MarketsList({
             }
             disabled={currentPage === 1 || isFetching}
             aria-label="Previous page"
-            className="min-h-[44px] min-w-[44px] rounded-2xl border border-gold/20 bg-gold/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 hover:border-gold/40 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            className={`${PM_PAGINATION_BUTTON_CLASS} min-h-[44px] min-w-[44px] rounded-2xl py-2 text-base md:text-sm`}
           >
             ←
           </button>
@@ -266,7 +267,7 @@ export function MarketsList({
             }
             disabled={currentPage === totalPages || isFetching}
             aria-label="Next page"
-            className="min-h-[44px] min-w-[44px] rounded-2xl border border-gold/20 bg-gold/5 px-3 py-2 text-base text-gold transition-colors hover:bg-gold/10 hover:border-gold/40 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            className={`${PM_PAGINATION_BUTTON_CLASS} min-h-[44px] min-w-[44px] rounded-2xl py-2 text-base md:text-sm`}
           >
             →
           </button>

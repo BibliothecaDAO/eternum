@@ -1,3 +1,5 @@
+import { DEFAULT_TOKEN_PRECISION, parseTokenAmountToIntegerString } from "@/ui/utils/token-amount";
+
 interface BlitzRegistrationDefaults {
   amount: string;
   precision: number;
@@ -18,6 +20,7 @@ interface FactoryWorldConfigOverrides {
   startSettlingAt?: number;
   devModeOn?: boolean;
   mmrEnabled?: boolean;
+  gameMode?: "blitz" | "eternum";
   durationHours?: string;
   durationMinutes?: string;
   blitzFeeAmount?: string;
@@ -60,6 +63,7 @@ interface FactoryConfigLike {
     pointRegistrationCloseAfterEndSeconds?: number;
   };
   blitz?: {
+    mode?: { on?: boolean };
     registration?: {
       fee_amount?: bigint;
       fee_token?: string;
@@ -94,21 +98,13 @@ interface FactoryConfigLike {
   [key: string]: unknown;
 }
 
-const parseDecimalToBigInt = (value: string, precision: number): bigint => {
-  const trimmed = value.trim();
-  if (!trimmed) throw new Error("Fee amount is required");
-  const normalized = trimmed.startsWith(".") ? `0${trimmed}` : trimmed;
-  if (!/^\d+(\.\d+)?$/.test(normalized)) {
-    throw new Error("Fee amount must be a number");
-  }
-  const [whole, fraction = ""] = normalized.split(".");
-  if (fraction.length > precision) {
-    throw new Error(`Fee amount has more than ${precision} decimals`);
-  }
-  const paddedFraction = fraction.padEnd(precision, "0");
-  const combined = `${whole}${precision > 0 ? paddedFraction : ""}`.replace(/^0+(?=\d)/, "");
-  return BigInt(combined || "0");
-};
+type FactorySeasonConfig = NonNullable<FactoryConfigLike["season"]>;
+type FactoryBlitzConfig = NonNullable<FactoryConfigLike["blitz"]>;
+type FactoryBlitzRegistrationConfig = NonNullable<FactoryBlitzConfig["registration"]>;
+type FactorySettlementConfig = NonNullable<FactoryConfigLike["settlement"]>;
+type FactoryTradeConfig = NonNullable<FactoryConfigLike["trade"]>;
+type FactoryBattleConfig = NonNullable<FactoryConfigLike["battle"]>;
+type FactoryAgentConfig = NonNullable<FactoryConfigLike["agent"]>;
 
 const hasValue = (value?: string): boolean => value !== undefined && value.trim() !== "";
 
@@ -128,11 +124,22 @@ const parseInteger = (value: string, label: string): number => {
   return parsed;
 };
 
-export const buildWorldConfigForFactory = ({
-  baseConfig,
-  defaults,
-  overrides,
-}: BuildWorldConfigForFactoryInput): FactoryConfigLike => {
+const resolveNonNegativeNumberOverride = (
+  value: string | undefined,
+  label: string,
+  fallback: number | undefined,
+): number | undefined => {
+  if (!hasValue(value)) {
+    return fallback;
+  }
+
+  return parseNonNegativeNumber(value!, label);
+};
+
+const resolveFactoryDurationSeconds = (
+  defaults: FactoryWorldConfigDefaults,
+  overrides: FactoryWorldConfigOverrides,
+): number => {
   const durationHours = hasValue(overrides.durationHours)
     ? parseNonNegativeNumber(overrides.durationHours!, "Duration hours")
     : Number(defaults.durationHours || 0);
@@ -145,88 +152,186 @@ export const buildWorldConfigForFactory = ({
     throw new Error("Duration minutes must be between 0 and 59");
   }
 
+  return Math.max(60, Math.max(0, durationHours) * 3600 + Math.max(0, durationMinutes) * 60);
+};
+
+const resolveBlitzFeePrecision = (
+  defaults: FactoryWorldConfigDefaults,
+  overrides: FactoryWorldConfigOverrides,
+): number => {
   const precision = hasValue(overrides.blitzFeePrecision)
     ? parseInteger(overrides.blitzFeePrecision!, "Fee precision")
-    : defaults.defaultBlitzRegistration.precision;
+    : (defaults.defaultBlitzRegistration.precision ?? DEFAULT_TOKEN_PRECISION);
 
   if (precision < 0) {
     throw new Error("Fee precision must be a non-negative integer");
   }
 
+  return precision;
+};
+
+const resolveBlitzFeeAmount = (
+  baseConfig: FactoryConfigLike,
+  defaults: FactoryWorldConfigDefaults,
+  overrides: FactoryWorldConfigOverrides,
+): bigint | undefined => {
+  const precision = resolveBlitzFeePrecision(defaults, overrides);
   const amountToParse = hasValue(overrides.blitzFeeAmount)
     ? overrides.blitzFeeAmount!.trim()
     : defaults.defaultBlitzRegistration.amount;
 
-  const blitzFeeAmount = amountToParse
-    ? parseDecimalToBigInt(amountToParse, precision)
-    : baseConfig.blitz?.registration?.fee_amount;
+  if (!amountToParse) {
+    return baseConfig.blitz?.registration?.fee_amount;
+  }
 
-  const registrationCountMax = hasValue(overrides.registrationCountMax)
-    ? parseNonNegativeNumber(overrides.registrationCountMax!, "Registration count max")
-    : 24;
+  return BigInt(parseTokenAmountToIntegerString(amountToParse, precision, "Fee amount"));
+};
 
-  const registrationDelaySeconds = hasValue(overrides.registrationDelaySeconds)
-    ? parseNonNegativeNumber(overrides.registrationDelaySeconds!, "Registration delay seconds")
-    : baseConfig.blitz?.registration?.registration_delay_seconds;
+const resolveSeasonConfig = (
+  baseConfig: FactoryConfigLike,
+  overrides: FactoryWorldConfigOverrides,
+  durationSeconds: number,
+): FactorySeasonConfig => ({
+  ...(baseConfig.season || {}),
+  startMainAt: overrides.startMainAt ?? baseConfig.season?.startMainAt,
+  startSettlingAt: overrides.startSettlingAt ?? baseConfig.season?.startSettlingAt,
+  durationSeconds,
+  bridgeCloseAfterEndSeconds: resolveNonNegativeNumberOverride(
+    overrides.seasonBridgeCloseAfterEndSeconds,
+    "Bridge close after end seconds",
+    baseConfig.season?.bridgeCloseAfterEndSeconds,
+  ),
+  pointRegistrationCloseAfterEndSeconds: resolveNonNegativeNumberOverride(
+    overrides.seasonPointRegistrationCloseAfterEndSeconds,
+    "Point registration close after end seconds",
+    baseConfig.season?.pointRegistrationCloseAfterEndSeconds,
+  ),
+});
 
-  const registrationPeriodSeconds = hasValue(overrides.registrationPeriodSeconds)
-    ? parseNonNegativeNumber(overrides.registrationPeriodSeconds!, "Registration period seconds")
-    : baseConfig.blitz?.registration?.registration_period_seconds;
+const resolveBlitzModeOn = (baseConfig: FactoryConfigLike, overrides: FactoryWorldConfigOverrides): boolean =>
+  overrides.gameMode ? overrides.gameMode === "blitz" : (baseConfig.blitz?.mode?.on ?? true);
 
-  const bridgeCloseAfterEndSeconds = hasValue(overrides.seasonBridgeCloseAfterEndSeconds)
-    ? parseNonNegativeNumber(overrides.seasonBridgeCloseAfterEndSeconds!, "Bridge close after end seconds")
-    : baseConfig.season?.bridgeCloseAfterEndSeconds;
+const resolveBlitzRegistrationConfig = (
+  baseConfig: FactoryConfigLike,
+  defaults: FactoryWorldConfigDefaults,
+  overrides: FactoryWorldConfigOverrides,
+): FactoryBlitzRegistrationConfig => ({
+  ...(baseConfig.blitz?.registration || {}),
+  fee_amount: resolveBlitzFeeAmount(baseConfig, defaults, overrides),
+  fee_token:
+    overrides.blitzFeeToken?.trim() ||
+    defaults.defaultBlitzRegistration.token ||
+    baseConfig.blitz?.registration?.fee_token,
+  fee_recipient: overrides.blitzFeeRecipient?.trim() || baseConfig.blitz?.registration?.fee_recipient,
+  registration_count_max: resolveNonNegativeNumberOverride(
+    overrides.registrationCountMax,
+    "Registration count max",
+    24,
+  ),
+  registration_delay_seconds: resolveNonNegativeNumberOverride(
+    overrides.registrationDelaySeconds,
+    "Registration delay seconds",
+    baseConfig.blitz?.registration?.registration_delay_seconds,
+  ),
+  registration_period_seconds: resolveNonNegativeNumberOverride(
+    overrides.registrationPeriodSeconds,
+    "Registration period seconds",
+    baseConfig.blitz?.registration?.registration_period_seconds,
+  ),
+});
 
-  const pointRegistrationCloseAfterEndSeconds = hasValue(overrides.seasonPointRegistrationCloseAfterEndSeconds)
-    ? parseNonNegativeNumber(
-        overrides.seasonPointRegistrationCloseAfterEndSeconds!,
-        "Point registration close after end seconds",
-      )
-    : baseConfig.season?.pointRegistrationCloseAfterEndSeconds;
+const resolveSettlementConfig = (
+  baseConfig: FactoryConfigLike,
+  overrides: FactoryWorldConfigOverrides,
+): FactorySettlementConfig => {
+  const singleRealmMode = overrides.singleRealmMode ?? baseConfig.settlement?.single_realm_mode ?? false;
+  const twoPlayerMode = overrides.twoPlayerMode ?? baseConfig.settlement?.two_player_mode ?? false;
 
-  const settlementCenter = hasValue(overrides.settlementCenter)
-    ? parseNonNegativeNumber(overrides.settlementCenter!, "Settlement center")
-    : baseConfig.settlement?.center;
-
-  const settlementBaseDistance = hasValue(overrides.settlementBaseDistance)
-    ? parseNonNegativeNumber(overrides.settlementBaseDistance!, "Settlement base distance")
-    : baseConfig.settlement?.base_distance;
-
-  const settlementSubsequentDistance = hasValue(overrides.settlementSubsequentDistance)
-    ? parseNonNegativeNumber(overrides.settlementSubsequentDistance!, "Settlement subsequent distance")
-    : baseConfig.settlement?.subsequent_distance;
-
-  const settlementSingleRealmMode = overrides.singleRealmMode ?? baseConfig.settlement?.single_realm_mode ?? false;
-  const settlementTwoPlayerMode = overrides.twoPlayerMode ?? baseConfig.settlement?.two_player_mode ?? false;
-  if (settlementSingleRealmMode && settlementTwoPlayerMode) {
+  if (singleRealmMode && twoPlayerMode) {
     throw new Error("single_realm_mode and two_player_mode cannot both be enabled");
   }
 
-  const tradeMaxCount = hasValue(overrides.tradeMaxCount)
-    ? parseNonNegativeNumber(overrides.tradeMaxCount!, "Trade max count")
-    : baseConfig.trade?.maxCount;
+  return {
+    ...(baseConfig.settlement || {}),
+    center: resolveNonNegativeNumberOverride(
+      overrides.settlementCenter,
+      "Settlement center",
+      baseConfig.settlement?.center,
+    ),
+    base_distance: resolveNonNegativeNumberOverride(
+      overrides.settlementBaseDistance,
+      "Settlement base distance",
+      baseConfig.settlement?.base_distance,
+    ),
+    subsequent_distance: resolveNonNegativeNumberOverride(
+      overrides.settlementSubsequentDistance,
+      "Settlement subsequent distance",
+      baseConfig.settlement?.subsequent_distance,
+    ),
+    single_realm_mode: singleRealmMode,
+    two_player_mode: twoPlayerMode,
+  };
+};
 
-  const battleGraceTickCount = hasValue(overrides.battleGraceTickCount)
-    ? parseNonNegativeNumber(overrides.battleGraceTickCount!, "Battle grace tick count")
-    : baseConfig.battle?.graceTickCount;
+const resolveTradeConfig = (
+  baseConfig: FactoryConfigLike,
+  overrides: FactoryWorldConfigOverrides,
+): FactoryTradeConfig => ({
+  ...(baseConfig.trade || {}),
+  maxCount: resolveNonNegativeNumberOverride(overrides.tradeMaxCount, "Trade max count", baseConfig.trade?.maxCount),
+});
 
-  const battleGraceTickCountHyp = hasValue(overrides.battleGraceTickCountHyp)
-    ? parseNonNegativeNumber(overrides.battleGraceTickCountHyp!, "Battle hyperstructure grace tick count")
-    : baseConfig.battle?.graceTickCountHyp;
+const resolveBattleConfig = (
+  baseConfig: FactoryConfigLike,
+  overrides: FactoryWorldConfigOverrides,
+): FactoryBattleConfig => ({
+  ...(baseConfig.battle || {}),
+  delaySeconds: resolveNonNegativeNumberOverride(
+    overrides.battleDelaySeconds,
+    "Battle delay seconds",
+    baseConfig.battle?.delaySeconds,
+  ),
+  graceTickCount: resolveNonNegativeNumberOverride(
+    overrides.battleGraceTickCount,
+    "Battle grace tick count",
+    baseConfig.battle?.graceTickCount,
+  ),
+  graceTickCountHyp: resolveNonNegativeNumberOverride(
+    overrides.battleGraceTickCountHyp,
+    "Battle hyperstructure grace tick count",
+    baseConfig.battle?.graceTickCountHyp,
+  ),
+});
 
-  const battleDelaySeconds = hasValue(overrides.battleDelaySeconds)
-    ? parseNonNegativeNumber(overrides.battleDelaySeconds!, "Battle delay seconds")
-    : baseConfig.battle?.delaySeconds;
+const resolveAgentConfig = (
+  baseConfig: FactoryConfigLike,
+  overrides: FactoryWorldConfigOverrides,
+): FactoryAgentConfig => ({
+  ...(baseConfig.agent || {}),
+  max_current_count: resolveNonNegativeNumberOverride(
+    overrides.agentMaxCurrentCount,
+    "Agent max current count",
+    baseConfig.agent?.max_current_count,
+  ),
+  max_lifetime_count: resolveNonNegativeNumberOverride(
+    overrides.agentMaxLifetimeCount,
+    "Agent max lifetime count",
+    baseConfig.agent?.max_lifetime_count,
+  ),
+});
 
-  const agentMaxCurrentCount = hasValue(overrides.agentMaxCurrentCount)
-    ? parseNonNegativeNumber(overrides.agentMaxCurrentCount!, "Agent max current count")
-    : baseConfig.agent?.max_current_count;
-
-  const agentMaxLifetimeCount = hasValue(overrides.agentMaxLifetimeCount)
-    ? parseNonNegativeNumber(overrides.agentMaxLifetimeCount!, "Agent max lifetime count")
-    : baseConfig.agent?.max_lifetime_count;
-
-  const durationSeconds = Math.max(60, Math.max(0, durationHours) * 3600 + Math.max(0, durationMinutes) * 60);
+export const buildWorldConfigForFactory = ({
+  baseConfig,
+  defaults,
+  overrides,
+}: BuildWorldConfigForFactoryInput): FactoryConfigLike => {
+  const durationSeconds = resolveFactoryDurationSeconds(defaults, overrides);
+  const seasonConfig = resolveSeasonConfig(baseConfig, overrides, durationSeconds);
+  const blitzRegistrationConfig = resolveBlitzRegistrationConfig(baseConfig, defaults, overrides);
+  const settlementConfig = resolveSettlementConfig(baseConfig, overrides);
+  const tradeConfig = resolveTradeConfig(baseConfig, overrides);
+  const battleConfig = resolveBattleConfig(baseConfig, overrides);
+  const agentConfig = resolveAgentConfig(baseConfig, overrides);
 
   return {
     ...baseConfig,
@@ -239,51 +344,20 @@ export const buildWorldConfigForFactory = ({
       },
     },
     season: {
-      ...(baseConfig.season || {}),
-      startMainAt: overrides.startMainAt ?? baseConfig.season?.startMainAt,
-      startSettlingAt: overrides.startSettlingAt ?? baseConfig.season?.startSettlingAt,
-      durationSeconds,
-      bridgeCloseAfterEndSeconds,
-      pointRegistrationCloseAfterEndSeconds,
+      ...seasonConfig,
     },
     blitz: {
       ...(baseConfig.blitz || {}),
-      registration: {
-        ...(baseConfig.blitz?.registration || {}),
-        fee_amount: blitzFeeAmount,
-        fee_token:
-          overrides.blitzFeeToken?.trim() ||
-          defaults.defaultBlitzRegistration.token ||
-          baseConfig.blitz?.registration?.fee_token,
-        fee_recipient: overrides.blitzFeeRecipient?.trim() || baseConfig.blitz?.registration?.fee_recipient,
-        registration_count_max: registrationCountMax,
-        registration_delay_seconds: registrationDelaySeconds,
-        registration_period_seconds: registrationPeriodSeconds,
+      mode: {
+        ...(baseConfig.blitz?.mode || {}),
+        on: resolveBlitzModeOn(baseConfig, overrides),
       },
+      registration: blitzRegistrationConfig,
     },
-    settlement: {
-      ...(baseConfig.settlement || {}),
-      center: settlementCenter,
-      base_distance: settlementBaseDistance,
-      subsequent_distance: settlementSubsequentDistance,
-      single_realm_mode: settlementSingleRealmMode,
-      two_player_mode: settlementTwoPlayerMode,
-    },
-    trade: {
-      ...(baseConfig.trade || {}),
-      maxCount: tradeMaxCount,
-    },
-    battle: {
-      ...(baseConfig.battle || {}),
-      delaySeconds: battleDelaySeconds,
-      graceTickCount: battleGraceTickCount,
-      graceTickCountHyp: battleGraceTickCountHyp,
-    },
-    agent: {
-      ...(baseConfig.agent || {}),
-      max_current_count: agentMaxCurrentCount,
-      max_lifetime_count: agentMaxLifetimeCount,
-    },
+    settlement: settlementConfig,
+    trade: tradeConfig,
+    battle: battleConfig,
+    agent: agentConfig,
     mmr: {
       ...(baseConfig.mmr || {}),
       enabled: overrides.mmrEnabled ?? defaults.mmrEnabledOn,

@@ -11,11 +11,53 @@ import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
 
-// Note: registration_end_at uses start_main_at because registration ends when the main game starts
-const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+const WORLD_CONFIG_TABLE = "s1_eternum-WorldConfig";
+const HYPERSTRUCTURE_GLOBALS_TABLE = "s1_eternum-HyperstructureGlobals";
+const ZERO_OWNER_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+const WORLD_MODE_QUERY = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+
+// Note: registration_end_at uses start_main_at because registration ends when the main game starts.
+const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.registration_count_max" AS registration_count_max, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+
+// Eternum worlds do not rely on blitz_registration_config. Fetch season timing + spacing config instead.
+const WORLD_CONFIG_ETERNUM_QUERY = `
+  SELECT
+    "season_config.start_settling_at" AS start_settling_at,
+    "season_config.start_main_at" AS start_main_at,
+    "season_config.end_at" AS end_at,
+    "season_config.dev_mode_on" AS dev_mode_on,
+    "mmr_config.enabled" AS mmr_enabled,
+    "settlement_config.base_distance" AS settlement_base_distance,
+    "settlement_config.spires_layer_distance" AS spires_layer_distance,
+    "settlement_config.spires_max_count" AS spires_max_count,
+    "settlement_config.spires_settled_count" AS spires_settled_count,
+    "settlement_config.layer_max" AS settlement_layer_max,
+    "settlement_config.layers_skipped" AS settlement_layers_skipped,
+    "season_addresses_config.season_pass_address" AS season_pass_address,
+    "village_pass_config.token_address" AS village_pass_token_address,
+    "map_center_offset" AS map_center_offset,
+    (
+      SELECT COUNT(DISTINCT owner)
+      FROM "s1_eternum-Structure"
+      WHERE category IN (1, 5) AND owner != '${ZERO_OWNER_ADDRESS}'
+    ) AS settled_players_count,
+    (
+      SELECT COUNT(*)
+      FROM "s1_eternum-Structure"
+      WHERE category = 1 AND owner != '${ZERO_OWNER_ADDRESS}'
+    ) AS settled_realms_count,
+    (
+      SELECT COUNT(*)
+      FROM "s1_eternum-Structure"
+      WHERE category = 5 AND owner != '${ZERO_OWNER_ADDRESS}'
+    ) AS settled_villages_count
+  FROM "${WORLD_CONFIG_TABLE}"
+  LIMIT 1;
+`;
 
 // Query to get hyperstructure created count (separate table)
-const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1;`;
+const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "${HYPERSTRUCTURE_GLOBALS_TABLE}" LIMIT 1;`;
 const PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR = "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
 const prizeDistributionSelector = normalizeSelector(PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR);
 const rpcProviderCache = new Map<string, RpcProvider>();
@@ -98,9 +140,24 @@ const fetchTokenBalance = async (
 };
 
 export interface WorldConfigMeta {
+  mode: "blitz" | "eternum" | "unknown";
+  startSettlingAt: number | null;
   startMainAt: number | null;
   endAt: number | null;
+  seasonDurationSeconds: number | null;
+  // Eternum spacing config
+  settlementBaseDistance: number | null;
+  spiresLayerDistance: number | null;
+  spiresMaxCount: number | null;
+  spiresSettledCount: number | null;
+  settlementLayerMax: number | null;
+  settlementLayersSkipped: number | null;
+  mapCenterOffset: number | null;
+  seasonPassAddress: string | null;
+  villagePassAddress: string | null;
   registrationCount: number | null;
+  registrationCountMax: number | null;
+  twoPlayerMode: boolean;
   // Blitz registration config
   entryTokenAddress: string | null;
   feeTokenAddress: string | null;
@@ -113,6 +170,12 @@ export interface WorldConfigMeta {
   devModeOn: boolean;
   // Player registration status (null if not checked or no player)
   isPlayerRegistered: boolean | null;
+  // Eternum-only: whether the connected player already has at least one settled realm.
+  hasPlayerSettledRealm: boolean | null;
+  // Eternum-only: global settled structure counts used by landing cards.
+  settledPlayersCount: number | null;
+  settledRealmsCount: number | null;
+  settledVillagesCount: number | null;
   // Number of hyperstructures left to create (for forging)
   numHyperstructuresLeft: number | null;
   // Reward distribution contract for this world
@@ -175,6 +238,23 @@ const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: stri
   return null;
 };
 
+const fetchPlayerHasSettledRealm = async (toriiBaseUrl: string, playerAddress: string): Promise<boolean | null> => {
+  try {
+    const query = `SELECT COUNT(*) AS realm_count FROM "s1_eternum-Structure" WHERE owner = "${playerAddress}" AND category = 1 LIMIT 1;`;
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = (await response.json()) as Record<string, unknown>[];
+    const [row] = data;
+    const realmCount = parseMaybeHexToNumber(row?.realm_count);
+    if (realmCount == null) return null;
+    return realmCount > 0;
+  } catch {
+    // Silently fail - settled realm check is best-effort
+  }
+  return null;
+};
+
 const fetchPrizeDistributionAddress = async (worldName: string, chain: Chain): Promise<string | null> => {
   try {
     const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
@@ -216,9 +296,23 @@ const fetchWorldConfigMeta = async (
   playerAddress?: string | null,
 ): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
+    mode: "unknown",
+    startSettlingAt: null,
     startMainAt: null,
     endAt: null,
+    seasonDurationSeconds: null,
+    settlementBaseDistance: null,
+    spiresLayerDistance: null,
+    spiresMaxCount: null,
+    spiresSettledCount: null,
+    settlementLayerMax: null,
+    settlementLayersSkipped: null,
+    mapCenterOffset: null,
+    seasonPassAddress: null,
+    villagePassAddress: null,
     registrationCount: null,
+    registrationCountMax: null,
+    twoPlayerMode: false,
     entryTokenAddress: null,
     feeTokenAddress: null,
     feeAmount: 0n,
@@ -227,28 +321,39 @@ const fetchWorldConfigMeta = async (
     mmrEnabled: false,
     devModeOn: false,
     isPlayerRegistered: null,
+    hasPlayerSettledRealm: null,
+    settledPlayersCount: null,
+    settledRealmsCount: null,
+    settledVillagesCount: null,
     numHyperstructuresLeft: null,
     prizeDistributionAddress: null,
     winnerJackpotAmount: 0n,
   };
 
   try {
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
+    // Detect game mode first so we can run a mode-specific world-config query.
+    const modeUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_MODE_QUERY)}`;
+    const modeResponse = await fetch(modeUrl);
+    if (!modeResponse.ok) return meta;
+    const [modeRow] = (await modeResponse.json()) as Record<string, unknown>[];
+    const isBlitzMode = parseMaybeBool(modeRow?.blitz_mode_on);
+    if (isBlitzMode === true) meta.mode = "blitz";
+    if (isBlitzMode === false) meta.mode = "eternum";
+
+    const worldConfigQuery = meta.mode === "blitz" ? WORLD_CONFIG_BLITZ_QUERY : WORLD_CONFIG_ETERNUM_QUERY;
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(worldConfigQuery)}`;
     const response = await fetch(url);
     if (!response.ok) return meta;
     const [row] = (await response.json()) as Record<string, unknown>[];
     if (row) {
+      if (row.start_settling_at != null) meta.startSettlingAt = parseMaybeHexToNumber(row.start_settling_at) ?? null;
       if (row.start_main_at != null) meta.startMainAt = parseMaybeHexToNumber(row.start_main_at) ?? null;
       if (row.end_at != null) meta.endAt = parseMaybeHexToNumber(row.end_at);
-      if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
-      // Blitz registration config
-      if (row.entry_token_address != null) meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
-      if (row.fee_token != null) meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
-      if (row.fee_amount != null) meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
-      if (row.registration_start_at != null)
-        meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
-      if (row.registration_end_at != null)
-        meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
+
+      if (meta.startMainAt != null && meta.endAt != null && meta.endAt >= meta.startMainAt) {
+        meta.seasonDurationSeconds = meta.endAt - meta.startMainAt;
+      }
+
       if (row.mmr_enabled != null) {
         const mmrVal = parseMaybeHexToNumber(row.mmr_enabled);
         meta.mmrEnabled = mmrVal != null && mmrVal !== 0;
@@ -258,36 +363,99 @@ const fetchWorldConfigMeta = async (
         meta.devModeOn = devVal != null && devVal !== 0;
       }
 
-      const twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
+      if (meta.mode === "blitz") {
+        if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
+        if (row.registration_count_max != null)
+          meta.registrationCountMax = parseMaybeHexToNumber(row.registration_count_max);
+        if (row.entry_token_address != null) meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
+        if (row.fee_token != null) meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
+        if (row.fee_amount != null) meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
+        if (row.registration_start_at != null)
+          meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at) ?? null;
+        if (row.registration_end_at != null)
+          meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
 
-      // Calculate hyperstructures left from max_ring_count
-      const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
-      if (maxRingCount > 0) {
-        // Fetch created count from HyperstructureGlobals
-        try {
-          const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
-          const globalsResponse = await fetch(globalsUrl);
-          if (globalsResponse.ok) {
-            const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
-            const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount, twoPlayerMode);
-          } else {
-            // If no globals exist yet, all hyperstructures are available
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
+        meta.twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
+
+        // Calculate hyperstructures left from max_ring_count
+        const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
+        if (maxRingCount > 0) {
+          // Fetch created count from HyperstructureGlobals
+          try {
+            const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
+            const globalsResponse = await fetch(globalsUrl);
+            if (globalsResponse.ok) {
+              const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
+              const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
+              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(
+                maxRingCount,
+                createdCount,
+                meta.twoPlayerMode,
+              );
+            } else {
+              // If no globals exist yet, all hyperstructures are available
+              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, meta.twoPlayerMode);
+            }
+          } catch {
+            // If query fails, calculate based on zero created
+            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, meta.twoPlayerMode);
           }
-        } catch {
-          // If query fails, calculate based on zero created
-          meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, twoPlayerMode);
+        }
+      }
+
+      if (meta.mode === "eternum") {
+        if (row.settlement_base_distance != null) {
+          meta.settlementBaseDistance = parseMaybeHexToNumber(row.settlement_base_distance);
+        }
+        if (row.spires_layer_distance != null) {
+          meta.spiresLayerDistance = parseMaybeHexToNumber(row.spires_layer_distance);
+        }
+        if (row.spires_max_count != null) {
+          meta.spiresMaxCount = parseMaybeHexToNumber(row.spires_max_count);
+        }
+        if (row.spires_settled_count != null) {
+          meta.spiresSettledCount = parseMaybeHexToNumber(row.spires_settled_count);
+        }
+        if (row.settlement_layer_max != null) {
+          meta.settlementLayerMax = parseMaybeHexToNumber(row.settlement_layer_max);
+        }
+        if (row.settlement_layers_skipped != null) {
+          meta.settlementLayersSkipped = parseMaybeHexToNumber(row.settlement_layers_skipped);
+        }
+        if (row.season_pass_address != null) {
+          meta.seasonPassAddress = parseMaybeHexToAddress(row.season_pass_address);
+        }
+        if (row.village_pass_token_address != null) {
+          meta.villagePassAddress = parseMaybeHexToAddress(row.village_pass_token_address);
+        }
+        if (row.map_center_offset != null) {
+          meta.mapCenterOffset = parseMaybeHexToNumber(row.map_center_offset);
+        }
+        if (row.settled_players_count != null) {
+          meta.settledPlayersCount = parseMaybeHexToNumber(row.settled_players_count);
+        }
+        if (row.settled_realms_count != null) {
+          meta.settledRealmsCount = parseMaybeHexToNumber(row.settled_realms_count);
+        }
+        if (row.settled_villages_count != null) {
+          meta.settledVillagesCount = parseMaybeHexToNumber(row.settled_villages_count);
         }
       }
     }
 
     // Run optional side fetches in parallel.
     const sideFetches: Promise<void>[] = [];
-    if (playerAddress) {
+    if (playerAddress && meta.mode === "blitz") {
       sideFetches.push(
         fetchPlayerRegistration(toriiBaseUrl, playerAddress).then((isRegistered) => {
           meta.isPlayerRegistered = isRegistered;
+        }),
+      );
+    }
+    if (playerAddress && meta.mode === "eternum") {
+      sideFetches.push(
+        fetchPlayerHasSettledRealm(toriiBaseUrl, playerAddress).then((hasSettledRealm) => {
+          meta.hasPlayerSettledRealm = hasSettledRealm;
         }),
       );
     }

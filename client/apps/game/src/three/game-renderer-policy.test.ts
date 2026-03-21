@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveRendererEnvironmentPolicy,
+  resolveCapabilityAwareRendererEffectPlan,
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
+  resolveRendererEffectPlan,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
+import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
 describe("resolveLabelRenderIntervalMs", () => {
   it("returns close-view cadence for desktop", () => {
@@ -136,6 +140,7 @@ describe("resolvePostProcessingEffectPlan", () => {
       resolvePostProcessingEffectPlan({
         fxaa: true,
         bloom: false,
+        chromaticAberration: false,
         vignette: false,
       }),
     ).toEqual({
@@ -146,18 +151,481 @@ describe("resolvePostProcessingEffectPlan", () => {
     });
   });
 
-  it("enables chromatic aberration only when vignette is enabled", () => {
+  it("keeps chromatic aberration tied to its own quality toggle", () => {
     expect(
       resolvePostProcessingEffectPlan({
         fxaa: false,
         bloom: true,
-        vignette: true,
+        chromaticAberration: true,
+        vignette: false,
       }),
     ).toEqual({
       shouldEnableFXAA: false,
       shouldEnableBloom: true,
-      shouldEnableVignette: true,
+      shouldEnableVignette: false,
       shouldEnableChromaticAberration: true,
+    });
+  });
+});
+
+describe("resolveRendererEffectPlan", () => {
+  it("maps quality toggles into a backend-neutral effect policy", () => {
+    expect(
+      resolveRendererEffectPlan({
+        antiAlias: "fxaa",
+        bloomEnabled: true,
+        bloomIntensity: 0.35,
+        chromaticAberrationEnabled: false,
+        colorGrade: {
+          brightness: 0.92,
+          contrast: 1.08,
+          hue: 0.01,
+          saturation: 0.88,
+        },
+        toneMapping: {
+          exposure: 1.15,
+          mode: "aces-filmic",
+          whitePoint: 4.5,
+        },
+        vignette: {
+          darkness: 0.4,
+          enabled: false,
+          offset: 0.2,
+        },
+      }),
+    ).toEqual({
+      antiAlias: "fxaa",
+      bloom: {
+        enabled: true,
+        intensity: 0.35,
+      },
+      chromaticAberration: {
+        enabled: false,
+      },
+      colorGrade: {
+        brightness: 0.92,
+        contrast: 1.08,
+        hue: 0.01,
+        saturation: 0.88,
+      },
+      toneMapping: {
+        exposure: 1.15,
+        mode: "aces-filmic",
+        whitePoint: 4.5,
+      },
+      vignette: {
+        darkness: 0.4,
+        enabled: false,
+        offset: 0.2,
+      },
+    });
+  });
+
+  it("disables optional effects cleanly", () => {
+    expect(
+      resolveRendererEffectPlan({
+        antiAlias: "none",
+        bloomEnabled: false,
+        bloomIntensity: 0.7,
+        chromaticAberrationEnabled: true,
+        colorGrade: {
+          brightness: 1,
+          contrast: 1,
+          hue: 0,
+          saturation: 1,
+        },
+        toneMapping: {
+          exposure: 0.95,
+          mode: "reinhard",
+          whitePoint: 3,
+        },
+        vignette: {
+          darkness: 0.65,
+          enabled: true,
+          offset: 0.35,
+        },
+      }),
+    ).toEqual({
+      antiAlias: "none",
+      bloom: {
+        enabled: false,
+        intensity: 0.7,
+      },
+      chromaticAberration: {
+        enabled: true,
+      },
+      colorGrade: {
+        brightness: 1,
+        contrast: 1,
+        hue: 0,
+        saturation: 1,
+      },
+      toneMapping: {
+        exposure: 0.95,
+        mode: "reinhard",
+        whitePoint: 3,
+      },
+      vignette: {
+        darkness: 0.65,
+        enabled: true,
+        offset: 0.35,
+      },
+    });
+  });
+});
+
+describe("resolveCapabilityAwareRendererEffectPlan", () => {
+  it("degrades tone-mapping explicitly when the backend cannot honor parity controls", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "none",
+        bloomEnabled: false,
+        bloomIntensity: 0,
+        capabilities: createRendererBackendCapabilities(),
+        chromaticAberrationEnabled: false,
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        disabledReasons: {},
+        toneMapping: {
+          exposure: 1.2,
+          mode: "cineon",
+          whitePoint: 2,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      }),
+    ).toEqual({
+      degradations: [
+        {
+          detail: "Using backend default tone mapping because the active renderer does not expose parity controls",
+          feature: "toneMappingControl",
+          reason: "unsupported-backend",
+        },
+      ],
+      plan: {
+        antiAlias: "none",
+        bloom: {
+          enabled: false,
+          intensity: 0,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 0.8,
+          mode: "aces-filmic",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      },
+    });
+  });
+
+  it("turns unsupported optional effects into explicit degradations instead of active flags", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "fxaa",
+        bloomEnabled: true,
+        bloomIntensity: 0.35,
+        capabilities: createRendererBackendCapabilities({
+          supportsToneMappingControl: true,
+        }),
+        chromaticAberrationEnabled: true,
+        colorGrade: {
+          brightness: 0,
+          contrast: 0.1,
+          hue: 0,
+          saturation: 0.2,
+        },
+        disabledReasons: {},
+        toneMapping: {
+          exposure: 1.15,
+          mode: "aces-filmic",
+          whitePoint: 4.5,
+        },
+        vignette: {
+          darkness: 0.4,
+          enabled: true,
+          offset: 0.2,
+        },
+      }),
+    ).toEqual({
+      degradations: [
+        { feature: "colorGrade", reason: "unsupported-backend" },
+        { feature: "bloom", reason: "unsupported-backend" },
+        { feature: "vignette", reason: "unsupported-backend" },
+        { feature: "chromaticAberration", reason: "unsupported-backend" },
+      ],
+      plan: {
+        antiAlias: "fxaa",
+        bloom: {
+          enabled: false,
+          intensity: 0.35,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 1.15,
+          mode: "aces-filmic",
+          whitePoint: 4.5,
+        },
+        vignette: {
+          darkness: 0.4,
+          enabled: false,
+          offset: 0.2,
+        },
+      },
+    });
+  });
+
+  it("records when optional effects were disabled by policy rather than by backend support", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "none",
+        bloomEnabled: false,
+        bloomIntensity: 0.25,
+        capabilities: createRendererBackendCapabilities({
+          supportsBloom: true,
+          supportsChromaticAberration: true,
+          supportsToneMappingControl: true,
+          supportsVignette: true,
+        }),
+        chromaticAberrationEnabled: false,
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        disabledReasons: {
+          bloom: "disabled-by-quality",
+          chromaticAberration: "disabled-by-user",
+        },
+        toneMapping: {
+          exposure: 1,
+          mode: "linear",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      }),
+    ).toEqual({
+      degradations: [
+        { feature: "bloom", reason: "disabled-by-quality" },
+        { feature: "chromaticAberration", reason: "disabled-by-user" },
+      ],
+      plan: {
+        antiAlias: "none",
+        bloom: {
+          enabled: false,
+          intensity: 0.25,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 1,
+          mode: "linear",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      },
+    });
+  });
+
+  it("keeps bloom active while explicitly degrading the remaining unsupported optional effects", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "fxaa",
+        bloomEnabled: true,
+        bloomIntensity: 0.4,
+        capabilities: createRendererBackendCapabilities({
+          supportsBloom: true,
+          supportsToneMappingControl: true,
+        }),
+        chromaticAberrationEnabled: true,
+        colorGrade: {
+          brightness: 0.05,
+          contrast: 0.1,
+          hue: 0,
+          saturation: 0.2,
+        },
+        disabledReasons: {},
+        toneMapping: {
+          exposure: 1.1,
+          mode: "cineon",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0.35,
+          enabled: true,
+          offset: 0.2,
+        },
+      }),
+    ).toEqual({
+      degradations: [
+        { feature: "colorGrade", reason: "unsupported-backend" },
+        { feature: "vignette", reason: "unsupported-backend" },
+        { feature: "chromaticAberration", reason: "unsupported-backend" },
+      ],
+      plan: {
+        antiAlias: "fxaa",
+        bloom: {
+          enabled: true,
+          intensity: 0.4,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 1.1,
+          mode: "cineon",
+          whitePoint: 1,
+        },
+        vignette: {
+          darkness: 0.35,
+          enabled: false,
+          offset: 0.2,
+        },
+      },
+    });
+  });
+
+  it("does not degrade tone mapping when supportsToneMappingControl is true", () => {
+    expect(
+      resolveCapabilityAwareRendererEffectPlan({
+        antiAlias: "none",
+        bloomEnabled: false,
+        bloomIntensity: 0,
+        capabilities: createRendererBackendCapabilities({
+          supportsToneMappingControl: true,
+        }),
+        chromaticAberrationEnabled: false,
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        disabledReasons: {},
+        toneMapping: {
+          exposure: 1.2,
+          mode: "cineon",
+          whitePoint: 2,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      }),
+    ).toEqual({
+      degradations: [],
+      plan: {
+        antiAlias: "none",
+        bloom: {
+          enabled: false,
+          intensity: 0,
+        },
+        chromaticAberration: {
+          enabled: false,
+        },
+        colorGrade: {
+          brightness: 0,
+          contrast: 0,
+          hue: 0,
+          saturation: 0,
+        },
+        toneMapping: {
+          exposure: 1.2,
+          mode: "cineon",
+          whitePoint: 2,
+        },
+        vignette: {
+          darkness: 0,
+          enabled: false,
+          offset: 0,
+        },
+      },
+    });
+  });
+});
+
+describe("resolveRendererEnvironmentPolicy", () => {
+  it("applies environment IBL with the requested intensity when the backend supports it", () => {
+    expect(
+      resolveRendererEnvironmentPolicy({
+        capabilities: createRendererBackendCapabilities({
+          supportsEnvironmentIbl: true,
+        }),
+        intensity: 0.55,
+      }),
+    ).toEqual({
+      degradations: [],
+      intensity: 0.55,
+      shouldApplyEnvironment: true,
+    });
+  });
+
+  it("reports an explicit fallback lighting degradation when environment IBL is unavailable", () => {
+    expect(
+      resolveRendererEnvironmentPolicy({
+        capabilities: createRendererBackendCapabilities(),
+        intensity: 0.45,
+      }),
+    ).toEqual({
+      degradations: [
+        {
+          detail: "Using scene key/fill fallback lighting policy at target environment intensity 0.45",
+          feature: "environmentIbl",
+          reason: "unsupported-backend",
+        },
+      ],
+      intensity: 0.45,
+      shouldApplyEnvironment: false,
     });
   });
 });

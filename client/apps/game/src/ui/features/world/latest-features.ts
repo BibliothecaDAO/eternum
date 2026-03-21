@@ -9,6 +9,160 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-21",
+    title: "Smarter Factory Recovery",
+    description:
+      "Factory V2 now waits to show Continue until a launch has genuinely gone stale, so the recovery button no longer flashes during normal setup step transitions.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Dev Panel Polish",
+    description:
+      "Factory V2 developer tools now put contract lookup first, keep factory config multicalls much more compact, and prompt for a wallet network switch before sending config on the wrong chain.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Config Multicall",
+    description:
+      "Factory V2 now hides a developer factory-config panel that lets you batch selected set_factory calls into one wallet multicall, so advanced setup changes are faster and easier to manage.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Mainnet Launch Recovery",
+    description:
+      "Factory V2 now supports mainnet launch workflows again and automatically turns on gas coverage after mainnet game setup, so new worlds can come online without a separate paymaster sync.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Dev Contract Lookup",
+    description:
+      "Factory V2 now hides a developer lookup panel that can resolve prize and custom manifest contract addresses directly from the factory indexer, without waiting for a game indexer to come online.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-20",
+    title: "Pending Launch Reload Fix",
+    description:
+      "Factory V2 now caches a launch as soon as you start it, so reloading the page still keeps that game visible while it is coming online.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-20",
+    title: "Blitz Reward Preview",
+    description:
+      "Factory V2 now shows the active Blitz exploration reward table for the selected duration, so you can see the exact reward mix before you launch.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-20",
+    title: "Factory V2 Launch Center",
+    description:
+      "The landing page now has a full Factory V2 flow for starting a game, checking progress, and recovering pending launches, with Blitz opening first when Factory is idle, calmer progress states, and a layout that holds up much better on mobile.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-19",
+    title: "Stable Biome Chunk Refresh",
+    description:
+      "Fixed world map biome flicker during chunk refreshes and rapid traversal, so terrain updates stay visually stable while nearby tiles and managers catch up.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "FP Wallet Chip Removed",
+    description:
+      "Removed the experimental FP Wallet chip from the top header to keep entity and resource UI focused on core in-panel faith metrics.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Faith Panel Overflow Fix",
+    description:
+      "Adjusted Wonder faith cards in compact entity details so all key stats remain visible without clipping, and enabled scrolling in the full Faith tab when content is taller than the panel.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Wonder Faith Detail Views",
+    description:
+      "Wonders now have a dedicated faith detail view from both map tiles and the Faith leaderboard, with ownership, FP rates, and follower details in a dedicated modal panel.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-19",
+    title: "Auto World Mode Detection",
+    description:
+      "Fixed game startup so Blitz and Eternum mode are detected from each world's onchain config instead of requiring a forced environment mode flag.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Stable Leaderboard Refresh",
+    description:
+      "Fixed in-game leaderboard refresh behavior so standings no longer collapse and redraw during periodic sync updates.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-19",
+    title: "Faith Total FP Estimation",
+    description:
+      "Faith leaderboard Total FP now includes estimated unclaimed points from each Wonder's current FP/sec, so rankings reflect live devotion growth between contract claims.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-18",
+    title: "Wonder Devotion Actions",
+    description:
+      "Realm and Village panels now let you view current faith allegiance and devote to a Wonder directly in-game, including wonder FP/sec and follower stats before confirming.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-18",
+    title: "Faith Wonder Leaderboard Tab",
+    description:
+      "Added a new Faith tab to the in-game leaderboard that ranks all Wonders by accumulated Faith Points, including FP/sec, follower counts, and owner details.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-19",
+    title: "Blitz Research Lab Preview Fix",
+    description:
+      "Fixed Blitz construction previews so the Research Lab no longer appears in building options for Blitz games.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-18",
+    title: "1v1 Capacity Display Fix",
+    description:
+      "Blitz 1v1 game cards and registration checks now use the true two-player cap, so the lobby count and Register availability stay aligned with onchain settlement limits.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-17",
+    title: "Spire and Mine Tile Actions",
+    description:
+      "Selected tile interactions now handle Spires with a direct Ethereal Layer travel action, show Holy Site devotion placeholders, and keep mine naming consistent across Blitz and Eternum views.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-17",
+    title: "Eternum Settlement Card Stats",
+    description:
+      "Eternum game cards now show settled-player counts plus settled realm and village totals, so card stats stay meaningful for worlds that do not use player registration.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-17",
+    title: "Infinite Season Timer Fix",
+    description:
+      "Fixed infinite sandbox worlds so the header no longer shows a 0h end countdown or urgent red flashing, and the End season leaderboard action is now hidden when a season has no end timestamp.",
+    type: "fix",
+  },
+  {
     date: "2026-03-06",
     title: "Tournament Leaderboard Table Cleanup",
     description:

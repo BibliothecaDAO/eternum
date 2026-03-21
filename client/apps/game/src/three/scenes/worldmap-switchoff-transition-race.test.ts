@@ -52,9 +52,12 @@ describe("worldmap switch-off transition race hardening", () => {
     });
 
     await flushMicrotasks(2);
-    fixture.gridUpdate.resolveNext();
     fixture.tileFetch.resolveNext(true);
     fixture.boundsSwitch.resolveNext();
+    fixture.structureHydration.resolveNext();
+    fixture.assetPrewarm.resolveNext();
+    await flushMicrotasks(2);
+    fixture.terrainPreparation.resolveNext({ chunkKey: "24,24" });
 
     const result = await switchPromise;
 
@@ -73,5 +76,12 @@ describe("worldmap switch-off transition race hardening", () => {
     const source = readWorldmapSource();
 
     expect(source).toMatch(/invalidateWorldmapSwitchOffTransitionState/);
+  });
+
+  it("routes shared lifecycle cleanup through WarpTravel", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(/extends WarpTravel/);
+    expect(source).toMatch(/runWarpTravelSwitchOffLifecycle\(\)/);
   });
 });

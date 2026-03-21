@@ -20,7 +20,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -33,7 +33,7 @@ export const TopHeader = memo(() => {
     account: { account },
   } = useDojo();
 
-  const { isMapView } = useQuery();
+  const { handleUrlChange } = useQuery();
 
   const playClick = useUISound("ui.click");
   const playHover = useUISound("ui.hover");
@@ -65,8 +65,30 @@ export const TopHeader = memo(() => {
   const selectedStructurePosition = useMemo(() => {
     return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
   }, [selectedStructure]);
+  const [currentPathname, setCurrentPathname] = useState(() =>
+    typeof window !== "undefined" ? window.location.pathname : "/play/hex",
+  );
 
   const goToStructure = useGoToStructure(setup);
+  const showFastTravelLayerToggle = mode.id === "eternum";
+  const isFastTravelView = currentPathname.includes("/travel");
+  const isLocalView = currentPathname.includes("/hex");
+  const isWorldView = !isLocalView;
+
+  useEffect(() => {
+    const updatePathname = () => {
+      setCurrentPathname(window.location.pathname);
+    };
+
+    updatePathname();
+    window.addEventListener("urlChanged", updatePathname);
+    window.addEventListener("popstate", updatePathname);
+
+    return () => {
+      window.removeEventListener("urlChanged", updatePathname);
+      window.removeEventListener("popstate", updatePathname);
+    };
+  }, []);
 
   const normalizeAddress = useCallback((value: string) => value.trim().toLowerCase(), []);
 
@@ -108,6 +130,32 @@ export const TopHeader = memo(() => {
     );
   }, [account.address, leaderboardEntries, normalizeAddress, playerEntries]);
 
+  const navigateToFastTravelLayer = useCallback(() => {
+    playClick();
+
+    if (isFastTravelView) {
+      goToStructure(
+        lastControlledStructureEntityId || structureEntityId,
+        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+        true,
+      );
+      return;
+    }
+
+    const col = selectedStructurePosition.x;
+    const row = selectedStructurePosition.y;
+    handleUrlChange(`/play/travel?col=${col}&row=${row}`);
+  }, [
+    goToStructure,
+    handleUrlChange,
+    isFastTravelView,
+    lastControlledStructureEntityId,
+    playClick,
+    selectedStructurePosition.x,
+    selectedStructurePosition.y,
+    structureEntityId,
+  ]);
+
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
       <motion.div
@@ -138,8 +186,6 @@ export const TopHeader = memo(() => {
               )}
             </div>
 
-            <div className="h-6 w-px bg-gold/20" />
-
             <div className="flex flex-shrink-0 flex-nowrap items-center gap-3 text-xs md:text-base">
               <div className="cycle-selector flex justify-center md:justify-start gap-2 whitespace-nowrap">
                 <TickProgress />
@@ -156,7 +202,7 @@ export const TopHeader = memo(() => {
                     );
                   }}
                   onMouseEnter={() => playHover()}
-                  className={cn("text-xs", !isMapView && "text-gold font-bold")}
+                  className={cn("text-xs", isLocalView && "text-gold font-bold")}
                 >
                   Local
                 </span>
@@ -164,7 +210,7 @@ export const TopHeader = memo(() => {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={isMapView}
+                    checked={isWorldView}
                     onChange={(e) => {
                       const checked = e.target.checked;
                       playClick();
@@ -188,10 +234,26 @@ export const TopHeader = memo(() => {
                     );
                   }}
                   onMouseEnter={() => playHover()}
-                  className={cn("text-xs", isMapView && "text-gold font-bold")}
+                  className={cn("text-xs", isWorldView && "text-gold font-bold")}
                 >
                   World
                 </span>
+                {showFastTravelLayerToggle && (
+                  <button
+                    type="button"
+                    onClick={navigateToFastTravelLayer}
+                    onMouseEnter={() => playHover()}
+                    className={cn(
+                      "rounded-md border px-2 py-0.5 text-[11px] transition-all duration-200",
+                      isFastTravelView
+                        ? "border-cyan-300 bg-cyan-400/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
+                        : "border-gold/25 bg-gold/10 text-gold/75 hover:border-gold/40 hover:text-gold",
+                    )}
+                    title={isFastTravelView ? "Return to World Layer" : "Go to Ethereal Layer"}
+                  >
+                    Ethereal
+                  </button>
+                )}
                 <div className="relative flex gap-2">
                   <button
                     type="button"

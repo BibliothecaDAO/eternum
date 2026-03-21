@@ -1,5 +1,9 @@
 import { BiomeType, BuildingType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 
+// `@bibliothecadao/types` dist currently omits `StructureType.BitcoinMine` from enum typings.
+// Keep support for chain value `8` without depending on the missing enum member.
+const BITCOIN_MINE_STRUCTURE_TYPE = 8 as StructureType;
+
 export enum BiomeTileIndex {
   Outline = 0,
   Beach = 1,
@@ -63,20 +67,26 @@ export enum BuildingTileIndex {
   WorkersHut = 18,
 }
 
-export const structureTypeToBuildingTileIndex: Record<StructureType, BuildingTileIndex> = {
+export const structureTypeToBuildingTileIndex: Partial<Record<StructureType, BuildingTileIndex>> = {
   [StructureType.Bank]: BuildingTileIndex.Market,
   [StructureType.Realm]: BuildingTileIndex.Castle0,
   [StructureType.FragmentMine]: BuildingTileIndex.EssenceRift,
   [StructureType.Hyperstructure]: BuildingTileIndex.Hyperstructure,
   [StructureType.Village]: BuildingTileIndex.Camp,
+  [StructureType.HolySite]: BuildingTileIndex.Camp,
+  [StructureType.Camp]: BuildingTileIndex.Camp,
+  [BITCOIN_MINE_STRUCTURE_TYPE]: BuildingTileIndex.EssenceRift,
 };
 
-export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
+export const structureTypeToBuildingType: Partial<Record<StructureType, BuildingType>> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,
   [StructureType.Realm]: BuildingType.ResourceLabor,
   [StructureType.FragmentMine]: BuildingType.ResourceAncientFragment,
   [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
   [StructureType.Village]: BuildingType.ResourceLabor,
+  [StructureType.HolySite]: BuildingType.ResourceLabor,
+  [StructureType.Camp]: BuildingType.ResourceLabor,
+  [BITCOIN_MINE_STRUCTURE_TYPE]: BuildingType.ResourceLabor,
 };
 
 export function getStructureTileIndex(structureType: StructureType, level?: number): BuildingTileIndex {
@@ -155,6 +165,7 @@ export const BuildingTypeToTileIndex: Record<BuildingType, BuildingTileIndex> = 
   [BuildingType.ResourceWheat]: BuildingTileIndex.Farm,
   [BuildingType.ResourceFish]: BuildingTileIndex.FishingVillage,
   [BuildingType.ResourceEssence]: BuildingTileIndex.Mine,
+  [BuildingType.ResourceResearch]: BuildingTileIndex.Mine,
 };
 
 export enum UnitTileIndex {

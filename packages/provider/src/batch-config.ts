@@ -141,6 +141,8 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // Guilds (creation)
   [TransactionType.CREATE_GUILD]: TransactionCostCategory.MEDIUM,
   [TransactionType.JOIN_GUILD]: TransactionCostCategory.MEDIUM,
+  [TransactionType.PLEDGE_FAITH]: TransactionCostCategory.MEDIUM,
+  [TransactionType.REMOVE_FAITH]: TransactionCostCategory.MEDIUM,
 
   // ============================================
   // LOW COST (10) - Simple State Changes
@@ -177,6 +179,8 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.ALLOCATE_SHARES]: TransactionCostCategory.LOW,
   [TransactionType.CLAIM_WONDER_PRODUCTION_BONUS]: TransactionCostCategory.LOW,
   [TransactionType.CONTRIBUTE_TO_CONSTRUCTION]: TransactionCostCategory.LOW,
+  [TransactionType.UPDATE_WONDER_OWNERSHIP]: TransactionCostCategory.LOW,
+  [TransactionType.UPDATE_STRUCTURE_OWNERSHIP]: TransactionCostCategory.LOW,
 
   // Approvals
   [TransactionType.ATTACH_LORDS]: TransactionCostCategory.LOW,
@@ -246,6 +250,7 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.SET_STAMINA_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_STAMINA_REFILL_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_SETTLEMENT_CONFIG]: TransactionCostCategory.LOW,
+  [TransactionType.SET_BLITZ_EXPLORATION_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_BLITZ_REGISTRATION_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_QUEST_CONFIG]: TransactionCostCategory.LOW,
 };

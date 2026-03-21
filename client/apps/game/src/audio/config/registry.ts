@@ -849,6 +849,18 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     volume: 0.4,
   },
 
+  // Birds - Night variations
+  "ambient.birds.night.1": {
+    id: "ambient.birds.night.1",
+    url: "/sound/ambient/birds_night_1.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.4,
+  },
+
   // Crickets - Night variations
   "ambient.crickets.night.1": {
     id: "ambient.crickets.night.1",
@@ -903,16 +915,6 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     spatial: false,
     loop: true,
     volume: 0.25,
-  },
-  "ambient.rain.light": {
-    id: "ambient.rain.light",
-    url: "/sound/ambient/rain_heavy.mp3", // Using rain_heavy as placeholder
-    category: AudioCategory.ENVIRONMENT,
-    priority: 6,
-    poolSize: 1,
-    spatial: false,
-    loop: true,
-    volume: 0.3, // Reduced volume to simulate lighter rain
   },
   "ambient.rain.heavy": {
     id: "ambient.rain.heavy",

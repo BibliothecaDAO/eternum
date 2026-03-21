@@ -4,7 +4,7 @@ use crate::alias::ID;
 use crate::constants::DAYDREAMS_AGENT_ID;
 use crate::models::map::{Tile, TileOccupier};
 use crate::models::map2::TileOpt;
-use crate::models::position::{Coord, CoordTrait};
+use crate::models::position::{Coord, CoordTrait, DirectionTrait};
 use crate::models::troop::{TroopTier, TroopType};
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::utils::map::biomes::Biome;
@@ -187,6 +187,22 @@ pub impl IMapImpl of IMapTrait {
 
     fn unoccupy(ref world: WorldStorage, ref tile: Tile) {
         Self::occupy(ref world, ref tile, TileOccupier::None, 0);
+    }
+
+    /// Check if a coordinate is adjacent to a spire on the same map layer.
+    /// Used for cross-layer battle validation - battles between different map layers
+    /// are only allowed when at least one combatant is adjacent to a spire.
+    fn is_adjacent_to_spire(ref world: WorldStorage, coord: Coord) -> bool {
+        let directions = DirectionTrait::all();
+        for direction in directions {
+            let neighbor_coord = coord.neighbor(direction);
+            let tile_opt: TileOpt = world.read_model((coord.alt, neighbor_coord.x, neighbor_coord.y));
+            let tile: Tile = tile_opt.into();
+            if tile.occupier_type == TileOccupier::Spire.into() {
+                return true;
+            }
+        }
+        false
     }
 }
 

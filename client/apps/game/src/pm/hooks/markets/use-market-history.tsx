@@ -49,7 +49,7 @@ const compactLabel = (value: string) => {
 
 export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
   const { sdk } = useDojoSdk();
-  const { findController, controllers } = useControllers();
+  const { findController } = useControllers();
 
   const outcomesText = useMemo(() => market.getMarketTextOutcomes(), [market]);
   const collateralToken = market.collateralToken as RegisteredToken;
@@ -133,7 +133,7 @@ export const useMarketHistory = (market: MarketClass, refreshKey = 0) => {
         ];
       }),
     );
-  }, [market.outcome_slot_count, outcomesText, findController, controllers]);
+  }, [market.outcome_slot_count, outcomesText, findController]);
 
   // Pre-compute entity IDs for each outcome slot
   const numeratorsEntityIds = useMemo(

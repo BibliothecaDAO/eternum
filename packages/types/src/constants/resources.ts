@@ -1,5 +1,5 @@
 import { Resources } from "../types";
-import { ResourcesIds } from "./index";
+import { ResourcesIds } from "./resource-ids";
 
 export const STEALABLE_RESOURCES = [
   ResourcesIds.Lords,

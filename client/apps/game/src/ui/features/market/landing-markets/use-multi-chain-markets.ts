@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { CairoCustomEnum } from "starknet";
 import { useMemo } from "react";
 
-import type { RegisteredToken } from "@/pm/bindings";
+import type { ConditionResolution, RegisteredToken } from "@/pm/bindings";
 import { MarketClass } from "@/pm/class";
 import { MarketStatusFilter, MarketTypeFilter, getPmSqlApiForUrl, type MarketWithDetailsRow } from "@/pm/hooks/queries";
 import { useConfig } from "@/pm/providers";
@@ -62,6 +62,25 @@ const toErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === "string") return error;
   return "Unknown data source error";
+};
+
+const normalizeHexAddress = (value: unknown): string | null => {
+  if (value == null) return null;
+
+  try {
+    const normalized = `0x${BigInt(String(value)).toString(16)}`.toLowerCase();
+    return normalized;
+  } catch {
+    return null;
+  }
+};
+
+const getMarketPrizeAddress = (market: MarketClass): string | null => {
+  if (!Array.isArray(market.oracle_params) || market.oracle_params.length < 2) {
+    return null;
+  }
+
+  return normalizeHexAddress(market.oracle_params[1]);
 };
 
 const getSelectedChains = (chainFilter: MarketChainFilter): MarketDataChain[] =>
@@ -173,12 +192,34 @@ const transformToMarketClass = (
     value: BigInt(entry.value),
   }));
 
+  const conditionResolution = (() => {
+    if (!row.resolution_payout_numerators) return undefined;
+
+    try {
+      const rawPayouts = JSON.parse(row.resolution_payout_numerators);
+      const payoutNumerators = Array.isArray(rawPayouts)
+        ? rawPayouts.map((value) => BigInt(value as string | number))
+        : [];
+
+      return {
+        condition_id: row.condition_id,
+        oracle: row.oracle,
+        question_id: row.question_id,
+        outcome_slot_count: BigInt(row.outcome_slot_count),
+        payout_numerators: payoutNumerators,
+      } as unknown as ConditionResolution;
+    } catch {
+      return undefined;
+    }
+  })();
+
   return new MarketClass({
     market: market as never,
     marketCreated: marketCreated as never,
     collateralToken,
     vaultDenominator: vaultDenominator as never,
     vaultNumerators: vaultNumerators as never[],
+    conditionResolution,
   });
 };
 
@@ -263,8 +304,20 @@ const fetchChainMarkets = async ({
     .filter((item): item is EnrichedMarket => Boolean(item));
 };
 
-const mergeAndSortByNewest = (markets: EnrichedMarket[]) =>
+const getMarketStatusPriority = (market: MarketClass) => {
+  if (!market.isResolved() && !market.isEnded()) return 0; // Live / open trading.
+  if (!market.isResolved() && !market.isResolvable()) return 1; // Trading ended, awaiting resolve window.
+  if (!market.isResolved() && market.isResolvable()) return 2; // Awaiting resolution.
+  return 3; // Resolved.
+};
+
+const mergeAndSortMarkets = (markets: EnrichedMarket[], status: MarketStatusKey) =>
   markets.toSorted((a, b) => {
+    if (status === "all") {
+      const statusDifference = getMarketStatusPriority(a.market) - getMarketStatusPriority(b.market);
+      if (statusDifference !== 0) return statusDifference;
+    }
+
     const createdAtDifference = Number(b.market.created_at ?? 0) - Number(a.market.created_at ?? 0);
     if (createdAtDifference !== 0) return createdAtDifference;
     if (a.volumeRaw !== b.volumeRaw) return a.volumeRaw > b.volumeRaw ? -1 : 1;
@@ -355,22 +408,37 @@ export function useMultiChainMarkets({
   chainFilter,
   limit,
   offset,
+  blockedOracleAddresses = [],
 }: {
   status: MarketStatusKey;
   chainFilter: MarketChainFilter;
   limit: number;
   offset: number;
+  blockedOracleAddresses?: string[];
 }) {
   const { getRegisteredToken } = useConfig();
   const queryClient = useQueryClient();
   const selectedChains = useMemo(() => getSelectedChains(chainFilter), [chainFilter]);
+  const blockedOracleAddressesKey = useMemo(
+    () =>
+      blockedOracleAddresses
+        .map((address) => address.toLowerCase())
+        .toSorted()
+        .join(","),
+    [blockedOracleAddresses],
+  );
 
   const query = useQuery({
-    queryKey: ["pm", "multi-chain", "markets", status, chainFilter],
+    queryKey: ["pm", "multi-chain", "markets", status, chainFilter, blockedOracleAddressesKey],
     queryFn: async () => {
       const now = Math.ceil(Date.now() / 1000);
       const sourceStatus = createEmptySourceStatus(selectedChains);
       const statusFilter = STATUS_TO_FILTER[status];
+      const blockedOracleSet = new Set(
+        blockedOracleAddresses
+          .map((address) => normalizeHexAddress(address))
+          .filter((address): address is string => !!address),
+      );
 
       const results = await Promise.allSettled(
         selectedChains.map((chain) =>
@@ -395,8 +463,25 @@ export function useMultiChainMarkets({
         sourceStatus[chain] = { ok: false, error: toErrorMessage(result.reason) };
       });
 
+      const filteredMarkets =
+        blockedOracleSet.size === 0
+          ? merged
+          : merged.filter((entry) => {
+              const oracle = normalizeHexAddress(entry.market.oracle);
+              if (oracle && blockedOracleSet.has(oracle)) {
+                return false;
+              }
+
+              const marketPrizeAddress = getMarketPrizeAddress(entry.market);
+              if (marketPrizeAddress && blockedOracleSet.has(marketPrizeAddress)) {
+                return false;
+              }
+
+              return true;
+            });
+
       return {
-        markets: mergeAndSortByNewest(merged),
+        markets: mergeAndSortMarkets(filteredMarkets, status),
         sourceStatus,
       };
     },

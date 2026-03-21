@@ -64,6 +64,11 @@ function getChestEpoch(chest: MergedNftData): ChestEpoch {
   return "blitz-rewards-s0";
 }
 
+function getChestTypeLabel(epoch: ChestEpoch): string {
+  if (epoch === "eternum-rewards-s1") return "Eternum Rewards Chest (S1)";
+  return "Blitz Rewards Chest (S0)";
+}
+
 interface ChestOpeningExperienceProps {
   /** Called when experience is closed */
   onClose?: () => void;
@@ -260,6 +265,7 @@ export function ChestOpeningExperience({
         <RevealStage
           assets={revealedAssets}
           chestRarity={chestRarity}
+          chestTypeLabel={getChestTypeLabel(flowState.selectedChestEpoch)}
           onComplete={handleRevealComplete}
           showContent={true}
           onClose={handleClose}

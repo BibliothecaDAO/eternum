@@ -40,6 +40,7 @@ const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
   [ResourcesIds.PaladinT3]: "resource.collect.stone",
   [ResourcesIds.Wheat]: "resource.collect.wheat",
   [ResourcesIds.Fish]: "resource.collect.fish",
+  [ResourcesIds.Research]: "resource.collect.diamonds",
   [ResourcesIds.Lords]: "resource.collect.lords",
   [ResourcesIds.Essence]: "resource.collect.diamonds",
   [ResourcesIds.StaminaRelic1]: "relic.chest",
@@ -67,19 +68,6 @@ export const getResourceSoundId = (resourceId?: ResourcesIds): string => {
     return DEFAULT_RESOURCE_SOUND_ID;
   }
   return RESOURCE_SOUND_MAP[resourceId] ?? DEFAULT_RESOURCE_SOUND_ID;
-};
-
-/**
- * @deprecated Use AudioManager.getInstance().play() directly. This function bypasses the audio system.
- */
-const playSound = (sound: string, hasSound: boolean, volume: number) => {
-  const audio = new Audio("/sound/" + sound);
-  if (!hasSound) {
-    audio.volume = 0;
-  } else {
-    audio.volume = volume / 100;
-  }
-  audio.play();
 };
 
 const BUILDING_SOUNDS: Partial<Record<BuildingType, string>> = {

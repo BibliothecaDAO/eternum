@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import type { ChainType } from "../utils/manifest-loader";
 import {
+  checkBanksExist as checkBanksExistService,
   checkIndexerExists as checkIndexerExistsService,
   getWorldDeployedAddress as getWorldDeployedAddressService,
 } from "../services/factory-indexer";
@@ -22,32 +23,44 @@ export const useFactoryAdmin = (chain: ChainType) => {
     return checkIndexerExistsService(worldName);
   }, []);
 
+  const checkBanksExist = useCallback(async (worldName: string, expectedCount: number) => {
+    return checkBanksExistService(worldName, expectedCount);
+  }, []);
+
   const refreshStatuses = useCallback(
-    async (worldNames: string[]) => {
+    async (worldNames: string[], opts?: { checkBanks?: boolean; bankCount?: number }) => {
       const statusPromises = worldNames.map(async (worldName) => {
         const [indexerExists, deployedAddress] = await Promise.all([
           checkIndexerExists(worldName),
           getWorldDeployedAddressLocal(worldName),
         ]);
-        return { worldName, indexerExists, isDeployed: !!deployedAddress, deployedAddress };
+        // Only check banks if requested and indexer is available
+        let banksExist = false;
+        if (opts?.checkBanks && indexerExists) {
+          banksExist = await checkBanksExist(worldName, opts.bankCount ?? 6);
+        }
+        return { worldName, indexerExists, isDeployed: !!deployedAddress, deployedAddress, banksExist };
       });
 
       const results = await Promise.all(statusPromises);
       const indexerStatusMap: Record<string, boolean> = {};
       const deployedStatusMap: Record<string, boolean> = {};
-      results.forEach(({ worldName, indexerExists, isDeployed, deployedAddress }) => {
+      const bankStatusMap: Record<string, boolean> = {};
+      results.forEach(({ worldName, indexerExists, isDeployed, deployedAddress, banksExist }) => {
         indexerStatusMap[worldName] = indexerExists;
         deployedStatusMap[worldName] = isDeployed;
+        bankStatusMap[worldName] = banksExist;
         if (deployedAddress) cacheDeployedAddress(worldName, deployedAddress);
       });
-      return { indexerStatusMap, deployedStatusMap };
+      return { indexerStatusMap, deployedStatusMap, bankStatusMap };
     },
-    [getWorldDeployedAddressLocal, checkIndexerExists],
+    [getWorldDeployedAddressLocal, checkIndexerExists, checkBanksExist],
   );
 
   return {
     getWorldDeployedAddressLocal,
     checkIndexerExists,
+    checkBanksExist,
     refreshStatuses,
   };
 };

@@ -1,3 +1,10 @@
+pub mod artificer {
+    pub mod contracts;
+
+    #[cfg(test)]
+    mod tests;
+}
+
 pub mod config {
     pub mod contracts;
     #[cfg(test)]
@@ -91,10 +98,14 @@ pub mod season {
 }
 
 pub mod utils {
+    pub mod bitcoin_mine;
+    pub mod blitz_exploration;
     pub mod bridge;
+    pub mod camp;
     pub mod distance;
     pub mod donkey;
     pub mod erc20;
+    pub mod holysite;
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
@@ -132,4 +143,22 @@ pub mod mmr {
     mod tests {
         mod test_mmr_systems;
     }
+}
+
+pub mod faith {
+    pub mod contracts;
+    pub mod prize_contracts;
+    #[cfg(test)]
+    mod tests;
+}
+
+pub mod bitcoin_mine {
+    pub mod contracts;
+    pub mod discovery_systems;
+    #[cfg(test)]
+    mod tests;
+}
+
+pub mod spire {
+    pub mod contracts;
 }

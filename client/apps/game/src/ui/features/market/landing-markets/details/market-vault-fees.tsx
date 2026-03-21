@@ -171,8 +171,8 @@ export function MarketVaultFees({
 
   if (!hasVaultShares && value === 0n) {
     return (
-      <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/80">
-        <p className="text-white">Vault fees</p>
+      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-dark-wood px-4 py-5 text-sm text-gold/80">
+        <p className="text-lightest">Vault fees</p>
         <p className="mt-1 text-xs text-gold/60">You don't have any vault fee shares for this market.</p>
       </div>
     );
@@ -181,7 +181,7 @@ export function MarketVaultFees({
   return (
     <>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
+        <div className="rounded-md border border-gold/15 bg-brown/45 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
           Vault fees
         </div>
         <Button variant="secondary" size="xs" className="gap-2" onClick={claim} disabled={!canClaim || isSubmitting}>
@@ -193,11 +193,11 @@ export function MarketVaultFees({
       {!canClaim && <div className="mb-4 text-xs text-gold/60">Claims unlock once the market is resolved.</div>}
 
       <div className="space-y-3">
-        <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+        <div className="flex items-start gap-3 rounded-lg border border-gold/15 bg-brown/45 px-3 py-3">
           <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-3">
             <VStack className="gap-1">
               <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Your share</span>
-              <span className="text-lg font-semibold text-white">
+              <span className="text-lg font-semibold text-lightest">
                 {shareDisplay === "--" ? "--" : Number(share) > 0 ? `${formatUnits(share, 2, 2)}%` : "0%"}
               </span>
               <span className="text-xs text-gold/60">of accumulated fees</span>
@@ -206,7 +206,7 @@ export function MarketVaultFees({
             <VStack className="gap-1">
               <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault shares</span>
               <HStack className="items-baseline gap-1">
-                <span className="text-lg font-semibold text-white">{sharesDisplay}</span>
+                <span className="text-lg font-semibold text-lightest">{sharesDisplay}</span>
               </HStack>
               <span className="text-xs text-gold/60">vault shares held</span>
             </VStack>
@@ -214,7 +214,9 @@ export function MarketVaultFees({
             <VStack className="gap-1">
               <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Redeemable</span>
               <HStack className="items-baseline gap-1">
-                <span className="text-lg font-semibold text-white">{Number(value) > 0 ? redeemableDisplay : "0"}</span>
+                <span className="text-lg font-semibold text-lightest">
+                  {Number(value) > 0 ? redeemableDisplay : "0"}
+                </span>
                 <TokenIcon token={market.collateralToken} size={16} />
               </HStack>
               <span className="text-xs text-gold/60">claimable right now</span>

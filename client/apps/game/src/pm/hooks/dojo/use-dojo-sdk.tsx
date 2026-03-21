@@ -1,6 +1,6 @@
 import type { SDK } from "@dojoengine/sdk";
 import { DojoSdkProvider, useDojoSDK } from "@dojoengine/sdk/react";
-import { type PropsWithChildren, useEffect, useState } from "react";
+import { type PropsWithChildren, type ReactNode, useEffect, useState } from "react";
 import type { StarknetDomain } from "starknet";
 import type { PredictionMarketChain } from "../../manifest-loader";
 import { setupWorld, type SchemaType } from "../../bindings";
@@ -20,8 +20,10 @@ export const useDojoSdk = () => {
 function DojoSdkProviderInner({
   children,
   domain = appDomain,
+  fallback = null,
 }: PropsWithChildren<{
   domain?: StarknetDomain;
+  fallback?: ReactNode;
 }>) {
   const { dojoConfig } = useDojoConfig();
   const [sdk, setSdk] = useState<SDK<SchemaType>>();
@@ -55,7 +57,7 @@ function DojoSdkProviderInner({
     };
   }, [dojoConfig, domain]);
 
-  if (!sdk) return null;
+  if (!sdk) return <>{fallback}</>;
 
   return (
     <DojoSdkProvider sdk={sdk} dojoConfig={dojoConfig} clientFn={setupWorld}>
@@ -70,15 +72,19 @@ export const DojoSdkProviderInitialized = ({
   toriiUrl = "",
   worldAddress = "",
   chain,
+  fallback = null,
 }: PropsWithChildren<{
   domain?: StarknetDomain;
   toriiUrl?: string;
   worldAddress?: string;
   chain?: PredictionMarketChain;
+  fallback?: ReactNode;
 }>) => {
   return (
     <DojoConfigProvider toriiUrl={toriiUrl} worldAddress={worldAddress} chain={chain}>
-      <DojoSdkProviderInner domain={domain}>{children}</DojoSdkProviderInner>
+      <DojoSdkProviderInner domain={domain} fallback={fallback}>
+        {children}
+      </DojoSdkProviderInner>
     </DojoConfigProvider>
   );
 };

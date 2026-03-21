@@ -1,65 +1,28 @@
 export type NetworkType = "local" | "sepolia" | "slot" | "slottest" | "mainnet";
+export type GameType = "blitz" | "eternum";
 
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { buildConfig } from "../source/build-config";
 
 // Replacer for JSON.stringify that converts BigInt values to strings.
 function bigIntReplacer(_key: string, value: unknown) {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
-function extractContractAddressFromManifest(manifest: any, tag: string): string | null {
-  try {
-    const list = manifest?.contracts;
-    if (!Array.isArray(list)) return null;
-    const found = list.find((c: any) => c?.tag === tag);
-    return found?.address ?? null;
-  } catch {
-    return null;
-  }
-}
+export async function saveResolvedConfigJson(chain: NetworkType, gameType: GameType) {
+  const configurationJson = await buildConfig({
+    chain,
+    gameType,
+  });
 
-export async function saveConfigJsonFromConfigTsFile(chain: NetworkType) {
-  const CONFIGURATION_FILE = `../environments/${chain}`;
-  const configurationJson: any = (await import(CONFIGURATION_FILE)).default;
-
-  const dataDir = "./environments/data";
-  const targetPath = `${dataDir}/${chain}.json`;
-
-  // Compute prev_prize_distribution_address based on previous file and current manifest
-  let prevSaved: string | null = null;
-  let prevCurrent: string | null = null;
-  try {
-    if (fs.existsSync(targetPath)) {
-      const prevRaw = fs.readFileSync(targetPath, "utf8");
-      const prevParsed = JSON.parse(prevRaw);
-      prevSaved =
-        prevParsed?.configuration?.prev_prize_distribution_address ??
-        prevParsed?.prev_prize_distribution_address ??
-        null;
-      const prevManifest = prevParsed?.configuration?.setup?.manifest ?? prevParsed?.setup?.manifest;
-      prevCurrent = extractContractAddressFromManifest(prevManifest, "s1_eternum-prize_distribution_systems");
-    }
-  } catch {}
-
-  const newManifest = configurationJson?.setup?.manifest;
-  const newCurrent = extractContractAddressFromManifest(newManifest, "s1_eternum-prize_distribution_systems");
-
-  const norm = (x?: string | null) => (x ? x.toLowerCase() : "");
-  const clean = (x: string) => (x === "0x0" || x === "0x" ? "" : x);
-  const equal = (a?: string | null, b?: string | null) => clean(norm(a)) === clean(norm(b));
-
-  let computedPrev: string | null = null;
-  if (prevCurrent) {
-    computedPrev = equal(prevCurrent, newCurrent) ? (prevSaved ?? null) : prevCurrent;
-  } else {
-    computedPrev = null;
-  }
-
-  configurationJson.prev_prize_distribution_address = computedPrev;
+  const dataDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../generated");
+  const targetPath = `${dataDir}/${gameType}.${chain}.json`;
 
   const jsonFileContent = `{
       "generatedFromTsFile": true,
-      "message": "This file was generated from the .ts file and should not be edited manually",
+      "message": "This file was generated from the composed config source and should not be edited manually",
       "configuration": ${JSON.stringify(configurationJson, bigIntReplacer, 2)}
     }`;
 

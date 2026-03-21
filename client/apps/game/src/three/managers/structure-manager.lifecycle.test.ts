@@ -319,6 +319,21 @@ const BASE_STRUCTURE_UPDATE = {
 };
 
 describe("StructureManager destroy lifecycle", () => {
+  it("runs a single visible-structure rebuild during chunk switches", async () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+
+    subject.currentChunk = "0,0";
+    subject.latestTransitionToken = 0;
+    subject.transitionChunkByToken = new Map();
+    subject.chunkSwitchPromise = null;
+    subject.pruneTransitionChunkHistory = vi.fn();
+    subject.updateVisibleStructures = vi.fn().mockResolvedValue(undefined);
+
+    await subject.updateChunk("24,24");
+
+    expect(subject.updateVisibleStructures).toHaveBeenCalledTimes(1);
+  });
+
   it("cleans subscriptions, timers, labels, models, and caches", () => {
     const fixture = createStructureManagerSubject();
 
@@ -366,6 +381,58 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.disposePointsA).toHaveBeenCalledTimes(1);
     expect(fixture.disposePointsB).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("StructureManager already destroyed, skipping cleanup");
+  });
+
+  it("stops an async visible-structure refresh from mutating after destroy", async () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const structureType = "Village";
+    const setMatrixAt = vi.fn();
+    const setCount = vi.fn();
+    let resolveModels: ((value: unknown) => void) | undefined;
+
+    subject.isDestroyed = false;
+    subject.currentChunk = "24,24";
+    subject.visibleStructureCount = 0;
+    subject.structureModels = new Map();
+    subject.cosmeticStructureModels = new Map();
+    subject.entityIdMaps = new Map();
+    subject.cosmeticEntityIdMaps = new Map();
+    subject.wonderEntityIdMaps = new Map();
+    subject.pointsRenderers = undefined;
+    subject.activeStructureAttachmentEntities = new Set();
+    subject.entityIdLabels = new Map();
+    subject.previousVisibleIds = new Set();
+    subject.structures = {
+      getStructureByEntityId: vi.fn(),
+    };
+    subject.getVisibleStructuresForChunk = vi.fn(() => [
+      {
+        entityId: 1,
+        hexCoords: { col: 0, row: 0 },
+        structureType,
+      },
+    ]);
+    subject.hasCosmeticSkin = vi.fn(() => false);
+    subject.ensureStructureModels = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveModels = resolve;
+        }),
+    );
+
+    const updatePromise = subject.performVisibleStructuresUpdate();
+    subject.isDestroyed = true;
+    subject.structureModels.set(structureType, [
+      {
+        setMatrixAt,
+        setCount,
+      },
+    ]);
+    resolveModels?.([]);
+    await updatePromise;
+
+    expect(setMatrixAt).not.toHaveBeenCalled();
+    expect(setCount).not.toHaveBeenCalled();
   });
 
   it("keeps tile owner name when a building-only pending update exists", async () => {
@@ -421,5 +488,50 @@ describe("StructureManager destroy lifecycle", () => {
     const updated = structuresById.get(7);
     expect(updated.owner.address).toBe(0n);
     expect(updated.owner.ownerName).toBe("The Vanguard");
+  });
+
+  it("rebuilds visible structures when an active-chunk onUpdate changes a visible structure", async () => {
+    const { subject } = createOnUpdateSubject();
+    subject.isInCurrentChunk = vi.fn(() => true);
+
+    await subject.onUpdate({
+      ...BASE_STRUCTURE_UPDATE,
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+    });
+
+    expect(subject.updateVisibleStructures).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips full visible rebuilds for metadata-only updates to already-visible structures", async () => {
+    const { subject, structuresById } = createOnUpdateSubject();
+    subject.isInCurrentChunk = vi.fn(() => true);
+
+    structuresById.set(7, {
+      entityId: 7,
+      structureName: "Camp",
+      structureType: "Village",
+      hexCoords: { col: 10, row: 15 },
+      initialized: true,
+      stage: 0,
+      level: 1,
+      owner: { address: 5n, ownerName: "Alice", guildName: "" },
+      isMine: false,
+      isAlly: false,
+      guardArmies: [],
+      activeProductions: [],
+      cosmeticId: "default",
+      cosmeticAssetPaths: [],
+      attachments: [],
+      hyperstructureRealmCount: 0,
+    });
+
+    await subject.onUpdate({
+      ...BASE_STRUCTURE_UPDATE,
+      owner: { address: 5n, ownerName: "Alice", guildName: "" },
+      guardArmies: [],
+      activeProductions: [],
+    });
+
+    expect(subject.updateVisibleStructures).not.toHaveBeenCalled();
   });
 });

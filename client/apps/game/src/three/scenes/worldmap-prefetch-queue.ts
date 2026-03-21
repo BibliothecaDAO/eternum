@@ -5,12 +5,16 @@ export interface PrefetchQueueItem {
   fetchTiles: boolean;
 }
 
+export interface PrefetchFetchKeyLookup {
+  has(fetchKey: string): boolean;
+}
+
 interface ShouldProcessPrefetchQueueItemInput {
   item: PrefetchQueueItem;
   isSwitchedOff: boolean;
   desiredFetchKeys: Set<string>;
   fetchedFetchKeys: Set<string>;
-  pendingFetchKeys: Set<string>;
+  pendingFetchKeys: PrefetchFetchKeyLookup;
   pinnedAreaKeys: Set<string>;
 }
 

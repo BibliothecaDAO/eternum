@@ -44,6 +44,7 @@ import {
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
+import { DeploymentStrengthSummary } from "../deployment-strength-summary";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { DirectionSelection } from "./direction-selection";
 import { TroopCountSelector } from "./troop-count-selector";
@@ -298,6 +299,7 @@ export const UnifiedArmyCreationModal = ({
         ? troopCapacityLimit
         : Math.max(troopCapacityLimit - selectedGuardCount, 0)
       : null;
+  const projectedTroopCountForSummary = armyType ? troopCount : selectedGuardCount + troopCount;
 
   const selectedGuardCategory = selectedGuard?.troops?.category as TroopType | undefined;
   const selectedGuardTier = selectedGuard?.troops?.tier as TroopTier | undefined;
@@ -641,7 +643,7 @@ export const UnifiedArmyCreationModal = ({
     !armyType && (!canInteractWithDefense || isDefenseSlotCreationBlocked || !isDefenseSlotCompatible);
 
   const actionLabel = armyType
-    ? "CREATE ATTACK ARMY"
+    ? "CREATE FIELD ARMY"
     : `ADD DEFENSE - ${GUARD_SLOT_NAMES[guardSlot as GuardSlot]?.toUpperCase()}`;
 
   const isActionDisabled =
@@ -663,7 +665,7 @@ export const UnifiedArmyCreationModal = ({
   };
   const handleTroopCountChange = (value: number) => setTroopCount(Math.max(0, Math.min(value, maxAffordable)));
 
-  const modalBaseTitle = armyType ? "Create Attack Army" : "Create Defense Army";
+  const modalBaseTitle = armyType ? "Create Field Army" : "Create Defense Army";
   const modalTitle = structureName ? `${structureName} - ${modalBaseTitle}` : modalBaseTitle;
   const toggleModal = useUIStore((state) => state.toggleModal);
   const handleClose = useCallback(() => {
@@ -700,6 +702,14 @@ export const UnifiedArmyCreationModal = ({
                 onChange={handleTroopCountChange}
                 capacityRemaining={capacityRemainingForSelector}
                 troopMaxSize={troopCapacityLimit ?? undefined}
+              />
+              <DeploymentStrengthSummary
+                className="mt-2"
+                structureLevel={structureLevel}
+                troopTier={selectedTroopCombo.tier}
+                troopCount={projectedTroopCountForSummary}
+                maxTroopSize={troopCapacityLimit}
+                capacityRemaining={capacityRemainingForSelector}
               />
             </div>
 

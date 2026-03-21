@@ -222,7 +222,7 @@ const FundingInput = ({
           min={minAmount}
           step="100"
           className={cx(
-            "w-full bg-transparent text-center font-cinzel text-3xl text-white outline-none placeholder:text-gold/30",
+            "w-full bg-transparent text-center font-cinzel text-3xl text-lightest outline-none placeholder:text-gold/30",
             !isValid && amount && "text-danger",
           )}
           placeholder="0"
