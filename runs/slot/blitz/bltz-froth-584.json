@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "runId": "slot.blitz:bltz-froth-584",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-froth-584",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/slot/blitz/bltz-froth-584/23372765802-1.json",
+  "latestLaunchRequestId": "23372765802-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-03-21T05:18:17.094Z",
+  "updatedAt": "2026-03-21T05:18:17.094Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23372765802,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23372765802",
+    "ref": "next",
+    "sha": "195558d3e30f9b27010d94ccb46f838b98d803a5"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {}
+}
