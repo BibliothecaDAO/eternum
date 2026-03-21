@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23377722816-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-21T10:32:55.810Z",
-  "updatedAt": "2026-03-21T10:34:37.592Z",
+  "updatedAt": "2026-03-21T10:34:39.606Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-21T10:34:39.606Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -67,5 +68,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-sg-60.json",
     "createGameTxHash": "0x511156afe53a01b2efad70b0e2a9478149963a4f140ac8399f7429bef76600f",
     "worldAddress": "0x0738be469eb8283276032aef94da161dce6d02ab8fdf2a8474fddd5631872021"
+  },
+  "activeLease": {
+    "launchRequestId": "23377722816-1",
+    "workflowRunId": 23377722816,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-21T10:34:39.606Z",
+    "expiresAt": "2026-03-21T11:19:39.606Z"
   }
 }
