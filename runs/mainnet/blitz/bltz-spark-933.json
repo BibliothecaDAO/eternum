@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23372425984-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-21T04:56:27.020Z",
-  "updatedAt": "2026-03-21T04:57:41.075Z",
+  "updatedAt": "2026-03-21T04:57:43.135Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-21T04:57:43.135Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -74,5 +75,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-spark-933.json",
     "createGameTxHash": "0x5e460820cf3a2885e998ceea1b4e86c55d00889c336e2228099e5a481d49155",
     "worldAddress": "0x0638535781d17322a833d50758d180236e877e1890531fbd42f281ed0053b67a"
+  },
+  "activeLease": {
+    "launchRequestId": "23372425984-1",
+    "workflowRunId": 23372425984,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-21T04:57:43.135Z",
+    "expiresAt": "2026-03-21T05:42:43.135Z"
   }
 }
