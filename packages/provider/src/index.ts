@@ -2089,7 +2089,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async execute_realm_production_plan(
     props: SystemProps.ExecuteRealmProductionPlanProps,
   ): Promise<GetTransactionReceiptResponse | undefined> {
-    const { signer, realm_entity_id } = props;
+    const { signer, realm_entity_id, skipQueue } = props;
     const productionSystemsAddress = getContractByName(this.manifest, `${NAMESPACE}-production_systems`);
 
     const sanitizeInstructions = (
@@ -2188,6 +2188,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
+
+    if (skipQueue) {
+      return await this.executeAndCheckTransaction(signer, callArgs, undefined, {
+        transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+      });
+    }
+
     return await this.promiseQueue.enqueue({
       signer,
       calls: callArgs,
