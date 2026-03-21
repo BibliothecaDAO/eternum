@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "chain": "mainnet",
+  "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
+  "owner": {
+    "environment": "mainnet.blitz",
+    "gameName": "bltz-vibe-171-mainnet3",
+    "launchRequestId": "23370309407-1",
+    "workflowName": "Game Launch",
+    "workflowRunId": 23370309407,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "leaseId": "b08bfa3e-899c-4f8f-b60f-a9c4b378ae2c"
+  },
+  "acquiredAt": "2026-03-21T02:43:01.839Z",
+  "heartbeatAt": "2026-03-21T02:43:01.839Z",
+  "expiresAt": "2026-03-21T02:53:01.839Z"
+}
