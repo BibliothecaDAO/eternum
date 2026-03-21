@@ -207,7 +207,7 @@ export const BlitzMMRTable = () => {
     return mmrValue.toString();
   };
 
-  // Helper to get player's display name
+  // Helper to get player display name
   const getPlayerDisplayName = (playerAddress: bigint): string => {
     const name = getAddressName(ContractAddress(playerAddress), components);
     return name || displayAddress(toHexString(playerAddress));
