@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "runId": "mainnet.blitz:bltz-blip-555",
+  "launchRequestId": "23372921802-1",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "bltz-blip-555",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-21T05:27:46.523Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23372921802,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23372921802",
+    "ref": "next",
+    "sha": "195558d3e30f9b27010d94ccb46f838b98d803a5"
+  },
+  "request": {
+    "environmentId": "mainnet.blitz",
+    "gameName": "bltz-blip-555",
+    "startTime": "2026-03-21T06:00:00.000Z",
+    "factoryAddress": "",
+    "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
+    "privateKey": "0x06a603ea042bf7989bcedb262e324d48e1a15c7139d79518ff79133939c04b73",
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "maxActions": 70,
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false
+  }
+}
