@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-21",
+    title: "Smarter Factory Recovery",
+    description:
+      "Factory V2 now waits to show Continue until a launch has genuinely gone stale, so the recovery button no longer flashes during normal setup step transitions.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-21",
     title: "Factory Dev Panel Polish",
     description:
       "Factory V2 developer tools now put contract lookup first, keep factory config multicalls much more compact, and prompt for a wallet network switch before sending config on the wrong chain.",

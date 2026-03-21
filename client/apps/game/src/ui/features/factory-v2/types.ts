@@ -30,6 +30,7 @@ export type FactoryRecoveryStepId =
 export type FactoryRunStatus = "running" | "attention" | "waiting" | "complete";
 
 export type FactoryStepStatus = "pending" | "running" | "succeeded" | "already_done" | "blocked" | "failed";
+export type FactoryRunRecoveryState = "active" | "transitioning" | "stalled" | "failed" | "complete";
 
 export type FactoryWatcherKind = "launch" | "continue" | "retry" | "refresh" | "reindex";
 export type FactoryPollingStatus = "idle" | "checking" | "live" | "paused";
@@ -84,6 +85,12 @@ export interface FactoryRunStep {
   latestEvent: string;
 }
 
+export interface FactoryRunRecovery {
+  state: FactoryRunRecoveryState;
+  canContinue: boolean;
+  continueStepId: FactoryRecoveryStepId | null;
+}
+
 export interface FactoryRun {
   id: string;
   syncKey: string;
@@ -95,6 +102,7 @@ export interface FactoryRun {
   status: FactoryRunStatus;
   summary: string;
   updatedAt: string;
+  recovery?: FactoryRunRecovery;
   steps: FactoryRunStep[];
 }
 

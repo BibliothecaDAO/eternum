@@ -91,6 +91,77 @@ describe("factory run recovery actions", () => {
     expect(getRunDetailMessage(run)).toBe("This setup stalled on one step, so that step will need another try.");
   });
 
+  it("does not show continue during a normal transition gap", () => {
+    const run = buildFactoryRun({
+      status: "running",
+      steps: [
+        {
+          id: "create-world",
+          title: "Create world",
+          summary: "Create world succeeded.",
+          workflowName: "create-world",
+          status: "succeeded",
+          verification: "Create world succeeded.",
+          latestEvent: "Create world succeeded.",
+        },
+        {
+          id: "wait-for-factory-index",
+          title: "Wait for factory index",
+          summary: "Waiting to run.",
+          workflowName: "wait-for-factory-index",
+          status: "pending",
+          verification: "Waiting to run.",
+          latestEvent: "Waiting to run.",
+        },
+      ],
+      recovery: {
+        state: "transitioning",
+        canContinue: false,
+        continueStepId: null,
+      },
+    });
+
+    expect(resolveRunPrimaryAction(run)).toBeNull();
+  });
+
+  it("shows continue only when recovery marks the run stalled", () => {
+    const run = buildFactoryRun({
+      status: "running",
+      steps: [
+        {
+          id: "create-world",
+          title: "Create world",
+          summary: "Create world succeeded.",
+          workflowName: "create-world",
+          status: "succeeded",
+          verification: "Create world succeeded.",
+          latestEvent: "Create world succeeded.",
+        },
+        {
+          id: "wait-for-factory-index",
+          title: "Wait for factory index",
+          summary: "Waiting to run.",
+          workflowName: "wait-for-factory-index",
+          status: "pending",
+          verification: "Waiting to run.",
+          latestEvent: "Waiting to run.",
+        },
+      ],
+      recovery: {
+        state: "stalled",
+        canContinue: true,
+        continueStepId: "wait-for-factory-index",
+      },
+    });
+
+    expect(resolveRunPrimaryAction(run)).toEqual({
+      kind: "continue",
+      label: "Continue",
+      launchScope: "wait-for-factory-index",
+      stepId: "wait-for-factory-index",
+    });
+  });
+
   it("uses plain language for step detail rows", () => {
     const run = buildFactoryRun({
       steps: [

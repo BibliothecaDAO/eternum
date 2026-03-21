@@ -14,6 +14,18 @@
  * - FACTORY_ALLOWED_ORIGIN           default: *
  */
 
+const DEFAULT_FACTORY_RUN_RECOVERY_GRACE_MS = 15_000;
+const RECOVERABLE_FACTORY_STEP_IDS = new Set([
+  "create-world",
+  "wait-for-factory-index",
+  "configure-world",
+  "grant-lootchest-role",
+  "grant-village-pass-role",
+  "create-banks",
+  "create-indexer",
+  "sync-paymaster",
+]);
+
 export default {
   async fetch(request, env) {
     return handleRequest(request, env);
@@ -84,7 +96,7 @@ async function handleCreateFactoryRun(request, env) {
       env,
       {
         error: "A launch is already in progress for this game",
-        run: existingRun,
+        run: enrichFactoryRunResponse(existingRun),
       },
       409,
     );
@@ -120,7 +132,7 @@ async function handleListFactoryRuns(request, url, env) {
 
   const github = createGitHubClient(env);
   const runs = await readFactoryRunsForEnvironment(github, environment, resolveRunStoreBranch(env));
-  return buildJsonResponse(request, env, { runs }, 200);
+  return buildJsonResponse(request, env, { runs: runs.map(enrichFactoryRunResponse) }, 200);
 }
 
 async function handleContinueFactoryRun(request, env, route) {
@@ -145,7 +157,7 @@ async function handleContinueFactoryRun(request, env, route) {
       env,
       {
         error: "A launch step is already in progress for this game",
-        run,
+        run: enrichFactoryRunResponse(run),
       },
       409,
     );
@@ -191,7 +203,7 @@ async function handleReadFactoryRun(request, route, env) {
     return buildJsonResponse(request, env, { error: resolveMissingRunMessage(route.environment, route.gameName) }, 404);
   }
 
-  return buildJsonResponse(request, env, run, 200);
+  return buildJsonResponse(request, env, enrichFactoryRunResponse(run), 200);
 }
 
 function validateCreateFactoryRunBody(body) {
@@ -340,6 +352,98 @@ function hasActiveLease(run) {
   }
 
   return Date.parse(run.activeLease.expiresAt) > Date.now();
+}
+
+function enrichFactoryRunResponse(run) {
+  return {
+    ...run,
+    recovery: resolveFactoryRunRecovery(run),
+  };
+}
+
+function resolveFactoryRunRecovery(run) {
+  const continueStepId = resolveFactoryContinueStepId(run);
+
+  if (run.status === "complete") {
+    return {
+      state: "complete",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  if (hasFailedFactoryRunStep(run)) {
+    return {
+      state: "failed",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  if (hasActiveLease(run) || hasRunningFactoryRunStep(run)) {
+    return {
+      state: "active",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  if (!continueStepId) {
+    return {
+      state: "active",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  if (!hasExceededFactoryRunRecoveryGracePeriod(run)) {
+    return {
+      state: "transitioning",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  return {
+    state: "stalled",
+    canContinue: true,
+    continueStepId,
+  };
+}
+
+function hasFailedFactoryRunStep(run) {
+  return run.steps.some((step) => step.status === "failed");
+}
+
+function hasRunningFactoryRunStep(run) {
+  return run.steps.some((step) => step.status === "running");
+}
+
+function resolveFactoryContinueStepId(run) {
+  const currentStepId = run.currentStepId;
+  if (isRecoverableFactoryStepId(currentStepId) && isPendingFactoryStep(run, currentStepId)) {
+    return currentStepId;
+  }
+
+  const pendingStep = run.steps.find((step) => step.status === "pending" && isRecoverableFactoryStepId(step.id));
+  return pendingStep?.id || null;
+}
+
+function isPendingFactoryStep(run, stepId) {
+  return run.steps.some((step) => step.id === stepId && step.status === "pending");
+}
+
+function isRecoverableFactoryStepId(stepId) {
+  return typeof stepId === "string" && RECOVERABLE_FACTORY_STEP_IDS.has(stepId);
+}
+
+function hasExceededFactoryRunRecoveryGracePeriod(run) {
+  const updatedAtMs = Date.parse(run.updatedAt);
+  if (!Number.isFinite(updatedAtMs)) {
+    return true;
+  }
+
+  return Date.now() - updatedAtMs >= DEFAULT_FACTORY_RUN_RECOVERY_GRACE_MS;
 }
 
 function matchFactoryRunRoute(pathname) {

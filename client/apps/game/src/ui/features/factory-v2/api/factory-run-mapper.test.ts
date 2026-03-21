@@ -20,6 +20,11 @@ const buildRunRecord = (overrides: Partial<FactoryWorkerRunRecord> = {}): Factor
   workflow: {
     workflowName: "game-launch.yml",
   },
+  recovery: {
+    state: "active",
+    canContinue: false,
+    continueStepId: null,
+  },
   steps: [
     {
       id: "create-world",
@@ -69,5 +74,23 @@ describe("mapFactoryWorkerRun", () => {
     expect(run.status).toBe("attention");
     expect(run.steps[0]?.status).toBe("failed");
     expect(run.steps[0]?.latestEvent).toBe("RPC timed out.");
+  });
+
+  it("maps explicit worker recovery state into the UI model", () => {
+    const run = mapFactoryWorkerRun(
+      buildRunRecord({
+        recovery: {
+          state: "stalled",
+          canContinue: true,
+          continueStepId: "configure-world",
+        },
+      }),
+    );
+
+    expect(run.recovery).toEqual({
+      state: "stalled",
+      canContinue: true,
+      continueStepId: "configure-world",
+    });
   });
 });

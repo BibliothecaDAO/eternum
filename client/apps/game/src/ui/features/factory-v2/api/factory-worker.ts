@@ -14,6 +14,13 @@ export type FactoryWorkerLaunchStepId =
 export type FactoryWorkerLaunchScope = "full" | FactoryWorkerLaunchStepId;
 export type FactoryWorkerRunStatus = "running" | "attention" | "complete";
 export type FactoryWorkerRunStepStatus = "pending" | "running" | "succeeded" | "failed";
+export type FactoryWorkerRunRecoveryState = "active" | "transitioning" | "stalled" | "failed" | "complete";
+
+export interface FactoryWorkerRunRecovery {
+  state: FactoryWorkerRunRecoveryState;
+  canContinue: boolean;
+  continueStepId: FactoryWorkerLaunchStepId | null;
+}
 
 export interface FactoryWorkerRunRecord {
   version: 1;
@@ -48,6 +55,7 @@ export interface FactoryWorkerRunRecord {
     ref?: string;
     sha?: string;
   };
+  recovery?: FactoryWorkerRunRecovery;
   steps: Array<{
     id: FactoryWorkerLaunchStepId;
     title: string;

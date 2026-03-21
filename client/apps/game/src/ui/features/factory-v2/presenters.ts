@@ -199,16 +199,8 @@ const countSatisfiedSteps = (run: FactoryRun) =>
 const hasRetryableStep = (run: FactoryRun) =>
   run.steps.some((step) => step.status === "blocked" || step.status === "failed");
 
-const hasContinuableStep = (run: FactoryRun) =>
-  !hasRetryableStep(run) &&
-  !run.steps.some((step) => step.status === "running") &&
-  run.steps.some((step) => step.status === "pending");
-
 const resolveRetryableStep = (run: FactoryRun) =>
   run.steps.find((step) => step.status === "blocked" || step.status === "failed") ?? null;
-
-const resolveContinuableStep = (run: FactoryRun) =>
-  run.steps.find((step) => step.status === "pending") ?? run.steps.find((step) => step.status === "running") ?? null;
 
 const resolveFirstStep = (run: FactoryRun) => run.steps[0] ?? null;
 
@@ -383,10 +375,9 @@ export const resolveRunPrimaryAction = (run: FactoryRun): FactoryRunPrimaryActio
         };
   }
 
-  const continuableStep = hasContinuableStep(run) ? resolveContinuableStep(run) : null;
-  const continueStepId = continuableStep ? resolveRecoveryStepId(continuableStep.id) : null;
+  const continueStepId = resolveRunContinueStepId(run);
 
-  if (continuableStep && continueStepId) {
+  if (continueStepId) {
     return {
       kind: "continue",
       label: "Continue",
@@ -397,3 +388,11 @@ export const resolveRunPrimaryAction = (run: FactoryRun): FactoryRunPrimaryActio
 
   return null;
 };
+
+function resolveRunContinueStepId(run: FactoryRun): FactoryRecoveryStepId | null {
+  if (!run.recovery?.canContinue || !run.recovery.continueStepId) {
+    return null;
+  }
+
+  return run.recovery.continueStepId;
+}
