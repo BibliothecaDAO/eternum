@@ -62,7 +62,8 @@ export const useChainTimeStore = create<ChainTimeState>((set, get) => ({
       // while preventing the unbounded inflation that causes tx failures.
       const MAX_LEAD_MS = 5_000;
       const leadMs = currentNowMs - heartbeat.timestamp;
-      const anchorTimestampMs = leadMs > MAX_LEAD_MS ? heartbeat.timestamp + MAX_LEAD_MS : Math.max(heartbeat.timestamp, currentNowMs);
+      const anchorTimestampMs =
+        leadMs > MAX_LEAD_MS ? heartbeat.timestamp + MAX_LEAD_MS : Math.max(heartbeat.timestamp, currentNowMs);
       const rewindPreventedMs = Math.max(0, currentNowMs - heartbeat.timestamp);
 
       logChainTimeDebug("heartbeat_applied", {
