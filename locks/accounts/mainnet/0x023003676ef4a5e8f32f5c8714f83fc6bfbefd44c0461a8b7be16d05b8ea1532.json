@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "daily-unranked-2-21.03.26",
-    "launchRequestId": "23381319954-1",
+    "gameName": "daily-ranked-EU-21.03.26",
+    "launchRequestId": "23385503260-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23381319954,
+    "workflowRunId": 23385503260,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "de50a0e5-1192-4fb3-b9bf-39e654aa64dd"
+    "stepId": "create-world",
+    "leaseId": "a762ea75-e486-403f-a213-c2fedce5c51b"
   },
-  "acquiredAt": "2026-03-21T14:07:53.126Z",
-  "heartbeatAt": "2026-03-21T14:07:57.267Z",
-  "expiresAt": "2026-03-21T14:07:57.267Z",
-  "releasedAt": "2026-03-21T14:07:57.267Z"
+  "acquiredAt": "2026-03-21T18:05:48.938Z",
+  "heartbeatAt": "2026-03-21T18:05:48.938Z",
+  "expiresAt": "2026-03-21T18:15:48.938Z"
 }
