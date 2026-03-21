@@ -24,6 +24,8 @@ import {
 } from "starknet";
 import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
+import { withRetry } from "./retry";
+import type { RetryConfig } from "./retry";
 import { BatchedTransactionDetail, TransactionType } from "./types";
 import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
 export const NAMESPACE = "s1_eternum";
@@ -464,6 +466,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   private pendingTransactionSpans = new Map<string, Span>();
   private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
+  private readonly retryConfig?: RetryConfig;
   /**
    * Create a new EternumProvider instance
    *
@@ -474,9 +477,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     katana: Manifest,
     url?: string,
     private VRF_PROVIDER_ADDRESS?: string,
+    retryConfig?: RetryConfig,
   ) {
     super(katana, url);
     this.manifest = katana;
+    this.retryConfig = retryConfig;
 
     this.getWorldAddress = function () {
       const worldAddress = this.manifest.world.address;
@@ -823,7 +828,23 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     let tx;
     try {
-      tx = await this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, executionDetails);
+      if (this.retryConfig && this.retryConfig.maxRetries > 0) {
+        let currentExecutionDetails = executionDetails;
+        tx = await withRetry(
+          () => this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, currentExecutionDetails),
+          this.retryConfig,
+          async (error, attempt) => {
+            // Re-estimate gas on nonce-related errors
+            const msg = error instanceof Error ? error.message.toLowerCase() : "";
+            if (msg.includes("nonce")) {
+              currentExecutionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
+            }
+            console.warn(`[provider] Retry attempt ${attempt} for transaction: ${extractErrorMessage(error)}`);
+          },
+        );
+      } else {
+        tx = await this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, executionDetails);
+      }
     } catch (error) {
       releaseVrfExecutionLock?.();
       releaseVrfExecutionLock = undefined;
