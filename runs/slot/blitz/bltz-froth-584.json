@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-froth-584",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/blitz/bltz-froth-584/23372884404-1.json",
   "latestLaunchRequestId": "23372884404-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-21T05:18:17.094Z",
-  "updatedAt": "2026-03-21T05:25:43.103Z",
+  "updatedAt": "2026-03-21T05:27:08.159Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,11 +62,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Finishing setup succeeded",
       "startedAt": "2026-03-21T05:25:43.103Z",
-      "finishedAt": "2026-03-21T05:22:20.849Z"
+      "finishedAt": "2026-03-21T05:27:08.159Z"
     }
   ],
   "artifacts": {
@@ -74,14 +74,17 @@
     "createGameTxHash": "0x3c8c6341378bffc6edd53b547f38f537bb526fed2c7a499dfc0183ee2512b76",
     "worldAddress": "0x0563582cecbe7a47f62a12dea2e643e7b233d132bc4cb61dd71a0e9a30109c12",
     "configureTxHash": "0x7e8d51ccf7161a444a8729323df90d1793e8f284c1037b62d6be0d646fe1c1",
-    "lootChestRoleTxHash": "0x3c5774570b39b9eae71362334ab0fd6863e4f93d61ab04c887cace89f08e383"
+    "lootChestRoleTxHash": "0x3c5774570b39b9eae71362334ab0fd6863e4f93d61ab04c887cace89f08e383",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "next",
+      "runId": 23372908572,
+      "runNumber": 793,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23372908572",
+      "status": "completed",
+      "conclusion": "success"
+    }
   },
-  "activeLease": {
-    "launchRequestId": "23372884404-1",
-    "workflowRunId": 23372884404,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-21T05:25:43.103Z",
-    "expiresAt": "2026-03-21T06:10:43.103Z"
-  }
+  "completedAt": "2026-03-21T05:27:08.159Z"
 }
