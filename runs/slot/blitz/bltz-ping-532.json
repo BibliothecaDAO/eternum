@@ -10,9 +10,9 @@
   "requestedLaunchStep": "configure-world",
   "inputPath": "inputs/slot/blitz/bltz-ping-532/23371137920-1.json",
   "latestLaunchRequestId": "23371137920-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-03-21T03:27:03.565Z",
-  "updatedAt": "2026-03-21T03:35:12.602Z",
+  "updatedAt": "2026-03-21T03:35:33.221Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,11 +44,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
+      "latestEvent": "Applying settings succeeded",
       "startedAt": "2026-03-21T03:35:12.602Z",
-      "finishedAt": "2026-03-21T03:28:42.171Z"
+      "finishedAt": "2026-03-21T03:35:33.221Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -68,14 +68,7 @@
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-blitz-bltz-ping-532.json",
     "createGameTxHash": "0x5cc6eafd305166e8cc590956a0b4cc41f37d375c199bb0d9386667c4c4b1a5b",
-    "worldAddress": "0x035c2649cf724f42885cdb7e2cd43ebd61ce00085a0a830473b0420a4524ed4f"
-  },
-  "activeLease": {
-    "launchRequestId": "23371137920-1",
-    "workflowRunId": 23371137920,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-03-21T03:35:12.602Z",
-    "expiresAt": "2026-03-21T04:20:12.602Z"
+    "worldAddress": "0x035c2649cf724f42885cdb7e2cd43ebd61ce00085a0a830473b0420a4524ed4f",
+    "configureTxHash": "0x5e012b442f9a54e7c5a61efea046d3c2e4f4da5de0ab051b605b25fa8cf4695"
   }
 }
