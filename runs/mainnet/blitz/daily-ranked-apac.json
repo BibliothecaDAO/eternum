@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23378392387-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-21T11:11:49.055Z",
-  "updatedAt": "2026-03-21T11:13:03.470Z",
+  "updatedAt": "2026-03-21T11:13:05.865Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -44,9 +44,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-21T11:13:05.865Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -74,5 +75,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-daily-ranked-apac.json",
     "createGameTxHash": "0x360f9f978bcf152d3b8fc23382492d26e476e1048af2edff7d14cfc95951d09",
     "worldAddress": "0x003f3724df119fa6acd031c4240ea5650993218f2a76a41afca0d6ab725fd3fd"
+  },
+  "activeLease": {
+    "launchRequestId": "23378392387-1",
+    "workflowRunId": 23378392387,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-21T11:13:05.865Z",
+    "expiresAt": "2026-03-21T11:58:05.865Z"
   }
 }
