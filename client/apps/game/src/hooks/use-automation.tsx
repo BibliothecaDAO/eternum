@@ -352,7 +352,10 @@ export const useAutomation = () => {
         });
       }
 
-      // Phase 2: Execute all plans in parallel (enqueue all at once before any user actions can interleave)
+      // Phase 2: Execute all plans in parallel (each realm gets its own independent transaction)
+      console.log(
+        `[Automation] Planning complete: ${executablePlans.length} executable out of ${realmList.length} realms`,
+      );
       if (executablePlans.length > 0) {
         console.log(`[Automation] Executing ${executablePlans.length} production plans in parallel`);
 
