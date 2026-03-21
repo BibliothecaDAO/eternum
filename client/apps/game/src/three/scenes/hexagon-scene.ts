@@ -64,7 +64,7 @@ import {
 } from "./hexagon-scene-camera-transition";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 import { LightningEffectSystem } from "./lightning-effect-system";
-import { resolveWorldmapViewFromDistance } from "./worldmap-zoom-controller";
+import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-policy";
 
 export { CameraView } from "./camera-view";
 type CameraTransitionStatus = "idle" | "transitioning";
@@ -165,7 +165,7 @@ export abstract class HexagonScene {
     this.sceneOwnershipBootstrapped = true;
   }
 
-  private notifyControlsChanged(): void {
+  protected notifyControlsChanged(): void {
     publishCameraTransitionFrame({
       updateControls: () => this.controls.update(),
       syncDistanceVisuals: () => {
@@ -1009,7 +1009,7 @@ export abstract class HexagonScene {
     }
 
     const minDistance = 10;
-    const maxDistance = 40;
+    const maxDistance = 60;
     const t = Math.min(1, Math.max(0, (distance - minDistance) / (maxDistance - minDistance)));
     const opacity = 0.04 + t * 0.06;
 
@@ -1354,7 +1354,7 @@ export abstract class HexagonScene {
   }
 
   private updateFogForDistance(distance: number): void {
-    if (!this.fogEnabledByQuality || !this.fogEnabledByUser || this.currentCameraView === CameraView.Close) {
+    if (!this.fogEnabledByQuality || !this.fogEnabledByUser) {
       if (this.scene.fog) {
         this.scene.fog = null;
       }
@@ -1366,8 +1366,9 @@ export abstract class HexagonScene {
     }
 
     const clipFar = Math.min(this.camera.far, distance * 3.5);
-    const startFactor = this.currentCameraView === CameraView.Medium ? 0.35 : 0.45;
-    const endFactor = this.currentCameraView === CameraView.Medium ? 0.85 : 0.9;
+    const normalizedDistance = Math.min(1, Math.max(0, (distance - 10) / 50));
+    const startFactor = 0.3 + normalizedDistance * 0.15;
+    const endFactor = 0.8 + normalizedDistance * 0.1;
 
     const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
     const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
@@ -1404,6 +1405,10 @@ export abstract class HexagonScene {
       return;
     }
 
+    if (this.sceneName === SceneName.WorldMap) {
+      return;
+    }
+
     switch (view) {
       case CameraView.Close:
         this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
@@ -1420,8 +1425,8 @@ export abstract class HexagonScene {
   }
 
   private syncResolvedCameraViewFromDistance(distance: number): void {
-    const nextView = resolveWorldmapViewFromDistance({
-      currentView: this.currentCameraView,
+    const nextView = resolveWorldmapZoomBand({
+      currentBand: this.currentCameraView,
       distance,
     });
     if (nextView === this.currentCameraView) {

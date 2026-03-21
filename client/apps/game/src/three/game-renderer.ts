@@ -571,9 +571,7 @@ export default class GameRenderer {
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener("change", () => {
       this.labelsDirty = true;
-      if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
-        this.worldmapScene.requestChunkRefresh();
-      } else if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel && this.fastTravelScene) {
+      if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel && this.fastTravelScene) {
         this.fastTravelScene.requestSceneRefresh();
       }
     });
@@ -592,7 +590,8 @@ export default class GameRenderer {
       (enableMapZoom) => {
         console.log(`[GameRenderer] Zoom setting changed to: ${enableMapZoom}`);
         if (this.controls) {
-          this.controls.enableZoom = enableMapZoom;
+          this.controls.enableZoom =
+            this.sceneManager?.getCurrentScene() === SceneName.WorldMap ? false : enableMapZoom;
         }
       },
     );

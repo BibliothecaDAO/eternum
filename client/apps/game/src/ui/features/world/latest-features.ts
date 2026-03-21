@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-22",
+    title: "Stable Worldmap Zoom",
+    description:
+      "World map zoom now runs through one smoother camera system for mouse wheel, minimap zoom, and keyboard shortcuts, so focus points stay steadier and zoom-driven refreshes stop fighting each other.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-21",
     title: "Smarter Factory Recovery",
     description:
