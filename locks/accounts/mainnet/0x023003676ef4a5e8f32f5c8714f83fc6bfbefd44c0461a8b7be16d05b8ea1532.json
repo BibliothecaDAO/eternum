@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-vibe-171-mainnet4",
-    "launchRequestId": "23371600510-1",
+    "gameName": "bltz-mainnet-0000",
+    "launchRequestId": "23371674803-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23371600510,
+    "workflowRunId": 23371674803,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "98ba5a43-dc22-4187-a7e5-90efbcb5eafd"
+    "stepId": "create-world",
+    "leaseId": "ddeecb2c-0111-4f4f-8154-ae2d20d72d46"
   },
-  "acquiredAt": "2026-03-21T04:04:21.356Z",
-  "heartbeatAt": "2026-03-21T04:04:32.689Z",
-  "expiresAt": "2026-03-21T04:04:32.689Z",
-  "releasedAt": "2026-03-21T04:04:32.689Z"
+  "acquiredAt": "2026-03-21T04:08:59.493Z",
+  "heartbeatAt": "2026-03-21T04:08:59.493Z",
+  "expiresAt": "2026-03-21T04:18:59.493Z"
 }
