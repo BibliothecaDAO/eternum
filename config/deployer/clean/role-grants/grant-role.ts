@@ -32,9 +32,27 @@ export interface GrantRoleResult {
   call: GrantRoleCall;
 }
 
-interface GrantRoleExecution {
+export interface GrantRolesRequest {
+  chain: string;
+  calls: GrantRoleCall[];
+  rpcUrl?: string;
+  accountAddress?: string;
+  privateKey?: string;
+  context?: string;
+  dryRun?: boolean;
+}
+
+export interface GrantRolesResult {
+  chain: string;
   rpcUrl: string;
-  call: GrantRoleCall;
+  transactionHash?: string;
+  dryRun: boolean;
+  calls: GrantRoleCall[];
+}
+
+interface GrantRolesExecution {
+  rpcUrl: string;
+  calls: GrantRoleCall[];
 }
 
 interface GrantRoleExecutionCredentials {
@@ -58,10 +76,14 @@ function resolveGrantRoleRpcUrl(chain: string, rpcUrl?: string): string {
   return resolveDefaultRpcUrl(chain);
 }
 
-function resolveGrantRoleExecution(request: GrantRoleRequest): GrantRoleExecution {
+function resolveGrantRolesExecution(request: GrantRolesRequest): GrantRolesExecution {
+  if (!request.calls.length) {
+    throw new Error("At least one grant_role call is required");
+  }
+
   return {
     rpcUrl: resolveGrantRoleRpcUrl(request.chain, request.rpcUrl),
-    call: buildGrantRoleCall(request.contractAddress, request.role, request.recipient),
+    calls: request.calls,
   };
 }
 
@@ -79,7 +101,9 @@ function createGrantRoleAccount(chain: string, rpcUrl: string, credentials: Gran
   });
 }
 
-function resolveGrantRoleCredentials(request: GrantRoleRequest): GrantRoleExecutionCredentials {
+function resolveGrantRoleCredentials(
+  request: Pick<GrantRolesRequest, "accountAddress" | "privateKey" | "context" | "chain">,
+): GrantRoleExecutionCredentials {
   return resolveAccountCredentials({
     accountAddress: request.accountAddress,
     privateKey: request.privateKey,
@@ -99,10 +123,10 @@ async function submitGrantRoleTransaction(params: {
   chain: string;
   rpcUrl: string;
   credentials: GrantRoleExecutionCredentials;
-  call: GrantRoleCall;
+  calls: GrantRoleCall[];
 }): Promise<string> {
   const account = createGrantRoleAccount(params.chain, params.rpcUrl, params.credentials);
-  const tx = await account.execute([params.call]);
+  const tx = await account.execute(params.calls);
   const receipt = await account.waitForTransaction(tx.transaction_hash);
 
   if (!wasGrantRoleSuccessful(receipt)) {
@@ -113,8 +137,8 @@ async function submitGrantRoleTransaction(params: {
 }
 
 async function executeGrantRoleIfNeeded(
-  request: GrantRoleRequest,
-  execution: GrantRoleExecution,
+  request: GrantRolesRequest,
+  execution: GrantRolesExecution,
 ): Promise<string | undefined> {
   if (request.dryRun) {
     return undefined;
@@ -124,15 +148,34 @@ async function executeGrantRoleIfNeeded(
     chain: request.chain,
     rpcUrl: execution.rpcUrl,
     credentials: resolveGrantRoleCredentials(request),
-    call: execution.call,
+    calls: execution.calls,
   });
+}
+
+function buildGrantRolesResult(
+  request: GrantRolesRequest,
+  execution: GrantRolesExecution,
+  transactionHash?: string,
+): GrantRolesResult {
+  return {
+    chain: request.chain,
+    rpcUrl: execution.rpcUrl,
+    transactionHash,
+    dryRun: request.dryRun === true,
+    calls: execution.calls,
+  };
 }
 
 function buildGrantRoleResult(
   request: GrantRoleRequest,
-  execution: GrantRoleExecution,
+  execution: GrantRolesExecution,
   transactionHash?: string,
 ): GrantRoleResult {
+  const call = execution.calls[0];
+  if (!call) {
+    throw new Error("Expected a single grant_role call");
+  }
+
   return {
     chain: request.chain,
     rpcUrl: execution.rpcUrl,
@@ -141,12 +184,31 @@ function buildGrantRoleResult(
     recipient: request.recipient,
     transactionHash,
     dryRun: request.dryRun === true,
-    call: execution.call,
+    call,
   };
 }
 
-export async function grantRole(request: GrantRoleRequest): Promise<GrantRoleResult> {
-  const execution = resolveGrantRoleExecution(request);
+function buildSingleGrantRolesRequest(request: GrantRoleRequest): GrantRolesRequest {
+  return {
+    chain: request.chain,
+    calls: [buildGrantRoleCall(request.contractAddress, request.role, request.recipient)],
+    rpcUrl: request.rpcUrl,
+    accountAddress: request.accountAddress,
+    privateKey: request.privateKey,
+    context: request.context,
+    dryRun: request.dryRun,
+  };
+}
+
+export async function grantRoles(request: GrantRolesRequest): Promise<GrantRolesResult> {
+  const execution = resolveGrantRolesExecution(request);
   const transactionHash = await executeGrantRoleIfNeeded(request, execution);
+  return buildGrantRolesResult(request, execution, transactionHash);
+}
+
+export async function grantRole(request: GrantRoleRequest): Promise<GrantRoleResult> {
+  const singleGrantRequest = buildSingleGrantRolesRequest(request);
+  const execution = resolveGrantRolesExecution(singleGrantRequest);
+  const transactionHash = await executeGrantRoleIfNeeded(singleGrantRequest, execution);
   return buildGrantRoleResult(request, execution, transactionHash);
 }

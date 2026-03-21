@@ -250,6 +250,7 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.SET_STAMINA_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_STAMINA_REFILL_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_SETTLEMENT_CONFIG]: TransactionCostCategory.LOW,
+  [TransactionType.SET_BLITZ_EXPLORATION_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_BLITZ_REGISTRATION_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_QUEST_CONFIG]: TransactionCostCategory.LOW,
 };

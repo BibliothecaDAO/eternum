@@ -802,6 +802,10 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   entry_token_deploy_calldata: BigNumberish[];
   entry_token_ipfs_cid: ByteArray;
 }
+
+export interface SetBlitzExplorationConfigProps extends SystemSigner {
+  reward_profile_id: BigNumberish;
+}
 export interface MintTestRealmProps extends SystemSigner {
   token_id: BigNumberish;
   realms_address: BigNumberish;

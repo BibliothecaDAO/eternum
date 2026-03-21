@@ -9,17 +9,52 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
-    date: "2026-03-20",
-    title: "Removed Village Preview Mode",
+    date: "2026-03-21",
+    title: "Factory Dev Panel Polish",
     description:
-      "Village timer and militia claim panels now render only for real villages, removing the mock preview mode from owned realms.",
+      "Factory V2 developer tools now put contract lookup first, keep factory config multicalls much more compact, and prompt for a wallet network switch before sending config on the wrong chain.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Config Multicall",
+    description:
+      "Factory V2 now hides a developer factory-config panel that lets you batch selected set_factory calls into one wallet multicall, so advanced setup changes are faster and easier to manage.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Mainnet Launch Recovery",
+    description:
+      "Factory V2 now supports mainnet launch workflows again and automatically turns on gas coverage after mainnet game setup, so new worlds can come online without a separate paymaster sync.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Dev Contract Lookup",
+    description:
+      "Factory V2 now hides a developer lookup panel that can resolve prize and custom manifest contract addresses directly from the factory indexer, without waiting for a game indexer to come online.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-20",
+    title: "Pending Launch Reload Fix",
+    description:
+      "Factory V2 now caches a launch as soon as you start it, so reloading the page still keeps that game visible while it is coming online.",
     type: "fix",
   },
   {
-    date: "2026-03-19",
-    title: "Village Pass Distributor Transfer",
+    date: "2026-03-20",
+    title: "Blitz Reward Preview",
     description:
-      "Village settlement now shows the distributor wallet pass balance, adds a one-click transfer to your connected wallet, and limits village placement realm choices to settled realms that still have free village slots.",
+      "Factory V2 now shows the active Blitz exploration reward table for the selected duration, so you can see the exact reward mix before you launch.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-20",
+    title: "Factory V2 Launch Center",
+    description:
+      "The landing page now has a full Factory V2 flow for starting a game, checking progress, and recovering pending launches, with Blitz opening first when Factory is idle, calmer progress states, and a layout that holds up much better on mobile.",
     type: "feature",
   },
   {
@@ -69,41 +104,6 @@ export const latestFeatures: LatestFeature[] = [
     title: "Faith Total FP Estimation",
     description:
       "Faith leaderboard Total FP now includes estimated unclaimed points from each Wonder's current FP/sec, so rankings reflect live devotion growth between contract claims.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-18",
-    title: "Village Militia Claim Action",
-    description:
-      "Owned village timer panels now include an onchain claim button for militia grants once the unlock timer is ready, matching contract-required `receive_army_grant` flow.",
-    type: "feature",
-  },
-  {
-    date: "2026-03-18",
-    title: "No-Scroll Village Timer Grid",
-    description:
-      "Village intel in selected-tile details now uses a fixed three-cell micro-grid on small screens, so militia and immunity timings stay visible without horizontal scrolling.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-18",
-    title: "Compact Village Intel Ribbon",
-    description:
-      "Selected-tile village timer info now uses a compact chip ribbon, preserving room for defense, production, and balance tabs while keeping militia and immunity timing visible.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-18",
-    title: "Public Village Timer Intel",
-    description:
-      "Village militia unlock and raid-immunity timers now appear in selected-tile structure details, so any player can inspect village vulnerability windows without owning that structure.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-18",
-    title: "Village Timers and Cap Readouts",
-    description:
-      "Village details now show militia unlock and raid-immunity timing, and troop create/transfer flows use consistent deployment-cap and army-strength readouts so military limits are clearer before action.",
     type: "improvement",
   },
   {

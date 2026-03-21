@@ -3564,7 +3564,7 @@ export const GameEntryModal = ({
     });
 
     // Navigate with placeholder coords (0,0). The loading overlay will
-    // re-navigate to the player's realm once structures are available.
+    // re-navigate to the player's realm once structures are available
     const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));

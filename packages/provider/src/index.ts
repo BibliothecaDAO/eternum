@@ -30,7 +30,8 @@ export { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory 
 export { BatchedTransactionDetail, TransactionType } from "./types";
 export type { VrfSource } from "./vrf";
 
-const MIN_V3_L2_GAS_MAX_AMOUNT = 1_500_000_000n;
+// Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
+const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
 const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
 const HUNDRED_PERCENT = 100n;
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
@@ -326,7 +327,7 @@ const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN 
   const currentMaxAmount = resourceBounds.l2_gas.max_amount;
   const paddedMaxAmount =
     (currentMaxAmount * (HUNDRED_PERCENT + V3_L2_GAS_OVERHEAD_PERCENT) + (HUNDRED_PERCENT - 1n)) / HUNDRED_PERCENT;
-  const nextMaxAmount = paddedMaxAmount > MIN_V3_L2_GAS_MAX_AMOUNT ? paddedMaxAmount : MIN_V3_L2_GAS_MAX_AMOUNT;
+  const nextMaxAmount = paddedMaxAmount > MAX_V3_L2_GAS_MAX_AMOUNT ? MAX_V3_L2_GAS_MAX_AMOUNT : paddedMaxAmount;
 
   if (nextMaxAmount === currentMaxAmount) {
     return resourceBounds;
@@ -864,6 +865,10 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public isBatching(): boolean {
     return Array.isArray(this._batchCalls);
+  }
+
+  public getQueuedBatchCallCount(): number {
+    return this._batchCalls?.length ?? 0;
   }
 
   public markImmediateEntrypoints(entrypoints: string | string[]): void {
@@ -3287,6 +3292,16 @@ export class EternumProvider extends EnhancedDojoProvider {
         resources.length,
         ...resources.flatMap(({ resource, min_amount, max_amount }) => [resource, min_amount, max_amount]),
       ],
+    });
+  }
+
+  public async set_blitz_exploration_config(props: SystemProps.SetBlitzExplorationConfigProps) {
+    const { reward_profile_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_blitz_exploration_config",
+      calldata: [reward_profile_id],
     });
   }
 

@@ -201,6 +201,7 @@ export enum TransactionType {
   SET_STAMINA_CONFIG = "set_stamina_config",
   SET_STAMINA_REFILL_CONFIG = "set_stamina_refill_config",
   SET_SETTLEMENT_CONFIG = "set_settlement_config",
+  SET_BLITZ_EXPLORATION_CONFIG = "set_blitz_exploration_config",
   SET_BLITZ_REGISTRATION_CONFIG = "set_blitz_registration_config",
   SET_QUEST_CONFIG = "set_quest_config",
 

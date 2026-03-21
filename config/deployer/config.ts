@@ -19,6 +19,7 @@ import {
 
 // Browser-compatible: Make chalk optional for browser environments
 let chalk: any;
+let pathModule: typeof import("path") | undefined;
 try {
   // Support both ESM (chalk@5) and CJS resolution
   // If require returns a namespace with .default, unwrap it
@@ -37,6 +38,13 @@ try {
     red: noop,
     blue: noop,
   };
+}
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  pathModule = require("path");
+} catch {
+  pathModule = undefined;
 }
 
 import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
@@ -2112,8 +2120,10 @@ export const nodeReadConfig = async (chain: Chain, gameType: string) => {
   }
 
   try {
-    const path = `./environments/data/${gameType}.${chain}.json`;
-    const config = JSON.parse(fs.readFileSync(path, "utf8"));
+    const configPath = pathModule
+      ? pathModule.resolve(import.meta.dir, `../generated/${gameType}.${chain}.json`)
+      : `./generated/${gameType}.${chain}.json`;
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     return config.configuration as any; // as any to avoid type errors
   } catch (error) {
     throw new Error(`Failed to load configuration for ${gameType} on chain ${chain}: ${error}`);

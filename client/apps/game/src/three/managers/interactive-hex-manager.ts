@@ -14,7 +14,7 @@ const INTERACTIVE_HEX_Y = 0.1;
 const INTERACTIVE_PICK_Y = 0;
 const RAY_PARALLEL_EPSILON = 1e-6;
 
-export type InteractiveHexHoverVisualMode = HoverVisualMode;
+type InteractiveHexHoverVisualMode = HoverVisualMode;
 
 export class InteractiveHexManager {
   private scene: THREE.Scene;

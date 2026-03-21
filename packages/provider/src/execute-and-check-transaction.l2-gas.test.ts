@@ -33,7 +33,7 @@ const makeProvider = () => {
 };
 
 describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
-  it("bumps l2 gas max_amount when fee estimation returns a low cap", async () => {
+  it("caps l2 gas max_amount at the current v3 mainnet limit", async () => {
     const provider = makeProvider();
     const signer = {
       estimateInvokeFee: vi.fn().mockResolvedValue({
@@ -51,7 +51,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
     const txDetails = provider.execute.mock.calls[0][3];
     expect(txDetails.version).toBe(3);
-    expect(txDetails.resourceBounds.l2_gas.max_amount).toBeGreaterThan(1_225_966_400n);
+    expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(1_200_000_000n);
   });
 
   it("submits without waiting when waitForConfirmation is false", async () => {
