@@ -6,6 +6,7 @@ import {
   setBlitzExplorationConfig,
   setBlitzRegistrationParametersConfig,
   setFaithConfig,
+  setResourceFactoryConfig,
   setSeasonConfig,
 } from "../config/native-steps";
 
@@ -211,5 +212,37 @@ describe("native config steps", () => {
 
     expect(capturedCalls).toHaveLength(1);
     expect(capturedCalls[0]?.end_at).toBe((capturedCalls[0]?.start_main_at as number) + 3_600);
+  });
+
+  test("fills missing simple recipe outputs with zero in resource factory payloads", async () => {
+    const baseConfig = loadEnvironmentConfiguration("mainnet.blitz");
+    const config = applyDeploymentConfigOverrides(baseConfig, {
+      startMainAt: 1_763_112_600,
+      factoryAddress: "0xabc",
+      durationSeconds: 432_000,
+      devModeOn: true,
+    });
+
+    const capturedCalls: Array<Record<string, unknown>> = [];
+    const provider = {
+      manifest: getGameManifest("mainnet") as any,
+      set_resource_factory_config: async (payload: Record<string, unknown>) => {
+        capturedCalls.push(payload);
+        return { statusReceipt: "ok" };
+      },
+    };
+
+    await setResourceFactoryConfig({
+      account: { address: "0x1" } as any,
+      provider: provider as any,
+      config,
+    });
+
+    expect(capturedCalls).toHaveLength(1);
+
+    const calls = capturedCalls[0]?.calls as Array<Record<string, unknown>>;
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.every((call) => call.resource_output_per_simple_input !== undefined)).toBe(true);
+    expect(calls.some((call) => call.resource_output_per_simple_input === 0)).toBe(true);
   });
 });

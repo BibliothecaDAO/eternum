@@ -242,7 +242,7 @@ function buildResourceFactoryCalls(config: NativeConfig) {
     realm_output_per_second: getNumericRecordValue(complexOutputsByResource, resourceType),
     village_output_per_second: getNumericRecordValue(complexOutputsByResource, resourceType) / 2,
     labor_output_per_resource: getNumericRecordValue(laborOutputsByResource, resourceType),
-    resource_output_per_simple_input: getNumericRecordValue(simpleOutputsByResource, resourceType),
+    resource_output_per_simple_input: getOptionalNumericRecordValue(simpleOutputsByResource, resourceType) ?? 0,
     simple_input_resources_list: getNumericRecordValue(simpleInputsByResource, resourceType),
     resource_output_per_complex_input: getNumericRecordValue(complexOutputsByResource, resourceType),
     complex_input_resources_list: complexInputResourcesList,
