@@ -39,6 +39,10 @@ vi.mock("./factory-v2-watch-workspace", () => ({
   ),
 }));
 
+vi.mock("./factory-v2-developer-tools", () => ({
+  FactoryV2DeveloperTools: () => <div>Developer tools</div>,
+}));
+
 vi.mock("./factory-v2-workflow-switch", () => ({
   FactoryV2WorkflowSwitch: ({ onSelect }: { onSelect: (view: "start" | "watch") => void }) => (
     <div>

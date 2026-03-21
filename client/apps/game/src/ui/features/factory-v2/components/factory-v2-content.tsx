@@ -3,6 +3,7 @@ import { useState } from "react";
 import { factoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
+import { FactoryV2DeveloperTools } from "./factory-v2-developer-tools";
 import { FactoryV2ModeSwitch } from "./factory-v2-mode-switch";
 import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
@@ -125,6 +126,14 @@ export const FactoryV2Content = () => {
             />
           </div>
         ) : null}
+
+        <FactoryV2DeveloperTools
+          mode={factory.selectedMode}
+          chain={factory.selectedEnvironment?.chain ?? "slot"}
+          environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+          draftGameName={factory.draftGameName}
+          selectedRunName={factory.selectedRun?.name ?? null}
+        />
       </div>
     </section>
   );

@@ -1,34 +1,34 @@
 import { shortString } from "starknet";
 
-/**
- * Decode a padded felt-hex string into an ASCII short string, stripping null bytes.
- */
 export const decodePaddedFeltAscii = (hex: string): string => {
   if (!hex) return "";
-  const h = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
-  if (h === "0") return "";
+  const normalizedHex = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
+  if (normalizedHex === "0") return "";
 
   try {
-    const asDec = BigInt(`0x${h}`).toString();
-    const decoded = shortString.decodeShortString(asDec);
+    const asDecimal = BigInt(`0x${normalizedHex}`).toString();
+    const decoded = shortString.decodeShortString(asDecimal);
     if (decoded && decoded.trim().length > 0) return decoded;
   } catch {
-    // ignore and fallback to manual decode
+    // Ignore decode failures and fall back to manual byte parsing.
   }
 
-  let i = 0;
-  while (i + 1 < h.length && h.slice(i, i + 2) === "00") i += 2;
-  let out = "";
-  for (; i + 1 < h.length; i += 2) {
-    const byte = parseInt(h.slice(i, i + 2), 16);
+  let index = 0;
+  while (index + 1 < normalizedHex.length && normalizedHex.slice(index, index + 2) === "00") index += 2;
+
+  let output = "";
+  for (; index + 1 < normalizedHex.length; index += 2) {
+    const byte = parseInt(normalizedHex.slice(index, index + 2), 16);
     if (byte === 0) continue;
-    out += String.fromCharCode(byte);
+    output += String.fromCharCode(byte);
   }
-  return out;
+
+  return output;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value) return null;
+
   if (typeof value === "string") {
     try {
       const parsed = JSON.parse(value);
@@ -39,23 +39,21 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
       return null;
     }
   }
+
   if (typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
+
   return null;
 };
 
-/**
- * Pull the felt string stored in a factory row for either `name` or `data.name`.
- */
 export const extractNameFelt = (row: Record<string, unknown>): string | null => {
   const direct = row.name ?? row["data.name"];
   if (typeof direct === "string") return direct;
 
   const data = asRecord(row.data);
-  if (data) {
-    const nested = data.name;
-    if (typeof nested === "string") return nested;
+  if (data && typeof data.name === "string") {
+    return data.name;
   }
 
   return null;
@@ -64,15 +62,18 @@ export const extractNameFelt = (row: Record<string, unknown>): string | null => 
 const normalizeValue = (value: unknown): bigint | null => {
   if (typeof value === "bigint") return value;
   if (typeof value === "number" && Number.isFinite(value)) return BigInt(Math.floor(value));
+
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return null;
+
     try {
       return BigInt(trimmed);
     } catch {
       return null;
     }
   }
+
   return null;
 };
 
@@ -82,6 +83,7 @@ const normalizeAddress = (value: unknown): string | null => {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return null;
+
     try {
       const asBigInt =
         trimmed.startsWith("0x") || trimmed.startsWith("0X")
@@ -89,6 +91,7 @@ const normalizeAddress = (value: unknown): string | null => {
           : /^[0-9]+$/.test(trimmed)
             ? BigInt(trimmed)
             : null;
+
       if (asBigInt == null || asBigInt <= 0n) return null;
       return `0x${asBigInt.toString(16)}`;
     } catch {
@@ -107,22 +110,15 @@ const normalizeAddress = (value: unknown): string | null => {
   return null;
 };
 
-/**
- * Pull the world contract address from a factory row.
- */
 export const extractContractAddress = (row: Record<string, unknown>): string | null => {
-  const direct = row.contract_address ?? row["data.address"];
-  const normalizedDirect = normalizeAddress(direct);
-  if (normalizedDirect) {
-    return normalizedDirect;
+  const direct = normalizeAddress(row.contract_address ?? row["data.address"]);
+  if (direct) {
+    return direct;
   }
 
   const data = asRecord(row.data);
   if (data) {
-    const nested = normalizeAddress(data.contract_address);
-    if (nested) {
-      return nested;
-    }
+    return normalizeAddress(data.contract_address);
   }
 
   return null;
@@ -130,10 +126,10 @@ export const extractContractAddress = (row: Record<string, unknown>): string | n
 
 const findGameNumber = (record: Record<string, unknown>, depth = 0): bigint | null => {
   if (depth > 3) return null;
+
   for (const key of ["game_number", "gameNumber"]) {
     if (Object.prototype.hasOwnProperty.call(record, key)) {
-      const value = record[key as keyof typeof record];
-      const parsed = normalizeValue(value);
+      const parsed = normalizeValue(record[key]);
       if (parsed !== null) return parsed;
     }
   }
@@ -141,36 +137,32 @@ const findGameNumber = (record: Record<string, unknown>, depth = 0): bigint | nu
   if (Object.prototype.hasOwnProperty.call(record, "data")) {
     const nested = asRecord(record.data);
     if (nested) {
-      const nestedValue = findGameNumber(nested, depth + 1);
-      if (nestedValue !== null) return nestedValue;
+      return findGameNumber(nested, depth + 1);
     }
   }
 
   return null;
 };
 
-/**
- * Pull the highest game number from a factory row that exposes a `game_number`.
- */
 export const extractGameNumberFromRow = (row: Record<string, unknown>): bigint | null => {
   return findGameNumber(row);
 };
 
-/**
- * Execute a Torii factory SQL query and return the raw rows.
- */
 export const fetchFactoryRows = async (
   factorySqlBaseUrl: string,
   query: string,
 ): Promise<Record<string, unknown>[]> => {
   const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Factory query failed: ${response.status} ${response.statusText}`);
   }
-  const rows = (await res.json()) as Record<string, unknown>[];
+
+  const rows = (await response.json()) as Record<string, unknown>[];
   if (!Array.isArray(rows)) {
     throw new Error("Factory query returned unexpected payload");
   }
+
   return rows;
 };
