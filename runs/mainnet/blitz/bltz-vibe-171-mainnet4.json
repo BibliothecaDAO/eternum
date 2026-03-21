@@ -6,21 +6,21 @@
   "gameType": "blitz",
   "gameName": "bltz-vibe-171-mainnet4",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/bltz-vibe-171-mainnet4/23370728054-1.json",
-  "latestLaunchRequestId": "23370728054-1",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "configure-world",
+  "inputPath": "inputs/mainnet/blitz/bltz-vibe-171-mainnet4/23371091921-1.json",
+  "latestLaunchRequestId": "23371091921-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-21T03:09:03.253Z",
-  "updatedAt": "2026-03-21T03:10:30.307Z",
+  "updatedAt": "2026-03-21T03:32:20.998Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23370728054,
+    "workflowRunId": 23371091921,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23370728054",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23371091921",
     "ref": "credence0x/factory-v2-polish",
-    "sha": "7eec405d7887fc408e5da287ae90a49c30879f3d"
+    "sha": "82da0cf7a8560295c903b04b37b77c63f1314b20"
   },
   "steps": [
     {
