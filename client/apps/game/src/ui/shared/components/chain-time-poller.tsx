@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { CHAIN_TIME_DEBUG_STORAGE_KEY, logChainTimeDebug } from "@/utils/chain-time-debug";
 
-const POLL_INTERVAL_MS = 60_000;
+const POLL_INTERVAL_MS = 10_000;
 
 export const ChainTimePoller = () => {
   const {

@@ -53,8 +53,16 @@ export const useChainTimeStore = create<ChainTimeState>((set, get) => ({
       }
 
       const currentNowMs = computeNowMs(state.anchorTimestampMs, state.anchorPerfMs);
-      const anchorTimestampMs = Math.max(heartbeat.timestamp, currentNowMs);
       const anchorPerfMs = getPerfNowMs();
+
+      // Cap how far the client clock can lead the chain.
+      // Without a cap, Math.max creates a one-way ratchet where drift
+      // accumulates indefinitely (the client can never sync back down).
+      // 5 seconds covers normal block-to-block jitter and RPC latency
+      // while preventing the unbounded inflation that causes tx failures.
+      const MAX_LEAD_MS = 5_000;
+      const leadMs = currentNowMs - heartbeat.timestamp;
+      const anchorTimestampMs = leadMs > MAX_LEAD_MS ? heartbeat.timestamp + MAX_LEAD_MS : Math.max(heartbeat.timestamp, currentNowMs);
       const rewindPreventedMs = Math.max(0, currentNowMs - heartbeat.timestamp);
 
       logChainTimeDebug("heartbeat_applied", {
@@ -65,6 +73,7 @@ export const useChainTimeStore = create<ChainTimeState>((set, get) => ({
         previousNowMs: currentNowMs,
         nextAnchorTimestampMs: anchorTimestampMs,
         rewindPreventedMs,
+        driftCappedMs: leadMs > MAX_LEAD_MS ? leadMs - MAX_LEAD_MS : 0,
       });
 
       return {
