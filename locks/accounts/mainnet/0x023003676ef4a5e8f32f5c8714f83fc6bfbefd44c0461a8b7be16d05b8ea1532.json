@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "daily-ranked-apac",
-    "launchRequestId": "23378392387-1",
+    "gameName": "daily-unranked-2-21.03.26",
+    "launchRequestId": "23381319954-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23378392387,
+    "workflowRunId": 23381319954,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "9d8edad7-0c21-4bab-ab92-88b05dc8b873"
+    "stepId": "create-world",
+    "leaseId": "bb96652d-5655-4880-b168-f7417600e4ae"
   },
-  "acquiredAt": "2026-03-21T11:14:06.029Z",
-  "heartbeatAt": "2026-03-21T11:14:10.176Z",
-  "expiresAt": "2026-03-21T11:14:10.176Z",
-  "releasedAt": "2026-03-21T11:14:10.176Z"
+  "acquiredAt": "2026-03-21T14:05:45.690Z",
+  "heartbeatAt": "2026-03-21T14:05:45.690Z",
+  "expiresAt": "2026-03-21T14:15:45.690Z"
 }
