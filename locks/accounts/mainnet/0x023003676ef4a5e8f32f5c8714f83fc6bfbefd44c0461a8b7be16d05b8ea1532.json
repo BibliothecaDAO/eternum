@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-mainnet-0000",
-    "launchRequestId": "23371674803-1",
+    "gameName": "bltz-mainnet-0001",
+    "launchRequestId": "23371991368-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23371674803,
+    "workflowRunId": 23371991368,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "698cf4e2-d714-4bdd-8db7-e901dfa41470"
+    "stepId": "create-world",
+    "leaseId": "0b5091a1-ffe6-40d9-a11a-20b2e25c2c56"
   },
-  "acquiredAt": "2026-03-21T04:11:08.544Z",
-  "heartbeatAt": "2026-03-21T04:11:12.693Z",
-  "expiresAt": "2026-03-21T04:11:12.693Z",
-  "releasedAt": "2026-03-21T04:11:12.693Z"
+  "acquiredAt": "2026-03-21T04:29:09.641Z",
+  "heartbeatAt": "2026-03-21T04:29:09.641Z",
+  "expiresAt": "2026-03-21T04:39:09.641Z"
 }
