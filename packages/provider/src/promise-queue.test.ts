@@ -55,12 +55,10 @@ describe("PromiseQueue", () => {
     });
 
     expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
-    expect(executor.executeAndCheckTransaction).toHaveBeenCalledWith(
-      signer,
-      calls,
-      undefined,
-      { waitForConfirmation: false, transactionType: TransactionType.SET_ENTITY_NAME },
-    );
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledWith(signer, calls, undefined, {
+      waitForConfirmation: false,
+      transactionType: TransactionType.SET_ENTITY_NAME,
+    });
   });
 
   // 2 -----------------------------------------------------------------------
@@ -92,9 +90,7 @@ describe("PromiseQueue", () => {
     const batchDetails = (executor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls[0][2];
     expect(batchDetails).toBeDefined();
     expect(batchDetails).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ type: TransactionType.SET_ENTITY_NAME, count: 3 }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ type: TransactionType.SET_ENTITY_NAME, count: 3 })]),
     );
   });
 
@@ -138,9 +134,15 @@ describe("PromiseQueue", () => {
     const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
     const signer = makeSigner();
 
-    const p1 = queue.enqueue({ signer, calls: makeCall("a"), transactionType: TransactionType.SET_ENTITY_NAME }).catch((e: unknown) => e);
-    const p2 = queue.enqueue({ signer, calls: makeCall("b"), transactionType: TransactionType.SET_ENTITY_NAME }).catch((e: unknown) => e);
-    const p3 = queue.enqueue({ signer, calls: makeCall("c"), transactionType: TransactionType.SET_ENTITY_NAME }).catch((e: unknown) => e);
+    const p1 = queue
+      .enqueue({ signer, calls: makeCall("a"), transactionType: TransactionType.SET_ENTITY_NAME })
+      .catch((e: unknown) => e);
+    const p2 = queue
+      .enqueue({ signer, calls: makeCall("b"), transactionType: TransactionType.SET_ENTITY_NAME })
+      .catch((e: unknown) => e);
+    const p3 = queue
+      .enqueue({ signer, calls: makeCall("c"), transactionType: TransactionType.SET_ENTITY_NAME })
+      .catch((e: unknown) => e);
 
     await vi.runAllTimersAsync();
 
@@ -406,12 +408,14 @@ describe("Parallel Category Processing", () => {
   it("processes independent categories in parallel", async () => {
     // Create a mock executor with artificial 50ms delay
     const executor: TransactionExecutor = {
-      executeAndCheckTransaction: vi.fn().mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve({ statusReceipt: "PENDING", transaction_hash: "0xabc" }), 50),
-          ),
-      ),
+      executeAndCheckTransaction: vi
+        .fn()
+        .mockImplementation(
+          () =>
+            new Promise((resolve) =>
+              setTimeout(() => resolve({ statusReceipt: "PENDING", transaction_hash: "0xabc" }), 50),
+            ),
+        ),
     };
 
     const queue = new PromiseQueue(executor, { batchDelayMs: 0 });

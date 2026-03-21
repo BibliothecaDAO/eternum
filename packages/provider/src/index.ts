@@ -423,7 +423,6 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
 }
 const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
 
-
 export const buildVrfCalls = async ({
   account,
   call,
@@ -997,7 +996,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
-    return await this.promiseQueue.enqueue({ signer, calls: callArgs, transactionType: TransactionType.OBTAIN_ENTRY_TOKEN });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: callArgs,
+      transactionType: TransactionType.OBTAIN_ENTRY_TOKEN,
+    });
   }
 
   public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
@@ -1022,7 +1025,11 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: CallData.compile([tokenIdUint256, lockId ?? 69]),
       };
 
-      return await this.promiseQueue.enqueue({ signer, calls: [tokenLockCall, registerCall], transactionType: TransactionType.REGISTER });
+      return await this.promiseQueue.enqueue({
+        signer,
+        calls: [tokenLockCall, registerCall],
+        transactionType: TransactionType.REGISTER,
+      });
     }
 
     return await this.promiseQueue.enqueue({ signer, calls: registerCall, transactionType: TransactionType.REGISTER });
@@ -1055,7 +1062,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [count],
     };
     calls.push(makeHyperstructureCall);
-    return await this.promiseQueue.enqueue({ signer, calls: calls, transactionType: TransactionType.MAKE_HYPERSTRUCTURES });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: calls,
+      transactionType: TransactionType.MAKE_HYPERSTRUCTURES,
+    });
   }
 
   /**
@@ -1086,7 +1097,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "assign_realm_positions",
       calldata: [],
     });
-    return await this.promiseQueue.enqueue({ signer, calls: calls, transactionType: TransactionType.ASSIGN_REALM_POSITIONS });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: calls,
+      transactionType: TransactionType.ASSIGN_REALM_POSITIONS,
+    });
   }
 
   /**
@@ -1330,20 +1345,24 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
     } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
-      entrypoint: "create_order",
-      calldata: [
-        maker_id,
-        taker_id,
-        maker_gives_resource_type,
-        taker_pays_resource_type,
-        maker_gives_min_resource_amount,
-        maker_gives_max_count,
-        taker_pays_min_resource_amount,
-        expires_at,
-      ],
-    }, transactionType: TransactionType.CREATE_ORDER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+        entrypoint: "create_order",
+        calldata: [
+          maker_id,
+          taker_id,
+          maker_gives_resource_type,
+          taker_pays_resource_type,
+          maker_gives_min_resource_amount,
+          maker_gives_max_count,
+          taker_pays_min_resource_amount,
+          expires_at,
+        ],
+      },
+      transactionType: TransactionType.CREATE_ORDER,
+    });
   }
 
   /**
@@ -1378,11 +1397,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async accept_order(props: SystemProps.AcceptOrderProps) {
     const { taker_id, trade_id, taker_buys_count, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
-      entrypoint: "accept_order",
-      calldata: [taker_id, trade_id, taker_buys_count],
-    }, transactionType: TransactionType.ACCEPT_ORDER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+        entrypoint: "accept_order",
+        calldata: [taker_id, trade_id, taker_buys_count],
+      },
+      transactionType: TransactionType.ACCEPT_ORDER,
+    });
   }
 
   /**
@@ -1411,11 +1434,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async cancel_order(props: SystemProps.CancelOrderProps) {
     const { trade_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
-      entrypoint: "cancel_order",
-      calldata: [trade_id],
-    }, transactionType: TransactionType.CANCEL_ORDER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+        entrypoint: "cancel_order",
+        calldata: [trade_id],
+      },
+      transactionType: TransactionType.CANCEL_ORDER,
+    });
   }
 
   /**
@@ -1467,11 +1494,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
     const { realm_entity_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-structure_systems`),
-      entrypoint: "level_up",
-      calldata: [realm_entity_id],
-    }, transactionType: TransactionType.LEVEL_UP });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-structure_systems`),
+        entrypoint: "level_up",
+        calldata: [realm_entity_id],
+      },
+      transactionType: TransactionType.LEVEL_UP,
+    });
   }
 
   /**
@@ -1520,7 +1551,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [village_pass_token_id, connected_realm, direction],
     };
 
-    return await this.promiseQueue.enqueue({ signer, calls: [approvalForAllCall, ...callData, createCall], transactionType: TransactionType.CREATE });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: [approvalForAllCall, ...callData, createCall],
+      transactionType: TransactionType.CREATE,
+    });
   }
 
   /**
@@ -1534,11 +1569,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async receive_army_grant(props: SystemProps.ReceiveArmyGrantProps) {
     const { village_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-village_systems`),
-      entrypoint: "receive_army_grant",
-      calldata: [village_id],
-    }, transactionType: TransactionType.CREATE });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-village_systems`),
+        entrypoint: "receive_army_grant",
+        calldata: [village_id],
+      },
+      transactionType: TransactionType.CREATE,
+    });
   }
 
   /**
@@ -1693,16 +1732,20 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async send_resources(props: SystemProps.SendResourcesProps) {
     const { sender_entity_id, recipient_entity_id, resources, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
-      entrypoint: "send",
-      calldata: [
-        sender_entity_id,
-        recipient_entity_id,
-        resources.length,
-        ...resources.flatMap(({ resource, amount }) => [resource, amount]),
-      ],
-    }, transactionType: TransactionType.SEND });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+        entrypoint: "send",
+        calldata: [
+          sender_entity_id,
+          recipient_entity_id,
+          resources.length,
+          ...resources.flatMap(({ resource, amount }) => [resource, amount]),
+        ],
+      },
+      transactionType: TransactionType.SEND,
+    });
   }
 
   /**
@@ -1796,17 +1839,25 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     };
 
-    return await this.promiseQueue.enqueue({ signer, calls: [approvalCall, pickupCall], transactionType: TransactionType.PICKUP });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: [approvalCall, pickupCall],
+      transactionType: TransactionType.PICKUP,
+    });
   }
 
   public async arrivals_offload(props: SystemProps.ArrivalsOffloadProps) {
     const { structureId, day, slot, resource_count, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
-      entrypoint: "arrivals_offload",
-      calldata: [structureId, day, slot, resource_count],
-    }, transactionType: TransactionType.ARRIVALS_OFFLOAD });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+        entrypoint: "arrivals_offload",
+        calldata: [structureId, day, slot, resource_count],
+      },
+      transactionType: TransactionType.ARRIVALS_OFFLOAD,
+    });
   }
 
   /**
@@ -1829,11 +1880,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_address_name(props: SystemProps.SetAddressNameProps) {
     const { name, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-name_systems`),
-      entrypoint: "set_address_name",
-      calldata: [name],
-    }, transactionType: TransactionType.SET_ADDRESS_NAME });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-name_systems`),
+        entrypoint: "set_address_name",
+        calldata: [name],
+      },
+      transactionType: TransactionType.SET_ADDRESS_NAME,
+    });
   }
 
   /**
@@ -1858,13 +1913,16 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_entity_name(props: SystemProps.SetEntityNameProps) {
     const { entity_id, name, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-name_systems`),
-      entrypoint: "set_entity_name",
-      calldata: [entity_id, name],
-    }, transactionType: TransactionType.SET_ENTITY_NAME });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-name_systems`),
+        entrypoint: "set_entity_name",
+        calldata: [entity_id, name],
+      },
+      transactionType: TransactionType.SET_ENTITY_NAME,
+    });
   }
-
 
   /**
    * Create a new building
@@ -1895,11 +1953,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_building(props: SystemProps.CreateBuildingProps): Promise<GetTransactionReceiptResponse> {
     const { entity_id, directions, building_category, use_simple, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "create_building",
-      calldata: CallData.compile([entity_id, directions, building_category, use_simple]),
-    }, transactionType: TransactionType.CREATE_BUILDING });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+        entrypoint: "create_building",
+        calldata: CallData.compile([entity_id, directions, building_category, use_simple]),
+      },
+      transactionType: TransactionType.CREATE_BUILDING,
+    });
   }
 
   /**
@@ -1932,14 +1994,18 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
     const { entity_id, building_coord, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "destroy_building",
-      calldata: CallData.compile([
-        entity_id,
-        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
-      ]),
-    }, transactionType: TransactionType.DESTROY_BUILDING });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+        entrypoint: "destroy_building",
+        calldata: CallData.compile([
+          entity_id,
+          { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+        ]),
+      },
+      transactionType: TransactionType.DESTROY_BUILDING,
+    });
   }
 
   /**
@@ -1967,14 +2033,18 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async pause_production(props: SystemProps.PauseProductionProps) {
     const { entity_id, building_coord, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "pause_building_production",
-      calldata: CallData.compile([
-        entity_id,
-        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
-      ]),
-    }, transactionType: TransactionType.PAUSE_BUILDING_PRODUCTION });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+        entrypoint: "pause_building_production",
+        calldata: CallData.compile([
+          entity_id,
+          { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+        ]),
+      },
+      transactionType: TransactionType.PAUSE_BUILDING_PRODUCTION,
+    });
   }
 
   /**
@@ -2002,14 +2072,18 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async resume_production(props: SystemProps.ResumeProductionProps) {
     const { entity_id, building_coord, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "resume_building_production",
-      calldata: CallData.compile([
-        entity_id,
-        { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
-      ]),
-    }, transactionType: TransactionType.RESUME_BUILDING_PRODUCTION });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+        entrypoint: "resume_building_production",
+        calldata: CallData.compile([
+          entity_id,
+          { alt: building_coord.alt ?? false, x: building_coord.x, y: building_coord.y },
+        ]),
+      },
+      transactionType: TransactionType.RESUME_BUILDING_PRODUCTION,
+    });
   }
 
   public async execute_realm_production_plan(
@@ -2114,7 +2188,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
-    return await this.promiseQueue.enqueue({ signer, calls: callArgs, transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: callArgs,
+      transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+    });
   }
 
   /**
@@ -2243,11 +2321,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async buy_resources(props: SystemProps.BuyResourcesProps) {
     const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
-      entrypoint: "buy",
-      calldata: [bank_entity_id, entity_id, resource_type, amount],
-    }, transactionType: TransactionType.BUY });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
+        entrypoint: "buy",
+        calldata: [bank_entity_id, entity_id, resource_type, amount],
+      },
+      transactionType: TransactionType.BUY,
+    });
   }
 
   /**
@@ -2276,11 +2358,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async sell_resources(props: SystemProps.SellResourcesProps) {
     const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
-      entrypoint: "sell",
-      calldata: [bank_entity_id, entity_id, resource_type, amount],
-    }, transactionType: TransactionType.SELL });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
+        entrypoint: "sell",
+        calldata: [bank_entity_id, entity_id, resource_type, amount],
+      },
+      transactionType: TransactionType.SELL,
+    });
   }
 
   /**
@@ -2376,11 +2462,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {
     const { bank_entity_id, entity_id, resource_type, shares, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
-      entrypoint: "remove",
-      calldata: [bank_entity_id, entity_id, resource_type, shares],
-    }, transactionType: TransactionType.REMOVE });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
+        entrypoint: "remove",
+        calldata: [bank_entity_id, entity_id, resource_type, shares],
+      },
+      transactionType: TransactionType.REMOVE,
+    });
   }
 
   /**
@@ -2398,11 +2488,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async guard_add(props: SystemProps.GuardAddProps) {
     const { for_structure_id, slot, category, tier, amount, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
-      entrypoint: "guard_add",
-      calldata: [for_structure_id, slot, category, tier, amount],
-    }, transactionType: TransactionType.GUARD_ADD });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "guard_add",
+        calldata: [for_structure_id, slot, category, tier, amount],
+      },
+      transactionType: TransactionType.GUARD_ADD,
+    });
   }
 
   /**
@@ -2417,11 +2511,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async guard_delete(props: SystemProps.GuardDeleteProps) {
     const { for_structure_id, slot, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
-      entrypoint: "guard_delete",
-      calldata: [for_structure_id, slot],
-    }, transactionType: TransactionType.GUARD_DELETE });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "guard_delete",
+        calldata: [for_structure_id, slot],
+      },
+      transactionType: TransactionType.GUARD_DELETE,
+    });
   }
 
   /**
@@ -2439,11 +2537,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_create(props: SystemProps.ExplorerCreateProps) {
     const { for_structure_id, category, tier, amount, spawn_direction, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
-      entrypoint: "explorer_create",
-      calldata: [for_structure_id, category, tier, amount, spawn_direction],
-    }, transactionType: TransactionType.EXPLORER_CREATE });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "explorer_create",
+        calldata: [for_structure_id, category, tier, amount, spawn_direction],
+      },
+      transactionType: TransactionType.EXPLORER_CREATE,
+    });
   }
 
   /**
@@ -2459,11 +2561,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_add(props: SystemProps.ExplorerAddProps) {
     const { to_explorer_id, amount, home_direction, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
-      entrypoint: "explorer_add",
-      calldata: [to_explorer_id, amount, home_direction],
-    }, transactionType: TransactionType.EXPLORER_ADD });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "explorer_add",
+        calldata: [to_explorer_id, amount, home_direction],
+      },
+      transactionType: TransactionType.EXPLORER_ADD,
+    });
   }
 
   /**
@@ -2477,11 +2583,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_delete(props: SystemProps.ExplorerDeleteProps) {
     const { explorer_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
-      entrypoint: "explorer_delete",
-      calldata: [explorer_id],
-    }, transactionType: TransactionType.EXPLORER_DELETE });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "explorer_delete",
+        calldata: [explorer_id],
+      },
+      transactionType: TransactionType.EXPLORER_DELETE,
+    });
   }
 
   /**
@@ -2497,16 +2607,20 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async troop_troop_adjacent_transfer(props: SystemProps.TroopTroopAdjacentTransferProps) {
     const { from_troop_id, to_troop_id, resources, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
-      entrypoint: "troop_troop_adjacent_transfer",
-      calldata: [
-        from_troop_id,
-        to_troop_id,
-        resources.length,
-        ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
-      ],
-    }, transactionType: TransactionType.TROOP_TROOP_ADJACENT_TRANSFER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+        entrypoint: "troop_troop_adjacent_transfer",
+        calldata: [
+          from_troop_id,
+          to_troop_id,
+          resources.length,
+          ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+        ],
+      },
+      transactionType: TransactionType.TROOP_TROOP_ADJACENT_TRANSFER,
+    });
   }
 
   /**
@@ -2522,16 +2636,20 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async troop_structure_adjacent_transfer(props: SystemProps.TroopStructureAdjacentTransferProps) {
     const { from_explorer_id, to_structure_id, resources, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
-      entrypoint: "troop_structure_adjacent_transfer",
-      calldata: [
-        from_explorer_id,
-        to_structure_id,
-        resources.length,
-        ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
-      ],
-    }, transactionType: TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+        entrypoint: "troop_structure_adjacent_transfer",
+        calldata: [
+          from_explorer_id,
+          to_structure_id,
+          resources.length,
+          ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+        ],
+      },
+      transactionType: TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER,
+    });
   }
 
   /**
@@ -2547,16 +2665,20 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async structure_troop_adjacent_transfer(props: SystemProps.StructureTroopAdjacentTransferProps) {
     const { from_structure_id, to_troop_id, resources, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
-      entrypoint: "structure_troop_adjacent_transfer",
-      calldata: [
-        from_structure_id,
-        to_troop_id,
-        resources.length,
-        ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
-      ],
-    }, transactionType: TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+        entrypoint: "structure_troop_adjacent_transfer",
+        calldata: [
+          from_structure_id,
+          to_troop_id,
+          resources.length,
+          ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+        ],
+      },
+      transactionType: TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER,
+    });
   }
 
   /**
@@ -2573,11 +2695,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_explorer_swap(props: SystemProps.ExplorerExplorerSwapProps) {
     const { from_explorer_id, to_explorer_id, to_explorer_direction, count, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
-      entrypoint: "explorer_explorer_swap",
-      calldata: [from_explorer_id, to_explorer_id, to_explorer_direction, count],
-    }, transactionType: TransactionType.EXPLORER_EXPLORER_SWAP });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "explorer_explorer_swap",
+        calldata: [from_explorer_id, to_explorer_id, to_explorer_direction, count],
+      },
+      transactionType: TransactionType.EXPLORER_EXPLORER_SWAP,
+    });
   }
 
   /**
@@ -2595,11 +2721,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_guard_swap(props: SystemProps.ExplorerGuardSwapProps) {
     const { from_explorer_id, to_structure_id, to_structure_direction, to_guard_slot, count, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
-      entrypoint: "explorer_guard_swap",
-      calldata: [from_explorer_id, to_structure_id, to_structure_direction, to_guard_slot, count],
-    }, transactionType: TransactionType.EXPLORER_GUARD_SWAP });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "explorer_guard_swap",
+        calldata: [from_explorer_id, to_structure_id, to_structure_direction, to_guard_slot, count],
+      },
+      transactionType: TransactionType.EXPLORER_GUARD_SWAP,
+    });
   }
 
   /**
@@ -2617,11 +2747,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async guard_explorer_swap(props: SystemProps.GuardExplorerSwapProps) {
     const { from_structure_id, from_guard_slot, to_explorer_id, to_explorer_direction, count, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
-      entrypoint: "guard_explorer_swap",
-      calldata: [from_structure_id, from_guard_slot, to_explorer_id, to_explorer_direction, count],
-    }, transactionType: TransactionType.GUARD_EXPLORER_SWAP });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "guard_explorer_swap",
+        calldata: [from_structure_id, from_guard_slot, to_explorer_id, to_explorer_direction, count],
+      },
+      transactionType: TransactionType.GUARD_EXPLORER_SWAP,
+    });
   }
 
   /**
@@ -2636,11 +2770,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_travel(props: SystemProps.ExplorerTravelProps) {
     const { explorer_id, directions, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
-      entrypoint: "explorer_move",
-      calldata: [explorer_id, directions, 0],
-    }, transactionType: TransactionType.TRAVEL_HEX });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+        entrypoint: "explorer_move",
+        calldata: [explorer_id, directions, 0],
+      },
+      transactionType: TransactionType.TRAVEL_HEX,
+    });
   }
 
   /**
@@ -2736,11 +2874,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata.push(resource.amount); // amount
     });
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
-      entrypoint: "attack_explorer_vs_explorer",
-      calldata,
-    }, transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
+        entrypoint: "attack_explorer_vs_explorer",
+        calldata,
+      },
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
+    });
   }
 
   /**
@@ -2756,11 +2898,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async attack_explorer_vs_guard(props: SystemProps.AttackExplorerVsGuardProps) {
     const { explorer_id, structure_id, structure_direction, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
-      entrypoint: "attack_explorer_vs_guard",
-      calldata: [explorer_id, structure_id, structure_direction],
-    }, transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
+        entrypoint: "attack_explorer_vs_guard",
+        calldata: [explorer_id, structure_id, structure_direction],
+      },
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD,
+    });
   }
 
   /**
@@ -2777,11 +2923,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async attack_guard_vs_explorer(props: SystemProps.AttackGuardVsExplorerProps) {
     const { structure_id, structure_guard_slot, explorer_id, explorer_direction, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
-      entrypoint: "attack_guard_vs_explorer",
-      calldata: [structure_id, structure_guard_slot, explorer_id, explorer_direction],
-    }, transactionType: TransactionType.ATTACK_GUARD_VS_EXPLORER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
+        entrypoint: "attack_guard_vs_explorer",
+        calldata: [structure_id, structure_guard_slot, explorer_id, explorer_direction],
+      },
+      transactionType: TransactionType.ATTACK_GUARD_VS_EXPLORER,
+    });
   }
 
   /**
@@ -2801,17 +2951,21 @@ export class EternumProvider extends EnhancedDojoProvider {
     // Prepare calldata for steal_resources which is a Span<(u8, u128)>
     const resourcesCalldata = steal_resources.flatMap((resource) => [resource.resourceId, resource.amount]);
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_raid_systems`),
-      entrypoint: "raid_explorer_vs_guard",
-      calldata: [
-        explorer_id,
-        structure_id,
-        structure_direction,
-        steal_resources.length, // Size of the span
-        ...resourcesCalldata, // Flattened resource tuples
-      ],
-    }, transactionType: TransactionType.RAID_EXPLORER_VS_GUARD });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_raid_systems`),
+        entrypoint: "raid_explorer_vs_guard",
+        calldata: [
+          explorer_id,
+          structure_id,
+          structure_direction,
+          steal_resources.length, // Size of the span
+          ...resourcesCalldata, // Flattened resource tuples
+        ],
+      },
+      transactionType: TransactionType.RAID_EXPLORER_VS_GUARD,
+    });
   }
 
   /**
@@ -2826,11 +2980,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async claim_wonder_production_bonus(props: SystemProps.ClaimWonderProductionBonusProps) {
     const { structure_id, wonder_structure_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "claim_wonder_production_bonus",
-      calldata: [structure_id, wonder_structure_id],
-    }, transactionType: TransactionType.CLAIM_WONDER_PRODUCTION_BONUS });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+        entrypoint: "claim_wonder_production_bonus",
+        calldata: [structure_id, wonder_structure_id],
+      },
+      transactionType: TransactionType.CLAIM_WONDER_PRODUCTION_BONUS,
+    });
   }
 
   /**
@@ -2845,11 +3003,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async pledge_faith(props: SystemProps.PledgeFaithProps) {
     const { structure_id, wonder_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
-      entrypoint: "pledge_faith",
-      calldata: [structure_id, wonder_id],
-    }, transactionType: TransactionType.PLEDGE_FAITH });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
+        entrypoint: "pledge_faith",
+        calldata: [structure_id, wonder_id],
+      },
+      transactionType: TransactionType.PLEDGE_FAITH,
+    });
   }
 
   /**
@@ -2863,11 +3025,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async remove_faith(props: SystemProps.RemoveFaithProps) {
     const { structure_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
-      entrypoint: "remove_faith",
-      calldata: [structure_id],
-    }, transactionType: TransactionType.REMOVE_FAITH });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
+        entrypoint: "remove_faith",
+        calldata: [structure_id],
+      },
+      transactionType: TransactionType.REMOVE_FAITH,
+    });
   }
 
   /**
@@ -2881,11 +3047,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async update_wonder_ownership(props: SystemProps.UpdateWonderOwnershipProps) {
     const { wonder_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
-      entrypoint: "update_wonder_ownership",
-      calldata: [wonder_id],
-    }, transactionType: TransactionType.UPDATE_WONDER_OWNERSHIP });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
+        entrypoint: "update_wonder_ownership",
+        calldata: [wonder_id],
+      },
+      transactionType: TransactionType.UPDATE_WONDER_OWNERSHIP,
+    });
   }
 
   /**
@@ -2899,11 +3069,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async update_structure_ownership(props: SystemProps.UpdateStructureOwnershipProps) {
     const { structure_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
-      entrypoint: "update_structure_ownership",
-      calldata: [structure_id],
-    }, transactionType: TransactionType.UPDATE_STRUCTURE_OWNERSHIP });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-faith_systems`),
+        entrypoint: "update_structure_ownership",
+        calldata: [structure_id],
+      },
+      transactionType: TransactionType.UPDATE_STRUCTURE_OWNERSHIP,
+    });
   }
 
   public async mint_starting_resources(props: SystemProps.MintStartingResources) {
@@ -2922,41 +3096,57 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_guild(props: SystemProps.CreateGuildProps) {
     const { is_public, guild_name, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "create_guild",
-      calldata: [is_public, guild_name],
-    }, transactionType: TransactionType.CREATE_GUILD });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+        entrypoint: "create_guild",
+        calldata: [is_public, guild_name],
+      },
+      transactionType: TransactionType.CREATE_GUILD,
+    });
   }
 
   public async join_guild(props: SystemProps.JoinGuildProps) {
     const { guild_entity_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "join_guild",
-      calldata: [guild_entity_id],
-    }, transactionType: TransactionType.JOIN_GUILD });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+        entrypoint: "join_guild",
+        calldata: [guild_entity_id],
+      },
+      transactionType: TransactionType.JOIN_GUILD,
+    });
   }
 
   public async update_whitelist(props: SystemProps.UpdateWhitelist) {
     const { address, whitelist, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "update_whitelist",
-      calldata: [address, whitelist],
-    }, transactionType: TransactionType.UPDATE_WHITELIST });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+        entrypoint: "update_whitelist",
+        calldata: [address, whitelist],
+      },
+      transactionType: TransactionType.UPDATE_WHITELIST,
+    });
   }
 
   public async remove_guild_member(props: SystemProps.RemoveGuildMember) {
     const { player_address_to_remove, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "remove_member",
-      calldata: [player_address_to_remove],
-    }, transactionType: TransactionType.REMOVE_GUILD_MEMBER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+        entrypoint: "remove_member",
+        calldata: [player_address_to_remove],
+      },
+      transactionType: TransactionType.REMOVE_GUILD_MEMBER,
+    });
   }
 
   public async disband_guild(props: SystemProps.DisbandGuild) {
@@ -2978,11 +3168,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async leave_guild(props: SystemProps.LeaveGuildProps) {
     const { signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "leave_guild",
-      calldata: [],
-    }, transactionType: TransactionType.LEAVE_GUILD });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+        entrypoint: "leave_guild",
+        calldata: [],
+      },
+      transactionType: TransactionType.LEAVE_GUILD,
+    });
   }
 
   public async set_starting_resources_config(props: SystemProps.SetStartingResourcesConfigProps) {
@@ -3574,51 +3768,71 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async initialize(props: SystemProps.InitializeHyperstructureProps) {
     const { hyperstructure_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "initialize",
-      calldata: [hyperstructure_id],
-    }, transactionType: TransactionType.INITIALIZE });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+        entrypoint: "initialize",
+        calldata: [hyperstructure_id],
+      },
+      transactionType: TransactionType.INITIALIZE,
+    });
   }
 
   public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
     const { hyperstructure_entity_id, contributor_entity_id, contributions, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "contribute",
-      calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
-    }, transactionType: TransactionType.CONTRIBUTE });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+        entrypoint: "contribute",
+        calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
+      },
+      transactionType: TransactionType.CONTRIBUTE,
+    });
   }
 
   public async set_access(props: SystemProps.SetAccessProps) {
     const { hyperstructure_entity_id, access, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "update_construction_access",
-      calldata: [hyperstructure_entity_id, access],
-    }, transactionType: TransactionType.SET_ACCESS });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+        entrypoint: "update_construction_access",
+        calldata: [hyperstructure_entity_id, access],
+      },
+      transactionType: TransactionType.SET_ACCESS,
+    });
   }
 
   public async end_game(props: SystemProps.EndGameProps) {
     const { signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-season_systems`),
-      entrypoint: "season_close",
-      calldata: [],
-    }, transactionType: TransactionType.END_GAME });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-season_systems`),
+        entrypoint: "season_close",
+        calldata: [],
+      },
+      transactionType: TransactionType.END_GAME,
+    });
   }
 
   public async allocate_shares(props: SystemProps.SetCoOwnersProps) {
     const { hyperstructure_entity_id, co_owners, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "allocate_shares",
-      calldata: [hyperstructure_entity_id, co_owners.length, ...co_owners.flat()],
-    }, transactionType: TransactionType.ALLOCATE_SHARES });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+        entrypoint: "allocate_shares",
+        calldata: [hyperstructure_entity_id, co_owners.length, ...co_owners.flat()],
+      },
+      transactionType: TransactionType.ALLOCATE_SHARES,
+    });
   }
 
   public async season_prize_claim(props: SystemProps.ClaimLeaderboardRewardsProps) {
@@ -3634,11 +3848,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async blitz_prize_player_rank(props: SystemProps.BlitzPrizePlayerRankProps) {
     const { trial_id, total_player_count_committed, players_list, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
-      entrypoint: "blitz_prize_player_rank",
-      calldata: [trial_id, total_player_count_committed, players_list.length, ...players_list],
-    }, transactionType: TransactionType.BLITZ_PRIZE_PLAYER_RANK });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
+        entrypoint: "blitz_prize_player_rank",
+        calldata: [trial_id, total_player_count_committed, players_list.length, ...players_list],
+      },
+      transactionType: TransactionType.BLITZ_PRIZE_PLAYER_RANK,
+    });
   }
 
   public async blitz_prize_claim(props: SystemProps.BlitzPrizeClaimProps) {
@@ -3660,18 +3878,26 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "blitz_prize_claim",
       calldata: [players.length, ...players],
     });
-    return await this.promiseQueue.enqueue({ signer, calls: calls, transactionType: TransactionType.BLITZ_PRIZE_CLAIM });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: calls,
+      transactionType: TransactionType.BLITZ_PRIZE_CLAIM,
+    });
   }
 
   // Blitz prize: single-registrant no-game claim
   public async blitz_prize_claim_no_game(props: SystemProps.BlitzPrizeClaimNoGameProps) {
     const { registered_player, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
-      entrypoint: "blitz_prize_claim_no_game",
-      calldata: [registered_player],
-    }, transactionType: TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
+        entrypoint: "blitz_prize_claim_no_game",
+        calldata: [registered_player],
+      },
+      transactionType: TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME,
+    });
   }
 
   // MMR system calls - commit and claim in a single transaction
@@ -3691,27 +3917,39 @@ export class EternumProvider extends EnhancedDojoProvider {
       },
     ];
 
-    return await this.promiseQueue.enqueue({ signer, calls: calls, transactionType: TransactionType.COMMIT_AND_CLAIM_MMR });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: calls,
+      transactionType: TransactionType.COMMIT_AND_CLAIM_MMR,
+    });
   }
 
   public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {
     const { hyperstructure_ids, player, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "claim_construction_points",
-      calldata: [hyperstructure_ids.length, ...hyperstructure_ids, player],
-    }, transactionType: TransactionType.CLAIM_CONSTRUCTION_POINTS });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+        entrypoint: "claim_construction_points",
+        calldata: [hyperstructure_ids.length, ...hyperstructure_ids, player],
+      },
+      transactionType: TransactionType.CLAIM_CONSTRUCTION_POINTS,
+    });
   }
 
   public async claim_share_points(props: SystemProps.ClaimSharePointsProps) {
     const { hyperstructure_ids, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "claim_share_points",
-      calldata: [hyperstructure_ids.length, ...hyperstructure_ids],
-    }, transactionType: TransactionType.CLAIM_SHARE_POINTS });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+        entrypoint: "claim_share_points",
+        calldata: [hyperstructure_ids.length, ...hyperstructure_ids],
+      },
+      transactionType: TransactionType.CLAIM_SHARE_POINTS,
+    });
   }
 
   public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {
@@ -3873,11 +4111,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       realms_address, // Should this be dynamically fetched from season config or passed to provider instead of prop?
     } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: realms_address.toString(),
-      entrypoint: "mint",
-      calldata: [uint256.bnToUint256(token_id)],
-    }, transactionType: TransactionType.MINT });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: realms_address.toString(),
+        entrypoint: "mint",
+        calldata: [uint256.bnToUint256(token_id)],
+      },
+      transactionType: TransactionType.MINT,
+    });
   }
 
   public async mint_season_passes(props: SystemProps.MintSeasonPassesProps) {
@@ -3960,11 +4202,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async burn_resource_for_labor_production(props: SystemProps.BurnOtherResourcesForLaborProductionProps) {
     const { entity_id, resource_types, resource_amounts, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "burn_resource_for_labor_production",
-      calldata: [entity_id, resource_types.length, ...resource_types, resource_amounts.length, ...resource_amounts],
-    }, transactionType: TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+        entrypoint: "burn_resource_for_labor_production",
+        calldata: [entity_id, resource_types.length, ...resource_types, resource_amounts.length, ...resource_amounts],
+      },
+      transactionType: TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION,
+    });
   }
 
   /**
@@ -3994,17 +4240,21 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async burn_labor_for_resource_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
     const { from_entity_id, production_cycles, produced_resource_types, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "burn_labor_for_resource_production",
-      calldata: [
-        from_entity_id,
-        production_cycles.length,
-        ...production_cycles,
-        produced_resource_types.length,
-        ...produced_resource_types,
-      ],
-    }, transactionType: TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+        entrypoint: "burn_labor_for_resource_production",
+        calldata: [
+          from_entity_id,
+          production_cycles.length,
+          ...production_cycles,
+          produced_resource_types.length,
+          ...produced_resource_types,
+        ],
+      },
+      transactionType: TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION,
+    });
   }
 
   /**
@@ -4031,17 +4281,21 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async burn_resource_for_resource_production(props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps) {
     const { from_entity_id, produced_resource_types, production_cycles, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "burn_resource_for_resource_production",
-      calldata: [
-        from_entity_id,
-        produced_resource_types.length,
-        ...produced_resource_types,
-        production_cycles.length,
-        ...production_cycles,
-      ],
-    }, transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+        entrypoint: "burn_resource_for_resource_production",
+        calldata: [
+          from_entity_id,
+          produced_resource_types.length,
+          ...produced_resource_types,
+          production_cycles.length,
+          ...production_cycles,
+        ],
+      },
+      transactionType: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+    });
   }
 
   // Loot Chest functions
@@ -4158,11 +4412,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async cancel_marketplace_order(props: SystemProps.CancelMarketplaceOrderProps) {
     const { order_id, signer } = props;
 
-    return await this.promiseQueue.enqueue({ signer, calls: {
-      contractAddress: props.marketplace_address.toString(),
-      entrypoint: "cancel",
-      calldata: [order_id],
-    }, transactionType: TransactionType.CANCEL_MARKETPLACE_ORDER });
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: props.marketplace_address.toString(),
+        entrypoint: "cancel",
+        calldata: [order_id],
+      },
+      transactionType: TransactionType.CANCEL_MARKETPLACE_ORDER,
+    });
   }
 
   /**

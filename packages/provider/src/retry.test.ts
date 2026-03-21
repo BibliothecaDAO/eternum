@@ -154,15 +154,13 @@ describe("retry utilities", () => {
       let now = 0;
       vi.useFakeTimers();
 
-      const fn = vi
-        .fn()
-        .mockImplementation(() => {
-          timestamps.push(Date.now());
-          if (fn.mock.calls.length < 3) {
-            return Promise.reject(error);
-          }
-          return Promise.resolve("done");
-        });
+      const fn = vi.fn().mockImplementation(() => {
+        timestamps.push(Date.now());
+        if (fn.mock.calls.length < 3) {
+          return Promise.reject(error);
+        }
+        return Promise.resolve("done");
+      });
 
       const retryPromise = withRetry(fn, {
         maxRetries: 3,

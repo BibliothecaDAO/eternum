@@ -286,10 +286,7 @@ export const DEFAULT_BATCH_DELAYS: BatchDelayConfig = {
  * Get the batch delay for a given transaction type, respecting type overrides,
  * category delays, and the default delay (in that priority order).
  */
-export function getDelayForTransaction(
-  type: TransactionType | undefined,
-  config: BatchDelayConfig,
-): number {
+export function getDelayForTransaction(type: TransactionType | undefined, config: BatchDelayConfig): number {
   if (type && config.typeOverrides?.[type] !== undefined) {
     return config.typeOverrides[type]!;
   }
