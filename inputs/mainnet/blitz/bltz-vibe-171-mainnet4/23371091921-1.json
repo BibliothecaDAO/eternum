@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "runId": "mainnet.blitz:bltz-vibe-171-mainnet4",
+  "launchRequestId": "23371091921-1",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "bltz-vibe-171-mainnet4",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "configure-world",
+  "createdAt": "2026-03-21T03:32:20.998Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23371091921,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23371091921",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "82da0cf7a8560295c903b04b37b77c63f1314b20"
+  },
+  "request": {
+    "environmentId": "mainnet.blitz",
+    "gameName": "bltz-vibe-171-mainnet4",
+    "startTime": "2026-03-21T04:00:00.000Z",
+    "factoryAddress": "",
+    "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
+    "privateKey": "0x06a603ea042bf7989bcedb262e324d48e1a15c7139d79518ff79133939c04b73",
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "maxActions": 70,
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false
+  }
+}
