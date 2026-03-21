@@ -10,9 +10,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-spark-933/23372425984-1.json",
   "latestLaunchRequestId": "23372425984-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-21T04:56:27.020Z",
-  "updatedAt": "2026-03-21T04:58:52.931Z",
+  "updatedAt": "2026-03-21T05:00:05.882Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,10 +62,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-21T04:58:52.931Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-21T04:58:52.931Z",
+      "finishedAt": "2026-03-21T05:00:05.882Z"
     },
     {
       "id": "sync-paymaster",
@@ -79,14 +80,16 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-spark-933.json",
     "createGameTxHash": "0x5e460820cf3a2885e998ceea1b4e86c55d00889c336e2228099e5a481d49155",
     "worldAddress": "0x0638535781d17322a833d50758d180236e877e1890531fbd42f281ed0053b67a",
-    "configureTxHash": "0x10f153e8b45d8804a5e344fcb36cd314a3ba6ee55cd35dc39aa4ea6bc43c823"
-  },
-  "activeLease": {
-    "launchRequestId": "23372425984-1",
-    "workflowRunId": 23372425984,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-21T04:58:52.931Z",
-    "expiresAt": "2026-03-21T05:43:52.931Z"
+    "configureTxHash": "0x10f153e8b45d8804a5e344fcb36cd314a3ba6ee55cd35dc39aa4ea6bc43c823",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "credence0x/factory-v2-polish",
+      "runId": 23372480031,
+      "runNumber": 790,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23372480031",
+      "status": "completed",
+      "conclusion": "success"
+    }
   }
 }
