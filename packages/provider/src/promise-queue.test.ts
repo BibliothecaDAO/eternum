@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { TransactionExecutor } from "./transaction-executor";
 import { TransactionType } from "./types";
-import { TransactionCostCategory } from "./batch-config";
+import { TransactionCostCategory, BatchDelayConfig } from "./batch-config";
 
 // ---------------------------------------------------------------------------
 // Factories
@@ -243,5 +243,269 @@ describe("PromiseQueue", () => {
     });
 
     expect(result).toEqual(expectedResult);
+  });
+});
+
+// ===========================================================================
+// Phase 2: Configurable Batch Delay
+// ===========================================================================
+
+describe("Configurable Batch Delay", () => {
+  let executor: ReturnType<typeof makeExecutor>;
+
+  beforeEach(() => {
+    executor = makeExecutor();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("processes immediately when delay is 0 for a HIGH category item", async () => {
+    vi.useFakeTimers();
+    const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const p = queue.enqueue({
+      signer,
+      calls: makeCall("battle"),
+      transactionType: TransactionType.BATTLE_START,
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits configured delay before processing MEDIUM items", async () => {
+    vi.useFakeTimers();
+    const queue = new PromiseQueue(executor, { batchDelayMs: 500 });
+    const signer = makeSigner();
+
+    const p = queue.enqueue({
+      signer,
+      calls: makeCall("travel"),
+      transactionType: TransactionType.TRAVEL_HEX,
+    });
+
+    await vi.advanceTimersByTimeAsync(400);
+    expect(executor.executeAndCheckTransaction).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(100);
+    await p;
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to default 1000ms when no delay config provided", async () => {
+    vi.useFakeTimers();
+    const queue = new PromiseQueue(executor);
+    const signer = makeSigner();
+
+    const p = queue.enqueue({
+      signer,
+      calls: makeCall("name"),
+      transactionType: TransactionType.SET_ENTITY_NAME,
+    });
+
+    await vi.advanceTimersByTimeAsync(999);
+    expect(executor.executeAndCheckTransaction).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1);
+    await p;
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses per-category delay config when provided", async () => {
+    vi.useFakeTimers();
+    const queue = new PromiseQueue(executor, {
+      batchDelayConfig: {
+        categoryDelays: {
+          HIGH: 0,
+          MEDIUM: 500,
+          LOW: 1000,
+        } as Partial<Record<TransactionCostCategory, number>>,
+      },
+    });
+    const signer = makeSigner();
+
+    // HIGH item should process at delay 0
+    const pHigh = queue.enqueue({
+      signer,
+      calls: makeCall("battle"),
+      transactionType: TransactionType.BATTLE_START,
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    await pHigh;
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+
+    // MEDIUM item should process at delay 500
+    const pMedium = queue.enqueue({
+      signer,
+      calls: makeCall("travel"),
+      transactionType: TransactionType.TRAVEL_HEX,
+    });
+
+    await vi.advanceTimersByTimeAsync(499);
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await pMedium;
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("reschedules with shorter delay when a faster-category item arrives", async () => {
+    vi.useFakeTimers();
+    const queue = new PromiseQueue(executor, {
+      batchDelayConfig: {
+        categoryDelays: {
+          HIGH: 0,
+          LOW: 1000,
+        } as Partial<Record<TransactionCostCategory, number>>,
+      },
+    });
+    const signer = makeSigner();
+
+    // Enqueue a LOW item — timer starts for 1000ms
+    const pLow = queue.enqueue({
+      signer,
+      calls: makeCall("name"),
+      transactionType: TransactionType.SET_ENTITY_NAME,
+    });
+
+    // Advance 100ms
+    await vi.advanceTimersByTimeAsync(100);
+    expect(executor.executeAndCheckTransaction).not.toHaveBeenCalled();
+
+    // Enqueue a HIGH item — delay=0, should reschedule to immediate
+    const pHigh = queue.enqueue({
+      signer,
+      calls: makeCall("battle"),
+      transactionType: TransactionType.BATTLE_START,
+    });
+
+    // The timer should fire at 0ms from now (immediate reschedule)
+    await vi.advanceTimersByTimeAsync(0);
+    await Promise.all([pLow, pHigh]);
+
+    // Both items processed together (or in separate category batches)
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// Phase 3: Parallel Category Processing
+// ===========================================================================
+
+describe("Parallel Category Processing", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("processes independent categories in parallel", async () => {
+    // Create a mock executor with artificial 50ms delay
+    const executor: TransactionExecutor = {
+      executeAndCheckTransaction: vi.fn().mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ statusReceipt: "PENDING", transaction_hash: "0xabc" }), 50),
+          ),
+      ),
+    };
+
+    const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const start = Date.now();
+
+    // Enqueue 2 HIGH items and 2 LOW items
+    const promises = [
+      queue.enqueue({ signer, calls: makeCall("battle1"), transactionType: TransactionType.BATTLE_START }),
+      queue.enqueue({ signer, calls: makeCall("battle2"), transactionType: TransactionType.BATTLE_RESOLVE }),
+      queue.enqueue({ signer, calls: makeCall("name1"), transactionType: TransactionType.SET_ENTITY_NAME }),
+      queue.enqueue({ signer, calls: makeCall("name2"), transactionType: TransactionType.SET_ADDRESS_NAME }),
+    ];
+
+    await Promise.all(promises);
+    const elapsed = Date.now() - start;
+
+    // Should be ~50ms (parallel), not ~100ms (sequential)
+    // Use generous margin but it should definitely be less than 100ms
+    expect(elapsed).toBeLessThan(90);
+
+    // 2 batches: one HIGH, one LOW
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps batches within a single category sequential", async () => {
+    const callOrder: number[] = [];
+    let callIndex = 0;
+
+    const executor: TransactionExecutor = {
+      executeAndCheckTransaction: vi.fn().mockImplementation(() => {
+        const idx = callIndex++;
+        callOrder.push(idx);
+        return Promise.resolve({ statusReceipt: "PENDING", transaction_hash: `0x${idx}` });
+      }),
+    };
+
+    const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    // Enqueue 15 LOW items (batch limit 10, so 2 chunks)
+    const promises: Promise<any>[] = [];
+    for (let i = 0; i < 15; i++) {
+      promises.push(
+        queue.enqueue({
+          signer,
+          calls: makeCall(`action_${i}`),
+          transactionType: TransactionType.SET_ENTITY_NAME,
+        }),
+      );
+    }
+
+    await Promise.all(promises);
+
+    // Should be 2 batches: 10 + 5
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+
+    // First batch (index 0) should complete before second batch (index 1)
+    expect(callOrder).toEqual([0, 1]);
+  });
+
+  it("error in one category does not block others", async () => {
+    const executor: TransactionExecutor = {
+      executeAndCheckTransaction: vi.fn().mockImplementation((signer, calls, batchDetails, options) => {
+        // Fail for HIGH items (BATTLE_START), succeed for LOW items
+        const txType = options?.transactionType;
+        if (txType === TransactionType.BATTLE_START) {
+          return Promise.reject(new Error("HIGH category failed"));
+        }
+        return Promise.resolve({ statusReceipt: "PENDING", transaction_hash: "0xok" });
+      }),
+    };
+
+    const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pHigh = queue
+      .enqueue({ signer, calls: makeCall("battle"), transactionType: TransactionType.BATTLE_START })
+      .catch((e: unknown) => e);
+
+    const pLow = queue.enqueue({
+      signer,
+      calls: makeCall("name"),
+      transactionType: TransactionType.SET_ENTITY_NAME,
+    });
+
+    const [highResult, lowResult] = await Promise.all([pHigh, pLow]);
+
+    // HIGH should have rejected
+    expect(highResult).toBeInstanceOf(Error);
+    expect((highResult as Error).message).toBe("HIGH category failed");
+
+    // LOW should have resolved successfully
+    expect(lowResult).toEqual({ statusReceipt: "PENDING", transaction_hash: "0xok" });
   });
 });

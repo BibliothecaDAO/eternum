@@ -27,7 +27,14 @@ import { ExecutionOptions } from "./transaction-executor";
 import { BatchedTransactionDetail, TransactionType } from "./types";
 import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
 export const NAMESPACE = "s1_eternum";
-export { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
+export {
+  CATEGORY_BATCH_LIMITS,
+  getTransactionCategory,
+  TransactionCostCategory,
+  DEFAULT_BATCH_DELAYS,
+  getDelayForTransaction,
+} from "./batch-config";
+export type { BatchDelayConfig } from "./batch-config";
 export { PromiseQueue, QueueableTransaction } from "./promise-queue";
 export { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
 export { withRetry, isRetryableError, calculateBackoffDelay, DEFAULT_RETRY_CONFIG } from "./retry";

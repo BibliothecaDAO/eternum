@@ -1,5 +1,11 @@
 import { Account, AccountInterface, AllowArray, Call } from "starknet";
-import { CATEGORY_BATCH_LIMITS, getTransactionCategory, TransactionCostCategory } from "./batch-config";
+import {
+  BatchDelayConfig,
+  CATEGORY_BATCH_LIMITS,
+  getDelayForTransaction,
+  getTransactionCategory,
+  TransactionCostCategory,
+} from "./batch-config";
 import { TransactionExecutor } from "./transaction-executor";
 import { BatchedTransactionDetail, TransactionType } from "./types";
 
@@ -27,13 +33,23 @@ export class PromiseQueue {
   private queue: QueueItem[] = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
-  private readonly BATCH_DELAY: number;
+  private batchTimeoutStartedAt: number = 0;
+  private currentScheduledDelay: number = Infinity;
+  private readonly flatDelay: number | undefined;
+  private readonly delayConfig: BatchDelayConfig | undefined;
 
   constructor(
     private executor: TransactionExecutor,
-    options?: { batchDelayMs?: number },
+    options?: { batchDelayMs?: number; batchDelayConfig?: BatchDelayConfig },
   ) {
-    this.BATCH_DELAY = options?.batchDelayMs ?? 1000;
+    if (options?.batchDelayConfig) {
+      this.delayConfig = options.batchDelayConfig;
+    } else if (options?.batchDelayMs !== undefined) {
+      this.flatDelay = options.batchDelayMs;
+    } else {
+      // Default: flat 1000ms (backward compatibility)
+      this.flatDelay = 1000;
+    }
   }
 
   /**
@@ -42,22 +58,48 @@ export class PromiseQueue {
   async enqueue<T>(transaction: QueueableTransaction): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.queue.push({ transaction, resolve, reject });
-      this.scheduleProcessing();
+      this.scheduleProcessing(transaction.transactionType);
     });
   }
 
-  private scheduleProcessing() {
+  private getDelay(transactionType?: TransactionType): number {
+    if (this.delayConfig) {
+      return getDelayForTransaction(transactionType, this.delayConfig);
+    }
+    return this.flatDelay ?? 1000;
+  }
+
+  private scheduleProcessing(transactionType?: TransactionType) {
     if (this.processing) return;
 
-    // Only start timer if one isn't already running (first-in timestamp)
-    // Even with delay=0 we use setTimeout so all synchronous enqueue() calls
-    // within the same tick are collected before processing begins.
-    if (!this.batchTimeout) {
-      this.batchTimeout = setTimeout(() => {
-        this.batchTimeout = null;
-        void this.processQueue();
-      }, this.BATCH_DELAY);
+    const newDelay = this.getDelay(transactionType);
+
+    if (this.batchTimeout) {
+      // A timer is already running. Check if the new item wants a shorter delay.
+      const elapsed = Date.now() - this.batchTimeoutStartedAt;
+      const remaining = Math.max(0, this.currentScheduledDelay - elapsed);
+
+      if (newDelay < remaining) {
+        // Reschedule with the shorter delay
+        clearTimeout(this.batchTimeout);
+        this.batchTimeout = setTimeout(() => {
+          this.batchTimeout = null;
+          void this.processQueue();
+        }, newDelay);
+        this.batchTimeoutStartedAt = Date.now();
+        this.currentScheduledDelay = newDelay;
+      }
+      // Otherwise keep existing timer
+      return;
     }
+
+    // No timer running — start one
+    this.batchTimeout = setTimeout(() => {
+      this.batchTimeout = null;
+      void this.processQueue();
+    }, newDelay);
+    this.batchTimeoutStartedAt = Date.now();
+    this.currentScheduledDelay = newDelay;
   }
 
   private async processQueue() {
@@ -79,7 +121,8 @@ export class PromiseQueue {
           signerGroups.set(address, group);
         }
 
-        // Within each signer group, group by cost category
+        // Within each signer group, group by cost category and process
+        // categories in parallel, batches within a category sequentially
         for (const [, signerItems] of signerGroups) {
           const categoryGroups = new Map<TransactionCostCategory, QueueItem[]>();
 
@@ -90,21 +133,17 @@ export class PromiseQueue {
             categoryGroups.set(category, group);
           }
 
-          // Process each category group with its specific batch limit
-          for (const [category, group] of categoryGroups) {
-            const batchLimit = CATEGORY_BATCH_LIMITS[category];
+          // Parallel across categories, sequential within each category
+          await Promise.allSettled(
+            Array.from(categoryGroups.entries()).map(async ([category, group]) => {
+              const batchLimit = CATEGORY_BATCH_LIMITS[category];
 
-            // Split into chunks based on category batch limit
-            const chunks: QueueItem[][] = [];
-            for (let i = 0; i < group.length; i += batchLimit) {
-              chunks.push(group.slice(i, i + batchLimit));
-            }
-
-            // Process each chunk
-            for (const batch of chunks) {
-              await this.processBatch(batch);
-            }
-          }
+              // Split into chunks based on category batch limit
+              for (let i = 0; i < group.length; i += batchLimit) {
+                await this.processBatch(group.slice(i, i + batchLimit));
+              }
+            }),
+          );
         }
       }
     } finally {
