@@ -2192,6 +2192,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
+    AudioManager.getInstance().play("unit.selected");
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
