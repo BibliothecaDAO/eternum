@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-spark-933",
-    "launchRequestId": "23372425984-1",
+    "gameName": "bltz-blip-555",
+    "launchRequestId": "23372921802-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23372425984,
+    "workflowRunId": 23372921802,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "1ba985e0-9549-47bf-97d2-6c235d1636f6"
+    "stepId": "create-world",
+    "leaseId": "a0a173bf-da25-438e-87ce-47f8b09dfbde"
   },
-  "acquiredAt": "2026-03-21T04:58:39.121Z",
-  "heartbeatAt": "2026-03-21T04:58:43.107Z",
-  "expiresAt": "2026-03-21T04:58:43.107Z",
-  "releasedAt": "2026-03-21T04:58:43.107Z"
+  "acquiredAt": "2026-03-21T05:27:51.323Z",
+  "heartbeatAt": "2026-03-21T05:27:51.323Z",
+  "expiresAt": "2026-03-21T05:37:51.323Z"
 }
