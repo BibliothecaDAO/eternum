@@ -42,24 +42,53 @@ function resolveFactoryRunLeaseDurationMs(): number {
   return parsedSeconds * 1000;
 }
 
-function buildFactoryRunSteps(gameType: FactoryRunRecord["gameType"]): FactoryRunStepRecord[] {
-  const sharedSteps: FactoryRunStepRecord[] = [
+function shouldIncludeVillagePassRoleStep(run: Pick<FactoryRunRecord, "gameType">): boolean {
+  return run.gameType === "eternum";
+}
+
+function shouldIncludeBanksStep(run: Pick<FactoryRunRecord, "gameType">): boolean {
+  return run.gameType === "eternum";
+}
+
+function shouldIncludePaymasterStep(run: Pick<FactoryRunRecord, "chain">): boolean {
+  return run.chain === "mainnet";
+}
+
+function buildFactoryRoleGrantSteps(run: Pick<FactoryRunRecord, "gameType">): FactoryRunStepRecord[] {
+  const steps = [buildFactoryRunStep("grant-lootchest-role")];
+
+  if (shouldIncludeVillagePassRoleStep(run)) {
+    steps.push(buildFactoryRunStep("grant-village-pass-role"));
+  }
+
+  return steps;
+}
+
+function buildFactoryBankSteps(run: Pick<FactoryRunRecord, "gameType">): FactoryRunStepRecord[] {
+  if (!shouldIncludeBanksStep(run)) {
+    return [];
+  }
+
+  return [buildFactoryRunStep("create-banks")];
+}
+
+function buildFactoryPaymasterSteps(run: Pick<FactoryRunRecord, "chain">): FactoryRunStepRecord[] {
+  if (!shouldIncludePaymasterStep(run)) {
+    return [];
+  }
+
+  return [buildFactoryRunStep("sync-paymaster")];
+}
+
+function buildFactoryRunSteps(run: Pick<FactoryRunRecord, "chain" | "gameType">): FactoryRunStepRecord[] {
+  return [
     buildFactoryRunStep("create-world"),
     buildFactoryRunStep("wait-for-factory-index"),
     buildFactoryRunStep("configure-world"),
-    buildFactoryRunStep("grant-lootchest-role"),
+    ...buildFactoryRoleGrantSteps(run),
+    ...buildFactoryBankSteps(run),
     buildFactoryRunStep("create-indexer"),
-  ];
-
-  if (gameType !== "eternum") {
-    return sharedSteps;
-  }
-
-  return [
-    ...sharedSteps.slice(0, 4),
-    buildFactoryRunStep("grant-village-pass-role"),
-    buildFactoryRunStep("create-banks"),
-    sharedSteps[4],
+    ...buildFactoryPaymasterSteps(run),
   ];
 }
 
@@ -114,7 +143,7 @@ function createFactoryRunRecord(context: FactoryRunStoreEventContext): FactoryRu
     updatedAt: context.timestamp,
     workflow: context.workflow,
     activeLease: undefined,
-    steps: buildFactoryRunSteps(environment.gameType),
+    steps: buildFactoryRunSteps(environment),
     artifacts: {},
   };
 }
@@ -261,6 +290,7 @@ function mergeLaunchArtifacts(
     lootChestRoleTxHash: summary.lootChestRoleTxHash || currentArtifacts.lootChestRoleTxHash,
     villagePassRoleTxHash: summary.villagePassRoleTxHash || currentArtifacts.villagePassRoleTxHash,
     createBanksTxHash: summary.createBanksTxHash || currentArtifacts.createBanksTxHash,
+    paymasterSynced: summary.paymasterSynced ?? currentArtifacts.paymasterSynced,
     indexerCreated: summary.indexerCreated || currentArtifacts.indexerCreated,
     indexerWorkflowRun: summary.indexerWorkflowRun || currentArtifacts.indexerWorkflowRun,
   };

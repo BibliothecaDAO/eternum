@@ -8,7 +8,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/launch-step.ts --step <create-world|wait-for-factory-index|configure-world|grant-lootchest-role|grant-village-pass-role|create-banks|create-indexer> --environment <slot.blitz|slot.eternum> --game <world-name> --start-time <unix|iso>",
+      "  bun config/deployer/clean/cli/launch-step.ts --step <create-world|wait-for-factory-index|configure-world|grant-lootchest-role|grant-village-pass-role|create-banks|create-indexer|sync-paymaster> --environment <slot.blitz|slot.eternum|mainnet.blitz|mainnet.eternum> --game <world-name> --start-time <unix|iso>",
       "",
       "Optional env or flags:",
       "  RPC_URL / --rpc-url",

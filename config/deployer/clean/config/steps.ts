@@ -135,7 +135,7 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
     setDiscoverableVillageSpawnResourcesConfig,
   ),
   defineStep("blitz-registration", "Set blitz registration config", setBlitzRegistrationParametersConfig, {
-    environments: ["slot.blitz"],
+    shouldRun: ({ config }) => isBlitzConfiguration(config),
   }),
   defineStep("agent", "Set agent config", setAgentConfig),
   defineStep("village-controllers", "Set village controllers config", setVillageControllersConfig, {

@@ -31,8 +31,10 @@ const ENV_KEYS = [
 
 const originalEnv = new Map<string, string | undefined>(ENV_KEYS.map((key) => [key, process.env[key]]));
 const originalFetch = globalThis.fetch;
-
-const summaryPath = resolveRepoPath(".context/game-launch/slot-blitz-bltz-flux-730.json");
+const summaryPaths = [
+  resolveSummaryPath("slot.blitz", "bltz-flux-730"),
+  resolveSummaryPath("mainnet.blitz", "bltz-mainnet-730"),
+];
 
 beforeEach(() => {
   process.env.GITHUB_ACTIONS = "true";
@@ -61,8 +63,10 @@ afterEach(() => {
 
   globalThis.fetch = originalFetch;
 
-  if (fs.existsSync(summaryPath)) {
-    fs.unlinkSync(summaryPath);
+  for (const summaryPath of summaryPaths) {
+    if (fs.existsSync(summaryPath)) {
+      fs.unlinkSync(summaryPath);
+    }
   }
 });
 
@@ -95,6 +99,62 @@ describe("factory run store", () => {
       "configure-world",
       "grant-lootchest-role",
       "create-indexer",
+    ]);
+  });
+
+  test("adds the paymaster step for mainnet blitz launches", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await recordFactoryLaunchStarted({
+      environmentId: "mainnet.blitz",
+      gameName: "bltz-mainnet-730",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "mainnet.blitz",
+        gameName: "bltz-mainnet-730",
+        startTime: "2026-03-18T10:00:00Z",
+      },
+    });
+
+    const runRecord = branchStore.readJson("runs/mainnet/blitz/bltz-mainnet-730.json");
+
+    expect(runRecord.steps.map((step: { id: string }) => step.id)).toEqual([
+      "create-world",
+      "wait-for-factory-index",
+      "configure-world",
+      "grant-lootchest-role",
+      "create-indexer",
+      "sync-paymaster",
+    ]);
+  });
+
+  test("keeps eternum launch steps and adds paymaster for mainnet eternum", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await recordFactoryLaunchStarted({
+      environmentId: "mainnet.eternum",
+      gameName: "etrn-mainnet-730",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "mainnet.eternum",
+        gameName: "etrn-mainnet-730",
+        startTime: "2026-03-18T10:00:00Z",
+      },
+    });
+
+    const runRecord = branchStore.readJson("runs/mainnet/eternum/etrn-mainnet-730.json");
+
+    expect(runRecord.steps.map((step: { id: string }) => step.id)).toEqual([
+      "create-world",
+      "wait-for-factory-index",
+      "configure-world",
+      "grant-lootchest-role",
+      "grant-village-pass-role",
+      "create-banks",
+      "create-indexer",
+      "sync-paymaster",
     ]);
   });
 
@@ -205,6 +265,55 @@ describe("factory run store", () => {
     expect(runRecord.currentStepId).toBe("wait-for-factory-index");
     expect(runRecord.activeLease).toBeUndefined();
     expect(runRecord.steps.find((step: { id: string }) => step.id === "create-world")?.status).toBe("succeeded");
+  });
+
+  test("records paymaster completion in launch artifacts", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await recordFactoryLaunchStarted({
+      environmentId: "mainnet.blitz",
+      gameName: "bltz-mainnet-730",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "mainnet.blitz",
+        gameName: "bltz-mainnet-730",
+        startTime: "2026-03-18T10:00:00Z",
+      },
+    });
+
+    writeLaunchSummaryFile({
+      environment: "mainnet.blitz",
+      chain: "mainnet",
+      gameType: "blitz",
+      gameName: "bltz-mainnet-730",
+      startTime: 1710756000,
+      startTimeIso: "2026-03-18T10:00:00.000Z",
+      rpcUrl: "https://rpc.example",
+      factoryAddress: "0x123",
+      paymasterSynced: true,
+      indexerCreated: true,
+      configMode: "batched",
+      configSteps: [],
+      dryRun: false,
+    });
+
+    await recordFactoryLaunchStepSucceeded({
+      environmentId: "mainnet.blitz",
+      gameName: "bltz-mainnet-730",
+      requestedLaunchStep: "full",
+      stepId: "sync-paymaster",
+      request: {
+        environmentId: "mainnet.blitz",
+        gameName: "bltz-mainnet-730",
+        startTime: "2026-03-18T10:00:00Z",
+      },
+    });
+
+    const runRecord = branchStore.readJson("runs/mainnet/blitz/bltz-mainnet-730.json");
+
+    expect(runRecord.artifacts.paymasterSynced).toBe(true);
+    expect(runRecord.artifacts.summaryPath).toBe(".context/game-launch/mainnet-blitz-bltz-mainnet-730.json");
   });
 
   test("marks a failed step as needing attention", async () => {
@@ -475,7 +584,13 @@ describe("factory run store", () => {
 
 function writeLaunchSummaryFile(summary: LaunchGameSummary): void {
   fs.mkdirSync(resolveRepoPath(".context/game-launch"), { recursive: true });
-  fs.writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`);
+  fs.writeFileSync(resolveSummaryPath(summary.environment, summary.gameName), `${JSON.stringify(summary, null, 2)}\n`);
+}
+
+function resolveSummaryPath(environmentId: string, gameName: string): string {
+  return resolveRepoPath(
+    `.context/game-launch/${environmentId.replace(".", "-")}-${gameName.replace(/[^a-zA-Z0-9-_]/g, "-")}.json`,
+  );
 }
 
 function createBranchStoreFetch() {

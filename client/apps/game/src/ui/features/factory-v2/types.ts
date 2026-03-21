@@ -24,7 +24,8 @@ export type FactoryRecoveryStepId =
   | "grant-lootchest-role"
   | "grant-village-pass-role"
   | "create-banks"
-  | "create-indexer";
+  | "create-indexer"
+  | "sync-paymaster";
 
 export type FactoryRunStatus = "running" | "attention" | "waiting" | "complete";
 

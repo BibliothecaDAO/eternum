@@ -1208,32 +1208,59 @@ function buildPendingRun(
     status: "running",
     summary: resolvePendingRunSummary(pendingLaunch, watcher, pollingState),
     updatedAt: "Starting now",
-    steps: buildPendingRunSteps(pendingLaunch.mode),
+    steps: buildPendingRunSteps(pendingLaunch.mode, pendingLaunch.environmentId),
   };
 }
 
-function buildPendingRunSteps(mode: FactoryGameMode): FactoryRun["steps"] {
-  return (
-    mode === "eternum"
-      ? [
-          createPendingStep("launch-request", "running"),
-          createPendingStep("create-world", "pending"),
-          createPendingStep("wait-for-factory-index", "pending"),
-          createPendingStep("configure-world", "pending"),
-          createPendingStep("grant-lootchest-role", "pending"),
-          createPendingStep("grant-village-pass-role", "pending"),
-          createPendingStep("create-banks", "pending"),
-          createPendingStep("create-indexer", "pending"),
-        ]
-      : [
-          createPendingStep("launch-request", "running"),
-          createPendingStep("create-world", "pending"),
-          createPendingStep("wait-for-factory-index", "pending"),
-          createPendingStep("configure-world", "pending"),
-          createPendingStep("grant-lootchest-role", "pending"),
-          createPendingStep("create-indexer", "pending"),
-        ]
-  ) satisfies FactoryRun["steps"];
+function shouldIncludePendingVillagePassRoleStep(mode: FactoryGameMode): boolean {
+  return mode === "eternum";
+}
+
+function shouldIncludePendingBanksStep(mode: FactoryGameMode): boolean {
+  return mode === "eternum";
+}
+
+function shouldIncludePendingPaymasterStep(environmentId: string): boolean {
+  return environmentId.startsWith("mainnet.");
+}
+
+function buildPendingRoleGrantSteps(mode: FactoryGameMode): FactoryRun["steps"] {
+  const steps = [createPendingStep("grant-lootchest-role", "pending")];
+
+  if (shouldIncludePendingVillagePassRoleStep(mode)) {
+    steps.push(createPendingStep("grant-village-pass-role", "pending"));
+  }
+
+  return steps;
+}
+
+function buildPendingBankSteps(mode: FactoryGameMode): FactoryRun["steps"] {
+  if (!shouldIncludePendingBanksStep(mode)) {
+    return [];
+  }
+
+  return [createPendingStep("create-banks", "pending")];
+}
+
+function buildPendingPaymasterSteps(environmentId: string): FactoryRun["steps"] {
+  if (!shouldIncludePendingPaymasterStep(environmentId)) {
+    return [];
+  }
+
+  return [createPendingStep("sync-paymaster", "pending")];
+}
+
+function buildPendingRunSteps(mode: FactoryGameMode, environmentId: string): FactoryRun["steps"] {
+  return [
+    createPendingStep("launch-request", "running"),
+    createPendingStep("create-world", "pending"),
+    createPendingStep("wait-for-factory-index", "pending"),
+    createPendingStep("configure-world", "pending"),
+    ...buildPendingRoleGrantSteps(mode),
+    ...buildPendingBankSteps(mode),
+    createPendingStep("create-indexer", "pending"),
+    ...buildPendingPaymasterSteps(environmentId),
+  ];
 }
 
 function createPendingStep(

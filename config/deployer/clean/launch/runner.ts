@@ -14,7 +14,11 @@ import {
   DEFAULT_VRF_PROVIDER_ADDRESS,
 } from "../constants";
 import { buildDefaultBanks, grantVillagePassRolesToWorldSystems } from "../eternum";
-import { isEternumDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
+import {
+  isEternumDeploymentEnvironment,
+  isMainnetDeploymentEnvironment,
+  resolveDeploymentEnvironment,
+} from "../environment";
 import {
   isZeroAddress,
   patchManifestWithFactory,
@@ -22,6 +26,7 @@ import {
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
 import { createIndexer } from "../indexing/indexer";
+import { syncPaymasterPolicy } from "../paymaster";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
 import type {
@@ -90,8 +95,8 @@ function asProviderSigner(account: Account): ProviderSigner {
   return account as unknown as ProviderSigner;
 }
 
-function createAccount(address: string, privateKey: string, rpcUrl: string, vrfProviderAddress: string) {
-  const baseManifest = getGameManifest("slot" as Chain);
+function createAccount(address: string, privateKey: string, chain: Chain, rpcUrl: string, vrfProviderAddress: string) {
+  const baseManifest = getGameManifest(chain);
   const provider = new EternumProvider(baseManifest as any, rpcUrl, vrfProviderAddress);
   const account = new Account({
     provider: provider.provider as StarknetAccountOptions["provider"],
@@ -110,13 +115,23 @@ function shortenHash(value: string): string {
   return `${value.slice(0, 10)}...${value.slice(-6)}`;
 }
 
+function resolveLaunchFactoryAddress(request: LaunchGameRequest, environment: DeploymentEnvironment): string {
+  const factoryAddress = request.factoryAddress || environment.factoryAddress;
+
+  if (factoryAddress) {
+    return factoryAddress;
+  }
+
+  throw new Error(`Factory address is required for ${environment.id}. Set FACTORY_ADDRESS or pass --factory-address.`);
+}
+
 function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgress): LaunchRuntime {
   const environment = resolveDeploymentEnvironment(request.environmentId);
 
   return {
     progress,
     environment,
-    factoryAddress: request.factoryAddress || environment.factoryAddress,
+    factoryAddress: resolveLaunchFactoryAddress(request, environment),
     rpcUrl: request.rpcUrl || environment.rpcUrl,
     startTime: parseStartTime(request.startTime),
     cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
@@ -280,7 +295,13 @@ function resolveLaunchAccountContext(runtime: LaunchRuntime, request: LaunchGame
     fallbackPrivateKey: runtime.environment.privateKey,
     context: `environment "${runtime.environment.id}"`,
   });
-  const { account } = createAccount(accountAddress, privateKey, runtime.rpcUrl, runtime.vrfProviderAddress);
+  const { account } = createAccount(
+    accountAddress,
+    privateKey,
+    runtime.environment.chain as Chain,
+    runtime.rpcUrl,
+    runtime.vrfProviderAddress,
+  );
 
   return {
     accountAddress,
@@ -526,6 +547,39 @@ async function grantVillagePassRolesIfNeeded(params: {
   return result.transactionHash;
 }
 
+function shouldSyncPaymaster(runtime: LaunchRuntime): boolean {
+  return isMainnetDeploymentEnvironment(runtime.environment);
+}
+
+async function syncPaymasterIfNeeded(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+}): Promise<boolean | undefined> {
+  if (!shouldSyncPaymaster(params.runtime)) {
+    params.runtime.progress.log("Skipping paymaster sync for non-mainnet environment");
+    return undefined;
+  }
+
+  const result = await params.runtime.progress.run(
+    "sync paymaster",
+    () =>
+      syncPaymasterPolicy({
+        chain: params.runtime.environment.chain,
+        gameName: params.request.gameName,
+        cartridgeApiBase: params.runtime.cartridgeApiBase,
+      }),
+    {
+      start: "Syncing paymaster policy for the launched world",
+      success: (summary, elapsedMs) =>
+        summary.updated
+          ? `Paymaster policy synced in ${formatDuration(elapsedMs)} (${summary.actionCount} actions)`
+          : `Paymaster policy prepared in ${formatDuration(elapsedMs)} (${summary.actionCount} actions)`,
+    },
+  );
+
+  return result.updated;
+}
+
 async function createBanksIfNeeded(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
@@ -707,6 +761,13 @@ async function runCreateIndexerStep(
   return resolvedWorldContext;
 }
 
+async function runSyncPaymasterStep(execution: PreparedLaunchExecution): Promise<void> {
+  execution.summary.paymasterSynced = await syncPaymasterIfNeeded({
+    runtime: execution.runtime,
+    request: execution.request,
+  });
+}
+
 async function executeLaunchStep(execution: PreparedLaunchExecution, stepId: LaunchGameStepId): Promise<void> {
   switch (stepId) {
     case "create-world":
@@ -729,6 +790,9 @@ async function executeLaunchStep(execution: PreparedLaunchExecution, stepId: Lau
       return;
     case "create-indexer":
       await runCreateIndexerStep(execution);
+      return;
+    case "sync-paymaster":
+      await runSyncPaymasterStep(execution);
       return;
   }
 }
@@ -762,6 +826,7 @@ export async function launchGame(request: LaunchGameRequest): Promise<LaunchGame
   await runGrantVillagePassRoleStep(execution, accountContext);
   await runCreateBanksStep(execution, configuredDependencies);
   await runCreateIndexerStep(execution, worldContext);
+  await runSyncPaymasterStep(execution);
 
   return finalizeLaunchSummary(execution);
 }

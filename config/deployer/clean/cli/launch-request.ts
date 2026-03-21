@@ -241,10 +241,11 @@ export function resolveLaunchGameStepId(value?: string): LaunchGameStepId {
     case "grant-village-pass-role":
     case "create-banks":
     case "create-indexer":
+    case "sync-paymaster":
       return value;
     default:
       throw new Error(
-        `Unsupported launch step "${value}". Expected one of: create-world, wait-for-factory-index, configure-world, grant-lootchest-role, grant-village-pass-role, create-banks, create-indexer`,
+        `Unsupported launch step "${value}". Expected one of: create-world, wait-for-factory-index, configure-world, grant-lootchest-role, grant-village-pass-role, create-banks, create-indexer, sync-paymaster`,
       );
   }
 }

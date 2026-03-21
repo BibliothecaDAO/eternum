@@ -16,5 +16,7 @@ export function resolveLaunchStepTitle(stepId: LaunchGameStepId): string {
       return "Preparing banks";
     case "create-indexer":
       return "Finishing setup";
+    case "sync-paymaster":
+      return "Setting up gas coverage";
   }
 }

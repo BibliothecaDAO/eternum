@@ -8,7 +8,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/create.ts --environment <slot.blitz|slot.eternum> --game <world-name> --start-time <unix|iso>",
+      "  bun config/deployer/clean/cli/create.ts --environment <slot.blitz|slot.eternum|mainnet.blitz|mainnet.eternum> --game <world-name> --start-time <unix|iso>",
       "",
       "Optional env or flags:",
       "  RPC_URL / --rpc-url",
@@ -47,6 +47,7 @@ function usage(): void {
       "Examples:",
       "  bun config/deployer/clean/cli/create.ts --environment slot.blitz --game bltz-fire-gate-42 --start-time 1763112600",
       "  bun config/deployer/clean/cli/create.ts --environment slot.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
+      "  bun config/deployer/clean/cli/create.ts --environment mainnet.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
       "",
     ].join("\n"),
   );

@@ -34,13 +34,19 @@ describe("native config steps", () => {
 
   test("resolves different step subsets for different environments", () => {
     const blitzConfig = loadEnvironmentConfiguration("slot.blitz");
+    const mainnetBlitzConfig = loadEnvironmentConfiguration("mainnet.blitz");
     const eternumConfig = loadEnvironmentConfiguration("slot.eternum");
     (blitzConfig as typeof blitzConfig & { factory_address?: string }).factory_address = "0xabc";
+    (mainnetBlitzConfig as typeof mainnetBlitzConfig & { factory_address?: string }).factory_address = "0xabc";
     (eternumConfig as typeof eternumConfig & { factory_address?: string }).factory_address = "0xabc";
 
     const blitzStepIds = resolveFactoryWorldConfigSteps({
       environmentId: "slot.blitz",
       config: blitzConfig,
+    }).map((step) => step.id);
+    const mainnetBlitzStepIds = resolveFactoryWorldConfigSteps({
+      environmentId: "mainnet.blitz",
+      config: mainnetBlitzConfig,
     }).map((step) => step.id);
     const eternumStepIds = resolveFactoryWorldConfigSteps({
       environmentId: "slot.eternum",
@@ -55,6 +61,15 @@ describe("native config steps", () => {
     expect(blitzStepIds).not.toContain("bank");
     expect(blitzStepIds).toContain("season");
     expect(blitzStepIds).not.toContain("blitz-season");
+
+    expect(mainnetBlitzStepIds).toContain("blitz-registration");
+    expect(mainnetBlitzStepIds).toContain("blitz-exploration");
+    expect(mainnetBlitzStepIds).toContain("mmr");
+    expect(mainnetBlitzStepIds).not.toContain("faith");
+    expect(mainnetBlitzStepIds).not.toContain("trade");
+    expect(mainnetBlitzStepIds).not.toContain("bank");
+    expect(mainnetBlitzStepIds).toContain("season");
+    expect(mainnetBlitzStepIds).not.toContain("blitz-season");
 
     expect(eternumStepIds).toContain("faith");
     expect(eternumStepIds).toContain("trade");

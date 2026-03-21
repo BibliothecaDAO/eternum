@@ -5,9 +5,10 @@ describe("launch request helpers", () => {
   test("builds a launch request from shared CLI args", () => {
     expect(
       buildLaunchGameRequest({
-        environment: "slot.blitz",
+        environment: "mainnet.blitz",
         game: "bltz-test-1",
         "start-time": "2026-03-18T10:00:00Z",
+        "factory-address": "0xabc",
         "two-player-mode": "true",
         "duration-seconds": "3600",
         "map-config-overrides-json": JSON.stringify({
@@ -21,9 +22,10 @@ describe("launch request helpers", () => {
         }),
       }),
     ).toMatchObject({
-      environmentId: "slot.blitz",
+      environmentId: "mainnet.blitz",
       gameName: "bltz-test-1",
       startTime: "2026-03-18T10:00:00Z",
+      factoryAddress: "0xabc",
       twoPlayerMode: true,
       durationSeconds: 3600,
       mapConfigOverrides: {
@@ -42,6 +44,7 @@ describe("launch request helpers", () => {
     expect(resolveLaunchGameStepId("create-world")).toBe("create-world");
     expect(resolveLaunchGameStepId("configure-world")).toBe("configure-world");
     expect(resolveLaunchGameStepId("create-indexer")).toBe("create-indexer");
+    expect(resolveLaunchGameStepId("sync-paymaster")).toBe("sync-paymaster");
   });
 
   test("builds a run-store request context with the nested launch request intact", () => {

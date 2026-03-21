@@ -229,9 +229,10 @@ const resolveRecoveryStepId = (stepId: FactoryRunStepId): FactoryRecoveryStepId 
       return "grant-village-pass-role";
     case "create-banks":
       return "create-banks";
+    case "sync-paymaster":
+      return "sync-paymaster";
     case "create-indexer":
     case "wait-indexer":
-    case "sync-paymaster":
     case "publish-ready-state":
       return "create-indexer";
     default:

@@ -9,14 +9,14 @@ individual clean deployer steps so GitHub Actions can expose launch progress dir
 
 ```bash
 bun config/deployer/clean/cli/create.ts \
-  --environment slot.blitz \
+  --environment mainnet.blitz \
   --game bltz-fire-gate-42 \
   --start-time 1763112600
 ```
 
 Required inputs:
 
-- `--environment`: `slot.blitz` or `slot.eternum`
+- `--environment`: `slot.blitz`, `slot.eternum`, `mainnet.blitz`, or `mainnet.eternum`
 - `--game`
 - `--start-time`: unix seconds, unix milliseconds, or ISO-8601
 
@@ -50,6 +50,11 @@ Environment defaults are currently defined for both slot environments for:
 - dojo account address
 - dojo private key
 
+Mainnet environments now use the shared factory default
+`0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da`. You can still override it with `FACTORY_ADDRESS` or
+`--factory-address` if needed. Mainnet deployer credentials are still expected from GitHub Environment vars/secrets or
+explicit CLI flags.
+
 GitHub Actions credentials are selected through GitHub Environments:
 
 - environment `slot.blitz`
@@ -58,6 +63,14 @@ GitHub Actions credentials are selected through GitHub Environments:
 - environment `slot.eternum`
   - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
   - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
+- environment `mainnet.blitz`
+  - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
+  - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
+  - secret: `SLOT_AUTH`
+- environment `mainnet.eternum`
+  - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
+  - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
+  - secret: `SLOT_AUTH`
 
 The workflow does not need CI-provided defaults for Torii namespaces, Cartridge API base, or VRF provider address. Those
 are defaulted inside the clean deployer module, and the VRF provider default matches the shared slot value from the game
@@ -102,6 +115,8 @@ Supported step ids:
 The step runner uses the same request shape and env defaults as the full launcher. This is the script boundary the
 workflow uses now, and it is also the intended recovery boundary for browser-driven reruns.
 
+`sync-paymaster` is only meaningful for `mainnet.*` environments. The workflow rejects that recovery scope on slot.
+
 ## GitHub Workflow
 
 `.github/workflows/game-launch.yml` now exposes `launch_step`:
@@ -119,6 +134,7 @@ shows each launch step separately:
 - Grant village pass roles
 - Create banks
 - Create indexer
+- Sync paymaster
 
 The launch summary artifact upload now runs with `always()` so partial summaries still upload when a later step fails.
 
@@ -147,10 +163,14 @@ lease before a new workflow takes ownership, `step-started` acquires the lease f
 burying conflict logic inside the workflow YAML. Stale leases are ignored after their expiry window so canceled runs do
 not block recovery forever.
 
-For `slot.eternum`, the launch flow also runs the village pass role grant automatically after world configuration. It
-grants `MINTER_ROLE` to the deployed `realm_internal_systems` contract and `DISTRIBUTOR_ROLE` to the deployed
+For Eternum environments, the launch flow also runs the village pass role grant automatically after world configuration.
+It grants `MINTER_ROLE` to the deployed `realm_internal_systems` contract and `DISTRIBUTOR_ROLE` to the deployed
 `village_systems` contract on the chain's `villagePass` contract, using the same admin account as the rest of the
 launch.
+
+For mainnet environments, the launch flow also runs `sync-paymaster` after indexer creation. That step rebuilds the
+world policy from the factory-indexed manifest and applies it through the Slot CLI so gas coverage is ready without a
+separate manual workflow.
 
 ## Village Pass Role Grant
 

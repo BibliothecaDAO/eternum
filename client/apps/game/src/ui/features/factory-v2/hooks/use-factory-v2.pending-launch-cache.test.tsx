@@ -25,7 +25,9 @@ vi.mock("../api/factory-worker", () => {
     readFactoryRunIfPresent: vi.fn(),
     createFactoryRun: vi.fn(),
     continueFactoryRun: vi.fn(),
-    isFactoryWorkerEnvironmentSupported: vi.fn((environmentId: string) => environmentId.startsWith("slot.")),
+    isFactoryWorkerEnvironmentSupported: vi.fn((environmentId: string) =>
+      ["slot.eternum", "mainnet.eternum", "slot.blitz", "mainnet.blitz"].includes(environmentId),
+    ),
   };
 });
 
@@ -293,6 +295,40 @@ describe("useFactoryV2 pending launch cache", () => {
     expect(getFactory().selectedEnvironmentId).toBe("slot.eternum");
     expect(getFactory().selectedRun?.id).toBe("pending:slot.eternum:cached-launch");
     expect(getFactory().pendingRunName).toBe("cached-launch");
+  });
+
+  it("adds the paymaster step to cached mainnet launches", async () => {
+    writeFactoryPendingLaunches([
+      {
+        environmentId: "mainnet.eternum",
+        gameName: "mainnet-launch",
+        mode: "eternum",
+        createdAt: "2026-03-21T09:00:00.000Z",
+      },
+    ]);
+
+    await act(async () => {
+      root.render(<HookHarness />);
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(getFactory().modeRuns[0]?.id).toBe("pending:mainnet.eternum:mainnet-launch");
+    });
+
+    expect(getFactory().selectedEnvironmentId).toBe("mainnet.eternum");
+    expect(getFactory().environmentUnavailableReason).toBeNull();
+    expect(getFactory().modeRuns[0]?.steps.map((step) => step.id)).toEqual([
+      "launch-request",
+      "create-world",
+      "wait-for-factory-index",
+      "configure-world",
+      "grant-lootchest-role",
+      "grant-village-pass-role",
+      "create-banks",
+      "create-indexer",
+      "sync-paymaster",
+    ]);
   });
 
   it("clears cached pending launches when the run list already contains the real run", async () => {

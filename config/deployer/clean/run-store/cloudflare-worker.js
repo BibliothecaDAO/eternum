@@ -33,11 +33,11 @@ async function handleRequest(request, env) {
     }
 
     if (request.method === "GET" && url.pathname === "/api/factory/runs") {
-      return handleListFactoryRuns(request, url, env);
+      return await handleListFactoryRuns(request, url, env);
     }
 
     if (request.method === "POST" && url.pathname === "/api/factory/runs") {
-      return handleCreateFactoryRun(request, env);
+      return await handleCreateFactoryRun(request, env);
     }
 
     const runRoute = matchFactoryRunRoute(url.pathname);
@@ -46,11 +46,11 @@ async function handleRequest(request, env) {
     }
 
     if (request.method === "GET") {
-      return handleReadFactoryRun(request, runRoute, env);
+      return await handleReadFactoryRun(request, runRoute, env);
     }
 
     if (request.method === "POST" && runRoute.action === "continue") {
-      return handleContinueFactoryRun(request, env, runRoute);
+      return await handleContinueFactoryRun(request, env, runRoute);
     }
 
     return buildJsonResponse(request, env, { error: "Not found" }, 404);
@@ -161,6 +161,7 @@ async function handleContinueFactoryRun(request, env, route) {
   }
 
   const workflowRequest = buildContinueWorkflowRequest(route, run, inputRecord, body.launchStep);
+  validateLaunchWorkflowScopeForEnvironment(workflowRequest.environment, workflowRequest.launchStep);
   const workflowRun = await dispatchGameLaunchWorkflow(
     resolveWorkflowGitHubClient(github, inputRecord, body),
     workflowRequest,
@@ -273,7 +274,12 @@ function resolveLaunchInputRequest(inputRecord) {
 }
 
 function validateEnvironment(environment) {
-  if (environment !== "slot.blitz" && environment !== "slot.eternum") {
+  if (
+    environment !== "slot.blitz" &&
+    environment !== "slot.eternum" &&
+    environment !== "mainnet.blitz" &&
+    environment !== "mainnet.eternum"
+  ) {
     throw new HttpError(400, `Unsupported environment "${environment}"`);
   }
 }
@@ -293,9 +299,20 @@ function validateLaunchWorkflowScope(scope) {
     scope !== "grant-lootchest-role" &&
     scope !== "grant-village-pass-role" &&
     scope !== "create-banks" &&
-    scope !== "create-indexer"
+    scope !== "create-indexer" &&
+    scope !== "sync-paymaster"
   ) {
     throw new HttpError(400, `Unsupported launch step "${scope}"`);
+  }
+}
+
+function validateLaunchWorkflowScopeForEnvironment(environment, scope) {
+  if (scope === "full") {
+    return;
+  }
+
+  if (scope === "sync-paymaster" && !environment.startsWith("mainnet.")) {
+    throw new HttpError(400, `Launch step "${scope}" is only supported for mainnet environments`);
   }
 }
 

@@ -14,6 +14,7 @@ export const DEFAULT_TORII_WORKFLOW_FILE = "factory-torii-deployer.yml";
 export const DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS = 20 * 60 * 1000;
 export const DEFAULT_INDEXER_WORKFLOW_POLL_MS = 5_000;
 export const DEFAULT_VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
+export const DEFAULT_MAINNET_FACTORY_ADDRESS = "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da";
 export const DEFAULT_SLOT_FACTORY_ADDRESS = "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb";
 export const DEFAULT_MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9";
 export const DEFAULT_SEPOLIA_RPC_URL = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9";
@@ -47,6 +48,24 @@ const SLOT_DEFAULTS = {
 };
 
 export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, DeploymentEnvironment> = {
+  "mainnet.blitz": {
+    id: "mainnet.blitz",
+    chain: "mainnet",
+    gameType: "blitz",
+    toriiEnv: "mainnet",
+    configPath: "config/generated/blitz.mainnet.json",
+    factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
+    rpcUrl: DEFAULT_MAINNET_RPC_URL,
+  },
+  "mainnet.eternum": {
+    id: "mainnet.eternum",
+    chain: "mainnet",
+    gameType: "eternum",
+    toriiEnv: "mainnet",
+    configPath: "config/generated/eternum.mainnet.json",
+    factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
+    rpcUrl: DEFAULT_MAINNET_RPC_URL,
+  },
   "slot.blitz": {
     id: "slot.blitz",
     chain: "slot",

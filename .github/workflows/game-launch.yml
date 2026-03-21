@@ -8,6 +8,8 @@ on:
         required: true
         type: choice
         options:
+          - mainnet.blitz
+          - mainnet.eternum
           - slot.blitz
           - slot.eternum
       game_name:
@@ -73,6 +75,7 @@ on:
           - grant-village-pass-role
           - create-banks
           - create-indexer
+          - sync-paymaster
 
 jobs:
   launch:
@@ -94,6 +97,7 @@ jobs:
       GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON: ${{ github.event.inputs.blitz_registration_overrides_json }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
+      FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
       GITHUB_TOKEN: ${{ github.token }}
@@ -125,11 +129,35 @@ jobs:
           pnpm --dir packages/types build
           pnpm --dir packages/provider build
 
+      - name: Install Slot CLI
+        if:
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'sync-paymaster') }}
+        run: |
+          set -euo pipefail
+          curl -L https://slot.cartridge.sh | bash
+          /home/runner/.config/.slot/bin/slotup
+          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
+          slot --version || true
+
       - name: Prepare launch arguments
         run: |
           set -euo pipefail
 
-          if [ -z "${DOJO_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; then
+          GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
+          GAME_LAUNCH_GAME_TYPE="${GAME_LAUNCH_ENVIRONMENT##*.}"
+
+          if [ -z "${GAME_LAUNCH_NETWORK}" ] || [ -z "${GAME_LAUNCH_GAME_TYPE}" ]; then
+            echo "Unable to resolve config sync target from ${GAME_LAUNCH_ENVIRONMENT}" >&2
+            exit 1
+          fi
+
+          if [ "${GAME_LAUNCH_STEP}" = "sync-paymaster" ] && [ "${GAME_LAUNCH_NETWORK}" != "mainnet" ]; then
+            echo "sync-paymaster is only supported for mainnet environments" >&2
+            exit 1
+          fi
+
+          if [ "${GAME_LAUNCH_STEP}" != "sync-paymaster" ] && { [ -z "${DOJO_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; }; then
             echo "Missing DOJO credentials for ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
           fi
@@ -143,6 +171,18 @@ jobs:
             --start-time "${GAME_LAUNCH_START_TIME}"
             --mode batched
           )
+
+          GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
+          GAME_LAUNCH_GAME_TYPE="${GAME_LAUNCH_ENVIRONMENT##*.}"
+
+          if [ -z "${GAME_LAUNCH_NETWORK}" ] || [ -z "${GAME_LAUNCH_GAME_TYPE}" ]; then
+            echo "Unable to resolve config sync target from ${GAME_LAUNCH_ENVIRONMENT}" >&2
+            exit 1
+          fi
+
+          if [ -n "${FACTORY_ADDRESS}" ]; then
+            args+=(--factory-address "${FACTORY_ADDRESS}")
+          fi
 
           if [ -n "${GAME_LAUNCH_DEV_MODE_ON}" ]; then
             args+=(--dev-mode-on "${GAME_LAUNCH_DEV_MODE_ON}")
@@ -197,21 +237,9 @@ jobs:
             account_lease_args+=(--branch "${FACTORY_RUN_STORE_BRANCH}")
           fi
 
-          resolve_config_sync_target() {
-            GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
-            GAME_LAUNCH_GAME_TYPE="${GAME_LAUNCH_ENVIRONMENT##*.}"
-
-            if [ -z "${GAME_LAUNCH_NETWORK}" ] || [ -z "${GAME_LAUNCH_GAME_TYPE}" ]; then
-              echo "Unable to resolve config sync target from ${GAME_LAUNCH_ENVIRONMENT}" >&2
-              exit 1
-            fi
-          }
-
           sync_current_config() {
             pnpm run "config:sync:${GAME_LAUNCH_NETWORK}:${GAME_LAUNCH_GAME_TYPE}" >/dev/null
           }
-
-          resolve_config_sync_target
 
           run_launch_step_command() {
             local step_id="$1"
@@ -530,6 +558,17 @@ jobs:
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step create-indexer
+
+      - name: Sync paymaster
+        if:
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'sync-paymaster') }}
+        env:
+          SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step sync-paymaster
 
       - name: Upload launch summary
         if: ${{ always() }}

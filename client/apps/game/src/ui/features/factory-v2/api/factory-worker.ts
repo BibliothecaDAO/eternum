@@ -9,7 +9,8 @@ export type FactoryWorkerLaunchStepId =
   | "grant-lootchest-role"
   | "grant-village-pass-role"
   | "create-banks"
-  | "create-indexer";
+  | "create-indexer"
+  | "sync-paymaster";
 export type FactoryWorkerLaunchScope = "full" | FactoryWorkerLaunchStepId;
 export type FactoryWorkerRunStatus = "running" | "attention" | "complete";
 export type FactoryWorkerRunStepStatus = "pending" | "running" | "succeeded" | "failed";
@@ -65,6 +66,7 @@ export interface FactoryWorkerRunRecord {
     lootChestRoleTxHash?: string;
     villagePassRoleTxHash?: string;
     createBanksTxHash?: string;
+    paymasterSynced?: boolean;
     indexerCreated?: boolean;
   };
 }
@@ -93,7 +95,12 @@ interface ContinueFactoryRunRequest {
 
 const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
 
-const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>(["slot.eternum", "slot.blitz"]);
+const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
+  "slot.eternum",
+  "mainnet.eternum",
+  "slot.blitz",
+  "mainnet.blitz",
+]);
 
 export class FactoryWorkerApiError extends Error {
   constructor(

@@ -61,6 +61,7 @@ export interface FactoryRunArtifacts {
   lootChestRoleTxHash?: string;
   villagePassRoleTxHash?: string;
   createBanksTxHash?: string;
+  paymasterSynced?: boolean;
   indexerCreated?: boolean;
   indexerWorkflowRun?: IndexerWorkflowRun;
 }

@@ -12,14 +12,27 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.privateKey).toBe("0x3e3979c1ed728490308054fe357a9f49cf67f80f9721f44cc57235129e090f4");
   });
 
+  test("accepts mainnet.eternum with the shared mainnet factory default", () => {
+    const environment = resolveDeploymentEnvironment("mainnet.eternum");
+
+    expect(environment.chain).toBe("mainnet");
+    expect(environment.gameType).toBe("eternum");
+    expect(environment.factoryAddress).toBe("0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da");
+    expect(environment.rpcUrl).toBe("https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9");
+    expect(environment.accountAddress).toBeUndefined();
+    expect(environment.privateKey).toBeUndefined();
+  });
+
   test("rejects unsupported environments", () => {
-    expect(() => resolveDeploymentEnvironment("mainnet.blitz")).toThrow(
-      'Unsupported environment "mainnet.blitz". Expected one of: slot.blitz, slot.eternum',
+    expect(() => resolveDeploymentEnvironment("invalid.blitz")).toThrow(
+      'Unsupported environment "invalid.blitz". Expected one of: mainnet.blitz, mainnet.eternum, slot.blitz, slot.eternum',
     );
   });
 
   test("keeps eternum-only launch gates separate from blitz", () => {
     expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("slot.eternum"))).toBe(true);
     expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("slot.blitz"))).toBe(false);
+    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("mainnet.eternum"))).toBe(true);
+    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("mainnet.blitz"))).toBe(false);
   });
 });

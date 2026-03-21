@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-21",
+    title: "Factory Mainnet Launch Recovery",
+    description:
+      "Factory V2 now supports mainnet launch workflows again and automatically turns on gas coverage after mainnet game setup, so new worlds can come online without a separate paymaster sync.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-21",
     title: "Factory Dev Contract Lookup",
     description:
       "Factory V2 now hides a developer lookup panel that can resolve prize and custom manifest contract addresses directly from the factory indexer, without waiting for a game indexer to come online.",

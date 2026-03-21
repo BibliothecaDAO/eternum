@@ -5,9 +5,9 @@ import type {
 } from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
-export type DeploymentChain = "slot";
+export type DeploymentChain = "slot" | "mainnet";
 export type DeploymentGameType = "blitz" | "eternum";
-export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum";
+export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.blitz" | "mainnet.eternum";
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchGameStepId =
   | "create-world"
@@ -16,7 +16,8 @@ export type LaunchGameStepId =
   | "grant-lootchest-role"
   | "grant-village-pass-role"
   | "create-banks"
-  | "create-indexer";
+  | "create-indexer"
+  | "sync-paymaster";
 
 export interface DeploymentEnvironment {
   id: DeploymentEnvironmentId;
@@ -24,10 +25,10 @@ export interface DeploymentEnvironment {
   gameType: DeploymentGameType;
   toriiEnv: DeploymentChain;
   configPath: string;
-  factoryAddress: string;
+  factoryAddress?: string;
   rpcUrl: string;
-  accountAddress: string;
-  privateKey: string;
+  accountAddress?: string;
+  privateKey?: string;
 }
 
 export interface ConfigLogger {
@@ -147,6 +148,7 @@ export interface LaunchGameSummary {
   lootChestRoleTxHash?: string;
   villagePassRoleTxHash?: string;
   createBanksTxHash?: string;
+  paymasterSynced?: boolean;
   indexerCreated: boolean;
   indexerMode?: IndexerCreationResult["mode"];
   indexerRequest?: IndexerRequest;
