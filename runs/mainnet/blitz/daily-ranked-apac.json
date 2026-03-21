@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23378392387-1",
   "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-21T11:11:49.055Z",
-  "updatedAt": "2026-03-21T11:15:33.817Z",
+  "updatedAt": "2026-03-21T11:15:36.114Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -71,9 +71,10 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Setting up gas coverage started",
+      "startedAt": "2026-03-21T11:15:36.114Z"
     }
   ],
   "artifacts": {
@@ -91,5 +92,13 @@
       "status": "completed",
       "conclusion": "success"
     }
+  },
+  "activeLease": {
+    "launchRequestId": "23378392387-1",
+    "workflowRunId": 23378392387,
+    "workflowRunAttempt": 1,
+    "stepId": "sync-paymaster",
+    "acquiredAt": "2026-03-21T11:15:36.114Z",
+    "expiresAt": "2026-03-21T12:00:36.114Z"
   }
 }
