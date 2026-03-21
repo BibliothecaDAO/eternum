@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-22",
+    title: "Tactical Map Camera Tilt",
+    description:
+      "World map camera bands now tilt more consistently as you zoom out, so far views read more like a tactical map instead of flattening and then pitching back down.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-22",
     title: "Stable Worldmap Zoom",
     description:
       "World map zoom now runs through one smoother camera system for mouse wheel, minimap zoom, and keyboard shortcuts, so focus points stay steadier and zoom-driven refreshes stop fighting each other.",

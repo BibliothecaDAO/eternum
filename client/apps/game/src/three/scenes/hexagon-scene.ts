@@ -62,6 +62,7 @@ import {
   resolveCameraTransitionCompletion,
   resolveCameraTransitionStart,
 } from "./hexagon-scene-camera-transition";
+import { resolveWorldmapCameraViewProfile } from "./worldmap-camera-view-profile";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 import { LightningEffectSystem } from "./lightning-effect-system";
 import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-policy";
@@ -1384,20 +1385,9 @@ export abstract class HexagonScene {
   }
 
   private applyTargetCameraView(position: CameraView): void {
-    switch (position) {
-      case CameraView.Close:
-        this.cameraDistance = 10;
-        this.cameraAngle = Math.PI / 6;
-        break;
-      case CameraView.Medium:
-        this.cameraDistance = 20;
-        this.cameraAngle = Math.PI / 3;
-        break;
-      case CameraView.Far:
-        this.cameraDistance = 40;
-        this.cameraAngle = (50 * Math.PI) / 180;
-        break;
-    }
+    const profile = resolveWorldmapCameraViewProfile(position);
+    this.cameraDistance = profile.distance;
+    this.cameraAngle = profile.angleRadians;
   }
 
   private applyResolvedCameraView(view: CameraView): void {

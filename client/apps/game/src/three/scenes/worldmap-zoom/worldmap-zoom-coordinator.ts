@@ -1,4 +1,5 @@
 import { CameraView } from "../camera-view";
+import { resolveWorldmapCameraViewProfile } from "../worldmap-camera-view-profile";
 import { solveWorldmapZoomAnchor } from "./worldmap-zoom-anchor-solver";
 import { createWorldmapZoomBandState, updateWorldmapZoomBandState } from "./worldmap-zoom-band-policy";
 import { applyContinuousWorldmapZoomDelta } from "./worldmap-zoom-input-normalizer";
@@ -163,15 +164,7 @@ function resolveDistanceBand(distance: number): CameraView {
 }
 
 function resolveBandDistance(band: CameraView): number {
-  switch (band) {
-    case CameraView.Close:
-      return 10;
-    case CameraView.Far:
-      return 40;
-    case CameraView.Medium:
-    default:
-      return 20;
-  }
+  return resolveWorldmapCameraViewProfile(band).distance;
 }
 
 function clamp(value: number, min: number, max: number): number {
