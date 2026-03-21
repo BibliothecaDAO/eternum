@@ -1,5 +1,12 @@
-import type { FactoryRun, FactoryRunStatus, FactoryRunStep, FactoryStepStatus } from "../types";
-import type { FactoryWorkerRunRecord } from "./factory-worker";
+import type {
+  FactoryRecoveryStepId,
+  FactoryRun,
+  FactoryRunRecovery,
+  FactoryRunStatus,
+  FactoryRunStep,
+  FactoryStepStatus,
+} from "../types";
+import type { FactoryWorkerRunRecovery, FactoryWorkerRunRecord } from "./factory-worker";
 
 export function mapFactoryWorkerRun(record: FactoryWorkerRunRecord): FactoryRun {
   const steps = record.steps.map(mapFactoryWorkerStep);
@@ -15,6 +22,7 @@ export function mapFactoryWorkerRun(record: FactoryWorkerRunRecord): FactoryRun 
     status: resolveFactoryRunStatus(record),
     summary: resolveFactoryRunSummary(record),
     updatedAt: formatFactoryUpdatedAt(record.updatedAt),
+    recovery: mapFactoryRunRecovery(record.recovery),
     steps,
   };
 }
@@ -80,6 +88,34 @@ function resolveFactoryStepStatus(status: FactoryWorkerRunRecord["steps"][number
     case "pending":
     default:
       return "pending";
+  }
+}
+
+function mapFactoryRunRecovery(recovery: FactoryWorkerRunRecovery | undefined): FactoryRunRecovery | undefined {
+  if (!recovery) {
+    return undefined;
+  }
+
+  return {
+    state: recovery.state,
+    canContinue: recovery.canContinue,
+    continueStepId: mapRecoveryStepId(recovery.continueStepId),
+  };
+}
+
+function mapRecoveryStepId(stepId: FactoryWorkerRunRecovery["continueStepId"]): FactoryRecoveryStepId | null {
+  switch (stepId) {
+    case "create-world":
+    case "wait-for-factory-index":
+    case "configure-world":
+    case "grant-lootchest-role":
+    case "grant-village-pass-role":
+    case "create-banks":
+    case "create-indexer":
+    case "sync-paymaster":
+      return stepId;
+    default:
+      return null;
   }
 }
 

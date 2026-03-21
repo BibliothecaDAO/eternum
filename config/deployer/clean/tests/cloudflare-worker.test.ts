@@ -375,6 +375,129 @@ describe("factory worker map config overrides", () => {
   });
 });
 
+describe("factory worker recovery signals", () => {
+  test("keeps step handoffs transitioning until the run has gone stale", async () => {
+    globalThis.fetch = async (url) => {
+      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-11.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          runId: "slot.blitz:bltz-test-11",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          gameName: "bltz-test-11",
+          status: "running",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/bltz-test-11/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "configure-world",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-5_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [
+            {
+              id: "create-world",
+              title: "Creating world",
+              status: "succeeded",
+              workflowStepName: "Creating world",
+              latestEvent: "Creating world succeeded",
+            },
+            {
+              id: "wait-for-factory-index",
+              title: "Waiting for game",
+              status: "succeeded",
+              workflowStepName: "Waiting for game",
+              latestEvent: "Waiting for game succeeded",
+            },
+            {
+              id: "configure-world",
+              title: "Applying settings",
+              status: "pending",
+              workflowStepName: "Applying settings",
+              latestEvent: "Waiting to run",
+            },
+          ],
+          artifacts: {},
+        });
+      }
+
+      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-12.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          runId: "slot.blitz:bltz-test-12",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          gameName: "bltz-test-12",
+          status: "running",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/bltz-test-12/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "configure-world",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [
+            {
+              id: "create-world",
+              title: "Creating world",
+              status: "succeeded",
+              workflowStepName: "Creating world",
+              latestEvent: "Creating world succeeded",
+            },
+            {
+              id: "wait-for-factory-index",
+              title: "Waiting for game",
+              status: "succeeded",
+              workflowStepName: "Waiting for game",
+              latestEvent: "Waiting for game succeeded",
+            },
+            {
+              id: "configure-world",
+              title: "Applying settings",
+              status: "pending",
+              workflowStepName: "Applying settings",
+              latestEvent: "Waiting to run",
+            },
+          ],
+          artifacts: {},
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const transitioningResponse = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-11"),
+      buildWorkerEnv(),
+    );
+    const stalledResponse = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-12"),
+      buildWorkerEnv(),
+    );
+
+    const transitioningRun = await transitioningResponse.json();
+    const stalledRun = await stalledResponse.json();
+
+    expect(transitioningRun.recovery).toEqual({
+      state: "transitioning",
+      canContinue: false,
+      continueStepId: null,
+    });
+    expect(stalledRun.recovery).toEqual({
+      state: "stalled",
+      canContinue: true,
+      continueStepId: "configure-world",
+    });
+  });
+});
+
 function buildWorkerEnv() {
   return {
     GITHUB_TOKEN: "test-token",
@@ -394,4 +517,8 @@ function buildGitHubContentsResponse(value: unknown) {
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
+}
+
+function offsetTimestamp(offsetMs: number) {
+  return new Date(Date.now() + offsetMs).toISOString();
 }
