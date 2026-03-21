@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "runId": "slot.blitz:bltz-ping-532",
+  "launchRequestId": "23371137920-1",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-ping-532",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "configure-world",
+  "createdAt": "2026-03-21T03:35:09.668Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23371137920,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23371137920",
+    "ref": "credence0x/factory-v2-polish",
+    "sha": "82da0cf7a8560295c903b04b37b77c63f1314b20"
+  },
+  "request": {
+    "environmentId": "slot.blitz",
+    "gameName": "bltz-ping-532",
+    "startTime": "2026-03-21T04:00:00.000Z",
+    "factoryAddress": "",
+    "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+    "privateKey": "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912",
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "maxActions": 300,
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false
+  }
+}
