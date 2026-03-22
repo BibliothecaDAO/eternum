@@ -454,7 +454,7 @@ export class MapProtocol {
    * ```ts
    * const tile = await protocol.tileInfo(6, 4);
    * if (tile.entity?.explorer) {
-   *   console.log(`Army strength: ${tile.entity.explorer.strength.display}`);
+   *   console.log(`Army strength: ${tile.entity.explorer.strength.effective}`);
    * }
    * ```
    */
@@ -566,7 +566,7 @@ export class MapProtocol {
    * ```ts
    * const info = await protocol.entityInfo(42);
    * if (info?.structure) {
-   *   console.log(`Guards: ${info.structure.guardStrength.display}`);
+   *   console.log(`Guards: ${info.structure.guardStrength.effective}`);
    * }
    * ```
    */
@@ -719,7 +719,7 @@ export class MapProtocol {
    * // Find the 5 nearest enemy armies to your position
    * const enemies = await protocol.find("enemy_army", { x: 0, y: 0 }, 5);
    * for (const e of enemies) {
-   *   console.log(`${e.label} at (${e.position.x},${e.position.y}), strength: ${e.strength?.display}`);
+   *   console.log(`${e.label} at (${e.position.x},${e.position.y}), strength: ${e.strength?.effective}`);
    * }
    * ```
    */
