@@ -1,11 +1,4 @@
 /**
- * CLI entry point — invokes {@link main} and exits with a non-zero code on
- * unhandled fatal errors.
+ * CLI entry point — imports and runs the Commander program.
  */
-
-import { main } from "./main.js";
-
-main().catch((err) => {
-  console.error("Fatal:", err);
-  process.exit(1);
-});
+import "../cli/index.js";
