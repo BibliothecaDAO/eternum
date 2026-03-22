@@ -77,3 +77,29 @@ export function toContractY(display: number, mapCenter: number): number {
 export function fmtPos(rawX: number, rawY: number, mapCenter: number): string {
   return `(${toDisplayX(rawX, mapCenter)},${toDisplayY(rawY, mapCenter)})`;
 }
+
+/**
+ * Convert a raw contract Direction to a display-oriented direction name.
+ *
+ * Our display coordinates negate Y (positive = north), which flips the
+ * north/south axis relative to the contract's raw even-r offset grid.
+ * East/West are unchanged.
+ */
+const DISPLAY_DIRECTION_NAMES: Record<number, string> = {
+  0: "East",
+  1: "South East",  // raw NORTH_EAST → display South East (Y negated)
+  2: "South West",  // raw NORTH_WEST → display South West
+  3: "West",
+  4: "North West",  // raw SOUTH_WEST → display North West
+  5: "North East",  // raw SOUTH_EAST → display North East
+};
+
+/**
+ * Get the display-oriented direction name for a contract Direction enum value.
+ *
+ * @param direction - Direction enum value (0=EAST, 1=NORTH_EAST, etc.)
+ * @returns Human-readable direction matching the game client's visual orientation.
+ */
+export function displayDirection(direction: number): string {
+  return DISPLAY_DIRECTION_NAMES[direction] ?? `Direction ${direction}`;
+}
