@@ -83,16 +83,16 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
 
   let contractsBySelector: Record<string, string> | undefined;
   if (config.worldName && (!config.toriiUrl || !config.worldAddress)) {
-    console.log(`Discovering world "${config.worldName}" on ${config.chain}...`);
+    console.error(`Discovering world "${config.worldName}" on ${config.chain}...`);
     const info = await discoverWorld(config.chain, config.worldName);
     config.toriiUrl = info.toriiUrl;
     config.worldAddress = info.worldAddress;
     config.rpcUrl = info.rpcUrl;
     contractsBySelector = info.contractsBySelector;
     config.dataDir = join(homedir(), ".axis", "worlds", info.worldAddress);
-    console.log(`  Discovered: torii=${info.toriiUrl}, world=${info.worldAddress}`);
-    console.log(`  RPC: ${info.rpcUrl}`);
-    console.log(`  Resolved ${Object.keys(info.contractsBySelector).length} contract addresses from factory`);
+    console.error(`  Discovered: torii=${info.toriiUrl}, world=${info.worldAddress}`);
+    console.error(`  RPC: ${info.rpcUrl}`);
+    console.error(`  Resolved ${Object.keys(info.contractsBySelector).length} contract addresses from factory`);
   }
 
   // 2. Bootstrap data directory
@@ -131,7 +131,7 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
 
   if (restoreConsoleLog) restoreConsoleLog();
 
-  console.log(`  Account: ${account.address}`);
+  console.error(`  Account: ${account.address}`);
 
   // 5. Clients
   const client = await EternumClient.create({ toriiUrl: config.toriiUrl });
@@ -139,7 +139,7 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
 
   // 6. Game config
   const gameConfig: GameConfig = await (client.sql as any).fetchGameConfig();
-  console.log(
+  console.error(
     `  Game config: ${Object.keys(gameConfig.buildingCosts).length} buildings, ` +
       `${Object.keys(gameConfig.resourceFactories).length} recipes, ` +
       `cost scale ${gameConfig.buildingBaseCostPercentIncrease}`,
@@ -157,7 +157,7 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
       const rows = (await res.json()) as any[];
       if (rows[0]?.map_center_offset != null) {
         mapCenter = BASE_MAP_CENTER - Number(rows[0].map_center_offset);
-        console.log(`  Map center: ${mapCenter} (offset ${rows[0].map_center_offset})`);
+        console.error(`  Map center: ${mapCenter} (offset ${rows[0].map_center_offset})`);
       }
     }
   } catch {
@@ -186,7 +186,7 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
         resourceWeightGrams.set(Number(row.resource_type), Number(BigInt(row.weight_gram)));
       }
     }
-    console.log(
+    console.error(
       `  Transport config: donkey capacity ${donkeyCapacityGrams}g, ${resourceWeightGrams.size} resource weights loaded`,
     );
   } catch {
@@ -226,18 +226,18 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
 
   // 11. Wait for first map snapshot
   if (waitForMap) {
-    console.log("Waiting for first map load...");
+    console.error("Waiting for first map load...");
     for (let i = 0; i < 30; i++) {
       if (mapCtx.snapshot) break;
       await new Promise((r) => setTimeout(r, 1000));
     }
     if (mapCtx.snapshot) {
       toolCtx.snapshot = mapCtx.snapshot;
-      console.log(
+      console.error(
         `  Map loaded: ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols, ${mapCtx.snapshot.tiles.length} tiles`,
       );
     } else {
-      console.log("  WARNING: Map failed to load within 30s, starting anyway");
+      console.error("  WARNING: Map failed to load within 30s, starting anyway");
     }
   }
 

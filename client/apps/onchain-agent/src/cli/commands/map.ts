@@ -132,9 +132,10 @@ export function registerMapCommands(program: Command) {
       const info = {
         account: account.address,
         chain: config.chain,
+        worldName: config.worldName ?? null,
+        worldAddress: config.worldAddress,
         rpcUrl: config.rpcUrl,
         toriiUrl: config.toriiUrl,
-        worldAddress: config.worldAddress,
         mapLoaded: !!mapCtx.snapshot,
         tileCount: mapCtx.snapshot?.tiles.length ?? 0,
         buildings: Object.keys(gameConfig.buildingCosts).length,

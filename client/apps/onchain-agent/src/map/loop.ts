@@ -98,7 +98,7 @@ export function createMapLoop(
       const tileCount = area.tiles.length;
       const ownedCount = ownedEntityIds?.size ?? 0;
       if (tileCount !== lastTileCount || ownedCount !== lastOwnedCount) {
-        console.log(`[MAP] tiles=${tileCount}, ownedIds=${ownedCount}`);
+        console.error(`[MAP] tiles=${tileCount}, ownedIds=${ownedCount}`);
         lastTileCount = tileCount;
         lastOwnedCount = ownedCount;
       }
