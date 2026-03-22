@@ -49,8 +49,6 @@ import {
 // printing an auth URL) would corrupt the JSON-RPC stream. Redirect
 // everything to stderr so auth URLs appear in the MCP server logs.
 {
-  const _warn = console.warn;
-  const _error = console.error;
   const providerNoise = (msg: string) =>
     msg.includes("[provider]") || msg.includes("Failed to estimate") || msg.includes("Insufficient transaction");
   const toStderr = (...a: any[]) => process.stderr.write(a.map(String).join(" ") + "\n");

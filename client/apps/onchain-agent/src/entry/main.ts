@@ -213,8 +213,7 @@ function buildTickPrompt(mapCtx: MapContext): string {
  *   is missing, Cartridge auth times out, or the Torii client cannot initialize.
  */
 export async function main() {
-  const { config, client, account, gameConfig, mapCtx, mapLoop, automationLoop, automationStatus, toolCtx } =
-    await bootstrap();
+  const { config, mapCtx, mapLoop, automationLoop, automationStatus, toolCtx } = await bootstrap();
 
   // Resolve model (axis run-specific — not part of shared bootstrap)
   const model =
