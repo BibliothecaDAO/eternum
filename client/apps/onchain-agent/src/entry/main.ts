@@ -176,29 +176,45 @@ async function pruneMessages(
 /**
  * Build the per-tick user prompt sent to the agent at the start of each turn.
  *
- * Embeds the structured briefing and key game constraints so the agent
- * avoids common tool call failures (wrong stamina, not adjacent, etc.).
+ * Embeds the structured briefing, recent tool errors, and key game
+ * constraints so the agent avoids common tool call failures.
  *
  * @param mapCtx - Shared map context holding the latest protocol and snapshot.
+ * @param toolErrors - Recent tool invocation failures for the agent to learn from.
  * @returns Formatted tick prompt ready to pass to `agent.prompt()`.
  */
-function buildTickPrompt(mapCtx: MapContext): string {
+function buildTickPrompt(mapCtx: MapContext, toolErrors: ToolError[]): string {
   const briefing = mapCtx.protocol?.briefing();
   if (!briefing) return "Map not yet loaded. Wait for next tick.";
 
-  return `## Tick
+  const parts = [
+    "## Tick",
+    "",
+    JSON.stringify(briefing, null, 2),
+  ];
 
-${JSON.stringify(briefing, null, 2)}
+  if (toolErrors.length > 0) {
+    parts.push(
+      "",
+      "## Recent Errors",
+      ...toolErrors.map((e) => `- ${e.tool}: ${e.error}`),
+    );
+  }
 
-## Constraints
-- Stamina regenerates over time (20/tick). Travel costs ~10-30/hex depending on biome. Use it wisely.
-- Attacking requires stamina (configured per world). If stamina is too low, the attack does zero damage.
-- Most actions require adjacency: attack, raid, open_chest, guard_from_army, reinforce_army, transfer, unguard.
-- Move army to an adjacent hex first before interacting with a target.
-- Use simulate_attack before committing to check predicted outcome.
-- Use map_find and map_entity_info to scout before acting.
+  parts.push(
+    "",
+    "## Constraints",
+    "- Stamina regenerates over time (20/tick). Travel costs ~10-30/hex depending on biome. Use it wisely.",
+    "- Attacking requires stamina (configured per world). If stamina is too low, the attack does zero damage.",
+    "- Most actions require adjacency: attack, raid, open_chest, guard_from_army, reinforce_army, transfer, unguard.",
+    "- Move army to an adjacent hex first before interacting with a target.",
+    "- Use simulate_attack before committing to check predicted outcome.",
+    "- Use map_find and map_entity_info to scout before acting.",
+    "",
+    "Act on threats first, then opportunities.",
+  );
 
-Act on threats first, then opportunities.`;
+  return parts.join("\n");
 }
 
 // ── Main ────────────────────────────────────────────────────────────
@@ -260,12 +276,8 @@ export async function main() {
     transformContext: async (messages) => {
       // Keep toolCtx.snapshot in sync with the latest map data each tick
       if (mapCtx.snapshot) toolCtx.snapshot = mapCtx.snapshot;
-      const briefing = mapCtx.protocol ? JSON.stringify(mapCtx.protocol.briefing()) : "";
-      const errorBlock =
-        toolErrors.length > 0
-          ? "\n<tool_errors>\n" + toolErrors.map((e) => `  ${e.tool}: ${e.error}`).join("\n") + "\n</tool_errors>"
-          : "";
-      agent.setSystemPrompt(buildSystemPrompt(config.dataDir) + "\n\n" + briefing + errorBlock);
+      // Reload soul + task files from disk (picks up evolution rewrites and operator edits)
+      agent.setSystemPrompt(buildSystemPrompt(config.dataDir));
       const maxChars = (model.contextWindow ?? 200_000) * 3;
       const pruneTarget = Math.floor(maxChars * 0.5);
       return pruneMessages(messages, model, maxChars, pruneTarget);
@@ -339,7 +351,7 @@ export async function main() {
       // tool calls ("Skipped due to queued user message") and wastes work.
       return;
     }
-    const prompt = buildTickPrompt(mapCtx);
+    const prompt = buildTickPrompt(mapCtx, toolErrors);
     agentBusy = true;
     agent.prompt(prompt).then(
       () => {
