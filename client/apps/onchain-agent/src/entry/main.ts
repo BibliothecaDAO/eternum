@@ -253,7 +253,7 @@ export async function main() {
   const toolErrors: ToolError[] = [];
 
   // 4. Tools — core tools + read/grep/find/ls scoped to dataDir
-  const tools: AgentTool[] = [...createReadOnlyTools(config.dataDir), ...createCoreTools(toolCtx, mapCtx)];
+  const tools: AgentTool[] = [...createReadOnlyTools(config.dataDir), ...createCoreTools(toolCtx, mapCtx, config.dataDir)];
 
   // 5. System prompt
   const systemPrompt = buildSystemPrompt(config.dataDir);
