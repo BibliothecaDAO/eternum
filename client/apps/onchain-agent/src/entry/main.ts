@@ -176,24 +176,20 @@ async function pruneMessages(
 /**
  * Build the per-tick user prompt sent to the agent at the start of each turn.
  *
- * Embeds the protocol briefing (armies, structures, threats, opportunities)
- * and reminds the agent of its available actions.
+ * Embeds the structured briefing and a concise action reminder with correct tool names.
  *
  * @param mapCtx - Shared map context holding the latest protocol and snapshot.
  * @returns Formatted tick prompt ready to pass to `agent.prompt()`.
  */
 function buildTickPrompt(mapCtx: MapContext): string {
   const briefing = mapCtx.protocol?.briefing();
-  const briefingStr = briefing ? JSON.stringify(briefing) : "Map not yet loaded.";
-  return [
-    "## Tick — New Turn",
-    "",
-    briefingStr,
-    "",
-    "Review your priorities and decide what to do this turn.",
-    "Use map_query to explore the world: tile_info, nearby, entity_info, find.",
-    "Use move_army to reposition, attack to engage, open_chest to claim relics, or create_army to build forces.",
-  ].join("\n");
+  if (!briefing) return "Map not yet loaded. Wait for next tick.";
+
+  return `## Tick
+
+${JSON.stringify(briefing, null, 2)}
+
+Act on threats first, then opportunities. Use map_find and map_entity_info to scout. Move all armies with stamina.`;
 }
 
 // ── Main ────────────────────────────────────────────────────────────
