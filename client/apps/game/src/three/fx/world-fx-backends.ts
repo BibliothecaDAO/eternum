@@ -19,11 +19,14 @@ export interface IconFxAnimationRuntime {
   setScale(x: number, y: number, z: number): void;
 }
 
+export type FXRenderMode = "sprite" | "ground";
+
 export interface IconFxSpec {
   animate: (fx: IconFxAnimationRuntime, elapsed: number) => boolean;
   animateLabelDots?: boolean;
   isInfinite?: boolean;
   labelText?: string;
+  renderMode?: FXRenderMode;
   size: number;
   texture: THREE.Texture;
   type: string;
@@ -308,6 +311,49 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
   }
 }
 
+class GroundDecalWorldFxEffect extends BaseIconWorldFxEffect {
+  private readonly material: THREE.MeshBasicMaterial;
+  private readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  private readonly baseScale = new THREE.Vector3();
+
+  constructor(scene: THREE.Scene, spec: IconFxSpec, labelEnabled: boolean) {
+    super(scene, spec, labelEnabled);
+
+    this.material = new THREE.MeshBasicMaterial({
+      depthWrite: false,
+      depthTest: true,
+      map: spec.texture,
+      opacity: 0,
+      side: THREE.DoubleSide,
+      transparent: true,
+    });
+
+    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.material);
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.renderOrder = WORLD_FX_RENDER_ORDER;
+    this.setScale(spec.size, spec.size, spec.size);
+    this.group.add(this.mesh);
+  }
+
+  public setOpacity(opacity: number): void {
+    this.material.opacity = opacity;
+  }
+
+  public setRotation(rotation: number): void {
+    this.mesh.rotation.z = rotation;
+  }
+
+  public setScale(x: number, y: number, z: number): void {
+    this.baseScale.set(x, y, z);
+    this.mesh.scale.set(this.baseScale.x, this.baseScale.z, 1);
+  }
+
+  protected disposeVisuals(): void {
+    this.material.dispose();
+    this.mesh.geometry.dispose();
+  }
+}
+
 class TextWorldFxEffect implements ManagedWorldFxEffect {
   public readonly group: THREE.Group;
   public readonly label: CSS2DObject;
@@ -497,6 +543,9 @@ class LegacySpriteWorldFxBackend extends BaseWorldFxBackend {
   public readonly kind = "legacy-sprite" as const;
 
   public spawnIconFx(spec: IconFxSpec): WorldFxHandle {
+    if (spec.renderMode === "ground") {
+      return this.registerEffect(new GroundDecalWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx));
+    }
     return this.registerEffect(new LegacySpriteWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx));
   }
 }
@@ -507,6 +556,10 @@ class WebGpuBillboardWorldFxBackend extends BaseWorldFxBackend {
   public spawnIconFx(spec: IconFxSpec): WorldFxHandle {
     if (!this.capabilities.supportsBillboardMeshFx) {
       return createNoopWorldFxHandle();
+    }
+
+    if (spec.renderMode === "ground") {
+      return this.registerEffect(new GroundDecalWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx));
     }
 
     return this.registerEffect(
