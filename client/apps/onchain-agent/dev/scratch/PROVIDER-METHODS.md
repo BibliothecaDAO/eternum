@@ -4,54 +4,53 @@ All public async methods on `EternumProvider` from `@bibliothecadao/provider`.
 
 Legend:
 
-- **MCP** = exposed as MCP server tool
-- **PI** = used by pi-agent-core tools (`src/tools/`)
+- **CORE** = shared core function in `src/tools/core/` (available to MCP, PI agent, and CLI)
 - **AUTO** = used by automation loop (`src/automation/`)
-- **—** = not implemented
+- **—** = not implemented as a tool
 
 ## Troop Management
 
-| Method                   | Status   | Description                                                         |
-| ------------------------ | -------- | ------------------------------------------------------------------- |
-| `explorer_create`        | MCP / PI | Spawn new army from a structure                                     |
-| `explorer_add`           | MCP / PI | Reinforce existing army with more troops (must be adjacent to home) |
-| `explorer_delete`        | PI       | Disband an army, return troops to structure                         |
-| `guard_add`              | MCP / PI | Add troops from storage to a structure's guard slot                 |
-| `guard_delete`           | —        | Remove troops from a guard slot                                     |
-| `explorer_explorer_swap` | MCP / PI | Transfer troops between two adjacent armies (same type/tier)        |
-| `explorer_guard_swap`    | MCP / PI | Move troops from army to structure guard slot                       |
-| `guard_explorer_swap`    | MCP      | Move troops from guard slot to adjacent army                        |
+| Method                   | Status | Description                                                         |
+| ------------------------ | ------ | ------------------------------------------------------------------- |
+| `explorer_create`        | CORE   | Spawn new army from a structure                                     |
+| `explorer_add`           | CORE   | Reinforce existing army with more troops (must be adjacent to home) |
+| `explorer_delete`        | —      | Disband an army, return troops to structure                         |
+| `guard_add`              | CORE   | Add troops from storage to a structure's guard slot                 |
+| `guard_delete`           | —      | Remove troops from a guard slot                                     |
+| `explorer_explorer_swap` | CORE   | Transfer troops between two adjacent armies (same type/tier)        |
+| `explorer_guard_swap`    | CORE   | Move troops from army to structure guard slot                       |
+| `guard_explorer_swap`    | CORE   | Move troops from guard slot to adjacent army                        |
 
 ## Movement
 
-| Method             | Status   | Description                                     |
-| ------------------ | -------- | ----------------------------------------------- |
-| `explorer_travel`  | MCP / PI | Move army through explored tiles                |
-| `explorer_explore` | MCP / PI | Move army into unexplored tile (with VRF)       |
-| `explorer_move`    | —        | Combined move (travel or explore based on flag) |
+| Method             | Status | Description                                     |
+| ------------------ | ------ | ----------------------------------------------- |
+| `explorer_travel`  | CORE   | Move army through explored tiles                |
+| `explorer_explore` | CORE   | Move army into unexplored tile (with VRF)       |
+| `explorer_move`    | —      | Combined move (travel or explore based on flag) |
 
 ## Combat
 
-| Method                        | Status   | Description                                        |
-| ----------------------------- | -------- | -------------------------------------------------- |
-| `attack_explorer_vs_explorer` | MCP / PI | Army attacks another army                          |
-| `attack_explorer_vs_guard`    | MCP / PI | Army attacks a structure's guards                  |
-| `attack_guard_vs_explorer`    | MCP      | Structure guard attacks adjacent army              |
-| `raid_explorer_vs_guard`      | MCP      | Raid a structure (10% damage, can steal resources) |
+| Method                        | Status | Description                                        |
+| ----------------------------- | ------ | -------------------------------------------------- |
+| `attack_explorer_vs_explorer` | CORE   | Army attacks another army                          |
+| `attack_explorer_vs_guard`    | CORE   | Army attacks a structure's guards                  |
+| `attack_guard_vs_explorer`    | CORE   | Structure guard attacks adjacent army              |
+| `raid_explorer_vs_guard`      | CORE   | Raid a structure (10% damage, can steal resources) |
 
 ## Resource Transfer
 
-| Method                              | Status   | Description                                                                                        | Blitz?               |
-| ----------------------------------- | -------- | -------------------------------------------------------------------------------------------------- | -------------------- |
-| `troop_troop_adjacent_transfer`     | MCP      | Transfer resources between adjacent armies                                                         | Yes                  |
-| `troop_structure_adjacent_transfer` | MCP      | Transfer resources from army to adjacent structure                                                 | Yes                  |
-| `structure_troop_adjacent_transfer` | —        | Transfer resources from structure to adjacent army                                                 | **BLOCKED in Blitz** |
-| `send_resources`                    | MCP / PI | Send resources between structures (donkey caravan)                                                 | Yes                  |
-| `send_resources_multiple`           | —        | Send resources to multiple structures                                                              | Yes                  |
-| `pickup_resources`                  | MCP      | Pick up resources at a structure (used automatically by send_resources when sender has no donkeys) | Yes                  |
-| `arrivals_offload`                  | AUTO     | Offload incoming resource arrivals                                                                 | Yes                  |
-| `structure_burn`                    | —        | Destroy resources at a structure                                                                   | Yes                  |
-| `troop_burn`                        | —        | Destroy resources carried by an army                                                               | Yes                  |
+| Method                              | Status | Description                                                                                        | Blitz?               |
+| ----------------------------------- | ------ | -------------------------------------------------------------------------------------------------- | -------------------- |
+| `troop_troop_adjacent_transfer`     | CORE   | Transfer resources between adjacent armies                                                         | Yes                  |
+| `troop_structure_adjacent_transfer` | CORE   | Transfer resources from army to adjacent structure                                                 | Yes                  |
+| `structure_troop_adjacent_transfer` | —      | Transfer resources from structure to adjacent army                                                 | **BLOCKED in Blitz** |
+| `send_resources`                    | CORE   | Send resources between structures (donkey caravan)                                                 | Yes                  |
+| `send_resources_multiple`           | —      | Send resources to multiple structures                                                              | Yes                  |
+| `pickup_resources`                  | CORE   | Pick up resources at a structure (used automatically by send_resources when sender has no donkeys) | Yes                  |
+| `arrivals_offload`                  | AUTO   | Offload incoming resource arrivals                                                                 | Yes                  |
+| `structure_burn`                    | —      | Destroy resources at a structure                                                                   | Yes                  |
+| `troop_burn`                        | —      | Destroy resources carried by an army                                                               | Yes                  |
 
 ## Building & Production
 
@@ -70,10 +69,10 @@ Legend:
 
 ## Relics & Chests
 
-| Method        | Status   | Description                       |
-| ------------- | -------- | --------------------------------- |
-| `open_chest`  | MCP / PI | Open a relic chest (with VRF)     |
-| `apply_relic` | MCP      | Apply a relic effect to an entity |
+| Method        | Status | Description                       |
+| ------------- | ------ | --------------------------------- |
+| `open_chest`  | CORE   | Open a relic chest (with VRF)     |
+| `apply_relic` | CORE   | Apply a relic effect to an entity |
 
 ## Hyperstructures
 
