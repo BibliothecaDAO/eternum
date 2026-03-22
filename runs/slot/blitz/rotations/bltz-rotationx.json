@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-rotationx/23405829964-1.json",
   "latestLaunchRequestId": "23405829964-1",
-  "currentStepId": "create-series",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-03-22T15:06:44.322Z",
-  "updatedAt": "2026-03-22T15:06:48.098Z",
+  "updatedAt": "2026-03-22T15:07:04.461Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,17 +30,18 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-22T15:21:44.322Z",
-    "lastEvaluatedAt": "2026-03-22T15:06:44.322Z"
+    "nextEvaluationAt": "2026-03-22T15:22:04.461Z",
+    "lastEvaluatedAt": "2026-03-22T15:07:04.461Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series started",
-      "startedAt": "2026-03-22T15:06:48.098Z"
+      "latestEvent": "Creating series succeeded",
+      "startedAt": "2026-03-22T15:06:48.098Z",
+      "finishedAt": "2026-03-22T15:07:04.461Z"
     },
     {
       "id": "create-worlds",
@@ -96,7 +97,7 @@
     "autoRetryIntervalMinutes": 15,
     "dryRun": false,
     "configMode": "batched",
-    "seriesCreated": false,
+    "seriesCreated": true,
     "games": [
       {
         "gameName": "bltz-rotationx-01",
@@ -314,18 +315,12 @@
         "artifacts": {}
       }
     ],
-    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json"
+    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
+    "seriesCreatedAt": "2026-03-22T15:07:02.833Z"
   },
   "artifacts": {
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
-    "seriesCreated": false
-  },
-  "activeLease": {
-    "launchRequestId": "23405829964-1",
-    "workflowRunId": 23405829964,
-    "workflowRunAttempt": 1,
-    "stepId": "create-series",
-    "acquiredAt": "2026-03-22T15:06:48.098Z",
-    "expiresAt": "2026-03-22T15:51:48.098Z"
+    "seriesCreated": true,
+    "seriesCreatedAt": "2026-03-22T15:07:02.833Z"
   }
 }
