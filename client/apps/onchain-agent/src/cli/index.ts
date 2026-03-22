@@ -7,7 +7,8 @@
   const providerNoise = (msg: string) =>
     msg.includes("[provider]") ||
     msg.includes("Failed to estimate invoke fee") ||
-    msg.includes("Insufficient transaction data");
+    msg.includes("Insufficient transaction data") ||
+    msg.includes("[DEPRECATED]");
   console.warn = (...a: any[]) => {
     if (!providerNoise(String(a[0]))) _warn.apply(console, a);
   };
@@ -30,6 +31,7 @@
 import { Command } from "commander";
 import { registerRunCommand } from "./commands/run.js";
 import { registerMcpCommand } from "./commands/mcp.js";
+import { registerAuthCommand } from "./commands/auth.js";
 import { registerMapCommands } from "./commands/map.js";
 import { registerToolCommands } from "./commands/tools.js";
 
@@ -43,6 +45,7 @@ program
 
 registerRunCommand(program);
 registerMcpCommand(program);
+registerAuthCommand(program);
 registerMapCommands(program);
 registerToolCommands(program);
 
