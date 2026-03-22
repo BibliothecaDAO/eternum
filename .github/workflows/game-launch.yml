@@ -3,6 +3,15 @@ name: Game Launch
 on:
   workflow_dispatch:
     inputs:
+      launch_kind:
+        description: "Launch a single game, a series, or a rotation"
+        required: false
+        default: game
+        type: choice
+        options:
+          - game
+          - series
+          - rotation
       environment:
         description: "Deployment environment"
         required: true
@@ -14,10 +23,42 @@ on:
           - slot.eternum
       game_name:
         description: "Game/world name"
-        required: true
+        required: false
       game_start_time:
         description: "Game start time (unix seconds, unix milliseconds, or ISO-8601)"
-        required: true
+        required: false
+      series_name:
+        description: "Series name (required when launch_kind=series)"
+        required: false
+        type: string
+      series_games_json:
+        description: "JSON array of series games (required when launch_kind=series)"
+        required: false
+        type: string
+      rotation_name:
+        description: "Rotation name (required when launch_kind=rotation)"
+        required: false
+        type: string
+      first_game_start_time:
+        description: "First game start time for a rotation (required when launch_kind=rotation)"
+        required: false
+        type: string
+      game_interval_minutes:
+        description: "Minutes between rotation games"
+        required: false
+        type: string
+      max_games:
+        description: "Maximum number of rotation games to create"
+        required: false
+        type: string
+      advance_window_games:
+        description: "How many future rotation games to keep ready (max 5)"
+        required: false
+        type: string
+      evaluation_interval_minutes:
+        description: "How often rotation cron checks whether more games are needed"
+        required: false
+        type: string
       dev_mode_on:
         description: 'Optional override for dev mode ("true" or "false"). Leave blank to use the environment config.'
         required: false
@@ -61,6 +102,18 @@ on:
         description: "Optional JSON object with raw Blitz registration overrides."
         required: false
         type: string
+      auto_retry_enabled:
+        description: "Enable scheduled auto-retry for multi-game launches"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      auto_retry_interval_minutes:
+        description: "Multi-game auto-retry interval in minutes"
+        required: false
+        type: string
       launch_step:
         description: "Launch scope. Use full for the first trial, or target one step for recovery."
         required: false
@@ -76,6 +129,13 @@ on:
           - create-banks
           - create-indexer
           - sync-paymaster
+          - create-series
+          - create-worlds
+          - wait-for-factory-indexes
+          - configure-worlds
+          - grant-lootchest-roles
+          - grant-village-pass-roles
+          - create-indexers
 
 jobs:
   launch:
@@ -86,15 +146,26 @@ jobs:
       actions: write
       contents: write
     env:
+      GAME_LAUNCH_KIND: ${{ github.event.inputs.launch_kind }}
       GAME_LAUNCH_ENVIRONMENT: ${{ github.event.inputs.environment }}
       GAME_LAUNCH_GAME_NAME: ${{ github.event.inputs.game_name }}
       GAME_LAUNCH_START_TIME: ${{ github.event.inputs.game_start_time }}
+      GAME_LAUNCH_SERIES_NAME: ${{ github.event.inputs.series_name }}
+      GAME_LAUNCH_SERIES_GAMES_JSON: ${{ github.event.inputs.series_games_json }}
+      GAME_LAUNCH_ROTATION_NAME: ${{ github.event.inputs.rotation_name }}
+      GAME_LAUNCH_FIRST_GAME_START_TIME: ${{ github.event.inputs.first_game_start_time }}
+      GAME_LAUNCH_GAME_INTERVAL_MINUTES: ${{ github.event.inputs.game_interval_minutes }}
+      GAME_LAUNCH_MAX_GAMES: ${{ github.event.inputs.max_games }}
+      GAME_LAUNCH_ADVANCE_WINDOW_GAMES: ${{ github.event.inputs.advance_window_games }}
+      GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES: ${{ github.event.inputs.evaluation_interval_minutes }}
       GAME_LAUNCH_DEV_MODE_ON: ${{ github.event.inputs.dev_mode_on }}
       GAME_LAUNCH_SINGLE_REALM_MODE: ${{ github.event.inputs.single_realm_mode }}
       GAME_LAUNCH_TWO_PLAYER_MODE: ${{ github.event.inputs.two_player_mode }}
       GAME_LAUNCH_DURATION_SECONDS: ${{ github.event.inputs.duration_seconds }}
       GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON: ${{ github.event.inputs.map_config_overrides_json }}
       GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON: ${{ github.event.inputs.blitz_registration_overrides_json }}
+      GAME_LAUNCH_AUTO_RETRY_ENABLED: ${{ github.event.inputs.auto_retry_enabled }}
+      GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES: ${{ github.event.inputs.auto_retry_interval_minutes }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
       FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
@@ -166,9 +237,8 @@ jobs:
 
           cat > .context/game-launch/launch-env.sh <<'EOF'
           args=(
+            --launch-kind "${GAME_LAUNCH_KIND}"
             --environment "${GAME_LAUNCH_ENVIRONMENT}"
-            --game "${GAME_LAUNCH_GAME_NAME}"
-            --start-time "${GAME_LAUNCH_START_TIME}"
             --mode batched
           )
 
@@ -178,6 +248,45 @@ jobs:
           if [ -z "${GAME_LAUNCH_NETWORK}" ] || [ -z "${GAME_LAUNCH_GAME_TYPE}" ]; then
             echo "Unable to resolve config sync target from ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
+          fi
+
+          if [ "${GAME_LAUNCH_KIND}" = "series" ]; then
+            if [ -z "${GAME_LAUNCH_SERIES_NAME}" ] || [ -z "${GAME_LAUNCH_SERIES_GAMES_JSON}" ]; then
+              echo "Series launches require series_name and series_games_json" >&2
+              exit 1
+            fi
+
+            args+=(
+              --series-name "${GAME_LAUNCH_SERIES_NAME}"
+              --series-games-json "${GAME_LAUNCH_SERIES_GAMES_JSON}"
+            )
+          elif [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
+            if [ -z "${GAME_LAUNCH_ROTATION_NAME}" ] || [ -z "${GAME_LAUNCH_FIRST_GAME_START_TIME}" ] || [ -z "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}" ] || [ -z "${GAME_LAUNCH_MAX_GAMES}" ] || [ -z "${GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES}" ]; then
+              echo "Rotation launches require rotation_name, first_game_start_time, game_interval_minutes, max_games, and evaluation_interval_minutes" >&2
+              exit 1
+            fi
+
+            args+=(
+              --rotation-name "${GAME_LAUNCH_ROTATION_NAME}"
+              --first-game-start-time "${GAME_LAUNCH_FIRST_GAME_START_TIME}"
+              --game-interval-minutes "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}"
+              --max-games "${GAME_LAUNCH_MAX_GAMES}"
+              --evaluation-interval-minutes "${GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES}"
+            )
+
+            if [ -n "${GAME_LAUNCH_ADVANCE_WINDOW_GAMES}" ]; then
+              args+=(--advance-window-games "${GAME_LAUNCH_ADVANCE_WINDOW_GAMES}")
+            fi
+          else
+            if [ -z "${GAME_LAUNCH_GAME_NAME}" ] || [ -z "${GAME_LAUNCH_START_TIME}" ]; then
+              echo "Game launches require game_name and game_start_time" >&2
+              exit 1
+            fi
+
+            args+=(
+              --game "${GAME_LAUNCH_GAME_NAME}"
+              --start-time "${GAME_LAUNCH_START_TIME}"
+            )
           fi
 
           if [ -n "${FACTORY_ADDRESS}" ]; then
@@ -208,12 +317,48 @@ jobs:
             args+=(--blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}")
           fi
 
-          run_store_args=(
-            --environment "${GAME_LAUNCH_ENVIRONMENT}"
-            --game "${GAME_LAUNCH_GAME_NAME}"
-            --start-time "${GAME_LAUNCH_START_TIME}"
-            --launch-step "${GAME_LAUNCH_STEP}"
-          )
+          if [ "${GAME_LAUNCH_KIND}" = "series" ] || [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
+            if [ -n "${GAME_LAUNCH_AUTO_RETRY_ENABLED}" ]; then
+              args+=(--auto-retry-enabled "${GAME_LAUNCH_AUTO_RETRY_ENABLED}")
+            fi
+
+            if [ -n "${GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES}" ]; then
+              args+=(--auto-retry-interval-minutes "${GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES}")
+            fi
+          fi
+
+          if [ "${GAME_LAUNCH_KIND}" = "series" ]; then
+            run_store_args=(
+              --launch-kind series
+              --environment "${GAME_LAUNCH_ENVIRONMENT}"
+              --series-name "${GAME_LAUNCH_SERIES_NAME}"
+              --series-games-json "${GAME_LAUNCH_SERIES_GAMES_JSON}"
+              --launch-step "${GAME_LAUNCH_STEP}"
+            )
+          elif [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
+            run_store_args=(
+              --launch-kind rotation
+              --environment "${GAME_LAUNCH_ENVIRONMENT}"
+              --rotation-name "${GAME_LAUNCH_ROTATION_NAME}"
+              --first-game-start-time "${GAME_LAUNCH_FIRST_GAME_START_TIME}"
+              --game-interval-minutes "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}"
+              --max-games "${GAME_LAUNCH_MAX_GAMES}"
+              --evaluation-interval-minutes "${GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES}"
+              --launch-step "${GAME_LAUNCH_STEP}"
+            )
+
+            if [ -n "${GAME_LAUNCH_ADVANCE_WINDOW_GAMES}" ]; then
+              run_store_args+=(--advance-window-games "${GAME_LAUNCH_ADVANCE_WINDOW_GAMES}")
+            fi
+          else
+            run_store_args=(
+              --launch-kind game
+              --environment "${GAME_LAUNCH_ENVIRONMENT}"
+              --game "${GAME_LAUNCH_GAME_NAME}"
+              --start-time "${GAME_LAUNCH_START_TIME}"
+              --launch-step "${GAME_LAUNCH_STEP}"
+            )
+          fi
 
           if [ -n "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}" ]; then
             run_store_args+=(--map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}")
@@ -223,13 +368,37 @@ jobs:
             run_store_args+=(--blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}")
           fi
 
+          if [ "${GAME_LAUNCH_KIND}" = "series" ] || [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
+            if [ -n "${GAME_LAUNCH_AUTO_RETRY_ENABLED}" ]; then
+              run_store_args+=(--auto-retry-enabled "${GAME_LAUNCH_AUTO_RETRY_ENABLED}")
+            fi
+
+            if [ -n "${GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES}" ]; then
+              run_store_args+=(--auto-retry-interval-minutes "${GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES}")
+            fi
+          fi
+
           if [ -n "${FACTORY_RUN_STORE_BRANCH}" ]; then
             run_store_args+=(--branch "${FACTORY_RUN_STORE_BRANCH}")
           fi
 
+          resolve_account_lease_owner_name() {
+            if [ "${GAME_LAUNCH_KIND}" = "series" ]; then
+              printf '%s' "${GAME_LAUNCH_SERIES_NAME}"
+              return 0
+            fi
+
+            if [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
+              printf '%s' "${GAME_LAUNCH_ROTATION_NAME}"
+              return 0
+            fi
+
+            printf '%s' "${GAME_LAUNCH_GAME_NAME}"
+          }
+
           account_lease_args=(
             --environment "${GAME_LAUNCH_ENVIRONMENT}"
-            --game "${GAME_LAUNCH_GAME_NAME}"
+            --game "$(resolve_account_lease_owner_name)"
             --account-address "${DOJO_ACCOUNT_ADDRESS}"
           )
 
@@ -300,10 +469,30 @@ jobs:
 
           step_requires_account_lease() {
             local step_id="$1"
+            local lease_step_id=""
+
+            lease_step_id="$(resolve_account_lease_step_id "${step_id}" || true)"
+            [ -n "${lease_step_id}" ]
+          }
+
+          resolve_account_lease_step_id() {
+            local step_id="$1"
 
             case "${step_id}" in
-              create-world|configure-world|grant-lootchest-role|grant-village-pass-role|create-banks)
-                return 0
+              create-world|create-worlds)
+                printf 'create-world'
+                ;;
+              configure-world|configure-worlds)
+                printf 'configure-world'
+                ;;
+              grant-lootchest-role|grant-lootchest-roles)
+                printf 'grant-lootchest-role'
+                ;;
+              grant-village-pass-role|grant-village-pass-roles)
+                printf 'grant-village-pass-role'
+                ;;
+              create-banks)
+                printf 'create-banks'
                 ;;
               *)
                 return 1
@@ -313,11 +502,12 @@ jobs:
 
           acquire_account_lease_if_needed() {
             local step_id="$1"
+            local lease_step_id=""
             local lease_output=""
             local exit_code=0
             local did_wait="false"
 
-            if ! step_requires_account_lease "${step_id}"; then
+            if ! lease_step_id="$(resolve_account_lease_step_id "${step_id}")"; then
               return 0
             fi
 
@@ -328,7 +518,7 @@ jobs:
               lease_output=$(
                 bun config/deployer/clean/cli/launch-account-lease.ts \
                   --event acquire \
-                  --step "${step_id}" \
+                  --step "${lease_step_id}" \
                   "${account_lease_args[@]}" 2>&1
               )
               exit_code=$?
@@ -363,9 +553,10 @@ jobs:
 
           start_account_lease_heartbeat() {
             local step_id="$1"
+            local lease_step_id=""
             local heartbeat_seconds="${FACTORY_ACCOUNT_LEASE_HEARTBEAT_SECONDS:-30}"
 
-            if [ -z "${FACTORY_ACCOUNT_LEASE_ID:-}" ]; then
+            if [ -z "${FACTORY_ACCOUNT_LEASE_ID:-}" ] || ! lease_step_id="$(resolve_account_lease_step_id "${step_id}")"; then
               return 0
             fi
 
@@ -375,7 +566,7 @@ jobs:
                 sync_current_config
                 bun config/deployer/clean/cli/launch-account-lease.ts \
                   --event heartbeat \
-                  --step "${step_id}" \
+                  --step "${lease_step_id}" \
                   --lease-id "${FACTORY_ACCOUNT_LEASE_ID}" \
                   "${account_lease_args[@]}" >/dev/null 2>&1 || true
               done
@@ -397,8 +588,9 @@ jobs:
 
           release_account_lease_if_needed() {
             local step_id="$1"
+            local lease_step_id=""
 
-            if [ -z "${FACTORY_ACCOUNT_LEASE_ID:-}" ]; then
+            if [ -z "${FACTORY_ACCOUNT_LEASE_ID:-}" ] || ! lease_step_id="$(resolve_account_lease_step_id "${step_id}")"; then
               return 0
             fi
 
@@ -406,7 +598,7 @@ jobs:
 
             bun config/deployer/clean/cli/launch-account-lease.ts \
               --event release \
-              --step "${step_id}" \
+              --step "${lease_step_id}" \
               --lease-id "${FACTORY_ACCOUNT_LEASE_ID}" \
               "${account_lease_args[@]}" >/dev/null 2>&1 || true
 
@@ -459,7 +651,7 @@ jobs:
           }
 
           run_create_world_step_with_timeout_retry() {
-            local step_id="create-world"
+            local step_id="${1:-create-world}"
             local max_attempts=5
             local attempt=1
             local exit_code=1
@@ -506,58 +698,132 @@ jobs:
           bun config/deployer/clean/cli/launch-run-store.ts --event launch-started "${run_store_args[@]}"
 
       - name: Create world
-        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' }}
+        if:
+          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-world') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_create_world_step_with_timeout_retry
 
+      - name: Create series
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-series') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step create-series
+
+      - name: Create worlds
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-worlds') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_create_world_step_with_timeout_retry create-worlds
+
       - name: Wait for factory index
         if:
-          ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'wait-for-factory-index'
-          }}
+          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'wait-for-factory-index') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step wait-for-factory-index
 
+      - name: Wait for factory indexes
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'wait-for-factory-indexes')
+          }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step wait-for-factory-indexes
+
       - name: Configure world
-        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'configure-world' }}
+        if:
+          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'configure-world') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step configure-world
 
+      - name: Configure worlds
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'configure-worlds') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step configure-worlds
+
       - name: Grant loot chest role
         if:
-          ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-lootchest-role' }}
+          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'grant-lootchest-role') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step grant-lootchest-role
 
+      - name: Grant loot chest roles
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-lootchest-roles') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step grant-lootchest-roles
+
       - name: Grant village pass roles
         if:
-          ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-village-pass-role'
-          }}
+          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'grant-village-pass-role') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step grant-village-pass-role
 
+      - name: Grant village pass roles for series
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-village-pass-roles')
+          }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step grant-village-pass-roles
+
       - name: Create banks
-        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-banks' }}
+        if:
+          ${{ github.event.inputs.launch_step == 'create-banks' || (github.event.inputs.launch_step == 'full' &&
+          endsWith(github.event.inputs.environment, '.eternum')) }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step create-banks
 
       - name: Create indexer
-        if: ${{ github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-indexer' }}
+        if:
+          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-indexer') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step create-indexer
+
+      - name: Create indexers
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-indexers') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step create-indexers
 
       - name: Sync paymaster
         if:

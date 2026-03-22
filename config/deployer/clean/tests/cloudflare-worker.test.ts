@@ -136,6 +136,54 @@ describe("factory worker map config overrides", () => {
     expect(dispatchBody.inputs.environment).toBe("mainnet.blitz");
   });
 
+  test("dispatches rotation launches with rotation-specific inputs", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-ladder-loop.json")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (String(url).includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          rotationName: "bltz-ladder-loop",
+          firstGameStartTime: "2026-03-18T10:00:00Z",
+          gameIntervalMinutes: 60,
+          maxGames: 12,
+          advanceWindowGames: 5,
+          evaluationIntervalMinutes: 30,
+          autoRetryIntervalMinutes: 15,
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.launch_kind).toBe("rotation");
+    expect(dispatchBody.inputs.rotation_name).toBe("bltz-ladder-loop");
+    expect(dispatchBody.inputs.first_game_start_time).toBe("2026-03-18T10:00:00Z");
+    expect(dispatchBody.inputs.game_interval_minutes).toBe("60");
+    expect(dispatchBody.inputs.max_games).toBe("12");
+    expect(dispatchBody.inputs.advance_window_games).toBe("5");
+    expect(dispatchBody.inputs.evaluation_interval_minutes).toBe("30");
+    expect(dispatchBody.inputs.auto_retry_interval_minutes).toBe("15");
+  });
+
   test("reuses stored map config overrides during continue", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {
@@ -496,9 +544,138 @@ describe("factory worker recovery signals", () => {
       continueStepId: "configure-world",
     });
   });
+
+  test("rejects duplicate series game names before dispatching a workflow", async () => {
+    globalThis.fetch = async () => {
+      throw new Error("Series validation should fail before any GitHub calls");
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/series-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          seriesName: "bltz-weekend-cup",
+          games: [
+            { gameName: "bltz-weekend-cup-01", startTime: "2026-03-18T10:00:00Z", seriesGameNumber: 1 },
+            { gameName: "bltz-weekend-cup-01", startTime: "2026-03-18T11:00:00Z", seriesGameNumber: 2 },
+          ],
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Series game "bltz-weekend-cup-01" was requested more than once',
+    });
+  });
+
+  test("requires the admin secret for manual indexer tier updates", async () => {
+    let didCallGitHub = false;
+    globalThis.fetch = async () => {
+      didCallGitHub = true;
+      throw new Error("Unauthorized requests should not reach GitHub");
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/tier", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameName: "bltz-test-13",
+          tier: "legendary",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(didCallGitHub).toBe(false);
+  });
+
+  test("records pending indexer tier updates without overwriting the current tier", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "game",
+          runId: "slot.blitz:bltz-test-14",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          gameName: "bltz-test-14",
+          status: "complete",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/bltz-test-14/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [],
+          artifacts: {
+            indexerCreated: true,
+            indexerTier: "basic",
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-torii-deployer.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/tier", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameName: "bltz-test-14",
+          tier: "legendary",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const updateCall = fetchCalls.find(
+      (call) => call.url.includes("/contents/runs/slot/blitz/bltz-test-14.json") && call.init?.method === "PUT",
+    );
+    const updateBody = JSON.parse(String(updateCall?.init?.body));
+    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+
+    expect(response.status).toBe(202);
+    expect(nextRunRecord.artifacts.indexerTier).toBe("basic");
+    expect(nextRunRecord.artifacts.pendingIndexerTierTarget).toBe("legendary");
+    expect(nextRunRecord.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
+  });
 });
 
-function buildWorkerEnv() {
+function buildWorkerEnv(overrides: Record<string, string> = {}) {
   return {
     GITHUB_TOKEN: "test-token",
     GITHUB_REPOSITORY: "bibliotheca/eternum",
@@ -506,6 +683,7 @@ function buildWorkerEnv() {
     GITHUB_WORKFLOW_FILE: "game-launch.yml",
     GITHUB_WORKFLOW_REF: "next",
     FACTORY_RUN_STORE_BRANCH: "factory-runs",
+    ...overrides,
   };
 }
 

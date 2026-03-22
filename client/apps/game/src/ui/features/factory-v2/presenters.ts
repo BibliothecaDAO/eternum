@@ -26,12 +26,26 @@ const STEP_COPY_BY_ID: Record<FactoryRunStepId, FactoryStepCopy> = {
     done: "The request to start this game was accepted.",
     failed: "We could not send the request to start this game.",
   },
+  "create-series": {
+    title: "Creating series",
+    pending: "We have not started creating this series yet.",
+    running: "We’re creating this series now.",
+    done: "This series is ready to accept games.",
+    failed: "We could not create this series.",
+  },
   "create-world": {
     title: "Creating world",
     pending: "We have not started creating the new game world yet.",
     running: "We’re creating the new game world.",
     done: "The new game world is ready.",
     failed: "We could not create the new game world.",
+  },
+  "create-worlds": {
+    title: "Deploying games",
+    pending: "We have not started deploying these games yet.",
+    running: "We’re deploying these games now.",
+    done: "All planned games are deployed.",
+    failed: "We could not finish deploying every planned game.",
   },
   "wait-factory-index": {
     title: "Waiting for game",
@@ -47,6 +61,13 @@ const STEP_COPY_BY_ID: Record<FactoryRunStepId, FactoryStepCopy> = {
     done: "The new game is now showing up in Factory.",
     failed: "The new game has not appeared in Factory yet.",
   },
+  "wait-for-factory-indexes": {
+    title: "Waiting for games",
+    pending: "We have not started checking for these games yet.",
+    running: "We’re waiting for these games to appear in Factory.",
+    done: "These games are now showing up in Factory.",
+    failed: "Some planned games have not appeared in Factory yet.",
+  },
   "apply-config": {
     title: "Applying settings",
     pending: "We have not started applying this game’s settings yet.",
@@ -61,12 +82,26 @@ const STEP_COPY_BY_ID: Record<FactoryRunStepId, FactoryStepCopy> = {
     done: "This game’s settings are in place.",
     failed: "We could not finish applying this game’s settings.",
   },
+  "configure-worlds": {
+    title: "Applying settings",
+    pending: "We have not started applying settings across these games yet.",
+    running: "We’re applying settings across these games.",
+    done: "The shared settings are in place.",
+    failed: "We could not finish applying settings across these games.",
+  },
   "grant-lootchest-role": {
     title: "Setting up loot chests",
     pending: "We have not started turning on loot chests yet.",
     running: "We’re turning on loot chests for this game.",
     done: "Loot chests are ready for this game.",
     failed: "We could not turn on loot chests for this game.",
+  },
+  "grant-lootchest-roles": {
+    title: "Setting up loot chests",
+    pending: "We have not started turning on loot chests across these games yet.",
+    running: "We’re turning on loot chests for these games.",
+    done: "Loot chests are ready across these games.",
+    failed: "We could not turn on loot chests across these games.",
   },
   "grant-village-pass": {
     title: "Setting up village pass",
@@ -82,6 +117,13 @@ const STEP_COPY_BY_ID: Record<FactoryRunStepId, FactoryStepCopy> = {
     done: "Village pass is ready for this game.",
     failed: "We could not turn on village pass for this game.",
   },
+  "grant-village-pass-roles": {
+    title: "Setting up village pass",
+    pending: "We have not started turning on village pass across these games yet.",
+    running: "We’re turning on village pass for these games.",
+    done: "Village pass is ready across these games.",
+    failed: "We could not turn on village pass across these games.",
+  },
   "create-banks": {
     title: "Preparing banks",
     pending: "We have not started preparing the banks yet.",
@@ -96,6 +138,14 @@ const STEP_COPY_BY_ID: Record<FactoryRunStepId, FactoryStepCopy> = {
     done: "The last setup step is done.",
     failed: "We could not finish the last setup step.",
     alreadyDone: "The last setup step was already done.",
+  },
+  "create-indexers": {
+    title: "Finishing setup",
+    pending: "We have not started the final grouped setup step yet.",
+    running: "We’re finishing the final setup step for these games.",
+    done: "The final grouped setup step is done.",
+    failed: "We could not finish the final grouped setup step.",
+    alreadyDone: "The final grouped setup step was already done.",
   },
   "wait-indexer": {
     title: "Finishing setup",
@@ -203,27 +253,47 @@ const resolveRetryableStep = (run: FactoryRun) =>
   run.steps.find((step) => step.status === "blocked" || step.status === "failed") ?? null;
 
 const resolveFirstStep = (run: FactoryRun) => run.steps[0] ?? null;
+const resolveRunSubject = (run: FactoryRun) => {
+  if (run.kind === "rotation") {
+    return "rotation";
+  }
+
+  return run.kind === "series" ? "series" : "game";
+};
 
 const resolveRecoveryStepId = (stepId: FactoryRunStepId): FactoryRecoveryStepId | null => {
   switch (stepId) {
+    case "create-series":
+      return "create-series";
     case "create-world":
       return "create-world";
+    case "create-worlds":
+      return "create-worlds";
     case "wait-factory-index":
     case "wait-for-factory-index":
       return "wait-for-factory-index";
+    case "wait-for-factory-indexes":
+      return "wait-for-factory-indexes";
     case "apply-config":
     case "configure-world":
       return "configure-world";
+    case "configure-worlds":
+      return "configure-worlds";
     case "grant-lootchest-role":
       return "grant-lootchest-role";
+    case "grant-lootchest-roles":
+      return "grant-lootchest-roles";
     case "grant-village-pass":
     case "grant-village-pass-role":
       return "grant-village-pass-role";
+    case "grant-village-pass-roles":
+      return "grant-village-pass-roles";
     case "create-banks":
       return "create-banks";
     case "sync-paymaster":
       return "sync-paymaster";
     case "create-indexer":
+    case "create-indexers":
     case "wait-indexer":
     case "publish-ready-state":
       return "create-indexer";
@@ -308,15 +378,21 @@ export const getRunHeadline = (run: FactoryRun) => {
   const currentStep = getCurrentStep(run);
 
   if (!currentStep) {
-    return "This game is ready";
+    return `This ${resolveRunSubject(run)} is ready`;
   }
 
   switch (currentStep.status) {
     case "running":
-      return "Getting this game ready";
+      if (run.kind === "rotation") {
+        return "Keeping this rotation filled";
+      }
+
+      return run.kind === "series" ? "Getting this series ready" : "Getting this game ready";
     case "blocked":
     case "failed":
-      return shouldRetryFullLaunch(run, currentStep) ? "This game needs a fresh start" : "This game needs attention";
+      return shouldRetryFullLaunch(run, currentStep)
+        ? `This ${resolveRunSubject(run)} needs a fresh start`
+        : `This ${resolveRunSubject(run)} needs attention`;
     case "pending":
       return "Waiting on the next setup step";
     case "succeeded":
@@ -330,17 +406,19 @@ export const getRunDetailMessage = (run: FactoryRun) => {
   const currentStep = getCurrentStep(run);
 
   if (!currentStep) {
-    return "Everything is ready for this game.";
+    return `Everything is ready for this ${resolveRunSubject(run)}.`;
   }
 
   switch (currentStep.status) {
     case "running":
-      return "We are still finishing the setup.";
+      return run.kind === "rotation"
+        ? "We are checking this rotation, filling any missing games, and finishing setup where needed."
+        : "We are still finishing the setup.";
     case "blocked":
     case "failed":
       return shouldRetryFullLaunch(run, currentStep)
-        ? "This launch stopped early, so it will need a full retry."
-        : "This setup stalled on one step, so that step will need another try.";
+        ? `This ${resolveRunSubject(run)} launch stopped early, so it will need a full retry.`
+        : `This ${resolveRunSubject(run)} setup stalled on one step, so that step will need another try.`;
     case "pending":
       return "The next setup step has not started yet.";
     case "succeeded":

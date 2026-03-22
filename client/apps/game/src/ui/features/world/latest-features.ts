@@ -9,6 +9,27 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-22",
+    title: "Factory Rotation Runs",
+    description:
+      "Factory V2 now supports rotation launches that keep future games queued ahead automatically, with run-now checks, retry-aware recovery, and a watch view that shows the live queue at a glance.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-21",
+    title: "Factory Series Runs",
+    description:
+      "Factory V2 now lets you launch and monitor whole series from one shared form, append new games onto an existing parent series run, and keep automatic recovery focused on only the unfinished work.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-21",
+    title: "Safer Factory Indexer Tier Changes",
+    description:
+      "Factory admin indexer tier changes now require a confirmation secret and stay marked as pending until the deploy workflow finishes, so manual or scheduled scaling no longer looks complete before it really is.",
+    type: "fix",
+  },
+  {
     date: "2026-03-21",
     title: "Smarter Factory Recovery",
     description:

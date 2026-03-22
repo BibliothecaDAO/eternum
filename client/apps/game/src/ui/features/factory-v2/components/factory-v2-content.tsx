@@ -61,16 +61,30 @@ export const FactoryV2Content = () => {
               modeLabel={factory.modeDefinition.label}
               environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
               isMainnet={factory.selectedEnvironment?.chain === "mainnet"}
+              launchTargetKind={factory.selectedLaunchKind}
               presets={factory.presets}
               selectedPreset={factory.selectedPreset}
               gameName={factory.draftGameName}
+              seriesName={factory.draftSeriesName}
+              rotationName={factory.draftRotationName}
               startAt={factory.draftStartAt}
               durationMinutes={factory.draftDurationMinutes}
+              seriesGameCount={factory.draftSeriesGameCount}
+              seriesGames={factory.draftSeriesGames}
+              rotationPreviewGames={factory.draftRotationPreviewGames}
+              rotationGameIntervalMinutes={factory.draftRotationGameIntervalMinutes}
+              rotationMaxGames={factory.draftRotationMaxGames}
+              rotationAdvanceWindowGames={factory.draftRotationAdvanceWindowGames}
+              rotationEvaluationIntervalMinutes={factory.draftRotationEvaluationIntervalMinutes}
+              autoRetryIntervalMinutes={factory.draftAutoRetryIntervalMinutes}
               showsDuration={factory.showsDuration}
               durationOptions={factory.durationOptions}
               twoPlayerMode={factory.twoPlayerMode}
               singleRealmMode={factory.singleRealmMode}
-              existingGameName={factory.matchingRun?.name ?? null}
+              seriesSuggestions={factory.seriesSuggestions}
+              isLoadingSeries={factory.isLoadingSeries}
+              seriesLookupError={factory.seriesLookupError}
+              existingRunName={factory.matchingRun?.name ?? null}
               notice={factory.notice}
               launchDisabledReason={factory.environmentUnavailableReason}
               moreOptionsOpen={factory.moreOptions.isOpen}
@@ -78,10 +92,22 @@ export const FactoryV2Content = () => {
               moreOptionDraft={factory.moreOptions.draft}
               moreOptionErrors={factory.moreOptions.errors}
               moreOptionsDisabledReason={factory.moreOptions.launchDisabledReason}
+              onSelectLaunchTargetKind={factory.selectLaunchKind}
               onSelectPreset={factory.selectPreset}
               onGameNameChange={factory.setDraftGameName}
+              onSeriesNameChange={factory.setDraftSeriesName}
+              onRotationNameChange={factory.setDraftRotationName}
               onStartAtChange={factory.setDraftStartAt}
               onDurationChange={factory.setDraftDurationMinutes}
+              onSeriesGameCountChange={factory.setDraftSeriesGameCount}
+              onSeriesGameNameChange={factory.setSeriesGameName}
+              onSeriesGameStartAtChange={factory.setSeriesGameStartAt}
+              onRotationGameIntervalMinutesChange={factory.setDraftRotationGameIntervalMinutes}
+              onRotationMaxGamesChange={factory.setDraftRotationMaxGames}
+              onRotationAdvanceWindowGamesChange={factory.setDraftRotationAdvanceWindowGames}
+              onRotationEvaluationIntervalChange={factory.setDraftRotationEvaluationIntervalMinutes}
+              onAutoRetryIntervalChange={factory.setDraftAutoRetryIntervalMinutes}
+              onSelectSeriesSuggestion={factory.selectSeriesSuggestion}
               onToggleMapOptions={factory.moreOptions.toggleOpen}
               onMapOptionValueChange={factory.moreOptions.setValue}
               onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
@@ -122,6 +148,9 @@ export const FactoryV2Content = () => {
               }}
               onRefresh={() => {
                 void factory.refreshSelectedRun();
+              }}
+              onNudge={() => {
+                void factory.nudgeSelectedRun();
               }}
             />
           </div>

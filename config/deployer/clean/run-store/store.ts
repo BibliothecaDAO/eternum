@@ -109,6 +109,7 @@ function buildLaunchInputRecord(context: FactoryRunStoreEventContext): FactoryLa
 
   return {
     version: 1,
+    kind: "game",
     runId: resolveFactoryRunId(context),
     launchRequestId: context.launchRequestId,
     environment: context.environmentId,
@@ -128,6 +129,7 @@ function createFactoryRunRecord(context: FactoryRunStoreEventContext): FactoryRu
 
   return {
     version: 1,
+    kind: "game",
     runId: resolveFactoryRunId(context),
     environment: context.environmentId,
     chain: environment.chain,
@@ -284,6 +286,7 @@ function mergeLaunchArtifacts(
   return {
     ...currentArtifacts,
     summaryPath,
+    durationSeconds: summary.durationSeconds ?? currentArtifacts.durationSeconds,
     worldAddress: summary.worldAddress || currentArtifacts.worldAddress,
     createGameTxHash: summary.createGameTxHash || currentArtifacts.createGameTxHash,
     configureTxHash: summary.configureTxHash || currentArtifacts.configureTxHash,
@@ -292,6 +295,7 @@ function mergeLaunchArtifacts(
     createBanksTxHash: summary.createBanksTxHash || currentArtifacts.createBanksTxHash,
     paymasterSynced: summary.paymasterSynced ?? currentArtifacts.paymasterSynced,
     indexerCreated: summary.indexerCreated || currentArtifacts.indexerCreated,
+    indexerTier: summary.indexerTier || currentArtifacts.indexerTier,
     indexerWorkflowRun: summary.indexerWorkflowRun || currentArtifacts.indexerWorkflowRun,
   };
 }

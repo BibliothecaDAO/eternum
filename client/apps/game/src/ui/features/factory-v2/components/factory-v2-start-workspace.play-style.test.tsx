@@ -44,16 +44,37 @@ const buildProps = (
   modeLabel: "Blitz",
   environmentLabel: "Slot",
   isMainnet: false,
+  launchTargetKind: "game",
   presets: [createPreset()],
   selectedPreset: createPreset(),
   gameName: "bltz-sprint-01",
+  seriesName: "bltz-weekend-cup",
+  rotationName: "bltz-ladder-loop",
   startAt: "2026-03-18T12:00",
   durationMinutes: null,
+  seriesGameCount: 3,
+  seriesGames: [
+    { id: "series-1", gameName: "bltz-weekend-cup-01", startAt: "2026-03-18T12:00", seriesGameNumber: 1 },
+    { id: "series-2", gameName: "bltz-weekend-cup-02", startAt: "2026-03-18T12:00", seriesGameNumber: 2 },
+    { id: "series-3", gameName: "bltz-weekend-cup-03", startAt: "2026-03-18T12:00", seriesGameNumber: 3 },
+  ],
+  rotationPreviewGames: [
+    { id: "rotation-1", gameName: "bltz-ladder-loop-01", startAt: "2026-03-18T12:00", seriesGameNumber: 1 },
+    { id: "rotation-2", gameName: "bltz-ladder-loop-02", startAt: "2026-03-18T13:00", seriesGameNumber: 2 },
+  ],
+  rotationGameIntervalMinutes: 60,
+  rotationMaxGames: 12,
+  rotationAdvanceWindowGames: 5,
+  rotationEvaluationIntervalMinutes: 15,
+  autoRetryIntervalMinutes: 15,
   showsDuration: false,
   durationOptions: [],
   twoPlayerMode: false,
   singleRealmMode: false,
-  existingGameName: null,
+  seriesSuggestions: [],
+  isLoadingSeries: false,
+  seriesLookupError: null,
+  existingRunName: null,
   notice: null,
   launchDisabledReason: null,
   moreOptionsOpen: false,
@@ -77,10 +98,22 @@ const buildProps = (
     prizePrecision: null,
   },
   moreOptionsDisabledReason: null,
+  onSelectLaunchTargetKind: vi.fn(),
   onSelectPreset: vi.fn(),
   onGameNameChange: vi.fn(),
+  onSeriesNameChange: vi.fn(),
+  onRotationNameChange: vi.fn(),
   onStartAtChange: vi.fn(),
   onDurationChange: vi.fn(),
+  onSeriesGameCountChange: vi.fn(),
+  onSeriesGameNameChange: vi.fn(),
+  onSeriesGameStartAtChange: vi.fn(),
+  onRotationGameIntervalMinutesChange: vi.fn(),
+  onRotationMaxGamesChange: vi.fn(),
+  onRotationAdvanceWindowGamesChange: vi.fn(),
+  onRotationEvaluationIntervalChange: vi.fn(),
+  onAutoRetryIntervalChange: vi.fn(),
+  onSelectSeriesSuggestion: vi.fn(),
   onToggleMapOptions: vi.fn(),
   onMapOptionValueChange: vi.fn(),
   onToggleTwoPlayerMode: vi.fn(),
@@ -287,6 +320,50 @@ describe("FactoryV2StartWorkspace play style", () => {
 
     expect(onToggleTwoPlayerMode).toHaveBeenCalledTimes(1);
     expect(onToggleSingleRealmMode).not.toHaveBeenCalled();
+  });
+
+  it("keeps series launches enabled when a parent series run already exists", async () => {
+    await act(async () => {
+      root.render(
+        <FactoryV2StartWorkspace
+          {...buildProps({
+            launchTargetKind: "series",
+            existingRunName: "bltz-weekend-cup",
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const launchButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.trim().includes("Launch 3-game series on Slot"),
+    );
+
+    expect(launchButton).toBeDefined();
+    expect(launchButton?.hasAttribute("disabled")).toBe(false);
+    expect(container.textContent).toContain("append any new games and resume that shared run");
+  });
+
+  it("shows rotation controls and a queued preview when rotation is selected", async () => {
+    await act(async () => {
+      root.render(
+        <FactoryV2StartWorkspace
+          {...buildProps({
+            launchTargetKind: "rotation",
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Rotation basics");
+    expect(container.textContent).toContain("Rotation preview");
+    expect(container.textContent).toContain("Max games");
+    expect(container.textContent).toContain("Keep ahead");
+    expect(container.textContent).toContain("Game interval");
+    expect(container.textContent).toContain("Check every");
+    expect(container.textContent).toContain("bltz-ladder-loop-01");
+    expect(container.textContent).toContain("bltz-ladder-loop-02");
   });
 });
 

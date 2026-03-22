@@ -146,8 +146,11 @@ function buildWorkflowDispatchBody(request: IndexerRequest, dispatchId: string, 
   return JSON.stringify({
     ref,
     inputs: {
+      operation: "deploy",
       env: request.env,
       torii_prefix: request.worldName,
+      torii_name: request.worldName,
+      torii_tier: request.tier || "basic",
       rpc_url: request.rpcUrl,
       torii_world_address: request.worldAddress,
       torii_namespaces: request.namespaces,

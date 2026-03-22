@@ -204,7 +204,11 @@ function resolveLaunchConfiguration(
   return { deploymentConfig, configSteps };
 }
 
-function createLaunchSummary(runtime: LaunchRuntime, request: LaunchGameRequest): LaunchGameSummary {
+function createLaunchSummary(
+  runtime: LaunchRuntime,
+  request: LaunchGameRequest,
+  deploymentConfig: LaunchConfig,
+): LaunchGameSummary {
   return {
     environment: runtime.environment.id,
     chain: runtime.environment.chain,
@@ -212,6 +216,7 @@ function createLaunchSummary(runtime: LaunchRuntime, request: LaunchGameRequest)
     gameName: request.gameName,
     startTime: runtime.startTime,
     startTimeIso: toIsoUtc(runtime.startTime),
+    durationSeconds: deploymentConfig.season?.durationSeconds,
     rpcUrl: runtime.rpcUrl,
     factoryAddress: runtime.factoryAddress,
     indexerCreated: false,
@@ -235,6 +240,7 @@ function hydrateExistingLaunchSummary(summary: LaunchGameSummary): LaunchGameSum
     gameName: summary.gameName,
     startTime: summary.startTime,
     startTimeIso: summary.startTimeIso,
+    durationSeconds: summary.durationSeconds,
     rpcUrl: summary.rpcUrl,
     factoryAddress: summary.factoryAddress,
     configMode: summary.configMode,
@@ -254,7 +260,7 @@ function prepareLaunchExecution(request: LaunchGameRequest): PreparedLaunchExecu
   return {
     runtime,
     request,
-    summary: hydrateExistingLaunchSummary(createLaunchSummary(runtime, request)),
+    summary: hydrateExistingLaunchSummary(createLaunchSummary(runtime, request, deploymentConfig)),
     deploymentConfig,
     configSteps,
   };
@@ -275,6 +281,7 @@ function buildIndexerRequest(options: {
     namespaces: options.namespaces,
     worldName: options.worldName,
     worldAddress: options.worldAddress,
+    tier: "basic",
     workflowFile: options.workflowFile,
     ref: options.ref,
     externalContracts: [],
@@ -904,7 +911,9 @@ async function createIndexerIfNeeded(
   runtime: LaunchRuntime,
   request: LaunchGameRequest,
   worldAddress: string,
-): Promise<Pick<LaunchGameSummary, "indexerCreated" | "indexerMode" | "indexerRequest" | "indexerWorkflowRun">> {
+): Promise<
+  Pick<LaunchGameSummary, "indexerCreated" | "indexerMode" | "indexerTier" | "indexerRequest" | "indexerWorkflowRun">
+> {
   if (request.skipIndexer) {
     runtime.progress.log("Skipping indexer creation");
     return { indexerCreated: false };
@@ -935,6 +944,7 @@ async function createIndexerIfNeeded(
   return {
     indexerCreated: true,
     indexerMode: result.mode,
+    indexerTier: indexerRequest.tier,
     indexerRequest,
     indexerWorkflowRun: result.workflowRun,
   };

@@ -22,14 +22,56 @@ import {
 } from "../presenters";
 import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
 
-const FIRST_UPDATE_WAIT_MESSAGE = "This game just started. We are waiting for it to appear.";
+const FIRST_UPDATE_WAIT_MESSAGE = "This run just started. We are waiting for it to appear.";
 const AUTO_UPDATE_LABEL = "Updating automatically";
-const WATCH_SEARCH_EYEBROW = "Check a game";
-const WATCH_SEARCH_TITLE = "Find a game";
-const WATCH_SEARCH_DESCRIPTION = "Type the exact game name or choose one from your recent games.";
-const WATCH_EMPTY_DESCRIPTION = "Type a game name and press Enter to check its status.";
+const WATCH_SEARCH_EYEBROW = "Check a run";
+const WATCH_SEARCH_TITLE = "Find a run";
+const WATCH_SEARCH_DESCRIPTION = "Type the exact game, series, or rotation name or choose one from your recent runs.";
+const WATCH_EMPTY_DESCRIPTION = "Type a run name and press Enter to check its status.";
 const WATCH_TIMELINE_TITLE = "Setup progress";
 const WATCH_TIMELINE_DESCRIPTION = "See what is done, what is happening now, and what comes next.";
+
+type FactoryV2WatchWorkspaceProps = {
+  mode: FactoryGameMode;
+  runs: FactoryRun[];
+  selectedRun: FactoryRun | null;
+  activeRunName: string | null;
+  acceptedRunMessage: string | null;
+  watcher: FactoryWatcherState | null;
+  pollingState: FactoryPollingState;
+  isWatcherBusy: boolean;
+  isResolvingRunName: boolean;
+  notice: string | null;
+  lookupDisabledReason: string | null;
+  onSelectRun: (runId: string) => void;
+  onResolveRunByName: (gameName: string) => Promise<boolean>;
+  onContinue: () => void;
+  onRetry: () => void;
+  onBringIndexerLive: () => void;
+  onRefresh: () => void;
+  onNudge: () => void;
+};
+
+type FactoryV2WatchWorkspaceState = {
+  matchingRuns: FactoryRun[];
+  showsPendingRunState: boolean;
+  isPendingSelectedRun: boolean;
+  isAwaitingAcceptedUpdate: boolean;
+  showsInFlightState: boolean;
+  timelineRun: FactoryRun | null;
+  statusMeta: ReturnType<typeof getRunStatusMeta> | null;
+  currentStep: FactoryRun["steps"][number] | null;
+  completedStep: FactoryRun["steps"][number] | null;
+  nextStep: FactoryRun["steps"][number] | null;
+  environmentLabel: string | null;
+  currentStepLabel: string;
+  detailMessage: string;
+  headline: string;
+  liveStatusLabel: string;
+  secondaryNotice: string | null;
+  launchPlaceholderName: string;
+  actionBarProps: FactoryV2WatchActionBarProps | null;
+};
 
 export const FactoryV2WatchWorkspace = ({
   mode,
@@ -49,25 +91,8 @@ export const FactoryV2WatchWorkspace = ({
   onRetry,
   onBringIndexerLive,
   onRefresh,
-}: {
-  mode: FactoryGameMode;
-  runs: FactoryRun[];
-  selectedRun: FactoryRun | null;
-  activeRunName: string | null;
-  acceptedRunMessage: string | null;
-  watcher: FactoryWatcherState | null;
-  pollingState: FactoryPollingState;
-  isWatcherBusy: boolean;
-  isResolvingRunName: boolean;
-  notice: string | null;
-  lookupDisabledReason: string | null;
-  onSelectRun: (runId: string) => void;
-  onResolveRunByName: (gameName: string) => Promise<boolean>;
-  onContinue: () => void;
-  onRetry: () => void;
-  onBringIndexerLive: () => void;
-  onRefresh: () => void;
-}) => {
+  onNudge,
+}: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);
   const [showAllSteps, setShowAllSteps] = useState(false);
   const [watchGameName, setWatchGameName] = useState(selectedRun?.name ?? "");
@@ -97,58 +122,28 @@ export const FactoryV2WatchWorkspace = ({
     };
   }, []);
 
-  const matchingRuns = resolveMatchingRunsByName(runs, isFilteringRuns ? watchGameName : "");
-  const showsPendingRunState = Boolean(watcher) || Boolean(activeRunName) || pollingState.status !== "idle";
-  const isPendingSelectedRun = Boolean(selectedRun && selectedRun.id.startsWith("pending:"));
-  const isAwaitingAcceptedUpdate = Boolean(acceptedRunMessage);
-  const showsInFlightState = isPendingSelectedRun || isAwaitingAcceptedUpdate;
-  const timelineRun = selectedRun ? buildWatchTimelineRun(selectedRun) : null;
-  const statusMeta = selectedRun ? getRunStatusMeta(selectedRun.status) : null;
-  const currentStep = timelineRun ? getCurrentStep(timelineRun) : null;
-  const completedStep = timelineRun ? getCompletedStep(timelineRun) : null;
-  const nextStep = timelineRun ? getNextStep(timelineRun) : null;
-  const primaryAction = selectedRun && !isWatcherBusy ? resolveRunPrimaryAction(selectedRun) : null;
-  const environmentLabel = selectedRun ? getEnvironmentLabel(selectedRun.environment) : null;
-  const currentStepLabel = isPendingSelectedRun
-    ? `Starting ${selectedRun?.name ?? "your game"}`
-    : currentStep
-      ? getSimpleStepTitle(currentStep)
-      : "Everything is ready";
-  const detailMessage = selectedRun
-    ? isPendingSelectedRun
-      ? (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE)
-      : (acceptedRunMessage ?? watcher?.detail ?? notice ?? getRunDetailMessage(timelineRun ?? selectedRun))
-    : WATCH_EMPTY_DESCRIPTION;
-  const headline = selectedRun
-    ? isPendingSelectedRun
-      ? `Launching ${selectedRun.name}`
-      : isAwaitingAcceptedUpdate
-        ? "Got it"
-        : getRunHeadline(timelineRun ?? selectedRun)
-    : (watcher?.title ?? "Check a game");
-  const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun, selectedRun?.status ?? null);
-  const launchPlaceholderName = activeRunName || watchGameName.trim() || "your game";
-  const visiblePrimaryAction = isAwaitingAcceptedUpdate ? null : primaryAction;
-  const showsManualRefresh =
-    !isAwaitingAcceptedUpdate && pollingState.status !== "checking" && pollingState.status !== "live";
-  const secondaryNotice = notice && notice !== detailMessage && !watcher ? notice : null;
-  const showsActionBar = Boolean(visiblePrimaryAction || showsManualRefresh);
-  const actionBarProps = showsActionBar
-    ? {
-        visiblePrimaryAction,
-        showsManualRefresh,
-        isWatcherBusy,
-        isBlocked: Boolean(lookupDisabledReason),
-        primaryButtonClassName: appearance.primaryButtonClassName,
-        secondaryButtonClassName: appearance.secondaryButtonClassName,
-        onContinue,
-        onRetry,
-        onRefresh,
-      }
-    : null;
+  const state = resolveWatchWorkspaceState({
+    runs,
+    selectedRun,
+    activeRunName,
+    acceptedRunMessage,
+    watcher,
+    pollingState,
+    isWatcherBusy,
+    notice,
+    lookupDisabledReason,
+    watchGameName,
+    isFilteringRuns,
+    onContinue,
+    onRetry,
+    onRefresh,
+    onNudge,
+    primaryButtonClassName: appearance.primaryButtonClassName,
+    secondaryButtonClassName: appearance.secondaryButtonClassName,
+  });
   const stepSummaryOptions = {
     isWatcherBusy,
-    isBlocked: Boolean(lookupDisabledReason) || showsInFlightState,
+    isBlocked: Boolean(lookupDisabledReason) || state.showsInFlightState,
     onBringIndexerLive,
   };
   const selectRunByName = (value: string) => {
@@ -179,7 +174,7 @@ export const FactoryV2WatchWorkspace = ({
 
     event.preventDefault();
 
-    const matchingRun = resolveMatchingRunByName(runs, watchGameName) ?? matchingRuns[0] ?? null;
+    const matchingRun = resolveMatchingRunByName(runs, watchGameName) ?? state.matchingRuns[0] ?? null;
 
     if (matchingRun) {
       chooseRun(matchingRun);
@@ -198,7 +193,7 @@ export const FactoryV2WatchWorkspace = ({
         inputClassName={appearance.listItemClassName}
         pickerRef={pickerRef}
         watchGameName={watchGameName}
-        matchingRuns={matchingRuns}
+        matchingRuns={state.matchingRuns}
         isPickerOpen={isPickerOpen}
         lookupDisabledReason={lookupDisabledReason}
         isResolvingRunName={isResolvingRunName}
@@ -215,42 +210,193 @@ export const FactoryV2WatchWorkspace = ({
         onKeyDownInput={handleGameNameEnter}
       />
 
-      {selectedRun ? (
-        <FactoryV2WatchRunCard
-          appearance={appearance}
-          selectedRun={selectedRun}
-          timelineRun={timelineRun ?? selectedRun}
-          environmentLabel={environmentLabel}
-          showsInFlightState={showsInFlightState}
-          headline={headline}
-          pollingState={pollingState}
-          liveStatusLabel={liveStatusLabel}
-          currentStepLabel={currentStepLabel}
-          detailMessage={detailMessage}
-          completedStep={completedStep}
-          currentStep={currentStep}
-          nextStep={nextStep}
-          secondaryNotice={secondaryNotice}
-          showAllSteps={showAllSteps}
-          statusMeta={statusMeta}
-          actionBarProps={actionBarProps}
-          stepSummaryOptions={stepSummaryOptions}
-          onToggleShowAllSteps={() => setShowAllSteps((open) => !open)}
-        />
-      ) : showsPendingRunState ? (
-        <FactoryV2WatchPendingCard
-          appearance={appearance}
-          launchPlaceholderName={launchPlaceholderName}
-          pollingState={pollingState}
-          headline={watcher?.title ?? `Opening ${launchPlaceholderName}`}
-          primaryNotice={watcher?.detail ?? notice ?? FIRST_UPDATE_WAIT_MESSAGE}
-          secondaryNotice={notice && notice !== (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE) ? notice : null}
-        />
-      ) : (
-        <FactoryV2WatchEmptyCard appearanceClassName={appearance.featureSurfaceClassName} />
-      )}
+      <FactoryV2WatchWorkspaceContent
+        appearance={appearance}
+        selectedRun={selectedRun}
+        state={state}
+        watcher={watcher}
+        pollingState={pollingState}
+        notice={notice}
+        showAllSteps={showAllSteps}
+        stepSummaryOptions={stepSummaryOptions}
+        onToggleShowAllSteps={() => setShowAllSteps((open) => !open)}
+      />
     </article>
   );
+};
+
+function resolveWatchWorkspaceState({
+  runs,
+  selectedRun,
+  activeRunName,
+  acceptedRunMessage,
+  watcher,
+  pollingState,
+  isWatcherBusy,
+  notice,
+  lookupDisabledReason,
+  watchGameName,
+  isFilteringRuns,
+  onContinue,
+  onRetry,
+  onRefresh,
+  onNudge,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+}: {
+  runs: FactoryRun[];
+  selectedRun: FactoryRun | null;
+  activeRunName: string | null;
+  acceptedRunMessage: string | null;
+  watcher: FactoryWatcherState | null;
+  pollingState: FactoryPollingState;
+  isWatcherBusy: boolean;
+  notice: string | null;
+  lookupDisabledReason: string | null;
+  watchGameName: string;
+  isFilteringRuns: boolean;
+  onContinue: () => void;
+  onRetry: () => void;
+  onRefresh: () => void;
+  onNudge: () => void;
+  primaryButtonClassName: string;
+  secondaryButtonClassName: string;
+}): FactoryV2WatchWorkspaceState {
+  const matchingRuns = resolveMatchingRunsByName(runs, isFilteringRuns ? watchGameName : "");
+  const showsPendingRunState = Boolean(watcher) || Boolean(activeRunName) || pollingState.status !== "idle";
+  const isPendingSelectedRun = Boolean(selectedRun && selectedRun.id.startsWith("pending:"));
+  const isAwaitingAcceptedUpdate = Boolean(acceptedRunMessage);
+  const showsInFlightState = isPendingSelectedRun || isAwaitingAcceptedUpdate;
+  const timelineRun = selectedRun ? buildWatchTimelineRun(selectedRun) : null;
+  const statusMeta = selectedRun ? getRunStatusMeta(selectedRun.status) : null;
+  const currentStep = timelineRun ? getCurrentStep(timelineRun) : null;
+  const completedStep = timelineRun ? getCompletedStep(timelineRun) : null;
+  const nextStep = timelineRun ? getNextStep(timelineRun) : null;
+  const primaryAction = selectedRun && !isWatcherBusy ? resolveRunPrimaryAction(selectedRun) : null;
+  const environmentLabel = selectedRun ? getEnvironmentLabel(selectedRun.environment) : null;
+  const currentStepLabel = isPendingSelectedRun
+    ? `Starting ${selectedRun?.name ?? "your run"}`
+    : currentStep
+      ? getSimpleStepTitle(currentStep)
+      : "Everything is ready";
+  const detailMessage = selectedRun
+    ? isPendingSelectedRun
+      ? (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE)
+      : (acceptedRunMessage ?? watcher?.detail ?? notice ?? getRunDetailMessage(timelineRun ?? selectedRun))
+    : WATCH_EMPTY_DESCRIPTION;
+  const headline = selectedRun
+    ? isPendingSelectedRun
+      ? `Launching ${selectedRun.name}`
+      : isAwaitingAcceptedUpdate
+        ? "Got it"
+        : getRunHeadline(timelineRun ?? selectedRun)
+    : (watcher?.title ?? WATCH_SEARCH_TITLE);
+  const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun, selectedRun?.status ?? null);
+  const launchPlaceholderName = activeRunName || watchGameName.trim() || "your run";
+  const visiblePrimaryAction = isAwaitingAcceptedUpdate ? null : primaryAction;
+  const showsNudgeAction = selectedRun?.kind === "rotation" && !isAwaitingAcceptedUpdate;
+  const showsManualRefresh =
+    !isAwaitingAcceptedUpdate && pollingState.status !== "checking" && pollingState.status !== "live";
+  const secondaryNotice = notice && notice !== detailMessage && !watcher ? notice : null;
+  const showsActionBar = Boolean(visiblePrimaryAction || showsManualRefresh || showsNudgeAction);
+
+  return {
+    matchingRuns,
+    showsPendingRunState,
+    isPendingSelectedRun,
+    isAwaitingAcceptedUpdate,
+    showsInFlightState,
+    timelineRun,
+    statusMeta,
+    currentStep,
+    completedStep,
+    nextStep,
+    environmentLabel,
+    currentStepLabel,
+    detailMessage,
+    headline,
+    liveStatusLabel,
+    secondaryNotice,
+    launchPlaceholderName,
+    actionBarProps: showsActionBar
+      ? {
+          visiblePrimaryAction,
+          showsManualRefresh,
+          showsNudgeAction,
+          isWatcherBusy,
+          isBlocked: Boolean(lookupDisabledReason),
+          primaryButtonClassName,
+          secondaryButtonClassName,
+          onContinue,
+          onRetry,
+          onRefresh,
+          onNudge,
+        }
+      : null,
+  };
+}
+
+const FactoryV2WatchWorkspaceContent = ({
+  appearance,
+  selectedRun,
+  state,
+  watcher,
+  pollingState,
+  notice,
+  showAllSteps,
+  stepSummaryOptions,
+  onToggleShowAllSteps,
+}: {
+  appearance: ReturnType<typeof resolveFactoryModeAppearance>;
+  selectedRun: FactoryRun | null;
+  state: FactoryV2WatchWorkspaceState;
+  watcher: FactoryWatcherState | null;
+  pollingState: FactoryPollingState;
+  notice: string | null;
+  showAllSteps: boolean;
+  stepSummaryOptions: FactoryV2StepSummaryActionOptions;
+  onToggleShowAllSteps: () => void;
+}) => {
+  if (selectedRun) {
+    return (
+      <FactoryV2WatchRunCard
+        appearance={appearance}
+        selectedRun={selectedRun}
+        timelineRun={state.timelineRun ?? selectedRun}
+        environmentLabel={state.environmentLabel}
+        showsInFlightState={state.showsInFlightState}
+        headline={state.headline}
+        pollingState={pollingState}
+        liveStatusLabel={state.liveStatusLabel}
+        currentStepLabel={state.currentStepLabel}
+        detailMessage={state.detailMessage}
+        completedStep={state.completedStep}
+        currentStep={state.currentStep}
+        nextStep={state.nextStep}
+        secondaryNotice={state.secondaryNotice}
+        showAllSteps={showAllSteps}
+        statusMeta={state.statusMeta}
+        actionBarProps={state.actionBarProps}
+        stepSummaryOptions={stepSummaryOptions}
+        onToggleShowAllSteps={onToggleShowAllSteps}
+      />
+    );
+  }
+
+  if (state.showsPendingRunState) {
+    return (
+      <FactoryV2WatchPendingCard
+        appearance={appearance}
+        launchPlaceholderName={state.launchPlaceholderName}
+        pollingState={pollingState}
+        headline={watcher?.title ?? `Opening ${state.launchPlaceholderName}`}
+        primaryNotice={watcher?.detail ?? notice ?? FIRST_UPDATE_WAIT_MESSAGE}
+        secondaryNotice={notice && notice !== (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE) ? notice : null}
+      />
+    );
+  }
+
+  return <FactoryV2WatchEmptyCard appearanceClassName={appearance.featureSurfaceClassName} />;
 };
 
 const FactoryV2WatchRunCard = ({
@@ -343,6 +489,21 @@ const FactoryV2WatchRunCard = ({
         currentStepLabel={currentStepLabel}
         detailMessage={detailMessage}
       />
+
+      {selectedRun.kind === "series" ? (
+        <>
+          <FactoryV2AutoRetryCard autoRetry={selectedRun.autoRetry} />
+          <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
+        </>
+      ) : null}
+
+      {selectedRun.kind === "rotation" ? (
+        <>
+          <FactoryV2AutoRetryCard autoRetry={selectedRun.autoRetry} />
+          <FactoryV2RotationScheduleCard run={selectedRun} />
+          <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
+        </>
+      ) : null}
 
       <div className="space-y-2.5">
         <div className="mx-auto max-w-sm space-y-1 text-center">
@@ -459,6 +620,126 @@ const FactoryV2CurrentStepCard = ({
     </div>
   );
 };
+
+const FactoryV2AutoRetryCard = ({ autoRetry }: { autoRetry: FactoryRun["autoRetry"] }) => {
+  if (!autoRetry?.enabled) {
+    return null;
+  }
+
+  const statusLabel = autoRetry.cancelledAt
+    ? "Auto-retry cancelled"
+    : autoRetry.nextRetryAt
+      ? `Next retry ${formatRunTimestamp(autoRetry.nextRetryAt)}`
+      : `Retrying every ${autoRetry.intervalMinutes} minutes`;
+
+  return (
+    <div className="rounded-[22px] border border-black/8 bg-white/40 px-4 py-3 text-center shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Auto-retry</div>
+      <p className="mt-2 text-sm leading-6 text-black/56">{statusLabel}</p>
+    </div>
+  );
+};
+
+const FactoryV2RotationScheduleCard = ({ run }: { run: FactoryRun }) => {
+  if (run.kind !== "rotation" || !run.rotation || !run.evaluation) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3 rounded-[24px] border border-black/8 bg-white/40 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+      <div className="mx-auto max-w-sm space-y-1 text-center">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Rotation schedule</div>
+        <p className="text-[13px] leading-5 text-black/52">
+          This rotation keeps future games queued ahead until it reaches its maximum size.
+        </p>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <FactoryV2RotationMetric
+          label="Created"
+          value={`${run.rotation.createdGameCount} of ${run.rotation.maxGames}`}
+        />
+        <FactoryV2RotationMetric label="Queued ahead" value={`${run.rotation.queuedGameCount} games`} />
+        <FactoryV2RotationMetric label="Game interval" value={`Every ${run.rotation.gameIntervalMinutes} minutes`} />
+        <FactoryV2RotationMetric
+          label="Next check"
+          value={
+            run.evaluation.nextEvaluationAt
+              ? formatRunTimestamp(run.evaluation.nextEvaluationAt)
+              : `Every ${run.evaluation.intervalMinutes} minutes`
+          }
+        />
+      </div>
+    </div>
+  );
+};
+
+const FactoryV2RotationMetric = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-center">
+    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-black/40">{label}</div>
+    <div className="mt-1 text-[13px] font-semibold text-black">{value}</div>
+  </div>
+);
+
+const FactoryV2MultiGameChildrenCard = ({
+  kind,
+  children,
+}: {
+  kind: FactoryRun["kind"];
+  children: FactoryRun["children"];
+}) => {
+  if (!children || children.length === 0) {
+    return null;
+  }
+
+  const copy = resolveMultiGameChildrenCopy(kind);
+
+  return (
+    <div className="space-y-2 rounded-[24px] border border-black/8 bg-white/40 p-3 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+      <div className="mx-auto max-w-sm space-y-1 text-center">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{copy.title}</div>
+        <p className="text-[13px] leading-5 text-black/52">{copy.description}</p>
+      </div>
+      <div className="space-y-2">
+        {children.map((child) => (
+          <div
+            key={child.id}
+            className="flex flex-col gap-2 rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-left sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-black/8 bg-white/72 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/48">
+                  Game {child.seriesGameNumber}
+                </span>
+                <span className="truncate text-[13px] font-semibold text-black">{child.gameName}</span>
+              </div>
+              <p className="mt-1 text-[12px] leading-5 text-black/50">{child.latestEvent}</p>
+              {child.worldAddress ? (
+                <p className="mt-1 truncate text-[11px] leading-5 text-black/38">{child.worldAddress}</p>
+              ) : null}
+            </div>
+            <div className="shrink-0 self-start rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/52">
+              {child.status}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+function resolveMultiGameChildrenCopy(kind: FactoryRun["kind"]) {
+  if (kind === "rotation") {
+    return {
+      title: "Rotation games",
+      description: "Each queued game keeps its own setup state inside this rotation.",
+    };
+  }
+
+  return {
+    title: "Series games",
+    description: "Each child game keeps its own status inside the parent run.",
+  };
+}
 
 const FactoryV2WatchPendingCard = ({
   appearance,
@@ -640,7 +921,7 @@ const FactoryV2WatchSearchPanel = ({
         htmlFor="factory-watch-game"
         className="block text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42"
       >
-        Game name
+        Run name
       </label>
       <div ref={pickerRef} className="relative">
         <input
@@ -649,7 +930,7 @@ const FactoryV2WatchSearchPanel = ({
           onChange={(event) => onChangeInput(event.target.value)}
           onFocus={onFocusInput}
           onKeyDown={onKeyDownInput}
-          placeholder="Type a game name"
+          placeholder="Type a run name"
           disabled={Boolean(lookupDisabledReason)}
           className={cn(
             "h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 pr-10 text-center text-sm font-medium text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25",
@@ -668,7 +949,7 @@ const FactoryV2WatchSearchPanel = ({
         {isPickerOpen && matchingRuns.length > 0 ? (
           <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-[20px] border border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,238,228,0.96))] shadow-[0_18px_48px_rgba(30,20,10,0.16)] backdrop-blur-xl">
             <div className="border-b border-black/6 px-4 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.24em] text-black/34">
-              Recent games
+              Recent runs
             </div>
             <div className="max-h-60 overflow-y-auto p-1.5">
               {matchingRuns.slice(0, 6).map((run) => (
@@ -698,7 +979,7 @@ const FactoryV2WatchSearchPanel = ({
         ) : null}
       </div>
       {lookupDisabledReason ? <p className="text-sm leading-6 text-black/50">{lookupDisabledReason}</p> : null}
-      {isResolvingRunName ? <p className="text-sm leading-6 text-black/50">Looking for that game.</p> : null}
+      {isResolvingRunName ? <p className="text-sm leading-6 text-black/50">Looking for that run.</p> : null}
       {!lookupDisabledReason && !isResolvingRunName ? (
         <p className="text-sm leading-6 text-black/46">Press Enter to check its status.</p>
       ) : null}
@@ -709,6 +990,7 @@ const FactoryV2WatchSearchPanel = ({
 const FactoryV2WatchActionBar = ({
   visiblePrimaryAction,
   showsManualRefresh,
+  showsNudgeAction,
   isWatcherBusy,
   isBlocked,
   primaryButtonClassName,
@@ -716,6 +998,7 @@ const FactoryV2WatchActionBar = ({
   onContinue,
   onRetry,
   onRefresh,
+  onNudge,
 }: FactoryV2WatchActionBarProps) => (
   <div
     data-testid="factory-watch-action-bar"
@@ -748,6 +1031,21 @@ const FactoryV2WatchActionBar = ({
       >
         <RefreshCw className="h-4 w-4" />
         Check again
+      </button>
+    ) : null}
+
+    {showsNudgeAction ? (
+      <button
+        type="button"
+        onClick={onNudge}
+        disabled={isWatcherBusy || isBlocked}
+        className={cn(
+          "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+          secondaryButtonClassName,
+        )}
+      >
+        <RefreshCw className="h-4 w-4" />
+        Run now
       </button>
     ) : null}
   </div>
@@ -997,6 +1295,7 @@ interface FactoryV2StepSummaryActionOptions {
 interface FactoryV2WatchActionBarProps {
   visiblePrimaryAction: ReturnType<typeof resolveRunPrimaryAction> | null;
   showsManualRefresh: boolean;
+  showsNudgeAction: boolean;
   isWatcherBusy: boolean;
   isBlocked: boolean;
   primaryButtonClassName: string;
@@ -1004,6 +1303,7 @@ interface FactoryV2WatchActionBarProps {
   onContinue: () => void;
   onRetry: () => void;
   onRefresh: () => void;
+  onNudge: () => void;
 }
 
 function resolveStepSummaryAction(
@@ -1014,7 +1314,7 @@ function resolveStepSummaryAction(
     return null;
   }
 
-  if (step.id !== "create-indexer" && step.id !== "wait-indexer") {
+  if (step.id !== "create-indexer" && step.id !== "create-indexers" && step.id !== "wait-indexer") {
     return null;
   }
 
@@ -1051,4 +1351,19 @@ function buildLiveStatusLabel(
   }
 
   return pollingState.detail;
+}
+
+function formatRunTimestamp(timestamp: string) {
+  const date = new Date(timestamp);
+
+  if (Number.isNaN(date.getTime())) {
+    return "soon";
+  }
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

@@ -32,6 +32,7 @@ const buildRun = (overrides: Partial<FactoryRun> = {}): FactoryRun => ({
 const buildRunBase = (): FactoryRun => ({
   id: "run-1",
   syncKey: "sync-1",
+  kind: "game",
   mode: "blitz" as const,
   name: "bltz-sprint-01",
   environment: "slot.blitz",
@@ -115,6 +116,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
+          onNudge={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -133,8 +135,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
     expect(article?.className).toContain("w-full");
     expect(article?.className).toContain("md:max-w-md");
-    expect(searchPanel?.textContent).toContain("Find a game");
-    expect(searchPanel?.textContent).toContain("recent games");
+    expect(searchPanel?.textContent).toContain("Find a run");
+    expect(searchPanel?.textContent).toContain("recent runs");
     expect(selectedPanel?.textContent).toContain("Setup progress");
     expect(selectedPanel?.textContent).toContain("In progress");
     expect(selectedPanel?.textContent).toContain("3 of 4 parts");
@@ -231,6 +233,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
+          onNudge={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -240,5 +243,81 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
     expect(selectedPanel?.textContent).toContain("1 of 6 parts");
     expect(selectedPanel?.textContent).toContain("Step 1 of 6");
+  });
+
+  it("shows rotation schedule details and a run-now action for rotation runs", async () => {
+    const onNudge = vi.fn();
+    const rotationRun = buildRun({
+      kind: "rotation",
+      name: "bltz-ladder-loop",
+      autoRetry: {
+        enabled: true,
+        intervalMinutes: 15,
+        nextRetryAt: "2026-03-18T12:15:00.000Z",
+        lastRetryAt: null,
+        cancelledAt: null,
+        cancelReason: null,
+      },
+      evaluation: {
+        intervalMinutes: 30,
+        nextEvaluationAt: "2026-03-18T12:30:00.000Z",
+        lastEvaluatedAt: "2026-03-18T12:00:00.000Z",
+        lastNudgedAt: null,
+      },
+      rotation: {
+        rotationName: "bltz-ladder-loop",
+        maxGames: 12,
+        advanceWindowGames: 5,
+        createdGameCount: 4,
+        queuedGameCount: 3,
+        gameIntervalMinutes: 60,
+        firstGameStartTimeIso: "2026-03-18T12:00:00.000Z",
+      },
+      children: [
+        {
+          id: "rotation-child-1",
+          gameName: "bltz-ladder-loop-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "running",
+          latestEvent: "Queued for setup.",
+          currentStepId: "configure-worlds",
+          worldAddress: "0xabc",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[rotationRun]}
+          selectedRun={rotationRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={onNudge}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Rotation schedule");
+    expect(container.textContent).toContain("Created");
+    expect(container.textContent).toContain("4 of 12");
+    expect(container.textContent).toContain("Queued ahead");
+    expect(container.textContent).toContain("Rotation games");
+    expect(container.textContent).toContain("Run now");
   });
 });

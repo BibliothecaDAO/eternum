@@ -7,6 +7,14 @@ run-name: >-
 on:
   workflow_dispatch:
     inputs:
+      operation:
+        description: "Whether to deploy a new Torii instance or update an existing tier"
+        required: false
+        default: "deploy"
+        type: choice
+        options:
+          - deploy
+          - update-tier
       env:
         description: "Environment label (used for grouping outputs)"
         required: false
@@ -26,13 +34,17 @@ on:
       torii_tier:
         description: "Cartridge Slot tier"
         required: false
-        default: "epic"
+        default: "basic"
+      torii_name:
+        description: "Existing Torii name (required when operation=update-tier)"
+        required: false
+        default: ""
       rpc_url:
         description: "Starknet RPC URL"
-        required: true
+        required: false
       torii_world_address:
         description: "Torii world address (0x...)"
-        required: true
+        required: false
       world_block:
         description: "Starting world block number"
         required: false
@@ -84,8 +96,33 @@ jobs:
           echo "$HOME/.config/.slot/bin" >> $GITHUB_PATH
           echo "Slot version: $(~/.config/.slot/bin/slot --version)"
 
+      - name: Validate workflow inputs
+        run: |
+          set -euo pipefail
+
+          operation="${{ github.event.inputs.operation }}"
+
+          if [ "$operation" = "update-tier" ]; then
+            if [ -z "${{ github.event.inputs.torii_name }}" ]; then
+              echo "❌ torii_name is required when operation=update-tier"
+              exit 1
+            fi
+            exit 0
+          fi
+
+          if [ -z "${{ github.event.inputs.rpc_url }}" ]; then
+            echo "❌ rpc_url is required when operation=deploy"
+            exit 1
+          fi
+
+          if [ -z "${{ github.event.inputs.torii_world_address }}" ]; then
+            echo "❌ torii_world_address is required when operation=deploy"
+            exit 1
+          fi
+
       - name: Compute Torii identifiers (name prefix + timestamped folder)
         id: name
+        if: ${{ github.event.inputs.operation != 'update-tier' }}
         run: |
           set -euo pipefail
           prefix_raw="${{ github.event.inputs.torii_prefix }}"
@@ -115,6 +152,7 @@ jobs:
 
       - name: Render torii config from template
         id: render
+        if: ${{ github.event.inputs.operation != 'update-tier' }}
         env:
           ENV_NAME: ${{ github.event.inputs.env }}
           RPC_URL: ${{ github.event.inputs.rpc_url }}
@@ -230,6 +268,7 @@ jobs:
           echo "-------------------------------------------"
 
       - name: Create Torii slot instance
+        if: ${{ github.event.inputs.operation != 'update-tier' }}
         env:
           TEAM: ${{ github.event.inputs.slot_team }}
           TIER: ${{ github.event.inputs.torii_tier }}
@@ -248,6 +287,16 @@ jobs:
             "$NAME" torii \
             --version "$VERSION" \
             --config "$CONFIG"
+
+      - name: Update Torii slot tier
+        if: ${{ github.event.inputs.operation == 'update-tier' }}
+        env:
+          NAME: ${{ github.event.inputs.torii_name }}
+          TIER: ${{ github.event.inputs.torii_tier }}
+        run: |
+          set -euo pipefail
+          echo "Updating Torii slot tier: $NAME -> $TIER"
+          slot d update --tier "$TIER" "$NAME" torii
 
       # - name: Commit and push torii config
       #   if: success()
@@ -270,16 +319,24 @@ jobs:
       - name: Summary
         if: always()
         env:
-          NAME: ${{ steps.name.outputs.torii_name }}
+          NAME:
+            ${{ github.event.inputs.operation == 'update-tier' && github.event.inputs.torii_name ||
+            steps.name.outputs.torii_name }}
           ENV_NAME: ${{ github.event.inputs.env }}
           CONFIG: ${{ steps.render.outputs.config_path }}
           VERSION: ${{ github.event.inputs.torii_version }}
+          OPERATION: ${{ github.event.inputs.operation }}
+          TIER: ${{ github.event.inputs.torii_tier }}
         run: |
           {
             echo "## Torii Deployment";
+            echo "- Operation: \`$OPERATION\`";
             echo "- Name: \`$NAME\`";
             echo "- Env: \`$ENV_NAME\`";
-            echo "- Version: \`$VERSION\`";
-            echo "- Config saved: \`$CONFIG\`";
+            echo "- Tier: \`$TIER\`";
+            if [ "$OPERATION" != "update-tier" ]; then
+              echo "- Version: \`$VERSION\`";
+              echo "- Config saved: \`$CONFIG\`";
+            fi
             echo "- Deployed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')";
           } >> "$GITHUB_STEP_SUMMARY"

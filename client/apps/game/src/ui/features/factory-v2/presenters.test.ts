@@ -13,6 +13,7 @@ function buildFactoryRun(overrides: Partial<FactoryRun> = {}): FactoryRun {
   return {
     id: "slot.blitz:bltz-test-1",
     syncKey: "slot.blitz:bltz-test-1|updated",
+    kind: "game",
     mode: "blitz",
     name: "bltz-test-1",
     environment: "slot.blitz",
@@ -55,7 +56,7 @@ describe("factory run recovery actions", () => {
       launchScope: "full",
       stepId: "create-world",
     });
-    expect(getRunDetailMessage(run)).toBe("This launch stopped early, so it will need a full retry.");
+    expect(getRunDetailMessage(run)).toBe("This game launch stopped early, so it will need a full retry.");
   });
 
   it("keeps later failures on step-by-step recovery", () => {
@@ -88,7 +89,7 @@ describe("factory run recovery actions", () => {
       launchScope: "wait-for-factory-index",
       stepId: "wait-for-factory-index",
     });
-    expect(getRunDetailMessage(run)).toBe("This setup stalled on one step, so that step will need another try.");
+    expect(getRunDetailMessage(run)).toBe("This game setup stalled on one step, so that step will need another try.");
   });
 
   it("does not show continue during a normal transition gap", () => {

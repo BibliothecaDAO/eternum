@@ -1,33 +1,111 @@
 import type {
+  FactoryAutoRetryState,
   FactoryRecoveryStepId,
+  FactoryRotationEvaluationState,
   FactoryRun,
   FactoryRunRecovery,
   FactoryRunStatus,
   FactoryRunStep,
+  FactoryRunStepId,
+  FactorySeriesChildRun,
+  FactorySeriesChildStatus,
   FactoryStepStatus,
 } from "../types";
-import type { FactoryWorkerRunRecovery, FactoryWorkerRunRecord } from "./factory-worker";
+import type {
+  FactoryWorkerGameRunRecord,
+  FactoryWorkerRunRecord,
+  FactoryWorkerRunRecovery,
+  FactoryWorkerRotationRunRecord,
+  FactoryWorkerSeriesAutoRetry,
+  FactoryWorkerSeriesGameRecord,
+  FactoryWorkerSeriesRunRecord,
+} from "./factory-worker";
 
 export function mapFactoryWorkerRun(record: FactoryWorkerRunRecord): FactoryRun {
-  const steps = record.steps.map(mapFactoryWorkerStep);
+  if (isFactoryWorkerRotationRunRecord(record)) {
+    return mapFactoryWorkerRotationRun(record);
+  }
 
+  if (isFactoryWorkerSeriesRunRecord(record)) {
+    return mapFactoryWorkerSeriesRun(record);
+  }
+
+  return mapFactoryWorkerGameRun(record);
+}
+
+export function mapAndSortFactoryWorkerRuns(records: FactoryWorkerRunRecord[]) {
+  return [...records].sort(compareFactoryWorkerRunsByRecency).map(mapFactoryWorkerRun);
+}
+
+function isFactoryWorkerSeriesRunRecord(record: FactoryWorkerRunRecord): record is FactoryWorkerSeriesRunRecord {
+  return record.kind === "series";
+}
+
+function isFactoryWorkerRotationRunRecord(record: FactoryWorkerRunRecord): record is FactoryWorkerRotationRunRecord {
+  return record.kind === "rotation";
+}
+
+function mapFactoryWorkerGameRun(record: FactoryWorkerGameRunRecord): FactoryRun {
   return {
     id: record.runId,
-    syncKey: buildFactoryRunSyncKey(record),
+    syncKey: buildFactoryGameRunSyncKey(record),
+    kind: "game",
     mode: record.gameType,
     name: record.gameName,
     environment: record.environment,
     owner: "Factory",
     presetId: "",
-    status: resolveFactoryRunStatus(record),
-    summary: resolveFactoryRunSummary(record),
+    status: resolveFactoryRunStatus(record.status, record.currentStepId),
+    summary: resolveFactoryGameRunSummary(record.status, record.currentStepId),
     updatedAt: formatFactoryUpdatedAt(record.updatedAt),
     recovery: mapFactoryRunRecovery(record.recovery),
-    steps,
+    steps: record.steps.map(mapFactoryWorkerStep),
   };
 }
 
-function buildFactoryRunSyncKey(record: FactoryWorkerRunRecord) {
+function mapFactoryWorkerSeriesRun(record: FactoryWorkerSeriesRunRecord): FactoryRun {
+  return {
+    id: record.runId,
+    syncKey: buildFactorySeriesRunSyncKey(record),
+    kind: "series",
+    mode: record.gameType,
+    name: record.seriesName,
+    environment: record.environment,
+    owner: "Factory",
+    presetId: "",
+    status: resolveFactoryRunStatus(record.status, record.currentStepId),
+    summary: resolveFactorySeriesRunSummary(record.status, record.currentStepId),
+    updatedAt: formatFactoryUpdatedAt(record.updatedAt),
+    recovery: mapFactoryRunRecovery(record.recovery),
+    autoRetry: mapFactoryAutoRetry(record.autoRetry),
+    children: record.summary.games.map(mapFactorySeriesChildRun),
+    steps: record.steps.map(mapFactoryWorkerStep),
+  };
+}
+
+function mapFactoryWorkerRotationRun(record: FactoryWorkerRotationRunRecord): FactoryRun {
+  return {
+    id: record.runId,
+    syncKey: buildFactoryRotationRunSyncKey(record),
+    kind: "rotation",
+    mode: record.gameType,
+    name: record.rotationName,
+    environment: record.environment,
+    owner: "Factory",
+    presetId: "",
+    status: resolveFactoryRunStatus(record.status, record.currentStepId),
+    summary: resolveFactoryRotationRunSummary(record.status, record.currentStepId),
+    updatedAt: formatFactoryUpdatedAt(record.updatedAt),
+    recovery: mapFactoryRunRecovery(record.recovery),
+    autoRetry: mapFactoryAutoRetry(record.autoRetry),
+    evaluation: mapFactoryRotationEvaluation(record.evaluation),
+    rotation: mapFactoryRotationState(record),
+    children: record.summary.games.map(mapFactorySeriesChildRun),
+    steps: record.steps.map(mapFactoryWorkerStep),
+  };
+}
+
+function buildFactoryGameRunSyncKey(record: FactoryWorkerGameRunRecord) {
   return [
     record.latestLaunchRequestId,
     record.updatedAt,
@@ -37,8 +115,33 @@ function buildFactoryRunSyncKey(record: FactoryWorkerRunRecord) {
   ].join("|");
 }
 
-export function mapAndSortFactoryWorkerRuns(records: FactoryWorkerRunRecord[]) {
-  return [...records].sort(compareFactoryWorkerRunsByRecency).map(mapFactoryWorkerRun);
+function buildFactorySeriesRunSyncKey(record: FactoryWorkerSeriesRunRecord) {
+  return [
+    record.latestLaunchRequestId,
+    record.updatedAt,
+    record.currentStepId ?? "none",
+    record.status,
+    ...record.steps.map((step) => `${step.id}:${step.status}:${step.finishedAt ?? step.startedAt ?? "none"}`),
+    ...record.summary.games.map((game) => `${game.gameName}:${game.status}:${game.currentStepId ?? "none"}`),
+    record.autoRetry.enabled ? "auto:on" : "auto:off",
+    record.autoRetry.nextRetryAt ?? "no-next-retry",
+    record.autoRetry.lastRetryAt ?? "no-last-retry",
+  ].join("|");
+}
+
+function buildFactoryRotationRunSyncKey(record: FactoryWorkerRotationRunRecord) {
+  return [
+    record.latestLaunchRequestId,
+    record.updatedAt,
+    record.currentStepId ?? "none",
+    record.status,
+    ...record.steps.map((step) => `${step.id}:${step.status}:${step.finishedAt ?? step.startedAt ?? "none"}`),
+    ...record.summary.games.map((game) => `${game.gameName}:${game.status}:${game.currentStepId ?? "none"}`),
+    record.autoRetry.enabled ? "auto:on" : "auto:off",
+    record.autoRetry.nextRetryAt ?? "no-next-retry",
+    record.evaluation.nextEvaluationAt ?? "no-next-evaluation",
+    record.evaluation.lastNudgedAt ?? "no-last-nudge",
+  ].join("|");
 }
 
 function mapFactoryWorkerStep(step: FactoryWorkerRunRecord["steps"][number]): FactoryRunStep {
@@ -53,31 +156,93 @@ function mapFactoryWorkerStep(step: FactoryWorkerRunRecord["steps"][number]): Fa
   };
 }
 
-function resolveFactoryRunStatus(record: FactoryWorkerRunRecord): FactoryRunStatus {
-  if (record.status === "attention") {
+function mapFactorySeriesChildRun(game: FactoryWorkerSeriesGameRecord): FactorySeriesChildRun {
+  return {
+    id: `${game.gameName}:${game.seriesGameNumber}`,
+    gameName: game.gameName,
+    seriesGameNumber: game.seriesGameNumber,
+    startTimeIso: game.startTimeIso,
+    status: resolveFactorySeriesChildStatus(game.status),
+    latestEvent: game.latestEvent,
+    currentStepId: mapFactoryStepId(game.currentStepId),
+    worldAddress: game.artifacts.worldAddress,
+    indexerTier: game.artifacts.indexerTier,
+  };
+}
+
+function resolveFactoryRunStatus(
+  status: FactoryWorkerRunRecord["status"],
+  currentStepId: string | null,
+): FactoryRunStatus {
+  if (status === "attention") {
     return "attention";
   }
 
-  if (record.status === "complete") {
+  if (status === "complete") {
     return "complete";
   }
 
-  return record.currentStepId?.startsWith("wait-") ? "waiting" : "running";
+  return String(currentStepId).startsWith("wait-") ? "waiting" : "running";
 }
 
-function resolveFactoryRunSummary(record: FactoryWorkerRunRecord) {
-  switch (record.status) {
+function resolveFactoryGameRunSummary(status: FactoryWorkerGameRunRecord["status"], currentStepId: string | null) {
+  switch (status) {
     case "attention":
       return "This game needs your help.";
     case "complete":
       return "This game is ready.";
     case "running":
     default:
-      return record.currentStepId?.startsWith("wait-") ? "Waiting for the next step." : "Working on it now.";
+      return String(currentStepId).startsWith("wait-") ? "Waiting for the next step." : "Working on it now.";
+  }
+}
+
+function resolveFactorySeriesRunSummary(status: FactoryWorkerSeriesRunRecord["status"], currentStepId: string | null) {
+  switch (status) {
+    case "attention":
+      return "This series needs your help.";
+    case "complete":
+      return "This series is ready.";
+    case "running":
+    default:
+      return String(currentStepId).startsWith("wait-")
+        ? "Waiting for the next series step."
+        : "Working through this series now.";
+  }
+}
+
+function resolveFactoryRotationRunSummary(
+  status: FactoryWorkerRotationRunRecord["status"],
+  currentStepId: string | null,
+) {
+  switch (status) {
+    case "attention":
+      return "This rotation needs your help.";
+    case "complete":
+      return "This rotation is fully queued.";
+    case "running":
+    default:
+      return String(currentStepId).startsWith("wait-")
+        ? "Waiting for the next rotation checkpoint."
+        : "Keeping this rotation filled and ready.";
   }
 }
 
 function resolveFactoryStepStatus(status: FactoryWorkerRunRecord["steps"][number]["status"]): FactoryStepStatus {
+  switch (status) {
+    case "running":
+      return "running";
+    case "succeeded":
+      return "succeeded";
+    case "failed":
+      return "failed";
+    case "pending":
+    default:
+      return "pending";
+  }
+}
+
+function resolveFactorySeriesChildStatus(status: FactoryWorkerSeriesGameRecord["status"]): FactorySeriesChildStatus {
   switch (status) {
     case "running":
       return "running";
@@ -103,16 +268,93 @@ function mapFactoryRunRecovery(recovery: FactoryWorkerRunRecovery | undefined): 
   };
 }
 
+function mapFactoryAutoRetry(autoRetry: FactoryWorkerSeriesAutoRetry | undefined): FactoryAutoRetryState | undefined {
+  if (!autoRetry) {
+    return undefined;
+  }
+
+  return {
+    enabled: autoRetry.enabled,
+    intervalMinutes: autoRetry.intervalMinutes,
+    nextRetryAt: autoRetry.nextRetryAt ?? null,
+    lastRetryAt: autoRetry.lastRetryAt ?? null,
+    cancelledAt: autoRetry.cancelledAt ?? null,
+    cancelReason: autoRetry.cancelReason ?? null,
+  };
+}
+
+function mapFactoryRotationEvaluation(
+  evaluation: FactoryWorkerRotationRunRecord["evaluation"] | undefined,
+): FactoryRotationEvaluationState | undefined {
+  if (!evaluation) {
+    return undefined;
+  }
+
+  return {
+    intervalMinutes: evaluation.intervalMinutes,
+    nextEvaluationAt: evaluation.nextEvaluationAt ?? null,
+    lastEvaluatedAt: evaluation.lastEvaluatedAt ?? null,
+    lastNudgedAt: evaluation.lastNudgedAt ?? null,
+  };
+}
+
+function mapFactoryRotationState(record: FactoryWorkerRotationRunRecord): FactoryRun["rotation"] {
+  return {
+    rotationName: record.rotationName,
+    maxGames: record.summary.maxGames,
+    advanceWindowGames: record.summary.advanceWindowGames,
+    createdGameCount: record.summary.games.length,
+    queuedGameCount: record.summary.games.filter((game) => game.startTime * 1000 > Date.now()).length,
+    gameIntervalMinutes: record.summary.gameIntervalMinutes,
+    firstGameStartTimeIso: record.summary.firstGameStartTimeIso,
+  };
+}
+
 function mapRecoveryStepId(stepId: FactoryWorkerRunRecovery["continueStepId"]): FactoryRecoveryStepId | null {
   switch (stepId) {
+    case "create-series":
     case "create-world":
+    case "create-worlds":
     case "wait-for-factory-index":
+    case "wait-for-factory-indexes":
     case "configure-world":
+    case "configure-worlds":
     case "grant-lootchest-role":
+    case "grant-lootchest-roles":
     case "grant-village-pass-role":
+    case "grant-village-pass-roles":
     case "create-banks":
     case "create-indexer":
+    case "create-indexers":
     case "sync-paymaster":
+      return stepId;
+    default:
+      return null;
+  }
+}
+
+function mapFactoryStepId(stepId: string | null | undefined): FactoryRunStepId | null {
+  switch (stepId) {
+    case "create-series":
+    case "create-world":
+    case "create-worlds":
+    case "wait-factory-index":
+    case "wait-for-factory-index":
+    case "wait-for-factory-indexes":
+    case "apply-config":
+    case "configure-world":
+    case "configure-worlds":
+    case "grant-lootchest-role":
+    case "grant-lootchest-roles":
+    case "grant-village-pass":
+    case "grant-village-pass-role":
+    case "grant-village-pass-roles":
+    case "create-banks":
+    case "create-indexer":
+    case "create-indexers":
+    case "wait-indexer":
+    case "sync-paymaster":
+    case "publish-ready-state":
       return stepId;
     default:
       return null;
