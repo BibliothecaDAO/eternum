@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23407586975-1",
   "currentStepId": "create-series",
   "createdAt": "2026-03-22T15:06:44.322Z",
-  "updatedAt": "2026-03-22T16:41:43.219Z",
+  "updatedAt": "2026-03-22T17:00:29.319Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,8 +27,8 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-22T16:56:43.219Z",
-    "lastRetryAt": "2026-03-22T16:40:22.284Z"
+    "nextRetryAt": "2026-03-22T17:15:29.319Z",
+    "lastRetryAt": "2026-03-22T17:00:29.319Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
