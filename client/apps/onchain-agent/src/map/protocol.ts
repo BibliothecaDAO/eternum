@@ -26,7 +26,7 @@ import type { TileState, GuardInfo, ResourceInfo } from "@bibliothecadao/client"
 import type { StaminaConfig } from "@bibliothecadao/torii";
 import type { MapSnapshot } from "./renderer.js";
 import { isStructure, isExplorer, isChest } from "../world/occupier.js";
-import { calculateStrength, calculateGuardStrength, type Strength } from "../world/strength.js";
+import { calculateStrength, calculateGuardStrength, biomeCombatModifiers, type Strength } from "../world/strength.js";
 import { projectExplorerStamina } from "../world/stamina.js";
 import { BiomeIdToType } from "@bibliothecadao/types";
 import { Coord, getNeighborOffsets } from "@bibliothecadao/types";
@@ -47,6 +47,8 @@ export interface TileInfoResult {
   biomeId: number;
   /** Whether this tile has been explored on the map. */
   explored: boolean;
+  /** Combat modifier percentages for each troop type on this tile. */
+  combat: { Knight: number; Crossbowman: number; Paladin: number };
   /** Full entity details if the tile is occupied. Null for empty/unexplored tiles. */
   entity: EntityInfoResult | null;
 }
@@ -462,7 +464,7 @@ export class MapProtocol {
     const tile = this.snapshot.gridIndex.get(`${rawX},${rawY}`);
 
     if (!tile) {
-      return { position: { x, y }, biome: "Unknown", biomeId: 0, explored: false, entity: null };
+      return { position: { x, y }, biome: "Unknown", biomeId: 0, explored: false, combat: { Knight: 0, Crossbowman: 0, Paladin: 0 }, entity: null };
     }
 
     return {
@@ -470,6 +472,7 @@ export class MapProtocol {
       biome: biomeName(tile.biome),
       biomeId: tile.biome,
       explored: true,
+      combat: biomeCombatModifiers(tile.biome),
       entity: tile.occupierType !== 0 ? await this.resolveEntityDetails(tile) : null,
     };
   }
@@ -853,7 +856,7 @@ export class MapProtocol {
         const strengthStr = detail
           ? (() => {
               const s = calculateStrength(detail.troopCount, detail.troopTier, detail.troopType, neighbor.biome);
-              return ` (~${s.currentTile.effective.toLocaleString()} strength)`;
+              return ` (~${s.effective.toLocaleString()} strength)`;
             })()
           : "";
 
@@ -985,7 +988,7 @@ export class MapProtocol {
         const biome = biomeName(tile.biome);
         const dp = this.displayPos(tile.position);
         armies.push(
-          `  ${tile.occupierId} | ${detail.troopCount.toLocaleString()} ${detail.troopType} ${detail.troopTier} | str ${strength.currentTile.effective.toLocaleString()} (${strength.currentTile.modifier > 0 ? "+" : ""}${strength.currentTile.modifier}% on ${strength.currentTile.biome}) | stam ${stamina} | at (${dp.x},${dp.y}) | ${biome}`,
+          `  ${tile.occupierId} | ${detail.troopCount.toLocaleString()} ${detail.troopType} ${detail.troopTier} | str ${strength.effective.toLocaleString()} (${strength.modifier > 0 ? "+" : ""}${strength.modifier}% on ${biome}) | stam ${stamina} | at (${dp.x},${dp.y}) | ${biome}`,
         );
       } else {
         const dp = this.displayPos(tile.position);
