@@ -92,6 +92,7 @@ export async function startMcpServer(): Promise<void> {
   let bootstrapError: string | null = null;
   let bootstrapPhase = "starting";
   let authUrl: string | null = null;
+  let dataDir = "";
 
   /** Return an error string if the server isn't ready, or null if good to go. */
   const notReady = (): string | null => {
@@ -585,6 +586,21 @@ export async function startMcpServer(): Promise<void> {
       mcpCall(applyRelic, { entityId: entity_id, relicResourceId: relic_resource_id, recipientType: recipient_type }),
   );
 
+  // ── Memory Tools ──
+
+  server.tool(
+    "update_memory",
+    "Append a note to agent memory. Records intent, plans, and learnings with automatic timestamp.",
+    { content: z.string().describe("What to remember") },
+    async ({ content }) => {
+      const err = notReady();
+      if (err) return { content: [{ type: "text", text: err }], isError: true };
+      const { updateMemory } = await import("../tools/core/memory.js");
+      const result = updateMemory({ content }, dataDir);
+      return { content: [{ type: "text", text: result.message }], isError: !result.success };
+    },
+  );
+
   // ── Connect transport FIRST so the MCP handshake completes immediately ──
   log("Connecting MCP transport...");
   const transport = new StdioServerTransport();
@@ -659,6 +675,7 @@ export async function startMcpServer(): Promise<void> {
     // Automation loop (off by default in MCP mode)
     automationLoop = result.automationLoop;
 
+    dataDir = result.config.dataDir;
     bootstrapDone = true;
     log("Bootstrap complete. All tools ready.");
   } catch (err: any) {
