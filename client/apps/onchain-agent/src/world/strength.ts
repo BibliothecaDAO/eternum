@@ -1,12 +1,21 @@
 /**
  * Combat strength calculation — a universal number for any army or guard slot.
  *
- * Formula: `troop count × tier multiplier`. Biome modifier is resolved but
- * returned separately as display context, not baked into the base value.
+ * Includes full biome breakdown showing effective strength for each troop
+ * type on the current tile, plus the unit's actual effective strength.
  *
  * Tier values match the on-chain combat simulator:
  *   T1 = 100, T2 = 250 (2.5x), T3 = 700 (7x)
  */
+
+import { BiomeIdToType } from "@bibliothecadao/types";
+
+/** Convert PascalCase biome type to human-readable name. */
+function biomeName(biomeId: number): string {
+  const type = BiomeIdToType[biomeId];
+  if (!type) return "Unknown";
+  return type.replace(/([a-z])([A-Z])/g, "$1 $2");
+}
 
 // ── Tier multipliers ─────────────────────────────────────────────────
 
@@ -61,18 +70,36 @@ const BIOME_COMBAT_BONUS: Record<number, [number, number, number]> = {
 
 // ── Strength calculation ─────────────────────────────────────────────
 
+/** Per-troop-type biome modifier with calculated effective strength. */
+export interface BiomeMatchup {
+  modifier: number;
+  effective: number;
+}
+
 /**
  * Result of a combat strength calculation.
  *
- * Encapsulates the raw numeric strength, biome context, and a
- * human-readable display string the agent can show directly.
+ * Includes the base strength, a full biome breakdown showing what each
+ * troop type's effective strength would be on this tile, and the current
+ * tile summary.
  */
 export interface Strength {
   /** Base strength (troop count × tier value / 100). */
   base: number;
-  /** Biome modifier percentage (e.g. 30, -30, or 0). */
-  biomeModifier: number;
-  /** Formatted string, e.g. "4,200 (+30% on this tile)", "3,000 (-30% on this tile)", or just "5,000" when modifier is 0. */
+  /** Per-troop-type biome matchup on this tile. */
+  biomeBreakdown: {
+    Knight: BiomeMatchup;
+    Crossbowman: BiomeMatchup;
+    Paladin: BiomeMatchup;
+  };
+  /** This unit's effective strength on the current tile. */
+  currentTile: {
+    biome: string;
+    biomeId: number;
+    modifier: number;
+    effective: number;
+  };
+  /** Formatted display string. */
   display: string;
 }
 
@@ -99,18 +126,35 @@ export function calculateStrength(troopCount: number, troopTier: string, troopTy
   const tierValue = TIER_VALUE[troopTier] ?? TIER_VALUE.T1;
   const base = Math.floor((troopCount * tierValue) / 100);
 
-  const typeIdx = TROOP_TYPE_INDEX[troopType];
-  const bonuses = BIOME_COMBAT_BONUS[biome];
-  const biomeModifier = typeIdx !== undefined && bonuses ? bonuses[typeIdx] : 0;
+  const bonuses = BIOME_COMBAT_BONUS[biome] ?? [0, 0, 0];
 
-  let display = base.toLocaleString();
-  if (biomeModifier > 0) {
-    display += ` (+${biomeModifier}% on this tile)`;
-  } else if (biomeModifier < 0) {
-    display += ` (${biomeModifier}% on this tile)`;
+  const calcEffective = (modifier: number) => Math.floor(base * (1 + modifier / 100));
+
+  const biomeBreakdown = {
+    Knight: { modifier: bonuses[0], effective: calcEffective(bonuses[0]) },
+    Crossbowman: { modifier: bonuses[1], effective: calcEffective(bonuses[1]) },
+    Paladin: { modifier: bonuses[2], effective: calcEffective(bonuses[2]) },
+  };
+
+  const typeIdx = TROOP_TYPE_INDEX[troopType];
+  const myModifier = typeIdx !== undefined ? bonuses[typeIdx] : 0;
+  const effective = calcEffective(myModifier);
+
+  const biomeLabel = biomeName(biome);
+
+  let display = `${base.toLocaleString()} base`;
+  if (myModifier !== 0) {
+    display += ` → ${effective.toLocaleString()} on ${biomeLabel} (${myModifier > 0 ? "+" : ""}${myModifier}%)`;
+  } else {
+    display += ` → ${effective.toLocaleString()} on ${biomeLabel} (0%)`;
   }
 
-  return { base, biomeModifier, display };
+  return {
+    base,
+    biomeBreakdown,
+    currentTile: { biome: biomeLabel, biomeId: biome, modifier: myModifier, effective },
+    display,
+  };
 }
 
 /**
@@ -142,12 +186,23 @@ export function calculateGuardStrength(
   guards: Array<{ count: number; troopTier: string; troopType: string }>,
   biome: number,
 ): Strength {
+  const emptyBreakdown = {
+    Knight: { modifier: 0, effective: 0 },
+    Crossbowman: { modifier: 0, effective: 0 },
+    Paladin: { modifier: 0, effective: 0 },
+  };
+
   if (guards.length === 0) {
-    return { base: 0, biomeModifier: 0, display: "0" };
+    return {
+      base: 0,
+      biomeBreakdown: emptyBreakdown,
+      currentTile: { biome: biomeName(biome), biomeId: biome, modifier: 0, effective: 0 },
+      display: "0",
+    };
   }
 
   let totalBase = 0;
-  let dominantModifier = 0;
+  let dominantStrength: Strength | null = null;
   let dominantCount = 0;
 
   for (const g of guards) {
@@ -155,16 +210,25 @@ export function calculateGuardStrength(
     totalBase += s.base;
     if (g.count > dominantCount) {
       dominantCount = g.count;
-      dominantModifier = s.biomeModifier;
+      dominantStrength = s;
     }
   }
 
-  let display = totalBase.toLocaleString();
-  if (dominantModifier > 0) {
-    display += ` (+${dominantModifier}% on this tile)`;
-  } else if (dominantModifier < 0) {
-    display += ` (${dominantModifier}% on this tile)`;
+  const dominant = dominantStrength!;
+  const totalEffective = Math.floor(totalBase * (1 + dominant.currentTile.modifier / 100));
+  const biomeLabel = biomeName(biome);
+
+  let display = `${totalBase.toLocaleString()} base`;
+  if (dominant.currentTile.modifier !== 0) {
+    display += ` → ${totalEffective.toLocaleString()} on ${biomeLabel} (${dominant.currentTile.modifier > 0 ? "+" : ""}${dominant.currentTile.modifier}%)`;
+  } else {
+    display += ` → ${totalEffective.toLocaleString()} on ${biomeLabel} (0%)`;
   }
 
-  return { base: totalBase, biomeModifier: dominantModifier, display };
+  return {
+    base: totalBase,
+    biomeBreakdown: dominant.biomeBreakdown,
+    currentTile: { biome: biomeLabel, biomeId: biome, modifier: dominant.currentTile.modifier, effective: totalEffective },
+    display,
+  };
 }

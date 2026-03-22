@@ -6,6 +6,7 @@
  */
 
 import type { ToolContext } from "./context.js";
+import { toDisplayX, toDisplayY } from "./context.js";
 import { addressesEqual, extractTxError } from "./tx-context.js";
 import { getNeighborHexes, Direction, RESOURCE_PRECISION } from "@bibliothecadao/types";
 
@@ -62,6 +63,7 @@ export interface CreateArmyDetails {
   tierSuffix: string;
   troopCount: number;
   spawnDirection: string;
+  spawnPosition: { x: number; y: number };
   explorerCount: number;
   maxExplorerCount: number;
 }
@@ -146,10 +148,14 @@ export async function createArmy(input: CreateArmyInput, ctx: ToolContext): Prom
   // ── Find open spawn hex ──
   const neighbors = getNeighborHexes(structTile.position.x, structTile.position.y);
   let spawnDir: number | null = null;
+  let spawnRawX = 0;
+  let spawnRawY = 0;
   for (const n of neighbors) {
     const nt = ctx.snapshot.gridIndex.get(`${n.col},${n.row}`);
     if (nt && nt.occupierType === 0) {
       spawnDir = n.direction;
+      spawnRawX = n.col;
+      spawnRawY = n.row;
       break;
     }
   }
@@ -172,18 +178,21 @@ export async function createArmy(input: CreateArmyInput, ctx: ToolContext): Prom
   }
 
   const spawnDirectionName = Direction[spawnDir] ?? String(spawnDir);
+  const spawnDispX = toDisplayX(spawnRawX, ctx.mapCenter);
+  const spawnDispY = toDisplayY(spawnRawY, ctx.mapCenter);
   const details: CreateArmyDetails = {
     troopName: resName,
     tierSuffix,
     troopCount,
     spawnDirection: spawnDirectionName,
+    spawnPosition: { x: spawnDispX, y: spawnDispY },
     explorerCount: info.explorerCount + 1,
     maxExplorerCount: info.maxExplorerCount,
   };
 
   return {
     success: true,
-    message: `Army created: ${troopCount.toLocaleString()} ${resName} at ${spawnDirectionName} of realm. Armies: ${details.explorerCount}/${details.maxExplorerCount}`,
+    message: `Army created: ${troopCount.toLocaleString()} ${resName} at ${spawnDirectionName} of realm (${spawnDispX},${spawnDispY}). Armies: ${details.explorerCount}/${details.maxExplorerCount}. Use 'map find own_army' to get the entity ID.`,
     armyDetails: details,
   };
 }
