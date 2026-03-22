@@ -10,6 +10,7 @@ import { resolveSeriesLaunchStepIds } from "../launch/series-plan";
 import type { LaunchRotationStepId, LaunchRotationSummary, RotationLaunchStepId } from "../types";
 import { createFactoryRotationRunStoreEventContext } from "./context";
 import {
+  readGitHubBranchJsonFile,
   updateGitHubBranchJsonFile,
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
@@ -488,12 +489,39 @@ async function resolvePlannedRotationSummary(request: FactoryRotationRunRequestC
   return persistRotationLaunchSummary(reconcileRotationLaunchSummary(request, hydratedSummary));
 }
 
+async function readCurrentFactoryRotationRunRecord(
+  context: FactoryRotationRunStoreEventContext,
+  options: RecordFactoryRotationLaunchOptions,
+): Promise<FactoryRotationRunRecord | undefined> {
+  const config = requireGitHubBranchStoreConfig(options);
+  const { value } = await readGitHubBranchJsonFile<FactoryRotationRunRecord>(
+    config,
+    resolveFactoryRotationRunRecordPath(context),
+  );
+  return value;
+}
+
+async function resolveRotationLaunchStartSummary(
+  request: FactoryRotationRunRequestContext["request"],
+  currentRun?: FactoryRotationRunRecord,
+): Promise<LaunchRotationSummary> {
+  if (!currentRun?.summary) {
+    return resolvePlannedRotationSummary(request);
+  }
+
+  return resolvePlannedRotationSummary({
+    ...request,
+    resumeSummary: currentRun.summary,
+  });
+}
+
 export async function recordFactoryRotationLaunchStarted(
   request: FactoryRotationRunRequestContext,
   options: RecordFactoryRotationLaunchOptions = {},
 ): Promise<FactoryRotationRunRecord> {
   const context = createFactoryRotationRunStoreEventContext(request);
-  const summary = await resolvePlannedRotationSummary(request.request);
+  const currentRun = await readCurrentFactoryRotationRunRecord(context, options);
+  const summary = await resolveRotationLaunchStartSummary(request.request, currentRun);
   await writeRotationLaunchInputRecord(context, summary, options);
 
   return updateRotationRunRecord(

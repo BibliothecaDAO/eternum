@@ -129,6 +129,11 @@ async function handleRequest(request, env) {
         return await handleNudgeFactoryRotationRun(request, env, rotationRunRoute);
       }
 
+      if (request.method === "POST" && rotationRunRoute.action === "cancel-auto-retry") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleCancelFactoryRotationAutoRetry(request, env, rotationRunRoute);
+      }
+
       return buildJsonResponse(request, env, { error: "Not found" }, 404);
     }
 
@@ -479,7 +484,7 @@ async function handleContinueFactorySeriesRun(request, env, route) {
 
 async function handleCancelFactorySeriesAutoRetry(request, env, route) {
   const body = await readJsonBody(request);
-  validateCancelFactorySeriesAutoRetryBody(body);
+  validateCancelFactoryAutoRetryBody(body);
 
   const github = createGitHubClient(env, body.workflowRef);
   const branch = resolveRunStoreBranch(env);
@@ -489,6 +494,36 @@ async function handleCancelFactorySeriesAutoRetry(request, env, route) {
   const nextRun = await updateBranchJsonFile(github, runRecordPath, branch, (currentRun) => {
     if (!currentRun) {
       throw new HttpError(404, resolveMissingSeriesRunMessage(route.environment, route.seriesName));
+    }
+
+    return {
+      ...currentRun,
+      updatedAt: cancelledAt,
+      autoRetry: {
+        ...currentRun.autoRetry,
+        enabled: false,
+        nextRetryAt: undefined,
+        cancelledAt,
+        cancelReason: body.cancelReason?.trim() || currentRun.autoRetry.cancelReason,
+      },
+    };
+  });
+
+  return buildJsonResponse(request, env, enrichFactoryRunResponse(nextRun), 200);
+}
+
+async function handleCancelFactoryRotationAutoRetry(request, env, route) {
+  const body = await readJsonBody(request);
+  validateCancelFactoryAutoRetryBody(body);
+
+  const github = createGitHubClient(env, body.workflowRef);
+  const branch = resolveRunStoreBranch(env);
+  const runRecordPath = resolveFactoryRotationRunRecordPath(route.environment, route.rotationName);
+  const cancelledAt = new Date().toISOString();
+
+  const nextRun = await updateBranchJsonFile(github, runRecordPath, branch, (currentRun) => {
+    if (!currentRun) {
+      throw new HttpError(404, resolveMissingRotationRunMessage(route.environment, route.rotationName));
     }
 
     return {
@@ -778,7 +813,7 @@ function validateContinueFactoryRotationRunBody(body) {
   validateWorkflowRef(body.workflowRef);
 }
 
-function validateCancelFactorySeriesAutoRetryBody(body) {
+function validateCancelFactoryAutoRetryBody(body) {
   validateWorkflowRef(body.workflowRef);
 
   if (body.cancelReason !== undefined && typeof body.cancelReason !== "string") {
@@ -1415,6 +1450,20 @@ function matchFactoryRotationRunRoute(pathname) {
     const rotationName = decodeURIComponent(parts[4]);
     validateEnvironment(environment);
     return { environment, rotationName, action: "nudge" };
+  }
+
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "rotation-runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "cancel-auto-retry"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const rotationName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, rotationName, action: "cancel-auto-retry" };
   }
 
   return null;

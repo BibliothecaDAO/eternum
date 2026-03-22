@@ -52,7 +52,14 @@ export type FactoryWorkflowIntervalMinutes = 5 | 15 | 30 | 60;
 export type FactorySeriesRetryIntervalMinutes = FactoryWorkflowIntervalMinutes;
 export type FactoryRotationEvaluationIntervalMinutes = FactoryWorkflowIntervalMinutes;
 
-export type FactoryWatcherKind = "launch" | "continue" | "retry" | "refresh" | "reindex" | "nudge";
+export type FactoryWatcherKind =
+  | "launch"
+  | "continue"
+  | "retry"
+  | "refresh"
+  | "reindex"
+  | "nudge"
+  | "cancel_auto_retry";
 export type FactoryPollingStatus = "idle" | "checking" | "live" | "paused";
 
 export type FactoryLaunchStartRule = "next_hour";

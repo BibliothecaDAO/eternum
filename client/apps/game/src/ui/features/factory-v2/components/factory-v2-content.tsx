@@ -152,6 +152,9 @@ export const FactoryV2Content = () => {
               onNudge={() => {
                 void factory.nudgeSelectedRun();
               }}
+              onStopAutoRetry={() => {
+                void factory.cancelSelectedRunAutoRetry();
+              }}
             />
           </div>
         ) : null}

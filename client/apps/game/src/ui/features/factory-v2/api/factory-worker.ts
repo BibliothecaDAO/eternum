@@ -316,6 +316,20 @@ interface ContinueFactoryRotationRunRequest {
   launchStep: FactoryWorkerRotationLaunchScope;
 }
 
+interface CancelFactorySeriesAutoRetryRequest {
+  environment: FactoryWorkerEnvironmentId;
+  seriesName: string;
+  adminSecret: string;
+  cancelReason?: string;
+}
+
+interface CancelFactoryRotationAutoRetryRequest {
+  environment: FactoryWorkerEnvironmentId;
+  rotationName: string;
+  adminSecret: string;
+  cancelReason?: string;
+}
+
 interface UpdateFactoryIndexerTierRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName: string;
@@ -513,13 +527,20 @@ export async function nudgeFactoryRotationRun(
   });
 }
 
-async function cancelFactorySeriesAutoRetry(
-  environment: FactoryWorkerEnvironmentId,
-  seriesName: string,
-  cancelReason?: string,
-): Promise<void> {
+export async function cancelFactorySeriesAutoRetry(request: CancelFactorySeriesAutoRetryRequest): Promise<void> {
+  const { adminSecret, environment, seriesName, cancelReason } = request;
   await fetchFactoryWorkerJson(`${buildFactorySeriesRunPath(environment, seriesName)}/actions/cancel-auto-retry`, {
     method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify({ cancelReason }),
+  });
+}
+
+export async function cancelFactoryRotationAutoRetry(request: CancelFactoryRotationAutoRetryRequest): Promise<void> {
+  const { adminSecret, environment, rotationName, cancelReason } = request;
+  await fetchFactoryWorkerJson(`${buildFactoryRotationRunPath(environment, rotationName)}/actions/cancel-auto-retry`, {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
     body: JSON.stringify({ cancelReason }),
   });
 }

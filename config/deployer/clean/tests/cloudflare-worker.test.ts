@@ -596,6 +596,114 @@ describe("factory worker recovery signals", () => {
     expect(didCallGitHub).toBe(false);
   });
 
+  test("cancels auto retry for a rotation run when the admin secret is provided", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.blitz:rotation:bltz-rotationx",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          rotationName: "bltz-rotationx",
+          seriesName: "bltz-rotationx",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/rotations/bltz-rotationx/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-worlds",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          autoRetry: {
+            enabled: true,
+            intervalMinutes: 15,
+            nextRetryAt: offsetTimestamp(15 * 60_000),
+          },
+          evaluation: {
+            intervalMinutes: 15,
+            nextEvaluationAt: offsetTimestamp(15 * 60_000),
+          },
+          steps: [],
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            rotationName: "bltz-rotationx",
+            seriesName: "bltz-rotationx",
+            firstGameStartTime: 1774195200,
+            firstGameStartTimeIso: "2026-03-22T16:00:00.000Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 15,
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [],
+          },
+          artifacts: {
+            summaryPath: ".context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
+            seriesCreated: true,
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request(
+        "https://worker.example/api/factory/rotation-runs/slot.blitz/bltz-rotationx/actions/cancel-auto-retry",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-factory-admin-secret": "factory-secret",
+          },
+          body: JSON.stringify({
+            cancelReason: "operator stopped the loop",
+          }),
+        },
+      ),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const updateCall = fetchCalls.find(
+      (call) =>
+        call.url.includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") && call.init?.method === "PUT",
+    );
+    const updateBody = JSON.parse(String(updateCall?.init?.body));
+    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+
+    expect(response.status).toBe(200);
+    expect(nextRunRecord.autoRetry.enabled).toBe(false);
+    expect(nextRunRecord.autoRetry.nextRetryAt).toBeUndefined();
+    expect(nextRunRecord.autoRetry.cancelledAt).toEqual(expect.any(String));
+    expect(nextRunRecord.autoRetry.cancelReason).toBe("operator stopped the loop");
+  });
+
   test("records pending indexer tier updates without overwriting the current tier", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {

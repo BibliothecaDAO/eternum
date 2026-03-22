@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-22",
+    title: "Rotation Retry Controls",
+    description:
+      "Factory V2 now preserves live rotation state when scheduled checks run and lets admins stop series or rotation auto-retries from the watch flow with a confirmation secret.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-22",
     title: "Factory Rotation Runs",
     description:
       "Factory V2 now supports rotation launches that keep future games queued ahead automatically, with run-now checks, retry-aware recovery, and a watch view that shows the live queue at a glance.",

@@ -117,6 +117,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onBringIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -234,6 +235,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onBringIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -308,6 +310,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onBringIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={onNudge}
+          onStopAutoRetry={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -319,5 +322,74 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(container.textContent).toContain("Queued ahead");
     expect(container.textContent).toContain("Rotation games");
     expect(container.textContent).toContain("Run now");
+    expect(container.textContent).toContain("Stop auto retry");
+  });
+
+  it("stops auto retry from the watch action bar for active multi-game runs", async () => {
+    const onStopAutoRetry = vi.fn();
+    const seriesRun = buildRun({
+      kind: "series",
+      name: "bltz-weekend-cup",
+      autoRetry: {
+        enabled: true,
+        intervalMinutes: 15,
+        nextRetryAt: "2026-03-18T12:15:00.000Z",
+        lastRetryAt: null,
+        cancelledAt: null,
+        cancelReason: null,
+      },
+      children: [
+        {
+          id: "series-child-1",
+          gameName: "bltz-weekend-cup-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "running",
+          latestEvent: "Configuring world.",
+          currentStepId: "configure-worlds",
+          worldAddress: "0xabc",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[seriesRun]}
+          selectedRun={seriesRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={onStopAutoRetry}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const stopAutoRetryButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Stop auto retry"),
+    );
+
+    expect(stopAutoRetryButton).toBeTruthy();
+
+    await act(async () => {
+      (stopAutoRetryButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    expect(onStopAutoRetry).toHaveBeenCalledTimes(1);
   });
 });

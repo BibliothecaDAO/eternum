@@ -4,6 +4,7 @@ import {
   acquireFactoryAccountLease,
   heartbeatFactoryAccountLease,
   recordFactoryLaunchStarted,
+  recordFactoryRotationLaunchStarted,
   recordFactoryLaunchStepFailed,
   recordFactoryLaunchStepStarted,
   recordFactoryLaunchStepSucceeded,
@@ -34,6 +35,7 @@ const originalFetch = globalThis.fetch;
 const summaryPaths = [
   resolveSummaryPath("slot.blitz", "bltz-flux-730"),
   resolveSummaryPath("mainnet.blitz", "bltz-mainnet-730"),
+  resolveRotationSummaryPath("slot.blitz", "bltz-rotationx"),
 ];
 
 beforeEach(() => {
@@ -316,6 +318,110 @@ describe("factory run store", () => {
     expect(runRecord.artifacts.summaryPath).toBe(".context/game-launch/mainnet-blitz-bltz-mainnet-730.json");
   });
 
+  test("preserves the current rotation summary when a new workflow starts for an existing rotation", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    const existingSummary = {
+      environment: "slot.blitz",
+      chain: "slot",
+      gameType: "blitz",
+      rotationName: "bltz-rotationx",
+      seriesName: "bltz-rotationx",
+      firstGameStartTime: 4_070_908_800,
+      firstGameStartTimeIso: "2099-01-01T00:00:00.000Z",
+      gameIntervalMinutes: 60,
+      maxGames: 12,
+      advanceWindowGames: 5,
+      evaluationIntervalMinutes: 15,
+      rpcUrl: "https://rpc.example",
+      factoryAddress: "0x123",
+      autoRetryEnabled: true,
+      autoRetryIntervalMinutes: 15,
+      dryRun: false,
+      configMode: "batched",
+      seriesCreated: true,
+      seriesCreatedAt: "2098-12-31T23:50:00.000Z",
+      games: [
+        buildRotationTestGame("bltz-rotationx-01", 1, 4_070_908_800),
+        buildRotationTestGame("bltz-rotationx-02", 2, 4_070_912_400),
+        buildRotationTestGame("bltz-rotationx-03", 3, 4_070_916_000),
+        buildRotationTestGame("bltz-rotationx-04", 4, 4_070_919_600),
+        buildRotationTestGame("bltz-rotationx-05", 5, 4_070_923_200),
+      ],
+      outputPath: ".context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
+    } as const;
+
+    branchStore.writeJson("runs/slot/blitz/rotations/bltz-rotationx.json", {
+      version: 1,
+      kind: "rotation",
+      runId: "slot.blitz:rotation:bltz-rotationx",
+      environment: "slot.blitz",
+      chain: "slot",
+      gameType: "blitz",
+      rotationName: "bltz-rotationx",
+      seriesName: "bltz-rotationx",
+      status: "attention",
+      executionMode: "guided_recovery",
+      requestedLaunchStep: "full",
+      inputPath: "inputs/slot/blitz/rotations/bltz-rotationx/101-1.json",
+      latestLaunchRequestId: "101-1",
+      currentStepId: "create-worlds",
+      createdAt: "2098-12-31T23:50:00.000Z",
+      updatedAt: "2098-12-31T23:55:00.000Z",
+      workflow: { workflowName: "game-launch.yml" },
+      autoRetry: { enabled: true, intervalMinutes: 15, nextRetryAt: "2099-01-01T00:10:00.000Z" },
+      evaluation: { intervalMinutes: 15, nextEvaluationAt: "2099-01-01T00:10:00.000Z" },
+      steps: [
+        buildRotationTestRunStep("create-series", "succeeded"),
+        buildRotationTestRunStep("create-worlds", "pending"),
+        buildRotationTestRunStep("wait-for-factory-indexes", "pending"),
+        buildRotationTestRunStep("configure-worlds", "pending"),
+        buildRotationTestRunStep("grant-lootchest-roles", "pending"),
+        buildRotationTestRunStep("grant-village-pass-roles", "pending"),
+        buildRotationTestRunStep("create-banks", "pending"),
+        buildRotationTestRunStep("create-indexers", "pending"),
+        buildRotationTestRunStep("sync-paymaster", "pending"),
+      ],
+      summary: existingSummary,
+      artifacts: {
+        summaryPath: existingSummary.outputPath,
+        seriesCreated: true,
+        seriesCreatedAt: existingSummary.seriesCreatedAt,
+      },
+    });
+
+    await recordFactoryRotationLaunchStarted({
+      environmentId: "slot.blitz",
+      rotationName: "bltz-rotationx",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "slot.blitz",
+        rotationName: "bltz-rotationx",
+        firstGameStartTime: "2099-01-01T00:00:00Z",
+        gameIntervalMinutes: 60,
+        maxGames: 12,
+        advanceWindowGames: 5,
+        evaluationIntervalMinutes: 15,
+      },
+    });
+
+    const inputRecord = branchStore.readJson("inputs/slot/blitz/rotations/bltz-rotationx/101-1.json");
+    const runRecord = branchStore.readJson("runs/slot/blitz/rotations/bltz-rotationx.json");
+
+    expect(inputRecord.request.resumeSummary).toBeUndefined();
+    expect(runRecord.summary.seriesCreated).toBe(true);
+    expect(runRecord.summary.games.map((game: { gameName: string }) => game.gameName)).toEqual(
+      existingSummary.games.map((game) => game.gameName),
+    );
+    expect(runRecord.summary.games.map((game: { seriesGameNumber: number }) => game.seriesGameNumber)).toEqual(
+      existingSummary.games.map((game) => game.seriesGameNumber),
+    );
+    expect(runRecord.summary.games.map((game: { startTimeIso: string }) => game.startTimeIso)).toEqual(
+      existingSummary.games.map((game) => game.startTimeIso),
+    );
+  });
+
   test("marks a failed step as needing attention", async () => {
     const branchStore = createBranchStoreFetch();
     globalThis.fetch = branchStore.fetch;
@@ -591,6 +697,37 @@ function resolveSummaryPath(environmentId: string, gameName: string): string {
   return resolveRepoPath(
     `.context/game-launch/${environmentId.replace(".", "-")}-${gameName.replace(/[^a-zA-Z0-9-_]/g, "-")}.json`,
   );
+}
+
+function resolveRotationSummaryPath(environmentId: string, rotationName: string): string {
+  return resolveRepoPath(
+    `.context/game-launch/rotation-${environmentId.replace(".", "-")}-${rotationName.replace(/[^a-zA-Z0-9-_]/g, "-")}.json`,
+  );
+}
+
+function buildRotationTestRunStep(id: string, status: string) {
+  return {
+    id,
+    title: id,
+    status,
+    workflowStepName: id,
+    latestEvent: "Waiting to run",
+  };
+}
+
+function buildRotationTestGame(gameName: string, seriesGameNumber: number, startTime: number) {
+  return {
+    gameName,
+    startTime,
+    startTimeIso: new Date(startTime * 1000).toISOString(),
+    seriesGameNumber,
+    currentStepId: null,
+    latestEvent: "Waiting to run",
+    status: "pending",
+    configSteps: [],
+    steps: [],
+    artifacts: {},
+  };
 }
 
 function createBranchStoreFetch() {

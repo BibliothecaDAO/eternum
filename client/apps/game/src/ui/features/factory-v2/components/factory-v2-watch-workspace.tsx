@@ -50,6 +50,7 @@ type FactoryV2WatchWorkspaceProps = {
   onBringIndexerLive: () => void;
   onRefresh: () => void;
   onNudge: () => void;
+  onStopAutoRetry: () => void;
 };
 
 type FactoryV2WatchWorkspaceState = {
@@ -92,6 +93,7 @@ export const FactoryV2WatchWorkspace = ({
   onBringIndexerLive,
   onRefresh,
   onNudge,
+  onStopAutoRetry,
 }: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);
   const [showAllSteps, setShowAllSteps] = useState(false);
@@ -138,6 +140,7 @@ export const FactoryV2WatchWorkspace = ({
     onRetry,
     onRefresh,
     onNudge,
+    onStopAutoRetry,
     primaryButtonClassName: appearance.primaryButtonClassName,
     secondaryButtonClassName: appearance.secondaryButtonClassName,
   });
@@ -241,6 +244,7 @@ function resolveWatchWorkspaceState({
   onRetry,
   onRefresh,
   onNudge,
+  onStopAutoRetry,
   primaryButtonClassName,
   secondaryButtonClassName,
 }: {
@@ -259,6 +263,7 @@ function resolveWatchWorkspaceState({
   onRetry: () => void;
   onRefresh: () => void;
   onNudge: () => void;
+  onStopAutoRetry: () => void;
   primaryButtonClassName: string;
   secondaryButtonClassName: string;
 }): FactoryV2WatchWorkspaceState {
@@ -295,10 +300,13 @@ function resolveWatchWorkspaceState({
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your run";
   const visiblePrimaryAction = isAwaitingAcceptedUpdate ? null : primaryAction;
   const showsNudgeAction = selectedRun?.kind === "rotation" && !isAwaitingAcceptedUpdate;
+  const showsStopAutoRetryAction = shouldShowStopAutoRetryAction(selectedRun, isAwaitingAcceptedUpdate);
   const showsManualRefresh =
     !isAwaitingAcceptedUpdate && pollingState.status !== "checking" && pollingState.status !== "live";
   const secondaryNotice = notice && notice !== detailMessage && !watcher ? notice : null;
-  const showsActionBar = Boolean(visiblePrimaryAction || showsManualRefresh || showsNudgeAction);
+  const showsActionBar = Boolean(
+    visiblePrimaryAction || showsManualRefresh || showsNudgeAction || showsStopAutoRetryAction,
+  );
 
   return {
     matchingRuns,
@@ -323,6 +331,7 @@ function resolveWatchWorkspaceState({
           visiblePrimaryAction,
           showsManualRefresh,
           showsNudgeAction,
+          showsStopAutoRetryAction,
           isWatcherBusy,
           isBlocked: Boolean(lookupDisabledReason),
           primaryButtonClassName,
@@ -331,6 +340,7 @@ function resolveWatchWorkspaceState({
           onRetry,
           onRefresh,
           onNudge,
+          onStopAutoRetry,
         }
       : null,
   };
@@ -991,6 +1001,7 @@ const FactoryV2WatchActionBar = ({
   visiblePrimaryAction,
   showsManualRefresh,
   showsNudgeAction,
+  showsStopAutoRetryAction,
   isWatcherBusy,
   isBlocked,
   primaryButtonClassName,
@@ -999,6 +1010,7 @@ const FactoryV2WatchActionBar = ({
   onRetry,
   onRefresh,
   onNudge,
+  onStopAutoRetry,
 }: FactoryV2WatchActionBarProps) => (
   <div
     data-testid="factory-watch-action-bar"
@@ -1046,6 +1058,21 @@ const FactoryV2WatchActionBar = ({
       >
         <RefreshCw className="h-4 w-4" />
         Run now
+      </button>
+    ) : null}
+
+    {showsStopAutoRetryAction ? (
+      <button
+        type="button"
+        onClick={onStopAutoRetry}
+        disabled={isWatcherBusy || isBlocked}
+        className={cn(
+          "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+          "bg-rose-600 text-white hover:bg-rose-700",
+        )}
+      >
+        <RotateCcw className="h-4 w-4" />
+        Stop auto retry
       </button>
     ) : null}
   </div>
@@ -1296,6 +1323,7 @@ interface FactoryV2WatchActionBarProps {
   visiblePrimaryAction: ReturnType<typeof resolveRunPrimaryAction> | null;
   showsManualRefresh: boolean;
   showsNudgeAction: boolean;
+  showsStopAutoRetryAction: boolean;
   isWatcherBusy: boolean;
   isBlocked: boolean;
   primaryButtonClassName: string;
@@ -1304,6 +1332,17 @@ interface FactoryV2WatchActionBarProps {
   onRetry: () => void;
   onRefresh: () => void;
   onNudge: () => void;
+  onStopAutoRetry: () => void;
+}
+
+function shouldShowStopAutoRetryAction(selectedRun: FactoryRun | null, isAwaitingAcceptedUpdate: boolean) {
+  return Boolean(
+    selectedRun &&
+    !isAwaitingAcceptedUpdate &&
+    (selectedRun.kind === "series" || selectedRun.kind === "rotation") &&
+    selectedRun.autoRetry?.enabled &&
+    !selectedRun.autoRetry.cancelledAt,
+  );
 }
 
 function resolveStepSummaryAction(

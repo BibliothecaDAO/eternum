@@ -4,6 +4,8 @@ import { useFactorySeries } from "@/hooks/use-factory-series";
 import type { Chain } from "@contracts";
 import { mapAndSortFactoryWorkerRuns, mapFactoryWorkerRun } from "../api/factory-run-mapper";
 import {
+  cancelFactoryRotationAutoRetry,
+  cancelFactorySeriesAutoRetry,
   continueFactoryRun,
   continueFactoryRotationRun,
   continueFactorySeriesRun,
@@ -1070,6 +1072,44 @@ export const useFactoryV2 = () => {
     );
   };
 
+  const cancelSelectedRunAutoRetry = async () => {
+    if (!selectedRun || isWatcherBusy || !canCancelRunAutoRetry(selectedRun)) {
+      return;
+    }
+
+    if (selectedRun.kind !== "series" && selectedRun.kind !== "rotation") {
+      return;
+    }
+
+    const environmentId = assertSupportedEnvironment(selectedRun.environment);
+
+    if (!environmentId) {
+      setNotice(resolveEnvironmentUnavailableReason(selectedRun.environment));
+      return;
+    }
+
+    const adminSecret = requestFactoryAdminSecret(selectedRun.kind);
+
+    if (!adminSecret) {
+      return;
+    }
+
+    await runWatchedAction(
+      {
+        kind: "cancel_auto_retry",
+        runName: selectedRun.name,
+        title: `Stopping retries for ${selectedRun.name}`,
+        detail: "Cancelling scheduled recovery attempts for this run.",
+        workflowName: "cancel-auto-retry",
+        statusLabel: "Stopping",
+      },
+      async () => {
+        await cancelRunAutoRetry(environmentId, selectedRun, adminSecret);
+        await refreshRunRecord(environmentId, selectedRun.kind, selectedRun.name);
+      },
+    );
+  };
+
   const resolveRunByName = async (requestedName: string) => {
     const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
     const trimmedName = requestedName.trim();
@@ -1171,6 +1211,7 @@ export const useFactoryV2 = () => {
     continueSelectedRun,
     retrySelectedRun,
     nudgeSelectedRun,
+    cancelSelectedRunAutoRetry,
     bringIndexerLiveForSelectedRun,
     refreshSelectedRun,
     resolveRunByName,
@@ -1422,6 +1463,27 @@ export const useFactoryV2 = () => {
       environment: environmentId,
       gameName: run.name,
       launchStep: launchScope as FactoryWorkerGameLaunchScope,
+    });
+  }
+
+  async function cancelRunAutoRetry(environmentId: FactoryWorkerEnvironmentId, run: FactoryRun, adminSecret: string) {
+    if (run.kind === "series") {
+      await cancelFactorySeriesAutoRetry({
+        environment: environmentId,
+        seriesName: run.name,
+        adminSecret,
+      });
+      return;
+    }
+
+    if (run.kind !== "rotation") {
+      return;
+    }
+
+    await cancelFactoryRotationAutoRetry({
+      environment: environmentId,
+      rotationName: run.name,
+      adminSecret,
     });
   }
 
@@ -1980,6 +2042,18 @@ function resolveEnvironmentUnavailableReason(environmentId?: string | null) {
   }
 
   return "This network is not ready here yet.";
+}
+
+function requestFactoryAdminSecret(runKind: Extract<FactoryRun["kind"], "series" | "rotation">) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.prompt(`Enter the factory admin secret to stop auto-retry for this ${runKind}.`)?.trim() || null;
+}
+
+function canCancelRunAutoRetry(run: FactoryRun) {
+  return (run.kind === "series" || run.kind === "rotation") && run.autoRetry?.enabled && !run.autoRetry.cancelledAt;
 }
 
 function assertSupportedEnvironment(environmentId?: string | null) {
