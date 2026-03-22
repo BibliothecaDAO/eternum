@@ -245,7 +245,7 @@ export async function startMcpServer(): Promise<void> {
     {},
     async () => {
       if (!mapCtx.protocol) return { content: [{ type: "text", text: notReady() ?? "Map not loaded yet." }] };
-      return { content: [{ type: "text", text: mapCtx.protocol.briefing() || "(No owned entities)" }] };
+      return { content: [{ type: "text", text: JSON.stringify(mapCtx.protocol.briefing(), null, 2) }] };
     },
   );
 

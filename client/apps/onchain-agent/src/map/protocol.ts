@@ -972,89 +972,55 @@ export class MapProtocol {
    * Build a compact structured briefing for the agent's tick prompt.
    *
    * Produces a ~2K character summary with sections:
-   * - **YOUR ARMIES** — each army's troops, strength, stamina, position, biome
-   * - **YOUR STRUCTURES** — each structure's level, army capacity, guard status, position
-   * - **THREATS** — from {@link diagnostics}, enemy armies adjacent to your structures
-   * - **OPPORTUNITIES** — chests, unguarded structures near your armies
-   * - **STATUS** — armies ready to move
+   * Returns a structured summary object with counts, threat/opportunity
+   * highlights, and army readiness. Use `map find` and `map entity-info`
+   * for full details.
    *
-   * @returns Multi-line plaintext briefing string.
+   * @returns Structured briefing object.
    */
-  briefing(): string {
-    const sections: string[] = [];
+  briefing(): object {
+    // Count armies and structures
+    let armyCount = 0;
+    let readyArmies = 0;
+    let totalTroops = 0;
+    const structureSummaries: Array<{ entityId: number; name: string; level: number; armies: string; position: { x: number; y: number } }> = [];
 
-    // Your armies
-    const armies: string[] = [];
     for (const tile of this.snapshot.tiles) {
-      if (!isExplorer(tile.occupierType)) continue;
-      if (!this.ownedEntityIds.has(tile.occupierId)) continue;
-
-      const detail = this.snapshot.explorerDetails.get(tile.occupierId);
-      if (detail) {
-        const stamina = this.staminaConfig ? projectExplorerStamina(detail, this.staminaConfig) : detail.stamina;
-        const strength = calculateStrength(detail.troopCount, detail.troopTier, detail.troopType, tile.biome);
-        const biome = biomeName(tile.biome);
-        const dp = this.displayPos(tile.position);
-        armies.push(
-          `  ${tile.occupierId} | ${detail.troopCount.toLocaleString()} ${detail.troopType} ${detail.troopTier} | str ${strength.effective.toLocaleString()} (${strength.modifier > 0 ? "+" : ""}${strength.modifier}% on ${biome}) | stam ${stamina} | at (${dp.x},${dp.y}) | ${biome}`,
-        );
-      } else {
-        const dp = this.displayPos(tile.position);
-        armies.push(`  ${tile.occupierId} | at (${dp.x},${dp.y})`);
+      if (isExplorer(tile.occupierType) && this.ownedEntityIds.has(tile.occupierId)) {
+        armyCount++;
+        const detail = this.snapshot.explorerDetails.get(tile.occupierId);
+        if (detail) {
+          totalTroops += detail.troopCount;
+          const stamina = this.staminaConfig ? projectExplorerStamina(detail, this.staminaConfig) : detail.stamina;
+          if (stamina >= 20) readyArmies++;
+        }
       }
-    }
-    if (armies.length > 0) {
-      sections.push(`YOUR ARMIES (${armies.length}):\n${armies.join("\n")}`);
-    }
 
-    // Your structures
-    const structures: string[] = [];
-    for (const tile of this.snapshot.tiles) {
-      if (!isStructure(tile.occupierType)) continue;
-      if (!this.ownedEntityIds.has(tile.occupierId)) continue;
-
-      const detail = this.snapshot.structureDetails.get(tile.occupierId);
-      if (detail) {
-        const realmName = getRealmName(detail.realmId ?? 0);
-        const label = realmName ? `${detail.category} "${realmName}"` : detail.category;
-        const guards = detail.guards?.filter((g: GuardInfo) => g.count > 0) ?? [];
-        const guardStr =
-          guards.length > 0
-            ? guards.map((g: GuardInfo) => `${g.count.toLocaleString()} ${g.troopType} ${g.troopTier}`).join(", ")
-            : "unguarded";
-        const dp = this.displayPos(tile.position);
-        structures.push(
-          `  ${tile.occupierId} | ${label} lv${detail.level} | armies ${detail.explorerCount}/${detail.maxExplorerCount} | guards: ${guardStr} | at (${dp.x},${dp.y})`,
-        );
-      } else {
-        const label = STRUCTURE_TYPE_LABELS[tile.occupierType] ?? "Structure";
-        const dp = this.displayPos(tile.position);
-        structures.push(`  ${tile.occupierId} | ${label} | at (${dp.x},${dp.y})`);
+      if (isStructure(tile.occupierType) && this.ownedEntityIds.has(tile.occupierId)) {
+        const detail = this.snapshot.structureDetails.get(tile.occupierId);
+        const realmName = getRealmName(detail?.realmId ?? 0);
+        const name = realmName || detail?.category || "Structure";
+        structureSummaries.push({
+          entityId: tile.occupierId,
+          name,
+          level: detail?.level ?? 0,
+          armies: `${detail?.explorerCount ?? 0}/${detail?.maxExplorerCount ?? 0}`,
+          position: this.displayPos(tile.position),
+        });
       }
-    }
-    if (structures.length > 0) {
-      sections.push(`YOUR STRUCTURES (${structures.length}):\n${structures.join("\n")}`);
     }
 
     // Diagnostics
     const diags = this.diagnostics();
-    const threats = diags.filter((d) => d.severity === "threat");
-    const opportunities = diags.filter((d) => d.severity === "opportunity");
-    const info = diags.filter((d) => d.severity === "info");
+    const threats = diags.filter((d) => d.severity === "threat").map((d) => d.message);
+    const opportunities = diags.filter((d) => d.severity === "opportunity").map((d) => d.message);
 
-    if (threats.length > 0) {
-      sections.push(`THREATS (${threats.length}):\n${threats.map((d) => `  ⚠ ${d.message}`).join("\n")}`);
-    }
-    if (opportunities.length > 0) {
-      sections.push(
-        `OPPORTUNITIES (${opportunities.length}):\n${opportunities.map((d) => `  → ${d.message}`).join("\n")}`,
-      );
-    }
-    if (info.length > 0) {
-      sections.push(`STATUS:\n${info.map((d) => `  ${d.message}`).join("\n")}`);
-    }
-
-    return sections.join("\n\n");
+    return {
+      armies: { count: armyCount, ready: readyArmies, totalTroops },
+      structures: structureSummaries,
+      threats,
+      opportunities,
+    };
   }
 
   // ── Internal helpers ────────────────────────────────────────────

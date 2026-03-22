@@ -44,9 +44,9 @@ export function registerMapCommands(program: Command) {
       }
       const briefing = mapCtx.protocol!.briefing();
       if (json) {
-        console.log(JSON.stringify({ briefing }));
+        console.log(JSON.stringify(briefing, null, 2));
       } else {
-        console.log(briefing);
+        console.log(JSON.stringify(briefing, null, 2));
       }
       process.exit(0);
     });
@@ -171,11 +171,11 @@ export function registerMapCommands(program: Command) {
       // Run a single automation tick to populate status
       await automationLoop.refresh();
 
-      const briefing = mapCtx.protocol?.briefing() ?? "Map not loaded.";
+      const briefing = mapCtx.protocol?.briefing() ?? { error: "Map not loaded." };
       if (json) {
-        console.log(JSON.stringify({ briefing }));
+        console.log(JSON.stringify(briefing, null, 2));
       } else {
-        console.log(briefing);
+        console.log(JSON.stringify(briefing, null, 2));
       }
       process.exit(0);
     });

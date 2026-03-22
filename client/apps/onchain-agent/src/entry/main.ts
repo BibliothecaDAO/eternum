@@ -183,11 +183,12 @@ async function pruneMessages(
  * @returns Formatted tick prompt ready to pass to `agent.prompt()`.
  */
 function buildTickPrompt(mapCtx: MapContext): string {
-  const briefing = mapCtx.protocol?.briefing() ?? "Map not yet loaded.";
+  const briefing = mapCtx.protocol?.briefing();
+  const briefingStr = briefing ? JSON.stringify(briefing) : "Map not yet loaded.";
   return [
     "## Tick — New Turn",
     "",
-    briefing,
+    briefingStr,
     "",
     "Review your priorities and decide what to do this turn.",
     "Use map_query to explore the world: tile_info, nearby, entity_info, find.",
@@ -254,7 +255,7 @@ export async function main() {
     transformContext: async (messages) => {
       // Keep toolCtx.snapshot in sync with the latest map data each tick
       if (mapCtx.snapshot) toolCtx.snapshot = mapCtx.snapshot;
-      const briefing = mapCtx.protocol?.briefing() ?? "";
+      const briefing = mapCtx.protocol ? JSON.stringify(mapCtx.protocol.briefing()) : "";
       const errorBlock =
         toolErrors.length > 0
           ? "\n<tool_errors>\n" + toolErrors.map((e) => `  ${e.tool}: ${e.error}`).join("\n") + "\n</tool_errors>"
@@ -352,7 +353,7 @@ export async function main() {
     if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
       evolving = true;
       evolve(model, config.dataDir, {
-        map: mapCtx.protocol?.briefing() ?? "Map not loaded",
+        map: mapCtx.protocol ? JSON.stringify(mapCtx.protocol.briefing()) : "Map not loaded",
         structures:
           [...automationStatus.values()]
             .map(
