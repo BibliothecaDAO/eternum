@@ -176,7 +176,8 @@ async function pruneMessages(
 /**
  * Build the per-tick user prompt sent to the agent at the start of each turn.
  *
- * Embeds the structured briefing and a concise action reminder with correct tool names.
+ * Embeds the structured briefing and key game constraints so the agent
+ * avoids common tool call failures (wrong stamina, not adjacent, etc.).
  *
  * @param mapCtx - Shared map context holding the latest protocol and snapshot.
  * @returns Formatted tick prompt ready to pass to `agent.prompt()`.
@@ -189,7 +190,15 @@ function buildTickPrompt(mapCtx: MapContext): string {
 
 ${JSON.stringify(briefing, null, 2)}
 
-Act on threats first, then opportunities. Use map_find and map_entity_info to scout. Move all armies with stamina.`;
+## Constraints
+- Stamina regenerates over time (20/tick). Travel costs ~10-30/hex depending on biome. Use it wisely.
+- Attacking requires stamina (configured per world). If stamina is too low, the attack does zero damage.
+- Most actions require adjacency: attack, raid, open_chest, guard_from_army, reinforce_army, transfer, unguard.
+- Move army to an adjacent hex first before interacting with a target.
+- Use simulate_attack before committing to check predicted outcome.
+- Use map_find and map_entity_info to scout before acting.
+
+Act on threats first, then opportunities.`;
 }
 
 // ── Main ────────────────────────────────────────────────────────────
