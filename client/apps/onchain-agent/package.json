@@ -3,7 +3,9 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "bin": { "axis": "./src/cli/index.ts" },
+  "bin": {
+    "axis": "./src/cli/index.ts"
+  },
   "scripts": {
     "dev": "NODE_OPTIONS='--experimental-wasm-modules --disable-warning=ExperimentalWarning' tsx src/entry/index.ts run",
     "build": "tsc --noEmit",
@@ -13,6 +15,7 @@
   },
   "dependencies": {
     "@bibliothecadao/client": "workspace:*",
+    "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
