@@ -8,6 +8,12 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import {
+  PendingWorldmapFxStartPayload,
+  PendingWorldmapFxStopPayload,
+  WORLDMAP_PENDING_FX_START_EVENT,
+  WORLDMAP_PENDING_FX_STOP_EVENT,
+} from "@/utils/pending-worldmap-fx";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
@@ -110,6 +116,11 @@ import {
   resolvePendingArmyMovementSelectionPlan,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
+import {
+  resolveCreateArmyEffectTargetHex,
+  shouldClearPendingAttackEffect,
+  shouldClearPendingCreateArmyEffect,
+} from "./worldmap-pending-action-effect-policy";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import { resolveExploreCompletionPendingClearPlan, type TravelEffectType } from "./worldmap-travel-effect-policy";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
@@ -525,6 +536,17 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
   };
+  private pendingWorldmapFxStartHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const detail = (event as CustomEvent<PendingWorldmapFxStartPayload>).detail;
+    if (!detail) return;
+    this.startPendingActionFx(detail);
+  };
+  private pendingWorldmapFxStopHandler = (event: Event) => {
+    const detail = (event as CustomEvent<PendingWorldmapFxStopPayload>).detail;
+    if (!detail?.key) return;
+    this.clearPendingActionFx(detail.key);
+  };
   private handleWorldmapControlsChange = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
@@ -607,6 +629,13 @@ export default class WorldmapScene extends WarpTravel {
   private travelEffects: Map<string, () => void> = new Map();
   private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void; effectType: TravelEffectType }> =
     new Map();
+  private pendingActionEffectsByKey: Map<string, () => void> = new Map();
+  private pendingActionEffectTimeoutsByKey: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private pendingCreateArmyEffectsByKey: Map<
+    string,
+    { structureId: ID; direction: Direction; targetHex: HexPosition; troopResourceId: number }
+  > = new Map();
+  private pendingAttackEffectsByKey: Map<string, { attackerId: ID; defenderId?: ID }> = new Map();
   private cancelHexGridComputation?: () => void;
 
   // Global chunk switching coordination
@@ -857,6 +886,7 @@ export default class WorldmapScene extends WarpTravel {
         });
 
         this.updateArmyHexes(update);
+        this.resolvePendingCreateArmyFxOnArmyUpdate(update);
 
         // Add combat relationship
         if (update.battleData?.latestAttackerId) {
@@ -913,6 +943,7 @@ export default class WorldmapScene extends WarpTravel {
           return;
         }
         this.updateArmyHexes(update);
+        this.resolvePendingCreateArmyFxOnArmyUpdate(update);
         this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
       }),
     );
@@ -932,6 +963,8 @@ export default class WorldmapScene extends WarpTravel {
     // Listen for battle events and update army/structure labels
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
+        this.resolvePendingAttackFxOnBattleUpdate(update);
+
         // Update both attacker and defender information using the public methods
         const { attackerId, defenderId } = update.battleData;
 
@@ -1090,6 +1123,8 @@ export default class WorldmapScene extends WarpTravel {
     }, 16);
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.addEventListener(WORLDMAP_PENDING_FX_START_EVENT, this.pendingWorldmapFxStartHandler as EventListener);
+    window.addEventListener(WORLDMAP_PENDING_FX_STOP_EVENT, this.pendingWorldmapFxStopHandler as EventListener);
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     this.updateCameraTargetHexThrottled();
 
@@ -2061,6 +2096,180 @@ export default class WorldmapScene extends WarpTravel {
     return false;
   }
 
+  private startPendingActionFx(payload: PendingWorldmapFxStartPayload): void {
+    this.clearPendingActionFx(payload.key);
+
+    if (payload.kind === "create-army") {
+      const structureHex = this.structuresPositions.get(payload.structureId);
+      const targetHex = resolveCreateArmyEffectTargetHex(structureHex, payload.direction);
+      if (!targetHex) {
+        return;
+      }
+
+      const fxType = `create-army-resource-${payload.troopResourceId}`;
+      const textureUrl = `/images/resources/${payload.troopResourceId}.png`;
+      this.fxManager.ensureInfiniteIconFx(fxType, textureUrl, { renderMode: "ground" });
+
+      const createCleanup = this.playPendingFxAtHex({
+        type: fxType,
+        hex: targetHex,
+        size: 1.2,
+        yOffset: 0.45,
+      });
+      this.pendingActionEffectsByKey.set(payload.key, createCleanup);
+      this.pendingCreateArmyEffectsByKey.set(payload.key, {
+        structureId: payload.structureId,
+        direction: payload.direction,
+        targetHex,
+        troopResourceId: payload.troopResourceId,
+      });
+
+      const timeout = setTimeout(
+        () => this.clearPendingActionFx(payload.key),
+        Math.max(5_000, payload.timeoutMs ?? 45_000),
+      );
+      this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
+      this.clearPendingCreateArmyFxForOccupiedTiles();
+      return;
+    }
+
+    const attackerNormalized = new Position({ x: payload.attackerHex.col, y: payload.attackerHex.row }).getNormalized();
+    const targetNormalized = new Position({ x: payload.targetHex.col, y: payload.targetHex.row }).getNormalized();
+    const attackCleanup = this.playPendingFxAtHex({
+      type: "attack",
+      hex: { col: attackerNormalized.x, row: attackerNormalized.y },
+      size: 1.8,
+      yOffset: 0.48,
+    });
+    const defenseCleanup = this.playPendingFxAtHex({
+      type: "defense",
+      hex: { col: targetNormalized.x, row: targetNormalized.y },
+      size: 1.8,
+      yOffset: 0.48,
+    });
+
+    this.pendingActionEffectsByKey.set(payload.key, () => {
+      attackCleanup();
+      defenseCleanup();
+    });
+    this.pendingAttackEffectsByKey.set(payload.key, {
+      attackerId: payload.attackerId,
+      defenderId: payload.defenderId,
+    });
+
+    const timeout = setTimeout(
+      () => this.clearPendingActionFx(payload.key),
+      Math.max(5_000, payload.timeoutMs ?? 45_000),
+    );
+    this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
+  }
+
+  private playPendingFxAtHex(input: {
+    type: string;
+    hex: HexPosition;
+    size?: number;
+    yOffset?: number;
+    label?: string;
+  }): () => void {
+    const position = getWorldPositionForHex(input.hex);
+    const { end } = this.fxManager.playFxAtCoords(
+      input.type,
+      position.x,
+      position.y + (input.yOffset ?? 0.45),
+      position.z,
+      input.size ?? 1.4,
+      input.label,
+      true,
+    );
+
+    let cleaned = false;
+    return () => {
+      if (cleaned) return;
+      cleaned = true;
+      end();
+    };
+  }
+
+  private clearPendingActionFx(key: string): void {
+    const cleanup = this.pendingActionEffectsByKey.get(key);
+    if (cleanup) {
+      cleanup();
+      this.pendingActionEffectsByKey.delete(key);
+    }
+
+    const timeout = this.pendingActionEffectTimeoutsByKey.get(key);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.pendingActionEffectTimeoutsByKey.delete(key);
+    }
+
+    this.pendingCreateArmyEffectsByKey.delete(key);
+    this.pendingAttackEffectsByKey.delete(key);
+  }
+
+  private clearAllPendingActionFx(): void {
+    for (const key of Array.from(this.pendingActionEffectsByKey.keys())) {
+      this.clearPendingActionFx(key);
+    }
+  }
+
+  private resolvePendingCreateArmyFxOnArmyUpdate(update: { hexCoords: HexPosition; removed?: boolean }): void {
+    const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+    const updateHex = { col: normalized.x, row: normalized.y };
+    const keysToClear: string[] = [];
+
+    for (const [key, pending] of this.pendingCreateArmyEffectsByKey.entries()) {
+      const shouldClear = shouldClearPendingCreateArmyEffect({
+        pendingTargetHex: pending.targetHex,
+        updateHex,
+        removed: Boolean(update.removed),
+      });
+
+      if (shouldClear) {
+        keysToClear.push(key);
+      }
+    }
+
+    for (const key of keysToClear) {
+      this.clearPendingActionFx(key);
+    }
+
+    this.clearPendingCreateArmyFxForOccupiedTiles();
+  }
+
+  private clearPendingCreateArmyFxForOccupiedTiles(): void {
+    const keysToClear: string[] = [];
+
+    for (const [key, pending] of this.pendingCreateArmyEffectsByKey.entries()) {
+      if (this.armyHexes.get(pending.targetHex.col)?.get(pending.targetHex.row)) {
+        keysToClear.push(key);
+      }
+    }
+
+    for (const key of keysToClear) {
+      this.clearPendingActionFx(key);
+    }
+  }
+
+  private resolvePendingAttackFxOnBattleUpdate(update: BattleEventSystemUpdate): void {
+    const battleAttackerId =
+      typeof update.battleData.attackerId === "number" ? update.battleData.attackerId : undefined;
+    const battleDefenderId =
+      typeof update.battleData.defenderId === "number" ? update.battleData.defenderId : undefined;
+
+    for (const [key, pending] of this.pendingAttackEffectsByKey.entries()) {
+      const shouldClear = shouldClearPendingAttackEffect({
+        pendingAttackerId: pending.attackerId,
+        pendingDefenderId: pending.defenderId,
+        battleAttackerId,
+        battleDefenderId,
+      });
+      if (shouldClear) {
+        this.clearPendingActionFx(key);
+      }
+    }
+  }
+
   private schedulePendingArmyMovementFallback(entityId: ID): void {
     const existingFallback = this.pendingArmyMovementFallbackTimeouts.get(entityId);
     if (existingFallback) {
@@ -2647,6 +2856,7 @@ export default class WorldmapScene extends WarpTravel {
     this.toriiLoadingCounter = 0;
     this.state.setLoading(LoadingStateKey.Map, false);
 
+    this.clearAllPendingActionFx();
     this.runWarpTravelSwitchOffLifecycle();
 
     // Clean up wheel event listener
@@ -6652,6 +6862,8 @@ export default class WorldmapScene extends WarpTravel {
     this.controls.removeEventListener("change", this.handleWorldmapControlsChange);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.removeEventListener(WORLDMAP_PENDING_FX_START_EVENT, this.pendingWorldmapFxStartHandler as EventListener);
+    window.removeEventListener(WORLDMAP_PENDING_FX_STOP_EVENT, this.pendingWorldmapFxStopHandler as EventListener);
     this.clearCache();
 
     // Clean up selection pulse manager
