@@ -15,7 +15,7 @@ interface ApplyContinuousWorldmapZoomDeltaInput {
   zoomSensitivity?: number;
 }
 
-export interface NormalizedWorldmapWheelDelta {
+interface NormalizedWorldmapWheelDelta {
   normalizedDelta: number;
   direction: -1 | 0 | 1;
   inputKind: "trackpad" | "wheel";
