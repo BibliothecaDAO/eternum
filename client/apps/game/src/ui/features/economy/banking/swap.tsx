@@ -35,7 +35,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const playLordsSound = useUISound("resources.lords.add");
+  const playTradeExecuteSound = useUISound("ui.trade_execute");
 
   const [isBuyResource, setIsBuyResource] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,7 +107,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
     // If no bank protector, just perform swap
     performSwap().finally(() => {
-      playLordsSound();
+      playTradeExecuteSound();
       setIsLoading(false);
       setOpenConfirmation(false);
     });

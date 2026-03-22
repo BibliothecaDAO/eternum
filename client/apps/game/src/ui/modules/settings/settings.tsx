@@ -5,7 +5,7 @@ import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
-import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer } from "@/audio";
+import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { applyWorldSelection } from "@/runtime/world";
 import { ToriiSetting } from "@/types";
@@ -84,6 +84,9 @@ export const SettingsWindow = () => {
   const enableMapZoom = useUIStore((state) => state.enableMapZoom);
   const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
 
+  const playToggleOn = useUISound("ui.toggle_on");
+  const playToggleOff = useUISound("ui.toggle_off");
+
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
 
@@ -98,6 +101,11 @@ export const SettingsWindow = () => {
   }, [localStorage.getItem("TORII_SETTING")]);
 
   const clickFullScreen = () => {
+    if (fullScreen) {
+      playToggleOff();
+    } else {
+      playToggleOn();
+    }
     setFullScreen(!fullScreen);
     toggleFullScreen();
   };
@@ -249,6 +257,11 @@ export const SettingsWindow = () => {
                   onClick={() => {
                     const newToriiSetting =
                       toriiSetting === ToriiSetting.Local ? ToriiSetting.Remote : ToriiSetting.Local;
+                    if (newToriiSetting === ToriiSetting.Local) {
+                      playToggleOn();
+                    } else {
+                      playToggleOff();
+                    }
                     setToriiSetting(newToriiSetting);
                   }}
                   className="flex items-center space-x-2"
@@ -260,6 +273,11 @@ export const SettingsWindow = () => {
                   onClick={() => {
                     const newToriiSetting =
                       toriiSetting === ToriiSetting.Local ? ToriiSetting.Remote : ToriiSetting.Local;
+                    if (newToriiSetting === ToriiSetting.Remote) {
+                      playToggleOn();
+                    } else {
+                      playToggleOff();
+                    }
                     setToriiSetting(newToriiSetting);
                   }}
                   className="flex items-center space-x-2"
@@ -297,7 +315,14 @@ export const SettingsWindow = () => {
             </div>
             <div
               className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold"
-              onClick={() => setEnableMapZoom(!enableMapZoom)}
+              onClick={() => {
+                if (enableMapZoom) {
+                  playToggleOff();
+                } else {
+                  playToggleOn();
+                }
+                setEnableMapZoom(!enableMapZoom);
+              }}
             >
               <Checkbox enabled={enableMapZoom} />
               <div>Enable Map Zoom</div>
@@ -397,11 +422,23 @@ export const SettingsWindow = () => {
             <Headline>Sound</Headline>
             <div className="flex space-x-2">
               {audioState && !audioState.muted ? (
-                <Button variant="outline" onClick={() => setMuted(true)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    playToggleOff();
+                    setMuted(true);
+                  }}
+                >
                   <Unmuted className="w-4 cursor-pointer fill-gold" />
                 </Button>
               ) : (
-                <Button variant="outline" onClick={() => setMuted(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setMuted(false);
+                    playToggleOn();
+                  }}
+                >
                   <Muted className="w-4 cursor-pointer fill-gold" />
                 </Button>
               )}

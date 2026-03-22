@@ -1,3 +1,4 @@
+import { AudioManager } from "@/audio/core/AudioManager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getGameModeConfig } from "@/config/game-modes";
@@ -32,7 +33,9 @@ import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
 import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { IS_FLAT_MODE } from "@/ui/config";
+import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
+import type { QualityLevel } from "@/three/systems/hexception-ambience-system";
+import { GRAPHICS_SETTING, IS_FLAT_MODE } from "@/ui/config";
 import { HEXCEPTION_GRID_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
@@ -156,6 +159,7 @@ export default class HexceptionScene extends HexagonScene {
   private structureIndex: number = 0;
   private playerStructures: Structure[] = [];
   private mode: GameModeConfig;
+  private ambienceSystem: HexceptionAmbienceSystem | null = null;
   private structureUpdateSubscription: any | null = null;
   private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
@@ -182,6 +186,9 @@ export default class HexceptionScene extends HexagonScene {
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
+
+    const quality: QualityLevel = (GRAPHICS_SETTING as QualityLevel) || "HIGH";
+    this.ambienceSystem = new HexceptionAmbienceSystem(this.scene, quality);
 
     this.loadBuildingModels();
     this.loadBiomeModels(900);
@@ -458,6 +465,8 @@ export default class HexceptionScene extends HexagonScene {
           const { innerCol, innerRow, buildingType } = update;
           if (buildingType === BuildingType.None && innerCol && innerRow) {
             this.removeBuilding(innerCol, innerRow);
+          } else if (buildingType !== BuildingType.None) {
+            playBuildingSound(buildingType);
           }
           this.updateHexceptionGrid(this.hexceptionRadius);
         },
@@ -466,6 +475,9 @@ export default class HexceptionScene extends HexagonScene {
       this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
     }
+
+    // Setup ambience system at grid center (origin for the main hex)
+    this.ambienceSystem?.setup(new Vector3(0, 0, 0), this.hexceptionRadius);
 
     this.controls.maxDistance = IS_FLAT_MODE ? 36 : 20;
     this.controls.enablePan = false;
@@ -588,6 +600,10 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingPreview.dispose();
     }
 
+    // Dispose ambience system
+    this.ambienceSystem?.dispose();
+    this.ambienceSystem = null;
+
     super.destroy();
   }
 
@@ -625,11 +641,15 @@ export default class HexceptionScene extends HexagonScene {
             normalizedCoords,
             useSimpleCost,
           );
+          AudioManager.getInstance().play("ui.build_place");
         } catch (error) {
           console.log("catched error so removing building", error);
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
         }
         this.updateHexceptionGrid(this.hexceptionRadius);
+      } else {
+        // Hex is occupied — invalid placement
+        AudioManager.getInstance().play("ui.build_invalid");
       }
     } else {
       // if not building mode
@@ -1368,6 +1388,11 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingMixers.forEach((mixer) => {
       mixer.update(deltaTime);
     });
+
+    // Update ambience system with time progress and delta
+    const cycleProgress = this.state.cycleProgress || 0;
+    this.ambienceSystem?.setTimeProgress(cycleProgress);
+    this.ambienceSystem?.update(deltaTime);
   }
 
   public hasActiveLabelAnimations(): boolean {

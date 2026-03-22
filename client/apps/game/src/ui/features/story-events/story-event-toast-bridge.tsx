@@ -307,6 +307,19 @@ export function StoryEventToastBridge() {
       }
     }
 
+    // Play gong sound for non-battle story events
+    const recentNonBattleEvents = storyEventLog.filter(
+      (event) =>
+        event.story !== "BattleStory" &&
+        event.timestampMs >= now - RECENT_WINDOW_MS &&
+        !shownIdsRef.current.has(getStoryEventToastKey(event)),
+    );
+    for (const event of recentNonBattleEvents) {
+      const key = getStoryEventToastKey(event);
+      if (key) shownIdsRef.current.add(key);
+      AudioManager.getInstance().play("event.gong");
+    }
+
     // Prune old IDs to prevent unbounded memory growth
     if (shownIdsRef.current.size > 500) {
       const currentIds = new Set(storyEventLog.map((event) => getStoryEventToastKey(event)));
