@@ -27,15 +27,11 @@ function findPointLight(scene: Scene): PointLight | undefined {
 }
 
 function findMeshWithPlane(scene: Scene): Mesh | undefined {
-  return scene.children.find(
-    (c) => c instanceof Mesh && c.geometry instanceof PlaneGeometry,
-  ) as Mesh | undefined;
+  return scene.children.find((c) => c instanceof Mesh && c.geometry instanceof PlaneGeometry) as Mesh | undefined;
 }
 
 function findMeshWithSphere(scene: Scene): Mesh | undefined {
-  return scene.children.find(
-    (c) => c instanceof Mesh && c.geometry instanceof SphereGeometry,
-  ) as Mesh | undefined;
+  return scene.children.find((c) => c instanceof Mesh && c.geometry instanceof SphereGeometry) as Mesh | undefined;
 }
 
 function findAllPoints(scene: Scene): Points[] {

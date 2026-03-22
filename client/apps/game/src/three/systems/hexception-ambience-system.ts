@@ -353,9 +353,9 @@ export class HexceptionAmbienceSystem {
       this.mistPositions[i3 + 2] = gridCenter.z + Math.sin(angle) * radius;
 
       // Per-vertex colors (purple with brightness)
-      this.mistColors[i3] = 0x88 / 255 * brightness * 10;
-      this.mistColors[i3 + 1] = 0x66 / 255 * brightness * 10;
-      this.mistColors[i3 + 2] = 0xaa / 255 * brightness * 10;
+      this.mistColors[i3] = (0x88 / 255) * brightness * 10;
+      this.mistColors[i3 + 1] = (0x66 / 255) * brightness * 10;
+      this.mistColors[i3 + 2] = (0xaa / 255) * brightness * 10;
     }
 
     this.mistGeometry.setAttribute("position", new BufferAttribute(this.mistPositions, 3));
@@ -427,11 +427,11 @@ export class HexceptionAmbienceSystem {
     // Hex constants: cos(30°) ≈ 0.8660254, sin(30°) = 0.5
     const k = 0.8660254;
     // Reflect across hex edge normals
-    const dot = 2.0 * Math.min((-k) * qx + 0.5 * qy, 0.0);
-    qx -= dot * (-k);
+    const dot = 2.0 * Math.min(-k * qx + 0.5 * qy, 0.0);
+    qx -= dot * -k;
     qy -= dot * 0.5;
     // Clamp to hex half-width
-    qx -= clamp01((qx) / (k * radius)) * k * radius;
+    qx -= clamp01(qx / (k * radius)) * k * radius;
     // Shift for hex flat side
     qy -= radius;
     return Math.sqrt(qx * qx + Math.max(qy, 0) * Math.max(qy, 0)) * Math.sign(qy);
@@ -447,7 +447,7 @@ export class HexceptionAmbienceSystem {
 
     // Convert to hex axial coordinates (approximate)
     const row = Math.round(wy / vSpacing);
-    const colOffset = (row % 2 !== 0) ? hSpacing * 0.5 : 0;
+    const colOffset = row % 2 !== 0 ? hSpacing * 0.5 : 0;
     const col = Math.round((wx - colOffset) / hSpacing);
 
     // Check this and neighboring hex centers, find nearest
@@ -456,7 +456,7 @@ export class HexceptionAmbienceSystem {
       for (let dc = -1; dc <= 1; dc++) {
         const r = row + dr;
         const c = col + dc;
-        const cOff = (r % 2 !== 0) ? hSpacing * 0.5 : 0;
+        const cOff = r % 2 !== 0 ? hSpacing * 0.5 : 0;
         const cx = c * hSpacing + cOff;
         const cy = r * vSpacing;
         const d = HexceptionAmbienceSystem.sdHexagon(wx - cx, wy - cy, hexRadius);
@@ -487,8 +487,8 @@ export class HexceptionAmbienceSystem {
     for (let py = 0; py < size; py++) {
       for (let px = 0; px < size; px++) {
         // Map pixel to world coordinates centered at origin
-        const wx = ((px / size) - 0.5) * worldExtent;
-        const wy = ((py / size) - 0.5) * worldExtent;
+        const wx = (px / size - 0.5) * worldExtent;
+        const wy = (py / size - 0.5) * worldExtent;
 
         const d = HexceptionAmbienceSystem.hexGridSDF(wx, wy, hexRadius);
         const absDist = Math.abs(d);
@@ -540,7 +540,7 @@ export class HexceptionAmbienceSystem {
     this.seamGlowElapsed += deltaTime;
 
     // Subtle pulse via sine wave, period ~4s
-    const pulse = 0.5 + 0.5 * Math.sin(this.seamGlowElapsed * Math.PI * 2 / 4.0);
+    const pulse = 0.5 + 0.5 * Math.sin((this.seamGlowElapsed * Math.PI * 2) / 4.0);
 
     // Time-of-day: brighter at night (0.15), dimmer at day (0.04)
     const nightFactor = this.getNightFactor();
@@ -602,7 +602,11 @@ export class HexceptionAmbienceSystem {
       if (brightness > 0.7) {
         const nx = Math.min(sx + 1, size - 1);
         const ny = Math.min(sy + 1, size - 1);
-        for (const [bx, by] of [[nx, sy], [sx, ny], [nx, ny]] as [number, number][]) {
+        for (const [bx, by] of [
+          [nx, sy],
+          [sx, ny],
+          [nx, ny],
+        ] as [number, number][]) {
           const bidx = (by * size + bx) * 4;
           data[bidx] = Math.round(bVal * 0.6);
           data[bidx + 1] = Math.round(bVal * 0.6);
