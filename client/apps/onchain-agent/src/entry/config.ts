@@ -38,7 +38,7 @@ function loadDotenv() {
  * All configuration values the agent needs to connect to an Eternum world
  * and drive the tick loop.
  */
-interface AgentConfig {
+export interface AgentConfig {
   // ── World connection ──
 
   /** Target network. Read from `CHAIN` env var; defaults to `"mainnet"`. */
