@@ -277,7 +277,7 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
 
     this.pivot = new THREE.Group();
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.material);
-    this.pivot.onBeforeRender = (_renderer, _scene, camera) => {
+    this.mesh.onBeforeRender = (_renderer, _scene, camera) => {
       this.pivot.quaternion.copy(camera.quaternion);
       this.applyScale();
     };
