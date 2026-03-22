@@ -10,7 +10,9 @@ import {
 } from "../automation-status";
 import type { RealmExecutionStatus } from "@/hooks/store/use-automation-store";
 
-function makeStatus(overrides: Partial<RealmExecutionStatus> & { status: RealmExecutionStatus["status"] }): RealmExecutionStatus {
+function makeStatus(
+  overrides: Partial<RealmExecutionStatus> & { status: RealmExecutionStatus["status"] },
+): RealmExecutionStatus {
   return {
     attemptedAt: Date.now(),
     consecutiveFailures: 0,

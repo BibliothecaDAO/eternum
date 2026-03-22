@@ -67,9 +67,7 @@ const ProductionAutomationContent = ({ compact = false }: ProductionAutomationCo
 
   const activeCount = list.filter((r) => r.presetId !== "idle" && r.lastStatus?.status === "success").length;
   const failedCount = list.filter((r) => r.lastStatus?.status === "failed").length;
-  const skippedCount = list.filter(
-    (r) => r.presetId === "idle" || r.lastStatus?.status === "skipped",
-  ).length;
+  const skippedCount = list.filter((r) => r.presetId === "idle" || r.lastStatus?.status === "skipped").length;
 
   // Progress bar: time to next automation run
   const progressPercent = useMemo(() => {

@@ -173,10 +173,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
   const automationRealms = useAutomationStore((state) => state.realms);
   const hasAutomationFailures = useAutomationStore(
-    useCallback(
-      (state) => Object.values(state.realms).some((r) => (r.lastStatus?.consecutiveFailures ?? 0) >= 3),
-      [],
-    ),
+    useCallback((state) => Object.values(state.realms).some((r) => (r.lastStatus?.consecutiveFailures ?? 0) >= 3), []),
   );
   const { setup, account, network } = useDojo();
   const components = setup.components as ClientComponents;
