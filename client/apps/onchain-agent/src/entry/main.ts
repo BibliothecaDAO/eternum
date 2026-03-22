@@ -15,6 +15,8 @@ import type { AgentMessage, AgentTool } from "@mariozechner/pi-agent-core";
 import type { Message, Model } from "@mariozechner/pi-ai";
 import { getModel, completeSimple } from "@mariozechner/pi-ai";
 import { createReadOnlyTools } from "@mariozechner/pi-coding-agent";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createInterface } from "node:readline";
 
 import { bootstrap } from "./bootstrap-runtime.js";
@@ -171,6 +173,13 @@ async function pruneMessages(
   return kept;
 }
 
+/** Read memory.md contents, or empty string if missing. */
+function readMemory(dataDir: string): string {
+  const memoryPath = join(dataDir, "memory.md");
+  if (!existsSync(memoryPath)) return "";
+  return readFileSync(memoryPath, "utf-8").trim();
+}
+
 // ── Tick prompt builder ─────────────────────────────────────────────
 
 /**
@@ -183,7 +192,7 @@ async function pruneMessages(
  * @param toolErrors - Recent tool invocation failures for the agent to learn from.
  * @returns Formatted tick prompt ready to pass to `agent.prompt()`.
  */
-function buildTickPrompt(mapCtx: MapContext, toolErrors: ToolError[]): string {
+function buildTickPrompt(mapCtx: MapContext, toolErrors: ToolError[], memory: string): string {
   const briefing = mapCtx.protocol?.briefing();
   if (!briefing) return "Map not yet loaded. Wait for next tick.";
 
@@ -192,6 +201,10 @@ function buildTickPrompt(mapCtx: MapContext, toolErrors: ToolError[]): string {
     "",
     JSON.stringify(briefing, null, 2),
   ];
+
+  if (memory) {
+    parts.push("", "## Memory", memory);
+  }
 
   if (toolErrors.length > 0) {
     parts.push(
@@ -211,7 +224,7 @@ function buildTickPrompt(mapCtx: MapContext, toolErrors: ToolError[]): string {
     "- Use simulate_attack before committing to check predicted outcome.",
     "- Use map_find and map_entity_info to scout before acting.",
     "",
-    "Act on threats first, then opportunities.",
+    "Act on threats first, then opportunities. Before ending your turn, use update_memory to note your intent and any learnings. Keep it to 2-3 sentences.",
   );
 
   return parts.join("\n");
@@ -274,10 +287,7 @@ export async function main() {
     convertToLlm,
     followUpMode: "one-at-a-time",
     transformContext: async (messages) => {
-      // Keep toolCtx.snapshot in sync with the latest map data each tick
       if (mapCtx.snapshot) toolCtx.snapshot = mapCtx.snapshot;
-      // Reload soul + task files from disk (picks up evolution rewrites and operator edits)
-      agent.setSystemPrompt(buildSystemPrompt(config.dataDir));
       const maxChars = (model.contextWindow ?? 200_000) * 3;
       const pruneTarget = Math.floor(maxChars * 0.5);
       return pruneMessages(messages, model, maxChars, pruneTarget);
@@ -351,7 +361,14 @@ export async function main() {
       // tool calls ("Skipped due to queued user message") and wastes work.
       return;
     }
-    const prompt = buildTickPrompt(mapCtx, toolErrors);
+
+    // Rebuild system prompt once per tick (picks up evolution/operator edits)
+    agent.setSystemPrompt(buildSystemPrompt(config.dataDir));
+
+    // Read memory for inclusion in tick prompt
+    const memory = readMemory(config.dataDir);
+    const prompt = buildTickPrompt(mapCtx, toolErrors, memory);
+
     agentBusy = true;
     agent.prompt(prompt).then(
       () => {
