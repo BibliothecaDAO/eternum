@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { CameraView } from "./camera-view";
-import { resolveWorldmapCameraViewProfile, resolveWorldmapCameraViewProfiles } from "./worldmap-camera-view-profile";
+import {
+  resolveWorldmapCameraFieldOfViewDegrees,
+  resolveWorldmapCameraViewProfile,
+  resolveWorldmapCameraViewProfiles,
+} from "./worldmap-camera-view-profile";
 
 describe("resolveWorldmapCameraViewProfiles", () => {
   it("uses a monotonic top-down camera angle curve as zoom bands move farther away", () => {
@@ -19,8 +23,12 @@ describe("resolveWorldmapCameraViewProfiles", () => {
     expect(closeProfile.distance).toBe(10);
     expect(mediumProfile.distance).toBe(20);
     expect(farProfile.distance).toBe(40);
-    expect(closeProfile.angleDegrees).toBe(30);
-    expect(mediumProfile.angleDegrees).toBe(50);
-    expect(farProfile.angleDegrees).toBe(60);
+    expect(closeProfile.angleDegrees).toBe(42);
+    expect(mediumProfile.angleDegrees).toBe(52);
+    expect(farProfile.angleDegrees).toBe(58);
+  });
+
+  it("uses a narrower worldmap field of view to reduce perspective skew", () => {
+    expect(resolveWorldmapCameraFieldOfViewDegrees()).toBe(38);
   });
 });

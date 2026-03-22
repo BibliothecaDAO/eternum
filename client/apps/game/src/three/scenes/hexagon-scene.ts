@@ -41,11 +41,8 @@ import {
   PointLight,
   Quaternion,
   Raycaster,
-  RepeatWrapping,
-  SRGBColorSpace,
   Scene,
   Texture,
-  TextureLoader,
   Vector2,
   Vector3,
 } from "three";
@@ -925,21 +922,12 @@ export abstract class HexagonScene {
   }
 
   private createGroundMesh() {
-    const scale = 60;
     const metalness = 0;
     const roughness = 0.66;
 
     const geometry = new PlaneGeometry(2668, 1390.35);
-    const texture = new TextureLoader().load("/textures/paper/worldmap-bg-blitz.png", () => {
-      texture.colorSpace = SRGBColorSpace;
-      texture.wrapS = RepeatWrapping;
-      texture.wrapT = RepeatWrapping;
-      texture.repeat.set(scale, scale / 2.5);
-      texture.anisotropy = 4; // Sharper terrain at tilted viewing angles
-    });
-
     const material = new MeshStandardMaterial({
-      map: texture,
+      color: new Color(0x261838),
       metalness: metalness,
       roughness: roughness,
       side: DoubleSide,
@@ -955,7 +943,7 @@ export abstract class HexagonScene {
 
     this.scene.add(mesh);
     this.groundMesh = mesh;
-    this.groundMeshTexture = texture;
+    this.groundMeshTexture = null;
     this.setupGroundMeshGUI();
   }
 

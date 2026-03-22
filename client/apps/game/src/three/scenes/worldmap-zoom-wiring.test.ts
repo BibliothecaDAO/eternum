@@ -33,6 +33,20 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/this\.controls\.maxDistance = this\.worldmapMaxZoomDistance/);
   });
 
+  it("applies a narrower worldmap-only field of view than the shared renderer default", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).toMatch(/this\.camera\.fov = resolveWorldmapCameraFieldOfViewDegrees\(\)/);
+    expect(source).toMatch(/this\.camera\.fov = CAMERA_CONFIG\.fov/);
+  });
+
+  it("keeps worldmap hex interaction in outline mode without the filled surface overlay", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).toMatch(/interactiveHexManager\.setSurfaceVisibility\(false\)/);
+    expect(source).toMatch(/interactiveHexManager\.setHoverVisualMode\("outline"\)/);
+  });
+
   it("removes direct worldmap refresh requests from GameRenderer control changes", () => {
     const source = readSceneSource("../game-renderer.ts");
 

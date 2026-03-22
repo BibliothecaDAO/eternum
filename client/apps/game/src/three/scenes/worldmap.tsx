@@ -19,6 +19,7 @@ import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager"
 import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/hexagon-scene";
+import { CAMERA_CONFIG } from "@/three/constants";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -239,6 +240,7 @@ import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
 import { createProvisionalBiomeTracker, resolveArmySpawnBiome } from "./provisional-biome";
+import { resolveWorldmapCameraFieldOfViewDegrees } from "./worldmap-camera-view-profile";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -1075,6 +1077,8 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
+    this.interactiveHexManager.setSurfaceVisibility(false);
+    this.interactiveHexManager.setHoverVisualMode("outline");
 
     // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
     // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
@@ -2538,6 +2542,7 @@ export default class WorldmapScene extends WarpTravel {
   private configureWarpTravelSetupStart(): void {
     this.syncUrlChangedListenerLifecycle("setup");
     this.controls.maxDistance = this.worldmapMaxZoomDistance;
+    this.camera.fov = resolveWorldmapCameraFieldOfViewDegrees();
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
     this.configureWorldmapShadows();
@@ -2617,6 +2622,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   onSwitchOff(nextSceneName?: SceneName) {
+    if (nextSceneName !== SceneName.WorldMap) {
+      this.camera.fov = CAMERA_CONFIG.fov;
+      this.camera.updateProjectionMatrix();
+    }
     this.isSwitchedOff = true;
     const switchOffTransitionState = invalidateWorldmapSwitchOffTransitionState({
       chunkTransitionToken: this.chunkTransitionToken,
