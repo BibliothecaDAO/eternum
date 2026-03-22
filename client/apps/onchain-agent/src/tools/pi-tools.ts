@@ -37,7 +37,7 @@ import {
  * @param mapCtx - Mutable map context with protocol for map queries.
  * @returns Array of AgentTools ready for the PI agent.
  */
-export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool<any>[] {
+export function createCoreTools(ctx: ToolContext, mapCtx: MapContext, dataDir: string): AgentTool<any>[] {
   return [
     // ── Map Protocol Tools ──
     {
@@ -442,6 +442,25 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
           ctx,
         );
         return { content: [{ type: "text" as const, text: result.message }], details: result };
+      },
+    },
+
+    // ── Memory ──
+    {
+      name: "update_memory",
+      label: "Update Memory",
+      description:
+        "Append a note to your memory. Use this to record your intent, plans, and learnings. Keep entries concise (2-3 sentences). A timestamp is added automatically.",
+      parameters: Type.Object({
+        content: Type.String({ description: "What to remember" }),
+      }),
+      async execute(_toolCallId: string, { content }: { content: string }) {
+        const { updateMemory } = await import("./core/memory.js");
+        const result = updateMemory({ content }, dataDir);
+        return {
+          content: [{ type: "text" as const, text: result.message }],
+          details: result,
+        };
       },
     },
   ];
