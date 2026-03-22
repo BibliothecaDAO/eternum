@@ -5,7 +5,7 @@
  * at an earlier generation can be rejected on read.
  */
 
-export interface TerrainCacheGeneration {
+interface TerrainCacheGeneration {
   current(): number;
   bump(): void;
 }

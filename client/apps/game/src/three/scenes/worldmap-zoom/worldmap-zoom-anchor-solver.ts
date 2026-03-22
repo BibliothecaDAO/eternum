@@ -10,7 +10,7 @@ interface SolveWorldmapZoomAnchorInput {
   navigationBounds?: WorldmapNavigationBounds;
 }
 
-export interface SolveWorldmapZoomAnchorResult {
+interface SolveWorldmapZoomAnchorResult {
   cameraPosition: Vector3;
   target: Vector3;
   didUseAnchor: boolean;

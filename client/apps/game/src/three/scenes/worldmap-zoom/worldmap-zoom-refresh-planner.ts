@@ -1,6 +1,6 @@
 import type { ZoomRefreshLevel } from "./worldmap-zoom-types";
 
-export interface WorldmapZoomRefreshPlannerState {
+interface WorldmapZoomRefreshPlannerState {
   pendingLevel: ZoomRefreshLevel;
 }
 
@@ -11,7 +11,7 @@ interface PlanWorldmapZoomRefreshInput {
   chunkChanged?: boolean;
 }
 
-export interface PlanWorldmapZoomRefreshResult {
+interface PlanWorldmapZoomRefreshResult {
   immediateLevel: ZoomRefreshLevel;
   nextState: WorldmapZoomRefreshPlannerState;
 }

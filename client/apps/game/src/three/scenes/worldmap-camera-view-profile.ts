@@ -2,7 +2,7 @@ import { CameraView } from "./camera-view";
 
 const WORLDMAP_CAMERA_FOV_DEGREES = 38;
 
-export interface WorldmapCameraViewProfile {
+interface WorldmapCameraViewProfile {
   angleDegrees: number;
   angleRadians: number;
   distance: number;
