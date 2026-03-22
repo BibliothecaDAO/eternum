@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-rotationx/23405829964-1.json",
   "latestLaunchRequestId": "23405829964-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": null,
   "createdAt": "2026-03-22T15:06:44.322Z",
-  "updatedAt": "2026-03-22T15:14:52.613Z",
+  "updatedAt": "2026-03-22T15:20:42.032Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-22T15:29:44.888Z",
-    "lastEvaluatedAt": "2026-03-22T15:14:44.888Z"
+    "nextEvaluationAt": "2026-03-22T15:35:42.032Z",
+    "lastEvaluatedAt": "2026-03-22T15:20:42.032Z"
   },
   "steps": [
     {
@@ -82,10 +82,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-22T15:14:52.613Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-22T15:14:52.613Z",
+      "finishedAt": "2026-03-22T15:20:42.032Z"
     }
   ],
   "summary": {
@@ -114,7 +115,7 @@
         "startTimeIso": "2026-03-22T16:00:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed grant-village-pass-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -266,15 +267,37 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-22T15:16:04.453Z"
           }
         ],
         "artifacts": {
           "createGameTxHash": "0x1382c1a25c73907ff8175188df2727d784092c3745e4e8d1a3d1671b1d06be",
           "worldAddress": "0x06b44849262cbcf60e31d63cd702131356a4b8e3763d68a0f091fd2854c9e861",
           "configureTxHash": "0x23b7a335724aa2ed82391d8a855e29634ac06f52cb94d05ef8e68f96c161b40",
-          "lootChestRoleTxHash": "0x22f120ab18a601c334fc6bf80a362ecaf7dde6f3bd609892086ab9cf2de1207"
+          "lootChestRoleTxHash": "0x22f120ab18a601c334fc6bf80a362ecaf7dde6f3bd609892086ab9cf2de1207",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-rotationx-01",
+            "worldAddress": "0x06b44849262cbcf60e31d63cd702131356a4b8e3763d68a0f091fd2854c9e861",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23406007458,
+            "runNumber": 803,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406007458",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       },
@@ -284,7 +307,7 @@
         "startTimeIso": "2026-03-22T19:00:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed grant-village-pass-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -436,15 +459,37 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-22T15:17:13.360Z"
           }
         ],
         "artifacts": {
           "createGameTxHash": "0x1b6a10a43afcbdd9d1aa3cc7d7e54a7fe0c7f8f6508fa5f6bbe71d090347560",
           "worldAddress": "0x05967c1639c78d4756487840031a99637e9164b89fd94963e7ae43b5d3a4c26e",
           "configureTxHash": "0xd48f5681f86c4bd3c0f38ce23c3b761dccd50e8fbb3048fb0683799212a2bc",
-          "lootChestRoleTxHash": "0x3a70f86bd516cef5915aad11c8f6484205e9526c86375112075a1b2305f2489"
+          "lootChestRoleTxHash": "0x3a70f86bd516cef5915aad11c8f6484205e9526c86375112075a1b2305f2489",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-rotationx-02",
+            "worldAddress": "0x05967c1639c78d4756487840031a99637e9164b89fd94963e7ae43b5d3a4c26e",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23406028826,
+            "runNumber": 804,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406028826",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       },
@@ -454,7 +499,7 @@
         "startTimeIso": "2026-03-22T22:00:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed grant-village-pass-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -606,15 +651,37 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-22T15:18:17.272Z"
           }
         ],
         "artifacts": {
           "createGameTxHash": "0x42298a6547dfae8c43eafe9d6251b949729de80a6ae8a3a500aba583bd261cf",
           "worldAddress": "0x057ba44436404e4bcda67c820e43e07f7e084c96c64da8a4c82dbfb445dea823",
           "configureTxHash": "0x48103df0fc0c1633a6d5af756c0017ba982b4021cbbb34a09514c176255e2f7",
-          "lootChestRoleTxHash": "0x5da980eddecdf8771380fb9c84a60a0bbb6b511bb537a78fb396392387a2be5"
+          "lootChestRoleTxHash": "0x5da980eddecdf8771380fb9c84a60a0bbb6b511bb537a78fb396392387a2be5",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-rotationx-03",
+            "worldAddress": "0x057ba44436404e4bcda67c820e43e07f7e084c96c64da8a4c82dbfb445dea823",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23406049461,
+            "runNumber": 805,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406049461",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       },
@@ -624,7 +691,7 @@
         "startTimeIso": "2026-03-23T01:00:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed grant-village-pass-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -776,15 +843,37 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-22T15:19:26.316Z"
           }
         ],
         "artifacts": {
           "createGameTxHash": "0x764a358789836b57e35206dade4353a29dfc37e12b5b594ec65e1847da59bed",
           "worldAddress": "0x00626e244e5b6347e1676c0c8a2e55e300dba3b1872962f77e78be39fec1eec2",
           "configureTxHash": "0x342db8a031ef90e040b26da378a3a114fddbf0fbcc26ad7e66ccf453ec70931",
-          "lootChestRoleTxHash": "0x183db3cd938c9d0774a1f095c356cd665272e62bf10bf20032a1774d0ce8ba6"
+          "lootChestRoleTxHash": "0x183db3cd938c9d0774a1f095c356cd665272e62bf10bf20032a1774d0ce8ba6",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-rotationx-04",
+            "worldAddress": "0x00626e244e5b6347e1676c0c8a2e55e300dba3b1872962f77e78be39fec1eec2",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23406070342,
+            "runNumber": 806,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406070342",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       },
@@ -794,7 +883,7 @@
         "startTimeIso": "2026-03-23T04:00:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed grant-village-pass-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -946,15 +1035,37 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-22T15:20:40.558Z"
           }
         ],
         "artifacts": {
           "createGameTxHash": "0x4686a69602240272476e03665c14c76d708ed587b57fbeb36b19e50f28d0268",
           "worldAddress": "0x02a412bb4175cc64aa99df978682c43a1d2c70a77256f3cb83e9cc1e35a0e272",
           "configureTxHash": "0x71f27510d288b1c1e7a06973acfbe39e1ecdcfe7103148bb0843d7ea6ecb201",
-          "lootChestRoleTxHash": "0x36c0efb7d9a194a2c0b44ab15e1b2b414dbce6dd9a5dfa0062784d724ec02e1"
+          "lootChestRoleTxHash": "0x36c0efb7d9a194a2c0b44ab15e1b2b414dbce6dd9a5dfa0062784d724ec02e1",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-rotationx-05",
+            "worldAddress": "0x02a412bb4175cc64aa99df978682c43a1d2c70a77256f3cb83e9cc1e35a0e272",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23406091987,
+            "runNumber": 807,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406091987",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       }
@@ -966,13 +1077,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-22T15:07:02.833Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23405829964-1",
-    "workflowRunId": 23405829964,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-22T15:14:52.613Z",
-    "expiresAt": "2026-03-22T15:59:52.613Z"
   }
 }
