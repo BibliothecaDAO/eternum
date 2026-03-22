@@ -7,44 +7,40 @@
   "gameType": "blitz",
   "rotationName": "bltz-rotationx",
   "seriesName": "bltz-rotationx",
-  "status": "attention",
+  "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-rotationx/23409442977-1.json",
-  "latestLaunchRequestId": "23409442977-1",
+  "inputPath": "inputs/slot/blitz/rotations/bltz-rotationx/23409817570-1.json",
+  "latestLaunchRequestId": "23409817570-1",
   "currentStepId": "create-series",
   "createdAt": "2026-03-22T15:06:44.322Z",
-  "updatedAt": "2026-03-22T18:40:25.776Z",
+  "updatedAt": "2026-03-22T18:41:34.399Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23409442977,
+    "workflowRunId": 23409817570,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23409442977",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23409817570",
     "ref": "codex/factory-v2-rotation-review",
     "sha": "ff2107879249d945d781eebf7e45c02347c86da2"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-22T18:55:25.776Z",
     "lastRetryAt": "2026-03-22T18:40:25.776Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-22T18:36:41.490Z",
-    "lastEvaluatedAt": "2026-03-22T18:21:41.490Z"
+    "nextEvaluationAt": "2026-03-22T18:56:34.399Z",
+    "lastEvaluatedAt": "2026-03-22T18:41:34.399Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "failed",
+      "status": "pending",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series failed: [2026-03-22T18:21:39.794Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 30335-30337). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\nRpcError: RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x3358b5030ae1c774bc0bfbe8de9e483d0a25c93c222b9f5b53d78d1dd03e677\",\n        \"0x1\",\n        \"0x626c747a2d726f746174696f6e78\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3fee\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Transaction execution has failed:\\n0: Error in the called contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nExecution failed. Failure reason:\\nError in contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nError in contract (contract address: 0x0242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb, class hash: 0x0761156a5dbb84da20f3e4072b3658c13d67e693f1155ae00f79339f786eb498, selector: 0x03358b5030ae1c774bc0bfbe8de9e483d0a25c93c222b9f5b53d78d1dd03e677):\\n0x6e6f20736572696573206f776e6572206578706563746564 ('no series owner expected').\\n\"}\n    at errorHandler (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.5.2/node_modules/starknet/dist/index.mjs:6259:17)\n    at fetchEndpoint (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.5.2/node_modules/starknet/dist/index.mjs:6281:12)",
-      "startedAt": "2026-03-22T18:21:36.886Z",
-      "finishedAt": "2026-03-22T18:21:41.490Z",
-      "errorMessage": "[2026-03-22T18:21:39.794Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 30335-30337). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\nRpcError: RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x3358b5030ae1c774bc0bfbe8de9e483d0a25c93c222b9f5b53d78d1dd03e677\",\n        \"0x1\",\n        \"0x626c747a2d726f746174696f6e78\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3fee\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Transaction execution has failed:\\n0: Error in the called contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nExecution failed. Failure reason:\\nError in contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nError in contract (contract address: 0x0242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb, class hash: 0x0761156a5dbb84da20f3e4072b3658c13d67e693f1155ae00f79339f786eb498, selector: 0x03358b5030ae1c774bc0bfbe8de9e483d0a25c93c222b9f5b53d78d1dd03e677):\\n0x6e6f20736572696573206f776e6572206578706563746564 ('no series owner expected').\\n\"}\n    at errorHandler (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.5.2/node_modules/starknet/dist/index.mjs:6259:17)\n    at fetchEndpoint (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.5.2/node_modules/starknet/dist/index.mjs:6281:12)"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-worlds",
