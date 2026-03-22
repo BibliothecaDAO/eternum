@@ -110,6 +110,7 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
 };
 
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
+let webGpuFrameRecoveryWarned = false;
 
 const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
   setColorGrade: () => {},
@@ -181,6 +182,48 @@ function resolveRendererToneMapping(mode: RendererPostProcessPlan["toneMapping"]
     case "aces-filmic":
     default:
       return ACESFilmicToneMapping;
+  }
+}
+
+function isRecoverableWebGpuFrameError(error: unknown): boolean {
+  if (!(error instanceof TypeError)) {
+    return false;
+  }
+
+  return error.message.includes("depthTexture");
+}
+
+function logRecoverableWebGpuFrameError(error: TypeError): void {
+  if (webGpuFrameRecoveryWarned) {
+    return;
+  }
+
+  webGpuFrameRecoveryWarned = true;
+  console.warn("[WebGPURendererBackend] Recovered from a transient WebGPU frame failure", error);
+}
+
+function renderMainFrameWithRecovery(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
+  renderer.info.reset();
+  renderer.clear();
+
+  try {
+    renderer.render(pipeline.mainScene, pipeline.mainCamera);
+    return;
+  } catch (error) {
+    if (!isRecoverableWebGpuFrameError(error)) {
+      throw error;
+    }
+
+    recordRendererDiagnosticUncapturedError((error as TypeError).message);
+    logRecoverableWebGpuFrameError(error as TypeError);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.clear();
+
+    try {
+      renderer.render(pipeline.mainScene, pipeline.mainCamera);
+    } catch (retryError) {
+      recordRendererDiagnosticUncapturedError(retryError instanceof Error ? retryError.message : String(retryError));
+    }
   }
 }
 
@@ -290,9 +333,7 @@ export function createWebGPURendererBackend(
           return;
         }
 
-        renderer.info.reset();
-        renderer.clear();
-        renderer.render(pipeline.mainScene, pipeline.mainCamera);
+        renderMainFrameWithRecovery(renderer, pipeline);
         renderRendererOverlayPasses(renderer, pipeline);
         return;
       }

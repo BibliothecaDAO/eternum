@@ -152,6 +152,7 @@ export interface ExecuteRealmProductionPlanProps extends SystemSigner {
   realm_entity_id: BigNumberish;
   resource_to_resource?: ProductionPlanInstruction[];
   labor_to_resource?: ProductionPlanInstruction[];
+  skipQueue?: boolean;
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {

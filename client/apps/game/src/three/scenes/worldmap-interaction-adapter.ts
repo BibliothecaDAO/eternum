@@ -66,7 +66,9 @@ export function createWorldmapInteractionAdapter({
       });
 
       if (input.isMine) {
-        AudioManager.getInstance().play("ui.click");
+        AudioManager.getInstance().play("ui.hex_select");
+      } else {
+        AudioManager.getInstance().play("ui.hex_enemy");
       }
     },
 

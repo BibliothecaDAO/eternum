@@ -41,11 +41,8 @@ import {
   PointLight,
   Quaternion,
   Raycaster,
-  RepeatWrapping,
-  SRGBColorSpace,
   Scene,
   Texture,
-  TextureLoader,
   Vector2,
   Vector3,
 } from "three";
@@ -62,9 +59,10 @@ import {
   resolveCameraTransitionCompletion,
   resolveCameraTransitionStart,
 } from "./hexagon-scene-camera-transition";
+import { resolveWorldmapCameraViewProfile } from "./worldmap-camera-view-profile";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 import { LightningEffectSystem } from "./lightning-effect-system";
-import { resolveWorldmapViewFromDistance } from "./worldmap-zoom-controller";
+import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-policy";
 
 export { CameraView } from "./camera-view";
 type CameraTransitionStatus = "idle" | "transitioning";
@@ -165,7 +163,7 @@ export abstract class HexagonScene {
     this.sceneOwnershipBootstrapped = true;
   }
 
-  private notifyControlsChanged(): void {
+  protected notifyControlsChanged(): void {
     publishCameraTransitionFrame({
       updateControls: () => this.controls.update(),
       syncDistanceVisuals: () => {
@@ -924,21 +922,12 @@ export abstract class HexagonScene {
   }
 
   private createGroundMesh() {
-    const scale = 60;
     const metalness = 0;
     const roughness = 0.66;
 
     const geometry = new PlaneGeometry(2668, 1390.35);
-    const texture = new TextureLoader().load("/textures/paper/worldmap-bg-blitz.png", () => {
-      texture.colorSpace = SRGBColorSpace;
-      texture.wrapS = RepeatWrapping;
-      texture.wrapT = RepeatWrapping;
-      texture.repeat.set(scale, scale / 2.5);
-      texture.anisotropy = 4; // Sharper terrain at tilted viewing angles
-    });
-
     const material = new MeshStandardMaterial({
-      map: texture,
+      color: new Color(0x261838),
       metalness: metalness,
       roughness: roughness,
       side: DoubleSide,
@@ -954,7 +943,7 @@ export abstract class HexagonScene {
 
     this.scene.add(mesh);
     this.groundMesh = mesh;
-    this.groundMeshTexture = texture;
+    this.groundMeshTexture = null;
     this.setupGroundMeshGUI();
   }
 
@@ -1009,7 +998,7 @@ export abstract class HexagonScene {
     }
 
     const minDistance = 10;
-    const maxDistance = 40;
+    const maxDistance = 60;
     const t = Math.min(1, Math.max(0, (distance - minDistance) / (maxDistance - minDistance)));
     const opacity = 0.04 + t * 0.06;
 
@@ -1354,7 +1343,7 @@ export abstract class HexagonScene {
   }
 
   private updateFogForDistance(distance: number): void {
-    if (!this.fogEnabledByQuality || !this.fogEnabledByUser || this.currentCameraView === CameraView.Close) {
+    if (!this.fogEnabledByQuality || !this.fogEnabledByUser) {
       if (this.scene.fog) {
         this.scene.fog = null;
       }
@@ -1366,8 +1355,9 @@ export abstract class HexagonScene {
     }
 
     const clipFar = Math.min(this.camera.far, distance * 3.5);
-    const startFactor = this.currentCameraView === CameraView.Medium ? 0.35 : 0.45;
-    const endFactor = this.currentCameraView === CameraView.Medium ? 0.85 : 0.9;
+    const normalizedDistance = Math.min(1, Math.max(0, (distance - 10) / 50));
+    const startFactor = 0.3 + normalizedDistance * 0.15;
+    const endFactor = 0.8 + normalizedDistance * 0.1;
 
     const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
     const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
@@ -1383,24 +1373,17 @@ export abstract class HexagonScene {
   }
 
   private applyTargetCameraView(position: CameraView): void {
-    switch (position) {
-      case CameraView.Close:
-        this.cameraDistance = 10;
-        this.cameraAngle = Math.PI / 6;
-        break;
-      case CameraView.Medium:
-        this.cameraDistance = 20;
-        this.cameraAngle = Math.PI / 3;
-        break;
-      case CameraView.Far:
-        this.cameraDistance = 40;
-        this.cameraAngle = (50 * Math.PI) / 180;
-        break;
-    }
+    const profile = resolveWorldmapCameraViewProfile(position);
+    this.cameraDistance = profile.distance;
+    this.cameraAngle = profile.angleRadians;
   }
 
   private applyResolvedCameraView(view: CameraView): void {
     if (!this.mainDirectionalLight) {
+      return;
+    }
+
+    if (this.sceneName === SceneName.WorldMap) {
       return;
     }
 
@@ -1420,8 +1403,8 @@ export abstract class HexagonScene {
   }
 
   private syncResolvedCameraViewFromDistance(distance: number): void {
-    const nextView = resolveWorldmapViewFromDistance({
-      currentView: this.currentCameraView,
+    const nextView = resolveWorldmapZoomBand({
+      currentBand: this.currentCameraView,
       distance,
     });
     if (nextView === this.currentCameraView) {

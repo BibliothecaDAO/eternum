@@ -9,6 +9,41 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-22",
+    title: "Less Skewed Map Camera",
+    description:
+      "World map now uses a narrower camera field of view and a steadier tilt curve across zoom bands, so the map reads more like a tactical RTS view and less like an exaggerated perspective shot.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-22",
+    title: "Hidden Map Hex Fill",
+    description:
+      "World map interaction now keeps the hex hover outline without rendering the filled green interaction surface, so the map no longer shows a chunk-shaped overlay on top of the terrain.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-22",
+    title: "Simpler Map Ground",
+    description:
+      "World map ground now uses a flat backdrop instead of the paper texture, making it easier to spot whether terrain chunk shading differences are coming from the terrain layer itself.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-22",
+    title: "Tactical Map Camera Tilt",
+    description:
+      "World map camera bands now tilt more consistently as you zoom out, so far views read more like a tactical map instead of flattening and then pitching back down.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-22",
+    title: "Stable Worldmap Zoom",
+    description:
+      "World map zoom now runs through one smoother camera system for mouse wheel, minimap zoom, and keyboard shortcuts, so focus points stay steadier and zoom-driven refreshes stop fighting each other.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-21",
     title: "Smarter Factory Recovery",
     description:

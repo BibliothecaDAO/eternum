@@ -1,3 +1,4 @@
+import { useUISound } from "@/audio/hooks/useUISound";
 import Button from "@/ui/design-system/atoms/button";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import clsx from "clsx";
@@ -23,6 +24,7 @@ export const SecondaryPopup = ({
   width = "400px",
   onOutsideClick,
 }: FilterPopupProps) => {
+  const playPopupOpen = useUISound("ui.modal_open");
   const nodeRef = useRef<HTMLDivElement>(null);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -66,6 +68,10 @@ export const SecondaryPopup = ({
   const handleClick = () => {
     moveToTopZIndex();
   };
+
+  useEffect(() => {
+    playPopupOpen();
+  }, []);
 
   useEffect(() => {
     if (name) {

@@ -3,7 +3,7 @@
  * so that updateExploredHex always overwrites them with real data.
  */
 
-export interface ProvisionalBiomeTracker {
+interface ProvisionalBiomeTracker {
   mark(col: number, row: number): void;
   clear(col: number, row: number): void;
   isProvisional(col: number, row: number): boolean;
@@ -20,7 +20,7 @@ export function createProvisionalBiomeTracker(): ProvisionalBiomeTracker {
   };
 }
 
-export type ArmySpawnBiomeResult<TBiome extends string = string> =
+type ArmySpawnBiomeResult<TBiome extends string = string> =
   | { action: "skip" }
   | { action: "write_provisional"; biome: TBiome };
 
