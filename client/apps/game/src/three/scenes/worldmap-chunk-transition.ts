@@ -56,6 +56,22 @@ interface MissingActionPathOwnershipDecisionInput {
   allowPendingLocalOwnership?: boolean;
 }
 
+interface ChunkSwitchSelectionClearDecisionInput {
+  reason: "default" | "shortcut";
+  isShortcutArmySelectionInFlight: boolean;
+}
+
+interface PendingChunkRefreshUiReasonInput {
+  currentReason: "default" | "shortcut";
+  isShortcutArmySelectionInFlight: boolean;
+}
+
+interface ShortcutArmySelectionProtectionHoldInput {
+  hasPendingChunkRefreshTimer: boolean;
+  isChunkRefreshRunning: boolean;
+  hasGlobalChunkSwitchPromise: boolean;
+}
+
 interface ShortcutNavigationRefreshDecisionInput {
   isShortcutNavigation: boolean;
   transitionDurationSeconds: number;
@@ -86,8 +102,12 @@ type DuplicateTileRefreshStrategy = "none" | "deferred" | "immediate";
 
 interface DuplicateTileReconcilePlan {
   shouldInvalidateCaches: boolean;
+  shouldUpdateAuthoritativeState: boolean;
   refreshStrategy: DuplicateTileRefreshStrategy;
+  reconcileMode: DuplicateTileReconcileMode;
 }
+
+type DuplicateTileReconcileMode = "none" | "invalidate_only" | "local_terrain_patch" | "atomic_chunk_refresh";
 
 type DuplicateTileUpdateMode = "none" | "invalidate_only" | "invalidate_and_refresh";
 
@@ -288,6 +308,34 @@ export function shouldClearEntitySelectionForEntityActionTransition(
 }
 
 /**
+ * Shortcut tabbing should preserve selection even when a concurrent default
+ * refresh overlaps the shortcut navigation window.
+ */
+export function shouldClearEntitySelectionForChunkSwitch(input: ChunkSwitchSelectionClearDecisionInput): boolean {
+  return input.reason !== "shortcut" && !input.isShortcutArmySelectionInFlight;
+}
+
+/**
+ * Queued refreshes should stay in shortcut mode until they are consumed so a
+ * delayed scheduler flush cannot reintroduce selection flashes mid-tab cycle.
+ */
+export function resolvePendingChunkRefreshUiReason(input: PendingChunkRefreshUiReasonInput): "default" | "shortcut" {
+  if (input.currentReason === "shortcut" || input.isShortcutArmySelectionInFlight) {
+    return "shortcut";
+  }
+
+  return "default";
+}
+
+/**
+ * Keep shortcut selection protection alive until known chunk work has drained,
+ * otherwise a late-running refresh can still clear the freshly-tabbed selection.
+ */
+export function shouldHoldShortcutArmySelectionProtection(input: ShortcutArmySelectionProtectionHoldInput): boolean {
+  return input.hasPendingChunkRefreshTimer || input.isChunkRefreshRunning || input.hasGlobalChunkSwitchPromise;
+}
+
+/**
  * Accept only the exact current transition token.
  * Undefined token is treated as non-transitioned work and accepted.
  */
@@ -376,11 +424,26 @@ export function resolveRefreshCompletionActions(input: {
 export function shouldScheduleHydratedChunkRefreshForFetch(input: {
   fetchAreaKey: string;
   currentAreaKey: string | null;
+  suppressedAreaKeys?: Iterable<string>;
 }): boolean {
   if (!input.currentAreaKey) {
     return false;
   }
-  return input.fetchAreaKey === input.currentAreaKey;
+  if (input.fetchAreaKey !== input.currentAreaKey) {
+    return false;
+  }
+
+  if (!input.suppressedAreaKeys) {
+    return true;
+  }
+
+  for (const suppressedAreaKey of input.suppressedAreaKeys) {
+    if (suppressedAreaKey === input.fetchAreaKey) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -533,6 +596,8 @@ export function shouldForceRefreshForDuplicateTileUpdate(input: DuplicateTileRef
     return false;
   }
 
+  // If the duplicate is currently visible, the runtime must converge through
+  // a shared refresh path until it can prove the tile is already present.
   return input.isVisibleInCurrentChunk;
 }
 
@@ -585,24 +650,35 @@ export function resolveDuplicateTileUpdateActions(
 export function resolveDuplicateTileReconcilePlan(
   input: DuplicateTileRefreshDecisionInput,
 ): DuplicateTileReconcilePlan {
+  const hasBiomeDelta = input.hasBiomeDelta === true;
   const actions = resolveDuplicateTileUpdateActions(input);
   if (!actions.shouldInvalidateCaches) {
     return {
       shouldInvalidateCaches: false,
+      shouldUpdateAuthoritativeState: false,
       refreshStrategy: "none",
+      reconcileMode: "none",
     };
   }
 
   if (!actions.shouldRequestRefresh) {
+    // Visible same-biome duplicates need a deferred refresh because the
+    // early-return in updateExploredHex skips the individual mesh add.
+    // Without this, water/ocean tiles in chunk overlap zones stay invisible.
+    const needsDeferredRefresh = input.isVisibleInCurrentChunk || (hasBiomeDelta && !input.isVisibleInCurrentChunk);
     return {
       shouldInvalidateCaches: true,
-      refreshStrategy: "none",
+      shouldUpdateAuthoritativeState: hasBiomeDelta,
+      refreshStrategy: needsDeferredRefresh ? "deferred" : "none",
+      reconcileMode: "invalidate_only",
     };
   }
 
   return {
     shouldInvalidateCaches: true,
+    shouldUpdateAuthoritativeState: hasBiomeDelta,
     refreshStrategy: shouldRunImmediateDuplicateTileRefresh(input) ? "immediate" : "deferred",
+    reconcileMode: "atomic_chunk_refresh",
   };
 }
 
@@ -613,8 +689,17 @@ export function resolveDuplicateTileReconcilePlan(
 export async function waitForChunkTransitionToSettle(
   getTransitionPromise: () => Promise<unknown> | null,
   onTransitionError?: (error: unknown) => void,
+  options?: { isSwitchedOff?: () => boolean; maxIterations?: number },
 ): Promise<void> {
-  while (true) {
+  const maxIterations = options?.maxIterations ?? 100;
+  const isSwitchedOff = options?.isSwitchedOff;
+  let iterations = 0;
+
+  while (iterations < maxIterations) {
+    if (isSwitchedOff?.()) {
+      return;
+    }
+
     const transitionPromise = getTransitionPromise();
     if (!transitionPromise) {
       return;
@@ -625,5 +710,7 @@ export async function waitForChunkTransitionToSettle(
     } catch (error) {
       onTransitionError?.(error);
     }
+
+    iterations++;
   }
 }

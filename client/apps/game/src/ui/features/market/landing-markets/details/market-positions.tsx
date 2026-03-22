@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { addAddressPadding } from "starknet";
 
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import type { MarketClass } from "@/pm/class";
 import { PMErrorState, PMHoldersSkeleton } from "@/pm/components/loading";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
@@ -34,17 +35,25 @@ type HolderPosition = {
   totalRedeemable: bigint;
 };
 
-const HolderAvatar = ({ address, highlight }: { address: string; highlight?: boolean }) => {
-  const initials = address ? address.slice(2, 4).toUpperCase() : "??";
-
+const HolderAvatar = ({
+  address,
+  avatarUrl,
+  highlight,
+}: {
+  address: string;
+  avatarUrl: string;
+  highlight?: boolean;
+}) => {
   return (
-    <div
+    <img
+      src={avatarUrl}
+      alt={`${address} avatar`}
       className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold ${
-        highlight ? "bg-gold/20 text-dark ring-1 ring-gold/50" : "bg-white/10 text-white ring-1 ring-white/10"
+        highlight ? "ring-1 ring-gold/50" : "ring-1 ring-gold/20"
       }`}
-    >
-      {initials}
-    </div>
+      loading="lazy"
+      decoding="async"
+    />
   );
 };
 
@@ -74,13 +83,31 @@ export const MarketPositions = ({
 
   const positionTokenIds = useMemo(() => (market.position_ids || []).map((id) => BigInt(id)), [market.position_ids]);
   const { marketBuys, isLoading: isActivityLoading, isError: isActivityError } = useMarketActivity(market.market_id);
+  const accountAddressFilters = useMemo(() => {
+    if (!address) return undefined;
+    const variants = new Set<string>();
+    variants.add(address);
+    try {
+      variants.add(`0x${BigInt(address).toString(16)}`);
+    } catch {
+      // Ignore invalid variant derivation and keep the original address.
+    }
+    try {
+      variants.add(addAddressPadding(address.toLowerCase()));
+    } catch {
+      // Ignore invalid padding conversion and keep available variants.
+    }
+    return Array.from(variants);
+  }, [address]);
 
   const { tokens, balances, isLoading, isError } = useTokens(
     {
       contractAddresses: [vaultPositionsAddress],
       // contractAddresses: [vaultPositionsAddress, vaultFeesAddress],
       tokenIds: undefined,
-      accountAddresses: undefined,
+      // When viewing "My Positions", fetch the connected account explicitly so redeemable values
+      // can be computed from actual position balances instead of SQL buy-history fallback.
+      accountAddresses: accountAddressFilters,
       pagination: {
         cursor: undefined,
         direction: "Backward",
@@ -92,6 +119,7 @@ export const MarketPositions = ({
   );
 
   const outcomes = useMemo(() => market.getMarketOutcomes(), [market]);
+  const hasPayoutNumerators = Boolean(market.conditionResolution?.payout_numerators?.length);
   const marketIdHex = useMemo(() => {
     try {
       return addAddressPadding(`0x${BigInt(market.market_id).toString(16)}`);
@@ -102,11 +130,62 @@ export const MarketPositions = ({
   const paddedAddress = useMemo(() => {
     if (!address) return null;
     try {
-      return addAddressPadding(address.toLowerCase());
+      return addAddressPadding(`0x${BigInt(address).toString(16)}`);
     } catch {
       return null;
     }
   }, [address]);
+  const conditionIdHex = useMemo(() => {
+    try {
+      return addAddressPadding(`0x${BigInt(market.condition_id || 0).toString(16)}`).toLowerCase();
+    } catch {
+      return null;
+    }
+  }, [market.condition_id]);
+  const oracleHex = useMemo(() => {
+    try {
+      return addAddressPadding(`0x${BigInt(market.oracle || 0).toString(16)}`).toLowerCase();
+    } catch {
+      return null;
+    }
+  }, [market.oracle]);
+  const questionIdHex = useMemo(() => {
+    try {
+      return addAddressPadding(`0x${BigInt(market.question_id || 0).toString(16)}`).toLowerCase();
+    } catch {
+      return null;
+    }
+  }, [market.question_id]);
+
+  const { data: conditionResolutionRow } = useQuery({
+    queryKey: ["pm", "market", "condition-resolution", resolvedChain, conditionIdHex, oracleHex, questionIdHex],
+    enabled: Boolean(market.isResolved() && !hasPayoutNumerators && conditionIdHex && oracleHex && questionIdHex),
+    queryFn: async () => {
+      if (!conditionIdHex || !oracleHex || !questionIdHex) return null;
+      return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[resolvedChain]).fetchConditionResolutionByKeys(
+        conditionIdHex,
+        oracleHex,
+        questionIdHex,
+      );
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const payoutNumerators = useMemo<Array<bigint> | undefined>(() => {
+    const marketPayouts = market.conditionResolution?.payout_numerators;
+    if (marketPayouts && marketPayouts.length > 0) {
+      return marketPayouts.map((value) => BigInt(value));
+    }
+
+    if (!conditionResolutionRow?.payout_numerators) return undefined;
+    try {
+      const parsed = JSON.parse(conditionResolutionRow.payout_numerators);
+      if (!Array.isArray(parsed)) return undefined;
+      return parsed.map((value) => BigInt(value as string | number));
+    } catch {
+      return undefined;
+    }
+  }, [conditionResolutionRow?.payout_numerators, market.conditionResolution?.payout_numerators]);
 
   const {
     data: userBuyRows = [],
@@ -157,6 +236,7 @@ export const MarketPositions = ({
         market,
         positionIndex,
         balance,
+        payoutNumerators,
       });
       holder.totalRedeemable += valueRaw;
       holder.positions.push({
@@ -172,7 +252,7 @@ export const MarketPositions = ({
     });
 
     return Array.from(map.values()).toSorted((a, b) => (a.totalRaw < b.totalRaw ? 1 : -1));
-  }, [balances, tokens, positionTokenIds, outcomes, market]);
+  }, [balances, tokens, positionTokenIds, outcomes, market, payoutNumerators]);
 
   const holdersFromBuys = useMemo(() => {
     const map = new Map<string, HolderPosition>();
@@ -255,24 +335,38 @@ export const MarketPositions = ({
     const positions = Array.from(byOutcome.entries())
       .map(([index, amountRaw]) => {
         const outcome = outcomes[index];
+        const syntheticBalance = {
+          account_address: paddedAddress,
+          contract_address: vaultPositionsAddress,
+          token_id: positionTokenIds[index]?.toString() ?? "0",
+          balance: amountRaw.toString(),
+        } as unknown as TokenBalance;
+        const { valueRaw, valueFormatted } = computeRedeemableValue({
+          market,
+          positionIndex: index,
+          balance: syntheticBalance,
+          payoutNumerators,
+        });
         return {
           index,
           label: outcome?.name ?? `Outcome #${index + 1}`,
           amountRaw,
           amountFormatted: formatUnits(amountRaw, Number(market.collateralToken.decimals), 4),
-          valueFormatted: "0",
-          valueRaw: 0n,
+          valueFormatted,
+          valueRaw,
         };
       })
       .toSorted((a, b) => (a.amountRaw < b.amountRaw ? 1 : -1));
+
+    const totalRedeemable = positions.reduce((sum, position) => sum + position.valueRaw, 0n);
 
     return {
       account: paddedAddress,
       positions,
       totalRaw,
-      totalRedeemable: 0n,
+      totalRedeemable,
     };
-  }, [market.collateralToken.decimals, outcomes, paddedAddress, userBuyRows]);
+  }, [market, outcomes, paddedAddress, payoutNumerators, positionTokenIds, userBuyRows, vaultPositionsAddress]);
 
   const userHolder = useMemo(() => {
     if (!address) return null;
@@ -284,10 +378,28 @@ export const MarketPositions = ({
         return false;
       }
     });
-    return fromHolders ?? fallback;
+    if (!fromHolders) return fallback;
+    if (!fallback) return fromHolders;
+    if (fromHolders.totalRedeemable > 0n) return fromHolders;
+    if (fallback.totalRedeemable > 0n) return fallback;
+    return fromHolders;
   }, [address, holders, userHolderFromSql]);
 
-  const holdersToRender = address ? (userHolder ? [userHolder] : []) : holders;
+  const holdersToRender = useMemo(
+    () => (address ? (userHolder ? [userHolder] : []) : holders),
+    [address, holders, userHolder],
+  );
+  const holderAddresses = useMemo(() => holdersToRender.map((holder) => holder.account), [holdersToRender]);
+  const { data: holderAvatarProfiles = [] } = useAvatarProfiles(holderAddresses);
+  const avatarUrlByAddress = useMemo(() => {
+    const map = new Map<string, string | null>();
+    holderAvatarProfiles.forEach((profile) => {
+      const normalized = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalized) return;
+      map.set(normalized, profile.avatarUrl ?? null);
+    });
+    return map;
+  }, [holderAvatarProfiles]);
 
   const tokenForIcon = market.collateralToken;
 
@@ -304,8 +416,8 @@ export const MarketPositions = ({
   // Empty state
   if (holdersToRender.length === 0) {
     return (
-      <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/80">
-        <p className="text-white">{address ? "My positions" : "Market holders"}</p>
+      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-dark-wood px-4 py-5 text-sm text-gold/80">
+        <p className="text-lightest">{address ? "Positions" : "Market holders"}</p>
         <p className="mt-1 text-xs text-gold/60">
           {address
             ? "No positions found for your wallet in this market yet."
@@ -318,10 +430,8 @@ export const MarketPositions = ({
   return (
     <>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
-          {address
-            ? "Your positions"
-            : `${holdersToRender.length} ${holdersToRender.length === 1 ? "holder" : "holders"}`}
+        <div className="rounded-md border border-gold/15 bg-brown/45 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
+          {address ? "Positions" : `${holdersToRender.length} ${holdersToRender.length === 1 ? "holder" : "holders"}`}
         </div>
       </div>
 
@@ -337,20 +447,25 @@ export const MarketPositions = ({
               }
             })();
           const totalFormatted = formatUnits(holder.totalRaw, Number(market.collateralToken.decimals), 4);
+          const normalizedHolder = normalizeAvatarAddress(holder.account);
+          const avatarUrl = getAvatarUrl(
+            normalizedHolder ?? holder.account,
+            normalizedHolder ? avatarUrlByAddress.get(normalizedHolder) : undefined,
+          );
 
           return (
             <div
               key={`${holder.account}-${holderIdx}`}
               className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${
-                isYou ? "border-gold/50 bg-gold/5" : "border-white/10 bg-white/5"
+                isYou ? "border-gold/50 bg-gold/5" : "border-gold/15 bg-brown/45"
               }`}
             >
-              <HolderAvatar address={holder.account} highlight={isYou} />
+              <HolderAvatar address={holder.account} avatarUrl={avatarUrl} highlight={isYou} />
 
               <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-gold/70">
                   <div className="flex items-center gap-2">
-                    <MaybeController address={holder.account} className="text-white" />
+                    <MaybeController address={holder.account} className="text-lightest" />
                     {isYou ? (
                       <span className="rounded-full bg-gold/20 px-2 py-[2px] text-[10px] font-semibold uppercase text-dark">
                         You
@@ -359,13 +474,13 @@ export const MarketPositions = ({
                   </div>
                   <div className="flex items-center gap-1 text-gold/60">
                     <span>Holdings:</span>
-                    <span className="text-white font-semibold">{totalFormatted}</span>
+                    <span className="text-lightest font-semibold">{totalFormatted}</span>
                     {tokenForIcon ? <TokenIcon token={tokenForIcon} size={16} /> : null}
                   </div>
                   {market.isResolved() ? (
                     <div className="flex items-center gap-1 text-gold/60">
                       <span>Redeemable:</span>
-                      <span className="text-white font-semibold">
+                      <span className="text-lightest font-semibold">
                         {formatUnits(holder.totalRedeemable, Number(market.collateralToken.decimals), 4)}
                       </span>
                       {tokenForIcon ? <TokenIcon token={tokenForIcon} size={16} /> : null}
@@ -379,9 +494,9 @@ export const MarketPositions = ({
                     return (
                       <div
                         key={`${holder.account}-pos-${idx}`}
-                        className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm"
+                        className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-gold/15 bg-gold/10 px-3 py-2 text-sm"
                       >
-                        <span className="rounded-full bg-white/10 px-2 py-[2px] text-[11px] uppercase tracking-wide text-gold/70">
+                        <span className="rounded-full bg-gold/10 px-2 py-[2px] text-[11px] uppercase tracking-wide text-gold/70">
                           Outcome
                         </span>
                         <span className="text-gold/70">
@@ -389,14 +504,14 @@ export const MarketPositions = ({
                         </span>
 
                         <div className="flex items-center gap-1">
-                          <span className="text-white font-semibold">{pos.amountFormatted}</span>
+                          <span className="text-lightest font-semibold">{pos.amountFormatted}</span>
                           {tokenForIcon ? <TokenIcon token={tokenForIcon} size={14} /> : null}
                         </div>
 
                         {market.isResolved() ? (
                           <div className="flex items-center gap-1">
                             <span className="text-gold/60">Redeemable:</span>
-                            <span className="text-white font-semibold">
+                            <span className="text-lightest font-semibold">
                               {pos.valueRaw > 0n ? pos.valueFormatted : "-"}
                             </span>
                             {pos.valueRaw > 0n && tokenForIcon ? <TokenIcon token={tokenForIcon} size={14} /> : null}

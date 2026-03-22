@@ -36,7 +36,11 @@ import { applyEasing, EasingType } from "../utils/easing";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
+import type { ResolvedCosmeticSkin } from "../cosmetics/types";
+import { resolvePrimarySkinGltf } from "../cosmetics/skin-asset-source";
 import {
+  resolveNearestIntersection,
   resolveMovementProgressUpdate,
   resolveRotationUpdate,
   shouldSwitchModelForPosition,
@@ -96,6 +100,7 @@ export class ArmyModel {
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
   private nextInstanceIndex = 0;
+  private hasPendingBounds = false;
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
@@ -204,7 +209,8 @@ export class ArmyModel {
   /**
    * Ensures a cosmetic model is loaded by cosmeticId and asset path.
    */
-  private async ensureCosmeticModel(cosmeticId: string, assetPath: string): Promise<ModelData> {
+  private async ensureCosmeticModel(skin: ResolvedCosmeticSkin): Promise<ModelData> {
+    const { cosmeticId, assetPaths, registryEntry } = skin;
     if (this.cosmeticModels.has(cosmeticId)) {
       return this.cosmeticModels.get(cosmeticId)!;
     }
@@ -215,24 +221,21 @@ export class ArmyModel {
     }
 
     pending = new Promise<ModelData>((resolve, reject) => {
-      gltfLoader.load(
-        assetPath,
-        (gltf) => {
-          try {
-            const modelData = this.createModelData(gltf);
-            this.cosmeticModels.set(cosmeticId, modelData);
-            this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
-            resolve(modelData);
-          } catch (error) {
-            reject(error as Error);
-          }
-        },
-        undefined,
-        (error) => {
-          console.error(`[ArmyModel] Failed to load cosmetic model ${cosmeticId} from ${assetPath}:`, error);
+      void resolvePrimarySkinGltf({
+        cosmeticId,
+        assetPath: assetPaths[0] ?? "",
+        registryEntry,
+      })
+        .then((gltf) => {
+          const modelData = this.createModelData(gltf);
+          this.cosmeticModels.set(cosmeticId, modelData);
+          this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
+          resolve(modelData);
+        })
+        .catch((error) => {
+          console.error(`[ArmyModel] Failed to load cosmetic model ${cosmeticId}:`, error);
           reject(error);
-        },
-      );
+        });
     }).finally(() => {
       this.pendingCosmeticModelLoads.delete(cosmeticId);
     });
@@ -378,14 +381,10 @@ export class ArmyModel {
 
   private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry;
-
-    // Handle both single material and material array cases
-    const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-    const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
-    const material = ArmyModel.materialPool.getBasicMaterial(sourceMaterial, overrides);
+    const pooledMaterial = createPooledInstancedMaterial(mesh.material);
     const instancedMesh = new InstancedMesh(
       geometry,
-      material,
+      pooledMaterial.material,
       this.INITIAL_INSTANCE_CAPACITY,
     ) as AnimatedInstancedMesh;
 
@@ -393,8 +392,7 @@ export class ArmyModel {
     instancedMesh.castShadow = true;
     instancedMesh.instanceMatrix.needsUpdate = true;
     instancedMesh.renderOrder = 10 + meshIndex;
-    // @ts-ignore
-    if (mesh.material.name.includes("stand")) {
+    if (pooledMaterial.usesInstanceColor) {
       instancedMesh.instanceColor = new InstancedBufferAttribute(
         new Float32Array(this.INITIAL_INSTANCE_CAPACITY * 3),
         3,
@@ -511,9 +509,11 @@ export class ArmyModel {
       // Fallback: if we don't know the owner, clear all models (legacy behavior)
       // This should rarely happen in practice
       this.models.forEach((modelData) => {
+        modelData.activeInstances.delete(matrixIndex);
         this.clearModelSlot(modelData, matrixIndex);
       });
       this.cosmeticModels.forEach((modelData) => {
+        modelData.activeInstances.delete(matrixIndex);
         this.clearModelSlot(modelData, matrixIndex);
       });
     }
@@ -565,22 +565,23 @@ export class ArmyModel {
   /**
    * Preloads a cosmetic model by ID and asset path.
    */
-  public async preloadCosmeticModel(cosmeticId: string, assetPath: string): Promise<void> {
+  public async preloadCosmeticModel(skin: ResolvedCosmeticSkin): Promise<void> {
     try {
-      await this.ensureCosmeticModel(cosmeticId, assetPath);
+      await this.ensureCosmeticModel(skin);
     } catch (error) {
-      console.error(`Failed to preload cosmetic model ${cosmeticId}`, error);
+      console.error(`Failed to preload cosmetic model ${skin.cosmeticId}`, error);
     }
   }
 
   /**
    * Assigns a cosmetic model to an entity. This takes precedence over the base ModelType.
    */
-  public assignCosmeticToEntity(entityId: number, cosmeticId: string, assetPath: string): void {
+  public assignCosmeticToEntity(entityId: number, skin: ResolvedCosmeticSkin): void {
+    const { cosmeticId } = skin;
     const oldCosmeticId = this.entityCosmeticMap.get(entityId);
     if (oldCosmeticId === cosmeticId) return;
     this.entityCosmeticMap.set(entityId, cosmeticId);
-    void this.ensureCosmeticModel(cosmeticId, assetPath).catch((error) => {
+    void this.ensureCosmeticModel(skin).catch((error) => {
       console.error(`Failed to load cosmetic model ${cosmeticId}`, error);
     });
   }
@@ -589,6 +590,17 @@ export class ArmyModel {
    * Clears cosmetic assignment for an entity, falling back to base ModelType.
    */
   public clearCosmeticForEntity(entityId: number): void {
+    const cosmeticKey = this.entityCosmeticMap.get(entityId);
+    if (cosmeticKey) {
+      const instanceInfo = this.instanceData.get(entityId);
+      if (instanceInfo && instanceInfo.matrixIndex !== undefined) {
+        const cosmeticData = this.cosmeticModels.get(cosmeticKey);
+        if (cosmeticData) {
+          cosmeticData.activeInstances.delete(instanceInfo.matrixIndex);
+          this.clearModelSlot(cosmeticData, instanceInfo.matrixIndex);
+        }
+      }
+    }
     this.entityCosmeticMap.delete(entityId);
   }
 
@@ -613,6 +625,10 @@ export class ArmyModel {
     const modelType = this.entityModelMap.get(entityId);
     if (!modelType) return undefined;
     return this.models.get(modelType);
+  }
+
+  public getAssignedModelType(entityId: number): ModelType | undefined {
+    return this.entityModelMap.get(entityId);
   }
 
   public allocateInstanceSlot(entityId: number): number {
@@ -659,6 +675,42 @@ export class ArmyModel {
     }
     this.matrixIndexOwners.set(newSlot, entityId);
     this.rebindMovementMatrixIndex(entityId, newSlot);
+  }
+
+  public moveInstanceSlot(entityId: number, newSlot: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    const previousSlot = instanceData?.matrixIndex;
+    if (!instanceData || previousSlot === undefined || previousSlot === newSlot) {
+      return;
+    }
+
+    this.takeFreedSlot(newSlot);
+    const wasWalking = this.animationStates[previousSlot] === ANIMATION_STATE_MOVING;
+    this.updateInstance(
+      entityId,
+      newSlot,
+      instanceData.position,
+      instanceData.scale,
+      instanceData.rotation,
+      instanceData.color,
+    );
+    this.setAnimationState(newSlot, wasWalking);
+    this.clearInstanceSlot(previousSlot);
+    this.matrixIndexOwners.delete(previousSlot);
+    instanceData.matrixIndex = newSlot;
+    this.rebindMovementMatrixIndex(entityId, newSlot);
+  }
+
+  private takeFreedSlot(slot: number): void {
+    if (!this.freeSlotSet.has(slot)) {
+      return;
+    }
+
+    this.freeSlotSet.delete(slot);
+    const freeSlotIndex = this.freeSlots.indexOf(slot);
+    if (freeSlotIndex !== -1) {
+      this.freeSlots.splice(freeSlotIndex, 1);
+    }
   }
 
   private getScaleForModelType(modelType: ModelType): Vector3 {
@@ -858,20 +910,78 @@ export class ArmyModel {
   }
 
   // Animation Methods
-  public updateAnimations(_deltaTime: number, _visibility?: AnimationVisibilityContext): void {
+  public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
 
     const now = performance.now();
     const time = now * 0.001;
 
     this.models.forEach((modelData) => {
+      if (!this.shouldAnimateModel(modelData, visibility)) {
+        return;
+      }
       this.updateModelAnimations(modelData, time, now);
     });
 
     // Also update cosmetic model animations
     this.cosmeticModels.forEach((modelData) => {
+      if (!this.shouldAnimateModel(modelData, visibility)) {
+        return;
+      }
       this.updateModelAnimations(modelData, time, now);
     });
+  }
+
+  private shouldAnimateModel(modelData: ModelData, visibility?: AnimationVisibilityContext): boolean {
+    if (!visibility) {
+      return true;
+    }
+
+    if (modelData.activeInstances.size === 0) {
+      return false;
+    }
+
+    for (const slot of modelData.activeInstances) {
+      const entityId = this.matrixIndexOwners.get(slot);
+      if (entityId === undefined) {
+        continue;
+      }
+
+      const instance = this.instanceData.get(entityId);
+      if (!instance?.position) {
+        continue;
+      }
+
+      if (this.isAnimationPositionVisible(instance.position, visibility)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private isAnimationPositionVisible(position: Vector3, visibility: AnimationVisibilityContext): boolean {
+    if (visibility.visibilityManager) {
+      if (!visibility.visibilityManager.isPointVisible(position)) {
+        return false;
+      }
+
+      if (visibility.cameraPosition && visibility.maxDistance !== undefined) {
+        return visibility.cameraPosition.distanceTo(position) <= visibility.maxDistance;
+      }
+
+      return true;
+    }
+
+    if (visibility.frustumManager && !visibility.frustumManager.isPointVisible(position)) {
+      return false;
+    }
+
+    if (visibility.cameraPosition && visibility.maxDistance !== undefined) {
+      return visibility.cameraPosition.distanceTo(position) <= visibility.maxDistance;
+    }
+
+    return true;
   }
 
   private updateModelAnimations(modelData: ModelData, time: number, now: number): void {
@@ -1854,6 +1964,49 @@ export class ArmyModel {
     this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
   }
 
+  /**
+   * Visually hide an instance slot by zeroing its matrix without freeing
+   * the slot or removing it from activeInstances. Used when an army enters
+   * the deferred-removal queue so it disappears immediately while remaining
+   * matchable for supersede logic.
+   */
+  public hideInstanceSlot(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      if (modelData.activeInstances.has(matrixIndex)) {
+        modelData.instancedMeshes.forEach((mesh) => {
+          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          mesh.instanceMatrix.needsUpdate = true;
+        });
+        if (modelData.contactShadowMesh) {
+          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+        }
+      }
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      if (modelData.activeInstances.has(matrixIndex)) {
+        modelData.instancedMeshes.forEach((mesh) => {
+          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          mesh.instanceMatrix.needsUpdate = true;
+        });
+        if (modelData.contactShadowMesh) {
+          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+        }
+      }
+    });
+  }
+
+  public requestBoundsUpdate(): void {
+    this.hasPendingBounds = true;
+  }
+
+  public applyPendingBounds(): void {
+    if (!this.hasPendingBounds) return;
+    this.computeBoundingSphere();
+    this.hasPendingBounds = false;
+  }
+
   public computeBoundingSphere(): void {
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
@@ -1893,6 +2046,40 @@ export class ArmyModel {
     return sortedResults;
   }
 
+  public raycastNearest(raycaster: Raycaster): { instanceId: number | undefined; mesh: InstancedMesh } | undefined {
+    let nearest:
+      | {
+          instanceId: number | undefined;
+          mesh: InstancedMesh;
+          distance: number;
+        }
+      | undefined;
+
+    this.models.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        const intersects = raycaster.intersectObject(mesh);
+        if (intersects.length === 0) {
+          return;
+        }
+
+        nearest = resolveNearestIntersection(nearest, {
+          instanceId: intersects[0].instanceId,
+          mesh,
+          distance: intersects[0].distance,
+        });
+      });
+    });
+
+    if (!nearest) {
+      return undefined;
+    }
+
+    return {
+      instanceId: nearest.instanceId,
+      mesh: nearest.mesh,
+    };
+  }
+
   /**
    * Dispose of all resources including shared materials
    */
@@ -1900,9 +2087,7 @@ export class ArmyModel {
     // Dispose geometries and release materials from pool
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
-        // Release material from pool (handle both single and array materials)
-        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-        ArmyModel.materialPool.releaseMaterial(material);
+        releasePooledInstancedMaterial(mesh.material);
 
         // Dispose geometry
         mesh.geometry.dispose();
@@ -1921,8 +2106,7 @@ export class ArmyModel {
     // Dispose cosmetic models
     this.cosmeticModels.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
-        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-        ArmyModel.materialPool.releaseMaterial(material);
+        releasePooledInstancedMaterial(mesh.material);
         mesh.geometry.dispose();
         this.scene.remove(mesh);
       });

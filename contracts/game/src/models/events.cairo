@@ -51,6 +51,13 @@ pub enum Story {
     // Prize Distribution
     PrizeDistributionFinalStory: PrizeDistributionFinalStory,
     PrizeDistributedStory: PrizeDistributedStory,
+    // Faith System
+    FaithPledgedStory: FaithPledgedStory,
+    FaithRemovedStory: FaithRemovedStory,
+    FaithPointsClaimedStory: FaithPointsClaimedStory,
+    // Bitcoin Mine System
+    BitcoinMineProductionStory: BitcoinMineProductionStory,
+    BitcoinPhaseLotteryStory: BitcoinPhaseLotteryStory,
 }
 
 ///////////////////////////////////////////////
@@ -142,6 +149,9 @@ pub enum ExploreFind {
     Agent,
     Quest,
     Village,
+    HolySite,
+    Camp,
+    BitcoinMine,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -327,4 +337,55 @@ pub struct PrizeDistributedStory {
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct PrizeDistributionFinalStory {
     pub trial_id: u128,
+}
+
+///////////////////////////////////////////////
+///  Faith System
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct FaithPledgedStory {
+    pub structure_id: ID,
+    pub wonder_id: ID,
+    pub structure_owner: ContractAddress,
+    pub fp_to_owner: u16,
+    pub fp_to_pledger: u16,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct FaithRemovedStory {
+    pub structure_id: ID,
+    pub previous_wonder_id: ID,
+    pub structure_owner: ContractAddress,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct FaithPointsClaimedStory {
+    pub wonder_id: ID,
+    pub new_points: u128,
+    pub total_points: u128,
+}
+
+///////////////////////////////////////////////
+///  Bitcoin Mine System
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct BitcoinMineProductionStory {
+    pub mine_id: ID,
+    pub owner: ContractAddress,
+    pub phase_id: u64,
+    pub labor_deposited: u128,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct BitcoinPhaseLotteryStory {
+    pub phase_id: u64,
+    pub total_labor: u128,
+    pub winner_mine_id: ID,
+    pub winner_owner: ContractAddress,
+    pub winner_labor: u128,
+    pub prize_awarded: u128,
 }

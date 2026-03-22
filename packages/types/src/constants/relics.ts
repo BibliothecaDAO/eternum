@@ -1,4 +1,4 @@
-import { ResourcesIds } from "./index";
+import { ResourcesIds } from "./resource-ids";
 
 // Relic recipient type
 export enum RelicRecipientTypeParam {

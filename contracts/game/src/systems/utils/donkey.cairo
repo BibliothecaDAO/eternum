@@ -4,6 +4,7 @@ use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{CapacityConfig, WorldConfigUtilImpl};
+use crate::models::position::Coord;
 use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl};
 use crate::models::weight::Weight;
 
@@ -21,6 +22,11 @@ struct BurnDonkey {
 
 #[generate_trait]
 pub impl iDonkeyImpl of iDonkeyTrait {
+    #[inline]
+    fn assert_can_transport(ref world: WorldStorage, from_coord: Coord, dest_coord: Coord) {
+        assert!(from_coord.alt == false && dest_coord.alt == false, "transportation only allowed in regular layer");
+    }
+
     fn burn(ref world: WorldStorage, structure_id: ID, ref structure_weight: Weight, donkey_amount: u128) {
         // burn amount of donkey needed
         let donkey_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::DONKEY);

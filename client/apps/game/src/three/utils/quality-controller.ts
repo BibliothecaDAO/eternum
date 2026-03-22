@@ -13,6 +13,7 @@ export interface QualityFeatures {
   bloom: boolean;
   bloomIntensity: number;
   vignette: boolean;
+  chromaticAberration: boolean;
   fxaa: boolean;
 
   // Animations
@@ -55,6 +56,7 @@ const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     bloom: false,
     bloomIntensity: 0,
     vignette: false,
+    chromaticAberration: false,
     fxaa: false,
     // Animations
     morphAnimations: false,
@@ -80,6 +82,7 @@ const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     bloom: true,
     bloomIntensity: 0.15,
     vignette: false,
+    chromaticAberration: false,
     fxaa: true,
     // Animations
     morphAnimations: true,
@@ -105,6 +108,7 @@ const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     bloom: true,
     bloomIntensity: 0.25,
     vignette: true,
+    chromaticAberration: true,
     fxaa: true,
     // Animations
     morphAnimations: true,
@@ -142,6 +146,7 @@ const MOBILE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     bloom: false,
     bloomIntensity: 0,
     vignette: false,
+    chromaticAberration: false,
     fxaa: false,
     morphAnimations: false,
     animationFPS: 15,
@@ -160,6 +165,7 @@ const MOBILE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     pixelRatio: 1.5,
     bloomIntensity: 0.12,
     vignette: false,
+    chromaticAberration: false,
     fxaa: false,
     animationFPS: 20,
     maxVisibleArmies: 500,
@@ -187,6 +193,7 @@ interface DegradationStep {
 
 const DEGRADATION_STEPS: DegradationStep[] = [
   { feature: "vignette", value: false, description: "Disabled vignette effect" },
+  { feature: "chromaticAberration", value: false, description: "Disabled chromatic aberration effect" },
   { feature: "bloomIntensity", value: 0.1, description: "Reduced bloom intensity" },
   { feature: "animationFPS", value: 15, description: "Reduced animation FPS to 15" },
   { feature: "maxVisibleLabels", value: 150, description: "Reduced max visible labels" },

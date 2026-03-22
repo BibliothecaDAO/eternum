@@ -24,6 +24,14 @@ interface ContractAddressAndAmount {
   ];
 }
 
+interface PendingSharePointsClaim {
+  claimedPoints: number;
+  txHash?: string;
+  submittedAtMs: number;
+  confirmedAtMs?: number;
+  status: "submitted" | "confirmed";
+}
+
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
   public pointsPerPlayer: Map<ContractAddress, number> = new Map();
@@ -36,6 +44,8 @@ export class LeaderboardManager {
   private lastUnregisteredShareholderPointsUpdate: number = 0;
   private readonly unregisteredShareholderPointsUpdateInterval: number;
   private readonly realmCountPerHyperstructures: Map<ID, number> = new Map();
+  private pendingSharePointsClaims: Map<ContractAddress, PendingSharePointsClaim> = new Map();
+  private readonly pendingSharePointsClaimTtlMs: number = 2 * 60 * 1000;
 
   constructor(
     private readonly components: ClientComponents,
@@ -94,6 +104,37 @@ export class LeaderboardManager {
     this.playersByRank = this.getPlayersByRank();
   }
 
+  public setPendingSharePointsClaim(playerAddress: ContractAddress, claimedPoints: number, txHash?: string) {
+    if (claimedPoints <= 0) return;
+
+    this.pendingSharePointsClaims.set(playerAddress, {
+      claimedPoints,
+      txHash,
+      submittedAtMs: Date.now(),
+      status: "submitted",
+    });
+  }
+
+  public confirmPendingSharePointsClaim(playerAddress: ContractAddress, txHash?: string) {
+    const pendingClaim = this.pendingSharePointsClaims.get(playerAddress);
+    if (!pendingClaim) return;
+    if (txHash && pendingClaim.txHash && pendingClaim.txHash !== txHash) return;
+
+    pendingClaim.status = "confirmed";
+    pendingClaim.confirmedAtMs = Date.now();
+    if (txHash && !pendingClaim.txHash) {
+      pendingClaim.txHash = txHash;
+    }
+    this.pendingSharePointsClaims.set(playerAddress, pendingClaim);
+  }
+
+  public clearPendingSharePointsClaim(playerAddress: ContractAddress, txHash?: string) {
+    const pendingClaim = this.pendingSharePointsClaims.get(playerAddress);
+    if (!pendingClaim) return;
+    if (txHash && pendingClaim.txHash && pendingClaim.txHash !== txHash) return;
+    this.pendingSharePointsClaims.delete(playerAddress);
+  }
+
   /**
    * Start periodic updater for unregistered shareholder points
    */
@@ -126,6 +167,8 @@ export class LeaderboardManager {
    * Calculate and cache all unregistered shareholder points at once for efficiency
    */
   private updateUnregisteredShareholderPointsCache() {
+    this.pruneExpiredPendingSharePointsClaims();
+
     const configManager = ClientConfigManager.instance();
     const pointsPerSecondWithoutMultiplier = configManager.getHyperstructureConfig().pointsPerCycle;
     const seasonConfig = configManager.getSeasonConfig();
@@ -183,12 +226,44 @@ export class LeaderboardManager {
     this.lastUnregisteredShareholderPointsUpdate = Date.now();
   }
 
+  private pruneExpiredPendingSharePointsClaims() {
+    const now = Date.now();
+    for (const [playerAddress, pendingClaim] of this.pendingSharePointsClaims) {
+      if (now - pendingClaim.submittedAtMs > this.pendingSharePointsClaimTtlMs) {
+        this.pendingSharePointsClaims.delete(playerAddress);
+      }
+    }
+  }
+
+  private applyPendingSharePointsClaimOverride(playerAddress: ContractAddress, rawUnregisteredPoints: number): number {
+    this.pruneExpiredPendingSharePointsClaims();
+
+    const pendingClaim = this.pendingSharePointsClaims.get(playerAddress);
+    if (!pendingClaim) return rawUnregisteredPoints;
+
+    // Apply a pending claim offset to avoid double-counting immediately after submission,
+    // then clear the override once post-claim data has been observed.
+    if (pendingClaim.status === "confirmed" && rawUnregisteredPoints <= pendingClaim.claimedPoints) {
+      this.pendingSharePointsClaims.delete(playerAddress);
+      return rawUnregisteredPoints;
+    }
+
+    return Math.max(0, rawUnregisteredPoints - pendingClaim.claimedPoints);
+  }
+
   /**
    * Get cached unregistered shareholder points for a specific player
    */
-  public getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress: ContractAddress): number {
+  public getPlayerHyperstructureUnregisteredShareholderPoints(
+    playerAddress: ContractAddress,
+    options?: { ignorePendingClaimOverride?: boolean },
+  ): number {
     this.updateUnregisteredShareholderPointsCacheIfNeeded();
-    return this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
+    const rawUnregisteredPoints = this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
+    if (options?.ignorePendingClaimOverride) {
+      return rawUnregisteredPoints;
+    }
+    return this.applyPendingSharePointsClaimOverride(playerAddress, rawUnregisteredPoints);
   }
 
   /**
@@ -318,14 +393,22 @@ export class LeaderboardManager {
       const registeredPoints = Number(playerRegisteredPoints.registered_points / pointsPrecision);
 
       // Add cached unregistered shareholder points to registered points
-      const unregisteredShareholderPoints = this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
+      const rawUnregisteredShareholderPoints = this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
+      const unregisteredShareholderPoints = this.applyPendingSharePointsClaimOverride(
+        playerAddress,
+        rawUnregisteredShareholderPoints,
+      );
       const totalPoints = registeredPoints + unregisteredShareholderPoints;
 
       pointsPerPlayer.set(playerAddress, totalPoints);
     }
 
     // Also add players who only have unregistered shareholder points but no registered points
-    for (const [playerAddress, unregisteredShareholderPoints] of this.unregisteredShareholderPointsCache) {
+    for (const [playerAddress, rawUnregisteredShareholderPoints] of this.unregisteredShareholderPointsCache) {
+      const unregisteredShareholderPoints = this.applyPendingSharePointsClaimOverride(
+        playerAddress,
+        rawUnregisteredShareholderPoints,
+      );
       if (!pointsPerPlayer.has(playerAddress) && unregisteredShareholderPoints > 0) {
         pointsPerPlayer.set(playerAddress, unregisteredShareholderPoints);
       }

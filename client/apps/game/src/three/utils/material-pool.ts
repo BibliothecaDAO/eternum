@@ -14,10 +14,15 @@ interface MaterialKey {
   transparent: boolean;
   side: Side;
   opacity: number;
+  alphaTest?: number;
+  depthTest?: boolean;
+  depthWrite?: boolean;
   materialType: "basic" | "standard";
   color?: number;
+  emissive?: number;
   metalness?: number;
   roughness?: number;
+  vertexColors?: boolean;
 }
 
 interface MaterialStats {
@@ -55,10 +60,15 @@ export class MaterialPool {
       transparent: overrides?.transparent ?? sourceMaterial.transparent,
       side: sourceMaterial.side,
       opacity: overrides?.opacity ?? sourceMaterial.opacity,
+      alphaTest: (sourceMaterial as any).alphaTest,
+      depthTest: sourceMaterial.depthTest,
+      depthWrite: sourceMaterial.depthWrite,
       materialType: overrides?.materialType ?? "basic",
       color: overrides?.color ?? (sourceMaterial as any).color?.getHex(),
+      emissive: (sourceMaterial as any).emissive?.getHex?.(),
       metalness: overrides?.metalness ?? (sourceMaterial as any).metalness,
       roughness: overrides?.roughness ?? (sourceMaterial as any).roughness,
+      vertexColors: (sourceMaterial as any).vertexColors,
     };
 
     return JSON.stringify(key);
@@ -95,6 +105,10 @@ export class MaterialPool {
       side: sourceMaterial.side,
       opacity: overrides?.opacity ?? sourceMaterial.opacity,
       color: overrides?.color ?? sourceAsStandard.color,
+      alphaTest: sourceMaterial.alphaTest,
+      depthTest: sourceMaterial.depthTest,
+      depthWrite: sourceMaterial.depthWrite,
+      vertexColors: sourceAsStandard.vertexColors,
     });
 
     // Store references
@@ -138,8 +152,13 @@ export class MaterialPool {
       side: sourceMaterial.side,
       opacity: overrides?.opacity ?? sourceMaterial.opacity,
       color: overrides?.color ?? sourceAsStandard.color,
+      emissive: sourceAsStandard.emissive,
       metalness: overrides?.metalness ?? sourceAsStandard.metalness,
       roughness: overrides?.roughness ?? sourceAsStandard.roughness,
+      alphaTest: sourceMaterial.alphaTest,
+      depthTest: sourceMaterial.depthTest,
+      depthWrite: sourceMaterial.depthWrite,
+      vertexColors: sourceAsStandard.vertexColors,
     });
 
     // Store references

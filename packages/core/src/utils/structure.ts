@@ -87,5 +87,9 @@ export const getStructureImmunityTimer = (
 };
 
 export const getStructureTypeName = (structureType: StructureType, isBlitz: boolean) => {
-  return isBlitz ? BlitzStructureTypeToNameMapping[structureType] : EternumStructureTypeToNameMapping[structureType];
+  const structureTypeName = isBlitz
+    ? BlitzStructureTypeToNameMapping[structureType]
+    : EternumStructureTypeToNameMapping[structureType];
+
+  return structureTypeName ?? "Structure";
 };

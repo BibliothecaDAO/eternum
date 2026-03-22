@@ -9,7 +9,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { PrizePanel } from "@/ui/features/prize";
 import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
+import { FaithLeaderboardPanel, GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
@@ -17,7 +17,7 @@ import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { Shapes, TrendingUp, Users } from "lucide-react";
+import { Shapes, Sparkles, TrendingUp, Users } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
@@ -79,6 +79,8 @@ export const Social = () => {
   );
 
   useEffect(() => {
+    if (!isOpen) return;
+
     // update first time - initialize with interval on first call
     const manager = LeaderboardManager.instance(
       components,
@@ -87,10 +89,12 @@ export const Social = () => {
     );
     manager.initialize();
     setPlayersByRank(manager.playersByRank);
-  }, [components, setPlayersByRank]);
+  }, [components, isOpen, setPlayersByRank]);
 
   // Add periodic updates every 1 minute to refresh unregistered shareholder points
   useEffect(() => {
+    if (!isOpen) return;
+
     const interval = setInterval(() => {
       const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
       manager.updatePoints();
@@ -98,18 +102,22 @@ export const Social = () => {
     }, LEADERBOARD_UPDATE_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [components, setPlayersByRank]);
+  }, [components, isOpen, setPlayersByRank]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     void refreshPlayerData();
     const intervalId = window.setInterval(() => {
       void refreshPlayerData();
     }, PLAYER_STRUCTURE_REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [refreshPlayerData]);
+  }, [isOpen, refreshPlayerData]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     let cancelled = false;
 
     const loadStructureCounts = async () => {
@@ -142,13 +150,15 @@ export const Social = () => {
     return () => {
       cancelled = true;
     };
-  }, [lastPlayerDataRefreshTime]);
+  }, [isOpen, lastPlayerDataRefreshTime]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     setPlayerInfo(
       getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
     );
-  }, [players, account.address, playersByRank, playerStructureCountsMap, components, setPlayerInfo]);
+  }, [players, account.address, playersByRank, playerStructureCountsMap, components, isOpen, setPlayerInfo]);
 
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {
@@ -208,6 +218,20 @@ export const Social = () => {
       });
     }
 
+    if (mode.id === "eternum") {
+      baseTabs.push({
+        key: "Faith",
+        label: (
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} />
+            <span>Faith</span>
+          </div>
+        ),
+        component: <FaithLeaderboardPanel />,
+        expandedContent: null,
+      });
+    }
+
     baseTabs.push({
       key: "Blitz Prize",
       label: (
@@ -229,9 +253,9 @@ export const Social = () => {
           </div>
         ),
         component: (
-          <div className="h-full p-4">
-            <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)] h-full">
-              <div className="flex flex-col gap-3 h-full">
+          <div className="p-4">
+            <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)]">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 text-gold">
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-gold/15">
                     <TrendingUp size={16} />
@@ -241,7 +265,7 @@ export const Social = () => {
                     <div className="text-xs text-gold/70">Player skill ratings</div>
                   </div>
                 </div>
-                <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex-1 overflow-auto">
+                <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4">
                   <BlitzMMRTable />
                 </div>
                 <div className="text-xs text-gold/70 mt-2">
@@ -261,6 +285,7 @@ export const Social = () => {
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
+  const { isSyncing } = useSyncLeaderboard({ auto: isOpen, skip: !isOpen });
 
   useEffect(() => {
     if (tabsLength > 0 && activeTabIndex !== selectedTab) {
@@ -268,45 +293,10 @@ export const Social = () => {
     }
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
 
-  const SocialContent = () => {
-    const { isSyncing } = useSyncLeaderboard();
-    return isSyncing ? (
-      <LoadingAnimation />
-    ) : (
-      <Tabs
-        size="small"
-        selectedIndex={activeTabIndex}
-        onChange={(index: number) => {
-          setSelectedTab(index);
-          setIsExpanded(false);
-          setSelectedPlayer(0n);
-        }}
-        className="h-full mt-3"
-      >
-        <div className="flex flex-col h-full">
-          <Tabs.List className="">
-            {tabs.map((tab) => (
-              <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
-                {tab.label}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-
-          <Tabs.Panels className="overflow-hidden flex-1">
-            {tabs.map((tab) => (
-              <Tabs.Panel key={tab.key} className="h-full">
-                {tab.component}
-              </Tabs.Panel>
-            ))}
-          </Tabs.Panels>
-        </div>
-      </Tabs>
-    );
-  };
-
   return (
     <ExpandableOSWindow
       width="1100px"
+      height="760px"
       widthExpanded="400px"
       onClick={() => togglePopup(leaderboard)}
       show={isOpen}
@@ -315,7 +305,40 @@ export const Social = () => {
       childrenExpanded={tabs[activeTabIndex]?.expandedContent ?? null}
       isExpanded={isExpanded}
     >
-      {isOpen ? <SocialContent /> : null}
+      {isOpen ? (
+        isSyncing ? (
+          <LoadingAnimation />
+        ) : (
+          <Tabs
+            size="small"
+            selectedIndex={activeTabIndex}
+            onChange={(index: number) => {
+              setSelectedTab(index);
+              setIsExpanded(false);
+              setSelectedPlayer(0n);
+            }}
+            className="h-full mt-3"
+          >
+            <div className="flex flex-col h-full">
+              <Tabs.List className="">
+                {tabs.map((tab) => (
+                  <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
+                    {tab.label}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+
+              <Tabs.Panels className="overflow-hidden flex-1">
+                {tabs.map((tab) => (
+                  <Tabs.Panel key={tab.key} className="h-full">
+                    {tab.component}
+                  </Tabs.Panel>
+                ))}
+              </Tabs.Panels>
+            </div>
+          </Tabs>
+        )
+      ) : null}
     </ExpandableOSWindow>
   );
 };

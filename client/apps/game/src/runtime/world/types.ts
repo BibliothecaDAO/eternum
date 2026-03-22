@@ -1,3 +1,5 @@
+import type { Chain } from "@contracts";
+
 export interface FactoryContractRow {
   contract_address: string;
   contract_selector: string; // hex string (may be shorter or left-padded)
@@ -14,6 +16,12 @@ export interface WorldProfile {
   entryTokenAddress?: string; // entry token contract address from WorldConfig
   feeTokenAddress?: string; // fee token contract address from WorldConfig
   fetchedAt: number; // epoch ms
+}
+
+export interface FactoryIndexedWorld {
+  name: string;
+  chain: Chain;
+  worldAddress: string | null;
 }
 
 export interface WorldProfilesMap {

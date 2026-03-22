@@ -5,6 +5,8 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
+import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
+import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   formatArmies,
@@ -343,6 +345,7 @@ const AUTO_REGISTER_POINTS_DEBUG = true;
 const AutoRegisterPointsStoreManager = () => {
   const {
     account: { account },
+    network,
     setup: {
       components,
       systemCalls: { claim_share_points },
@@ -403,18 +406,45 @@ const AutoRegisterPointsStoreManager = () => {
 
       // Execute registration
       isProcessingRef.current = true;
+      let txHash: string | null = null;
       try {
-        await claim_share_points({
+        const playerAddress = ContractAddress(account.address);
+        const claimedPointsAtSubmit = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+          playerAddress,
+          { ignorePendingClaimOverride: true },
+        );
+
+        const transactionResult = await claim_share_points({
           signer: account,
           hyperstructure_ids: hyperstructureIds,
         });
+        txHash = extractTransactionHash(transactionResult);
 
+        if (claimedPointsAtSubmit > 0) {
+          leaderboardManager.setPendingSharePointsClaim(playerAddress, claimedPointsAtSubmit, txHash ?? undefined);
+        }
+        leaderboardManager.updatePoints();
+        log("Points registration transaction submitted", txHash);
+
+        if (txHash) {
+          await waitForTransactionConfirmation({
+            txHash,
+            provider: network.provider as { waitForTransactionWithCheck?: (hash: string) => Promise<unknown> },
+            account: account as { waitForTransaction?: (hash: string) => Promise<unknown> },
+            label: "auto-register points",
+          });
+        }
+
+        leaderboardManager.confirmPendingSharePointsClaim(playerAddress, txHash ?? undefined);
         log("Points registered successfully");
 
         // Refresh leaderboard
-        leaderboardManager.initialize();
+        leaderboardManager.forceRefresh();
+        leaderboardManager.updatePoints();
         log("Leaderboard refreshed");
       } catch (error) {
+        leaderboardManager.clearPendingSharePointsClaim(ContractAddress(account.address), txHash ?? undefined);
+        leaderboardManager.updatePoints();
         console.error("[AutoRegisterPoints] Failed:", error);
       } finally {
         isProcessingRef.current = false;
@@ -429,7 +459,7 @@ const AutoRegisterPointsStoreManager = () => {
     const intervalId = setInterval(checkAndRegisterPoints, POLLING_INTERVALS.autoRegisterPointsMs);
 
     return () => clearInterval(intervalId);
-  }, [account, components, claim_share_points, hyperstructure_entities]);
+  }, [account, components, claim_share_points, hyperstructure_entities, network.provider]);
 
   return null;
 };
@@ -538,14 +568,11 @@ const SeasonTimerStoreManager = () => {
   useEffect(() => {
     // Try to get season_config.end_at from WorldConfig
     const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    const endAt = worldConfig?.season_config?.end_at;
-    if (endAt && typeof endAt === "number") {
-      setGameEndAt(endAt);
-    }
-    const startMainAt = worldConfig?.season_config?.start_main_at;
-    if (startMainAt && typeof startMainAt === "number") {
-      setSeasonStartMainAt(startMainAt);
-    }
+    const seasonEndAt = resolveFiniteSeasonEndAt(worldConfig?.season_config?.end_at);
+    setGameEndAt(seasonEndAt);
+
+    const seasonStartMainAt = resolveSeasonStartTimestamp(worldConfig?.season_config?.start_main_at);
+    setSeasonStartMainAt(seasonStartMainAt);
   }, [components, setGameEndAt, setSeasonStartMainAt]);
   return null;
 };

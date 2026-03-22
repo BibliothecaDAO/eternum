@@ -53,49 +53,58 @@ export function MarketVaultFees({
     enabled: Boolean(address),
     queryFn: async () => {
       if (!address) return null;
-      const paddedAddress = addAddressPadding(address.toLowerCase());
+      let paddedAddress = address.toLowerCase();
+      try {
+        paddedAddress = addAddressPadding(`0x${BigInt(address).toString(16)}`).toLowerCase();
+      } catch {
+        // Keep lowercase fallback when address normalization fails.
+      }
       return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchProtocolFeesById(paddedAddress);
     },
     staleTime: 30 * 1000,
   });
 
-  const { relatedBalance, hasVaultShares, share, shareDisplay, value } = useMemo(() => {
-    const relatedBalance = balances.find((t) => BigInt(t.token_id || 0) === BigInt(market.market_id));
+  const { hasVaultShares, share, shareDisplay, claimableFromShares, claimableAddressFee, value, sharesBalance } =
+    useMemo(() => {
+      const relatedBalance = balances.find((t) => BigInt(t.token_id || 0) === BigInt(market.market_id));
 
-    const vaultFeesDenominator = market.vaultFeesDenominator;
+      const vaultFeesDenominator = market.vaultFeesDenominator;
 
-    const balance = BigInt(relatedBalance?.balance || 0);
-    const denominator = BigInt(vaultFeesDenominator?.value || 1);
-    const hasVaultShares = balance > 0n;
-    const marketFees = vaultFees && vaultFees[0] ? BigInt(vaultFees[0].accumulated_fee) : 0n;
-    const userAccumulated = BigInt(addressProtocolFees?.accumulated_fee || 0);
-    const userClaimed = BigInt(addressProtocolFees?.claimed_fee || 0);
-    const userClaimable = userAccumulated > userClaimed ? userAccumulated - userClaimed : 0n;
+      const indexedBalance = BigInt(relatedBalance?.balance || 0);
+      const denominator = BigInt(vaultFeesDenominator?.value || 1);
+      const marketFees = vaultFees && vaultFees[0] ? BigInt(vaultFees[0].accumulated_fee) : 0n;
+      const userAccumulated = BigInt(addressProtocolFees?.accumulated_fee || 0);
+      const userClaimed = BigInt(addressProtocolFees?.claimed_fee || 0);
+      const claimableAddressFee = userAccumulated > userClaimed ? userAccumulated - userClaimed : 0n;
 
-    const share = hasVaultShares ? (balance * 10_000n) / denominator : 0n;
-    const value = hasVaultShares ? (share * marketFees) / 10_000n : userClaimable;
-    const sharePercent = Number(share) / 100;
-    const shareDisplay =
-      hasVaultShares && Number.isFinite(sharePercent)
-        ? sharePercent.toLocaleString(undefined, { maximumFractionDigits: 2 })
-        : "--";
+      const hasVaultShares = indexedBalance > 0n;
+      const share = hasVaultShares && denominator > 0n ? (indexedBalance * 10_000n) / denominator : 0n;
+      const claimableFromShares = share > 0n ? (share * marketFees) / 10_000n : 0n;
+      const value = claimableFromShares + claimableAddressFee;
+      const sharePercent = Number(share) / 100;
+      const shareDisplay =
+        hasVaultShares && Number.isFinite(sharePercent)
+          ? sharePercent.toLocaleString(undefined, { maximumFractionDigits: 2 })
+          : "--";
 
-    return {
-      relatedBalance,
-      hasVaultShares,
-      share,
-      shareDisplay,
-      value,
-    };
-  }, [addressProtocolFees, balances, market, vaultFees]);
+      return {
+        hasVaultShares,
+        share,
+        shareDisplay,
+        claimableFromShares,
+        claimableAddressFee,
+        value,
+        sharesBalance: indexedBalance,
+      };
+    }, [addressProtocolFees, balances, market, vaultFees]);
 
   const decimals = Number(market.collateralToken.decimals);
   // Change: The vault balance is a number of shares, not a token amount.
   // No decimals handling/formatUnits, just show the raw shares amount.
   const sharesDisplay = useMemo(() => {
-    if (!relatedBalance) return "--";
-    return formatUnits(relatedBalance.balance, decimals, 4);
-  }, [relatedBalance, decimals]);
+    if (!hasVaultShares) return "--";
+    return formatUnits(sharesBalance, decimals, 4);
+  }, [sharesBalance, hasVaultShares, decimals]);
   const redeemableDisplay = useMemo(() => formatUnits(value, decimals, 6), [value, decimals]);
 
   const canClaim = market.isResolved() && value > 0n;
@@ -112,23 +121,40 @@ export function MarketVaultFees({
       return;
     }
 
-    const approveCall: Call = {
-      contractAddress: vaultFeesAdress,
-      entrypoint: "set_approval_for_all",
-      calldata: [marketAddress, true],
-    };
-
-    // Use uint256 for market id as calldata
-    const marketId_u256 = uint256.bnToUint256(BigInt(market.market_id));
-    const claimCall: Call = {
-      contractAddress: marketAddress,
-      entrypoint: "claim_market_fee_share",
-      calldata: [marketId_u256.low, marketId_u256.high],
-    };
-
     try {
       setIsSubmitting(true);
-      const resultTx = await account.execute([approveCall, claimCall]);
+      const calls: Call[] = [];
+
+      if (claimableFromShares > 0n) {
+        const approveCall: Call = {
+          contractAddress: vaultFeesAdress,
+          entrypoint: "set_approval_for_all",
+          calldata: [marketAddress, true],
+        };
+        const marketId_u256 = uint256.bnToUint256(BigInt(market.market_id));
+        const claimMarketFeeShareCall: Call = {
+          contractAddress: marketAddress,
+          entrypoint: "claim_market_fee_share",
+          calldata: [marketId_u256.low, marketId_u256.high],
+        };
+        calls.push(approveCall, claimMarketFeeShareCall);
+      }
+
+      if (claimableAddressFee > 0n) {
+        const claimAddressFeeCall: Call = {
+          contractAddress: marketAddress,
+          entrypoint: "claim_address_fee",
+          calldata: [1, market.collateral_token],
+        };
+        calls.push(claimAddressFeeCall);
+      }
+
+      if (calls.length === 0) {
+        toast.error("No claimable fees found.");
+        return;
+      }
+
+      const resultTx = await account.execute(calls);
 
       if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
         await account.waitForTransaction(resultTx.transaction_hash);
@@ -145,8 +171,8 @@ export function MarketVaultFees({
 
   if (!hasVaultShares && value === 0n) {
     return (
-      <div className="w-full rounded-lg border border-dashed border-white/10 bg-black/40 px-4 py-5 text-sm text-gold/80">
-        <p className="text-white">Vault fees</p>
+      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-dark-wood px-4 py-5 text-sm text-gold/80">
+        <p className="text-lightest">Vault fees</p>
         <p className="mt-1 text-xs text-gold/60">You don't have any vault fee shares for this market.</p>
       </div>
     );
@@ -155,7 +181,7 @@ export function MarketVaultFees({
   return (
     <>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
+        <div className="rounded-md border border-gold/15 bg-brown/45 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold/80">
           Vault fees
         </div>
         <Button variant="secondary" size="xs" className="gap-2" onClick={claim} disabled={!canClaim || isSubmitting}>
@@ -167,11 +193,11 @@ export function MarketVaultFees({
       {!canClaim && <div className="mb-4 text-xs text-gold/60">Claims unlock once the market is resolved.</div>}
 
       <div className="space-y-3">
-        <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+        <div className="flex items-start gap-3 rounded-lg border border-gold/15 bg-brown/45 px-3 py-3">
           <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-3">
             <VStack className="gap-1">
               <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Your share</span>
-              <span className="text-lg font-semibold text-white">
+              <span className="text-lg font-semibold text-lightest">
                 {shareDisplay === "--" ? "--" : Number(share) > 0 ? `${formatUnits(share, 2, 2)}%` : "0%"}
               </span>
               <span className="text-xs text-gold/60">of accumulated fees</span>
@@ -180,7 +206,7 @@ export function MarketVaultFees({
             <VStack className="gap-1">
               <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Vault shares</span>
               <HStack className="items-baseline gap-1">
-                <span className="text-lg font-semibold text-white">{sharesDisplay}</span>
+                <span className="text-lg font-semibold text-lightest">{sharesDisplay}</span>
               </HStack>
               <span className="text-xs text-gold/60">vault shares held</span>
             </VStack>
@@ -188,10 +214,15 @@ export function MarketVaultFees({
             <VStack className="gap-1">
               <span className="text-xs uppercase tracking-[0.08em] text-gold/70">Redeemable</span>
               <HStack className="items-baseline gap-1">
-                <span className="text-lg font-semibold text-white">{Number(value) > 0 ? redeemableDisplay : "0"}</span>
+                <span className="text-lg font-semibold text-lightest">
+                  {Number(value) > 0 ? redeemableDisplay : "0"}
+                </span>
                 <TokenIcon token={market.collateralToken} size={16} />
               </HStack>
               <span className="text-xs text-gold/60">claimable right now</span>
+              {claimableAddressFee > 0n && !hasVaultShares ? (
+                <span className="text-[11px] text-gold/50">includes address fees (not vault-share fees)</span>
+              ) : null}
             </VStack>
           </div>
         </div>

@@ -145,6 +145,7 @@ export interface MarketWithDetailsRow extends MarketRow {
   terms?: string;
   position_ids?: string;
   denominator?: string;
+  resolution_payout_numerators?: string | null;
 }
 
 interface MarketBuyAmountRow {
@@ -168,6 +169,21 @@ interface ProtocolFeesRow {
   claimed_fee: string;
 }
 
+interface ConditionResolutionRow {
+  condition_id: string;
+  oracle: string;
+  question_id: string;
+  outcome_slot_count: number;
+  payout_numerators: string; // JSON array of felt values
+}
+
+interface PayoutRedemptionRow {
+  redeemer: string;
+  condition_id: string;
+  payout: string;
+  internal_executed_at: string;
+}
+
 // SQL Query definitions
 const PM_SQL_QUERIES = {
   // Markets list with joined data (uses dynamic WHERE clause)
@@ -178,10 +194,15 @@ const PM_SQL_QUERIES = {
       mc.title,
       mc.terms,
       mc.position_ids,
-      vd.value as denominator
+      vd.value as denominator,
+      cr.payout_numerators as resolution_payout_numerators
     FROM "pm-Market" m
     LEFT JOIN "pm-MarketCreated" mc ON m.market_id = mc.market_id
     LEFT JOIN "pm-VaultDenominator" vd ON m.market_id = vd.market_id
+    LEFT JOIN "pm-ConditionResolution" cr
+      ON LOWER(m.condition_id) = LOWER(cr.condition_id)
+      AND LOWER(m.oracle) = LOWER(cr.oracle)
+      AND LOWER(m.question_id) = LOWER(cr.question_id)
     WHERE {whereClause}
     ORDER BY m.start_at DESC
     LIMIT {limit} OFFSET {offset}
@@ -231,10 +252,15 @@ const PM_SQL_QUERIES = {
       mc.title,
       mc.terms,
       mc.position_ids,
-      vd.value as denominator
+      vd.value as denominator,
+      cr.payout_numerators as resolution_payout_numerators
     FROM "pm-Market" m
     LEFT JOIN "pm-MarketCreated" mc ON m.market_id = mc.market_id
     LEFT JOIN "pm-VaultDenominator" vd ON m.market_id = vd.market_id
+    LEFT JOIN "pm-ConditionResolution" cr
+      ON LOWER(m.condition_id) = LOWER(cr.condition_id)
+      AND LOWER(m.oracle) = LOWER(cr.oracle)
+      AND LOWER(m.question_id) = LOWER(cr.question_id)
     WHERE m.oracle_params LIKE '%{prizeAddress}%'
     ORDER BY m.start_at DESC
     LIMIT 1
@@ -244,6 +270,24 @@ const PM_SQL_QUERIES = {
     SELECT id, token_address, accumulated_fee, claimed_fee
     FROM "pm-ProtocolFees"
     WHERE id = '{id}'
+    LIMIT 1
+  `,
+
+  CONDITION_RESOLUTION_BY_KEYS: `
+    SELECT condition_id, oracle, question_id, outcome_slot_count, payout_numerators
+    FROM "pm-ConditionResolution"
+    WHERE condition_id = '{conditionId}'
+      AND LOWER(oracle) = LOWER('{oracle}')
+      AND question_id = '{questionId}'
+    LIMIT 1
+  `,
+
+  PAYOUT_REDEMPTION_BY_REDEEMER_AND_CONDITION: `
+    SELECT redeemer, condition_id, payout, internal_executed_at
+    FROM "pm-PayoutRedemption"
+    WHERE LOWER(redeemer) = LOWER('{redeemer}')
+      AND LOWER(condition_id) = LOWER('{conditionId}')
+    ORDER BY internal_executed_at DESC
     LIMIT 1
   `,
 } as const;
@@ -371,6 +415,49 @@ class PmSqlApi {
     const query = PM_SQL_QUERIES.PROTOCOL_FEES_BY_ID.replace("{id}", safeId);
     const url = buildApiUrl(this.baseUrl, query);
     const results = await fetchWithErrorHandling<ProtocolFeesRow>(url, "Failed to fetch protocol fees by id");
+    return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch condition resolution row by composite keys.
+   */
+  async fetchConditionResolutionByKeys(
+    conditionId: string,
+    oracle: string,
+    questionId: string,
+  ): Promise<ConditionResolutionRow | null> {
+    const safeConditionId = conditionId.replace(/'/g, "''").toLowerCase();
+    const safeOracle = oracle.replace(/'/g, "''").toLowerCase();
+    const safeQuestionId = questionId.replace(/'/g, "''").toLowerCase();
+    const query = PM_SQL_QUERIES.CONDITION_RESOLUTION_BY_KEYS.replace("{conditionId}", safeConditionId)
+      .replace("{oracle}", safeOracle)
+      .replace("{questionId}", safeQuestionId);
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<ConditionResolutionRow>(
+      url,
+      "Failed to fetch condition resolution by keys",
+    );
+    return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch latest payout redemption for a redeemer and condition.
+   */
+  async fetchLatestPayoutRedemptionByRedeemerAndCondition(
+    redeemer: string,
+    conditionId: string,
+  ): Promise<PayoutRedemptionRow | null> {
+    const safeRedeemer = redeemer.replace(/'/g, "''").toLowerCase();
+    const safeConditionId = conditionId.replace(/'/g, "''").toLowerCase();
+    const query = PM_SQL_QUERIES.PAYOUT_REDEMPTION_BY_REDEEMER_AND_CONDITION.replace(
+      "{redeemer}",
+      safeRedeemer,
+    ).replace("{conditionId}", safeConditionId);
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<PayoutRedemptionRow>(
+      url,
+      "Failed to fetch payout redemption by redeemer and condition",
+    );
     return extractFirstOrNull(results);
   }
 }

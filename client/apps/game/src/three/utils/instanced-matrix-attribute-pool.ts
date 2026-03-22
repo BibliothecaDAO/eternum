@@ -11,7 +11,7 @@ interface PooledAttribute {
 
 export class InstancedMatrixAttributePool {
   private static instance: InstancedMatrixAttributePool;
-  private available: PooledAttribute[] = [];
+  private availableByCapacity = new Map<number, PooledAttribute[]>();
   private inUse = new Set<InstancedBufferAttribute>();
 
   static getInstance(): InstancedMatrixAttributePool {
@@ -22,14 +22,11 @@ export class InstancedMatrixAttributePool {
   }
 
   acquire(requiredMatrices: number): InstancedBufferAttribute {
-    const requiredCapacity = Math.max(requiredMatrices, DEFAULT_CAPACITY);
-    const matchIndex = this.available.findIndex((entry) => entry.capacity >= requiredCapacity);
-    let pooled: PooledAttribute | undefined;
+    const capacity = this.roundCapacity(Math.max(requiredMatrices, DEFAULT_CAPACITY));
+    const bucket = this.availableByCapacity.get(capacity);
+    let pooled = bucket?.pop();
 
-    if (matchIndex !== -1) {
-      pooled = this.available.splice(matchIndex, 1)[0];
-    } else {
-      const capacity = this.roundCapacity(requiredCapacity);
+    if (!pooled) {
       const array = new Float32Array(capacity * ELEMENTS_PER_MATRIX);
       pooled = {
         capacity,
@@ -48,11 +45,13 @@ export class InstancedMatrixAttributePool {
 
     this.inUse.delete(attribute);
     const capacity = attribute.array.length / ELEMENTS_PER_MATRIX;
-    this.available.push({ attribute, capacity });
+    const bucket = this.availableByCapacity.get(capacity) ?? [];
+    bucket.push({ attribute, capacity });
+    this.availableByCapacity.set(capacity, bucket);
   }
 
   clear() {
-    this.available.length = 0;
+    this.availableByCapacity.clear();
     this.inUse.clear();
   }
 

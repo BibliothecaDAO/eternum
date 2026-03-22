@@ -9,6 +9,12 @@ const diagnosticsWithSamples = (samples: number[]) => {
   return diagnostics;
 };
 
+const diagnosticsWithFirstVisibleCommitSamples = (samples: number[]) => {
+  const diagnostics = createWorldmapChunkDiagnostics();
+  diagnostics.firstVisibleCommitDurationMsSamples = [...samples];
+  return diagnostics;
+};
+
 describe("evaluateChunkSwitchP95Regression", () => {
   it("passes when current p95 is within 10% of baseline", () => {
     const baseline = diagnosticsWithSamples([100, 100, 100, 100, 100, 100, 100, 100, 100, 200]);
@@ -57,5 +63,44 @@ describe("evaluateChunkSwitchP95Regression", () => {
       throw new Error(`Expected pending status, got ${result.status}`);
     }
     expect(result.reason).toContain("Insufficient chunk-switch samples");
+  });
+
+  it("can compare first-visible-commit p95 independently from full switch duration", () => {
+    const baseline = diagnosticsWithFirstVisibleCommitSamples([50, 50, 50, 50, 50, 50, 50, 50, 50, 100]);
+    baseline.switchDurationMsSamples = [100, 100, 100, 100, 100, 100, 100, 100, 100, 200];
+    const current = diagnosticsWithFirstVisibleCommitSamples([50, 50, 50, 50, 50, 50, 50, 50, 50, 105]);
+    current.switchDurationMsSamples = [100, 100, 100, 100, 100, 100, 100, 100, 100, 260];
+
+    const result = evaluateChunkSwitchP95Regression({
+      baseline,
+      current,
+      metric: "first_visible_commit",
+      allowedRegressionFraction: 0.1,
+    });
+
+    expect(result.status).toBe("pass");
+    expect(result.metric).toBe("first_visible_commit");
+    expect(result.baselineP95Ms).toBe(100);
+    expect(result.currentP95Ms).toBe(105);
+    expect(result.regressionFraction).toBeCloseTo(0.05);
+  });
+
+  it("returns pending when first-visible-commit samples are unavailable", () => {
+    const baseline = diagnosticsWithSamples([100]);
+    const current = diagnosticsWithSamples([110]);
+
+    const result = evaluateChunkSwitchP95Regression({
+      baseline,
+      current,
+      metric: "first_visible_commit",
+      allowedRegressionFraction: 0.1,
+    });
+
+    expect(result.status).toBe("pending");
+    expect(result.metric).toBe("first_visible_commit");
+    if (result.status !== "pending") {
+      throw new Error(`Expected pending status, got ${result.status}`);
+    }
+    expect(result.reason).toContain("first-visible-commit");
   });
 });

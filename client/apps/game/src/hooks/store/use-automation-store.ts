@@ -63,6 +63,15 @@ export interface RealmAutomationExecutionSummary {
   skipped: { resourceId: ResourcesIds; reason: string }[];
 }
 
+export type AutomationExecutionStatus = "success" | "failed" | "skipped";
+
+export interface RealmExecutionStatus {
+  status: AutomationExecutionStatus;
+  message?: string;
+  attemptedAt: number;
+  consecutiveFailures: number;
+}
+
 export interface RealmAutomationConfig {
   realmId: string;
   realmName?: string;
@@ -73,6 +82,7 @@ export interface RealmAutomationConfig {
   createdAt: number;
   updatedAt: number;
   lastExecution?: RealmAutomationExecutionSummary;
+  lastStatus?: RealmExecutionStatus;
 }
 
 enum ProductionType {
@@ -107,6 +117,7 @@ interface ProductionAutomationState {
   resetAll: () => void;
   setNextRunTimestamp: (timestamp: number | null) => void;
   recordExecution: (realmId: string, summary: RealmAutomationExecutionSummary) => void;
+  recordStatus: (realmId: string, status: RealmExecutionStatus) => void;
   getRealmConfig: (realmId: string) => RealmAutomationConfig | undefined;
   setHydrated: (value: boolean) => void;
   pruneForGame: (gameId: string) => void;
@@ -325,6 +336,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
                 presetId: "smart",
                 updatedAt: Date.now(),
                 lastExecution: undefined,
+                lastStatus: undefined,
               },
             },
           };
@@ -353,6 +365,21 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           };
           return nextState;
         }),
+      recordStatus: (realmId, status) =>
+        set((state) => {
+          const realm = state.realms[realmId];
+          if (!realm) return state;
+          return {
+            realms: {
+              ...state.realms,
+              [realmId]: {
+                ...realm,
+                lastStatus: status,
+                updatedAt: Date.now(),
+              },
+            },
+          };
+        }),
       getRealmConfig: (realmId) => {
         const realm = get().realms[realmId];
         if (!realm) return undefined;
@@ -375,7 +402,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     {
       name: "eternum-production-automation",
       storage: createJSONStorage(() => localStorage),
-      version: 8,
+      version: 9,
       partialize: (state) => ({
         realms: state.realms,
         nextRunTimestamp: state.nextRunTimestamp,

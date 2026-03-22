@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/custom.d.ts",
+    "src/three/renderer-backend-v2.ts",
+    "src/three/three-webgpu-type-guard.ts"
+  ]
+}

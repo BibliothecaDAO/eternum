@@ -28,7 +28,11 @@ export function snapshotChunkDiagnostics(diagnostics: WorldmapChunkDiagnostics):
   return {
     ...diagnostics,
     switchDurationMsSamples: [...diagnostics.switchDurationMsSamples],
+    terrainReadyDurationMsSamples: [...diagnostics.terrainReadyDurationMsSamples],
+    terrainCommitDurationMsSamples: [...diagnostics.terrainCommitDurationMsSamples],
+    firstVisibleCommitDurationMsSamples: [...diagnostics.firstVisibleCommitDurationMsSamples],
     managerDurationMsSamples: [...diagnostics.managerDurationMsSamples],
+    managerCatchUpDurationMsSamples: [...diagnostics.managerCatchUpDurationMsSamples],
   };
 }
 

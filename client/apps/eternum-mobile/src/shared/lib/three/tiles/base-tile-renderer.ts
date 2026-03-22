@@ -68,8 +68,14 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
         this.texture.colorSpace = THREE.SRGBColorSpace;
       }
 
+      const textureDimensions = this.getTextureDimensions(this.texture);
+      if (!textureDimensions) {
+        console.error(`Texture dimensions unavailable for ${this.constructor.name}.`);
+        return;
+      }
+
       const tileWidthWithGap = this.config.tileWidth + this.config.tileGap;
-      const tilesPerRow = Math.floor((this.texture.image.width + this.config.tileGap) / tileWidthWithGap);
+      const tilesPerRow = Math.floor((textureDimensions.width + this.config.tileGap) / tileWidthWithGap);
 
       await this.createTileMaterials(tilesPerRow, this.texture);
       this.createPrototypeSprites();
@@ -93,7 +99,12 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     texture: THREE.Texture,
     opacity: number = 1.0,
   ): void {
-    const tileUV = this.calculateTileUV(tileIndex, tilesPerRow, texture.image.width, texture.image.height);
+    const textureDimensions = this.getTextureDimensions(texture);
+    if (!textureDimensions) {
+      console.warn(`Texture dimensions unavailable for tile ${tileId} in ${this.constructor.name}.`);
+      return;
+    }
+    const tileUV = this.calculateTileUV(tileIndex, tilesPerRow, textureDimensions.width, textureDimensions.height);
 
     const material = new THREE.SpriteMaterial({
       map: texture,
@@ -157,6 +168,26 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     const offsetY = 1 - ((tileY + 1) * tileHeightWithGap) / textureHeight;
 
     return { offsetX, offsetY, repeatX, repeatY };
+  }
+
+  protected getTextureDimensions(texture: THREE.Texture): { width: number; height: number } | null {
+    const textureImage = texture.image as unknown;
+    if (
+      !textureImage ||
+      typeof textureImage !== "object" ||
+      !("width" in textureImage) ||
+      !("height" in textureImage)
+    ) {
+      return null;
+    }
+
+    const width = (textureImage as { width?: unknown }).width;
+    const height = (textureImage as { height?: unknown }).height;
+    if (typeof width !== "number" || typeof height !== "number") {
+      return null;
+    }
+
+    return { width, height };
   }
 
   protected createSingleTileSprite(spriteKey: string, tileId: TTileIndex, position: THREE.Vector3, row: number): void {

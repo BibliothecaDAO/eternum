@@ -13,11 +13,22 @@ import { useAccount } from "@starknet-react/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
 import { env } from "../../env";
+import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
 import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
 
-// Known contract selector for blitz_realm_systems
+// Known contract selectors
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
+const REALM_SYSTEMS_SELECTOR = "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2";
+
+interface SeasonRegistrationParams {
+  realmId?: number;
+  ownerAddress?: string;
+  frontendAddress?: string;
+  side?: number;
+  layer?: number;
+  point?: number;
+}
 
 /**
  * Fetch ERC20 token balance using RPC call
@@ -83,7 +94,7 @@ interface UseWorldRegistrationProps {
 
 interface UseWorldRegistrationReturn {
   /** Execute registration */
-  register: () => Promise<void>;
+  register: (params?: SeasonRegistrationParams) => Promise<void>;
   /** Current registration stage */
   registrationStage: RegistrationStage;
   /** Whether registration is in progress */
@@ -96,6 +107,8 @@ interface UseWorldRegistrationReturn {
   feeAmount: bigint;
   /** Whether registration is currently possible */
   canRegister: boolean;
+  /** Whether registration capacity has been reached */
+  isRegistrationFull: boolean;
   /** Whether fee balance is being checked */
   isCheckingFeeBalance: boolean;
   /** Whether wallet has enough fee token balance for registration */
@@ -169,6 +182,9 @@ export const useWorldRegistration = ({
   const requiresEntryToken = Boolean(config?.entryTokenAddress && config.feeAmount > 0n);
   const feeAmount = config?.feeAmount ?? 0n;
   const devModeOn = config?.devModeOn ?? false;
+  const registrationCount = config?.registrationCount ?? 0;
+  const registrationCountMax = resolveEffectiveRegistrationCountMax(config);
+  const isRegistrationFull = isRegistrationCapacityReached(registrationCount, registrationCountMax);
   const requiresFeeBalanceForRegistration = chain === "mainnet";
   const needsFeeBalanceCheck = requiresFeeBalanceForRegistration && Boolean(config?.feeTokenAddress && feeAmount > 0n);
 
@@ -195,6 +211,7 @@ export const useWorldRegistration = ({
     !!usernameFelt &&
     !isCheckingFeeBalance &&
     hasSufficientFeeBalance &&
+    !isRegistrationFull &&
     registrationStage === "idle";
 
   const isRegistering = registrationStage !== "idle" && registrationStage !== "done" && registrationStage !== "error";
@@ -264,6 +281,16 @@ export const useWorldRegistration = ({
     const normalizedSelector = normalizeSelector(BLITZ_REALM_SYSTEMS_SELECTOR);
     const address = contracts[normalizedSelector];
     if (!address) throw new Error("blitz_realm_systems contract not found for this world");
+    return address;
+  }, []);
+
+  /**
+   * Get the realm_systems contract address (season mode settle path)
+   */
+  const getRealmSystemsAddress = useCallback(async (contracts: Record<string, string>): Promise<string> => {
+    const normalizedSelector = normalizeSelector(REALM_SYSTEMS_SELECTOR);
+    const address = contracts[normalizedSelector];
+    if (!address) throw new Error("realm_systems contract not found for this world");
     return address;
   }, []);
 
@@ -366,103 +393,129 @@ export const useWorldRegistration = ({
   /**
    * Execute full registration flow
    */
-  const register = useCallback(async () => {
-    if (!canRegister || !account) return;
+  const register = useCallback(
+    async (params?: SeasonRegistrationParams) => {
+      if (!canRegister || !account) return;
 
-    setError(null);
-    setRegistrationStage("preparing");
+      setError(null);
+      setRegistrationStage("preparing");
 
-    try {
-      // Resolve contracts
-      const contracts = await resolveContracts();
-      const blitzSystemsAddress = await getBlitzRealmSystemsAddress(contracts);
+      try {
+        // Resolve contracts
+        const contracts = await resolveContracts();
 
-      // Cast account to starknet Account for execute
-      const starknetAccount = account as unknown as Account;
+        // Cast account to starknet Account for execute
+        const starknetAccount = account as unknown as Account;
 
-      if (requiresEntryToken && config?.entryTokenAddress && config?.feeTokenAddress) {
-        // Create RPC provider for balance checks and entry token queries
-        const rpcUrl = getRpcUrlForChain(chain);
-        const rpcProvider = new RpcProvider({ nodeUrl: rpcUrl });
+        // Season mode path (Eternum): realm_systems.create(owner, realm_id, frontend, {side, layer, point})
+        // Placement + realm ID are accepted as params for future UI wiring. Defaults are placeholders.
+        if (config?.mode === "eternum") {
+          const realmSystemsAddress = await getRealmSystemsAddress(contracts);
+          const owner = params?.ownerAddress ?? address!;
+          const frontend = params?.frontendAddress ?? address!;
+          const realmId = params?.realmId ?? 0;
+          const side = params?.side ?? 0;
+          const layer = params?.layer ?? 1;
+          const point = params?.point ?? 0;
 
-        // Check if we already have an entry token
-        let tokenId = await fetchAvailableEntryTokenId(rpcProvider, config.entryTokenAddress, address!);
+          setRegistrationStage("registering");
+          await starknetAccount.execute({
+            contractAddress: realmSystemsAddress,
+            entrypoint: "create",
+            calldata: CallData.compile([owner, realmId, frontend, side, layer, point]),
+          });
+          setRegistrationStage("done");
+          return;
+        }
 
-        if (!tokenId) {
-          // Auto top-up on non-mainnet if fee balance is insufficient
-          const isNonMainnet = chain !== "mainnet";
-          if (isNonMainnet && feeAmount > 0n) {
-            // Check current fee token balance
-            const currentBalance = await fetchTokenBalance(rpcProvider, config.feeTokenAddress, address!);
+        const blitzSystemsAddress = await getBlitzRealmSystemsAddress(contracts);
 
-            if (currentBalance < feeAmount) {
-              // Transfer shortfall from master account
-              const masterAccount = createMasterAccount(rpcProvider);
-              if (masterAccount) {
-                const shortfall = feeAmount - currentBalance;
-                const amount = uint256.bnToUint256(shortfall);
-                try {
-                  await masterAccount.execute({
-                    contractAddress: config.feeTokenAddress,
-                    entrypoint: "transfer",
-                    calldata: CallData.compile([address!, amount.low, amount.high]),
-                  });
-                  // Wait a bit for the transfer to be indexed
-                  await new Promise((resolve) => setTimeout(resolve, 2000));
-                } catch (topUpError) {
-                  console.error("Auto top-up failed:", topUpError);
-                  // Continue anyway - the user might have gotten tokens elsewhere
+        if (requiresEntryToken && config?.entryTokenAddress && config?.feeTokenAddress) {
+          // Create RPC provider for balance checks and entry token queries
+          const rpcUrl = getRpcUrlForChain(chain);
+          const rpcProvider = new RpcProvider({ nodeUrl: rpcUrl });
+
+          // Check if we already have an entry token
+          let tokenId = await fetchAvailableEntryTokenId(rpcProvider, config.entryTokenAddress, address!);
+
+          if (!tokenId) {
+            // Auto top-up on non-mainnet if fee balance is insufficient
+            const isNonMainnet = chain !== "mainnet";
+            if (isNonMainnet && feeAmount > 0n) {
+              // Check current fee token balance
+              const currentBalance = await fetchTokenBalance(rpcProvider, config.feeTokenAddress, address!);
+
+              if (currentBalance < feeAmount) {
+                // Transfer shortfall from master account
+                const masterAccount = createMasterAccount(rpcProvider);
+                if (masterAccount) {
+                  const shortfall = feeAmount - currentBalance;
+                  const amount = uint256.bnToUint256(shortfall);
+                  try {
+                    await masterAccount.execute({
+                      contractAddress: config.feeTokenAddress,
+                      entrypoint: "transfer",
+                      calldata: CallData.compile([address!, amount.low, amount.high]),
+                    });
+                    // Wait a bit for the transfer to be indexed
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
+                  } catch (topUpError) {
+                    console.error("Auto top-up failed:", topUpError);
+                    // Continue anyway - the user might have gotten tokens elsewhere
+                  }
                 }
               }
             }
+
+            // Step 1: Obtain entry token
+            setRegistrationStage("obtaining-token");
+            const obtainCalls = buildObtainTokenCalls(blitzSystemsAddress);
+            await starknetAccount.execute(obtainCalls);
+
+            // Step 2: Wait for token
+            setRegistrationStage("waiting-for-token");
+            tokenId = await waitForEntryToken(rpcProvider);
+            console.log({ tokenId });
+            if (!tokenId) {
+              throw new Error("Failed to obtain entry token. Please try again.");
+            }
           }
 
-          // Step 1: Obtain entry token
-          setRegistrationStage("obtaining-token");
-          const obtainCalls = buildObtainTokenCalls(blitzSystemsAddress);
-          await starknetAccount.execute(obtainCalls);
-
-          // Step 2: Wait for token
-          setRegistrationStage("waiting-for-token");
-          tokenId = await waitForEntryToken(rpcProvider);
-          console.log({ tokenId });
-          if (!tokenId) {
-            throw new Error("Failed to obtain entry token. Please try again.");
-          }
+          // Step 3: Register with token
+          setRegistrationStage("registering");
+          const registerCalls = buildRegisterCalls(blitzSystemsAddress, tokenId);
+          await starknetAccount.execute(registerCalls);
+        } else {
+          // No entry token required - direct registration
+          setRegistrationStage("registering");
+          const registerCalls = buildRegisterCalls(blitzSystemsAddress, 0n);
+          await starknetAccount.execute(registerCalls);
         }
 
-        // Step 3: Register with token
-        setRegistrationStage("registering");
-        const registerCalls = buildRegisterCalls(blitzSystemsAddress, tokenId);
-        await starknetAccount.execute(registerCalls);
-      } else {
-        // No entry token required - direct registration
-        setRegistrationStage("registering");
-        const registerCalls = buildRegisterCalls(blitzSystemsAddress, 0n);
-        await starknetAccount.execute(registerCalls);
+        setRegistrationStage("done");
+      } catch (err) {
+        console.error("Registration failed:", err);
+        setError(err instanceof Error ? err.message : "Registration failed");
+        setRegistrationStage("error");
       }
-
-      setRegistrationStage("done");
-    } catch (err) {
-      console.error("Registration failed:", err);
-      setError(err instanceof Error ? err.message : "Registration failed");
-      setRegistrationStage("error");
-    }
-  }, [
-    canRegister,
-    account,
-    address,
-    config,
-    worldName,
-    chain,
-    feeAmount,
-    requiresEntryToken,
-    resolveContracts,
-    getBlitzRealmSystemsAddress,
-    buildObtainTokenCalls,
-    buildRegisterCalls,
-    waitForEntryToken,
-  ]);
+    },
+    [
+      canRegister,
+      account,
+      address,
+      config,
+      worldName,
+      chain,
+      feeAmount,
+      requiresEntryToken,
+      resolveContracts,
+      getBlitzRealmSystemsAddress,
+      getRealmSystemsAddress,
+      buildObtainTokenCalls,
+      buildRegisterCalls,
+      waitForEntryToken,
+    ],
+  );
 
   return {
     register,
@@ -472,6 +525,7 @@ export const useWorldRegistration = ({
     requiresEntryToken,
     feeAmount,
     canRegister,
+    isRegistrationFull,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,
   };

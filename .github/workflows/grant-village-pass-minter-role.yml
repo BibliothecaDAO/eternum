@@ -1,0 +1,71 @@
+name: Grant Village Pass Roles
+
+on:
+  workflow_dispatch:
+    inputs:
+      chain:
+        description: "Eternum environment"
+        required: true
+        default: "slot.eternum"
+        type: choice
+        options:
+          - slot.eternum
+          - slottest.eternum
+          - sepolia.eternum
+          - mainnet.eternum
+      game_name:
+        description: "Game/world name (example: etrn-iron-mist-11)"
+        required: true
+
+jobs:
+  grant-village-pass-roles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.event.inputs.chain }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Grant village pass roles to world systems
+        env:
+          NO_COLOR: ""
+          DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
+          DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
+          RPC_URL: ${{ vars.RPC_URL }}
+          CARTRIDGE_API_BASE: ${{ vars.CARTRIDGE_API_BASE || 'https://api.cartridge.gg' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DOJO_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; then
+            echo "Missing game launch DOJO credentials for ${{ github.job }}" >&2
+            exit 1
+          fi
+
+          bun config/deployer/clean/cli/grant-village-pass-minter-role.ts \
+            --chain "${{ github.event.inputs.chain }}" \
+            --game "${{ github.event.inputs.game_name }}"
+
+      - name: Upload role grant summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: village-pass-role-summary
+          path: .context/village-pass-role/**/*
+          if-no-files-found: error

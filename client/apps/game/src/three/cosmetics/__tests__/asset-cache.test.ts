@@ -5,6 +5,7 @@ const testMocks = vi.hoisted(() => ({
   textureLoadAsyncMock: vi.fn(),
   getStandardMaterialMock: vi.fn((material: unknown) => material),
   getBasicMaterialMock: vi.fn((material: unknown) => material),
+  releaseMaterialMock: vi.fn(),
 }));
 
 const threeMocks = vi.hoisted(() => {
@@ -78,6 +79,7 @@ vi.mock("../../utils/material-pool", () => ({
     getInstance: () => ({
       getStandardMaterial: testMocks.getStandardMaterialMock,
       getBasicMaterial: testMocks.getBasicMaterialMock,
+      releaseMaterial: testMocks.releaseMaterialMock,
     }),
   },
 }));
@@ -93,6 +95,7 @@ describe("cosmetic asset cache", () => {
     testMocks.textureLoadAsyncMock.mockReset();
     testMocks.getStandardMaterialMock.mockClear();
     testMocks.getBasicMaterialMock.mockClear();
+    testMocks.releaseMaterialMock.mockClear();
   });
 
   it("loads gltf and texture assets and records the handle", async () => {
@@ -119,5 +122,35 @@ describe("cosmetic asset cache", () => {
     expect(handle?.payload.gltfs).toHaveLength(1);
     expect(handle?.payload.textures).toHaveLength(1);
     expect(testMocks.getStandardMaterialMock).toHaveBeenCalledWith(expect.any(threeMocks.MockMeshStandardMaterial));
+  });
+
+  it("releases pooled materials and textures when clearing the cache", async () => {
+    const entry = registerCosmetic({
+      id: "army:Test:T1:cleanup",
+      category: "army-skin",
+      appliesTo: ["army:Test:T1"],
+      assetPaths: ["units/example.glb", "/images/example.png"],
+    });
+
+    const texture = new threeMocks.MockTexture() as InstanceType<typeof threeMocks.MockTexture> & {
+      dispose: ReturnType<typeof vi.fn>;
+    };
+    (texture as any).dispose = vi.fn();
+    testMocks.textureLoadAsyncMock.mockResolvedValue(texture);
+    testMocks.gltfLoadMock.mockImplementation((_path, onLoad) => {
+      const materialA = new threeMocks.MockMeshStandardMaterial();
+      const materialB = new threeMocks.MockMeshBasicMaterial();
+      const mesh = new threeMocks.MockMesh();
+      mesh.material = [materialA, materialB];
+      onLoad({ scene: { traverse: (callback: (node: any) => void) => callback(mesh) } });
+    });
+
+    await preloadAllCosmeticAssets();
+
+    clearCosmeticAssetCache();
+
+    expect(getCosmeticAsset(entry.id)).toBeUndefined();
+    expect(testMocks.releaseMaterialMock).toHaveBeenCalledTimes(2);
+    expect((texture as any).dispose).toHaveBeenCalledTimes(1);
   });
 });

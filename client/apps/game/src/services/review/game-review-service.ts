@@ -1,10 +1,10 @@
+import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import {
   fetchLandingLeaderboard,
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
 } from "@/services/leaderboard/landing-leaderboard-service";
-import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
 import { getMMRTierFromRaw, toMmrIntegerFromRaw } from "@/ui/utils/mmr-tiers";
 import { SqlApi, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
@@ -29,6 +29,7 @@ const RESOURCE_PRECISION_BIGINT = BigInt(RESOURCE_PRECISION);
 const LORDS_TOKEN_DECIMALS = 18;
 const VICTORY_POINTS_MULTIPLIER = 1_000_000n;
 const GAME_REWARD_CHEST_POINTS_THRESHOLD = 500n * VICTORY_POINTS_MULTIPLIER;
+const CLAIM_ALL_REWARDS_BATCH_SIZE = 200;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
 const EVENT_KEY0_EXPR = "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x')";
 const EVENT_PLAYER_EXPR =
@@ -81,6 +82,7 @@ const REVIEW_MMR_CONFIG_QUERY = `
 
 const REVIEW_SEASON_TIMING_QUERY = `
   SELECT
+    "season_config.dev_mode_on" AS dev_mode_on,
     "season_config.end_at" AS season_end_at,
     "season_config.registration_grace_seconds" AS registration_grace_seconds,
     "blitz_registration_config.registration_count" AS registration_count
@@ -156,6 +158,17 @@ const buildReviewRegisteredPointsQuery = (playerAddress: string) => `
   FROM "s1_eternum-PlayerRegisteredPoints"
   WHERE ltrim(lower(CAST(address AS TEXT)), '0x') = ltrim(lower('${playerAddress}'), '0x')
   LIMIT 1;
+`;
+
+const buildReviewUnclaimedPlayersQuery = (trialId: bigint) => `
+  SELECT
+    player,
+    rank,
+    paid
+  FROM "s1_eternum-PlayerRank"
+  WHERE ${buildTrialIdMatchCondition("trial_id", trialId)}
+    AND rank > 0
+  ORDER BY rank ASC;
 `;
 
 const buildToriiSqlUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii/sql`;
@@ -551,6 +564,7 @@ interface MmrConfigRow {
 }
 
 interface SeasonTimingRow {
+  dev_mode_on?: unknown;
   season_end_at?: unknown;
   registration_grace_seconds?: unknown;
   registration_count?: unknown;
@@ -580,6 +594,12 @@ interface PlayerRegisteredPointsRow {
   prize_claimed?: unknown;
 }
 
+interface PlayerRankClaimStatusRow {
+  player?: unknown;
+  rank?: unknown;
+  paid?: unknown;
+}
+
 interface TransactionsCountRow {
   transaction_count?: unknown;
 }
@@ -595,10 +615,13 @@ interface ReviewFinalizationMeta {
   registrationCount: number;
   finalTrialId: bigint | null;
   rankingFinalized: boolean;
+  devModeOn: boolean;
   mmrCommitted: boolean;
   mmrEnabled: boolean;
   mmrMinPlayers: number;
   mmrTokenAddress: string | null;
+  seasonEndAt: number | null;
+  registrationGraceSeconds: number;
   scoreSubmissionOpensAt: number | null;
 }
 
@@ -686,6 +709,17 @@ export interface GameReviewClaimSummary {
   claimBlockedReason: string | null;
 }
 
+interface GameReviewUnclaimedPlayer {
+  address: string;
+  rank: number;
+}
+
+interface GameReviewUnclaimedPlayersSummary {
+  rankingFinalized: boolean;
+  totalRankedPlayers: number;
+  unclaimedPlayers: GameReviewUnclaimedPlayer[];
+}
+
 interface FinalizeGameReviewResult {
   rankingSubmitted: boolean;
   mmrSubmitted: boolean;
@@ -698,6 +732,13 @@ interface FinalizeGameReviewResult {
 interface ClaimGameReviewRewardsResult {
   claimed: boolean;
   playerAddress: string;
+}
+
+interface ClaimGameReviewRewardsForPlayersResult {
+  claimed: boolean;
+  claimedPlayers: number;
+  playerAddresses: string[];
+  batchesSubmitted: number;
 }
 
 const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<ReviewFinalizationMeta> => {
@@ -723,24 +764,29 @@ const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<Rev
         : registeredPlayers.length;
   const finalTrialId = parseBigIntValue(rankFinalRows[0]?.trial_id);
   const rankingFinalized = finalTrialId != null && finalTrialId > 0n;
+  const devModeOn = parseBoolean(seasonTimingRows[0]?.dev_mode_on);
   const mmrCommitted = parseNumeric(mmrMetaRows[0]?.game_median) > 0;
 
   const mmrEnabled = parseNumeric(mmrConfigRows[0]?.mmr_enabled) !== 0;
   const mmrMinPlayers = Math.max(1, parseNumeric(mmrConfigRows[0]?.mmr_min_players) || 6);
   const mmrTokenAddress = parseAddress(mmrConfigRows[0]?.mmr_token_address);
-  const seasonEndAt = parseNumeric(seasonTimingRows[0]?.season_end_at);
+  const seasonEndAtRaw = parseNumeric(seasonTimingRows[0]?.season_end_at);
+  const seasonEndAt = seasonEndAtRaw > 0 ? seasonEndAtRaw : null;
   const registrationGraceSeconds = Math.max(0, parseNumeric(seasonTimingRows[0]?.registration_grace_seconds));
-  const scoreSubmissionOpensAt = seasonEndAt > 0 ? seasonEndAt + registrationGraceSeconds : null;
+  const scoreSubmissionOpensAt = seasonEndAt != null ? seasonEndAt + registrationGraceSeconds : null;
 
   return {
     registeredPlayers,
     registrationCount,
     finalTrialId,
     rankingFinalized,
+    devModeOn,
     mmrCommitted,
     mmrEnabled,
     mmrMinPlayers,
     mmrTokenAddress,
+    seasonEndAt,
+    registrationGraceSeconds,
     scoreSubmissionOpensAt,
   };
 };
@@ -1311,6 +1357,61 @@ export const fetchGameReviewClaimSummary = async ({
   };
 };
 
+const fetchGameReviewUnclaimedPlayers = async ({
+  worldName,
+  chain,
+}: {
+  worldName: string;
+  chain: Chain;
+}): Promise<GameReviewUnclaimedPlayersSummary> => {
+  // Keep the chain param for stable query keys and future chain-dependent claim policies.
+  void chain;
+
+  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
+  const finalization = await fetchReviewFinalizationMeta(toriiSqlBaseUrl);
+
+  if (!finalization.rankingFinalized || finalization.finalTrialId == null || finalization.finalTrialId <= 0n) {
+    return {
+      rankingFinalized: false,
+      totalRankedPlayers: 0,
+      unclaimedPlayers: [],
+    };
+  }
+
+  const playerRankRows = await queryToriiSql<PlayerRankClaimStatusRow>(
+    toriiSqlBaseUrl,
+    buildReviewUnclaimedPlayersQuery(finalization.finalTrialId),
+    "Failed to fetch player rank claim statuses",
+  );
+
+  const unclaimedPlayers: GameReviewUnclaimedPlayer[] = [];
+  let totalRankedPlayers = 0;
+
+  playerRankRows.forEach((row) => {
+    const playerAddress = parseAddress(row.player);
+    const playerRank = parseInteger(row.rank);
+    if (!playerAddress || playerRank == null || playerRank <= 0) {
+      return;
+    }
+
+    totalRankedPlayers += 1;
+    if (parseBoolean(row.paid)) {
+      return;
+    }
+
+    unclaimedPlayers.push({
+      address: playerAddress,
+      rank: playerRank,
+    });
+  });
+
+  return {
+    rankingFinalized: true,
+    totalRankedPlayers,
+    unclaimedPlayers,
+  };
+};
+
 export const finalizeGameRankingAndMMR = async ({
   worldName,
   chain,
@@ -1446,6 +1547,40 @@ export const claimGameReviewRewards = async ({
     throw new Error("Missing player address for reward claim.");
   }
 
+  await claimGameReviewRewardsForPlayers({
+    worldName,
+    chain,
+    signer,
+    playerAddresses: [normalizedAddress],
+  });
+
+  return {
+    claimed: true,
+    playerAddress: normalizedAddress,
+  };
+};
+
+const claimGameReviewRewardsForPlayers = async ({
+  worldName,
+  chain,
+  signer,
+  playerAddresses,
+}: {
+  worldName: string;
+  chain: Chain;
+  signer: Account | AccountInterface;
+  playerAddresses: string[];
+}): Promise<ClaimGameReviewRewardsForPlayersResult> => {
+  const normalizedAddresses = uniqueAddresses(playerAddresses);
+  if (normalizedAddresses.length === 0) {
+    return {
+      claimed: true,
+      claimedPlayers: 0,
+      playerAddresses: [],
+      batchesSubmitted: 0,
+    };
+  }
+
   const profile = await buildWorldProfile(chain, worldName);
   const baseManifest = getGameManifest(chain) as unknown as Record<string, unknown>;
   const patchedManifest = patchManifestWithFactory(baseManifest, profile.worldAddress, profile.contractsBySelector);
@@ -1455,27 +1590,32 @@ export const claimGameReviewRewards = async ({
     "prize_distribution_systems",
   ).address;
 
-  const claimCall: Call = {
-    contractAddress: prizeDistributionAddress,
-    entrypoint: "blitz_prize_claim",
-    calldata: [1, normalizedAddress],
-  };
+  const claimBatches = chunk(normalizedAddresses, CLAIM_ALL_REWARDS_BATCH_SIZE);
+  for (const batch of claimBatches) {
+    const claimCall: Call = {
+      contractAddress: prizeDistributionAddress,
+      entrypoint: "blitz_prize_claim",
+      calldata: [batch.length, ...batch],
+    };
 
-  const calls: Call[] = [];
-  const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
-  if (vrfProviderAddress !== undefined && Number(vrfProviderAddress) !== 0) {
-    calls.push({
-      contractAddress: vrfProviderAddress,
-      entrypoint: "request_random",
-      calldata: [prizeDistributionAddress, 0, signer.address],
-    });
+    const calls: Call[] = [];
+    const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
+    if (vrfProviderAddress !== undefined && Number(vrfProviderAddress) !== 0) {
+      calls.push({
+        contractAddress: vrfProviderAddress,
+        entrypoint: "request_random",
+        calldata: [prizeDistributionAddress, 0, signer.address],
+      });
+    }
+    calls.push(claimCall);
+
+    await signer.execute(calls);
   }
-  calls.push(claimCall);
-
-  await signer.execute(calls);
 
   return {
     claimed: true,
-    playerAddress: normalizedAddress,
+    claimedPlayers: normalizedAddresses.length,
+    playerAddresses: normalizedAddresses,
+    batchesSubmitted: claimBatches.length,
   };
 };

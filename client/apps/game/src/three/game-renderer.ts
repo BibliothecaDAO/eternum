@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getGameModeId } from "@/config/game-modes";
 import {
   CAMERA_CONFIG,
   CAMERA_FAR_PLANE,
@@ -9,82 +10,76 @@ import {
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/hexagon-scene";
+import FastTravelScene from "@/three/scenes/fast-travel";
 import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
 import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
-import {
-  BloomEffect,
-  BrightnessContrastEffect,
-  ChromaticAberrationEffect,
-  Effect,
-  EffectComposer,
-  EffectPass,
-  FXAAEffect,
-  HueSaturationEffect,
-  RenderPass,
-  ToneMappingEffect,
-  ToneMappingMode,
-  VignetteEffect,
-} from "postprocessing";
+import { ToneMappingMode } from "postprocessing";
 import {
   ACESFilmicToneMapping,
   CineonToneMapping,
-  HalfFloatType,
   LinearToneMapping,
   NoToneMapping,
-  PCFShadowMap,
-  PCFSoftShadowMap,
   PerspectiveCamera,
-  PMREMGenerator,
   Raycaster,
   ReinhardToneMapping,
-  UnsignedByteType,
   Vector2,
-  WebGLRenderer,
-  WebGLRenderTarget,
+  type Camera,
+  type Object3D,
+  type Object3DEventMap,
 } from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import Stats from "three/examples/jsm/libs/stats.module.js";
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { env } from "../../env";
+import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
+import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
 import { SceneName } from "./types";
 import {
+  resolveCapabilityAwareRendererEffectPlan,
   resolveLabelRenderDecision,
   resolveLabelRenderIntervalMs,
+  resolveRendererEnvironmentPolicy,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
+import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
+import {
+  replaceRendererDiagnosticDegradations,
+  setRendererDiagnosticCapabilities,
+  setRendererDiagnosticDegradations,
+  setRendererDiagnosticEffectPlan,
+  setRendererDiagnosticPostprocessPolicy,
+  snapshotRendererDiagnostics,
+  setRendererDiagnosticSceneName,
+  syncRendererBackendDiagnostics,
+} from "./renderer-diagnostics";
+import {
+  applyRendererBackendEnvironment,
+  applyRendererBackendPostProcessPlan,
+  applyRendererBackendQuality,
+  disposeRendererBackend,
+  renderRendererBackendFrame,
+  resizeRendererBackend,
+} from "./renderer-backend-compat";
+import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 import { transitionDB } from "./utils/";
-import { getContactShadowResources } from "./utils/contact-shadow";
+import { disposeContactShadowResources, getContactShadowResources } from "./utils/contact-shadow";
+import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
+import { createWebGLRendererBackend, type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
+import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
+import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
+import { requestRendererScenePrewarm, resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
+import { StatsRecorder } from "./stats-recorder";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
-let cachedHDRTarget: WebGLRenderTarget | null = null;
-let cachedHDRPromise: Promise<WebGLRenderTarget> | null = null;
-
-// Stats recording types
-interface StatsRecordingSample {
-  timestamp: number;
-  elapsedMs: number;
-  fps: number;
-  frameTime: number;
-  drawCalls: number;
-  triangles: number;
-  geometries: number;
-  textures: number;
-  programs: number;
-  scene: string;
-  heapUsedMB?: number;
-  heapTotalMB?: number;
-}
 
 const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
   [GraphicsSettings.HIGH]: 0.55,
@@ -95,19 +90,14 @@ const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
   private labelRendererElement!: HTMLDivElement;
-  private renderer!: WebGLRenderer;
+  private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  private renderer!: RendererSurfaceLike;
   private camera!: PerspectiveCamera;
   private raycaster!: Raycaster;
   private mouse!: Vector2;
   private controls!: MapControls;
-  private composer!: EffectComposer;
-  private renderPass!: RenderPass;
-  private effectPass?: EffectPass;
   private postProcessingConfig?: PostProcessingConfig;
-  private toneMappingEffect?: ToneMappingEffect;
-  private hueSaturationEffect?: HueSaturationEffect;
-  private brightnessContrastEffect?: BrightnessContrastEffect;
-  private vignetteEffect?: VignetteEffect;
+  private postProcessController?: RendererPostProcessController;
   private postProcessingGUIInitialized = false;
   private labelsDirty = true;
   private lastLabelRenderTime = 0;
@@ -120,6 +110,7 @@ export default class GameRenderer {
     brightness: 0,
     vignetteDarkness: 0,
   };
+  private weatherBaseValuesInitialized = false;
   private weatherPostProcessingEnabled = true;
   private unsubscribeQualityController?: () => void;
   private lastAppliedQuality?: QualityFeatures;
@@ -131,14 +122,7 @@ export default class GameRenderer {
   private statsDomElement?: HTMLElement;
 
   // Stats Recording
-  private isRecordingStats = false;
-  private statsRecordingSamples: StatsRecordingSample[] = [];
-  private statsRecordingStartTime = 0;
-  private statsRecordingIndicator?: HTMLDivElement;
-  private lastFps = 0;
-  private frameCount = 0;
-  private fpsAccumulator = 0;
-  private lastFpsUpdateTime = 0;
+  private statsRecorder!: StatsRecorder;
 
   // Camera settings
   private cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
@@ -149,6 +133,7 @@ export default class GameRenderer {
 
   // Scenes
   private worldmapScene!: WorldmapScene;
+  private fastTravelScene?: FastTravelScene;
   private hexceptionScene!: HexceptionScene;
   private hudScene!: HUDScene;
 
@@ -157,10 +142,11 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
-  private environmentTarget?: WebGLRenderTarget;
+  private guiFolders: TrackableGuiFolder[] = [];
   private unsubscribeEnableMapZoom?: () => void;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
   private readonly isMobileDevice = IS_MOBILE;
+  private backendInitializationPromise?: Promise<void>;
   private readonly handleWindowResize = () => this.onWindowResize();
   private readonly handleDocumentFocus = (event: FocusEvent) => {
     if (event.target instanceof HTMLInputElement && this.controls) {
@@ -177,13 +163,15 @@ export default class GameRenderer {
     this.graphicsSetting = GRAPHICS_SETTING;
     this.dojo = dojoContext;
 
-    this.initializeRenderer();
+    this.backendInitializationPromise = this.initializeRendererBackend();
     this.initializeCamera();
     this.initializeRaycaster();
-    this.setupGUIControls();
 
     this.waitForLabelRendererElement()
       .then((labelRendererElement) => {
+        if (this.isDestroyed) {
+          return;
+        }
         this.labelRendererElement = labelRendererElement;
         this.initializeLabelRenderer();
       })
@@ -217,16 +205,23 @@ export default class GameRenderer {
     this.setupRendererGUI();
   }
 
+  private isFastTravelEnabled(): boolean {
+    return getGameModeId() !== "blitz";
+  }
+
   private setupSceneSwitchingGUI() {
-    const changeSceneFolder = GUIManager.addFolder("Switch scene");
+    const changeSceneFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Switch scene"));
     const changeSceneParams = { scene: SceneName.WorldMap };
-    changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
+    const sceneOptions = this.isFastTravelEnabled()
+      ? [SceneName.WorldMap, SceneName.Hexception, SceneName.FastTravel]
+      : [SceneName.WorldMap, SceneName.Hexception];
+    changeSceneFolder.add(changeSceneParams, "scene", sceneOptions).name("Scene");
     changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
     changeSceneFolder.close();
   }
 
   private setupCameraMovementGUI() {
-    const moveCameraFolder = GUIManager.addFolder("Move Camera");
+    const moveCameraFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Move Camera"));
     const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
 
     moveCameraFolder.add(moveCameraParams, "col").name("Column");
@@ -267,7 +262,10 @@ export default class GameRenderer {
   }
 
   private setupRendererGUI() {
-    const rendererFolder = GUIManager.addFolder("Renderer");
+    if (!this.renderer) {
+      return;
+    }
+    const rendererFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Renderer"));
     rendererFolder
       .add(this.renderer, "toneMapping", {
         "No Tone Mapping": NoToneMapping,
@@ -280,7 +278,7 @@ export default class GameRenderer {
     rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
     rendererFolder.close();
 
-    const contactShadowFolder = GUIManager.addFolder("Contact Shadows");
+    const contactShadowFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Contact Shadows"));
     const { material } = getContactShadowResources();
     const params = { opacity: material.opacity };
     contactShadowFolder
@@ -298,12 +296,13 @@ export default class GameRenderer {
   }
 
   private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const WARN_AFTER_ATTEMPTS = 300; // ~5 seconds at 60fps
       let attempts = 0;
 
       const checkElement = () => {
         if (this.isDestroyed) {
+          reject(new Error("GameRenderer destroyed while waiting for label renderer element"));
           return;
         }
 
@@ -325,29 +324,62 @@ export default class GameRenderer {
     });
   }
 
-  private initializeRenderer() {
-    const isLowGraphics = this.graphicsSetting === GraphicsSettings.LOW;
-    this.renderer = new WebGLRenderer({
-      powerPreference: "high-performance",
-      antialias: false,
-      stencil: !isLowGraphics,
-      depth: true,
+  private async initializeRendererBackend(backendFactory?: RendererBackendFactory): Promise<void> {
+    if (backendFactory) {
+      this.backend = backendFactory({
+        graphicsSetting: this.graphicsSetting,
+        isMobileDevice: this.isMobileDevice,
+        pixelRatio: this.getTargetPixelRatio(),
+      });
+      this.renderer = this.backend.renderer;
+      const diagnostics = await this.backend.initialize();
+      syncRendererBackendDiagnostics(diagnostics);
+      setRendererDiagnosticCapabilities(this.backend.capabilities);
+      setRendererDiagnosticDegradations([]);
+      return;
+    }
+
+    const pixelRatio = this.getTargetPixelRatio();
+    const result = await initializeSelectedRendererBackend({
+      experimentalFactory: async ({ requestedMode }) => {
+        const backend = createWebGPURendererBackend({
+          graphicsSetting: this.graphicsSetting,
+          isMobileDevice: this.isMobileDevice,
+          pixelRatio,
+          requestedMode,
+        });
+        const diagnostics = await backend.initialize();
+
+        return {
+          backend,
+          diagnostics,
+        };
+      },
+      legacyFactory: async () => {
+        const backend = createWebGLRendererBackend({
+          graphicsSetting: this.graphicsSetting,
+          isMobileDevice: this.isMobileDevice,
+          pixelRatio,
+        });
+        const diagnostics = await backend.initialize();
+
+        return {
+          backend,
+          diagnostics,
+        };
+      },
+      options: {
+        envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+        graphicsSetting: this.graphicsSetting,
+        isMobileDevice: this.isMobileDevice,
+        pixelRatio,
+        search: window.location.search,
+      },
     });
 
-    this.renderer.setPixelRatio(this.getTargetPixelRatio());
-    this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
-    this.renderer.shadowMap.type = this.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.8;
-    this.renderer.autoClear = false;
-    // Disable auto-reset of renderer.info so we can capture full frame stats
-    this.renderer.info.autoReset = false;
-    //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    const frameBufferType = this.isMobileDevice ? UnsignedByteType : HalfFloatType;
-    this.composer = new EffectComposer(this.renderer, {
-      frameBufferType,
-    });
+    const backend = result.backend as RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+    this.backend = backend;
+    this.renderer = backend.renderer;
   }
 
   initStats() {
@@ -358,8 +390,14 @@ export default class GameRenderer {
     // Initialize memory monitoring
     this.initMemoryMonitoring();
 
-    // Setup stats recording keyboard shortcuts
-    this.setupStatsRecordingKeyboardShortcuts();
+    // Initialize stats recorder
+    this.statsRecorder = new StatsRecorder({
+      getRendererInfo: () => this.renderer.info,
+      getSceneName: () => this.sceneManager?.getCurrentScene() || "unknown",
+      getMemoryStatsProvider: () => this.memoryMonitor,
+      isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,
+    });
+    this.statsRecorder.setupKeyboardShortcuts();
   }
 
   public initMemoryMonitoring() {
@@ -389,7 +427,7 @@ export default class GameRenderer {
 
     // Provide renderer reference for better resource tracking
     this.memoryMonitor.setRenderer(this.renderer);
-    (window as any).__gameRenderer = this;
+    registerGameRendererDebugGlobals(window, this, this.renderer);
 
     // Create memory stats display element
     this.createMemoryStatsDisplay();
@@ -468,255 +506,40 @@ export default class GameRenderer {
     updateMemoryStats();
   }
 
-  // Stats Recording Methods
+  // Stats Recording — delegated to StatsRecorder
   public startStatsRecording() {
-    if (this.isRecordingStats) {
-      console.log("Stats recording already in progress");
-      return;
-    }
-
-    this.isRecordingStats = true;
-    this.statsRecordingSamples = [];
-    this.statsRecordingStartTime = performance.now();
-    this.lastFpsUpdateTime = this.statsRecordingStartTime;
-    this.frameCount = 0;
-    this.fpsAccumulator = 0;
-
-    // Create recording indicator
-    this.statsRecordingIndicator = document.createElement("div");
-    this.statsRecordingIndicator.style.cssText = `
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(255, 0, 0, 0.8);
-      color: white;
-      font-family: monospace;
-      font-size: 14px;
-      padding: 8px 12px;
-      border-radius: 4px;
-      z-index: 10001;
-      animation: pulse 1s infinite;
-    `;
-    this.statsRecordingIndicator.innerHTML = "🔴 Recording Stats...";
-
-    // Add pulse animation
-    const style = document.createElement("style");
-    style.id = "stats-recording-pulse";
-    style.textContent = `
-      @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-      }
-    `;
-    document.head.appendChild(style);
-    document.body.appendChild(this.statsRecordingIndicator);
-
-    console.log("📊 Stats recording started. Press Ctrl+Shift+S to stop and export.");
+    this.statsRecorder?.start();
   }
 
-  public stopStatsRecording(): StatsRecordingSample[] {
-    if (!this.isRecordingStats) {
-      console.log("No stats recording in progress");
-      return [];
-    }
-
-    this.isRecordingStats = false;
-
-    // Remove indicator
-    if (this.statsRecordingIndicator) {
-      this.statsRecordingIndicator.remove();
-      this.statsRecordingIndicator = undefined;
-    }
-    const pulseStyle = document.getElementById("stats-recording-pulse");
-    if (pulseStyle) pulseStyle.remove();
-
-    const samples = [...this.statsRecordingSamples];
-    const duration = (performance.now() - this.statsRecordingStartTime) / 1000;
-
-    console.log(`📊 Stats recording stopped. ${samples.length} samples over ${duration.toFixed(1)}s`);
-
-    return samples;
+  public stopStatsRecording() {
+    return this.statsRecorder?.stop() ?? [];
   }
 
   private captureStatsSample() {
-    if (!this.isRecordingStats) return;
-
-    const now = performance.now();
-    const elapsedMs = now - this.statsRecordingStartTime;
-
-    // Calculate FPS from frame time
-    this.frameCount++;
-    const timeSinceLastFpsUpdate = now - this.lastFpsUpdateTime;
-
-    if (timeSinceLastFpsUpdate >= 100) {
-      // Update FPS every 100ms
-      this.lastFps = (this.frameCount * 1000) / timeSinceLastFpsUpdate;
-      this.frameCount = 0;
-      this.lastFpsUpdateTime = now;
-    }
-
-    const info = this.renderer.info;
-    const currentScene = this.sceneManager?.getCurrentScene() || "unknown";
-
-    const sample: StatsRecordingSample = {
-      timestamp: Date.now(),
-      elapsedMs,
-      fps: Math.round(this.lastFps * 10) / 10,
-      frameTime: this.lastFps > 0 ? Math.round((1000 / this.lastFps) * 100) / 100 : 0,
-      drawCalls: info.render.calls,
-      triangles: info.render.triangles,
-      geometries: info.memory.geometries,
-      textures: info.memory.textures,
-      programs: info.programs?.length || 0,
-      scene: currentScene,
-    };
-
-    // Add memory info if available
-    if (this.memoryMonitor) {
-      const memStats = this.memoryMonitor.getCurrentStats(currentScene);
-      sample.heapUsedMB = memStats.heapUsedMB;
-      sample.heapTotalMB = memStats.heapTotalMB;
-    }
-
-    this.statsRecordingSamples.push(sample);
-
-    // Update indicator with sample count
-    if (this.statsRecordingIndicator) {
-      const duration = (elapsedMs / 1000).toFixed(1);
-      this.statsRecordingIndicator.innerHTML = `🔴 Recording: ${this.statsRecordingSamples.length} samples (${duration}s)`;
-    }
+    this.statsRecorder?.capture();
   }
 
   public exportStatsRecording() {
-    const samples = this.stopStatsRecording();
+    this.statsRecorder?.exportAsJSON();
+  }
 
-    if (samples.length === 0) {
-      console.log("No samples to export");
+  async initScene() {
+    await this.backendInitializationPromise;
+    if (this.isDestroyed) {
       return;
     }
-
-    // Calculate summary statistics
-    const fps = samples.map((s) => s.fps).filter((f) => f > 0);
-    const drawCalls = samples.map((s) => s.drawCalls);
-    const triangles = samples.map((s) => s.triangles);
-    const heapUsed = samples.map((s) => s.heapUsedMB).filter((h): h is number => h !== undefined);
-    const geometries = samples.map((s) => s.geometries);
-    const textures = samples.map((s) => s.textures);
-    const programs = samples.map((s) => s.programs);
-
-    const recordingDurationSec = samples[samples.length - 1].elapsedMs / 1000;
-
-    // Calculate memory growth rate (MB/s) using linear regression for accuracy
-    let memoryGrowthMBPerSecond = 0;
-    if (heapUsed.length >= 2 && recordingDurationSec > 0) {
-      const firstHeap = heapUsed[0];
-      const lastHeap = heapUsed[heapUsed.length - 1];
-      memoryGrowthMBPerSecond = Math.round(((lastHeap - firstHeap) / recordingDurationSec) * 100) / 100;
-    }
-
-    // Calculate resource changes
-    const resourceChanges = {
-      geometries: geometries[geometries.length - 1] - geometries[0],
-      textures: textures[textures.length - 1] - textures[0],
-      programs: programs[programs.length - 1] - programs[0],
-    };
-
-    const summary = {
-      recordingDuration: recordingDurationSec,
-      sampleCount: samples.length,
-      fps: {
-        min: Math.min(...fps),
-        max: Math.max(...fps),
-        avg: Math.round((fps.reduce((a, b) => a + b, 0) / fps.length) * 10) / 10,
-      },
-      drawCalls: {
-        min: Math.min(...drawCalls),
-        max: Math.max(...drawCalls),
-        avg: Math.round(drawCalls.reduce((a, b) => a + b, 0) / drawCalls.length),
-      },
-      triangles: {
-        min: Math.min(...triangles),
-        max: Math.max(...triangles),
-        avg: Math.round(triangles.reduce((a, b) => a + b, 0) / triangles.length),
-      },
-      memory: {
-        heapUsedMB: {
-          start: heapUsed.length > 0 ? heapUsed[0] : 0,
-          end: heapUsed.length > 0 ? heapUsed[heapUsed.length - 1] : 0,
-          min: heapUsed.length > 0 ? Math.min(...heapUsed) : 0,
-          max: heapUsed.length > 0 ? Math.max(...heapUsed) : 0,
-        },
-        growthMBPerSecond: memoryGrowthMBPerSecond,
-        resourceChanges,
-      },
-    };
-
-    const exportData = {
-      summary,
-      samples,
-      exportedAt: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-    };
-
-    // Copy to clipboard
-    const jsonString = JSON.stringify(exportData, null, 2);
-    navigator.clipboard
-      .writeText(jsonString)
-      .then(() => {
-        console.log("📋 Stats copied to clipboard!");
-        console.log("Summary:", summary);
-      })
-      .catch(() => {
-        // Fallback: download as file
-        const blob = new Blob([jsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `stats-recording-${Date.now()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        console.log("📁 Stats downloaded as file");
-      });
-  }
-
-  private setupStatsRecordingKeyboardShortcuts() {
-    if (!GRAPHICS_DEV_ENABLED) return;
-
-    const handler = (e: KeyboardEvent) => {
-      // Ctrl+Shift+R to start recording
-      if (e.ctrlKey && e.shiftKey && e.key === "R") {
-        e.preventDefault();
-        this.startStatsRecording();
-      }
-      // Ctrl+Shift+S to stop and export
-      if (e.ctrlKey && e.shiftKey && e.key === "S") {
-        e.preventDefault();
-        this.exportStatsRecording();
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-
-    // Store for cleanup
-    (this as any)._statsRecordingKeyHandler = handler;
-
-    console.log("📊 Stats recording shortcuts enabled: Ctrl+Shift+R (start) | Ctrl+Shift+S (stop & export)");
-  }
-
-  initScene() {
+    this.setupGUIControls();
     this.setupListeners();
 
     document.body.style.background = "black";
-    this.renderer.domElement.id = "main-canvas";
-
-    // CRITICAL: Remove any existing canvas before adding a new one
-    // This prevents memory leaks from multiple canvases when navigating home and back
+    // Remove stale canvas from a previous instance BEFORE claiming the id
     const existingCanvas = document.getElementById("main-canvas");
     if (existingCanvas) {
       console.warn("[GameRenderer] Found existing canvas, removing it to prevent memory leak");
       existingCanvas.remove();
     }
 
+    this.renderer.domElement.id = "main-canvas";
     document.body.appendChild(this.renderer.domElement);
 
     // Set up periodic cleanup of the transition database
@@ -748,8 +571,8 @@ export default class GameRenderer {
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener("change", () => {
       this.labelsDirty = true;
-      if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
-        this.worldmapScene.requestChunkRefresh();
+      if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel && this.fastTravelScene) {
+        this.fastTravelScene.requestSceneRefresh();
       }
     });
     this.controls.keys = {
@@ -767,7 +590,8 @@ export default class GameRenderer {
       (enableMapZoom) => {
         console.log(`[GameRenderer] Zoom setting changed to: ${enableMapZoom}`);
         if (this.controls) {
-          this.controls.enableZoom = enableMapZoom;
+          this.controls.enableZoom =
+            this.sceneManager?.getCurrentScene() === SceneName.WorldMap ? false : enableMapZoom;
         }
       },
     );
@@ -794,12 +618,17 @@ export default class GameRenderer {
     const url = new URL(window.location.href);
     const pathSegments = url.pathname.split("/").filter(Boolean);
     const sceneSlug = pathSegments.pop();
-    const targetScene =
-      sceneSlug === SceneName.Hexception || sceneSlug === SceneName.WorldMap
-        ? (sceneSlug as SceneName)
-        : SceneName.WorldMap;
+    const fastTravelEnabled = this.isFastTravelEnabled();
+    const targetScene = resolveNavigationSceneTarget({
+      requestedScene: resolveSceneNameFromRouteSegment(sceneSlug),
+      currentPath: url.pathname,
+      fastTravelEnabled,
+    });
 
-    if (targetScene === this.sceneManager.getCurrentScene() && targetScene === SceneName.WorldMap) {
+    if (
+      targetScene === this.sceneManager.getCurrentScene() &&
+      (targetScene === SceneName.WorldMap || (targetScene === SceneName.FastTravel && this.fastTravelScene))
+    ) {
       this.sceneManager.moveCameraForScene();
       this.transitionManager?.fadeIn();
     } else {
@@ -812,6 +641,9 @@ export default class GameRenderer {
   async prepareScenes() {
     this.initializeSceneManagement();
     this.initializeScenes();
+    this.requestScenePrewarm(this.worldmapScene);
+    this.requestScenePrewarm(this.hexceptionScene);
+    this.requestScenePrewarm(this.fastTravelScene);
     this.applyEnvironment();
     this.setupPostProcessingEffects();
     this.sceneManager.moveCameraForScene();
@@ -820,22 +652,35 @@ export default class GameRenderer {
   }
 
   private initializeSceneManagement() {
-    this.transitionManager = new TransitionManager(this.renderer);
+    this.transitionManager = new TransitionManager();
     this.sceneManager = new SceneManager(this.transitionManager);
   }
 
   private initializeScenes() {
     // Initialize Hexception scene
     this.hexceptionScene = new HexceptionScene(this.controls, this.dojo, this.mouse, this.raycaster, this.sceneManager);
+    this.hexceptionScene.setInputSurface(this.renderer.domElement);
     this.sceneManager.addScene(SceneName.Hexception, this.hexceptionScene);
 
     // Initialize WorldMap scene
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
+    this.worldmapScene.setInputSurface(this.renderer.domElement);
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
 
-    // Set up render pass
-    this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
-    this.composer.addPass(this.renderPass);
+    if (this.isFastTravelEnabled()) {
+      // Initialize FastTravel scene for non-Blitz modes only.
+      this.fastTravelScene = new FastTravelScene(
+        this.dojo,
+        this.raycaster,
+        this.controls,
+        this.mouse,
+        this.sceneManager,
+      );
+      this.fastTravelScene.setInputSurface(this.renderer.domElement);
+      this.sceneManager.addScene(SceneName.FastTravel, this.fastTravelScene);
+    } else {
+      this.fastTravelScene = undefined;
+    }
   }
 
   private setupPostProcessingEffects() {
@@ -844,39 +689,28 @@ export default class GameRenderer {
       return; // Skip post-processing for low graphics settings
     }
     this.postProcessingConfig = effectsConfig;
-    this.toneMappingEffect = this.createToneMappingEffect(effectsConfig);
     this.rebuildPostProcessing(qualityController.getFeatures());
+    this.setupToneMappingGUI(effectsConfig);
     this.setupPostProcessingGUI(effectsConfig);
   }
 
-  private createToneMappingEffect(config: PostProcessingConfig) {
-    const effect = new ToneMappingEffect({
-      mode: config.toneMapping.mode,
-    });
-    const mutableToneMapping = effect as unknown as { exposure: number; whitePoint: number };
-    mutableToneMapping.exposure = config.toneMapping.exposure;
-    mutableToneMapping.whitePoint = config.toneMapping.whitePoint;
-
-    const folder = GUIManager.addFolder("Tone Mapping");
+  private setupToneMappingGUI(config: PostProcessingConfig): void {
+    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Tone Mapping"));
     folder
       .add(config.toneMapping, "mode", {
         ...ToneMappingMode,
       })
-      .onChange((value: ToneMappingMode) => {
-        effect.mode = value;
-      });
+      .onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
 
-    folder.add(config.toneMapping, "exposure", 0.0, 2.0, 0.01).onChange((value: number) => {
-      mutableToneMapping.exposure = value;
-    });
+    folder
+      .add(config.toneMapping, "exposure", 0.0, 2.0, 0.01)
+      .onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
 
-    folder.add(config.toneMapping, "whitePoint", 0.0, 2.0, 0.01).onChange((value: number) => {
-      mutableToneMapping.whitePoint = value;
-    });
+    folder
+      .add(config.toneMapping, "whitePoint", 0.0, 2.0, 0.01)
+      .onChange(() => this.rebuildPostProcessing(qualityController.getFeatures()));
 
     folder.close();
-
-    return effect;
   }
 
   private getPostProcessingConfig(): PostProcessingConfig | null {
@@ -900,16 +734,14 @@ export default class GameRenderer {
     }
     this.postProcessingGUIInitialized = true;
 
-    const folder = GUIManager.addFolder("Color Grade");
+    const folder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Color Grade"));
 
     folder
       .add(config, "saturation", -0.5, 0.5, 0.01)
       .name("Saturation")
       .onChange((value: number) => {
         config.saturation = value;
-        if (this.hueSaturationEffect) {
-          (this.hueSaturationEffect as unknown as { saturation: number }).saturation = value;
-        }
+        this.postProcessController?.setColorGrade({ saturation: value });
       });
 
     folder
@@ -917,9 +749,7 @@ export default class GameRenderer {
       .name("Hue")
       .onChange((value: number) => {
         config.hue = value;
-        if (this.hueSaturationEffect) {
-          (this.hueSaturationEffect as unknown as { hue: number }).hue = value;
-        }
+        this.postProcessController?.setColorGrade({ hue: value });
       });
 
     folder
@@ -927,9 +757,7 @@ export default class GameRenderer {
       .name("Brightness")
       .onChange((value: number) => {
         config.brightness = value;
-        if (this.brightnessContrastEffect) {
-          (this.brightnessContrastEffect as unknown as { brightness: number }).brightness = value;
-        }
+        this.postProcessController?.setColorGrade({ brightness: value });
       });
 
     folder
@@ -937,106 +765,43 @@ export default class GameRenderer {
       .name("Contrast")
       .onChange((value: number) => {
         config.contrast = value;
-        if (this.brightnessContrastEffect) {
-          (this.brightnessContrastEffect as unknown as { contrast: number }).contrast = value;
-        }
+        this.postProcessController?.setColorGrade({ contrast: value });
       });
 
     folder.close();
-  }
 
-  private createVignetteEffect(config: PostProcessingConfig) {
-    this.vignetteEffect = new VignetteEffect({
-      darkness: config.vignette.darkness,
-      offset: config.vignette.offset,
+    const vignetteFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Vignette"));
+    vignetteFolder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
+      config.vignette.darkness = value;
+      this.postProcessController?.setVignette({ darkness: value });
     });
 
-    const folder = GUIManager.addFolder("Vignette");
-    folder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
-      this.vignetteEffect!.darkness = value;
+    vignetteFolder.add(config.vignette, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
+      config.vignette.offset = value;
+      this.postProcessController?.setVignette({ offset: value });
     });
 
-    folder.add(config.vignette, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
-      this.vignetteEffect!.offset = value;
-    });
-
-    folder.close();
-
-    return this.vignetteEffect;
-  }
-
-  private createBloomEffect(intensity: number) {
-    return new BloomEffect({
-      luminanceThreshold: 1.1,
-      mipmapBlur: true,
-      intensity,
-    });
+    vignetteFolder.close();
   }
 
   applyEnvironment() {
-    const pmremGenerator = new PMREMGenerator(this.renderer);
-    pmremGenerator.compileEquirectangularShader();
-
-    const fallbackTarget = pmremGenerator.fromScene(new RoomEnvironment());
-    this.setEnvironmentFromTarget(fallbackTarget, 0.1);
-
-    this.loadCachedEnvironmentMap(pmremGenerator)
-      .then((target) => {
-        this.setEnvironmentFromTarget(target, 0.1);
-      })
-      .catch((error) => {
-        console.error("Failed to load HDR environment map", error);
-      })
-      .finally(() => {
-        pmremGenerator.dispose();
-      });
-  }
-
-  private setEnvironmentFromTarget(renderTarget: WebGLRenderTarget, intensity: number) {
-    const envMap = renderTarget.texture;
-    this.hexceptionScene.setEnvironment(envMap, intensity);
-    this.worldmapScene.setEnvironment(envMap, intensity);
-
-    if (
-      this.environmentTarget &&
-      this.environmentTarget !== renderTarget &&
-      this.environmentTarget !== cachedHDRTarget
-    ) {
-      this.environmentTarget.dispose();
-    }
-
-    this.environmentTarget = renderTarget;
-  }
-
-  private loadCachedEnvironmentMap(pmremGenerator: PMREMGenerator): Promise<WebGLRenderTarget> {
-    if (cachedHDRTarget) {
-      return Promise.resolve(cachedHDRTarget);
-    }
-
-    if (cachedHDRPromise) {
-      return cachedHDRPromise;
-    }
-
-    const hdriLoader = new RGBELoader();
-    cachedHDRPromise = new Promise<WebGLRenderTarget>((resolve, reject) => {
-      hdriLoader.load(
-        "/textures/environment/models_env.hdr",
-        (texture) => {
-          const envTarget = pmremGenerator.fromEquirectangular(texture);
-          texture.dispose();
-          cachedHDRTarget = envTarget;
-          cachedHDRPromise = null;
-          resolve(envTarget);
-        },
-        undefined,
-        (error) => {
-          cachedHDRPromise = null;
-          reject(error);
-        },
-      );
+    const environmentPolicy = resolveRendererEnvironmentPolicy({
+      capabilities: this.backend.capabilities,
+      intensity: DEFAULT_ENVIRONMENT_INTENSITY[this.graphicsSetting],
     });
 
-    return cachedHDRPromise;
+    replaceRendererDiagnosticDegradations(["environmentIbl"], environmentPolicy.degradations);
+
+    if (!environmentPolicy.shouldApplyEnvironment) {
+      return;
+    }
+
+    void applyRendererBackendEnvironment(this.backend, {
+      hexceptionScene: this.hexceptionScene,
+      worldmapScene: this.worldmapScene,
+      fastTravelScene: this.fastTravelScene,
+      intensity: environmentPolicy.intensity,
+    });
   }
 
   private getTargetPixelRatio() {
@@ -1090,7 +855,7 @@ export default class GameRenderer {
     }
   }
 
-  private resolvePixelRatio(pixelRatio: number): number {
+  public resolvePixelRatio(pixelRatio: number): number {
     const mobileCap = this.getMobilePixelRatioCap();
     return Math.min(pixelRatio, mobileCap);
   }
@@ -1119,14 +884,14 @@ export default class GameRenderer {
       const height = container.clientHeight;
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
-      this.renderer.setSize(width, height);
+      resizeRendererBackend(this.backend, width, height);
       this.labelRenderer?.setSize(width, height);
       this.hudScene.onWindowResize(width, height);
     } else {
       // Fallback to window size if container not found
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      resizeRendererBackend(this.backend, window.innerWidth, window.innerHeight);
       this.labelRenderer?.setSize(window.innerWidth, window.innerHeight);
       this.hudScene.onWindowResize(window.innerWidth, window.innerHeight);
     }
@@ -1152,11 +917,12 @@ export default class GameRenderer {
     const stormIntensity = state.stormIntensity;
 
     // Store base values on first call if not already stored
-    if (this.basePostProcessingValues.saturation === 0 && this.postProcessingConfig) {
+    if (!this.weatherBaseValuesInitialized && this.postProcessingConfig) {
       this.basePostProcessingValues.saturation = this.postProcessingConfig.saturation;
       this.basePostProcessingValues.contrast = this.postProcessingConfig.contrast;
       this.basePostProcessingValues.brightness = this.postProcessingConfig.brightness;
       this.basePostProcessingValues.vignetteDarkness = this.postProcessingConfig.vignette.darkness;
+      this.weatherBaseValuesInitialized = true;
     }
 
     // Calculate weather-modulated values
@@ -1176,19 +942,14 @@ export default class GameRenderer {
     const vignetteIncrease = stormIntensity * 0.2; // Up to +0.2 during storms
     const targetVignette = this.basePostProcessingValues.vignetteDarkness + vignetteIncrease;
 
-    // Apply to effects (if they exist)
-    if (this.hueSaturationEffect) {
-      (this.hueSaturationEffect as unknown as { saturation: number }).saturation = targetSaturation;
-    }
-
-    if (this.brightnessContrastEffect) {
-      (this.brightnessContrastEffect as unknown as { contrast: number }).contrast = targetContrast;
-      (this.brightnessContrastEffect as unknown as { brightness: number }).brightness = targetBrightness;
-    }
-
-    if (this.vignetteEffect) {
-      (this.vignetteEffect as unknown as { darkness: number }).darkness = targetVignette;
-    }
+    this.postProcessController?.setColorGrade({
+      brightness: targetBrightness,
+      contrast: targetContrast,
+      saturation: targetSaturation,
+    });
+    this.postProcessController?.setVignette({
+      darkness: targetVignette,
+    });
   }
 
   private shouldRenderLabels(now: number): boolean {
@@ -1199,6 +960,9 @@ export default class GameRenderer {
     if (currentScene === SceneName.WorldMap) {
       view = this.worldmapScene.getCurrentCameraView();
       labelsActive = this.worldmapScene.hasActiveLabelAnimations();
+    } else if (currentScene === SceneName.FastTravel && this.fastTravelScene) {
+      view = this.fastTravelScene.getCurrentCameraView();
+      labelsActive = this.fastTravelScene.hasActiveLabelAnimations();
     } else if (currentScene === SceneName.Hexception) {
       view = this.hexceptionScene.getCurrentCameraView();
       labelsActive = this.hexceptionScene.hasActiveLabelAnimations();
@@ -1273,43 +1037,73 @@ export default class GameRenderer {
     if (this.controls) {
       this.controls.update();
     }
-    // Reset renderer stats at start of frame (since autoReset is disabled)
-    this.renderer.info.reset();
-
-    // Clear the renderer at the start of each frame
-    this.renderer.clear();
-
     const cycleProgress = useUIStore.getState().cycleProgress || 0;
     this.hudScene.update(deltaTime, cycleProgress);
     const weatherState = this.hudScene.getWeatherState();
     this.worldmapScene.setWeatherAtmosphereState(weatherState);
+    this.fastTravelScene?.setWeatherAtmosphereState(weatherState);
     this.hexceptionScene.setWeatherAtmosphereState(weatherState);
 
     // Render the current game scene
-    const isWorldMap = this.sceneManager?.getCurrentScene() === SceneName.WorldMap;
+    const currentScene = this.sceneManager?.getCurrentScene();
+    if (!currentScene) {
+      // No scene active yet (startup, transition, or failed setup).
+      // Transition overlay covers the gap — skip game scene update/render.
+      requestAnimationFrame(() => {
+        this.animate();
+      });
+      return;
+    }
+
+    const isWorldMap = currentScene === SceneName.WorldMap;
+    const isFastTravel = currentScene === SceneName.FastTravel && Boolean(this.fastTravelScene);
     if (isWorldMap) {
       this.worldmapScene.update(deltaTime);
+    } else if (isFastTravel && this.fastTravelScene) {
+      this.fastTravelScene.update(deltaTime);
     } else {
       this.hexceptionScene.update(deltaTime);
     }
-    const activeScene = isWorldMap ? this.worldmapScene.getScene() : this.hexceptionScene.getScene();
-    (this.renderPass as unknown as { scene: unknown }).scene = activeScene;
+    const activeScene = isWorldMap
+      ? this.worldmapScene.getScene()
+      : isFastTravel
+        ? (this.fastTravelScene?.getScene() ?? this.worldmapScene.getScene())
+        : this.hexceptionScene.getScene();
+    const activeSceneController = isWorldMap
+      ? this.worldmapScene
+      : isFastTravel
+        ? (this.fastTravelScene ?? this.worldmapScene)
+        : this.hexceptionScene;
+    const overlayPasses = [
+      {
+        camera: this.camera,
+        name: "world-interaction",
+        scene: activeSceneController.getInteractionOverlayScene(),
+      },
+      {
+        camera: this.hudScene.getCamera(),
+        name: "hud",
+        scene: this.hudScene.getScene(),
+      },
+    ];
 
     const shouldRenderLabels = this.shouldRenderLabels(currentTime);
     if (shouldRenderLabels) {
       this.labelRenderer.render(activeScene, this.camera);
     }
-    this.composer.render();
-
-    // Update post-processing based on weather state
-    this.updateWeatherPostProcessing();
-
-    // Render the HUD scene without clearing the buffer
-    this.renderer.clearDepth(); // Clear only the depth buffer
-    this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
+    renderRendererBackendFrame(this.backend, {
+      mainCamera: this.camera,
+      mainScene: activeScene,
+      overlayPasses,
+      sceneName: currentScene,
+    });
+    setRendererDiagnosticSceneName(currentScene ?? "unknown");
     if (shouldRenderLabels) {
       this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     }
+
+    // Update post-processing based on weather state
+    this.updateWeatherPostProcessing();
 
     // Capture stats sample AFTER rendering (to get accurate draw call/triangle counts)
     this.captureStatsSample();
@@ -1357,16 +1151,16 @@ export default class GameRenderer {
       if (this.renderer?.domElement && this.renderer.domElement.parentElement) {
         this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
       }
-      if (this.renderer) {
-        this.renderer.dispose();
-      }
-      if (this.composer) {
-        this.composer.dispose();
+      if (this.backend) {
+        disposeRendererBackend(this.backend);
       }
 
       // Clean up scenes
       if (this.worldmapScene && typeof this.worldmapScene.destroy === "function") {
         this.worldmapScene.destroy();
+      }
+      if (this.fastTravelScene && typeof this.fastTravelScene.destroy === "function") {
+        this.fastTravelScene.destroy();
       }
       if (this.hexceptionScene && typeof this.hexceptionScene.destroy === "function") {
         this.hexceptionScene.destroy();
@@ -1380,12 +1174,11 @@ export default class GameRenderer {
         this.controls.dispose();
       }
 
-      if (this.environmentTarget) {
-        if (this.environmentTarget !== cachedHDRTarget) {
-          this.environmentTarget.dispose();
-        }
-        this.environmentTarget = undefined;
+      if (this.transitionManager && typeof this.transitionManager.destroy === "function") {
+        this.transitionManager.destroy();
       }
+
+      destroyTrackedGuiFolders(this.guiFolders ?? []);
 
       // Remove event listeners
       window.removeEventListener("urlChanged", this.handleURLChange);
@@ -1395,6 +1188,7 @@ export default class GameRenderer {
       document.removeEventListener("blur", this.handleDocumentBlur, true);
 
       // Clean up memory monitoring
+      clearGameRendererDebugGlobals(window);
       if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
         this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
       }
@@ -1404,18 +1198,14 @@ export default class GameRenderer {
       }
       if (this.labelRendererElement) {
         this.labelRendererElement.replaceChildren();
+        this.labelRenderer = undefined!;
+        this.labelRendererElement = undefined!;
       }
 
+      disposeContactShadowResources();
+
       // Clean up stats recording
-      if (this.statsRecordingIndicator) {
-        this.statsRecordingIndicator.remove();
-      }
-      const pulseStyle = document.getElementById("stats-recording-pulse");
-      if (pulseStyle) pulseStyle.remove();
-      const keyHandler = (this as any)._statsRecordingKeyHandler;
-      if (keyHandler) {
-        window.removeEventListener("keydown", keyHandler);
-      }
+      this.statsRecorder?.destroy();
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");
     } catch (error) {
@@ -1436,84 +1226,115 @@ export default class GameRenderer {
 
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
     const resolvedPixelRatio = this.resolvePixelRatio(Math.min(devicePixelRatio, features.pixelRatio));
-    this.renderer.setPixelRatio(resolvedPixelRatio);
-    this.renderer.shadowMap.enabled = features.shadows;
+    applyRendererBackendQuality(this.backend, {
+      pixelRatio: resolvedPixelRatio,
+      shadows: features.shadows,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
 
-    if (this.postProcessingConfig && this.toneMappingEffect) {
+    if (this.postProcessingConfig) {
       this.rebuildPostProcessing(features);
+    } else {
+      setRendererDiagnosticDegradations([]);
     }
 
     this.worldmapScene?.applyQualityFeatures(features);
+    this.fastTravelScene?.applyQualityFeatures(features);
     this.hexceptionScene?.applyQualityFeatures(features);
-
-    if (this.composer) {
-      this.composer.setSize(window.innerWidth, window.innerHeight);
-    }
   }
 
   private rebuildPostProcessing(features: QualityFeatures): void {
-    if (!this.postProcessingConfig || !this.toneMappingEffect) {
+    if (!this.postProcessingConfig) {
       return;
     }
 
-    if (this.effectPass) {
-      const passes = (this.composer as any).passes as unknown[] | undefined;
-      if (passes) {
-        const index = passes.indexOf(this.effectPass);
-        if (index !== -1) {
-          passes.splice(index, 1);
-        }
-      }
-      this.effectPass.dispose?.();
-      this.effectPass = undefined;
-    }
-
-    const effects: Effect[] = [this.toneMappingEffect];
-
-    this.hueSaturationEffect = new HueSaturationEffect({
-      hue: this.postProcessingConfig.hue,
-      saturation: this.postProcessingConfig.saturation,
-    });
-    effects.push(this.hueSaturationEffect);
-
-    this.brightnessContrastEffect = new BrightnessContrastEffect({
-      brightness: this.postProcessingConfig.brightness,
-      contrast: this.postProcessingConfig.contrast,
-    });
-    effects.push(this.brightnessContrastEffect);
+    // Reset so updateWeatherPostProcessing re-captures base values from the new config
+    this.weatherBaseValuesInitialized = false;
 
     const effectPlan = resolvePostProcessingEffectPlan({
       fxaa: features.fxaa,
       bloom: features.bloom,
+      chromaticAberration: features.chromaticAberration,
       vignette: features.vignette,
     });
 
-    if (effectPlan.shouldEnableFXAA) {
-      effects.push(new FXAAEffect());
-    }
-    if (effectPlan.shouldEnableBloom) {
-      effects.push(this.createBloomEffect(features.bloomIntensity));
-    }
-    if (effectPlan.shouldEnableVignette) {
-      this.vignetteEffect = new VignetteEffect({
+    const rendererPlan = resolveCapabilityAwareRendererEffectPlan({
+      antiAlias: effectPlan.shouldEnableFXAA ? "fxaa" : "none",
+      bloomEnabled: effectPlan.shouldEnableBloom,
+      bloomIntensity: features.bloomIntensity,
+      capabilities: this.backend.capabilities,
+      chromaticAberrationEnabled: effectPlan.shouldEnableChromaticAberration,
+      colorGrade: {
+        brightness: this.postProcessingConfig.brightness,
+        contrast: this.postProcessingConfig.contrast,
+        hue: this.postProcessingConfig.hue,
+        saturation: this.postProcessingConfig.saturation,
+      },
+      disabledReasons: {
+        bloom: features.bloom ? undefined : "disabled-by-quality",
+        chromaticAberration: features.chromaticAberration ? undefined : "disabled-by-quality",
+        vignette: features.vignette ? undefined : "disabled-by-quality",
+      },
+      toneMapping: {
+        exposure: this.postProcessingConfig.toneMapping.exposure,
+        mode: this.resolveRendererToneMappingMode(this.postProcessingConfig.toneMapping.mode),
+        whitePoint: this.postProcessingConfig.toneMapping.whitePoint,
+      },
+      vignette: {
         darkness: this.postProcessingConfig.vignette.darkness,
+        enabled: effectPlan.shouldEnableVignette,
         offset: this.postProcessingConfig.vignette.offset,
-      });
-      effects.push(this.vignetteEffect);
+      },
+    });
+
+    this.postProcessController = applyRendererBackendPostProcessPlan(this.backend, rendererPlan.plan);
+    replaceRendererDiagnosticDegradations(
+      ["colorGrade", "bloom", "vignette", "chromaticAberration"],
+      rendererPlan.degradations,
+    );
+    setRendererDiagnosticEffectPlan(rendererPlan.plan);
+    setRendererDiagnosticPostprocessPolicy(
+      resolveWebgpuPostprocessPolicy({
+        activeMode: snapshotRendererDiagnostics().activeMode ?? "legacy-webgl",
+        capabilities: this.backend.capabilities,
+      }),
+    );
+  }
+
+  private async requestScenePrewarm(
+    scene:
+      | {
+          getCamera(): Camera;
+          getScene(): Object3D<Object3DEventMap>;
+        }
+      | undefined,
+  ): Promise<void> {
+    if (!scene || !this.backend?.renderer) {
+      return;
     }
 
-    // Subtle chromatic aberration for cinematic lens effect (HIGH quality only)
-    if (effectPlan.shouldEnableChromaticAberration) {
-      effects.push(
-        new ChromaticAberrationEffect({
-          offset: new Vector2(0.0008, 0.0008),
-          radialModulation: true,
-          modulationOffset: 0.3,
-        }),
-      );
+    try {
+      await requestRendererScenePrewarm(this.backend.renderer, scene.getScene(), scene.getCamera());
+    } catch (error) {
+      console.warn("GameRenderer: Scene prewarm failed", error);
     }
+  }
 
-    this.effectPass = new EffectPass(this.camera, ...effects);
-    this.composer.addPass(this.effectPass);
+  private resolveRendererToneMappingMode(mode: ToneMappingMode): RendererPostProcessPlan["toneMapping"]["mode"] {
+    switch (mode) {
+      case ToneMappingMode.ACES_FILMIC:
+        return "aces-filmic";
+      case ToneMappingMode.LINEAR:
+        return "linear";
+      case ToneMappingMode.NEUTRAL:
+        return "neutral";
+      case ToneMappingMode.REINHARD:
+        return "reinhard";
+      case ToneMappingMode.CINEON:
+      case ToneMappingMode.OPTIMIZED_CINEON:
+      default:
+        return "cineon";
+    }
   }
 }

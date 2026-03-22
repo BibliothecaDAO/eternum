@@ -1,4 +1,4 @@
-import { sqlApi } from "@/services/api";
+import { createSqlApi, sqlApi } from "@/services/api";
 import { SqlApi, type PlayerLeaderboardRow } from "@bibliothecadao/torii";
 
 const DEFAULT_LIMIT = 20;
@@ -42,12 +42,25 @@ export interface ScoreToBeatRun {
   rank: number;
 }
 
+export const SCORE_TO_BEAT_STATIC_GAMES = ["s0-game-1", "s0-game-2", "s0-game-3", "s0-game-4"] as const;
+type ScoreToBeatStaticGame = (typeof SCORE_TO_BEAT_STATIC_GAMES)[number];
+
+export interface ScoreToBeatStaticGameBreakdown {
+  game: ScoreToBeatStaticGame;
+  points: number;
+  chests: number;
+}
+
 export interface ScoreToBeatEntrySummary {
   address: string;
   displayName: string | null;
   combinedPoints: number;
+  /** All endpoint runs for the player, sorted desc by points. */
+  allRuns: ScoreToBeatRun[];
+  /** Best N runs used for combined score. */
   runs: ScoreToBeatRun[];
   totalRuns: number;
+  staticGames: ScoreToBeatStaticGameBreakdown[];
 }
 
 export interface ScoreToBeatResult {
@@ -62,6 +75,353 @@ interface ScoreToBeatOptions {
   runsToAggregate?: number;
   maxPlayers?: number;
 }
+
+interface ScoreToBeatStaticRow {
+  displayName: string;
+  address: string;
+  points: [number, number, number, number];
+  chests: [number, number, number, number];
+}
+
+const SCORE_TO_BEAT_STATIC_ENDPOINT_BY_GAME: Record<ScoreToBeatStaticGame, string> = {
+  "s0-game-1": "https://api.cartridge.gg/x/s0-game-1/torii/sql",
+  "s0-game-2": "https://api.cartridge.gg/x/s0-game-2/torii/sql",
+  "s0-game-3": "https://api.cartridge.gg/x/s0-game-3/torii/sql",
+  "s0-game-4": "https://api.cartridge.gg/x/s0-game-4/torii/sql",
+};
+
+const SCORE_TO_BEAT_STATIC_ENDPOINT_TO_GAME = new Map<string, ScoreToBeatStaticGame>(
+  SCORE_TO_BEAT_STATIC_GAMES.map((game) => [SCORE_TO_BEAT_STATIC_ENDPOINT_BY_GAME[game], game]),
+);
+
+const SCORE_TO_BEAT_STATIC_GAME_INDEX = new Map<ScoreToBeatStaticGame, number>(
+  SCORE_TO_BEAT_STATIC_GAMES.map((game, index) => [game, index]),
+);
+
+const SCORE_TO_BEAT_STATIC_ROWS: ScoreToBeatStaticRow[] = [
+  {
+    displayName: "djizus",
+    address: "0x04364d8e9f994453f5d0c8dc838293226d8ae0aec78030e5ee5fb91614b00eb5",
+    points: [98899, 0, 0, 94420],
+    chests: [1, 0, 0, 18],
+  },
+  {
+    displayName: "lgccharrmander",
+    address: "0x0643bce119f53a1ec83f57c4c42f694659c2da543d6f8a85b335d3f4bef12548",
+    points: [71740, 30128, 0, 3380],
+    chests: [1, 5, 0, 1],
+  },
+  {
+    displayName: "lgcambrosia",
+    address: "0x0389a701a79f1d62f160dc991d98ad14f122b79e54af68c5eac9086b3e93cbb9",
+    points: [59624, 0, 0, 0],
+    chests: [1, 0, 0, 0],
+  },
+  {
+    displayName: "bal7hazar",
+    address: "0x008b95a26e1392ed9e817607bfae2dd93efb9c66ee7db0b018091a11d9037006",
+    points: [55663, 0, 0, 0],
+    chests: [1, 0, 0, 0],
+  },
+  {
+    displayName: "calff",
+    address: "0x03a496b92d292386ad70dab94ae181a06d289440e3b632a2435721b4280874c4",
+    points: [51468, 79356, 37174, 1490],
+    chests: [1, 12, 5, 1],
+  },
+  {
+    displayName: "alexx855",
+    address: "0x062d69c12007e40bd6689499829bf5ed56a5908ce307bc5bd614fc50f299333b",
+    points: [38726, 24015, 0, 1210],
+    chests: [1, 4, 0, 1],
+  },
+  {
+    displayName: "lzg",
+    address: "0x041845afb6e2b85adbd473941344c8ab017914977280fe8d9b724b27822458e1",
+    points: [35306, 37050, 11675, 0],
+    chests: [1, 6, 2, 0],
+  },
+  {
+    displayName: "darklyn1",
+    address: "0x02e1ee7d1452498128ed3562a05e3cb85ab02a2c8436b2654cc53ca9dda427e6",
+    points: [27437, 0, 33723, 77241],
+    chests: [1, 0, 5, 15],
+  },
+  {
+    displayName: "lgckung",
+    address: "0x00594d857f23ba0bb3b5820b2f24af943be6102d73b92228f8ac60f9ab364f36",
+    points: [25368, 44456, 0, 10487],
+    chests: [1, 7, 0, 3],
+  },
+  {
+    displayName: "tsuaurym",
+    address: "0x062ba685f1d600ac7bda27e556b787548da32c7c0aa3ff5f58dddc07b9116f33",
+    points: [24408, 25310, 56909, 20440],
+    chests: [1, 4, 8, 4],
+  },
+  {
+    displayName: "krump",
+    address: "0x02e4727dfc9f4a6a0c8cee69c6987f487637ccd5e220808fd975bf267cf70431",
+    points: [23824, 0, 35144, 43046],
+    chests: [1, 0, 5, 9],
+  },
+  {
+    displayName: "s0u7mate",
+    address: "0x0347ce135915327d96d020914853a5aed59600e3bfa9b9be00e8d4066e7ba09f",
+    points: [21532, 87749, 0, 49539],
+    chests: [1, 13, 0, 10],
+  },
+  {
+    displayName: "vorpalsword",
+    address: "0x03e1a40b78d90a2477cf881dfec9fa8f782f317452813fdd6cc8b3cddea17c5e",
+    points: [11105, 0, 23138, 4590],
+    chests: [1, 0, 4, 4],
+  },
+  {
+    displayName: "tsubasa",
+    address: "0x02dff02c78f7828fb5ad7619caf4ea830e91ef3b6ce3a97efee681fbfc1af572",
+    points: [7726, 20587, 3280, 5350],
+    chests: [1, 3, 1, 2],
+  },
+  {
+    displayName: "lgc-apostador",
+    address: "0x04df2355a6f60f978e47702175ce56600214539270f90baa3cf83b3c20d3d986",
+    points: [3150, 32006, 0, 6490],
+    chests: [1, 5, 0, 2],
+  },
+  {
+    displayName: "lgccremildo",
+    address: "0x04a100384c231058476dc24210984383b3b89f8faddfb0b9dda325ee9bf8f765",
+    points: [3030, 8050, 20130, 25653],
+    chests: [1, 2, 3, 5],
+  },
+  {
+    displayName: "lordkb",
+    address: "0x015d9023ac1fbc6963c0ad84e3b98c47c6ff90def416e2c21f7b0da1759e4546",
+    points: [2748, 0, 0, 580],
+    chests: [1, 0, 0, 1],
+  },
+  {
+    displayName: "kacago",
+    address: "0x038eb51f5bcd7c7d2a44f68ff16535f3e16a3d5c051f80477e58ae309feb20ff",
+    points: [2650, 6209, 0, 5150],
+    chests: [1, 1, 0, 1],
+  },
+  {
+    displayName: "credence0x",
+    address: "0x040db150844dc372928b3b47e23cb6e240e2c99ddc5381680afd73d777cbd6c8",
+    points: [1860, 0, 0, 0],
+    chests: [1, 0, 0, 0],
+  },
+  {
+    displayName: "gogi",
+    address: "0x05182d69e155054d4852c775f3da3df704fd12fd77ebcc97b0a4ec3d619f60e6",
+    points: [1390, 0, 0, 0],
+    chests: [1, 0, 0, 0],
+  },
+  {
+    displayName: "jonki",
+    address: "0x04cf2d9d5f3dc3d176219355104f092d16c0b564b9cc9f7e6ca0d11c8662ad21",
+    points: [1200, 0, 0, 0],
+    chests: [1, 0, 0, 0],
+  },
+  {
+    displayName: "squid",
+    address: "0x0702150abd7903798fb763b6240beeb7fb6c73d7eceb2bb81ae11cf63ee4cfd8",
+    points: [1020, 0, 0, 0],
+    chests: [1, 0, 0, 0],
+  },
+  {
+    displayName: "lgctaffa",
+    address: "0x044daf0f4a5a19eac44cfbb5f336ade32aaf21baeed8ed94f91bd806f9321c4b",
+    points: [560, 74102, 54754, 15046],
+    chests: [1, 11, 8, 3],
+  },
+  {
+    displayName: "raschel0x",
+    address: "0x018f1a5171cf91eb2c8075af1f9e29a2890aa16037dff87c3920ca6307b1d199",
+    points: [210, 0, 0, 0],
+    chests: [0, 0, 0, 0],
+  },
+  {
+    displayName: "shadowfax",
+    address: "0x01483baba3337df2def5f69a069164627c3e4b4b6cdaa5f825cfa45835421de8",
+    points: [180, 0, 0, 0],
+    chests: [0, 0, 0, 0],
+  },
+  {
+    displayName: "0xblacksmith",
+    address: "0x0720fe2031189bdfbd555260fcd4b742ca7a2d61f67e68a691aeaab209499f7c",
+    points: [0, 0, 75571, 0],
+    chests: [0, 0, 10, 0],
+  },
+  {
+    displayName: "prefirox",
+    address: "0x05bf60edba145b935cb8149dfd5703b3412fccfd0133c5697b1b2b06dbf93c66",
+    points: [0, 210, 25868, 0],
+    chests: [0, 0, 4, 0],
+  },
+  {
+    displayName: "daydriems",
+    address: "0x05732a3405a9593fcc388b277cc3ae388fc03ceb961da7e25badd13aa2fa4d3f",
+    points: [0, 14130, 16439, 6490],
+    chests: [0, 3, 3, 2],
+  },
+  {
+    displayName: "oxhenry",
+    address: "0x01594eb3b8e73a2b8385895afee580c5b5c22023a357a9b130de082fc14ad017",
+    points: [0, 0, 13732, 0],
+    chests: [0, 0, 2, 0],
+  },
+  {
+    displayName: "femano",
+    address: "0x0079248b4b0e79f00e033d76824ed047b8820f7dd2e3df5a2d4c0af0061d3f40",
+    points: [0, 540, 7482, 0],
+    chests: [0, 1, 1, 0],
+  },
+  {
+    displayName: "xdoctorofc",
+    address: "0x07d2c4c0fbd10dd892e1a85bcdaee965eec960ade02d310a2049458342769c9a",
+    points: [0, 7270, 3720, 0],
+    chests: [0, 2, 1, 0],
+  },
+  {
+    displayName: "lgc-luqbraz",
+    address: "0x042fcb1a627923a4409adc4d0d3fd98f891e8fe23dbeb93eeda84a9f476067d9",
+    points: [0, 0, 1980, 0],
+    chests: [0, 0, 1, 0],
+  },
+  {
+    displayName: "loaf6969",
+    address: "0x05372427e24ffd54c70e3c04bed5077a670fa1442caa1ad90e4d3ffab39e08ab",
+    points: [0, 0, 300, 0],
+    chests: [0, 0, 0, 0],
+  },
+  {
+    displayName: "boat",
+    address: "0x06b525b0aaf7694a7e854f44ae0a4467c84c4e0111c15df7a6e2ab691bd77311",
+    points: [0, 210, 230, 0],
+    chests: [0, 0, 0, 0],
+  },
+  {
+    displayName: "neohalk",
+    address: "0x0675a55000f107c2763f46ab28fb72567de5b26fe362a953f0ff423924211bb4",
+    points: [0, 31083, 0, 4320],
+    chests: [0, 5, 0, 1],
+  },
+  {
+    displayName: "erickld",
+    address: "0x000a7cf6ec8701d810193d1384a1a70b812ab53ef7f2bd94fdfe8fb5da8a02ae",
+    points: [0, 17638, 0, 0],
+    chests: [0, 3, 0, 0],
+  },
+  {
+    displayName: "lgcovrr",
+    address: "0x058f5ca3b0975f45ed25d2431b8c881fc312f1f032a280ec10c26d2c3afb5320",
+    points: [0, 13651, 0, 0],
+    chests: [0, 2, 0, 0],
+  },
+  {
+    displayName: "sosison",
+    address: "0x047d21572248ed1f24a18a1401c896e4a3ce1109b41b2028a92bad6e39ecae4d",
+    points: [0, 3152, 0, 16738],
+    chests: [0, 1, 0, 4],
+  },
+  {
+    displayName: "lgcluiz",
+    address: "0x040e7788801347b243bb3873a1017ab4b2a6e850d2eb1103923ec8639e361b6b",
+    points: [0, 1520, 0, 0],
+    chests: [0, 1, 0, 0],
+  },
+  {
+    displayName: "ashe",
+    address: "0x03794259833a4d39fc711477a984e986c1fe843b31da71995728fe447b93b494",
+    points: [0, 1490, 0, 0],
+    chests: [0, 1, 0, 0],
+  },
+  {
+    displayName: "batminer",
+    address: "0x01c97ab8072fbea276dbd157f08fba150b3d5e14df3c203c877f409a86ffe7a3",
+    points: [0, 1460, 0, 800],
+    chests: [0, 1, 0, 1],
+  },
+  {
+    displayName: "wfedizzier",
+    address: "0x02da69c3f10c83dce048e79b747fe3aeb82342bfe10f00fb0fccb34e4b444b8f",
+    points: [0, 1200, 0, 1640],
+    chests: [0, 1, 0, 1],
+  },
+  {
+    displayName: "lgcmentira",
+    address: "0x04e5e01f0a28b1b16e6f94196676c6092e75e9e8a874880ef86d8e790bc34717",
+    points: [0, 950, 0, 0],
+    chests: [0, 1, 0, 0],
+  },
+  {
+    displayName: "tarrence",
+    address: "0x013f1386e3d4267a1502d8ca782d34b63634d969d3c527a511814c2ef67b84c4",
+    points: [0, 490, 0, 0],
+    chests: [0, 0, 0, 0],
+  },
+  {
+    displayName: "lordbulbhead",
+    address: "0x0665d10f25a27e8cd9f7363f5bc21448524b1000031be6fc7dd8787195091b7d",
+    points: [0, 0, 0, 19123],
+    chests: [0, 0, 0, 4],
+  },
+  {
+    displayName: "0d1nf233",
+    address: "0x04ac9805537b881adc2b95589f75e1b808c1b7cc59d0f6da80101dea5208b664",
+    points: [0, 0, 0, 9432],
+    chests: [0, 0, 0, 2],
+  },
+];
+
+const SCORE_TO_BEAT_STATIC_ROW_BY_ADDRESS = new Map<string, ScoreToBeatStaticRow>(
+  SCORE_TO_BEAT_STATIC_ROWS.map((row) => [row.address.toLowerCase(), row]),
+);
+
+const buildStaticGameBreakdown = (address: string): ScoreToBeatStaticGameBreakdown[] => {
+  const row = SCORE_TO_BEAT_STATIC_ROW_BY_ADDRESS.get(address.toLowerCase());
+
+  return SCORE_TO_BEAT_STATIC_GAMES.map((game) => {
+    const gameIndex = SCORE_TO_BEAT_STATIC_GAME_INDEX.get(game) ?? 0;
+    return {
+      game,
+      points: row?.points[gameIndex] ?? 0,
+      chests: row?.chests[gameIndex] ?? 0,
+    };
+  });
+};
+
+const buildMockLeaderboardEntries = (
+  game: ScoreToBeatStaticGame,
+  limit: number,
+  offset: number = 0,
+): PlayerLeaderboardData[] => {
+  const gameIndex = SCORE_TO_BEAT_STATIC_GAME_INDEX.get(game);
+  if (gameIndex == null) return [];
+
+  const rankedRows = SCORE_TO_BEAT_STATIC_ROWS.map((row) => ({
+    row,
+    points: row.points[gameIndex],
+    chests: row.chests[gameIndex],
+  }))
+    .filter((entry) => entry.points > 0 || entry.chests > 0)
+    .toSorted((a, b) => {
+      if (a.points !== b.points) return b.points - a.points;
+      if (a.chests !== b.chests) return b.chests - a.chests;
+      return a.row.displayName.localeCompare(b.row.displayName);
+    });
+
+  return rankedRows.slice(offset, offset + limit).map((entry, index) => ({
+    rank: offset + index + 1,
+    address: entry.row.address,
+    displayName: entry.row.displayName,
+    points: entry.points,
+    prizeClaimed: false,
+  }));
+};
 
 type NumericLike = string | number | bigint | null | undefined;
 
@@ -238,7 +598,7 @@ export const fetchLandingLeaderboard = async (
   offset: number = 0,
   toriiBaseUrl?: string,
 ): Promise<PlayerLeaderboardData[]> => {
-  const client = toriiBaseUrl ? new SqlApi(toriiBaseUrl) : sqlApi;
+  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl) : sqlApi;
   return fetchLeaderboardWithClient(client, limit, offset);
 };
 
@@ -251,7 +611,7 @@ export const fetchLandingLeaderboardEntryByAddress = async (
     return null;
   }
 
-  const client = toriiBaseUrl ? new SqlApi(toriiBaseUrl) : sqlApi;
+  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl) : sqlApi;
   const rawRow = await client.fetchPlayerLeaderboardByAddress(normalizedAddress);
 
   if (!rawRow) {
@@ -328,22 +688,33 @@ const fetchLeaderboardForEndpoint = async (
   endpoint: string,
   limit: number,
   offset: number = 0,
-): Promise<EndpointSnapshot> => ({
-  endpoint,
-  entries: await withTimeout(
-    fetchLeaderboardWithClient(new SqlApi(endpoint), limit, offset),
-    SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS,
-    `Score to beat request timed out for ${endpoint}`,
-  ),
-});
+): Promise<EndpointSnapshot> => {
+  const staticGame = SCORE_TO_BEAT_STATIC_ENDPOINT_TO_GAME.get(endpoint);
+  if (staticGame) {
+    return {
+      endpoint,
+      entries: buildMockLeaderboardEntries(staticGame, limit, offset),
+    };
+  }
+
+  return {
+    endpoint,
+    entries: await withTimeout(
+      fetchLeaderboardWithClient(createSqlApi(endpoint), limit, offset),
+      SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS,
+      `Score to beat request timed out for ${endpoint}`,
+    ),
+  };
+};
 
 export const fetchScoreToBeatAcrossEndpoints = async (
   toriiEndpoints: string[],
-  { perEndpointLimit = 50, runsToAggregate = 2, maxPlayers = 10 }: ScoreToBeatOptions = {},
+  { perEndpointLimit = 50, runsToAggregate = 2, maxPlayers }: ScoreToBeatOptions = {},
 ): Promise<ScoreToBeatResult> => {
   const safePerEndpointLimit = perEndpointLimit > 0 ? perEndpointLimit : DEFAULT_LIMIT;
   const safeRunsToAggregate = runsToAggregate > 0 ? runsToAggregate : 2;
-  const safeMaxPlayers = maxPlayers > 0 ? maxPlayers : 10;
+  const safeMaxPlayers =
+    typeof maxPlayers === "number" && Number.isFinite(maxPlayers) && maxPlayers > 0 ? Math.floor(maxPlayers) : null;
 
   const sanitizedEndpoints = sanitiseToriiEndpoints(toriiEndpoints);
 
@@ -394,23 +765,25 @@ export const fetchScoreToBeatAcrossEndpoints = async (
 
   const aggregatedEntries = Array.from(perPlayer.values())
     .map((player) => {
-      const sortedRuns = player.runs.toSorted((a, b) => b.points - a.points).slice(0, safeRunsToAggregate);
-      const combinedPoints = sortedRuns.reduce((sum, run) => sum + run.points, 0);
+      const allRuns = player.runs.toSorted((a, b) => b.points - a.points);
+      const bestRuns = allRuns.slice(0, safeRunsToAggregate);
+      const combinedPoints = bestRuns.reduce((sum, run) => sum + run.points, 0);
 
       return {
         address: player.address,
         displayName: player.displayName,
         combinedPoints,
-        runs: sortedRuns,
+        allRuns,
+        runs: bestRuns,
         totalRuns: player.runs.length,
+        staticGames: buildStaticGameBreakdown(player.address),
       } satisfies ScoreToBeatEntrySummary;
     })
     .filter((entry) => entry.runs.length > 0)
-    .toSorted((a, b) => b.combinedPoints - a.combinedPoints)
-    .slice(0, safeMaxPlayers);
+    .toSorted((a, b) => b.combinedPoints - a.combinedPoints);
 
   return {
-    entries: aggregatedEntries,
+    entries: safeMaxPlayers === null ? aggregatedEntries : aggregatedEntries.slice(0, safeMaxPlayers),
     endpoints: sanitizedEndpoints,
     failedEndpoints,
     generatedAt: Date.now(),

@@ -1,5 +1,6 @@
 import { getActiveWorld } from "@/runtime/world";
 import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
+import { getSeasonAddresses } from "@contracts";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../dojo-config";
@@ -38,11 +39,36 @@ const feeTokenPolicies = feeTokenAddress
     }
   : {};
 
+const seasonPassMethodPolicies = [
+  {
+    name: "approve",
+    entrypoint: "approve",
+  },
+  {
+    name: "set_approval_for_all",
+    entrypoint: "set_approval_for_all",
+  },
+];
+
+const seasonPassAddresses = Array.from(new Set([getSeasonPassAddress(), getSeasonAddresses("slot").seasonPass])).filter(
+  (address): address is string => Boolean(address && address !== "0x0"),
+);
+
+const seasonPassPolicies = Object.fromEntries(
+  seasonPassAddresses.map((address) => [
+    address,
+    {
+      methods: seasonPassMethodPolicies,
+    },
+  ]),
+);
+
 export const buildPolicies = (manifest: any) =>
   toSessionPolicies({
     contracts: {
       ...entryTokenPolicies,
       ...feeTokenPolicies,
+      ...seasonPassPolicies,
       [getContractByName(manifest, "s1_eternum", "blitz_realm_systems").address]: {
         methods: [
           {
@@ -268,6 +294,34 @@ export const buildPolicies = (manifest: any) =>
           {
             name: "remove_member",
             entrypoint: "remove_member",
+          },
+        ],
+      },
+      [getContractByName(manifest, "s1_eternum", "faith_systems").address]: {
+        methods: [
+          {
+            name: "pledge_faith",
+            entrypoint: "pledge_faith",
+          },
+          {
+            name: "remove_faith",
+            entrypoint: "remove_faith",
+          },
+          {
+            name: "update_wonder_ownership",
+            entrypoint: "update_wonder_ownership",
+          },
+          {
+            name: "update_structure_ownership",
+            entrypoint: "update_structure_ownership",
+          },
+          {
+            name: "dojo_name",
+            entrypoint: "dojo_name",
+          },
+          {
+            name: "world_dispatcher",
+            entrypoint: "world_dispatcher",
           },
         ],
       },
@@ -726,14 +780,6 @@ export const buildPolicies = (manifest: any) =>
             name: "VRF",
             description: "Verifiable Random Function",
             entrypoint: "request_random",
-          },
-        ],
-      },
-      [getSeasonPassAddress()]: {
-        methods: [
-          {
-            name: "set_approval_for_all",
-            entrypoint: "set_approval_for_all",
           },
         ],
       },

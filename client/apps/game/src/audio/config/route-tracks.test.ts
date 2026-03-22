@@ -11,18 +11,18 @@ const mockedGetGameModeId = vi.mocked(getGameModeId);
 describe("matchRoutePlaylist", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetGameModeId.mockReturnValue("standard");
+    mockedGetGameModeId.mockReturnValue("eternum");
   });
 
   it("prefers landing overview playlist for root path", () => {
-    mockedGetGameModeId.mockReturnValue("standard");
+    mockedGetGameModeId.mockReturnValue("eternum");
     const match = matchRoutePlaylist("/");
     expect(match.key).toBe("landing:overview");
     expect(match.tracks.length).toBeGreaterThan(0);
   });
 
   it("matches cosmetics section with nested routes", () => {
-    mockedGetGameModeId.mockReturnValue("standard");
+    mockedGetGameModeId.mockReturnValue("eternum");
     const match = matchRoutePlaylist("/cosmetics/skins");
     expect(match.key).toBe("landing:cosmetics");
   });
@@ -34,13 +34,13 @@ describe("matchRoutePlaylist", () => {
   });
 
   it("falls back to main play playlist when not in blitz", () => {
-    mockedGetGameModeId.mockReturnValue("standard");
+    mockedGetGameModeId.mockReturnValue("eternum");
     const match = matchRoutePlaylist("/play/world");
     expect(match.key).toBe("play:main");
   });
 
   it("always returns a playlist even for unknown routes", () => {
-    mockedGetGameModeId.mockReturnValue("standard");
+    mockedGetGameModeId.mockReturnValue("eternum");
     const match = matchRoutePlaylist("/unknown/path");
     expect(match.tracks.length).toBeGreaterThan(0);
   });

@@ -2,7 +2,7 @@ use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use starknet::ContractAddress;
 use crate::alias::ID;
-use crate::models::config::{MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
+use crate::models::config::{BlitzExplorationConfig, MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
 use crate::models::position::Coord;
 use crate::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
@@ -12,6 +12,7 @@ use crate::systems::quest::constants::{
     CAPACITY_SELECTOR_SALT, GAME_SELECTOR_SALT, LEVEL_SELECTOR_SALT, MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY,
     QUEST_REWARD_BASE_MULTIPLIER, VERSION, VRF_OFFSET,
 };
+use crate::systems::utils::blitz_exploration::iBlitzExplorationRewardsImpl;
 use crate::systems::utils::map::IMapImpl;
 use crate::systems::utils::troop::iExplorerImpl;
 use crate::utils::map::biomes::Biome;
@@ -435,16 +436,23 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         // use exploration reward system to get a random resource type and amount
         let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
         let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+        let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("blitz_exploration_config"),
+        );
+        let blitz_exploration_reward_profile_id =
+            iBlitzExplorationRewardsImpl::resolve_blitz_exploration_reward_profile_id(
+            blitz_exploration_config.reward_profile_id,
+        );
         let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
         let (resource_type, base_reward_amount) = iExplorerImpl::exploration_reward(
-            ref world, Option::None, current_tick, map_config, seed, blitz_mode_on,
+            ref world, Option::None, current_tick, map_config, seed, blitz_mode_on, blitz_exploration_reward_profile_id,
         );
 
         // apply quest reward multiplier and level multiplier to base exploration reward
         let amount: u128 = base_reward_amount * QUEST_REWARD_BASE_MULTIPLIER.into() * (level.into() + 1);
 
         let id = world.dispatcher.uuid();
-        let coord = Coord { alt: false, x: tile.col, y: tile.row };
+        let coord = Coord { alt: tile.alt, x: tile.col, y: tile.row };
 
         let quest_tile = @QuestTile {
             id, game_address, coord, level, resource_type, amount, capacity, participant_count: 0,

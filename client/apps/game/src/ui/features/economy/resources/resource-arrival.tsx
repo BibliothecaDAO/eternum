@@ -11,6 +11,22 @@ import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import Check from "lucide-react/dist/esm/icons/check";
 import { memo, useMemo } from "react";
 
+type ArrivalSummaryResource = {
+  resourceId: ResourcesIds;
+  amount: number;
+};
+
+type ArrivalSummary = {
+  id: string;
+  resources: ArrivalSummaryResource[];
+  secondsUntilArrival: number;
+  isReady: boolean;
+};
+
+function isDefined<T>(value: T | null | undefined): value is T {
+  return value != null;
+}
+
 export const StructureArrivals = memo(({ structure, now: nowOverride }: { structure: Structure; now?: number }) => {
   const chainNowMs = useChainTimeStore((state) => state.nowMs);
   const arrivals = useArrivalsByStructure(structure.entityId);
@@ -24,14 +40,14 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
   const arrivalsWithResources = useMemo(
     () =>
       arrivals
-        .filter((arrival) => arrival.resources.some(Boolean))
+        .filter((arrival) => arrival.resources.some(isDefined))
         .toSorted((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
     [arrivals],
   );
 
-  const arrivalSummaries = useMemo(() => {
+  const arrivalSummaries = useMemo<ArrivalSummary[]>(() => {
     return arrivalsWithResources.map((arrival) => {
-      const resources = arrival.resources.filter(Boolean).map((resource) => ({
+      const resources: ArrivalSummaryResource[] = arrival.resources.filter(isDefined).map((resource) => ({
         resourceId: resource.resourceId as ResourcesIds,
         amount: divideByPrecision(resource.amount),
       }));

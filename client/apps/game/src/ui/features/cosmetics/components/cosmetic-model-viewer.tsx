@@ -119,38 +119,39 @@ export const CosmeticModelViewer = ({
         const gltf = await gltfLoader.loadAsync(modelPath);
         if (!mounted) return;
 
-        model = gltf.scene.clone(true);
-        model.traverse((child) => {
+        const loadedModel = gltf.scene.clone(true);
+        model = loadedModel;
+        loadedModel.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = false;
             child.receiveShadow = false;
           }
         });
 
-        const initialBox = new THREE.Box3().setFromObject(model);
+        const initialBox = new THREE.Box3().setFromObject(loadedModel);
         const size = initialBox.getSize(new THREE.Vector3());
         const center = initialBox.getCenter(new THREE.Vector3());
 
-        model.position.sub(center);
+        loadedModel.position.sub(center);
 
         const maxDimension = Math.max(size.x, size.y, size.z) || 1;
         const scaleFactor = preset.fitSize / maxDimension;
-        model.scale.multiplyScalar(scaleFactor);
+        loadedModel.scale.multiplyScalar(scaleFactor);
 
-        const adjustedBox = new THREE.Box3().setFromObject(model);
+        const adjustedBox = new THREE.Box3().setFromObject(loadedModel);
         const minY = adjustedBox.min.y;
-        model.position.y -= minY;
+        loadedModel.position.y -= minY;
         if (preset.lift) {
-          model.position.y += preset.lift;
+          loadedModel.position.y += preset.lift;
         }
 
-        const focusBox = new THREE.Box3().setFromObject(model);
+        const focusBox = new THREE.Box3().setFromObject(loadedModel);
         const focus = focusBox.getCenter(new THREE.Vector3());
         configureCameraFocus(focus);
 
-        model.rotation.y = Math.PI / 6;
+        loadedModel.rotation.y = Math.PI / 6;
 
-        scene.add(model);
+        scene.add(loadedModel);
 
         // Render multiple frames after model loads to ensure proper display
         // This handles cases where the container might not have final dimensions yet
@@ -308,7 +309,7 @@ export const CosmeticModelViewer = ({
         renderer.domElement.parentElement.removeChild(renderer.domElement);
       }
     };
-  }, [modelPath, variant]);
+  }, [modelPath, shouldAnimate, variant]);
 
   return <div ref={containerRef} className="relative z-10 h-full w-full" />;
 };

@@ -13,6 +13,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
+import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
@@ -135,9 +136,7 @@ export const ArmyCreate = ({
   const remainingTroopCapacity =
     troopCapacityLimit !== null ? Math.max(troopCapacityLimit - currentTroopCount, 0) : Number.POSITIVE_INFINITY;
   const remainingCapacityDisplay = troopCapacityLimit !== null ? Math.max(0, Math.floor(remainingTroopCapacity)) : null;
-  const isAtCapacity = troopCapacityLimit !== null && remainingTroopCapacity <= 0;
-  const shouldShowCapacityInfo =
-    troopCapacityLimit !== null && !isAtCapacity && remainingTroopCapacity < troopCapacityLimit;
+  const projectedTroopCount = Math.max(0, currentTroopCount + troopCount);
 
   const handleTierChange = (tier: TroopTier) => {
     setSelectedTier(tier);
@@ -418,16 +417,14 @@ export const ArmyCreate = ({
                           onChange={handleTroopCountChange}
                           className="border border-gold/30"
                         />
-                        {isAtCapacity && troopCapacityLimit !== null && (
-                          <div className="mt-2 rounded-md border border-danger/40 bg-danger/10 px-2 py-1 text-xs text-danger">
-                            Army reached the maximum capacity of {troopCapacityLimit.toLocaleString()} troops.
-                          </div>
-                        )}
-                        {shouldShowCapacityInfo && remainingCapacityDisplay !== null && (
-                          <div className="mt-2 text-xs text-gold/60">
-                            Capacity remaining: {remainingCapacityDisplay.toLocaleString()}
-                          </div>
-                        )}
+                        <DeploymentStrengthSummary
+                          className="mt-2"
+                          structureLevel={structureLevel}
+                          troopTier={selectedTier}
+                          troopCount={projectedTroopCount}
+                          maxTroopSize={troopCapacityLimit}
+                          capacityRemaining={remainingCapacityDisplay}
+                        />
                       </div>
                     )}
                   </div>

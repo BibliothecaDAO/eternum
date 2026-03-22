@@ -1,31 +1,9 @@
-import { EternumProvider } from "@bibliothecadao/provider";
-import { getGameManifest } from "@contracts";
 import chalk from "chalk";
-import { Account } from "starknet";
-import { confirmNonLocalDeployment } from "utils/confirmation";
-import { logNetwork, saveConfigJsonFromConfigTsFile, type NetworkType } from "utils/environment";
-import { type Chain } from "../utils/utils";
+import { logNetwork } from "utils/environment";
+import { createQuestCommandContext, resolveQuestGameTypeArg } from "./quest-command-context";
 
-const {
-  VITE_PUBLIC_MASTER_ADDRESS,
-  VITE_PUBLIC_MASTER_PRIVATE_KEY,
-  VITE_PUBLIC_NODE_URL,
-  VITE_PUBLIC_CHAIN,
-  VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-} = process.env;
-
-// prompt user to confirm non-local deployment
-confirmNonLocalDeployment(VITE_PUBLIC_CHAIN!);
-await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN! as NetworkType);
-logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
-
-const manifest = await getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
-const provider = new EternumProvider(manifest, VITE_PUBLIC_NODE_URL, VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
-const account = new Account({
-  provider: provider.provider,
-  address: VITE_PUBLIC_MASTER_ADDRESS!,
-  signer: VITE_PUBLIC_MASTER_PRIVATE_KEY!,
-});
+const gameType = resolveQuestGameTypeArg(process.argv);
+const context = await createQuestCommandContext(gameType);
 
 console.log(
   chalk.cyan(`
@@ -33,13 +11,14 @@ console.log(
   └────────────────────────────────`),
 );
 
-const txQuestGames = await provider.disable_quests({
-  signer: account,
+const transaction = await context.provider.disable_quests({
+  signer: context.account,
 });
 
-if (txQuestGames) {
-  console.log(chalk.green(`    ✔ Disabling Quests Success `) + chalk.gray(txQuestGames.statusReceipt));
+if (transaction) {
+  console.log(chalk.green(`    ✔ Disabling Quests Success `) + chalk.gray(transaction.statusReceipt));
 } else {
   console.log(chalk.red(`    ✘ Disabling Quests Failed `));
 }
-logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
+
+logNetwork(context.network);

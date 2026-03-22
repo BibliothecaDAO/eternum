@@ -9,8 +9,9 @@ import {
   getResourceTiers,
 } from "@bibliothecadao/types";
 import { buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
+import { env } from "../../../env";
 
-export type GameModeId = "standard" | "blitz";
+export type GameModeId = "eternum" | "blitz";
 
 export type VillageIconKey = "castle" | "tent";
 
@@ -42,11 +43,11 @@ export interface GameModeConfig {
     showTransferResourcesToTroops: boolean;
     showExplorerCapacity: boolean;
     showHyperstructureProgress: boolean;
-    onboardingVariant: "standard" | "blitz";
+    onboardingVariant: "eternum" | "blitz";
     villageIconKey: VillageIconKey;
     showTradeMenu: boolean;
     showBridgeMenu: boolean;
-    hyperstructuresMenuVariant: "standard" | "blitz";
+    hyperstructuresMenuVariant: "eternum" | "blitz";
     showBankToggle: boolean;
     showQuestToggle: boolean;
     showGuildsTab: boolean;
@@ -96,7 +97,7 @@ const BASE_BUILDING_EXCLUSIONS = new Set<string>([
   "Storehouse",
 ]);
 
-const BLITZ_BUILDING_EXCLUSIONS = new Set<string>(["ResourceFish"]);
+const BLITZ_BUILDING_EXCLUSIONS = new Set<string>(["ResourceFish", "ResourceResearch"]);
 
 const BLITZ_UNMANAGEABLE_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Labor, ResourcesIds.Wheat]);
 
@@ -173,8 +174,8 @@ const blitzConfig: GameModeConfig = {
   matches: () => Boolean(configManager.getBlitzConfig()?.blitz_mode_on),
 };
 
-const standardConfig: GameModeConfig = {
-  id: "standard",
+const eternumConfig: GameModeConfig = {
+  id: "eternum",
   displayName: "Eternum",
   labels: {
     realm: "Realm",
@@ -199,11 +200,11 @@ const standardConfig: GameModeConfig = {
     showTransferResourcesToTroops: true,
     showExplorerCapacity: true,
     showHyperstructureProgress: true,
-    onboardingVariant: "standard",
+    onboardingVariant: "eternum",
     villageIconKey: "castle",
     showTradeMenu: true,
     showBridgeMenu: true,
-    hyperstructuresMenuVariant: "standard",
+    hyperstructuresMenuVariant: "eternum",
     showBankToggle: true,
     showQuestToggle: true,
     showGuildsTab: true,
@@ -231,19 +232,24 @@ const standardConfig: GameModeConfig = {
   matches: () => true,
 };
 
-const GAME_MODE_ORDER: GameModeConfig[] = [blitzConfig, standardConfig];
+const GAME_MODE_ORDER: GameModeConfig[] = [blitzConfig, eternumConfig];
 const GAME_MODE_BY_ID: Record<GameModeId, GameModeConfig> = {
   blitz: blitzConfig,
-  standard: standardConfig,
+  eternum: eternumConfig,
 };
+const FORCED_GAME_MODE_ID: GameModeId | undefined = env.VITE_PUBLIC_FORCE_GAME_MODE_ID;
 
 const resolveGameModeConfig = (): GameModeConfig => {
+  if (FORCED_GAME_MODE_ID) {
+    return GAME_MODE_BY_ID[FORCED_GAME_MODE_ID];
+  }
+
   for (const mode of GAME_MODE_ORDER) {
     if (mode.matches()) {
       return mode;
     }
   }
-  return standardConfig;
+  return eternumConfig;
 };
 
 export const getGameModeConfig = (): GameModeConfig => resolveGameModeConfig();

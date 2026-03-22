@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize]
     paths:
-      - "config/**/*.{ts,js}"
+      - "config/**/*.{ts,js,json}"
       - "*.{json,yaml,yml,toml}"
       - ".github/**/*"
       - "scripts/**/*"
@@ -89,7 +89,7 @@ jobs:
             - Dojo configuration validation (Scarb.toml, dojo_*.toml)
             - Torii indexer configuration (torii-*.toml)
             - Manifest file consistency (manifest_*.json)
-            - Game balance parameter management (config/environments/)
+            - Game balance parameter management (config/source/, config/generated/, config/utils/)
             - Resource and contract address management
 
             **Developer Experience:**

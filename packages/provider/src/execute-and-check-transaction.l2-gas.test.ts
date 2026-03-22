@@ -33,7 +33,7 @@ const makeProvider = () => {
 };
 
 describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
-  it("bumps l2 gas max_amount when fee estimation returns a low cap", async () => {
+  it("caps l2 gas max_amount at the current v3 mainnet limit", async () => {
     const provider = makeProvider();
     const signer = {
       estimateInvokeFee: vi.fn().mockResolvedValue({
@@ -51,7 +51,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
     const txDetails = provider.execute.mock.calls[0][3];
     expect(txDetails.version).toBe(3);
-    expect(txDetails.resourceBounds.l2_gas.max_amount).toBeGreaterThan(1_225_966_400n);
+    expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(1_200_000_000n);
   });
 
   it("submits without waiting when waitForConfirmation is false", async () => {
@@ -208,5 +208,124 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       transaction_hash: "0x2",
     });
     expect(provider.execute).toHaveBeenCalledTimes(2);
+  });
+
+  it("emits readable submission failures for object-shaped errors", async () => {
+    const provider = makeProvider();
+    provider.execute = vi.fn().mockRejectedValue({
+      message: { code: 40, details: "fallback object message" },
+      data: { message: "Execution reverted: insufficient balance" },
+    });
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+
+    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
+    expect(failedEmit?.[1]).toBe("Transaction failed to submit: insufficient balance");
+  });
+
+  it("prefers nested revert reason over generic short rpc messages", async () => {
+    const provider = makeProvider();
+    provider.execute = vi.fn().mockRejectedValue({
+      shortMessage: "Transaction execution error",
+      details:
+        'Transaction execution error: {"transaction_index":0,"execution_error":"Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 (\'argent/multicall-failed\'), 0x3, \\"one of the tiles in path is occupied\\", 0x454e545259504f494e545f4641494c4544 (\'ENTRYPOINT_FAILED\'))"}',
+    });
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+
+    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
+    expect(failedEmit?.[1]).toBe("Transaction failed to submit: one of the tiles in path is occupied");
+  });
+
+  it("extracts hex-annotated starknet nested reasons before generic rpc text", async () => {
+    const provider = makeProvider();
+    provider.execute = vi.fn().mockRejectedValue({
+      shortMessage: "Transaction execution error",
+      details:
+        `Transaction execution error: {"transaction_index":0,"execution_error":"Nested error: ` +
+        `(0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), ` +
+        `0x0 (''), 0x506f70756c6174696f6e2065786365656473206361706163697479 ('Population exceeds capacity'), ` +
+        `0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))"}`,
+    });
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+
+    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
+    expect(failedEmit?.[1]).toBe("Transaction failed to submit: Population exceeds capacity");
+  });
+
+  it("does not surface protocol error codes when no readable reason is available", async () => {
+    const provider = makeProvider();
+    provider.execute = vi.fn().mockRejectedValue(new Error("Transaction failed with reason: ENTRYPOINT_FAILED"));
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+
+    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
+    expect(failedEmit?.[1]).toBe("Transaction failed to submit: Unknown error");
+  });
+
+  it("falls back for wrapped generic string errors without serializing quotes", async () => {
+    const provider = makeProvider();
+    provider.execute = vi.fn().mockRejectedValue("Transaction failed to submit: Unknown error");
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+
+    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
+    expect(failedEmit?.[1]).toBe("Transaction failed to submit: Unknown error");
   });
 });

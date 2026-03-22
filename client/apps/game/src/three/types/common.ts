@@ -6,6 +6,7 @@ import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
 export enum SceneName {
   WorldMap = "map",
   Hexception = "hex",
+  FastTravel = "travel",
 }
 
 export enum HyperstructureTypesNames {
@@ -28,6 +29,7 @@ export interface StructureInfo {
   hasWonder: boolean;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
+  usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
   // Enhanced data from MapDataStore
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
@@ -52,6 +54,7 @@ export interface ArmyData {
   isDaydreamsAgent: boolean;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
+  usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
   // Enhanced data from MapDataStore
   troopCount: number;

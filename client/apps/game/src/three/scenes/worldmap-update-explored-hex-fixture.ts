@@ -8,7 +8,7 @@ interface DuplicateReconcilePlanInput {
 interface WorldmapUpdateExploredHexFixture {
   invalidateCalls: number;
   updateVisibleChunksCalls: boolean[];
-  requestChunkRefreshCalls: boolean[];
+  requestChunkRefreshCalls: Array<{ force: boolean; reason: string }>;
   applyDuplicateReconcilePlan: (plan: DuplicateReconcilePlanInput) => Promise<void>;
 }
 
@@ -24,13 +24,9 @@ export function createWorldmapUpdateExploredHexFixture(): WorldmapUpdateExplored
 
       fixture.invalidateCalls += 1;
 
-      if (plan.refreshStrategy === "immediate") {
-        fixture.updateVisibleChunksCalls.push(true);
+      if (plan.refreshStrategy === "deferred" || plan.refreshStrategy === "immediate") {
+        fixture.requestChunkRefreshCalls.push({ force: true, reason: "duplicate_tile" });
         return;
-      }
-
-      if (plan.refreshStrategy === "deferred") {
-        fixture.requestChunkRefreshCalls.push(true);
       }
     },
   };

@@ -552,6 +552,9 @@ export class WeatherManager {
     weatherFolder.add(status, "phaseProgress").name("Phase Progress").listen();
 
     // Update display
+    if (this.guiStatusIntervalId) {
+      clearInterval(this.guiStatusIntervalId);
+    }
     this.guiStatusIntervalId = setInterval(() => {
       status.type = this.currentType;
       status.phase = this.currentPhase;

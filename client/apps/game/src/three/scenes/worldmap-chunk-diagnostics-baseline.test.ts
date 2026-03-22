@@ -26,12 +26,24 @@ describe("snapshotChunkDiagnostics", () => {
   it("returns a clone disconnected from future mutations", () => {
     const diagnostics = createWorldmapChunkDiagnostics();
     diagnostics.switchDurationMsSamples.push(12);
+    diagnostics.terrainReadyDurationMsSamples.push(9);
+    diagnostics.terrainCommitDurationMsSamples.push(2);
+    diagnostics.firstVisibleCommitDurationMsSamples.push(11);
+    diagnostics.managerCatchUpDurationMsSamples.push(4);
     const snapshot = snapshotChunkDiagnostics(diagnostics);
 
     diagnostics.transitionStarted = 5;
     diagnostics.switchDurationMsSamples.push(25);
+    diagnostics.terrainReadyDurationMsSamples.push(19);
+    diagnostics.terrainCommitDurationMsSamples.push(7);
+    diagnostics.firstVisibleCommitDurationMsSamples.push(26);
+    diagnostics.managerCatchUpDurationMsSamples.push(10);
     expect(snapshot.transitionStarted).toBe(0);
     expect(snapshot.switchDurationMsSamples).toEqual([12]);
+    expect(snapshot.terrainReadyDurationMsSamples).toEqual([9]);
+    expect(snapshot.terrainCommitDurationMsSamples).toEqual([2]);
+    expect(snapshot.firstVisibleCommitDurationMsSamples).toEqual([11]);
+    expect(snapshot.managerCatchUpDurationMsSamples).toEqual([4]);
   });
 });
 
@@ -83,6 +95,7 @@ describe("cloneChunkDiagnosticsBaselines", () => {
   it("clones entry objects and diagnostics payloads", () => {
     const diagnostics = createWorldmapChunkDiagnostics();
     diagnostics.switchDurationMsSamples.push(9);
+    diagnostics.firstVisibleCommitDurationMsSamples.push(7);
     const source: WorldmapChunkDiagnosticsBaselineEntry[] = [
       {
         label: "one",
@@ -96,5 +109,8 @@ describe("cloneChunkDiagnosticsBaselines", () => {
     expect(cloned[0]).not.toBe(source[0]);
     expect(cloned[0].diagnostics).not.toBe(source[0].diagnostics);
     expect(cloned[0].diagnostics.switchDurationMsSamples).not.toBe(source[0].diagnostics.switchDurationMsSamples);
+    expect(cloned[0].diagnostics.firstVisibleCommitDurationMsSamples).not.toBe(
+      source[0].diagnostics.firstVisibleCommitDurationMsSamples,
+    );
   });
 });

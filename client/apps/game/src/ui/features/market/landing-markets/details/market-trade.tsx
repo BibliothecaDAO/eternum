@@ -25,6 +25,7 @@ import { useMarketRedeem } from "../use-market-redeem";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 const RISK_ACK_SESSION_KEY = "pm_trade_risk_ack_v1";
+type MarketDataChain = "slot" | "mainnet";
 
 const getStoredRiskAck = () => {
   if (typeof window === "undefined") return false;
@@ -84,7 +85,7 @@ const TradeConfirmDialog = ({
         padding="lg"
         radius="xl"
         border="subtle"
-        className="relative mx-4 w-full max-w-sm animate-fade-in-up shadow-2xl"
+        className="relative mx-4 w-full max-w-sm animate-fade-in-up border-gold/30 shadow-2xl"
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -105,10 +106,10 @@ const TradeConfirmDialog = ({
         {/* Trade Summary */}
         <div className="space-y-4">
           {/* Amount */}
-          <div className="rounded-lg bg-brown/50 p-4 text-center">
+          <div className="rounded-lg border border-gold/20 bg-brown/55 p-4 text-center">
             <p className="text-xs uppercase tracking-wide text-gold/50">You are buying</p>
             <div className="mt-1 flex items-center justify-center gap-2">
-              <span className="font-cinzel text-2xl font-bold text-white">{Number(amount) > 0 ? amount : "0"}</span>
+              <span className="font-cinzel text-2xl font-bold text-lightest">{Number(amount) > 0 ? amount : "0"}</span>
               <TokenIcon token={token} size={20} />
               <span className="text-gold/70">{token?.symbol}</span>
             </div>
@@ -133,13 +134,13 @@ const TradeConfirmDialog = ({
 
           {/* Payout Summary */}
           {potentialWin && (
-            <div className="rounded-lg border border-brilliance/30 bg-brilliance/10 p-3">
+            <div className="rounded-lg border border-gold/25 bg-brown/45 p-3">
               <div className="space-y-2">
                 {/* Shares */}
                 {userShares != null && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gold/60">Your Shares</span>
-                    <span className="font-medium text-white">{userShares.toFixed(2)}%</span>
+                    <span className="font-medium text-lightest">{userShares.toFixed(2)}%</span>
                   </div>
                 )}
                 {/* Payout if Win */}
@@ -165,7 +166,7 @@ const TradeConfirmDialog = ({
           )}
 
           {/* Risk Notice */}
-          <div className="rounded-lg border border-orange/30 bg-orange/5 p-3">
+          <div className="rounded-lg border border-orange/35 bg-orange/10 p-3">
             <div className="mb-2 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange" />
               <span className="text-xs font-semibold uppercase tracking-wide text-orange">Alpha Release</span>
@@ -183,7 +184,7 @@ const TradeConfirmDialog = ({
               onChange={(event) => handleRiskChange(event.target.checked)}
               className="mt-0.5 h-4 w-4 cursor-pointer rounded accent-gold"
             />
-            <span className="text-gold/80">I understand and accept the risks</span>
+            <span className="text-gold/85">I understand and accept the risks</span>
           </label>
         </div>
 
@@ -256,7 +257,7 @@ const TokenAmountInput = ({
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-[140px] bg-transparent text-center font-cinzel text-3xl text-white outline-none placeholder:text-gold/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-[140px] bg-transparent text-center font-cinzel text-3xl text-lightest outline-none placeholder:text-gold/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             placeholder="0"
           />
           <div className="pointer-events-none absolute right-0 top-2 translate-x-full pl-2">
@@ -313,12 +314,14 @@ export function MarketTrade({
   selectedOutcome,
   setSelectedOutcome,
   onTradeSuccess,
+  chain,
   compact = false,
 }: {
   market: MarketClass;
   selectedOutcome?: MarketOutcome;
   setSelectedOutcome?: (e: MarketOutcome) => void;
   onTradeSuccess?: () => void | Promise<void>;
+  chain?: MarketDataChain;
   compact?: boolean;
 }) {
   const {
@@ -335,7 +338,7 @@ export function MarketTrade({
   const isResolved = market.isResolved();
   const isTradeable = !isResolved && nowSec >= market.start_at && nowSec < market.end_at;
 
-  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market);
+  const { claimableDisplay, hasAnythingToClaim, isRedeeming, redeem } = useMarketRedeem(market, chain);
 
   // Helper to calculate if a trade is profitable for a given outcome index
   const isProfitableForOutcome = useMemo(() => {
@@ -519,9 +522,9 @@ export function MarketTrade({
           : "Claim your winnings below.";
 
     return isResolved ? (
-      <Panel tone="wood" padding="md" radius="lg" border="subtle" className="border-brilliance/30 bg-brilliance/5">
+      <Panel tone="wood" padding="md" radius="lg" border="subtle" className="border-gold/25 bg-brown/45">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wide text-brilliance">Resolved</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-gold">Resolved</span>
           <div className="flex items-center gap-2">
             <span className="font-cinzel text-xl font-bold text-brilliance">+{claimableDisplay}</span>
             <TokenIcon token={market.collateralToken} size={18} />
@@ -529,7 +532,7 @@ export function MarketTrade({
         </div>
         <p className="mt-2 text-xs text-gold/60">{claimMessage}</p>
         <Button
-          variant="success"
+          variant="gold"
           size="md"
           className="mt-3 w-full"
           disabled={claimDisabled}
@@ -556,13 +559,13 @@ export function MarketTrade({
           <TokenAmountInput amount={amount} setAmount={setAmount} token={market.collateralToken} />
 
           {/* Payout Summary Display */}
-          <div className="rounded-lg border border-brilliance/30 bg-brilliance/10 p-3">
+          <div className="rounded-lg border border-gold/25 bg-brown/45 p-3">
             <div className="space-y-2">
               {/* Your Shares */}
               {tradePreview.userShares != null && (
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gold/60">Your Shares</span>
-                  <span className="font-medium text-white">{tradePreview.userShares.toFixed(2)}%</span>
+                  <span className="font-medium text-lightest">{tradePreview.userShares.toFixed(2)}%</span>
                 </div>
               )}
 
@@ -658,7 +661,7 @@ export function MarketTrade({
                         className="h-2.5 w-2.5 rounded-full"
                         style={{ backgroundColor: getOutcomeColor(selectedOutcome.index) }}
                       />
-                      <span className="text-sm font-semibold text-white">
+                      <span className="text-sm font-semibold text-lightest">
                         <MaybeController address={selectedOutcome.name} />
                       </span>
                     </div>

@@ -1,6 +1,10 @@
 import { Position } from "@bibliothecadao/eternum";
 import { BiomeType, HexEntityInfo } from "@bibliothecadao/types";
 import GameWorker from "../workers/game-worker.ts?worker";
+import {
+  incrementWorldmapRenderCounter,
+  recordWorldmapRenderDuration,
+} from "../three/perf/worldmap-render-diagnostics";
 
 interface WorkerPosition {
   x: number;
@@ -67,7 +71,18 @@ class GameWorkerManager {
   public findPath(start: Position, end: Position, maxDistance: number): Promise<Position[]> {
     return new Promise((resolve, reject) => {
       const requestId = this.nextRequestId++;
-      this.requestMap.set(requestId, { resolve, reject });
+      const requestStartedAt = performance.now();
+      incrementWorldmapRenderCounter("workerFindPathCalls");
+      this.requestMap.set(requestId, {
+        resolve: (path) => {
+          recordWorldmapRenderDuration("workerFindPath", performance.now() - requestStartedAt);
+          resolve(path);
+        },
+        reject: (error) => {
+          recordWorldmapRenderDuration("workerFindPath", performance.now() - requestStartedAt);
+          reject(error);
+        },
+      });
 
       const startNorm = start.getNormalized();
       const endNorm = end.getNormalized();
