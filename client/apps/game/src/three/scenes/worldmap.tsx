@@ -1299,6 +1299,9 @@ export default class WorldmapScene extends WarpTravel {
 
   private resolveWorldmapGroundIntersection(clientX: number, clientY: number): Vector3 | null {
     const canvas = this.controls.domElement;
+    if (!canvas) {
+      return null;
+    }
     const bounds = canvas.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) {
       return null;

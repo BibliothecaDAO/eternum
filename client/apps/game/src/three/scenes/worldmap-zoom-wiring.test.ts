@@ -47,6 +47,12 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/interactiveHexManager\.setHoverVisualMode\("outline"\)/);
   });
 
+  it("guards the worldmap wheel anchor resolver when controls domElement is unavailable", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).toMatch(/if \(!canvas\) \{\s*return null;\s*\}/);
+  });
+
   it("removes direct worldmap refresh requests from GameRenderer control changes", () => {
     const source = readSceneSource("../game-renderer.ts");
 
