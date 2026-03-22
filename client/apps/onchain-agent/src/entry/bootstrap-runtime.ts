@@ -194,8 +194,7 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
   }
 
   // 9. Shared contexts
-  const mapFilePath = join(config.dataDir, "map.txt");
-  const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: mapFilePath };
+  const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: null };
   const automationStatus: AutomationStatusMap = new Map();
 
   // Build ToolContext — snapshot is mutable, updated each map tick
