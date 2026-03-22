@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23405829964-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-22T15:06:44.322Z",
-  "updatedAt": "2026-03-22T15:14:26.764Z",
+  "updatedAt": "2026-03-22T15:14:34.349Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -965,5 +965,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-22T15:07:02.833Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23405829964-1",
+    "workflowRunId": 23405829964,
+    "workflowRunAttempt": 1,
+    "stepId": "grant-village-pass-roles",
+    "acquiredAt": "2026-03-22T15:14:34.349Z",
+    "expiresAt": "2026-03-22T15:59:34.349Z"
   }
 }
