@@ -24,6 +24,18 @@ const waitForAsyncWork = async () => {
   await Promise.resolve();
 };
 
+const setInputValue = (input: HTMLInputElement, value: string) => {
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+
+  if (!valueSetter) {
+    throw new Error("Expected HTMLInputElement value setter to exist");
+  }
+
+  valueSetter.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+};
+
 const buildRun = (overrides: Partial<FactoryRun> = {}): FactoryRun => ({
   ...buildRunBase(),
   ...overrides,
@@ -118,6 +130,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -236,6 +249,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -311,6 +325,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={onNudge}
           onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -323,6 +338,134 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(container.textContent).toContain("Rotation games");
     expect(container.textContent).toContain("Run now");
     expect(container.textContent).toContain("Stop auto retry");
+  });
+
+  it("defaults series prize funding to completed unfunded games and forwards the secret", async () => {
+    const onFundPrize = vi.fn();
+    const seriesRun = buildRun({
+      kind: "series",
+      status: "complete",
+      summary: "Ready",
+      name: "bltz-weekend-cup",
+      steps: [
+        {
+          id: "create-series" as const,
+          title: "Create series",
+          summary: "done",
+          workflowName: "create-series",
+          status: "succeeded" as const,
+          verification: "done",
+          latestEvent: "done",
+        },
+      ],
+      children: [
+        {
+          id: "series-child-1",
+          gameName: "bltz-weekend-cup-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "succeeded",
+          latestEvent: "Ready",
+          currentStepId: null,
+          worldAddress: "0x111",
+        },
+        {
+          id: "series-child-2",
+          gameName: "bltz-weekend-cup-02",
+          seriesGameNumber: 2,
+          startTimeIso: "2026-03-18T13:00:00.000Z",
+          status: "succeeded",
+          latestEvent: "Ready",
+          currentStepId: null,
+          worldAddress: "0x222",
+          prizeFunding: {
+            transfers: [
+              {
+                id: "0xabc",
+                tokenAddress: "0x123",
+                amountRaw: "100",
+                amountDisplay: "1",
+                decimals: 18,
+                transactionHash: "0xabc",
+                fundedAt: "2026-03-18T11:00:00.000Z",
+              },
+            ],
+          },
+        },
+        {
+          id: "series-child-3",
+          gameName: "bltz-weekend-cup-03",
+          seriesGameNumber: 3,
+          startTimeIso: "2026-03-18T14:00:00.000Z",
+          status: "pending",
+          latestEvent: "Pending",
+          currentStepId: "configure-worlds",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[seriesRun]}
+          selectedRun={seriesRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={onFundPrize}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const amountInput = container.querySelector('[data-testid="factory-prize-amount"]') as HTMLInputElement | null;
+    const secretInput = container.querySelector('[data-testid="factory-prize-secret"]') as HTMLInputElement | null;
+    const firstGameCheckbox = container.querySelector(
+      '[data-testid="factory-prize-game-bltz-weekend-cup-01"]',
+    ) as HTMLInputElement | null;
+    const secondGameCheckbox = container.querySelector(
+      '[data-testid="factory-prize-game-bltz-weekend-cup-02"]',
+    ) as HTMLInputElement | null;
+    const thirdGameCheckbox = container.querySelector(
+      '[data-testid="factory-prize-game-bltz-weekend-cup-03"]',
+    ) as HTMLInputElement | null;
+    const submitButton = container.querySelector('[data-testid="factory-prize-submit"]') as HTMLButtonElement | null;
+
+    expect(container.textContent).toContain("Admin prize funding");
+    expect(firstGameCheckbox?.checked).toBe(true);
+    expect(secondGameCheckbox?.checked).toBe(false);
+    expect(thirdGameCheckbox?.disabled).toBe(true);
+
+    await act(async () => {
+      if (!amountInput || !secretInput || !submitButton) {
+        throw new Error("Expected prize funding controls to be rendered");
+      }
+
+      setInputValue(amountInput, "250");
+      setInputValue(secretInput, "factory-secret");
+      submitButton.click();
+      await waitForAsyncWork();
+    });
+
+    expect(onFundPrize).toHaveBeenCalledWith({
+      amount: "250",
+      adminSecret: "factory-secret",
+      selectedGameNames: ["bltz-weekend-cup-01"],
+    });
   });
 
   it("stops auto retry from the watch action bar for active multi-game runs", async () => {
@@ -374,6 +517,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={onStopAutoRetry}
+          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();

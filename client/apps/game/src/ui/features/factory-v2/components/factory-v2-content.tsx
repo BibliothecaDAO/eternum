@@ -155,6 +155,9 @@ export const FactoryV2Content = () => {
               onStopAutoRetry={() => {
                 void factory.cancelSelectedRunAutoRetry();
               }}
+              onFundPrize={(request) => {
+                void factory.fundSelectedRunPrize(request);
+              }}
             />
           </div>
         ) : null}

@@ -1,0 +1,91 @@
+name: Factory Prize Funding
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options:
+          - mainnet.blitz
+          - slot.blitz
+      run_kind:
+        description: "Fund a single game or a full series selection"
+        required: true
+        type: choice
+        options:
+          - game
+          - series
+      run_name:
+        description: "Game or series name"
+        required: true
+        type: string
+      prize_amount:
+        description: "Prize amount to send to each selected game"
+        required: true
+        type: string
+      selected_games_json:
+        description: "Optional JSON array of series game names to fund"
+        required: false
+        type: string
+
+jobs:
+  fund-prize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.event.inputs.environment }}
+    permissions:
+      contents: write
+    env:
+      FACTORY_RUN_STORE_BRANCH: factory-runs
+      GITHUB_TOKEN: ${{ github.token }}
+      DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
+      DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
+      CARTRIDGE_API_BASE: ${{ vars.CARTRIDGE_API_BASE || 'https://api.cartridge.gg' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build required packages
+        run: |
+          set -euo pipefail
+          pnpm --dir packages/types build
+          pnpm --dir packages/provider build
+
+      - name: Fund prize addresses
+        run: |
+          set -euo pipefail
+
+          args=(
+            --environment "${{ github.event.inputs.environment }}"
+            --run-kind "${{ github.event.inputs.run_kind }}"
+            --run-name "${{ github.event.inputs.run_name }}"
+            --amount "${{ github.event.inputs.prize_amount }}"
+          )
+
+          if [ -n "${{ github.event.inputs.selected_games_json }}" ]; then
+            args+=(
+              --selected-games-json "${{ github.event.inputs.selected_games_json }}"
+            )
+          fi
+
+          bun config/deployer/clean/cli/fund-prizes.ts "${args[@]}"

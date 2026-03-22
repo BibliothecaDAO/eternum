@@ -1,5 +1,6 @@
 import type {
   FactoryAutoRetryState,
+  FactoryPrizeFundingState,
   FactoryRecoveryStepId,
   FactoryRotationEvaluationState,
   FactoryRun,
@@ -13,6 +14,7 @@ import type {
 } from "../types";
 import type {
   FactoryWorkerGameRunRecord,
+  FactoryWorkerPrizeFundingState,
   FactoryWorkerRunRecord,
   FactoryWorkerRunRecovery,
   FactoryWorkerRotationRunRecord,
@@ -59,6 +61,7 @@ function mapFactoryWorkerGameRun(record: FactoryWorkerGameRunRecord): FactoryRun
     summary: resolveFactoryGameRunSummary(record.status, record.currentStepId),
     updatedAt: formatFactoryUpdatedAt(record.updatedAt),
     recovery: mapFactoryRunRecovery(record.recovery),
+    prizeFunding: mapFactoryPrizeFunding(record.artifacts.prizeFunding),
     steps: record.steps.map(mapFactoryWorkerStep),
   };
 }
@@ -167,6 +170,27 @@ function mapFactorySeriesChildRun(game: FactoryWorkerSeriesGameRecord): FactoryS
     currentStepId: mapFactoryStepId(game.currentStepId),
     worldAddress: game.artifacts.worldAddress,
     indexerTier: game.artifacts.indexerTier,
+    prizeFunding: mapFactoryPrizeFunding(game.artifacts.prizeFunding),
+  };
+}
+
+function mapFactoryPrizeFunding(
+  prizeFunding: FactoryWorkerPrizeFundingState | undefined,
+): FactoryPrizeFundingState | undefined {
+  if (!prizeFunding) {
+    return undefined;
+  }
+
+  return {
+    transfers: prizeFunding.transfers.map((transfer) => ({
+      id: transfer.id,
+      tokenAddress: transfer.tokenAddress,
+      amountRaw: transfer.amountRaw,
+      amountDisplay: transfer.amountDisplay,
+      decimals: transfer.decimals,
+      transactionHash: transfer.transactionHash,
+      fundedAt: transfer.fundedAt,
+    })),
   };
 }
 

@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-22",
+    title: "Factory Prize Funding",
+    description:
+      "Factory V2 now lets operators fund Blitz game prizes from the watch flow with a confirmation secret, and series funding defaults to only the completed games that have not already been paid.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-22",
     title: "Rotation Retry Controls",
     description:
       "Factory V2 now preserves live rotation state when scheduled checks run and lets admins stop series or rotation auto-retries from the watch flow with a confirmation secret.",

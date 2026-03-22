@@ -13,6 +13,8 @@ import {
   createFactoryRotationRun,
   createFactorySeriesRun,
   FactoryWorkerApiError,
+  fundFactoryGamePrize,
+  fundFactorySeriesPrizes,
   isFactoryWorkerEnvironmentSupported,
   listFactoryRuns,
   nudgeFactoryRotationRun,
@@ -76,6 +78,8 @@ import type {
 const RUN_LOOKUP_ATTEMPTS = 8;
 const RUN_LOOKUP_DELAY_MS = 1_500;
 const RUN_POLL_INTERVAL_MS = 5_000;
+const PRIZE_FUNDING_LOOKUP_ATTEMPTS = 40;
+const PRIZE_FUNDING_LOOKUP_DELAY_MS = 3_000;
 const FIRST_UPDATE_WAIT_MESSAGE = "This game just started. We are waiting for it to appear.";
 const AUTO_UPDATE_MESSAGE = "Updating automatically.";
 const EXISTING_GAME_NOTICE = "That game already exists. We opened it for you.";
@@ -91,6 +95,16 @@ interface AcceptedRunState {
 interface GuidedRecoveryState {
   runId: string;
   lastContinueActionKey: string | null;
+}
+
+type FactoryPrizeFundingEligibleRun = FactoryRun & {
+  kind: "game" | "series";
+};
+
+interface FactoryPrizeFundingRequest {
+  amount: string;
+  adminSecret: string;
+  selectedGameNames: string[];
 }
 
 export const useFactoryV2 = () => {
@@ -1110,6 +1124,61 @@ export const useFactoryV2 = () => {
     );
   };
 
+  const fundSelectedRunPrize = async ({ amount, adminSecret, selectedGameNames }: FactoryPrizeFundingRequest) => {
+    if (!selectedRun || isWatcherBusy || !canFundRunPrize(selectedRun)) {
+      return;
+    }
+
+    const environmentId = assertSupportedEnvironment(selectedRun.environment);
+
+    if (!environmentId) {
+      setNotice(resolveEnvironmentUnavailableReason(selectedRun.environment));
+      return;
+    }
+
+    const normalizedAmount = amount.trim();
+    const normalizedSecret = adminSecret.trim();
+    const normalizedSelectedGameNames = resolveRequestedPrizeFundingGameNames(selectedRun, selectedGameNames);
+
+    if (!normalizedAmount || !normalizedSecret) {
+      return;
+    }
+
+    await runWatchedAction(
+      {
+        kind: "fund_prize",
+        runName: selectedRun.name,
+        title: `Funding ${selectedRun.name}`,
+        detail:
+          selectedRun.kind === "series"
+            ? "Sending the selected prizes in one transaction."
+            : "Sending the prize to this game.",
+        workflowName: "factory-prize-funding.yml",
+        statusLabel: "Funding",
+      },
+      async () => {
+        await fundRunPrize(environmentId, selectedRun, {
+          amount: normalizedAmount,
+          adminSecret: normalizedSecret,
+          selectedGameNames: normalizedSelectedGameNames,
+        });
+
+        const observedPrizeFunding = await waitForPrizeFundingLedgerUpdate(
+          environmentId,
+          selectedRun,
+          normalizedSelectedGameNames,
+        );
+
+        if (observedPrizeFunding) {
+          setNotice("Prize funding was recorded.");
+          return;
+        }
+
+        setNotice("Prize funding started. Refresh this run in a moment to see the transfer.");
+      },
+    );
+  };
+
   const resolveRunByName = async (requestedName: string) => {
     const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
     const trimmedName = requestedName.trim();
@@ -1212,6 +1281,7 @@ export const useFactoryV2 = () => {
     retrySelectedRun,
     nudgeSelectedRun,
     cancelSelectedRunAutoRetry,
+    fundSelectedRunPrize,
     bringIndexerLiveForSelectedRun,
     refreshSelectedRun,
     resolveRunByName,
@@ -1487,6 +1557,30 @@ export const useFactoryV2 = () => {
     });
   }
 
+  async function fundRunPrize(
+    environmentId: FactoryWorkerEnvironmentId,
+    run: FactoryRun,
+    request: FactoryPrizeFundingRequest,
+  ) {
+    if (run.kind === "series") {
+      await fundFactorySeriesPrizes({
+        environment: environmentId,
+        seriesName: run.name,
+        amount: request.amount,
+        gameNames: request.selectedGameNames,
+        adminSecret: request.adminSecret,
+      });
+      return;
+    }
+
+    await fundFactoryGamePrize({
+      environment: environmentId,
+      gameName: run.name,
+      amount: request.amount,
+      adminSecret: request.adminSecret,
+    });
+  }
+
   async function readRunRecord(
     environmentId: FactoryWorkerEnvironmentId,
     kind: FactoryLaunchTargetKind,
@@ -1515,6 +1609,31 @@ export const useFactoryV2 = () => {
     }
 
     return readFactoryRunIfPresent(environmentId, runName);
+  }
+
+  async function waitForPrizeFundingLedgerUpdate(
+    environmentId: FactoryWorkerEnvironmentId,
+    run: FactoryPrizeFundingEligibleRun,
+    selectedGameNames: string[],
+  ) {
+    const initialSnapshot = capturePrizeFundingSnapshot(run, selectedGameNames);
+
+    for (let attempt = 0; attempt < PRIZE_FUNDING_LOOKUP_ATTEMPTS; attempt += 1) {
+      const record = await readRunRecordIfPresent(environmentId, run.kind, run.name);
+
+      if (record) {
+        const nextRun = mapFactoryWorkerRun(record);
+        selectFetchedRun(environmentId, record);
+
+        if (hasObservedPrizeFundingUpdate(nextRun, initialSnapshot)) {
+          return true;
+        }
+      }
+
+      await delay(PRIZE_FUNDING_LOOKUP_DELAY_MS);
+    }
+
+    return false;
   }
 
   function buildCreateRunRequest(environmentId: FactoryWorkerEnvironmentId, gameName: string) {
@@ -2054,6 +2173,72 @@ function requestFactoryAdminSecret(runKind: Extract<FactoryRun["kind"], "series"
 
 function canCancelRunAutoRetry(run: FactoryRun) {
   return (run.kind === "series" || run.kind === "rotation") && run.autoRetry?.enabled && !run.autoRetry.cancelledAt;
+}
+
+function canFundRunPrize(run: FactoryRun): run is FactoryPrizeFundingEligibleRun {
+  return run.mode === "blitz" && run.status === "complete" && (run.kind === "game" || run.kind === "series");
+}
+
+function resolveRequestedPrizeFundingGameNames(run: FactoryPrizeFundingEligibleRun, selectedGameNames: string[]) {
+  if (run.kind !== "series") {
+    return [];
+  }
+
+  const normalizedSelectedGameNames = selectedGameNames.map((gameName) => gameName.trim()).filter(Boolean);
+
+  if (normalizedSelectedGameNames.length > 0) {
+    return normalizedSelectedGameNames;
+  }
+
+  return (run.children ?? [])
+    .filter((child) => child.status === "succeeded" && (child.prizeFunding?.transfers.length ?? 0) === 0)
+    .map((child) => child.gameName);
+}
+
+type FactoryPrizeFundingSnapshot =
+  | {
+      kind: "game";
+      transferCount: number;
+    }
+  | {
+      kind: "series";
+      selectedGameNames: string[];
+      transferCountsByGameName: Record<string, number>;
+    };
+
+function capturePrizeFundingSnapshot(
+  run: FactoryPrizeFundingEligibleRun,
+  selectedGameNames: string[],
+): FactoryPrizeFundingSnapshot {
+  if (run.kind === "game") {
+    return {
+      kind: "game",
+      transferCount: run.prizeFunding?.transfers.length ?? 0,
+    };
+  }
+
+  return {
+    kind: "series",
+    selectedGameNames,
+    transferCountsByGameName: Object.fromEntries(
+      selectedGameNames.map((gameName) => [
+        gameName,
+        run.children?.find((child) => child.gameName === gameName)?.prizeFunding?.transfers.length ?? 0,
+      ]),
+    ),
+  };
+}
+
+function hasObservedPrizeFundingUpdate(run: FactoryRun, snapshot: FactoryPrizeFundingSnapshot) {
+  if (snapshot.kind === "game") {
+    return (run.prizeFunding?.transfers.length ?? 0) > snapshot.transferCount;
+  }
+
+  return snapshot.selectedGameNames.every((gameName) => {
+    const nextTransferCount =
+      run.children?.find((child) => child.gameName === gameName)?.prizeFunding?.transfers.length ?? 0;
+    return nextTransferCount > (snapshot.transferCountsByGameName[gameName] ?? 0);
+  });
 }
 
 function assertSupportedEnvironment(environmentId?: string | null) {

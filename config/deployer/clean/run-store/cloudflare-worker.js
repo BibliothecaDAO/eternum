@@ -94,6 +94,11 @@ async function handleRequest(request, env) {
         return await handleContinueFactoryRun(request, env, runRoute);
       }
 
+      if (request.method === "POST" && runRoute.action === "fund-prize") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleFundFactoryGamePrize(request, env, runRoute);
+      }
+
       return buildJsonResponse(request, env, { error: "Not found" }, 404);
     }
 
@@ -105,6 +110,11 @@ async function handleRequest(request, env) {
 
       if (request.method === "POST" && seriesRunRoute.action === "continue") {
         return await handleContinueFactorySeriesRun(request, env, seriesRunRoute);
+      }
+
+      if (request.method === "POST" && seriesRunRoute.action === "fund-prize") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleFundFactorySeriesPrizes(request, env, seriesRunRoute);
       }
 
       if (request.method === "POST" && seriesRunRoute.action === "cancel-auto-retry") {
@@ -375,6 +385,47 @@ async function handleContinueFactoryRun(request, env, route) {
   );
 }
 
+async function handleFundFactoryGamePrize(request, env, route) {
+  const body = await readJsonBody(request);
+  validateFactoryPrizeFundingBody(body);
+
+  const github = createGitHubClient(env, body.workflowRef);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactoryRunIfPresent(github, route.environment, route.gameName, branch);
+
+  if (!run) {
+    return buildJsonResponse(request, env, { error: resolveMissingRunMessage(route.environment, route.gameName) }, 404);
+  }
+
+  assertFactoryGameRunReadyForPrizeFunding(run);
+
+  const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
+  if (!inputRecord) {
+    return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
+  }
+
+  const workflowRun = await dispatchFactoryPrizeFundingWorkflow(
+    resolveWorkflowGitHubClient(github, inputRecord, body),
+    {
+      environment: route.environment,
+      runKind: "game",
+      runName: route.gameName,
+      amount: body.amount.trim(),
+      selectedGameNames: [],
+    },
+  );
+
+  return buildJsonResponse(
+    request,
+    env,
+    {
+      accepted: true,
+      workflowRun,
+    },
+    202,
+  );
+}
+
 async function handleReadFactoryRun(request, route, env) {
   const github = createGitHubClient(env);
   const run = await readFactoryRunIfPresent(github, route.environment, route.gameName, resolveRunStoreBranch(env));
@@ -476,6 +527,54 @@ async function handleContinueFactorySeriesRun(request, env, route) {
     env,
     {
       accepted: true,
+      workflowRun,
+    },
+    202,
+  );
+}
+
+async function handleFundFactorySeriesPrizes(request, env, route) {
+  const body = await readJsonBody(request);
+  validateFactorySeriesPrizeFundingBody(body);
+
+  const github = createGitHubClient(env, body.workflowRef);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactorySeriesRunIfPresent(github, route.environment, route.seriesName, branch);
+
+  if (!run) {
+    return buildJsonResponse(
+      request,
+      env,
+      { error: resolveMissingSeriesRunMessage(route.environment, route.seriesName) },
+      404,
+    );
+  }
+
+  assertFactorySeriesRunReadyForPrizeFunding(run);
+  const selectedGameNames = resolveSelectedPrizeFundingGameNames(run, body.gameNames);
+  const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
+
+  if (!inputRecord) {
+    return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
+  }
+
+  const workflowRun = await dispatchFactoryPrizeFundingWorkflow(
+    resolveWorkflowGitHubClient(github, inputRecord, body),
+    {
+      environment: route.environment,
+      runKind: "series",
+      runName: route.seriesName,
+      amount: body.amount.trim(),
+      selectedGameNames,
+    },
+  );
+
+  return buildJsonResponse(
+    request,
+    env,
+    {
+      accepted: true,
+      selectedGameNames,
       workflowRun,
     },
     202,
@@ -828,6 +927,22 @@ function validateFactoryIndexerTierUpdateBody(body) {
   validateWorkflowRef(body.workflowRef);
 }
 
+function validateFactoryPrizeFundingBody(body) {
+  validateWorkflowRef(body.workflowRef);
+
+  if (typeof body.amount !== "string" || !body.amount.trim()) {
+    throw new HttpError(400, "amount is required");
+  }
+}
+
+function validateFactorySeriesPrizeFundingBody(body) {
+  validateFactoryPrizeFundingBody(body);
+
+  if (body.gameNames !== undefined) {
+    validatePrizeFundingGameNames(body.gameNames);
+  }
+}
+
 function buildContinueWorkflowRequest(route, run, inputRecord, launchStep) {
   const rawRequest = resolveLaunchInputRequest(inputRecord);
   const normalizedLaunchStep = resolveRecoveryLaunchScope(run, launchStep);
@@ -981,6 +1096,75 @@ function resolveLaunchInputRequest(inputRecord) {
   return inputRecord;
 }
 
+function assertFactoryGameRunReadyForPrizeFunding(run) {
+  if (run.gameType !== "blitz") {
+    throw new HttpError(400, "Prize funding is only supported for blitz runs");
+  }
+
+  if (run.status !== "complete") {
+    throw new HttpError(409, `Game "${run.gameName}" must finish deploying before prize funding`);
+  }
+
+  if (!run.artifacts?.worldAddress) {
+    throw new HttpError(409, `Game "${run.gameName}" is missing a world address`);
+  }
+}
+
+function assertFactorySeriesRunReadyForPrizeFunding(run) {
+  if (run.gameType !== "blitz") {
+    throw new HttpError(400, "Prize funding is only supported for blitz runs");
+  }
+
+  if (run.status !== "complete") {
+    throw new HttpError(409, `Series "${run.seriesName}" must finish deploying before prize funding`);
+  }
+
+  if (!Array.isArray(run.summary?.games) || run.summary.games.length === 0) {
+    throw new HttpError(409, `Series "${run.seriesName}" does not have any games ready for prize funding`);
+  }
+}
+
+function resolveSelectedPrizeFundingGameNames(run, requestedGameNames) {
+  const selectedGameNames =
+    Array.isArray(requestedGameNames) && requestedGameNames.length > 0
+      ? requestedGameNames.map((gameName) => gameName.trim())
+      : buildDefaultPrizeFundingGameNames(run);
+
+  if (selectedGameNames.length === 0) {
+    throw new HttpError(409, `No eligible unfunded games are ready in "${run.seriesName}"`);
+  }
+
+  const gamesByName = new Map(run.summary.games.map((game) => [game.gameName, game]));
+
+  for (const gameName of selectedGameNames) {
+    const game = gamesByName.get(gameName);
+
+    if (!game) {
+      throw new HttpError(400, `Game "${gameName}" was not found in "${run.seriesName}"`);
+    }
+
+    if (game.status !== "succeeded") {
+      throw new HttpError(409, `Game "${gameName}" must finish deploying before prize funding`);
+    }
+
+    if (!game.artifacts?.worldAddress) {
+      throw new HttpError(409, `Game "${gameName}" is missing a world address`);
+    }
+  }
+
+  return run.summary.games.filter((game) => selectedGameNames.includes(game.gameName)).map((game) => game.gameName);
+}
+
+function buildDefaultPrizeFundingGameNames(run) {
+  return run.summary.games
+    .filter((game) => game.status === "succeeded" && !hasPrizeFundingTransfers(game.artifacts?.prizeFunding))
+    .map((game) => game.gameName);
+}
+
+function hasPrizeFundingTransfers(prizeFunding) {
+  return Array.isArray(prizeFunding?.transfers) && prizeFunding.transfers.length > 0;
+}
+
 function validateEnvironment(environment) {
   if (
     environment !== "slot.blitz" &&
@@ -1055,6 +1239,28 @@ function validateSeriesGames(games) {
       }
       requestedGameNumbers.add(game.seriesGameNumber);
     }
+  }
+}
+
+function validatePrizeFundingGameNames(gameNames) {
+  if (!Array.isArray(gameNames)) {
+    throw new HttpError(400, "gameNames must be an array");
+  }
+
+  const seenGameNames = new Set();
+
+  for (const gameName of gameNames) {
+    if (typeof gameName !== "string" || !gameName.trim()) {
+      throw new HttpError(400, "gameNames must contain non-empty strings");
+    }
+
+    const normalizedGameName = gameName.trim();
+
+    if (seenGameNames.has(normalizedGameName)) {
+      throw new HttpError(400, `Prize funding game "${normalizedGameName}" was requested more than once`);
+    }
+
+    seenGameNames.add(normalizedGameName);
   }
 }
 
@@ -1370,6 +1576,20 @@ function matchFactoryRunRoute(pathname) {
     return { environment, gameName, action: "continue" };
   }
 
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "fund-prize"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const gameName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, gameName, action: "fund-prize" };
+  }
+
   return null;
 }
 
@@ -1395,6 +1615,20 @@ function matchFactorySeriesRunRoute(pathname) {
     const seriesName = decodeURIComponent(parts[4]);
     validateEnvironment(environment);
     return { environment, seriesName, action: "continue" };
+  }
+
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "series-runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "fund-prize"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const seriesName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, seriesName, action: "fund-prize" };
   }
 
   if (
@@ -1583,6 +1817,31 @@ async function dispatchGameLaunchWorkflow(github, request) {
 
   return {
     workflowFile: github.workflowFile,
+  };
+}
+
+async function dispatchFactoryPrizeFundingWorkflow(github, request) {
+  const workflowFile = "factory-prize-funding.yml";
+  const response = await github.fetch(`/repos/${github.repo}/actions/workflows/${workflowFile}/dispatches`, {
+    method: "POST",
+    body: JSON.stringify({
+      ref: github.workflowRef,
+      inputs: {
+        environment: request.environment,
+        run_kind: request.runKind,
+        run_name: request.runName,
+        prize_amount: request.amount,
+        selected_games_json: request.selectedGameNames.length > 0 ? JSON.stringify(request.selectedGameNames) : "",
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw await toGitHubHttpError(response, "Failed to dispatch factory-prize-funding workflow");
+  }
+
+  return {
+    workflowFile,
   };
 }
 

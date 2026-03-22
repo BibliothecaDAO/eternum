@@ -783,6 +783,185 @@ describe("factory worker recovery signals", () => {
   });
 });
 
+describe("factory worker prize funding", () => {
+  test("requires the admin secret for prize funding routes", async () => {
+    let didCallGitHub = false;
+    globalThis.fetch = async () => {
+      didCallGitHub = true;
+      throw new Error("Unauthorized requests should not reach GitHub");
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-prize-run/actions/fund-prize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(didCallGitHub).toBe(false);
+  });
+
+  test("dispatches series prize funding with only unfunded completed games by default", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/blitz/series/bltz-weekend-cup.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "series",
+          runId: "slot.blitz:series:bltz-weekend-cup",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          seriesName: "bltz-weekend-cup",
+          status: "complete",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/series/bltz-weekend-cup/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          autoRetry: {
+            enabled: true,
+            intervalMinutes: 15,
+          },
+          steps: [],
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            seriesName: "bltz-weekend-cup",
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [
+              {
+                gameName: "bltz-weekend-cup-01",
+                startTime: 1774195200,
+                startTimeIso: "2026-03-22T16:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 1,
+                currentStepId: null,
+                latestEvent: "Ready",
+                status: "succeeded",
+                artifacts: {
+                  worldAddress: "0x111",
+                },
+              },
+              {
+                gameName: "bltz-weekend-cup-02",
+                startTime: 1774198800,
+                startTimeIso: "2026-03-22T17:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 2,
+                currentStepId: null,
+                latestEvent: "Ready",
+                status: "succeeded",
+                artifacts: {
+                  worldAddress: "0x222",
+                  prizeFunding: {
+                    transfers: [
+                      {
+                        id: "0xabc",
+                        tokenAddress: "0x123",
+                        amountRaw: "100",
+                        amountDisplay: "1",
+                        decimals: 18,
+                        transactionHash: "0xabc",
+                        fundedAt: "2026-03-18T11:00:00.000Z",
+                      },
+                    ],
+                  },
+                },
+              },
+              {
+                gameName: "bltz-weekend-cup-03",
+                startTime: 1774202400,
+                startTimeIso: "2026-03-22T18:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 3,
+                currentStepId: "configure-worlds",
+                latestEvent: "Configuring",
+                status: "running",
+                artifacts: {},
+              },
+            ],
+          },
+          artifacts: {
+            summaryPath: ".context/game-launch/series-slot-blitz-bltz-weekend-cup.json",
+            seriesCreated: true,
+            seriesCreatedAt: "2026-03-18T10:00:00.000Z",
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/inputs/slot/blitz/series/bltz-weekend-cup/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.blitz",
+          seriesName: "bltz-weekend-cup",
+          request: {
+            environmentId: "slot.blitz",
+            seriesName: "bltz-weekend-cup",
+            games: [
+              { gameName: "bltz-weekend-cup-01", startTime: "2026-03-22T16:00:00.000Z" },
+              { gameName: "bltz-weekend-cup-02", startTime: "2026-03-22T17:00:00.000Z" },
+              { gameName: "bltz-weekend-cup-03", startTime: "2026-03-22T18:00:00.000Z" },
+            ],
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/series-runs/slot.blitz/bltz-weekend-cup/actions/fund-prize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-prize-funding.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.run_kind).toBe("series");
+    expect(dispatchBody.inputs.run_name).toBe("bltz-weekend-cup");
+    expect(dispatchBody.inputs.prize_amount).toBe("250");
+    expect(dispatchBody.inputs.selected_games_json).toBe(JSON.stringify(["bltz-weekend-cup-01"]));
+  });
+});
+
 function buildWorkerEnv(overrides: Record<string, string> = {}) {
   return {
     GITHUB_TOKEN: "test-token",

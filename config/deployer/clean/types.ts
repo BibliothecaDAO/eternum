@@ -267,10 +267,25 @@ export interface LaunchGameSummary {
   indexerTier?: IndexerTier;
   indexerRequest?: IndexerRequest;
   indexerWorkflowRun?: IndexerWorkflowRun;
+  prizeFunding?: PrizeFundingState;
   configMode: ExecutionMode;
   configSteps: ExecutedConfigStep[];
   dryRun: boolean;
   outputPath?: string;
+}
+
+export interface PrizeFundingTransfer {
+  id: string;
+  tokenAddress: string;
+  amountRaw: string;
+  amountDisplay: string;
+  decimals: number;
+  transactionHash: string;
+  fundedAt: string;
+}
+
+export interface PrizeFundingState {
+  transfers: PrizeFundingTransfer[];
 }
 
 export interface SeriesLaunchGameArtifacts {
@@ -288,6 +303,7 @@ export interface SeriesLaunchGameArtifacts {
   pendingIndexerTierRequestedAt?: string;
   indexerRequest?: IndexerRequest;
   indexerWorkflowRun?: IndexerWorkflowRun;
+  prizeFunding?: PrizeFundingState;
 }
 
 export interface SeriesLaunchGameStepState {

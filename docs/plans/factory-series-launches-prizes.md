@@ -5,6 +5,20 @@ This document is the persisted implementation brief for the current Factory work
 It exists so the series-launch work, recovery model, indexer policy, and blitz prize-funding flow are captured in one
 place instead of being spread across chat history.
 
+## Current UI Direction
+
+Factory V1 is being phased out.
+
+Operational controls that still matter for launches should live in Factory V2 watch surfaces unless they truly require a
+separate operator console.
+
+That means:
+
+- series and rotation recovery controls live in Factory V2
+- blitz prize funding lives in Factory V2 watch cards
+- confirmation secrets are still required for protected actions
+- the old `factory.tsx` page is not the target for new Factory work
+
 ## Scope
 
 The requested feature set is:
@@ -26,10 +40,10 @@ The requested feature set is:
 The system should keep one clear rule:
 
 - the public Factory V2 surface is for launching and watching runs
-- operator-only actions stay in admin
+- protected operator actions live in Factory V2 watch surfaces with confirmation secrets
 - the run store is the source of truth for resumability and automation
 
-This keeps the main Factory UI calm while still allowing operational tooling for funding and tier changes.
+This keeps the main Factory UI calm while still allowing protected operational tooling where it is needed.
 
 ## Delivery Status Snapshot
 
@@ -214,7 +228,8 @@ This scheduler applies across all games, not only newly launched ones.
 
 ## Blitz Prize Funding
 
-Prize funding is admin-only and should not live on the public Factory V2 launcher.
+Prize funding is admin-only in behavior and should live on the protected Factory V2 watch flow, not on the public
+launcher form.
 
 It should be modeled as a tracked post-launch operation for blitz games.
 
@@ -349,7 +364,7 @@ All prize routes must validate the confirmation secret.
 
 ### Admin UI
 
-Admin should get:
+Factory V2 watch should get:
 
 - single-game prize funding panel
 - series funding panel with selectable game list
@@ -357,7 +372,7 @@ Admin should get:
 - default selection of only unfunded games
 - explicit resend toggle for funded games
 
-The public Factory V2 UI should not expose prize funding controls.
+The public Factory V2 start flow should not expose prize funding controls.
 
 ## Testing Plan
 
@@ -391,7 +406,7 @@ These need to stay explicit and not be rediscovered from chat later:
 - series funding amount should stay per-game in V1 unless product explicitly wants total-budget splitting
 - prize funding should use a dedicated admin workflow, not the normal launch button path
 - prize recipient should come from trusted run or factory data, never from free-form admin input
-- the public Factory V2 page stays clean by keeping prize controls in admin only
+- Factory V2 watch is the right home for protected prize controls, while the start flow stays clean
 
 ## Practical Next Slice
 

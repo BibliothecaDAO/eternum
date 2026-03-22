@@ -59,7 +59,8 @@ export type FactoryWatcherKind =
   | "refresh"
   | "reindex"
   | "nudge"
-  | "cancel_auto_retry";
+  | "cancel_auto_retry"
+  | "fund_prize";
 export type FactoryPollingStatus = "idle" | "checking" | "live" | "paused";
 
 export type FactoryLaunchStartRule = "next_hour";
@@ -127,6 +128,20 @@ export interface FactoryAutoRetryState {
   cancelReason: string | null;
 }
 
+export interface FactoryPrizeFundingTransfer {
+  id: string;
+  tokenAddress: string;
+  amountRaw: string;
+  amountDisplay: string;
+  decimals: number;
+  transactionHash: string;
+  fundedAt: string;
+}
+
+export interface FactoryPrizeFundingState {
+  transfers: FactoryPrizeFundingTransfer[];
+}
+
 export interface FactorySeriesGameDraft {
   id: string;
   gameName: string;
@@ -151,6 +166,7 @@ export interface FactorySeriesChildRun {
   currentStepId: FactoryRunStepId | null;
   worldAddress?: string;
   indexerTier?: string;
+  prizeFunding?: FactoryPrizeFundingState;
 }
 
 export interface FactoryRotationEvaluationState {
@@ -184,6 +200,7 @@ export interface FactoryRun {
   updatedAt: string;
   recovery?: FactoryRunRecovery;
   autoRetry?: FactoryAutoRetryState;
+  prizeFunding?: FactoryPrizeFundingState;
   evaluation?: FactoryRotationEvaluationState;
   rotation?: FactoryRotationRunState;
   children?: FactorySeriesChildRun[];

@@ -11,6 +11,7 @@ import type {
   LaunchSeriesRequest,
   LaunchSeriesStepId,
   LaunchSeriesSummary,
+  PrizeFundingState,
 } from "../types";
 
 export type LaunchWorkflowScope = "full" | LaunchGameStepId;
@@ -94,6 +95,7 @@ export interface FactoryRunArtifacts {
   pendingIndexerTierTarget?: string;
   pendingIndexerTierRequestedAt?: string;
   indexerWorkflowRun?: IndexerWorkflowRun;
+  prizeFunding?: PrizeFundingState;
 }
 
 export interface FactoryRunStepRecord {

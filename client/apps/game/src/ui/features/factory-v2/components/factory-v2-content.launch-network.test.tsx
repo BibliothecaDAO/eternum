@@ -111,6 +111,7 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   retrySelectedRun: vi.fn(async () => true),
   bringIndexerLiveForSelectedRun: vi.fn(async () => true),
   refreshSelectedRun: vi.fn(async () => true),
+  fundSelectedRunPrize: vi.fn(async () => true),
   resolveRunByName: vi.fn(async () => false),
   ...overrides,
 });

@@ -21,6 +21,7 @@ import {
   resolveRunPrimaryAction,
 } from "../presenters";
 import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
+import { FactoryV2PrizeFundingCard } from "./factory-v2-prize-funding-card";
 
 const FIRST_UPDATE_WAIT_MESSAGE = "This run just started. We are waiting for it to appear.";
 const AUTO_UPDATE_LABEL = "Updating automatically";
@@ -51,6 +52,7 @@ type FactoryV2WatchWorkspaceProps = {
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
+  onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
 };
 
 type FactoryV2WatchWorkspaceState = {
@@ -94,6 +96,7 @@ export const FactoryV2WatchWorkspace = ({
   onRefresh,
   onNudge,
   onStopAutoRetry,
+  onFundPrize,
 }: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);
   const [showAllSteps, setShowAllSteps] = useState(false);
@@ -222,6 +225,7 @@ export const FactoryV2WatchWorkspace = ({
         notice={notice}
         showAllSteps={showAllSteps}
         stepSummaryOptions={stepSummaryOptions}
+        onFundPrize={onFundPrize}
         onToggleShowAllSteps={() => setShowAllSteps((open) => !open)}
       />
     </article>
@@ -355,6 +359,7 @@ const FactoryV2WatchWorkspaceContent = ({
   notice,
   showAllSteps,
   stepSummaryOptions,
+  onFundPrize,
   onToggleShowAllSteps,
 }: {
   appearance: ReturnType<typeof resolveFactoryModeAppearance>;
@@ -365,6 +370,7 @@ const FactoryV2WatchWorkspaceContent = ({
   notice: string | null;
   showAllSteps: boolean;
   stepSummaryOptions: FactoryV2StepSummaryActionOptions;
+  onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
   onToggleShowAllSteps: () => void;
 }) => {
   if (selectedRun) {
@@ -388,6 +394,7 @@ const FactoryV2WatchWorkspaceContent = ({
         statusMeta={state.statusMeta}
         actionBarProps={state.actionBarProps}
         stepSummaryOptions={stepSummaryOptions}
+        onFundPrize={onFundPrize}
         onToggleShowAllSteps={onToggleShowAllSteps}
       />
     );
@@ -428,6 +435,7 @@ const FactoryV2WatchRunCard = ({
   statusMeta,
   actionBarProps,
   stepSummaryOptions,
+  onFundPrize,
   onToggleShowAllSteps,
 }: {
   appearance: ReturnType<typeof resolveFactoryModeAppearance>;
@@ -448,6 +456,7 @@ const FactoryV2WatchRunCard = ({
   statusMeta: ReturnType<typeof getRunStatusMeta> | null;
   actionBarProps: FactoryV2WatchActionBarProps | null;
   stepSummaryOptions: FactoryV2StepSummaryActionOptions;
+  onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
   onToggleShowAllSteps: () => void;
 }) => (
   <FactoryV2WatchSurfaceCard
@@ -514,6 +523,12 @@ const FactoryV2WatchRunCard = ({
           <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
         </>
       ) : null}
+
+      <FactoryV2PrizeFundingCard
+        run={selectedRun}
+        isBusy={Boolean(actionBarProps?.isWatcherBusy)}
+        onSubmit={onFundPrize}
+      />
 
       <div className="space-y-2.5">
         <div className="mx-auto max-w-sm space-y-1 text-center">

@@ -33,6 +33,20 @@ export type FactoryWorkerRunRecoveryState = "active" | "transitioning" | "stalle
 export type FactoryWorkerIndexerTier = "basic" | "pro" | "legendary" | "epic";
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 
+export interface FactoryWorkerPrizeFundingTransfer {
+  id: string;
+  tokenAddress: string;
+  amountRaw: string;
+  amountDisplay: string;
+  decimals: number;
+  transactionHash: string;
+  fundedAt: string;
+}
+
+export interface FactoryWorkerPrizeFundingState {
+  transfers: FactoryWorkerPrizeFundingTransfer[];
+}
+
 export interface FactoryWorkerRunRecovery {
   state: FactoryWorkerRunRecoveryState;
   canContinue: boolean;
@@ -61,6 +75,7 @@ interface FactoryWorkerGameArtifacts {
   paymasterSynced?: boolean;
   indexerCreated?: boolean;
   indexerTier?: FactoryWorkerIndexerTier;
+  prizeFunding?: FactoryWorkerPrizeFundingState;
 }
 
 interface FactoryWorkerRotationEvaluation {
@@ -135,6 +150,7 @@ export interface FactoryWorkerSeriesGameRecord {
     worldAddress?: string;
     indexerCreated?: boolean;
     indexerTier?: FactoryWorkerIndexerTier;
+    prizeFunding?: FactoryWorkerPrizeFundingState;
   };
 }
 
@@ -334,6 +350,21 @@ interface UpdateFactoryIndexerTierRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName: string;
   tier: FactoryWorkerIndexerTier;
+  adminSecret: string;
+}
+
+interface FundFactoryGamePrizeRequest {
+  environment: FactoryWorkerEnvironmentId;
+  gameName: string;
+  amount: string;
+  adminSecret: string;
+}
+
+interface FundFactorySeriesPrizesRequest {
+  environment: FactoryWorkerEnvironmentId;
+  seriesName: string;
+  amount: string;
+  gameNames?: string[];
   adminSecret: string;
 }
 
@@ -551,6 +582,24 @@ export async function updateFactoryIndexerTier(request: UpdateFactoryIndexerTier
     method: "POST",
     headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
     body: JSON.stringify(body),
+  });
+}
+
+export async function fundFactoryGamePrize(request: FundFactoryGamePrizeRequest): Promise<void> {
+  const { adminSecret, environment, gameName, amount } = request;
+  await fetchFactoryWorkerJson(`${buildFactoryRunPath(environment, gameName)}/actions/fund-prize`, {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify({ amount }),
+  });
+}
+
+export async function fundFactorySeriesPrizes(request: FundFactorySeriesPrizesRequest): Promise<void> {
+  const { adminSecret, environment, seriesName, amount, gameNames } = request;
+  await fetchFactoryWorkerJson(`${buildFactorySeriesRunPath(environment, seriesName)}/actions/fund-prize`, {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify({ amount, gameNames }),
   });
 }
 
