@@ -27,6 +27,7 @@ import type { StaminaConfig } from "@bibliothecadao/torii";
 import type { MapSnapshot } from "./renderer.js";
 import { isStructure, isExplorer, isChest } from "../world/occupier.js";
 import { calculateStrength, calculateGuardStrength, biomeCombatModifiers, type Strength } from "../world/strength.js";
+import { getRealmName } from "../data/realm-names.js";
 import { projectExplorerStamina } from "../world/stamina.js";
 import { BiomeIdToType } from "@bibliothecadao/types";
 import { Coord, getNeighborOffsets } from "@bibliothecadao/types";
@@ -148,6 +149,10 @@ export interface EntityInfoResult {
   structure?: {
     /** Structure category (e.g. "Realm", "Hyperstructure", "Fragment Mine"). */
     category: string;
+    /** Realm ID (for name lookup). 0 for non-realm structures. */
+    realmId: number;
+    /** Realm name (e.g. "Stolsli"). Empty for non-realm structures. */
+    realmName: string;
     /** Current structure level. */
     level: number;
     /** Active guard slots with non-zero troop counts. */
@@ -682,8 +687,11 @@ export class MapProtocol {
       if (detail) {
         const guards = detail.guards?.filter((g: GuardInfo) => g.count > 0) ?? [];
         const guardStrength = calculateGuardStrength(guards, biome);
+        const realmId = detail.realmId ?? 0;
         base.structure = {
           category: detail.category,
+          realmId,
+          realmName: getRealmName(realmId),
           level: detail.level,
           guards,
           guardStrength,
@@ -1007,7 +1015,8 @@ export class MapProtocol {
 
       const detail = this.snapshot.structureDetails.get(tile.occupierId);
       if (detail) {
-        const label = detail.category;
+        const realmName = getRealmName(detail.realmId ?? 0);
+        const label = realmName ? `${detail.category} "${realmName}"` : detail.category;
         const guards = detail.guards?.filter((g: GuardInfo) => g.count > 0) ?? [];
         const guardStr =
           guards.length > 0
@@ -1073,6 +1082,8 @@ export class MapProtocol {
         if (owned) label = `Your ${label}`;
         const detail = this.snapshot.structureDetails.get(tile.occupierId);
         if (detail) {
+          const realmName = getRealmName(detail.realmId ?? 0);
+          if (realmName) label += ` "${realmName}"`;
           const guards = detail.guards?.filter((g: GuardInfo) => g.count > 0) ?? [];
           if (guards.length > 0) {
             strength = calculateGuardStrength(guards, tile.biome);
