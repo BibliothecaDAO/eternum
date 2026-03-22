@@ -6,9 +6,9 @@
  */
 
 import type { ToolContext } from "./context.js";
-import { toDisplayX, toDisplayY } from "./context.js";
+import { toDisplayX, toDisplayY, displayDirection } from "./context.js";
 import { addressesEqual, extractTxError } from "./tx-context.js";
-import { getNeighborHexes, Direction, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { getNeighborHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 // ── Biome → best troop type mapping ──
 // Biome IDs: 1–4,7 → Crossbowman; 5,6,8,9,11,14 → Paladin; 10,12,13,15,16 → Knight
@@ -184,7 +184,7 @@ export async function createArmy(input: CreateArmyInput, ctx: ToolContext): Prom
     return { success: false, message: `Create failed: ${extractTxError(err)}`, armyDetails: null };
   }
 
-  const spawnDirectionName = Direction[spawnDir] ?? String(spawnDir);
+  const spawnDirectionName = displayDirection(spawnDir);
   const spawnDispX = toDisplayX(spawnRawX, ctx.mapCenter);
   const spawnDispY = toDisplayY(spawnRawY, ctx.mapCenter);
   const details: CreateArmyDetails = {
