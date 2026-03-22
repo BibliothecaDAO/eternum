@@ -108,8 +108,9 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext): AgentTool
       parameters: Type.Object({}),
       async execute() {
         if (!mapCtx.protocol) return { content: [{ type: "text" as const, text: "Map not loaded yet." }], details: {} };
-        const text = mapCtx.protocol.briefing() || "(No owned entities)";
-        return { content: [{ type: "text" as const, text }], details: { briefing: text } };
+        const briefing = mapCtx.protocol.briefing();
+        const text = JSON.stringify(briefing, null, 2);
+        return { content: [{ type: "text" as const, text }], details: { briefing } };
       },
     },
 
