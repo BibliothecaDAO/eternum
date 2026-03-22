@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-rotationx/23405829964-1.json",
-  "latestLaunchRequestId": "23405829964-1",
-  "currentStepId": null,
+  "inputPath": "inputs/slot/blitz/rotations/bltz-rotationx/23406484644-1.json",
+  "latestLaunchRequestId": "23406484644-1",
+  "currentStepId": "create-series",
   "createdAt": "2026-03-22T15:06:44.322Z",
-  "updatedAt": "2026-03-22T15:40:23.518Z",
+  "updatedAt": "2026-03-22T15:41:35.961Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23405829964,
+    "workflowRunId": 23406484644,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23405829964",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406484644",
     "ref": "codex/factory-v2-rotation-review",
     "sha": "ff2107879249d945d781eebf7e45c02347c86da2"
   },
@@ -30,63 +30,51 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-22T15:55:23.518Z",
-    "lastEvaluatedAt": "2026-03-22T15:40:23.518Z"
+    "nextEvaluationAt": "2026-03-22T15:56:35.961Z",
+    "lastEvaluatedAt": "2026-03-22T15:41:35.961Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series succeeded",
-      "startedAt": "2026-03-22T15:06:48.098Z",
-      "finishedAt": "2026-03-22T15:07:04.461Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games succeeded",
-      "startedAt": "2026-03-22T15:07:06.938Z",
-      "finishedAt": "2026-03-22T15:12:41.561Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games succeeded",
-      "startedAt": "2026-03-22T15:12:49.158Z",
-      "finishedAt": "2026-03-22T15:12:55.231Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings succeeded",
-      "startedAt": "2026-03-22T15:12:57.721Z",
-      "finishedAt": "2026-03-22T15:14:00.297Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests succeeded",
-      "startedAt": "2026-03-22T15:14:05.140Z",
-      "finishedAt": "2026-03-22T15:14:26.764Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup succeeded",
-      "startedAt": "2026-03-22T15:14:52.613Z",
-      "finishedAt": "2026-03-22T15:20:42.032Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -107,7 +95,7 @@
     "autoRetryIntervalMinutes": 15,
     "dryRun": false,
     "configMode": "batched",
-    "seriesCreated": true,
+    "seriesCreated": false,
     "games": [
       {
         "gameName": "bltz-rotationx-01",
@@ -115,126 +103,9 @@
         "startTimeIso": "2026-03-22T16:00:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
-        "status": "succeeded",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -243,63 +114,31 @@
           },
           {
             "id": "create-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed create-worlds",
-            "updatedAt": "2026-03-22T15:08:47.507Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "succeeded",
-            "latestEvent": "Completed wait-for-factory-indexes",
-            "updatedAt": "2026-03-22T15:12:52.404Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "configure-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed configure-worlds",
-            "updatedAt": "2026-03-22T15:13:16.683Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "succeeded",
-            "latestEvent": "Completed grant-lootchest-roles",
-            "updatedAt": "2026-03-22T15:14:13.087Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "create-indexers",
-            "status": "succeeded",
-            "latestEvent": "Completed create-indexers",
-            "updatedAt": "2026-03-22T15:16:04.453Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {
-          "createGameTxHash": "0x1382c1a25c73907ff8175188df2727d784092c3745e4e8d1a3d1671b1d06be",
-          "worldAddress": "0x06b44849262cbcf60e31d63cd702131356a4b8e3763d68a0f091fd2854c9e861",
-          "configureTxHash": "0x23b7a335724aa2ed82391d8a855e29634ac06f52cb94d05ef8e68f96c161b40",
-          "lootChestRoleTxHash": "0x22f120ab18a601c334fc6bf80a362ecaf7dde6f3bd609892086ab9cf2de1207",
-          "indexerCreated": true,
-          "indexerMode": "github-actions",
-          "indexerTier": "basic",
-          "indexerRequest": {
-            "env": "slot",
-            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
-            "namespaces": "s1_eternum",
-            "worldName": "bltz-rotationx-01",
-            "worldAddress": "0x06b44849262cbcf60e31d63cd702131356a4b8e3763d68a0f091fd2854c9e861",
-            "tier": "basic",
-            "externalContracts": []
-          },
-          "indexerWorkflowRun": {
-            "workflowFile": "factory-torii-deployer.yml",
-            "ref": "codex/factory-v2-rotation-review",
-            "runId": 23406007458,
-            "runNumber": 803,
-            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406007458",
-            "status": "completed",
-            "conclusion": "success"
-          }
-        },
-        "durationSeconds": 5400
+        "artifacts": {}
       },
       {
         "gameName": "bltz-rotationx-02",
@@ -307,126 +146,9 @@
         "startTimeIso": "2026-03-22T19:00:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
-        "status": "succeeded",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -435,63 +157,31 @@
           },
           {
             "id": "create-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed create-worlds",
-            "updatedAt": "2026-03-22T15:09:49.977Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "succeeded",
-            "latestEvent": "Completed wait-for-factory-indexes",
-            "updatedAt": "2026-03-22T15:12:52.734Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "configure-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed configure-worlds",
-            "updatedAt": "2026-03-22T15:13:29.198Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "succeeded",
-            "latestEvent": "Completed grant-lootchest-roles",
-            "updatedAt": "2026-03-22T15:14:15.576Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "create-indexers",
-            "status": "succeeded",
-            "latestEvent": "Completed create-indexers",
-            "updatedAt": "2026-03-22T15:17:13.360Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {
-          "createGameTxHash": "0x1b6a10a43afcbdd9d1aa3cc7d7e54a7fe0c7f8f6508fa5f6bbe71d090347560",
-          "worldAddress": "0x05967c1639c78d4756487840031a99637e9164b89fd94963e7ae43b5d3a4c26e",
-          "configureTxHash": "0xd48f5681f86c4bd3c0f38ce23c3b761dccd50e8fbb3048fb0683799212a2bc",
-          "lootChestRoleTxHash": "0x3a70f86bd516cef5915aad11c8f6484205e9526c86375112075a1b2305f2489",
-          "indexerCreated": true,
-          "indexerMode": "github-actions",
-          "indexerTier": "basic",
-          "indexerRequest": {
-            "env": "slot",
-            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
-            "namespaces": "s1_eternum",
-            "worldName": "bltz-rotationx-02",
-            "worldAddress": "0x05967c1639c78d4756487840031a99637e9164b89fd94963e7ae43b5d3a4c26e",
-            "tier": "basic",
-            "externalContracts": []
-          },
-          "indexerWorkflowRun": {
-            "workflowFile": "factory-torii-deployer.yml",
-            "ref": "codex/factory-v2-rotation-review",
-            "runId": 23406028826,
-            "runNumber": 804,
-            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406028826",
-            "status": "completed",
-            "conclusion": "success"
-          }
-        },
-        "durationSeconds": 5400
+        "artifacts": {}
       },
       {
         "gameName": "bltz-rotationx-03",
@@ -499,126 +189,9 @@
         "startTimeIso": "2026-03-22T22:00:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
-        "status": "succeeded",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -627,63 +200,31 @@
           },
           {
             "id": "create-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed create-worlds",
-            "updatedAt": "2026-03-22T15:10:45.042Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "succeeded",
-            "latestEvent": "Completed wait-for-factory-indexes",
-            "updatedAt": "2026-03-22T15:12:53.065Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "configure-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed configure-worlds",
-            "updatedAt": "2026-03-22T15:13:38.578Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "succeeded",
-            "latestEvent": "Completed grant-lootchest-roles",
-            "updatedAt": "2026-03-22T15:14:17.977Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "create-indexers",
-            "status": "succeeded",
-            "latestEvent": "Completed create-indexers",
-            "updatedAt": "2026-03-22T15:18:17.272Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {
-          "createGameTxHash": "0x42298a6547dfae8c43eafe9d6251b949729de80a6ae8a3a500aba583bd261cf",
-          "worldAddress": "0x057ba44436404e4bcda67c820e43e07f7e084c96c64da8a4c82dbfb445dea823",
-          "configureTxHash": "0x48103df0fc0c1633a6d5af756c0017ba982b4021cbbb34a09514c176255e2f7",
-          "lootChestRoleTxHash": "0x5da980eddecdf8771380fb9c84a60a0bbb6b511bb537a78fb396392387a2be5",
-          "indexerCreated": true,
-          "indexerMode": "github-actions",
-          "indexerTier": "basic",
-          "indexerRequest": {
-            "env": "slot",
-            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
-            "namespaces": "s1_eternum",
-            "worldName": "bltz-rotationx-03",
-            "worldAddress": "0x057ba44436404e4bcda67c820e43e07f7e084c96c64da8a4c82dbfb445dea823",
-            "tier": "basic",
-            "externalContracts": []
-          },
-          "indexerWorkflowRun": {
-            "workflowFile": "factory-torii-deployer.yml",
-            "ref": "codex/factory-v2-rotation-review",
-            "runId": 23406049461,
-            "runNumber": 805,
-            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406049461",
-            "status": "completed",
-            "conclusion": "success"
-          }
-        },
-        "durationSeconds": 5400
+        "artifacts": {}
       },
       {
         "gameName": "bltz-rotationx-04",
@@ -691,126 +232,9 @@
         "startTimeIso": "2026-03-23T01:00:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
-        "status": "succeeded",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -819,63 +243,31 @@
           },
           {
             "id": "create-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed create-worlds",
-            "updatedAt": "2026-03-22T15:11:39.096Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "succeeded",
-            "latestEvent": "Completed wait-for-factory-indexes",
-            "updatedAt": "2026-03-22T15:12:53.394Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "configure-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed configure-worlds",
-            "updatedAt": "2026-03-22T15:13:47.637Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "succeeded",
-            "latestEvent": "Completed grant-lootchest-roles",
-            "updatedAt": "2026-03-22T15:14:20.335Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "create-indexers",
-            "status": "succeeded",
-            "latestEvent": "Completed create-indexers",
-            "updatedAt": "2026-03-22T15:19:26.316Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {
-          "createGameTxHash": "0x764a358789836b57e35206dade4353a29dfc37e12b5b594ec65e1847da59bed",
-          "worldAddress": "0x00626e244e5b6347e1676c0c8a2e55e300dba3b1872962f77e78be39fec1eec2",
-          "configureTxHash": "0x342db8a031ef90e040b26da378a3a114fddbf0fbcc26ad7e66ccf453ec70931",
-          "lootChestRoleTxHash": "0x183db3cd938c9d0774a1f095c356cd665272e62bf10bf20032a1774d0ce8ba6",
-          "indexerCreated": true,
-          "indexerMode": "github-actions",
-          "indexerTier": "basic",
-          "indexerRequest": {
-            "env": "slot",
-            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
-            "namespaces": "s1_eternum",
-            "worldName": "bltz-rotationx-04",
-            "worldAddress": "0x00626e244e5b6347e1676c0c8a2e55e300dba3b1872962f77e78be39fec1eec2",
-            "tier": "basic",
-            "externalContracts": []
-          },
-          "indexerWorkflowRun": {
-            "workflowFile": "factory-torii-deployer.yml",
-            "ref": "codex/factory-v2-rotation-review",
-            "runId": 23406070342,
-            "runNumber": 806,
-            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406070342",
-            "status": "completed",
-            "conclusion": "success"
-          }
-        },
-        "durationSeconds": 5400
+        "artifacts": {}
       },
       {
         "gameName": "bltz-rotationx-05",
@@ -883,126 +275,9 @@
         "startTimeIso": "2026-03-23T04:00:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
-        "status": "succeeded",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -1011,71 +286,37 @@
           },
           {
             "id": "create-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed create-worlds",
-            "updatedAt": "2026-03-22T15:12:37.655Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "succeeded",
-            "latestEvent": "Completed wait-for-factory-indexes",
-            "updatedAt": "2026-03-22T15:12:53.724Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "configure-worlds",
-            "status": "succeeded",
-            "latestEvent": "Completed configure-worlds",
-            "updatedAt": "2026-03-22T15:13:56.375Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "succeeded",
-            "latestEvent": "Completed grant-lootchest-roles",
-            "updatedAt": "2026-03-22T15:14:22.711Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           },
           {
             "id": "create-indexers",
-            "status": "succeeded",
-            "latestEvent": "Completed create-indexers",
-            "updatedAt": "2026-03-22T15:20:40.558Z"
+            "status": "pending",
+            "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {
-          "createGameTxHash": "0x4686a69602240272476e03665c14c76d708ed587b57fbeb36b19e50f28d0268",
-          "worldAddress": "0x02a412bb4175cc64aa99df978682c43a1d2c70a77256f3cb83e9cc1e35a0e272",
-          "configureTxHash": "0x71f27510d288b1c1e7a06973acfbe39e1ecdcfe7103148bb0843d7ea6ecb201",
-          "lootChestRoleTxHash": "0x36c0efb7d9a194a2c0b44ab15e1b2b414dbce6dd9a5dfa0062784d724ec02e1",
-          "indexerCreated": true,
-          "indexerMode": "github-actions",
-          "indexerTier": "basic",
-          "indexerRequest": {
-            "env": "slot",
-            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
-            "namespaces": "s1_eternum",
-            "worldName": "bltz-rotationx-05",
-            "worldAddress": "0x02a412bb4175cc64aa99df978682c43a1d2c70a77256f3cb83e9cc1e35a0e272",
-            "tier": "basic",
-            "externalContracts": []
-          },
-          "indexerWorkflowRun": {
-            "workflowFile": "factory-torii-deployer.yml",
-            "ref": "codex/factory-v2-rotation-review",
-            "runId": 23406091987,
-            "runNumber": 807,
-            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23406091987",
-            "status": "completed",
-            "conclusion": "success"
-          }
-        },
-        "durationSeconds": 5400
+        "artifacts": {}
       }
     ],
-    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
-    "seriesCreatedAt": "2026-03-22T15:07:02.833Z"
+    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json"
   },
   "artifacts": {
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
-    "seriesCreated": true,
-    "seriesCreatedAt": "2026-03-22T15:07:02.833Z"
+    "seriesCreated": false
   }
 }
