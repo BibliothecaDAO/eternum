@@ -89,6 +89,7 @@ every 10 ticks based on what the agent wrote in memory.
 ```
 ├── soul.md              — personality (operator edits)
 ├── memory.md            — agent working memory
+├── automation-status.txt — realm build/production status
 ├── tasks/
 │   ├── priorities.md
 │   ├── combat.md
