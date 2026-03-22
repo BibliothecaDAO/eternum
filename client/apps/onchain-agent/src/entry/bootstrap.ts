@@ -81,6 +81,7 @@ export function bootstrapDataDir(dataDir: string): void {
   }
 
   writeIfMissing(join(dataDir, "soul.md"), DEFAULT_SOUL);
+  writeIfMissing(join(dataDir, "memory.md"), "");
 
   for (const [name, content] of Object.entries(DEFAULT_TASKS)) {
     writeIfMissing(join(tasksDir, `${name}.md`), content);
