@@ -386,27 +386,8 @@ export async function main() {
 
     if (tickCount % EVOLUTION_INTERVAL === 0 && !evolving) {
       evolving = true;
-      evolve(model, config.dataDir, {
-        map: mapCtx.protocol ? JSON.stringify(mapCtx.protocol.briefing()) : "Map not loaded",
-        structures:
-          [...automationStatus.values()]
-            .map(
-              (s) =>
-                `${s.name} | lv${s.level} | build ${s.buildOrderProgress} | Wheat: ${s.wheatBalance}, Essence: ${s.essenceBalance}`,
-            )
-            .join("\n") || "No structures",
-        armies: mapCtx.snapshot?.explorerDetails
-          ? [...mapCtx.snapshot.explorerDetails.entries()]
-              .map(
-                ([id, info]: [number, any]) =>
-                  `army ${id} | ${info.troopCount?.toLocaleString() ?? "?"} ${info.troopType ?? "?"} ${info.troopTier ?? "?"}`,
-              )
-              .join("\n")
-          : "No armies",
-        toolErrors: toolErrors.map((e) => `${e.tool}: ${e.error}`).join("\n") || "None",
-        recentMessages: (agent as any).state?.messages?.slice(-30),
-        timestamp: Date.now(),
-      })
+      const briefing = mapCtx.protocol?.briefing() ?? {};
+      evolve(model, config.dataDir, briefing)
         .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
         .finally(() => {
           evolving = false;
