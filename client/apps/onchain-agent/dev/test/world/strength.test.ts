@@ -29,34 +29,52 @@ describe("calculateStrength — tier multipliers", () => {
   });
 });
 
-describe("calculateStrength — biome modifiers", () => {
-  it("Paladin gets +30% on Grassland (biome 11)", () => {
+describe("calculateStrength — biome breakdown", () => {
+  it("Paladin gets +30% on Tundra (biome 11)", () => {
     const s = calculateStrength(1000, "T1", "Paladin", 11);
-    expect(s.biomeModifier).toBe(30);
+    expect(s.currentTile.modifier).toBe(30);
+    expect(s.currentTile.effective).toBe(1300);
+    expect(s.biomeBreakdown.Paladin.modifier).toBe(30);
+    expect(s.biomeBreakdown.Paladin.effective).toBe(1300);
     expect(s.display).toContain("+30%");
   });
 
-  it("Crossbowman gets -30% on Grassland (biome 11)", () => {
+  it("Crossbowman gets -30% on Tundra (biome 11)", () => {
     const s = calculateStrength(1000, "T1", "Crossbowman", 11);
-    expect(s.biomeModifier).toBe(-30);
+    expect(s.currentTile.modifier).toBe(-30);
+    expect(s.currentTile.effective).toBe(700);
+    expect(s.biomeBreakdown.Crossbowman.modifier).toBe(-30);
     expect(s.display).toContain("-30%");
   });
 
-  it("Knight is neutral on Grassland (biome 11)", () => {
+  it("Knight is neutral on Tundra (biome 11)", () => {
     const s = calculateStrength(1000, "T1", "Knight", 11);
-    expect(s.biomeModifier).toBe(0);
-    expect(s.display).not.toContain("%");
+    expect(s.currentTile.modifier).toBe(0);
+    expect(s.currentTile.effective).toBe(1000);
+    expect(s.display).toContain("0%");
   });
 
-  it("Knight gets +30% in Forest (biome 12)", () => {
+  it("Knight gets +30% in Tropical Seasonal Forest (biome 12)", () => {
     const s = calculateStrength(1000, "T1", "Knight", 12);
-    expect(s.biomeModifier).toBe(30);
-    expect(s.display).toContain("+30%");
+    expect(s.currentTile.modifier).toBe(30);
+    expect(s.currentTile.effective).toBe(1300);
+    expect(s.biomeBreakdown.Knight.modifier).toBe(30);
   });
 
   it("no modifier for unknown biome", () => {
     const s = calculateStrength(1000, "T1", "Knight", 99);
-    expect(s.biomeModifier).toBe(0);
+    expect(s.currentTile.modifier).toBe(0);
+    expect(s.currentTile.effective).toBe(1000);
+  });
+
+  it("shows all three troop types in breakdown", () => {
+    const s = calculateStrength(1000, "T1", "Knight", 12); // Forest
+    expect(s.biomeBreakdown.Knight.modifier).toBe(30);
+    expect(s.biomeBreakdown.Knight.effective).toBe(1300);
+    expect(s.biomeBreakdown.Crossbowman.modifier).toBe(0);
+    expect(s.biomeBreakdown.Crossbowman.effective).toBe(1000);
+    expect(s.biomeBreakdown.Paladin.modifier).toBe(-30);
+    expect(s.biomeBreakdown.Paladin.effective).toBe(700);
   });
 });
 
@@ -67,14 +85,17 @@ describe("calculateStrength — display format", () => {
     expect(s.display).toContain("70,000");
   });
 
-  it("shows base only when no biome modifier", () => {
-    const s = calculateStrength(1000, "T1", "Knight", 11);
-    expect(s.display).toBe("1,000");
+  it("shows base → effective with biome info", () => {
+    const s = calculateStrength(1000, "T1", "Knight", 11); // 0% on Grassland
+    expect(s.display).toContain("1,000 base");
+    expect(s.display).toContain("Grassland");
   });
 
-  it("shows modifier with base", () => {
-    const s = calculateStrength(1000, "T2", "Paladin", 11);
-    expect(s.display).toBe("2,500 (+30% on this tile)");
+  it("shows effective strength with modifier", () => {
+    const s = calculateStrength(1000, "T2", "Paladin", 11); // +30% on Tundra
+    expect(s.display).toContain("2,500 base");
+    expect(s.display).toContain("3,250");
+    expect(s.display).toContain("+30%");
   });
 });
 
@@ -85,7 +106,6 @@ describe("calculateGuardStrength", () => {
       { count: 300, troopTier: "T2", troopType: "Knight" },
     ];
     const s = calculateGuardStrength(guards, 0);
-    // 500*100/100 + 300*250/100 = 500 + 750 = 1250
     expect(s.base).toBe(1250);
   });
 
@@ -97,20 +117,21 @@ describe("calculateGuardStrength", () => {
 
   it("uses biome modifier of the largest guard group", () => {
     const guards = [
-      { count: 100, troopTier: "T1", troopType: "Knight" }, // neutral on Grassland
-      { count: 800, troopTier: "T1", troopType: "Paladin" }, // +30% on Grassland
+      { count: 100, troopTier: "T1", troopType: "Knight" },
+      { count: 800, troopTier: "T1", troopType: "Paladin" },
     ];
-    const s = calculateGuardStrength(guards, 11);
-    expect(s.biomeModifier).toBe(30);
+    const s = calculateGuardStrength(guards, 11); // Grassland (biome 11): Paladin +30%
+    expect(s.currentTile.modifier).toBe(30);
     expect(s.display).toContain("+30%");
   });
 
   it("shows negative modifier from dominant guard", () => {
     const guards = [
-      { count: 1000, troopTier: "T2", troopType: "Crossbowman" }, // -30% on Grassland
+      { count: 1000, troopTier: "T2", troopType: "Crossbowman" },
     ];
-    const s = calculateGuardStrength(guards, 11);
-    expect(s.biomeModifier).toBe(-30);
+    const s = calculateGuardStrength(guards, 11); // Grassland (biome 11): Crossbowman -30%
+    expect(s.currentTile.modifier).toBe(-30);
     expect(s.base).toBe(2500);
+    expect(s.currentTile.effective).toBe(1750);
   });
 });
