@@ -8,11 +8,11 @@ function readHexagonSceneSource(): string {
   return readFileSync(resolve(currentDir, "hexagon-scene.ts"), "utf8");
 }
 
-describe("worldmap view resolution policy wiring", () => {
-  it("derives semantic view from camera distance instead of assigning the target view directly", () => {
+describe("hexagon scene ground presentation", () => {
+  it("renders the world ground without the paper texture backdrop", () => {
     const source = readHexagonSceneSource();
 
-    expect(source).toMatch(/resolveWorldmapZoomBand\(/);
-    expect(source).not.toMatch(/this\.currentCameraView = position;/);
+    expect(source).not.toMatch(/worldmap-bg-blitz\.png/);
+    expect(source).not.toMatch(/map:\s*texture/);
   });
 });
