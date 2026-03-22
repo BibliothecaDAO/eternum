@@ -6,21 +6,21 @@ showOutline: false
 
 # Configuration
 
-`client/apps/onchain-agent/.env`
+Environment variables — set in `.env` or pass directly.
 
 ```bash
 # Required
-WORLD_NAME=<world-name>
-ANTHROPIC_API_KEY=sk-ant-...   # PI agent only
+CHAIN=slot                         # mainnet, sepolia, slot, slottest
+WORLD_NAME=<world-slug>            # auto-discovers Torii + world address
+ANTHROPIC_API_KEY=sk-ant-...       # only for axis run
 
 # Optional (defaults shown)
-CHAIN=mainnet
 MODEL_PROVIDER=anthropic
 MODEL_ID=claude-sonnet-4-20250514
 TICK_INTERVAL_MS=60000
-TORII_URL=                     # auto-discovered
-WORLD_ADDRESS=                 # auto-discovered
-RPC_URL=                       # auto-discovered
+TORII_URL=                         # auto-discovered from WORLD_NAME
+WORLD_ADDRESS=                     # auto-discovered from WORLD_NAME
+RPC_URL=                           # per-chain default
 ```
 
 :::details[x402 Provider — on-chain USDC permits instead of an API key]
@@ -47,8 +47,25 @@ X402_PAYMENT_HEADER=PAYMENT-SIGNATURE
 `~/.axis/worlds/<worldAddress>/`:
 
 ```bash
-├── soul.md
+├── soul.md              # personality (operator edits, never auto-modified)
+├── memory.md            # agent working memory (appended each tick)
+├── map.txt              # ASCII map (refreshed every 10s)
 ├── automation-status.txt
-├── tasks/
-└── .cartridge/
+├── tasks/               # strategic lessons (evolution rewrites)
+│   ├── priorities.md
+│   ├── combat.md
+│   ├── economy.md
+│   ├── exploration.md
+│   └── reflection.md
+└── .cartridge/          # session persistence
 ```
+
+## Memory Architecture
+
+| File         | Owner     | Purpose                             |
+| ------------ | --------- | ----------------------------------- |
+| `soul.md`    | Operator  | Personality — never auto-modified   |
+| `memory.md`  | Agent     | Working memory — appended each tick |
+| `tasks/*.md` | Evolution | Strategic lessons learned over time |
+
+The agent reads all three each tick. It writes to `memory.md` via the `update_memory` tool. Evolution reads `memory.md` and rewrites `tasks/` every 10 ticks.

@@ -6,13 +6,17 @@ showOutline: false
 
 # Axis
 
-Eternum onchain agent. Explores, fights, and manages economy autonomously.
+Autonomous onchain agent for Eternum. Explores, fights, and manages economy.
 
-:::note[Two modes]
+:::note[Three modes]
 
-- **MCP Server** — tools called on demand
-- **PI Agent** — autonomous tick loop :::
-- [Setup](/development/axis/setup) — run the agent
-- [Tools](/development/axis/tools-reference) — what it can do
-- [Configuration](/development/axis/configuration) — advanced
-- [Map Protocol](/development/axis/map-protocol) — design
+- **`axis run`** — autonomous tick loop (agent plays on its own)
+- **`axis mcp`** — MCP server (tools called by Claude Code)
+- **`axis <command>`** — one-shot CLI commands (query or act, then exit) :::
+
+## Pages
+
+- [Setup](/development/axis/setup) — install and run
+- [Tools](/development/axis/tools-reference) — all available tools
+- [Configuration](/development/axis/configuration) — env vars and runtime data
+- [Map Protocol](/development/axis/map-protocol) — query design
