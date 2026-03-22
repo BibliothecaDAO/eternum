@@ -59,12 +59,19 @@ export interface CreateArmyInput {
 
 /** Detailed info about the newly created army. */
 export interface CreateArmyDetails {
+  /** Troop name including tier, e.g. "Crossbowman T1". */
   troopName: string;
+  /** Tier suffix: "T1", "T2", or "T3". */
   tierSuffix: string;
+  /** Number of troops in the army. */
   troopCount: number;
+  /** Direction from the structure where the army spawned, e.g. "EAST". */
   spawnDirection: string;
+  /** Display coordinates where the army spawned. */
   spawnPosition: { x: number; y: number };
+  /** Number of explorers the structure now has (including the new one). */
   explorerCount: number;
+  /** Maximum explorers the structure can support. */
   maxExplorerCount: number;
 }
 
