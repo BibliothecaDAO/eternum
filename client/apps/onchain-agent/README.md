@@ -4,11 +4,11 @@ Autonomous onchain agent for [Eternum | Blitz](https://blitz.realms.world/).
 
 ## Modes
 
-| Command      | Description                                    |
-| ------------ | ---------------------------------------------- |
-| `axis run`   | Autonomous agent loop (tick → act → repeat)    |
-| `axis mcp`   | MCP server for Claude Code                     |
-| `axis <cmd>` | One-shot tool commands (map queries, actions)   |
+| Command      | Description                                   |
+| ------------ | --------------------------------------------- |
+| `axis run`   | Autonomous agent loop (tick → act → repeat)   |
+| `axis mcp`   | MCP server for Claude Code                    |
+| `axis <cmd>` | One-shot tool commands (map queries, actions) |
 
 ## Quick Start
 
@@ -36,6 +36,8 @@ ANTHROPIC_API_KEY=sk-ant-...   # only needed for axis run
 ```bash
 CHAIN=slot WORLD_NAME=myworld ./dist/axis run
 ```
+
+> if running from build output artifact location
 
 ### Use as MCP server (Claude Code)
 
@@ -71,13 +73,14 @@ The agent handles combat and exploration. Automation handles the economy. The ma
 
 Three layers of persistent state:
 
-| File          | Owner     | Purpose                              |
-| ------------- | --------- | ------------------------------------ |
-| `soul.md`     | Operator  | Personality — never auto-modified    |
-| `memory.md`   | Agent     | Working memory — appended each tick  |
-| `tasks/*.md`  | Evolution | Strategic lessons learned over time  |
+| File         | Owner     | Purpose                             |
+| ------------ | --------- | ----------------------------------- |
+| `soul.md`    | Operator  | Personality — never auto-modified   |
+| `memory.md`  | Agent     | Working memory — appended each tick |
+| `tasks/*.md` | Evolution | Strategic lessons learned over time |
 
-The agent reads all three each tick. It writes to `memory.md` via the `update_memory` tool. Evolution rewrites `tasks/` every 10 ticks based on what the agent wrote in memory.
+The agent reads all three each tick. It writes to `memory.md` via the `update_memory` tool. Evolution rewrites `tasks/`
+every 10 ticks based on what the agent wrote in memory.
 
 ## Data
 
@@ -86,8 +89,6 @@ The agent reads all three each tick. It writes to `memory.md` via the `update_me
 ```
 ├── soul.md              — personality (operator edits)
 ├── memory.md            — agent working memory
-├── map.txt              — ASCII map (refreshed every 10s)
-├── automation-status.txt
 ├── tasks/
 │   ├── priorities.md
 │   ├── combat.md
