@@ -14,7 +14,7 @@
  *
  * @example
  * ```ts
- * const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: join(dataDir, "map.txt") };
+ * const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: null };
  * // After the first map loop tick, mapCtx.snapshot and mapCtx.protocol are populated.
  * ```
  *
@@ -45,9 +45,7 @@ export interface MapContext {
   protocol: MapProtocol | null;
 
   /**
-   * Absolute path where the ASCII map is written after each refresh.
-   *
-   * Typically `<dataDir>/map.txt`. Set to `null` in tests to skip disk writes.
+   * Absolute path for optional disk writes. Set to `null` to skip (default).
    */
   filePath: string | null;
 
