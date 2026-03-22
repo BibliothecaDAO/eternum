@@ -3,8 +3,9 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
+  "bin": { "axis": "./src/cli/index.ts" },
   "scripts": {
-    "dev": "NODE_OPTIONS='--experimental-wasm-modules --disable-warning=ExperimentalWarning' tsx src/entry/index.ts",
+    "dev": "NODE_OPTIONS='--experimental-wasm-modules --disable-warning=ExperimentalWarning' tsx src/entry/index.ts run",
     "build": "tsc --noEmit",
     "build:binary": "bun run dev/scripts/build.ts",
     "test": "vitest --run",
