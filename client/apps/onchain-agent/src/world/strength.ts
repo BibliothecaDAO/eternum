@@ -99,8 +99,6 @@ export interface Strength {
     modifier: number;
     effective: number;
   };
-  /** Formatted display string. */
-  display: string;
 }
 
 /**
@@ -142,18 +140,10 @@ export function calculateStrength(troopCount: number, troopTier: string, troopTy
 
   const biomeLabel = biomeName(biome);
 
-  let display = `${base.toLocaleString()} base`;
-  if (myModifier !== 0) {
-    display += ` → ${effective.toLocaleString()} on ${biomeLabel} (${myModifier > 0 ? "+" : ""}${myModifier}%)`;
-  } else {
-    display += ` → ${effective.toLocaleString()} on ${biomeLabel} (0%)`;
-  }
-
   return {
     base,
     biomeBreakdown,
     currentTile: { biome: biomeLabel, biomeId: biome, modifier: myModifier, effective },
-    display,
   };
 }
 
@@ -197,7 +187,6 @@ export function calculateGuardStrength(
       base: 0,
       biomeBreakdown: emptyBreakdown,
       currentTile: { biome: biomeName(biome), biomeId: biome, modifier: 0, effective: 0 },
-      display: "0",
     };
   }
 
@@ -218,17 +207,9 @@ export function calculateGuardStrength(
   const totalEffective = Math.floor(totalBase * (1 + dominant.currentTile.modifier / 100));
   const biomeLabel = biomeName(biome);
 
-  let display = `${totalBase.toLocaleString()} base`;
-  if (dominant.currentTile.modifier !== 0) {
-    display += ` → ${totalEffective.toLocaleString()} on ${biomeLabel} (${dominant.currentTile.modifier > 0 ? "+" : ""}${dominant.currentTile.modifier}%)`;
-  } else {
-    display += ` → ${totalEffective.toLocaleString()} on ${biomeLabel} (0%)`;
-  }
-
   return {
     base: totalBase,
     biomeBreakdown: dominant.biomeBreakdown,
     currentTile: { biome: biomeLabel, biomeId: biome, modifier: dominant.currentTile.modifier, effective: totalEffective },
-    display,
   };
 }

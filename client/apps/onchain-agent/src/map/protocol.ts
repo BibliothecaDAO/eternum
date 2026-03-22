@@ -26,7 +26,7 @@ import type { TileState, GuardInfo, ResourceInfo } from "@bibliothecadao/client"
 import type { StaminaConfig } from "@bibliothecadao/torii";
 import type { MapSnapshot } from "./renderer.js";
 import { isStructure, isExplorer, isChest } from "../world/occupier.js";
-import { calculateStrength, calculateGuardStrength } from "../world/strength.js";
+import { calculateStrength, calculateGuardStrength, type Strength } from "../world/strength.js";
 import { projectExplorerStamina } from "../world/stamina.js";
 import { BiomeIdToType } from "@bibliothecadao/types";
 import { Coord, getNeighborOffsets } from "@bibliothecadao/types";
@@ -67,7 +67,7 @@ export interface OccupierSummary {
   /** One-line human-readable description (e.g. "Your 5,000 Knight T2", "Realm lv3"). */
   label: string;
   /** Combat strength if applicable (explorer or guarded structure). */
-  strength?: { base: number; display: string };
+  strength?: Strength;
 }
 
 /**
@@ -138,7 +138,7 @@ export interface EntityInfoResult {
     /** Current projected stamina (accounts for regeneration since last update). */
     stamina: number;
     /** Combat strength with base value and biome-modified display string. */
-    strength: { base: number; display: string };
+    strength: Strength;
     /** Owner display name ("You" for own armies, decoded felt or truncated address). */
     owner: string;
   };
@@ -151,7 +151,7 @@ export interface EntityInfoResult {
     /** Active guard slots with non-zero troop counts. */
     guards: GuardInfo[];
     /** Aggregate combat strength of all guards, accounting for biome. */
-    guardStrength: { base: number; display: string };
+    guardStrength: Strength;
     /** Resources held by the structure. */
     resources: ResourceInfo[];
     /** Current number of explorers spawned from this structure. */
@@ -184,7 +184,7 @@ export interface FindResult {
   /** Hex distance from the reference position (present only if `referencePos` was provided). */
   distance?: number;
   /** Combat strength (present for armies and guarded structures). */
-  strength?: { base: number; display: string };
+  strength?: Strength;
 }
 
 /**
@@ -851,7 +851,10 @@ export class MapProtocol {
 
         const detail = this.snapshot.explorerDetails.get(neighbor.occupierId);
         const strengthStr = detail
-          ? ` (~${calculateStrength(detail.troopCount, detail.troopTier, detail.troopType, neighbor.biome).display})`
+          ? (() => {
+              const s = calculateStrength(detail.troopCount, detail.troopTier, detail.troopType, neighbor.biome);
+              return ` (~${s.currentTile.effective.toLocaleString()} strength)`;
+            })()
           : "";
 
         diags.push({
@@ -982,7 +985,7 @@ export class MapProtocol {
         const biome = biomeName(tile.biome);
         const dp = this.displayPos(tile.position);
         armies.push(
-          `  ${tile.occupierId} | ${detail.troopCount.toLocaleString()} ${detail.troopType} ${detail.troopTier} | str ${strength.display} | stam ${stamina} | at (${dp.x},${dp.y}) | ${biome}`,
+          `  ${tile.occupierId} | ${detail.troopCount.toLocaleString()} ${detail.troopType} ${detail.troopTier} | str ${strength.currentTile.effective.toLocaleString()} (${strength.currentTile.modifier > 0 ? "+" : ""}${strength.currentTile.modifier}% on ${strength.currentTile.biome}) | stam ${stamina} | at (${dp.x},${dp.y}) | ${biome}`,
         );
       } else {
         const dp = this.displayPos(tile.position);
@@ -1059,7 +1062,7 @@ export class MapProtocol {
     const kind = occupierKind(tile.occupierType);
     const owned = this.ownedEntityIds.has(tile.occupierId);
     let label: string;
-    let strength: { base: number; display: string } | undefined;
+    let strength: Strength | undefined;
 
     switch (kind) {
       case "structure": {
