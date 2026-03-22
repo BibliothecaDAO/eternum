@@ -6,12 +6,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ProductionModal } from "@/ui/features/settlement";
+import { productionAutomation } from "@/ui/features/world/components/config";
 import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { inferRealmPreset } from "@/utils/automation-presets";
+import { getRealmStatusColor, getRealmStatusLabel, getFailureSeverity, timeAgo } from "@/utils/automation-status";
 import {
   Position,
   formatTime,
@@ -25,12 +27,14 @@ import {
   ContractAddress,
   EntityType,
   RelicRecipientType,
+  ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+import Bot from "lucide-react/dist/esm/icons/bot";
 import Shield from "lucide-react/dist/esm/icons/shield";
 import Sword from "lucide-react/dist/esm/icons/sword";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
@@ -108,14 +112,72 @@ const NextAutomationRunLabel = memo(() => {
 
 NextAutomationRunLabel.displayName = "NextAutomationRunLabel";
 
+const RealmAutomationStatusLine = memo(({ realmId }: { realmId: string }) => {
+  const lastStatus = useAutomationStore(useCallback((state) => state.realms[realmId]?.lastStatus, [realmId]));
+  const lastExecution = useAutomationStore(useCallback((state) => state.realms[realmId]?.lastExecution, [realmId]));
+
+  if (!lastStatus) return null;
+
+  const statusColor = getRealmStatusColor(lastStatus);
+  const statusLabel = getRealmStatusLabel(lastStatus);
+  const failureSeverity = getFailureSeverity(lastStatus);
+  const timeSince = timeAgo(lastStatus.attemptedAt);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
+        <span
+          className={`inline-block h-1.5 w-1.5 rounded-full ${
+            lastStatus.status === "success"
+              ? "bg-emerald-400"
+              : lastStatus.status === "failed"
+                ? "bg-red-400"
+                : "bg-amber-400"
+          }`}
+        />
+        <span className={`text-[10px] ${statusColor}`}>{statusLabel}</span>
+        <span className="text-[10px] text-gold/30">{timeSince}</span>
+      </div>
+
+      {failureSeverity === "critical" && (
+        <div className="rounded border border-danger/30 bg-danger/5 px-2 py-1 text-[10px] text-danger">
+          {lastStatus.consecutiveFailures} consecutive failures: {lastStatus.message}
+        </div>
+      )}
+
+      {lastStatus.status === "success" && lastExecution?.outputsByResource && (
+        <div className="text-[10px] text-gold/40">
+          Produced:{" "}
+          {Object.entries(lastExecution.outputsByResource)
+            .filter(([, amount]) => amount > 0)
+            .map(([resId, amount]) => {
+              const label = ResourcesIds[Number(resId) as ResourcesIds];
+              return `${Math.round(amount).toLocaleString()} ${typeof label === "string" ? label : `#${resId}`}`;
+            })
+            .join(", ")}
+        </div>
+      )}
+    </div>
+  );
+});
+
+RealmAutomationStatusLine.displayName = "RealmAutomationStatusLine";
+
 export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
   const openPopup = useUIStore((state) => state.openPopup);
+  const togglePopup = useUIStore((state) => state.togglePopup);
   const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
   const automationRealms = useAutomationStore((state) => state.realms);
+  const hasAutomationFailures = useAutomationStore(
+    useCallback(
+      (state) => Object.values(state.realms).some((r) => (r.lastStatus?.consecutiveFailures ?? 0) >= 3),
+      [],
+    ),
+  );
   const { setup, account, network } = useDojo();
   const components = setup.components as ClientComponents;
   const { isMapView } = useQuery();
@@ -276,7 +338,20 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       {(isRealm || isVillage) && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Production</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Production</span>
+              <button
+                onClick={() => togglePopup(productionAutomation)}
+                className="relative p-0.5 text-gold/50 hover:text-gold transition-colors"
+                title="Automation Dashboard"
+                type="button"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                {hasAutomationFailures && (
+                  <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+                )}
+              </button>
+            </div>
             <div className="flex items-center gap-2">
               <ProductionStatusPill statusLabel={statusLabel} />
               <ProductionModifyButton onClick={handleModifyClick} disabled={!realmId || !structurePosition} />
@@ -300,6 +375,11 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
           <div className="mt-3 text-right text-[10px] text-gold/50">
             <NextAutomationRunLabel />
           </div>
+          {realmId && (
+            <div className="mt-1">
+              <RealmAutomationStatusLine realmId={String(realmId)} />
+            </div>
+          )}
         </div>
       )}
 
