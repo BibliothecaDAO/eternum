@@ -6,7 +6,7 @@ showOutline: false
 
 # Setup
 
-Node.js 22+, pnpm, and realms settled in the game client.
+Node.js 22+, pnpm, Bun (for binary build), and realms settled in the game client.
 
 ::::steps
 
@@ -18,52 +18,66 @@ cd eternum && pnpm install
 pnpm build:packages
 pnpm --dir packages/client build
 cd client/apps/onchain-agent
-cp .env.example .env
 ```
+
+### Build the binary
+
+```bash
+bun run dev/scripts/build.ts
+```
+
+Outputs `./dist/axis`.
 
 ### Configure
 
-Edit `.env`:
+Create `.env` in the directory where you run axis:
 
 ```bash
 CHAIN=slot
-WORLD_NAME=<world-name>
-ANTHROPIC_API_KEY=sk-ant-...
+WORLD_NAME=<world-slug>
+ANTHROPIC_API_KEY=sk-ant-...   # only needed for axis run
 ```
 
 See [Configuration](/development/axis/configuration) for all variables.
 
-### Run
-
-Pick one:
-
 ::::
 
-## MCP Server
+## Run the Agent
 
-```bash [Terminal]
-# from repo root
-claude mcp add eternum \
-  -- npx tsx ./client/apps/onchain-agent/dev/scripts/mcp-server.ts
+```bash
+CHAIN=slot WORLD_NAME=myworld ./dist/axis run
 ```
 
-1. Call `status`
-2. Auth URL copied to clipboard — paste in browser
-3. Approve on Cartridge
-4. Call `status` again
+The agent authenticates, loads the map, and starts the tick loop. Type messages to steer it.
+
+## MCP Server (Claude Code)
+
+```bash
+claude mcp add-json --scope user eternum \
+  '{"type":"stdio","command":"/path/to/dist/axis","args":["mcp"],"env":{"CHAIN":"slot","WORLD_NAME":"myworld"}}'
+```
 
 :::tip `ANTHROPIC_API_KEY` not needed — Claude Code provides the model. :::
 
-## PI Agent
+## One-Shot Commands
 
-```bash [Terminal]
-# from client/apps/onchain-agent
-pnpm dev
+```bash
+./dist/axis status --json
+./dist/axis map briefing
+./dist/axis map find own_army
+./dist/axis create-army 169
+./dist/axis move-army 229 5 -3
 ```
 
-1. Browser opens for Cartridge auth
-2. Approve
-3. Tick loop starts
+Run `axis --help` for all commands. Use `--json` for machine-readable output (stderr has logs, stdout has clean JSON).
+
+## Auth
+
+```bash
+./dist/axis auth
+```
+
+Authenticates with Cartridge and copies the login URL to clipboard. If already authenticated, prints the account address.
 
 ## Troubleshooting
 
@@ -75,6 +89,6 @@ pnpm dev
 | "Server is starting" hangs |     `CHAIN` and `WORLD_NAME` must match a live world.     |
 |    "Map not loaded yet"    |               Wait ~10 seconds after auth.                |
 |      Missing packages      | `pnpm build:packages && pnpm --dir packages/client build` |
-| Auth browser doesn't open  |                Check terminal for the URL.                |
+| Auth browser doesn't open  |         Run `axis auth` to get the URL directly.          |
 
 :::

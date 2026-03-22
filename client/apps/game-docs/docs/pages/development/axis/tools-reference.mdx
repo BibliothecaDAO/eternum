@@ -6,25 +6,26 @@ showOutline: false
 
 # Tools
 
-:::info Display coordinates. Positive Y = north. :::
+:::info Display coordinates. Positive Y = north. Tile info includes combat modifiers per troop type. :::
 
 | Tool                    | Params                                                 | Description                                |
 | ----------------------- | ------------------------------------------------------ | ------------------------------------------ |
-| `status`                | —                                                      | Readiness check, auth link                 |
-| `map_tile_info`         | `x`, `y`                                               | Biome, entity, guards, resources, strength |
+| `status`                | —                                                      | Account, world, chain info                 |
+| `auth`                  | —                                                      | Authenticate, copy login URL to clipboard  |
+| `map_tile_info`         | `x`, `y`                                               | Biome, combat modifiers, entity details    |
 | `map_nearby`            | `x`, `y`, `radius`                                     | Nearby armies, enemies, structures, chests |
-| `map_entity_info`       | `entity_id`                                            | Troops, stamina, guards, resources, owner  |
+| `map_entity_info`       | `entity_id`                                            | Troops, stamina, strength, resources       |
 | `map_find`              | `type`, `ref_x`, `ref_y`                               | Find entities by type, sorted by distance  |
-| `map_briefing`          | —                                                      | Game state summary                         |
+| `map_briefing`          | —                                                      | Structured game state summary (JSON)       |
 | `automation`            | `action`                                               | `start`, `stop`, `status`                  |
 | `move_army`             | `army_id`, `target_x`, `target_y`                      | Pathfind, move, auto-explore               |
 | `simulate_attack`       | `army_id`, `target_x`, `target_y`                      | Preview battle outcome                     |
 | `attack_target`         | `army_id`, `target_x`, `target_y`                      | Attack adjacent target                     |
 | `attack_from_guard`     | `structure_id`, `slot`, `target_army_id`               | Guard slot attacks adjacent enemy          |
 | `raid_target`           | `army_id`, `target_x`, `target_y`, `steal_resources`   | 10% damage, steal resources                |
-| `create_army`           | `structure_id`, `troop_type`, `tier`, `amount`         | Spawn army, auto-picks troop type          |
-| `open_chest`            | `army_id`, `chest_x`, `chest_y`                        | Open adjacent chest                        |
-| `reinforce_army`        | `army_id`, `amount`                                    | Add troops from home structure             |
+| `create_army`           | `structure_id`, `troop_type`, `tier`, `amount`         | Spawn army, auto-picks troop type by biome |
+| `open_chest`            | `army_id`, `chest_x`, `chest_y`                        | Open adjacent chest for relics             |
+| `reinforce_army`        | `army_id`, `amount`                                    | Add troops from adjacent structure         |
 | `send_resources`        | `from_structure_id`, `to_structure_id`, `resources`    | Donkey caravan between structures          |
 | `transfer_to_structure` | `army_id`, `structure_id`, `resources`                 | Army → adjacent structure                  |
 | `transfer_to_army`      | `from_army_id`, `to_army_id`, `resources`              | Army → adjacent army                       |
@@ -33,3 +34,33 @@ showOutline: false
 | `unguard_to_army`       | `structure_id`, `slot`, `army_id`, `amount`            | Guard slot → army                          |
 | `transfer_troops`       | `from_army_id`, `to_army_id`, `amount`                 | Troops between adjacent armies             |
 | `apply_relic`           | `entity_id`, `relic_resource_id`, `recipient_type`     | Buff army, guards, or production           |
+| `update_memory`         | `content`                                              | Append timestamped note to agent memory    |
+
+## Strength
+
+Entity strength includes biome modifiers. Each tile shows combat modifiers for all three troop types:
+
+```json
+"combat": { "Knight": -30, "Crossbowman": 30, "Paladin": 0 }
+```
+
+Entity strength shows base and effective (with modifier applied):
+
+```json
+"strength": { "base": 1500, "effective": 1950, "modifier": 30 }
+```
+
+## Briefing
+
+`map_briefing` returns structured JSON:
+
+```json
+{
+  "armies": { "count": 3, "ready": 3, "totalTroops": 4500 },
+  "structures": [
+    { "entityId": 169, "name": "Stolsli", "level": 0, "armies": "1/1", "position": { "x": 0, "y": -8 } }
+  ],
+  "threats": [],
+  "opportunities": []
+}
+```

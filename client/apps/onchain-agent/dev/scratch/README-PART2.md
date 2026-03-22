@@ -10,6 +10,7 @@
 | Resources  | `send_resources` `transfer_to_structure` `transfer_to_army`              |
 | Automation | `automation`                                                             |
 | Buffs      | `apply_relic`                                                            |
+| Memory     | `update_memory`                                                          |
 | Status     | `status`                                                                 |
 
 ## Configuration

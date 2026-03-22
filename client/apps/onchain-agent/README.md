@@ -1,74 +1,107 @@
 # Axis
 
-For [Eternum | Blitz](https://blitz.realms.world/).
+Autonomous onchain agent for [Eternum | Blitz](https://blitz.realms.world/).
 
-| Mode       |             |
-| ---------- | ----------- |
-| `pnpm dev` | Pi agent    |
-| MCP server | Claude Code |
+## Modes
+
+| Command      | Description                                    |
+| ------------ | ---------------------------------------------- |
+| `axis run`   | Autonomous agent loop (tick → act → repeat)    |
+| `axis mcp`   | MCP server for Claude Code                     |
+| `axis <cmd>` | One-shot tool commands (map queries, actions)   |
 
 ## Quick Start
 
-```
-# Repo root
+```bash
+# From repo root
 pnpm i && pnpm build:packages && pnpm --dir packages/client build
+
+# Build the binary
 cd client/apps/onchain-agent
+bun run dev/scripts/build.ts
 ```
 
-Create `.env`:
+### Configure
 
-```
-CHAIN=slot
-WORLD_NAME=
-ANTHROPIC_API_KEY=
-```
-
-Manually settle realms first in game client
-
-```
-pnpm dev
-```
-
-Open URL
-
-> IF SESSION BUGS, DO AUTH IN INCOGNITO TAB
-
-## MCP Server
+Create `.env` in the directory where you'll run axis (or pass env vars directly):
 
 ```bash
-claude mcp add eternum -- npx tsx ./client/apps/onchain-agent/dev/scripts/mcp-server.ts
+CHAIN=slot
+WORLD_NAME=<world-slug>
+ANTHROPIC_API_KEY=sk-ant-...   # only needed for axis run
 ```
 
-Reads `.env` from `client/apps/onchain-agent/` regardless of working directory. Call `status` first.
+### Run the agent
+
+```bash
+CHAIN=slot WORLD_NAME=myworld ./dist/axis run
+```
+
+### Use as MCP server (Claude Code)
+
+```bash
+claude mcp add-json --scope user eternum \
+  '{"type":"stdio","command":"/path/to/axis","args":["mcp"],"env":{"CHAIN":"slot","WORLD_NAME":"myworld"}}'
+```
+
+### One-shot commands
+
+```bash
+axis status --json
+axis map briefing
+axis map find own_army
+axis create-army 169
+axis move-army 229 5 -3
+```
+
+Run `axis --help` for all commands.
 
 ## Architecture
 
 ```
 Agent Loop (tick → briefing → LLM → tool calls → repeat)
-    ├── Map Loop (10s) — tiles, ASCII map, threat detection
-    └── Automation Loop (60s) — build, upgrade, produce, offload
+    ├── Map Loop (10s) — tiles, threat detection, protocol queries
+    ├── Automation Loop (60s) — build, upgrade, produce, offload
+    └── Evolution (every 10 ticks) — rewrites strategy based on agent memory
 ```
 
 The agent handles combat and exploration. Automation handles the economy. The map feeds both.
 
-Evolution rewrites `soul.md` and task files every 10 ticks based on results.
+## Memory Architecture
+
+Three layers of persistent state:
+
+| File          | Owner     | Purpose                              |
+| ------------- | --------- | ------------------------------------ |
+| `soul.md`     | Operator  | Personality — never auto-modified    |
+| `memory.md`   | Agent     | Working memory — appended each tick  |
+| `tasks/*.md`  | Evolution | Strategic lessons learned over time  |
+
+The agent reads all three each tick. It writes to `memory.md` via the `update_memory` tool. Evolution rewrites `tasks/` every 10 ticks based on what the agent wrote in memory.
 
 ## Data
 
 `~/.axis/worlds/<worldAddress>/`:
 
 ```
-├── soul.md
-├── map.txt
+├── soul.md              — personality (operator edits)
+├── memory.md            — agent working memory
+├── map.txt              — ASCII map (refreshed every 10s)
 ├── automation-status.txt
 ├── tasks/
-└── .cartridge/
+│   ├── priorities.md
+│   ├── combat.md
+│   ├── economy.md
+│   ├── exploration.md
+│   └── reflection.md
+└── .cartridge/          — session persistence
 ```
+
+## Configuration
+
+See [Configuration](dev/scratch/README-PART2.md) for all environment variables.
 
 ## Links
 
-- [dev/scratch/README-PART2.md](dev/scratch/README-PART2.md) — Advanced configuration
-- [dev/scratch/PROVIDER-METHODS.md](dev/scratch/PROVIDER-METHODS.md) — Table view of which methods have been added as
-  tools to which implementation
-- [dev/scratch/SCRATCH.md](dev/scratch/SCRATCH.md) — allocate all temporary work here. overwriteable. do not create new
-  directories.
+- [dev/scratch/README-PART2.md](dev/scratch/README-PART2.md) — Tools table, full env var reference
+- [dev/scratch/PROVIDER-METHODS.md](dev/scratch/PROVIDER-METHODS.md) — Provider method coverage
