@@ -4,11 +4,11 @@
  * task-list improvements to disk.
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Model } from "@mariozechner/pi-ai";
 import { completeSimple } from "@mariozechner/pi-ai";
-import { loadSoul, loadTaskLists } from "./soul.js";
+import { loadTaskLists } from "./soul.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,120 +40,51 @@ interface EvolutionResult {
 // Build prompt
 // ---------------------------------------------------------------------------
 
-/** Compact snapshot of game state used for before/after comparison in an evolution cycle. */
 export interface EvolutionSnapshot {
-  /** ASCII map text from the current {@link MapSnapshot}. */
-  map: string;
-  /** Multi-line summary of owned structures (name, level, build progress, resources). */
-  structures: string;
-  /** Multi-line summary of owned armies (entity ID, troop count, type, tier). */
-  armies: string;
-  /** Newline-separated tool error strings accumulated since the last evolution. */
-  toolErrors: string;
-  /** Recent agent messages (last ~30) for the model to review actions taken. */
-  recentMessages?: any[];
-  /** Unix timestamp in milliseconds when the snapshot was captured. */
+  /** Structured briefing from map protocol. */
+  briefing: object;
+  /** Unix timestamp in milliseconds. */
   timestamp: number;
 }
 
-function buildEvolutionPrompt(dataDir: string, before: EvolutionSnapshot | null, after: EvolutionSnapshot): string {
-  const soulPath = join(dataDir, "soul.md");
-  const soul = existsSync(soulPath) ? loadSoul(soulPath) : "(no soul defined)";
+function buildEvolutionPrompt(dataDir: string, briefing: object): string {
+  const memoryPath = join(dataDir, "memory.md");
+  const memory = existsSync(memoryPath) ? readFileSync(memoryPath, "utf-8").trim() : "(no memory yet)";
   const taskLists = loadTaskLists(join(dataDir, "tasks"));
 
-  let prompt = `You are the evolution engine for a game-playing agent in Eternum (an on-chain strategy game).
-Compare the BEFORE and AFTER game state to see what changed, then suggest improvements.
+  let prompt = `You are the evolution engine for an autonomous Eternum agent.
 
-## Current Soul
-${soul}
+## Agent's Memory (what the agent experienced and learned)
+${memory}
 
-## Current Task Lists
+## Current Strategy
 `;
 
   for (const [domain, content] of taskLists) {
     prompt += `### ${domain}\n${content}\n\n`;
   }
 
-  if (before) {
-    prompt += `## BEFORE (${new Date(before.timestamp).toISOString()})
-Map:
-${before.map}
-Structures:
-${before.structures}
-Armies:
-${before.armies}
-Tool errors since last evolution:
-${before.toolErrors || "None"}
+  prompt += `## Current Game State
+${JSON.stringify(briefing, null, 2)}
 
-## AFTER (${new Date(after.timestamp).toISOString()})
-Map:
-${after.map}
-Structures:
-${after.structures}
-Armies:
-${after.armies}
-Tool errors since last evolution:
-${after.toolErrors || "None"}
+## Instructions
 
-`;
-  } else {
-    prompt += `## Current State (first evolution — no "before" snapshot)
-Map:
-${after.map}
-Structures:
-${after.structures}
-Armies:
-${after.armies}
+Given what the agent experienced and learned, update the strategy files if you see improvements.
 
-`;
-  }
-
-  // Include key actions from recent messages (tool calls and results only, skip tick prompts)
-  const msgs = after.recentMessages ?? [];
-  if (msgs.length > 0) {
-    prompt += `## Key Actions (last ${msgs.length} messages)\n\n`;
-    for (const msg of msgs) {
-      if (msg.role === "assistant" && Array.isArray(msg.content)) {
-        for (const b of msg.content) {
-          if (b.type === "toolCall") prompt += `→ ${b.name}(${JSON.stringify(b.arguments).slice(0, 150)})\n`;
-        }
-      } else if (msg.role === "toolResult") {
-        const text = Array.isArray(msg.content)
-          ? msg.content
-              .filter((b: any) => b.type === "text")
-              .map((b: any) => b.text)
-              .join("")
-              .slice(0, 200)
-          : String(msg.content ?? "").slice(0, 200);
-        if (text) prompt += `  ${text}\n`;
-      }
-    }
-    prompt += "\n";
-  }
-
-  prompt += `## Instructions
-
-Compare BEFORE and AFTER. What changed? Did the agent:
-- Gain or lose structures/villages?
-- Gain or lose armies/troops?
-- Make repeated tool errors?
-- Grow or shrink economically?
-
-Based on what ACTUALLY happened, suggest improvements. Focus on:
-- Concrete tactical adjustments (e.g. "don't attack below 2x ratio")
-- Resource priorities (e.g. "save essence for T2 buildings")
-- Positioning advice (e.g. "keep armies near owned structures")
+Focus on:
+- Concrete tactical adjustments (e.g. "don't attack below 2x strength ratio")
+- Resource priorities (e.g. "save essence for realm upgrades before expanding")
+- Positioning advice (e.g. "keep armies within 3 hexes of owned structures")
 
 Keep suggestions SHORT and CONCRETE. Each file should be under 50 lines.
-The agent has these tools: inspect_tile, move_army, attack_target, create_army,
-reinforce_army, defend_structure, transfer_resources, open_chest, view_map.
+Only change what needs changing. Do NOT modify soul.md.
 
 Each suggestion must have:
-- target: "soul" | "task_list"
-- domain: (required for task_list) one of: combat, economy, exploration, priorities
+- target: "task_list" (only — soul is not modifiable)
+- domain: one of: combat, economy, exploration, priorities, reflection
 - action: "update"
 - content: the FULL new content (replaces the file entirely)
-- reasoning: one sentence explaining what changed and why this helps
+- reasoning: one sentence explaining what changed and why
 
 \`\`\`json
 [
@@ -217,8 +148,7 @@ function applyEvolution(suggestions: EvolutionSuggestion[], dataDir: string): st
 
     switch (suggestion.target) {
       case "soul":
-        filePath = join(dataDir, "soul.md");
-        break;
+        continue; // soul.md is operator-owned, never auto-modified
       case "task_list":
         if (!suggestion.domain) continue;
         filePath = join(dataDir, "tasks", `${suggestion.domain}.md`);
@@ -256,22 +186,17 @@ function applyEvolution(suggestions: EvolutionSuggestion[], dataDir: string): st
  *   in the comparison; the previous call's snapshot is reused as "before").
  * @returns Parsed {@link EvolutionResult} with analysis and validated suggestions.
  */
-let previousSnapshot: EvolutionSnapshot | null = null;
-
 export async function evolve(
   model: Model<any>,
   dataDir: string,
-  currentSnapshot: EvolutionSnapshot,
+  briefing: object,
 ): Promise<EvolutionResult> {
-  const prompt = buildEvolutionPrompt(dataDir, previousSnapshot, currentSnapshot);
-
-  // Save current as "before" for next cycle
-  const snapshotForNext = { ...currentSnapshot };
+  const prompt = buildEvolutionPrompt(dataDir, briefing);
 
   const response = await completeSimple(model, {
     systemPrompt:
       "You are analyzing a game-playing AI agent's strategy. " +
-      "Suggest concrete, specific improvements. Be surgical — only change what needs changing.",
+      "Suggest concrete, specific improvements to task files only. Do not modify soul.md.",
     messages: [{ role: "user" as const, content: prompt, timestamp: Date.now() }],
   });
 
@@ -282,14 +207,11 @@ export async function evolve(
 
   if (result.suggestions.length > 0) {
     const applied = applyEvolution(result.suggestions, dataDir);
-    console.log(`Evolution: applied ${applied.length} changes`);
-    for (const f of applied) console.log(`  → ${f}`);
+    console.error(`Evolution: applied ${applied.length} changes`);
+    for (const f of applied) console.error(`  → ${f}`);
   } else {
-    console.log("Evolution: no changes suggested");
+    console.error("Evolution: no changes suggested");
   }
-
-  // Save current snapshot as "before" for next evolution cycle
-  previousSnapshot = snapshotForNext;
 
   return result;
 }
