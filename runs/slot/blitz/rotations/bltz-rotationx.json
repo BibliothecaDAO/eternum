@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "kind": "rotation",
+  "runId": "slot.blitz:rotation:bltz-rotationx",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "rotationName": "bltz-rotationx",
+  "seriesName": "bltz-rotationx",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/slot/blitz/rotations/bltz-rotationx/23405829964-1.json",
+  "latestLaunchRequestId": "23405829964-1",
+  "currentStepId": "create-series",
+  "createdAt": "2026-03-22T15:06:44.322Z",
+  "updatedAt": "2026-03-22T15:06:44.322Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23405829964,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23405829964",
+    "ref": "codex/factory-v2-rotation-review",
+    "sha": "ff2107879249d945d781eebf7e45c02347c86da2"
+  },
+  "autoRetry": {
+    "enabled": true,
+    "intervalMinutes": 15
+  },
+  "evaluation": {
+    "intervalMinutes": 15,
+    "nextEvaluationAt": "2026-03-22T15:21:44.322Z",
+    "lastEvaluatedAt": "2026-03-22T15:06:44.322Z"
+  },
+  "steps": [
+    {
+      "id": "create-series",
+      "title": "Creating series",
+      "status": "pending",
+      "workflowStepName": "Creating series",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-worlds",
+      "title": "Creating games",
+      "status": "pending",
+      "workflowStepName": "Creating games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-indexes",
+      "title": "Waiting for games",
+      "status": "pending",
+      "workflowStepName": "Waiting for games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-worlds",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-roles",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexers",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "summary": {
+    "environment": "slot.blitz",
+    "chain": "slot",
+    "gameType": "blitz",
+    "rotationName": "bltz-rotationx",
+    "seriesName": "bltz-rotationx",
+    "firstGameStartTime": 1774195200,
+    "firstGameStartTimeIso": "2026-03-22T16:00:00.000Z",
+    "gameIntervalMinutes": 180,
+    "maxGames": 7,
+    "advanceWindowGames": 5,
+    "evaluationIntervalMinutes": 15,
+    "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+    "factoryAddress": "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb",
+    "autoRetryEnabled": true,
+    "autoRetryIntervalMinutes": 15,
+    "dryRun": false,
+    "configMode": "batched",
+    "seriesCreated": false,
+    "games": [
+      {
+        "gameName": "bltz-rotationx-01",
+        "startTime": 1774195200,
+        "startTimeIso": "2026-03-22T16:00:00.000Z",
+        "seriesGameNumber": 1,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-rotationx-02",
+        "startTime": 1774206000,
+        "startTimeIso": "2026-03-22T19:00:00.000Z",
+        "seriesGameNumber": 2,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-rotationx-03",
+        "startTime": 1774216800,
+        "startTimeIso": "2026-03-22T22:00:00.000Z",
+        "seriesGameNumber": 3,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-rotationx-04",
+        "startTime": 1774227600,
+        "startTimeIso": "2026-03-23T01:00:00.000Z",
+        "seriesGameNumber": 4,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-rotationx-05",
+        "startTime": 1774238400,
+        "startTimeIso": "2026-03-23T04:00:00.000Z",
+        "seriesGameNumber": 5,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      }
+    ],
+    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json"
+  },
+  "artifacts": {
+    "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
+    "seriesCreated": false
+  }
+}
