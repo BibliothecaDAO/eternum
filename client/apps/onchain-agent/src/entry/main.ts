@@ -1,9 +1,9 @@
 /**
  * Entry point for the Eternum autonomous agent.
  *
- * Orchestrates the full startup and run sequence: config → world discovery →
- * Cartridge auth → EternumClient/Provider → game tools → map loop →
- * automation loop → context pruning → tick-driven agent loop.
+ * Orchestrates the full startup and run sequence: config -> world discovery ->
+ * Cartridge auth -> EternumClient/Provider -> game tools -> map loop ->
+ * automation loop -> context pruning -> tick-driven agent loop.
  *
  * Uses pi-agent-core directly (no game-agent framework).
  *
@@ -15,46 +15,14 @@ import type { AgentMessage, AgentTool } from "@mariozechner/pi-agent-core";
 import type { Message, Model } from "@mariozechner/pi-ai";
 import { getModel, completeSimple } from "@mariozechner/pi-ai";
 import { createReadOnlyTools } from "@mariozechner/pi-coding-agent";
-import { EternumClient } from "@bibliothecadao/client";
-import { EternumProvider } from "@bibliothecadao/provider";
 import { createInterface } from "node:readline";
-import { homedir } from "node:os";
-import { join } from "node:path";
 
-import { loadConfig } from "./config.js";
-import { getManifest } from "../auth/embedded-data.js";
-
-// Suppress noisy provider logs (fee estimation failures, tx data warnings, wait spam)
-{
-  const _warn = console.warn;
-  const _error = console.error;
-  const _info = console.info;
-  const providerNoise = (msg: string) =>
-    msg.includes("[provider]") ||
-    msg.includes("Failed to estimate invoke fee") ||
-    msg.includes("Insufficient transaction data");
-  console.warn = (...a: any[]) => {
-    if (!providerNoise(String(a[0]))) _warn.apply(console, a);
-  };
-  console.error = (...a: any[]) => {
-    if (!providerNoise(String(a[0]))) _error.apply(console, a);
-  };
-  console.info = (...a: any[]) => {
-    if (!providerNoise(String(a[0]))) _info.apply(console, a);
-  };
-}
-import { discoverWorld, patchManifest } from "../world/discovery.js";
-import { bootstrapDataDir } from "./bootstrap.js";
+import { bootstrap } from "./bootstrap-runtime.js";
 import { buildSystemPrompt } from "./soul.js";
 import { evolve } from "./evolution.js";
-import { getAccount } from "../auth/session.js";
 import { createX402Model } from "../providers/x402/index.js";
-import { createMapLoop } from "../map/loop.js";
-import { createAutomationLoop } from "../automation/loop.js";
 import type { MapContext } from "../map/context.js";
 import { createCoreTools } from "../tools/pi-tools.js";
-import type { ToolContext } from "../tools/core/context.js";
-import type { AutomationStatusMap } from "../automation/status.js";
 
 /** A tool invocation that failed during an agent turn. */
 interface ToolError {
@@ -245,35 +213,10 @@ function buildTickPrompt(mapCtx: MapContext): string {
  *   is missing, Cartridge auth times out, or the Torii client cannot initialize.
  */
 export async function main() {
-  const config = loadConfig();
+  const { config, client, account, gameConfig, mapCtx, mapLoop, automationLoop, automationStatus, toolCtx } =
+    await bootstrap();
 
-  // Auto-discover world if WORLD_NAME is set and explicit URLs are missing
-  let contractsBySelector: Record<string, string> | undefined;
-  if (config.worldName && (!config.toriiUrl || !config.worldAddress)) {
-    console.log(`Discovering world "${config.worldName}" on ${config.chain}...`);
-    const info = await discoverWorld(config.chain, config.worldName);
-    config.toriiUrl = info.toriiUrl;
-    config.worldAddress = info.worldAddress;
-    config.rpcUrl = info.rpcUrl;
-    contractsBySelector = info.contractsBySelector;
-    // Re-resolve dataDir now that we have the world address
-    config.dataDir = join(homedir(), ".axis", "worlds", info.worldAddress);
-    console.log(`  Discovered: torii=${info.toriiUrl}, world=${info.worldAddress}`);
-    console.log(`  RPC: ${info.rpcUrl}`);
-    console.log(`  Resolved ${Object.keys(info.contractsBySelector).length} contract addresses from factory`);
-  }
-
-  bootstrapDataDir(config.dataDir);
-
-  // Load and patch manifest before auth so session policies use the correct
-  // contract addresses for this world (factory-discovered addresses differ
-  // from the base mainnet manifest).
-  let manifest = getManifest(config.chain);
-  if (contractsBySelector) {
-    manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
-  }
-
-  // Resolve model early so we can log the actual model ID
+  // Resolve model (axis run-specific — not part of shared bootstrap)
   const model =
     config.modelProvider === "x402"
       ? await createX402Model()
@@ -286,63 +229,7 @@ export async function main() {
   console.log(`  Model: ${config.modelProvider}/${model.id}`);
   console.log(`  VRF: ${config.vrfProviderAddress.slice(0, 10)}...`);
 
-  // 1. Auth — get a signed account (session stored in world dataDir)
-  const account = await getAccount({
-    chain: config.chain,
-    rpcUrl: config.rpcUrl,
-    chainId: config.chainId,
-    basePath: join(config.dataDir, ".cartridge"),
-    manifest,
-  });
-  console.log(`  Account: ${account.address}`);
-
-  // 2. Create headless client (reads) + provider (writes)
-  const client = await EternumClient.create({ toriiUrl: config.toriiUrl });
-  const provider = new EternumProvider(manifest, config.rpcUrl, config.vrfProviderAddress);
-
-  // 2b. Load game config from Torii (building costs, production recipes)
-  const gameConfig = await (client.sql as any).fetchGameConfig();
-  console.log(
-    `  Game config: ${Object.keys(gameConfig.buildingCosts).length} buildings, ` +
-      `${Object.keys(gameConfig.resourceFactories).length} recipes, ` +
-      `cost scale ${gameConfig.buildingBaseCostPercentIncrease}`,
-  );
-
-  // 3. Shared contexts
-  const mapFilePath = join(config.dataDir, "map.txt");
-  const mapCtx: MapContext = { snapshot: null, protocol: null, filePath: mapFilePath };
-  const automationStatus: AutomationStatusMap = new Map();
   const toolErrors: ToolError[] = [];
-
-  // Query map_center_offset for display coordinate conversion
-  const BASE_MAP_CENTER = 2147483646;
-  let mapCenter = BASE_MAP_CENTER;
-  try {
-    const sql = client.sql as any;
-    const baseUrl = sql.baseUrl ?? config.toriiUrl + "/sql";
-    const res = await fetch(
-      `${baseUrl}?query=${encodeURIComponent("SELECT `map_center_offset` FROM `s1_eternum-WorldConfig` LIMIT 1")}`,
-    );
-    if (res.ok) {
-      const rows = (await res.json()) as any[];
-      if (rows[0]?.map_center_offset != null) {
-        mapCenter = BASE_MAP_CENTER - Number(rows[0].map_center_offset);
-      }
-    }
-  } catch {
-    /* non-critical — coords will use raw values */
-  }
-
-  // Build the shared ToolContext — snapshot is mutable, updated each map tick
-  const toolCtx: ToolContext = {
-    client,
-    provider,
-    signer: account,
-    playerAddress: account.address,
-    gameConfig,
-    snapshot: null as any, // set once map loop produces the first snapshot
-    mapCenter,
-  };
 
   // 4. Tools — core tools + read/grep/find/ls scoped to dataDir
   const tools: AgentTool[] = [...createReadOnlyTools(config.dataDir), ...createCoreTools(toolCtx, mapCtx)];
@@ -381,6 +268,7 @@ export async function main() {
   });
 
   // 6a. Log agent events so we can see what the LLM is doing
+  let tickCount = 0;
   agent.subscribe((event) => {
     switch (event.type) {
       case "agent_start":
@@ -431,74 +319,11 @@ export async function main() {
     }
   });
 
-  // 7. Map loop — refreshes tile data in the background
-  let onThreatCallback: ((alerts: any[]) => void) | null = null;
-  const mapLoop = createMapLoop(
-    client,
-    mapCtx,
-    account.address,
-    undefined,
-    gameConfig.stamina,
-    (alerts) => {
-      if (onThreatCallback) onThreatCallback(alerts);
-    },
-    mapCenter,
-  );
-  mapLoop.start();
-  mapCtx.refresh = async () => {
-    await mapLoop.refresh();
-    // Keep toolCtx.snapshot in sync with the latest map data
-    if (mapCtx.snapshot) toolCtx.snapshot = mapCtx.snapshot;
-  };
-
-  // Wire threat detection — agent.steer() pushes urgent defensive alerts
-  onThreatCallback = (alerts) => {
-    const anchor = mapCtx.snapshot?.anchor;
-    if (!anchor) return;
-    for (const alert of alerts) {
-      const eRow = anchor.maxY - alert.enemyY + 1;
-      const eCol = alert.enemyX - anchor.minX + 1;
-      const sRow = anchor.maxY - alert.structureY + 1;
-      const sCol = alert.structureX - anchor.minX + 1;
-      const msg = `DEFENSIVE ALERT: Enemy army detected at ${eRow}:${eCol}, adjacent to your structure at ${sRow}:${sCol}. Assess threat and respond.`;
-      console.log(`[THREAT] ${msg}`);
-      agent.steer({ role: "user", content: msg, timestamp: Date.now() } as AgentMessage);
-    }
-  };
-
-  // Wait for first map load before starting the agent — otherwise the LLM
-  // gets "Map not yet loaded" and wastes its first turn guessing coordinates.
-  console.log("Waiting for first map load...");
-  for (let i = 0; i < 30; i++) {
-    if (mapCtx.snapshot) break;
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  if (mapCtx.snapshot) {
-    toolCtx.snapshot = mapCtx.snapshot;
-    console.log(
-      `  Map loaded: ${mapCtx.snapshot.rowCount} rows x ${mapCtx.snapshot.colCount} cols, ${mapCtx.snapshot.tiles.length} tiles`,
-    );
-  } else {
-    console.log("  WARNING: Map failed to load within 30s, starting agent anyway");
-  }
-
-  // 7b. Automation loop — builds, upgrades, and produces across all owned realms
-  const automationLoop = createAutomationLoop(
-    client,
-    provider,
-    account,
-    account.address,
-    config.dataDir,
-    mapCtx,
-    gameConfig,
-    undefined,
-    automationStatus,
-  );
+  // Start automation loop
   automationLoop.start();
 
   // 8. Tick loop — prompt() when idle, steer() when busy (matches game-agent pattern).
   const EVOLUTION_INTERVAL = 10; // evolve every N ticks
-  let tickCount = 0;
   let evolving = false;
   let agentBusy = false;
 
