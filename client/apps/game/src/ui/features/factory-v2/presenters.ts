@@ -293,7 +293,9 @@ const resolveRecoveryStepId = (stepId: FactoryRunStepId): FactoryRecoveryStepId 
     case "sync-paymaster":
       return "sync-paymaster";
     case "create-indexer":
+      return "create-indexer";
     case "create-indexers":
+      return "create-indexers";
     case "wait-indexer":
     case "publish-ready-state":
       return "create-indexer";

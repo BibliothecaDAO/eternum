@@ -56,7 +56,7 @@ on:
         required: false
         type: string
       evaluation_interval_minutes:
-        description: "How often rotation cron checks whether more games are needed"
+        description: "How often a rotation becomes due for evaluation"
         required: false
         type: string
       dev_mode_on:

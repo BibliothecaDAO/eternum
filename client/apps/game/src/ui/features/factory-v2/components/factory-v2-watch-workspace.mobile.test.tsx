@@ -261,7 +261,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(selectedPanel?.textContent).toContain("Step 1 of 6");
   });
 
-  it("shows rotation schedule details and a run-now action for rotation runs", async () => {
+  it("hides rotation maintenance actions while a rotation is still in progress", async () => {
     const onNudge = vi.fn();
     const rotationRun = buildRun({
       kind: "rotation",
@@ -335,7 +335,69 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(container.textContent).toContain("Created");
     expect(container.textContent).toContain("4 of 12");
     expect(container.textContent).toContain("Queued ahead");
+    expect(container.textContent).toContain("Next evaluation");
     expect(container.textContent).toContain("Rotation games");
+    expect(container.textContent).not.toContain("Run now");
+    expect(container.textContent).not.toContain("Stop auto retry");
+  });
+
+  it("shows rotation maintenance actions once the run needs attention", async () => {
+    const rotationRun = buildRun({
+      kind: "rotation",
+      status: "attention",
+      autoRetry: {
+        enabled: true,
+        intervalMinutes: 15,
+        nextRetryAt: "2026-03-18T12:15:00.000Z",
+        lastRetryAt: null,
+        cancelledAt: null,
+        cancelReason: null,
+      },
+      evaluation: {
+        intervalMinutes: 30,
+        nextEvaluationAt: "2026-03-18T12:30:00.000Z",
+        lastEvaluatedAt: "2026-03-18T12:00:00.000Z",
+        lastNudgedAt: null,
+      },
+      rotation: {
+        rotationName: "bltz-ladder-loop",
+        maxGames: 12,
+        advanceWindowGames: 5,
+        createdGameCount: 4,
+        queuedGameCount: 3,
+        gameIntervalMinutes: 60,
+        firstGameStartTimeIso: "2026-03-18T12:00:00.000Z",
+      },
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[rotationRun]}
+          selectedRun={rotationRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
     expect(container.textContent).toContain("Run now");
     expect(container.textContent).toContain("Stop auto retry");
   });
@@ -468,10 +530,11 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     });
   });
 
-  it("stops auto retry from the watch action bar for active multi-game runs", async () => {
+  it("stops auto retry from the watch action bar for stalled multi-game runs", async () => {
     const onStopAutoRetry = vi.fn();
     const seriesRun = buildRun({
       kind: "series",
+      status: "attention",
       name: "bltz-weekend-cup",
       autoRetry: {
         enabled: true,

@@ -303,7 +303,7 @@ function resolveWatchWorkspaceState({
   const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun, selectedRun?.status ?? null);
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your run";
   const visiblePrimaryAction = isAwaitingAcceptedUpdate ? null : primaryAction;
-  const showsNudgeAction = selectedRun?.kind === "rotation" && !isAwaitingAcceptedUpdate;
+  const showsNudgeAction = shouldShowRotationNudgeAction(selectedRun, isAwaitingAcceptedUpdate);
   const showsStopAutoRetryAction = shouldShowStopAutoRetryAction(selectedRun, isAwaitingAcceptedUpdate);
   const showsManualRefresh =
     !isAwaitingAcceptedUpdate && pollingState.status !== "checking" && pollingState.status !== "live";
@@ -686,7 +686,7 @@ const FactoryV2RotationScheduleCard = ({ run }: { run: FactoryRun }) => {
         <FactoryV2RotationMetric label="Queued ahead" value={`${run.rotation.queuedGameCount} games`} />
         <FactoryV2RotationMetric label="Game interval" value={`Every ${run.rotation.gameIntervalMinutes} minutes`} />
         <FactoryV2RotationMetric
-          label="Next check"
+          label="Next evaluation"
           value={
             run.evaluation.nextEvaluationAt
               ? formatRunTimestamp(run.evaluation.nextEvaluationAt)
@@ -1355,9 +1355,18 @@ function shouldShowStopAutoRetryAction(selectedRun: FactoryRun | null, isAwaitin
     selectedRun &&
     !isAwaitingAcceptedUpdate &&
     (selectedRun.kind === "series" || selectedRun.kind === "rotation") &&
+    !isFactoryRunInProgress(selectedRun) &&
     selectedRun.autoRetry?.enabled &&
     !selectedRun.autoRetry.cancelledAt,
   );
+}
+
+function shouldShowRotationNudgeAction(selectedRun: FactoryRun | null, isAwaitingAcceptedUpdate: boolean) {
+  return Boolean(selectedRun?.kind === "rotation" && !isAwaitingAcceptedUpdate && !isFactoryRunInProgress(selectedRun));
+}
+
+function isFactoryRunInProgress(selectedRun: FactoryRun | null) {
+  return selectedRun?.status === "running" || selectedRun?.status === "waiting";
 }
 
 function resolveStepSummaryAction(

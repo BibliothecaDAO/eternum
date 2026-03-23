@@ -9,6 +9,34 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-23",
+    title: "Quieter Rotation Controls",
+    description:
+      "Factory V2 now hides rotation maintenance controls while a run is actively progressing, so Run now and Stop auto retry only appear once the run is no longer mid-launch.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Safer Rotation Retries",
+    description:
+      "Factory V2 now retries grouped rotation and series indexer failures with the correct grouped step id, so Retry no longer sends an invalid single-game recovery request.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Rotation Schedule Wording",
+    description:
+      "Factory V2 now labels rotation timing as evaluation cadence instead of a generic next check, so the watch view no longer implies it knows your worker cron schedule.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Rotation Interval Preview Fix",
+    description:
+      "Fixed Factory V2 rotation previews so the second queued game now keeps the same selected interval as the rest of the rotation schedule.",
+    type: "fix",
+  },
+  {
     date: "2026-03-22",
     title: "Factory Prize Funding",
     description:

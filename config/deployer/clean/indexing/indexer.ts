@@ -48,6 +48,19 @@ interface GitHubWorkflowRunsResponse {
   workflow_runs?: GitHubWorkflowRunResponse[];
 }
 
+interface WorkflowDispatchAttemptResult {
+  ok: boolean;
+  dispatchStartedAtMs: number;
+  status: number;
+  statusText: string;
+  body: string;
+  retryAfterMs: number | null;
+}
+
+const TRANSIENT_WORKFLOW_DISPATCH_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+const MAX_WORKFLOW_DISPATCH_ATTEMPTS = 3;
+const BASE_WORKFLOW_DISPATCH_RETRY_DELAY_MS = 1_500;
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -160,6 +173,45 @@ function buildWorkflowDispatchBody(request: IndexerRequest, dispatchId: string, 
   });
 }
 
+function parseRetryAfterHeader(value: string | null): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds * 1_000;
+  }
+
+  const timestampMs = Date.parse(value);
+  if (!Number.isFinite(timestampMs)) {
+    return null;
+  }
+
+  return Math.max(0, timestampMs - Date.now());
+}
+
+function isTransientWorkflowDispatchFailure(status: number): boolean {
+  return TRANSIENT_WORKFLOW_DISPATCH_STATUSES.has(status);
+}
+
+function resolveWorkflowDispatchRetryDelayMs(attempt: number, retryAfterMs: number | null): number {
+  if (retryAfterMs !== null) {
+    return retryAfterMs;
+  }
+
+  return BASE_WORKFLOW_DISPATCH_RETRY_DELAY_MS * attempt;
+}
+
+function buildWorkflowDispatchFailureMessage(
+  workflowFile: string,
+  attempt: Pick<WorkflowDispatchAttemptResult, "status" | "statusText" | "body">,
+): string {
+  return `Failed to dispatch ${workflowFile}: ${attempt.status} ${attempt.statusText}${
+    attempt.body ? ` - ${attempt.body}` : ""
+  }`;
+}
+
 function matchesDispatch(
   run: GitHubWorkflowRunResponse,
   dispatchId: string,
@@ -251,14 +303,12 @@ async function getWorkflowRun(
   return parseJson<GitHubWorkflowRunResponse>(response);
 }
 
-async function dispatchIndexerWorkflow(
+async function postIndexerWorkflowDispatch(
   request: IndexerRequest,
   config: GitHubWorkflowDispatchConfig,
   dependencies: WorkflowExecutionDependencies,
   dispatchId: string,
-): Promise<number> {
-  dependencies.onProgress?.(`Dispatching ${config.workflowFile} on ref ${config.ref}`);
-
+): Promise<WorkflowDispatchAttemptResult> {
   const dispatchStartedAtMs = Date.now();
   const response = await dependencies.fetchImpl(
     `${config.apiBaseUrl}/repos/${config.repo}/actions/workflows/${encodeURIComponent(config.workflowFile)}/dispatches`,
@@ -269,14 +319,67 @@ async function dispatchIndexerWorkflow(
     },
   );
 
-  if (!response.ok) {
-    const body = await readErrorBody(response);
-    throw new Error(
-      `Failed to dispatch ${config.workflowFile}: ${response.status} ${response.statusText}${body ? ` - ${body}` : ""}`,
+  return {
+    ok: response.ok,
+    dispatchStartedAtMs,
+    status: response.status,
+    statusText: response.statusText,
+    body: response.ok ? "" : await readErrorBody(response),
+    retryAfterMs: parseRetryAfterHeader(response.headers.get("retry-after")),
+  };
+}
+
+async function findWorkflowRunAfterDispatchFailure(
+  config: GitHubWorkflowDispatchConfig,
+  dependencies: WorkflowExecutionDependencies,
+  dispatchId: string,
+  dispatchStartedAtMs: number,
+): Promise<boolean> {
+  try {
+    return (await findWorkflowRun(config, dispatchId, dispatchStartedAtMs, dependencies.fetchImpl)) !== null;
+  } catch {
+    return false;
+  }
+}
+
+async function dispatchIndexerWorkflow(
+  request: IndexerRequest,
+  config: GitHubWorkflowDispatchConfig,
+  dependencies: WorkflowExecutionDependencies,
+  dispatchId: string,
+): Promise<number> {
+  dependencies.onProgress?.(`Dispatching ${config.workflowFile} on ref ${config.ref}`);
+
+  let firstDispatchStartedAtMs: number | null = null;
+
+  for (let attempt = 1; attempt <= MAX_WORKFLOW_DISPATCH_ATTEMPTS; attempt += 1) {
+    const dispatchAttempt = await postIndexerWorkflowDispatch(request, config, dependencies, dispatchId);
+    firstDispatchStartedAtMs ??= dispatchAttempt.dispatchStartedAtMs;
+
+    if (dispatchAttempt.ok) {
+      return firstDispatchStartedAtMs;
+    }
+
+    const failureMessage = buildWorkflowDispatchFailureMessage(config.workflowFile, dispatchAttempt);
+    if (!isTransientWorkflowDispatchFailure(dispatchAttempt.status) || attempt === MAX_WORKFLOW_DISPATCH_ATTEMPTS) {
+      throw new Error(failureMessage);
+    }
+
+    const delayMs = resolveWorkflowDispatchRetryDelayMs(attempt, dispatchAttempt.retryAfterMs);
+    dependencies.onProgress?.(
+      `${failureMessage}. Retrying in ${Math.ceil(delayMs / 1_000)}s (${attempt + 1}/${MAX_WORKFLOW_DISPATCH_ATTEMPTS})`,
     );
+    await dependencies.wait(delayMs);
+
+    if (await findWorkflowRunAfterDispatchFailure(config, dependencies, dispatchId, firstDispatchStartedAtMs)) {
+      dependencies.onProgress?.(
+        `Detected ${config.workflowFile} run after a transient dispatch failure; continuing with the existing workflow run`,
+      );
+      return firstDispatchStartedAtMs;
+    }
   }
 
-  return dispatchStartedAtMs;
+  throw new Error(`Failed to dispatch ${config.workflowFile}`);
 }
 
 async function waitForWorkflowRunToAppear(

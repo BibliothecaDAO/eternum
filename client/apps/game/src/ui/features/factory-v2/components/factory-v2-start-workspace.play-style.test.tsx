@@ -361,7 +361,7 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(container.textContent).toContain("Max games");
     expect(container.textContent).toContain("Keep ahead");
     expect(container.textContent).toContain("Game interval");
-    expect(container.textContent).toContain("Check every");
+    expect(container.textContent).toContain("Evaluate every");
     expect(container.textContent).toContain("bltz-ladder-loop-01");
     expect(container.textContent).toContain("bltz-ladder-loop-02");
   });

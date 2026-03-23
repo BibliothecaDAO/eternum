@@ -192,6 +192,30 @@ describe("factory run recovery actions", () => {
     expect(getStepDetailMessage(run.steps[1])).toBe("We have not started applying this game’s settings yet.");
   });
 
+  it("keeps grouped indexer retries on the grouped launch step", () => {
+    const run = buildFactoryRun({
+      kind: "rotation",
+      steps: [
+        {
+          id: "create-indexers",
+          title: "Create indexers",
+          summary: "Grouped indexer setup failed.",
+          workflowName: "create-indexers",
+          status: "failed",
+          verification: "Grouped indexer setup failed.",
+          latestEvent: "Grouped indexer setup failed.",
+        },
+      ],
+    });
+
+    expect(resolveRunPrimaryAction(run)).toEqual({
+      kind: "retry",
+      label: "Retry full launch",
+      launchScope: "full",
+      stepId: "create-indexers",
+    });
+  });
+
   it("counts the active setup step in progress labels", () => {
     expect(
       getRunProgressLabel(

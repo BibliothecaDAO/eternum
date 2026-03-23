@@ -1043,7 +1043,7 @@ function resolveLaunchSummaryItems({
       environmentLabel,
       `Max ${rotationMaxGames}`,
       `Ahead ${rotationAdvanceWindowGames}`,
-      `Check ${rotationEvaluationIntervalMinutes}m`,
+      `Evaluate ${rotationEvaluationIntervalMinutes}m`,
       `Retry ${autoRetryIntervalMinutes}m`,
     ];
   }
@@ -1325,7 +1325,7 @@ const FactoryV2RotationBasics = ({
       />
       <FactoryV2SelectField
         inputId="factory-rotation-evaluation-interval"
-        label="Check every"
+        label="Evaluate every"
         value={String(rotationEvaluationIntervalMinutes)}
         appearanceClassName={appearanceClassName}
         onChange={(value) =>
