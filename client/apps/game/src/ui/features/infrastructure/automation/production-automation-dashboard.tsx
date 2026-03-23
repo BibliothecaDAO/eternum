@@ -66,11 +66,14 @@ const ProductionAutomationContent = ({ compact = false }: ProductionAutomationCo
     return () => clearInterval(interval);
   }, []);
 
-  const { activeCount, failedCount, skippedCount } = useMemo(() => ({
-    activeCount: list.filter((r) => r.presetId !== "idle" && r.lastStatus?.status === "success").length,
-    failedCount: list.filter((r) => r.lastStatus?.status === "failed").length,
-    skippedCount: list.filter((r) => r.presetId === "idle" || r.lastStatus?.status === "skipped").length,
-  }), [list]);
+  const { activeCount, failedCount, skippedCount } = useMemo(
+    () => ({
+      activeCount: list.filter((r) => r.presetId !== "idle" && r.lastStatus?.status === "success").length,
+      failedCount: list.filter((r) => r.lastStatus?.status === "failed").length,
+      skippedCount: list.filter((r) => r.presetId === "idle" || r.lastStatus?.status === "skipped").length,
+    }),
+    [list],
+  );
 
   // Progress bar: time to next automation run
   const progressPercent = useMemo(() => {

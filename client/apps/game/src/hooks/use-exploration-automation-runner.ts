@@ -84,7 +84,9 @@ export const useExplorationAutomationRunner = () => {
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
   const activeEntriesRef = useRef(activeEntries);
 
-  useEffect(() => { activeEntriesRef.current = activeEntries; }, [activeEntries]);
+  useEffect(() => {
+    activeEntriesRef.current = activeEntries;
+  }, [activeEntries]);
 
   const resolveExplorerEntity = useCallback(
     (explorerId: number) => {
@@ -98,7 +100,9 @@ export const useExplorationAutomationRunner = () => {
         return { explorer };
       }
 
-      console.warn(`[ExplorationAutomation] resolveExplorerEntity: primary lookup failed for explorerId=${explorerId}, falling back to linear scan`);
+      console.warn(
+        `[ExplorationAutomation] resolveExplorerEntity: primary lookup failed for explorerId=${explorerId}, falling back to linear scan`,
+      );
       const explorerIdMap = components.ExplorerTroops.values.explorer_id;
       for (const [entitySymbol, value] of explorerIdMap.entries()) {
         if (Number(value) === explorerId) {

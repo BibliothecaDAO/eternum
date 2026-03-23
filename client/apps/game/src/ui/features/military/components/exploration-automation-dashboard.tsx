@@ -50,10 +50,9 @@ const getStatusColor = (entry: ExplorationAutomationEntry): string => {
   return "text-emerald-400";
 };
 
-const getProgressPercent = (entry: ExplorationAutomationEntry): number => {
+const getProgressPercent = (entry: ExplorationAutomationEntry, nowMs: number): number => {
   if (!entry.active || !entry.nextRunAt) return 0;
-  const now = Date.now();
-  const remaining = Math.max(0, entry.nextRunAt - now);
+  const remaining = Math.max(0, entry.nextRunAt - nowMs);
 
   // Progress = how much of the 120s interval has elapsed
   // 120s remaining = 0%, 0s remaining = 100%
@@ -64,9 +63,9 @@ const getProgressPercent = (entry: ExplorationAutomationEntry): number => {
   return progress;
 };
 
-const getSecondsRemaining = (entry: ExplorationAutomationEntry): number => {
+const getSecondsRemaining = (entry: ExplorationAutomationEntry, nowMs: number): number => {
   if (!entry.active || !entry.nextRunAt) return 0;
-  const remaining = Math.max(0, entry.nextRunAt - Date.now());
+  const remaining = Math.max(0, entry.nextRunAt - nowMs);
   return Math.ceil(remaining / 1000);
 };
 
@@ -78,105 +77,116 @@ interface ExplorerPosition {
 interface ExplorerEntryRowProps {
   entry: ExplorationAutomationEntry;
   pos: ExplorerPosition | undefined;
+  progressPercent: number;
+  secondsRemaining: number;
   onGoTo: (entry: ExplorationAutomationEntry) => void;
   onRunNow: (entry: ExplorationAutomationEntry) => void;
   onToggleActive: (id: string) => void;
   onRemove: (entry: ExplorationAutomationEntry) => void;
 }
 
-const ExplorerEntryRow = memo(({ entry, pos, onGoTo, onRunNow, onToggleActive, onRemove }: ExplorerEntryRowProps) => {
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between rounded-lg border p-2 transition-all",
-        entry.active
-          ? entry.blockedReason
-            ? "border-amber-500/30 bg-amber-500/5"
-            : "border-emerald-500/30 bg-emerald-500/5"
-          : "border-gold/20 bg-black/30",
-      )}
-    >
-      {/* Left side - info */}
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <div className="relative shrink-0">
-          <Bot className="w-4 h-4 text-gold/70" />
-          {entry.active && !entry.blockedReason && (
-            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          )}
-        </div>
-        <div className="flex flex-col min-w-0 flex-1 gap-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-gold/90">#{entry.explorerId}</span>
-            <span className={cn("text-[10px]", getStatusColor(entry))}>{getStatusLabel(entry)}</span>
+const ExplorerEntryRow = memo(
+  ({
+    entry,
+    pos,
+    progressPercent,
+    secondsRemaining,
+    onGoTo,
+    onRunNow,
+    onToggleActive,
+    onRemove,
+  }: ExplorerEntryRowProps) => {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-between rounded-lg border p-2 transition-all",
+          entry.active
+            ? entry.blockedReason
+              ? "border-amber-500/30 bg-amber-500/5"
+              : "border-emerald-500/30 bg-emerald-500/5"
+            : "border-gold/20 bg-black/30",
+        )}
+      >
+        {/* Left side - info */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="relative shrink-0">
+            <Bot className="w-4 h-4 text-gold/70" />
+            {entry.active && !entry.blockedReason && (
+              <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
           </div>
-          {/* Progress bar for active entries */}
-          {entry.active && (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 rounded-full bg-black/40 overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-1000",
-                    entry.blockedReason ? "bg-amber-400" : "bg-emerald-400",
-                  )}
-                  style={{ width: `${getProgressPercent(entry)}%` }}
-                />
-              </div>
-              <span className="text-[9px] text-gold/50 tabular-nums w-6 text-right">
-                {getSecondsRemaining(entry)}s
-              </span>
+          <div className="flex flex-col min-w-0 flex-1 gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-medium text-gold/90">#{entry.explorerId}</span>
+              <span className={cn("text-[10px]", getStatusColor(entry))}>{getStatusLabel(entry)}</span>
             </div>
-          )}
-          {!entry.active && <span className="text-[9px] text-gold/40">Paused</span>}
+            {/* Progress bar for active entries */}
+            {entry.active && (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-black/40 overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-1000",
+                      entry.blockedReason ? "bg-amber-400" : "bg-emerald-400",
+                    )}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <span className="text-[9px] text-gold/50 tabular-nums w-6 text-right">{secondsRemaining}s</span>
+              </div>
+            )}
+            {!entry.active && <span className="text-[9px] text-gold/40">Paused</span>}
+          </div>
+        </div>
+
+        {/* Right side - actions */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => onGoTo(entry)}
+            disabled={!pos}
+            className={cn(
+              "flex items-center justify-center rounded p-1.5 transition-all",
+              pos ? "text-gold/60 hover:bg-gold/10 hover:text-gold" : "text-gold/20 cursor-not-allowed",
+            )}
+            title="Go to location"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onRunNow(entry)}
+            className="flex items-center justify-center rounded p-1.5 text-blue-400/70 transition-all hover:bg-blue-500/10 hover:text-blue-400"
+            title="Run now"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleActive(entry.id)}
+            className={cn(
+              "flex items-center justify-center rounded p-1.5 transition-all",
+              entry.active
+                ? "text-gold/60 hover:bg-gold/10 hover:text-gold"
+                : "text-emerald-400/70 hover:bg-emerald-500/10 hover:text-emerald-400",
+            )}
+            title={entry.active ? "Pause" : "Resume"}
+          >
+            {entry.active ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3.5 h-3.5" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => onRemove(entry)}
+            className="flex items-center justify-center rounded p-1.5 text-red-400/60 transition-all hover:bg-red-500/10 hover:text-red-400"
+            title="Remove"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
-
-      {/* Right side - actions */}
-      <div className="flex items-center gap-0.5 shrink-0">
-        <button
-          type="button"
-          onClick={() => onGoTo(entry)}
-          disabled={!pos}
-          className={cn(
-            "flex items-center justify-center rounded p-1.5 transition-all",
-            pos ? "text-gold/60 hover:bg-gold/10 hover:text-gold" : "text-gold/20 cursor-not-allowed",
-          )}
-          title="Go to location"
-        >
-          <MapPin className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onRunNow(entry)}
-          className="flex items-center justify-center rounded p-1.5 text-blue-400/70 transition-all hover:bg-blue-500/10 hover:text-blue-400"
-          title="Run now"
-        >
-          <RotateCw className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onToggleActive(entry.id)}
-          className={cn(
-            "flex items-center justify-center rounded p-1.5 transition-all",
-            entry.active
-              ? "text-gold/60 hover:bg-gold/10 hover:text-gold"
-              : "text-emerald-400/70 hover:bg-emerald-500/10 hover:text-emerald-400",
-          )}
-          title={entry.active ? "Pause" : "Resume"}
-        >
-          {entry.active ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3.5 h-3.5" />}
-        </button>
-        <button
-          type="button"
-          onClick={() => onRemove(entry)}
-          className="flex items-center justify-center rounded p-1.5 text-red-400/60 transition-all hover:bg-red-500/10 hover:text-red-400"
-          title="Remove"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-});
+    );
+  },
+);
 ExplorerEntryRow.displayName = "ExplorerEntryRow";
 
 interface ExplorationAutomationContentProps {
@@ -186,7 +196,10 @@ interface ExplorationAutomationContentProps {
 
 const ExplorationAutomationContent = ({ onNavigate, compact = false }: ExplorationAutomationContentProps) => {
   const entries = useExplorationAutomationStore(useShallow((s) => s.entries));
-  const list = useMemo(() => Object.values(entries).toSorted((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), [entries]);
+  const list = useMemo(
+    () => Object.values(entries).toSorted((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+    [entries],
+  );
   const toggleActive = useExplorationAutomationStore((s) => s.toggleActive);
   const runNow = useExplorationAutomationStore((s) => s.runNow);
   const remove = useExplorationAutomationStore((s) => s.remove);
@@ -199,10 +212,37 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
   } = useDojo();
 
   const listRef = useRef(list);
-  useEffect(() => { listRef.current = list; }, [list]);
+  useEffect(() => {
+    listRef.current = list;
+  }, [list]);
 
   // Get explorer positions
   const [explorerPositions, setExplorerPositions] = useState<Record<string, ExplorerPosition>>({});
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const refreshExplorerPositions = useCallback(() => {
+    if (!components) {
+      setExplorerPositions({});
+      return;
+    }
+
+    const positions: Record<string, ExplorerPosition> = {};
+    listRef.current.forEach((entry) => {
+      const explorerId = Number(entry.explorerId);
+      if (!Number.isFinite(explorerId) || explorerId <= 0) return;
+
+      const entity = getEntityIdFromKeys([BigInt(explorerId)]);
+      const explorer = getComponentValue(components.ExplorerTroops, entity);
+      if (explorer?.coord) {
+        positions[entry.id] = {
+          x: Number(explorer.coord.x),
+          y: Number(explorer.coord.y),
+        };
+      }
+    });
+
+    setExplorerPositions(positions);
+  }, [components]);
 
   const handlePauseAll = useCallback(() => {
     const activeCount = list.filter((e) => e.active).length;
@@ -260,32 +300,16 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
 
   // Update positions periodically
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!components) return;
-      const positions: Record<string, ExplorerPosition> = {};
-      listRef.current.forEach((entry) => {
-        const explorerId = Number(entry.explorerId);
-        if (!Number.isFinite(explorerId) || explorerId <= 0) return;
+    refreshExplorerPositions();
 
-        const entity = getEntityIdFromKeys([BigInt(explorerId)]);
-        const explorer = getComponentValue(components.ExplorerTroops, entity);
-        if (explorer?.coord) {
-          positions[entry.id] = {
-            x: Number(explorer.coord.x),
-            y: Number(explorer.coord.y),
-          };
-        }
-      });
-      setExplorerPositions(positions);
-    }, 5000);
+    const interval = setInterval(refreshExplorerPositions, 5000);
 
     return () => clearInterval(interval);
-  }, [components]);
+  }, [refreshExplorerPositions]);
 
-  // Force re-render for relative times
-  const [, setTick] = useState(0);
+  // Force re-render for countdowns and relative times
   useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    const interval = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -336,6 +360,8 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
               key={entry.id}
               entry={entry}
               pos={explorerPositions[entry.id]}
+              progressPercent={getProgressPercent(entry, nowMs)}
+              secondsRemaining={getSecondsRemaining(entry, nowMs)}
               onGoTo={handleGoToExplorer}
               onRunNow={handleRunNow}
               onToggleActive={toggleActive}
