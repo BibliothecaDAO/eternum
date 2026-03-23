@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-franky",
   "seriesName": "bltz-franky",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "wait-for-factory-indexes",
   "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23457847452-1.json",
   "latestLaunchRequestId": "23457847452-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": null,
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T20:14:21.917Z",
+  "updatedAt": "2026-03-23T20:19:37.940Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,7 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T20:19:13.396Z",
-    "lastEvaluatedAt": "2026-03-23T20:14:13.396Z"
+    "lastEvaluatedAt": "2026-03-23T20:19:37.940Z"
   },
   "steps": [
     {
@@ -79,10 +78,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-23T20:14:21.917Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-03-23T20:14:21.917Z",
+      "finishedAt": "2026-03-23T20:19:37.940Z"
     }
   ],
   "summary": {
@@ -693,7 +693,7 @@
         "startTimeIso": "2026-03-23T09:20:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -845,14 +845,36 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T20:15:40.488Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x07767e3d06ad0c92ff1a4d59ea53a4ac93ed409b02308c84fc725946274dd045",
           "configureTxHash": "0x344241847c212bf0a2da60479b9aae57bddc6d16bf81d7e41180e87fc709544",
-          "lootChestRoleTxHash": "0x4105ea1b6984ba6e59db6b47c87b5a94fdeb562981ff2e85dbb4a8ffdd3cd5b"
+          "lootChestRoleTxHash": "0x4105ea1b6984ba6e59db6b47c87b5a94fdeb562981ff2e85dbb4a8ffdd3cd5b",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-franky-04",
+            "worldAddress": "0x07767e3d06ad0c92ff1a4d59ea53a4ac93ed409b02308c84fc725946274dd045",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23457964977,
+            "runNumber": 955,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23457964977",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       },
@@ -862,7 +884,7 @@
         "startTimeIso": "2026-03-23T10:20:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1014,15 +1036,37 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T20:16:50.501Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x01c6d28ab4332fa623ee12b3c8802745b7c3f0f3d7fa4cb3b22a221ca0404e0f",
           "createGameTxHash": "0x403b76d769fc7d7b2aaeea1a917ef39f18dec9f3aafcb739d399fd92ec64ba1",
           "configureTxHash": "0x30b91148e25f59541444982a9b6300e06273131b6d99b2aee0840f64daeeb83",
-          "lootChestRoleTxHash": "0x3e918854f4e01cb33d9d9a44a27904b07bf1a8a3213da5f94b30c65050600dc"
+          "lootChestRoleTxHash": "0x3e918854f4e01cb33d9d9a44a27904b07bf1a8a3213da5f94b30c65050600dc",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-franky-05",
+            "worldAddress": "0x01c6d28ab4332fa623ee12b3c8802745b7c3f0f3d7fa4cb3b22a221ca0404e0f",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23458015669,
+            "runNumber": 956,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458015669",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       },
@@ -1032,7 +1076,7 @@
         "startTimeIso": "2026-03-23T11:20:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1184,15 +1228,37 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T20:18:00.499Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x054bc8739267dcb5cd53c7f55f6aa18c46ffbf601aeb91e934c5c891313dce47",
           "createGameTxHash": "0x576111165db27ff01b2587f4a5513b5072093dbc34e7a89409f8763b75bd3f",
           "configureTxHash": "0x6fd8d661ed1f5ec06b25a42a947924cca9623908a53cef8b8c218b529ee94e9",
-          "lootChestRoleTxHash": "0x607d0b585f805ddd262aff6739bf93310a6117f62d0339d878b8329e28fc7f6"
+          "lootChestRoleTxHash": "0x607d0b585f805ddd262aff6739bf93310a6117f62d0339d878b8329e28fc7f6",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-franky-06",
+            "worldAddress": "0x054bc8739267dcb5cd53c7f55f6aa18c46ffbf601aeb91e934c5c891313dce47",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23458063693,
+            "runNumber": 957,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458063693",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       },
@@ -1202,7 +1268,7 @@
         "startTimeIso": "2026-03-23T12:20:00.000Z",
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1354,15 +1420,37 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T20:19:36.517Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x04374fc1fc3de14743e208cb9c0c325e20f525aa973151e642036f91fa782f3a",
           "createGameTxHash": "0x354ee6ee3c9c714219567c87d4ca2c6686036617df076384542528298c160e5",
           "configureTxHash": "0x372789b144e48414d1b8ce7554b27b11fac72eed6b93372a497a6b6e526da6",
-          "lootChestRoleTxHash": "0x20ca6af052df5e024056276505d99e374e9b68796b4ba27f4fc38cd21273e16"
+          "lootChestRoleTxHash": "0x20ca6af052df5e024056276505d99e374e9b68796b4ba27f4fc38cd21273e16",
+          "indexerCreated": true,
+          "indexerMode": "github-actions",
+          "indexerTier": "basic",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-franky-07",
+            "worldAddress": "0x04374fc1fc3de14743e208cb9c0c325e20f525aa973151e642036f91fa782f3a",
+            "tier": "basic",
+            "externalContracts": []
+          },
+          "indexerWorkflowRun": {
+            "workflowFile": "factory-torii-deployer.yml",
+            "ref": "codex/factory-v2-rotation-review",
+            "runId": 23458112242,
+            "runNumber": 958,
+            "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458112242",
+            "status": "completed",
+            "conclusion": "success"
+          }
         },
         "durationSeconds": 5400
       }
@@ -1375,12 +1463,5 @@
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
   },
-  "activeLease": {
-    "launchRequestId": "23457847452-1",
-    "workflowRunId": 23457847452,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-23T20:14:21.917Z",
-    "expiresAt": "2026-03-23T20:59:21.917Z"
-  }
+  "completedAt": "2026-03-23T20:19:37.940Z"
 }
