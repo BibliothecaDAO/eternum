@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23457847452-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T20:19:37.940Z",
+  "updatedAt": "2026-03-23T20:21:00.801Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -874,7 +874,9 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23457964977",
             "status": "completed",
             "conclusion": "success"
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-23T20:20:55.819Z"
         },
         "durationSeconds": 5400
       },
@@ -1066,7 +1068,9 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458015669",
             "status": "completed",
             "conclusion": "success"
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-23T20:20:57.086Z"
         },
         "durationSeconds": 5400
       },
@@ -1258,7 +1262,9 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458063693",
             "status": "completed",
             "conclusion": "success"
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-23T20:20:58.336Z"
         },
         "durationSeconds": 5400
       },
@@ -1450,7 +1456,9 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458112242",
             "status": "completed",
             "conclusion": "success"
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-23T20:20:59.403Z"
         },
         "durationSeconds": 5400
       }
