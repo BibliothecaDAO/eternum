@@ -1,6 +1,5 @@
 import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
 import { Button, TextInput } from "@/ui/design-system/atoms";
-import { SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { CreateGuildButton, GuildListHeader, GuildRow, useSocialStore } from "@/ui/features/social";
 import { getRealmCountPerHyperstructure, sortItems } from "@/ui/utils/utils";
 import {
@@ -41,10 +40,6 @@ export const Guilds = ({
   const [isCreatingGuild, setIsCreatingGuild] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [guildName, setGuildName] = useState("");
-  const [activeSort, setActiveSort] = useState<SortInterface>({
-    sortKey: "rank",
-    sort: "asc",
-  });
 
   const guilds = useGuilds();
   const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
@@ -111,6 +106,7 @@ export const Guilds = ({
           realms: stats.totalRealms,
           mines: stats.totalMines,
           hyperstructures: stats.totalHypers,
+          structureCount: stats.totalRealms + stats.totalMines + stats.totalHypers,
           memberCount: stats.memberCount,
         };
       })
@@ -311,17 +307,20 @@ export const Guilds = ({
   };
 
   return (
-    <div className="flex flex-col min-h-72 h-full w-full p-4 overflow-hidden">
-      <div className="flex flex-col space-y-4 mb-4">
-        <div className="flex flex-row gap-4 justify-between">
-          <div className="flex gap-2">
-            <Button onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}>
+    <div className="flex min-h-72 h-full w-full flex-col overflow-hidden p-2">
+      <div className="mb-4 flex flex-col gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={guildsViewGuildInvites ? "outline" : "primary"}
+              onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}
+            >
               {guildsViewGuildInvites ? "Show Tribe Rankings" : "Show Tribe Invites"}
             </Button>
             <Button
               variant="outline"
               onClick={downloadSocialData}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5"
               title="Download social data as JSON"
             >
               <Download className="w-4 h-4" />
@@ -329,12 +328,12 @@ export const Guilds = ({
             </Button>
           </div>
           {playerGuild?.entityId ? (
-            <Button variant="gold" onClick={() => viewGuildMembers(playerGuild.entityId)}>
+            <Button variant="gold" onClick={() => viewGuildMembers(playerGuild.entityId)} className="sm:ml-auto">
               Tribe {playerGuild.name}
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button isLoading={isLoading} variant="primary" className="w-full" onClick={toggleIsCreatingGuild}>
+            <Button isLoading={isLoading} variant="primary" className="sm:ml-auto" onClick={toggleIsCreatingGuild}>
               Create Tribe
             </Button>
           )}
@@ -357,10 +356,10 @@ export const Guilds = ({
         />
       </div>
 
-      <div className="flex-1 min-h-0">
-        <div className="flex flex-col h-full rounded-xl backdrop-blur-sm">
+      <div className="flex min-h-0 flex-1">
+        <div className="flex h-full min-h-0 flex-1 flex-col rounded-xl">
           <GuildListHeader activeSort={guildsActiveSort} setActiveSort={setGuildsActiveSort} />
-          <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          <div className="mt-4 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
             {filteredGuilds.map((guild) => (
               <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
             ))}
