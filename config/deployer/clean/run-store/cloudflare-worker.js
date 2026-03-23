@@ -1609,6 +1609,159 @@ function hasExceededFactorySeriesRunRecoveryGracePeriod(run) {
   );
 }
 
+function hasActiveLeaseIndexEntry(entry) {
+  const expiresAtMs = Date.parse(entry.activeLeaseExpiresAt || "");
+  return Number.isFinite(expiresAtMs) && expiresAtMs > Date.now();
+}
+
+function resolveFactoryIndexEntryContinueStepId(entry) {
+  return entry.recoverableFailedStepId || entry.recoverablePendingStepId || null;
+}
+
+function hasExceededFactoryIndexEntryRecoveryGracePeriod(entry) {
+  const updatedAtMs = Date.parse(entry.updatedAt || "");
+  if (!Number.isFinite(updatedAtMs)) {
+    return true;
+  }
+
+  const graceMs =
+    entry.kind === "rotation"
+      ? DEFAULT_FACTORY_ROTATION_RUN_RECOVERY_GRACE_MS
+      : entry.kind === "series"
+        ? DEFAULT_FACTORY_SERIES_RUN_RECOVERY_GRACE_MS
+        : DEFAULT_FACTORY_RUN_RECOVERY_GRACE_MS;
+
+  return Date.now() - updatedAtMs >= graceMs;
+}
+
+function resolveFactoryRunRecoveryFromIndexEntry(entry) {
+  const continueStepId = resolveFactoryIndexEntryContinueStepId(entry);
+
+  if (entry.status === "complete") {
+    return {
+      state: "complete",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  if (hasActiveLeaseIndexEntry(entry) || entry.hasRunningStep) {
+    return {
+      state: "active",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  if (!continueStepId) {
+    return {
+      state: "active",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  if (entry.kind === "game" && entry.recoverableFailedStepId) {
+    return {
+      state: "failed",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  if (entry.recoverableFailedStepId) {
+    return {
+      state: "failed",
+      canContinue: true,
+      continueStepId,
+    };
+  }
+
+  if (!hasExceededFactoryIndexEntryRecoveryGracePeriod(entry)) {
+    return {
+      state: "transitioning",
+      canContinue: false,
+      continueStepId: null,
+    };
+  }
+
+  return {
+    state: "stalled",
+    canContinue: true,
+    continueStepId,
+  };
+}
+
+function isEligibleForSeriesAutoRetryIndexEntry(entry) {
+  const recovery = resolveFactoryRunRecoveryFromIndexEntry(entry);
+  const nextRetryAtMs = Date.parse(entry.autoRetry?.nextRetryAt || "");
+
+  return (
+    entry.kind === "series" &&
+    entry.autoRetry?.enabled === true &&
+    !entry.autoRetry?.cancelledAt &&
+    entry.status !== "complete" &&
+    !hasActiveLeaseIndexEntry(entry) &&
+    recovery.canContinue === true &&
+    Number.isFinite(nextRetryAtMs) &&
+    nextRetryAtMs <= Date.now()
+  );
+}
+
+function isEligibleForRotationAutoRetryIndexEntry(entry) {
+  const recovery = resolveFactoryRunRecoveryFromIndexEntry(entry);
+  const nextRetryAtMs = Date.parse(entry.autoRetry?.nextRetryAt || "");
+
+  return (
+    entry.kind === "rotation" &&
+    entry.autoRetry?.enabled === true &&
+    !entry.autoRetry?.cancelledAt &&
+    entry.status !== "complete" &&
+    !hasActiveLeaseIndexEntry(entry) &&
+    recovery.canContinue === true &&
+    Number.isFinite(nextRetryAtMs) &&
+    nextRetryAtMs <= Date.now()
+  );
+}
+
+function isEligibleForRotationEvaluationIndexEntry(entry) {
+  const recovery = resolveFactoryRunRecoveryFromIndexEntry(entry);
+  const nextEvaluationAtMs = Date.parse(entry.evaluation?.nextEvaluationAt || "");
+
+  return (
+    entry.kind === "rotation" &&
+    entry.status !== "complete" &&
+    !hasActiveLeaseIndexEntry(entry) &&
+    recovery.canContinue === false &&
+    Number.isFinite(nextEvaluationAtMs) &&
+    nextEvaluationAtMs <= Date.now()
+  );
+}
+
+function hasPendingIndexerTierForGameIndexEntry(entry) {
+  if (!entry?.artifacts?.indexerCreated) {
+    return false;
+  }
+
+  return Boolean(
+    resolvePendingIndexerTierTarget({
+      startTime: parseLaunchStartTime(entry.startTime),
+      durationSeconds: entry.durationSeconds,
+      artifacts: entry.artifacts,
+    }),
+  );
+}
+
+function hasPendingIndexerTierForSeriesLikeIndexEntry(entry) {
+  return (entry.games || []).some((game) =>
+    resolvePendingIndexerTierTarget({
+      startTime: parseLaunchStartTime(game.startTime),
+      durationSeconds: game.durationSeconds,
+      artifacts: game.artifacts,
+    }),
+  );
+}
+
 function matchFactoryRunRoute(pathname) {
   const parts = pathname.split("/").filter(Boolean);
 
@@ -1859,6 +2012,207 @@ async function readBranchJsonIfPresent(github, path, branch) {
   }
 }
 
+function buildFactoryMaintenanceArtifactsSnapshot(artifacts) {
+  return {
+    indexerCreated: artifacts?.indexerCreated,
+    indexerTier: artifacts?.indexerTier,
+    pendingIndexerTierTarget: artifacts?.pendingIndexerTierTarget,
+    pendingIndexerTierRequestedAt: artifacts?.pendingIndexerTierRequestedAt,
+  };
+}
+
+function buildFactoryMaintenanceGame(game) {
+  return {
+    gameName: game.gameName,
+    startTime: game.startTime,
+    durationSeconds: game.durationSeconds,
+    artifacts: buildFactoryMaintenanceArtifactsSnapshot(game.artifacts),
+  };
+}
+
+function resolveRecoverableFailedStepId(steps, recoverableStepIds) {
+  const failedStep = (steps || []).find((step) => step.status === "failed" && recoverableStepIds.has(step.id));
+  return failedStep?.id || null;
+}
+
+function resolveRecoverablePendingStepId(steps, currentStepId, recoverableStepIds) {
+  if (currentStepId && recoverableStepIds.has(currentStepId)) {
+    const currentPendingStep = (steps || []).find((step) => step.id === currentStepId && step.status === "pending");
+    if (currentPendingStep) {
+      return currentPendingStep.id;
+    }
+  }
+
+  const pendingStep = (steps || []).find((step) => step.status === "pending" && recoverableStepIds.has(step.id));
+  return pendingStep?.id || null;
+}
+
+function buildFactoryGameRunMaintenanceIndexEntry(run) {
+  return {
+    kind: "game",
+    environment: run.environment,
+    gameName: run.gameName,
+    path: resolveFactoryRunRecordPath(run.environment, run.gameName),
+    inputPath: run.inputPath,
+    status: run.status,
+    updatedAt: run.updatedAt,
+    workflowRef: run.workflow?.ref,
+    currentStepId: run.currentStepId,
+    activeLeaseExpiresAt: run.activeLease?.expiresAt,
+    hasRunningStep: (run.steps || []).some((step) => step.status === "running"),
+    recoverableFailedStepId: resolveRecoverableFailedStepId(run.steps, RECOVERABLE_FACTORY_STEP_IDS),
+    recoverablePendingStepId: resolveRecoverablePendingStepId(
+      run.steps,
+      run.currentStepId,
+      RECOVERABLE_FACTORY_STEP_IDS,
+    ),
+    startTime: run.artifacts?.scheduledStartTime,
+    durationSeconds: run.artifacts?.durationSeconds,
+    artifacts: buildFactoryMaintenanceArtifactsSnapshot(run.artifacts),
+  };
+}
+
+function buildFactorySeriesRunMaintenanceIndexEntry(run) {
+  return {
+    kind: "series",
+    environment: run.environment,
+    seriesName: run.seriesName,
+    path: resolveFactorySeriesRunRecordPath(run.environment, run.seriesName),
+    inputPath: run.inputPath,
+    status: run.status,
+    updatedAt: run.updatedAt,
+    workflowRef: run.workflow?.ref,
+    currentStepId: run.currentStepId,
+    activeLeaseExpiresAt: run.activeLease?.expiresAt,
+    hasRunningStep: (run.steps || []).some((step) => step.status === "running"),
+    recoverableFailedStepId: resolveRecoverableFailedStepId(run.steps, RECOVERABLE_FACTORY_SERIES_STEP_IDS),
+    recoverablePendingStepId: resolveRecoverablePendingStepId(
+      run.steps,
+      run.currentStepId,
+      RECOVERABLE_FACTORY_SERIES_STEP_IDS,
+    ),
+    autoRetry: run.autoRetry,
+    games: (run.summary?.games || []).map(buildFactoryMaintenanceGame),
+  };
+}
+
+function buildFactoryRotationRunMaintenanceIndexEntry(run) {
+  return {
+    kind: "rotation",
+    environment: run.environment,
+    rotationName: run.rotationName,
+    path: resolveFactoryRotationRunRecordPath(run.environment, run.rotationName),
+    inputPath: run.inputPath,
+    status: run.status,
+    updatedAt: run.updatedAt,
+    workflowRef: run.workflow?.ref,
+    currentStepId: run.currentStepId,
+    activeLeaseExpiresAt: run.activeLease?.expiresAt,
+    hasRunningStep: (run.steps || []).some((step) => step.status === "running"),
+    recoverableFailedStepId: resolveRecoverableFailedStepId(run.steps, RECOVERABLE_FACTORY_SERIES_STEP_IDS),
+    recoverablePendingStepId: resolveRecoverablePendingStepId(
+      run.steps,
+      run.currentStepId,
+      RECOVERABLE_FACTORY_SERIES_STEP_IDS,
+    ),
+    autoRetry: run.autoRetry,
+    evaluation: run.evaluation,
+    games: (run.summary?.games || []).map(buildFactoryMaintenanceGame),
+  };
+}
+
+function buildFactoryMaintenanceIndexEntry(run) {
+  switch (run?.kind) {
+    case "game":
+      return buildFactoryGameRunMaintenanceIndexEntry(run);
+    case "series":
+      return buildFactorySeriesRunMaintenanceIndexEntry(run);
+    case "rotation":
+      return buildFactoryRotationRunMaintenanceIndexEntry(run);
+    default:
+      return null;
+  }
+}
+
+function resolveFactoryMaintenanceIndexEntryKey(entry) {
+  switch (entry.kind) {
+    case "game":
+      return entry.gameName;
+    case "series":
+      return entry.seriesName;
+    case "rotation":
+      return entry.rotationName;
+    default:
+      throw new Error(`Unsupported maintenance index entry kind "${entry.kind}"`);
+  }
+}
+
+function buildEmptyFactoryMaintenanceIndex(environment, kind) {
+  return {
+    version: 1,
+    environment,
+    kind,
+    updatedAt: new Date().toISOString(),
+    entries: {},
+  };
+}
+
+async function readFactoryMaintenanceIndexIfPresent(github, environment, kind, branch) {
+  const indexPath = resolveFactoryMaintenanceIndexPath(environment, kind);
+  return (
+    (await readBranchJsonIfPresent(github, indexPath, branch)) || buildEmptyFactoryMaintenanceIndex(environment, kind)
+  );
+}
+
+function readFactoryMaintenanceIndexEntries(index) {
+  return Object.values(index?.entries || {});
+}
+
+async function readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch) {
+  return readFactoryMaintenanceIndexEntries(
+    await readFactoryMaintenanceIndexIfPresent(github, environment, "game", branch),
+  );
+}
+
+async function readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch) {
+  return readFactoryMaintenanceIndexEntries(
+    await readFactoryMaintenanceIndexIfPresent(github, environment, "series", branch),
+  );
+}
+
+async function readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch) {
+  return readFactoryMaintenanceIndexEntries(
+    await readFactoryMaintenanceIndexIfPresent(github, environment, "rotation", branch),
+  );
+}
+
+async function updateFactoryMaintenanceIndexForRunRecord(github, branch, run) {
+  const entry = buildFactoryMaintenanceIndexEntry(run);
+  if (!entry) {
+    return;
+  }
+
+  const entryKey = resolveFactoryMaintenanceIndexEntryKey(entry);
+  const indexPath = resolveFactoryMaintenanceIndexPath(entry.environment, entry.kind);
+  await updateBranchJsonFileValue(
+    github,
+    indexPath,
+    branch,
+    (currentIndex) => ({
+      ...(currentIndex || buildEmptyFactoryMaintenanceIndex(entry.environment, entry.kind)),
+      version: 1,
+      environment: entry.environment,
+      kind: entry.kind,
+      updatedAt: entry.updatedAt,
+      entries: {
+        ...(currentIndex?.entries || {}),
+        [entryKey]: entry,
+      },
+    }),
+    `factory-runs: update ${entry.kind} maintenance index for ${entry.environment}/${entryKey}`,
+  );
+}
+
 async function dispatchGameLaunchWorkflow(github, request) {
   const response = await github.fetch(`/repos/${github.repo}/actions/workflows/${github.workflowFile}/dispatches`, {
     method: "POST",
@@ -2085,6 +2439,21 @@ function resolveFactoryRotationRunDirectoryPath(environment) {
   return `${resolveFactoryRunDirectoryPath(environment)}/rotations`;
 }
 
+function resolveFactoryMaintenanceIndexPath(environment, kind) {
+  const [chain, gameType] = environment.split(".");
+
+  switch (kind) {
+    case "game":
+      return `indexes/${chain}/${gameType}/games.json`;
+    case "series":
+      return `indexes/${chain}/${gameType}/series.json`;
+    case "rotation":
+      return `indexes/${chain}/${gameType}/rotations.json`;
+    default:
+      throw new Error(`Unsupported maintenance index kind "${kind}"`);
+  }
+}
+
 function toSafeSlug(value) {
   return value
     .trim()
@@ -2199,7 +2568,7 @@ async function readBranchJsonWithMetadataIfPresent(github, path, branch) {
   }
 }
 
-async function updateBranchJsonFile(github, path, branch, updateValue, commitMessage = `Update ${path}`) {
+async function updateBranchJsonFileValue(github, path, branch, updateValue, commitMessage = `Update ${path}`) {
   const existingRecord = await readBranchJsonWithMetadataIfPresent(github, path, branch);
   const nextValue = updateValue(existingRecord?.value || null);
   const response = await github.fetch(`/repos/${github.repo}/contents/${path}`, {
@@ -2214,6 +2583,16 @@ async function updateBranchJsonFile(github, path, branch, updateValue, commitMes
 
   if (!response.ok) {
     throw await toGitHubHttpError(response, `Failed to write ${path}`);
+  }
+
+  return nextValue;
+}
+
+async function updateBranchJsonFile(github, path, branch, updateValue, commitMessage = `Update ${path}`) {
+  const nextValue = await updateBranchJsonFileValue(github, path, branch, updateValue, commitMessage);
+
+  if (path.startsWith("runs/")) {
+    await updateFactoryMaintenanceIndexForRunRecord(github, branch, nextValue);
   }
 
   return nextValue;
@@ -2267,14 +2646,19 @@ async function handleScheduledFactoryMaintenance(env) {
 
 async function retryEligibleFactorySeriesRuns(github, branch) {
   for (const environment of FACTORY_ENVIRONMENTS) {
-    const runs = await readFactorySeriesRunsForEnvironment(github, environment, branch);
+    const entries = await readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
-    for (const run of runs) {
-      if (!isEligibleForSeriesAutoRetry(run)) {
+    for (const entry of entries) {
+      if (!isEligibleForSeriesAutoRetryIndexEntry(entry)) {
         continue;
       }
 
       try {
+        const run = await readFactorySeriesRunIfPresent(github, environment, entry.seriesName, branch);
+        if (!run || !isEligibleForSeriesAutoRetry(run)) {
+          continue;
+        }
+
         const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
         if (!inputRecord) {
           continue;
@@ -2336,14 +2720,19 @@ function isEligibleForSeriesAutoRetry(run) {
 
 async function retryEligibleFactoryRotationRuns(github, branch) {
   for (const environment of FACTORY_ENVIRONMENTS) {
-    const runs = await readFactoryRotationRunsForEnvironment(github, environment, branch);
+    const entries = await readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
-    for (const run of runs) {
-      if (!isEligibleForRotationAutoRetry(run)) {
+    for (const entry of entries) {
+      if (!isEligibleForRotationAutoRetryIndexEntry(entry)) {
         continue;
       }
 
       try {
+        const run = await readFactoryRotationRunIfPresent(github, environment, entry.rotationName, branch);
+        if (!run || !isEligibleForRotationAutoRetry(run)) {
+          continue;
+        }
+
         const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
         if (!inputRecord) {
           continue;
@@ -2405,14 +2794,19 @@ function isEligibleForRotationAutoRetry(run) {
 
 async function evaluateEligibleFactoryRotationRuns(github, branch) {
   for (const environment of FACTORY_ENVIRONMENTS) {
-    const runs = await readFactoryRotationRunsForEnvironment(github, environment, branch);
+    const entries = await readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
-    for (const run of runs) {
-      if (!isEligibleForRotationEvaluation(run)) {
+    for (const entry of entries) {
+      if (!isEligibleForRotationEvaluationIndexEntry(entry)) {
         continue;
       }
 
       try {
+        const run = await readFactoryRotationRunIfPresent(github, environment, entry.rotationName, branch);
+        if (!run || !isEligibleForRotationEvaluation(run)) {
+          continue;
+        }
+
         const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
         if (!inputRecord) {
           continue;
@@ -2477,15 +2871,24 @@ async function reconcileFactoryIndexerTiers(github, branch) {
 }
 
 async function reconcileFactoryGameRunIndexerTiers(github, branch, environment) {
-  const runs = await readFactoryRunsForEnvironment(github, environment, branch);
+  const entries = await readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
-  for (const run of runs) {
+  for (const entry of entries) {
+    if (!hasPendingIndexerTierForGameIndexEntry(entry)) {
+      continue;
+    }
+
     try {
+      const run = await readFactoryRunIfPresent(github, environment, entry.gameName, branch);
+      if (!run) {
+        continue;
+      }
+
       await reconcileFactoryGameRunIndexerTier(github, branch, environment, run);
     } catch (error) {
       logFactoryError("game_indexer_tier_reconcile_failed", {
         environment,
-        gameName: run.gameName,
+        gameName: entry.gameName,
         message: error instanceof Error ? error.message : String(error),
       });
     }
@@ -2493,15 +2896,24 @@ async function reconcileFactoryGameRunIndexerTiers(github, branch, environment) 
 }
 
 async function reconcileFactorySeriesRunIndexerTiers(github, branch, environment) {
-  const runs = await readFactorySeriesRunsForEnvironment(github, environment, branch);
+  const entries = await readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
-  for (const run of runs) {
+  for (const entry of entries) {
+    if (!hasPendingIndexerTierForSeriesLikeIndexEntry(entry)) {
+      continue;
+    }
+
     try {
+      const run = await readFactorySeriesRunIfPresent(github, environment, entry.seriesName, branch);
+      if (!run) {
+        continue;
+      }
+
       await reconcileFactorySeriesRunIndexerTier(github, branch, environment, run);
     } catch (error) {
       logFactoryError("series_indexer_tier_reconcile_failed", {
         environment,
-        seriesName: run.seriesName,
+        seriesName: entry.seriesName,
         message: error instanceof Error ? error.message : String(error),
       });
     }
@@ -2509,15 +2921,24 @@ async function reconcileFactorySeriesRunIndexerTiers(github, branch, environment
 }
 
 async function reconcileFactoryRotationRunIndexerTiers(github, branch, environment) {
-  const runs = await readFactoryRotationRunsForEnvironment(github, environment, branch);
+  const entries = await readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
-  for (const run of runs) {
+  for (const entry of entries) {
+    if (!hasPendingIndexerTierForSeriesLikeIndexEntry(entry)) {
+      continue;
+    }
+
     try {
+      const run = await readFactoryRotationRunIfPresent(github, environment, entry.rotationName, branch);
+      if (!run) {
+        continue;
+      }
+
       await reconcileFactoryRotationRunIndexerTier(github, branch, environment, run);
     } catch (error) {
       logFactoryError("rotation_indexer_tier_reconcile_failed", {
         environment,
-        rotationName: run.rotationName,
+        rotationName: entry.rotationName,
         message: error instanceof Error ? error.message : String(error),
       });
     }
@@ -2529,8 +2950,7 @@ async function reconcileFactoryGameRunIndexerTier(github, branch, environment, r
     return;
   }
 
-  const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
-  const timing = resolveGameRunTiming(run, inputRecord);
+  const timing = resolveGameRunTiming(run);
   const desiredTier = resolvePendingIndexerTierTarget({
     startTime: timing.startTime,
     durationSeconds: timing.durationSeconds,
@@ -2542,7 +2962,7 @@ async function reconcileFactoryGameRunIndexerTier(github, branch, environment, r
   }
 
   const dispatchResult = await requestIndexerTierDispatch(
-    resolveIndexerTierWorkflowGitHubClient(github, run, inputRecord),
+    resolveIndexerTierWorkflowGitHubClient(github, run, null),
     {
       environment,
       gameName: run.gameName,
@@ -2581,8 +3001,7 @@ async function reconcileFactoryGameRunIndexerTier(github, branch, environment, r
 }
 
 async function reconcileFactorySeriesRunIndexerTier(github, branch, environment, run) {
-  const inputRecord = run.inputPath ? await readFactoryLaunchInputIfPresent(github, run.inputPath, branch) : null;
-  const workflowGitHub = resolveIndexerTierWorkflowGitHubClient(github, run, inputRecord);
+  const workflowGitHub = resolveIndexerTierWorkflowGitHubClient(github, run, null);
   const updatedGames = [];
   let hasChanges = false;
 
@@ -2613,8 +3032,7 @@ async function reconcileFactorySeriesRunIndexerTier(github, branch, environment,
 }
 
 async function reconcileFactoryRotationRunIndexerTier(github, branch, environment, run) {
-  const inputRecord = run.inputPath ? await readFactoryLaunchInputIfPresent(github, run.inputPath, branch) : null;
-  const workflowGitHub = resolveIndexerTierWorkflowGitHubClient(github, run, inputRecord);
+  const workflowGitHub = resolveIndexerTierWorkflowGitHubClient(github, run, null);
   const updatedGames = [];
   let hasChanges = false;
 
@@ -2722,9 +3140,9 @@ async function requestIndexerTierDispatch(github, request, context) {
   }
 }
 
-function resolveGameRunTiming(run, inputRecord) {
-  const rawRequest = resolveLaunchInputRequest(inputRecord);
-  const startTime = rawRequest.startTime || inputRecord?.startTime;
+function resolveGameRunTiming(run, inputRecord = null) {
+  const rawRequest = inputRecord ? resolveLaunchInputRequest(inputRecord) : {};
+  const startTime = run.artifacts?.scheduledStartTime ?? rawRequest.startTime ?? inputRecord?.startTime;
   const parsedStartTime = parseLaunchStartTime(startTime);
 
   return {

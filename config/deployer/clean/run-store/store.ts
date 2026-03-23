@@ -8,6 +8,7 @@ import {
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
+import { recordFactoryRunMaintenanceIndex } from "./maintenance-index";
 import { resolveFactoryRunId, resolveFactoryRunRecordPath } from "./paths";
 import { resolveLaunchStepTitle } from "./steps";
 import type {
@@ -146,7 +147,10 @@ function createFactoryRunRecord(context: FactoryRunStoreEventContext): FactoryRu
     workflow: context.workflow,
     activeLease: undefined,
     steps: buildFactoryRunSteps(environment),
-    artifacts: {},
+    artifacts: {
+      scheduledStartTime: context.request.startTime,
+      durationSeconds: context.request.durationSeconds,
+    },
   };
 }
 
@@ -286,6 +290,7 @@ function mergeLaunchArtifacts(
   return {
     ...currentArtifacts,
     summaryPath,
+    scheduledStartTime: summary.startTime ?? currentArtifacts.scheduledStartTime,
     durationSeconds: summary.durationSeconds ?? currentArtifacts.durationSeconds,
     worldAddress: summary.worldAddress || currentArtifacts.worldAddress,
     createGameTxHash: summary.createGameTxHash || currentArtifacts.createGameTxHash,
@@ -358,13 +363,15 @@ async function updateRunRecord(
 ): Promise<FactoryRunRecord> {
   const config = requireGitHubBranchStoreConfig(options);
   const runRecordPath = resolveFactoryRunRecordPath(context);
-
-  return updateGitHubBranchJsonFile<FactoryRunRecord>(
+  const nextRun = await updateGitHubBranchJsonFile<FactoryRunRecord>(
     config,
     runRecordPath,
     (current) => updateRecord(current || createFactoryRunRecord(context)),
     buildCommitMessage(action, context),
   );
+
+  await recordFactoryRunMaintenanceIndex(config, nextRun);
+  return nextRun;
 }
 
 export async function recordFactoryLaunchStarted(

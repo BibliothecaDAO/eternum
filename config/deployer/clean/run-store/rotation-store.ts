@@ -15,6 +15,7 @@ import {
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
+import { recordFactoryRotationMaintenanceIndex } from "./maintenance-index";
 import { resolveFactoryRotationRunId, resolveFactoryRotationRunRecordPath } from "./paths";
 import { applyTargetedSeriesLikeGameStepStatus } from "./series-like-step-status";
 import { resolveRotationStepTitle } from "./steps";
@@ -506,13 +507,15 @@ async function updateRotationRunRecord(
 ): Promise<FactoryRotationRunRecord> {
   const config = requireGitHubBranchStoreConfig(options);
   const runRecordPath = resolveFactoryRotationRunRecordPath(context);
-
-  return updateGitHubBranchJsonFile<FactoryRotationRunRecord>(
+  const nextRun = await updateGitHubBranchJsonFile<FactoryRotationRunRecord>(
     config,
     runRecordPath,
     (current) => updateRecord(current || createFactoryRotationRunRecord(context, summary)),
     buildCommitMessage(action, context),
   );
+
+  await recordFactoryRotationMaintenanceIndex(config, nextRun);
+  return nextRun;
 }
 
 async function resolvePlannedRotationSummary(request: FactoryRotationRunRequestContext["request"]) {

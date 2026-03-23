@@ -94,11 +94,18 @@ describe("factory run store", () => {
 
     const inputRecord = branchStore.readJson("inputs/slot/blitz/bltz-flux-730/101-1.json");
     const runRecord = branchStore.readJson("runs/slot/blitz/bltz-flux-730.json");
+    const maintenanceIndex = branchStore.readJson("indexes/slot/blitz/games.json");
 
     expect(inputRecord.launchRequestId).toBe("101-1");
     expect(runRecord.status).toBe("running");
     expect(runRecord.currentStepId).toBe("create-world");
     expect(runRecord.executionMode).toBe("fast_trial");
+    expect(maintenanceIndex.entries["bltz-flux-730"]).toMatchObject({
+      kind: "game",
+      gameName: "bltz-flux-730",
+      status: "running",
+      startTime: "2026-03-18T10:00:00Z",
+    });
     expect(runRecord.steps.map((step: { id: string }) => step.id)).toEqual([
       "create-world",
       "wait-for-factory-index",

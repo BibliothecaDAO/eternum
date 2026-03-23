@@ -137,6 +137,31 @@ function hasCompletedSeriesLikeGameStep(game: SeriesLaunchGameSummary, stepId: L
   return game.steps.some((step) => step.id === stepId && step.status === "succeeded");
 }
 
+function resolveSeriesLikeGameStepIndex(game: SeriesLaunchGameSummary, stepId: LaunchSeriesStepId): number {
+  return game.steps.findIndex((step) => step.id === stepId);
+}
+
+function resolveRequiredSeriesLikeGameStepId(
+  game: SeriesLaunchGameSummary,
+  stepId: LaunchSeriesStepId,
+): LaunchSeriesStepId | null {
+  const stepIndex = resolveSeriesLikeGameStepIndex(game, stepId);
+  if (stepIndex <= 0) {
+    return null;
+  }
+
+  return game.steps[stepIndex - 1]?.id ?? null;
+}
+
+function hasCompletedSeriesLikeGamePrerequisite(game: SeriesLaunchGameSummary, stepId: LaunchSeriesStepId): boolean {
+  const requiredStepId = resolveRequiredSeriesLikeGameStepId(game, stepId);
+  if (!requiredStepId) {
+    return true;
+  }
+
+  return hasCompletedSeriesLikeGameStep(game, requiredStepId);
+}
+
 function resolveTargetedSeriesLikeGameNames(
   request: SeriesLikeRequest,
   summary: SeriesLikeSummary,
@@ -169,6 +194,10 @@ function shouldRunSeriesLikeGameStep(
   stepId: LaunchSeriesStepId,
   targetedGameNames: Set<string> | null,
 ): boolean {
+  if (!hasCompletedSeriesLikeGamePrerequisite(game, stepId)) {
+    return false;
+  }
+
   if (!targetedGameNames) {
     return !hasCompletedSeriesLikeGameStep(game, stepId);
   }

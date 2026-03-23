@@ -490,6 +490,7 @@ describe("factory worker recovery signals", () => {
           updatedAt: offsetTimestamp(-30_000),
           workflow: {
             workflowName: "game-launch.yml",
+            ref: "codex/factory-v2-rotation-review",
           },
           steps: [
             {
@@ -778,7 +779,21 @@ describe("factory worker recovery signals", () => {
         });
       }
 
+      if (
+        String(url).includes("/contents/indexes/slot/blitz/rotations.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return new Response("{}", { status: 404 });
+      }
+
       if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (String(url).includes("/contents/indexes/slot/blitz/rotations.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -855,6 +870,10 @@ describe("factory worker recovery signals", () => {
         });
       }
 
+      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && (!init?.method || init.method === "GET")) {
+        return new Response("{}", { status: 404 });
+      }
+
       if (String(url).includes("/contents/inputs/slot/blitz/bltz-test-14/101-1.json")) {
         return buildGitHubContentsResponse({
           workflow: {
@@ -869,6 +888,13 @@ describe("factory worker recovery signals", () => {
       }
 
       if (String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -915,12 +941,57 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/runs/") && value.includes("?ref=factory-runs") && !value.includes(".json?ref=")) {
-        if (value.includes("/contents/runs/slot/blitz/series?ref=factory-runs")) {
-          return buildGitHubDirectoryResponse([{ type: "file", path: "runs/slot/blitz/series/bltz-knicker.json" }]);
-        }
+      if (value.includes("/contents/indexes/slot/blitz/series.json?ref=factory-runs")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "series",
+          updatedAt: startedAt,
+          entries: {
+            "bltz-knicker": {
+              kind: "series",
+              environment: "slot.blitz",
+              seriesName: "bltz-knicker",
+              path: "runs/slot/blitz/series/bltz-knicker.json",
+              inputPath: "inputs/slot/blitz/series/bltz-knicker/101-1.json",
+              status: "running",
+              updatedAt: startedAt,
+              workflowRef: "codex/factory-v2-rotation-review",
+              currentStepId: null,
+              hasRunningStep: false,
+              recoverableFailedStepId: null,
+              recoverablePendingStepId: null,
+              autoRetry: {
+                enabled: false,
+                intervalMinutes: 15,
+              },
+              games: [
+                {
+                  gameName: "bltz-knicker-01",
+                  startTime: startedAt,
+                  durationSeconds: 3600,
+                  artifacts: {
+                    indexerCreated: true,
+                    indexerTier: "basic",
+                  },
+                },
+                {
+                  gameName: "bltz-knicker-02",
+                  startTime: startedAt,
+                  durationSeconds: 3600,
+                  artifacts: {
+                    indexerCreated: true,
+                    indexerTier: "basic",
+                  },
+                },
+              ],
+            },
+          },
+        });
+      }
 
-        return buildGitHubDirectoryResponse([]);
+      if (value.includes("/contents/indexes/") && value.includes("?ref=factory-runs")) {
+        return new Response("{}", { status: 404 });
       }
 
       if (
@@ -945,6 +1016,7 @@ describe("factory worker recovery signals", () => {
           updatedAt: offsetTimestamp(-30_000),
           workflow: {
             workflowName: "game-launch.yml",
+            ref: "codex/factory-v2-rotation-review",
           },
           steps: [],
           summary: {
@@ -972,15 +1044,6 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/series/bltz-knicker/101-1.json")) {
-        return buildGitHubContentsResponse({
-          workflow: {
-            ref: "codex/factory-v2-rotation-review",
-          },
-          request: {},
-        });
-      }
-
       if (value.includes("/actions/workflows/factory-torii-deployer.yml/dispatches")) {
         dispatchCount += 1;
 
@@ -995,6 +1058,13 @@ describe("factory worker recovery signals", () => {
       }
 
       if (value.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (value.includes("/contents/indexes/slot/blitz/series.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -1030,6 +1100,9 @@ describe("factory worker recovery signals", () => {
 
     expect(dispatchCalls).toHaveLength(2);
     expect(firstDispatchBody.ref).toBe("codex/factory-v2-rotation-review");
+    expect(fetchCalls.some((call) => call.url.includes("/contents/runs/slot/blitz/series?ref=factory-runs"))).toBe(
+      false,
+    );
     expect(firstGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
     expect(firstGame.artifacts.lastIndexerTierDispatchFailedAt).toEqual(expect.any(String));
     expect(firstGame.artifacts.lastIndexerTierDispatchError).toContain(

@@ -13,6 +13,7 @@ import {
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
+import { recordFactorySeriesMaintenanceIndex } from "./maintenance-index";
 import { resolveFactorySeriesRunId, resolveFactorySeriesRunRecordPath } from "./paths";
 import { applyTargetedSeriesLikeGameStepStatus } from "./series-like-step-status";
 import { resolveSeriesStepTitle } from "./steps";
@@ -456,13 +457,15 @@ async function updateSeriesRunRecord(
 ): Promise<FactorySeriesRunRecord> {
   const config = requireGitHubBranchStoreConfig(options);
   const runRecordPath = resolveFactorySeriesRunRecordPath(context);
-
-  return updateGitHubBranchJsonFile<FactorySeriesRunRecord>(
+  const nextRun = await updateGitHubBranchJsonFile<FactorySeriesRunRecord>(
     config,
     runRecordPath,
     (current) => updateRecord(current || createFactorySeriesRunRecord(context, summary)),
     buildCommitMessage(action, context),
   );
+
+  await recordFactorySeriesMaintenanceIndex(config, nextRun);
+  return nextRun;
 }
 
 export async function recordFactorySeriesLaunchStarted(

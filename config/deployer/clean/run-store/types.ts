@@ -17,6 +17,8 @@ import type {
 export type LaunchWorkflowScope = "full" | LaunchGameStepId;
 export type SeriesLaunchWorkflowScope = "full" | LaunchSeriesStepId;
 export type RotationLaunchWorkflowScope = "full" | LaunchRotationStepId;
+export type FactoryRunKind = "game" | "series" | "rotation";
+export type FactoryMaintenanceIndexKind = FactoryRunKind;
 export type FactoryRunExecutionMode = "fast_trial" | "guided_recovery";
 export type FactoryRunStatus = "running" | "attention" | "complete";
 export type FactoryRunStepStatus = "pending" | "running" | "succeeded" | "failed";
@@ -82,6 +84,7 @@ export interface FactoryRotationRunLease {
 
 export interface FactoryRunArtifacts {
   summaryPath?: string;
+  scheduledStartTime?: string | number;
   durationSeconds?: number;
   worldAddress?: string;
   createGameTxHash?: string;
@@ -276,6 +279,71 @@ export interface FactoryRotationRunRecord {
     seriesCreated?: boolean;
     seriesCreatedAt?: string;
   };
+}
+
+export interface FactoryRunMaintenanceArtifacts {
+  indexerCreated?: boolean;
+  indexerTier?: string;
+  pendingIndexerTierTarget?: string;
+  pendingIndexerTierRequestedAt?: string;
+}
+
+export interface FactoryRunMaintenanceIndexGame {
+  gameName: string;
+  startTime?: string | number;
+  durationSeconds?: number;
+  artifacts: FactoryRunMaintenanceArtifacts;
+}
+
+interface FactoryRunMaintenanceIndexEntryBase {
+  kind: FactoryMaintenanceIndexKind;
+  environment: DeploymentEnvironmentId;
+  path: string;
+  inputPath?: string;
+  status: FactoryRunStatus;
+  updatedAt: string;
+  workflowRef?: string;
+  currentStepId: string | null;
+  activeLeaseExpiresAt?: string;
+  hasRunningStep: boolean;
+  recoverableFailedStepId?: string | null;
+  recoverablePendingStepId?: string | null;
+}
+
+export interface FactoryGameRunMaintenanceIndexEntry extends FactoryRunMaintenanceIndexEntryBase {
+  kind: "game";
+  gameName: string;
+  startTime?: string | number;
+  durationSeconds?: number;
+  artifacts: FactoryRunMaintenanceArtifacts;
+}
+
+export interface FactorySeriesRunMaintenanceIndexEntry extends FactoryRunMaintenanceIndexEntryBase {
+  kind: "series";
+  seriesName: string;
+  autoRetry: FactorySeriesAutoRetryState;
+  games: FactoryRunMaintenanceIndexGame[];
+}
+
+export interface FactoryRotationRunMaintenanceIndexEntry extends FactoryRunMaintenanceIndexEntryBase {
+  kind: "rotation";
+  rotationName: string;
+  autoRetry: FactorySeriesAutoRetryState;
+  evaluation: FactoryRotationEvaluationState;
+  games: FactoryRunMaintenanceIndexGame[];
+}
+
+export type FactoryRunMaintenanceIndexEntry =
+  | FactoryGameRunMaintenanceIndexEntry
+  | FactorySeriesRunMaintenanceIndexEntry
+  | FactoryRotationRunMaintenanceIndexEntry;
+
+export interface FactoryRunMaintenanceIndexRecord {
+  version: 1;
+  environment: DeploymentEnvironmentId;
+  kind: FactoryMaintenanceIndexKind;
+  updatedAt: string;
+  entries: Record<string, FactoryRunMaintenanceIndexEntry>;
 }
 
 export interface FactoryRunIdentity {

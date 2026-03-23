@@ -3,6 +3,7 @@ import { resolveDeploymentEnvironment } from "../environment";
 import { toSafeSlug } from "../shared/slug";
 import type {
   FactoryAccountLeaseIdentity,
+  FactoryMaintenanceIndexKind,
   FactoryRotationRunIdentity,
   FactoryRunIdentity,
   FactorySeriesRunIdentity,
@@ -37,6 +38,28 @@ export function resolveFactoryRotationRunDirectoryPath(
   environmentId: FactoryRotationRunIdentity["environmentId"],
 ): string {
   return path.join(resolveFactoryRunDirectoryPath(environmentId), "rotations");
+}
+
+function resolveFactoryMaintenanceIndexFileName(kind: FactoryMaintenanceIndexKind): string {
+  switch (kind) {
+    case "game":
+      return "games.json";
+    case "series":
+      return "series.json";
+    case "rotation":
+      return "rotations.json";
+  }
+}
+
+export function resolveFactoryMaintenanceIndexPath(
+  environmentId: FactoryRunIdentity["environmentId"],
+  kind: FactoryMaintenanceIndexKind,
+): string {
+  return path.join(
+    "indexes",
+    ...resolveEnvironmentSegments(environmentId),
+    resolveFactoryMaintenanceIndexFileName(kind),
+  );
 }
 
 export function resolveFactoryRunRecordPath(identity: FactoryRunIdentity): string {

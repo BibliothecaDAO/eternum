@@ -1,4 +1,5 @@
 export * from "./account-lease";
+export * from "./maintenance-index";
 export * from "./paths";
 export * from "./rotation-store";
 export * from "./series-store";
