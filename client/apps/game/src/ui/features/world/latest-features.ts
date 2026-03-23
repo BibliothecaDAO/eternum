@@ -17,6 +17,104 @@ export const latestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-03-23",
+    title: "Removed Light Test Dropdown",
+    description:
+      "Removed the temporary top-header light override selector so world lighting follows the live cycle only, keeping gameplay UI focused and less cluttered.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Clearer Dusk vs Evening",
+    description:
+      "Dusk now stays warmer while Late Evening shifts cooler with stronger moon-rim separation, making both phases easier to tell apart without sacrificing map readability.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Moon Rim Night Separation",
+    description:
+      "Night lighting now adds a cool moon rim directional pass so units and structures separate better from the terrain without flattening daytime lighting.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Cooler Night Color Grade",
+    description:
+      "Night and late-evening lighting now shift to cooler blue tones with lower saturation instead of relying on darkness alone, making time-of-day changes clearer without hurting visibility.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Late Evening Override",
+    description:
+      "Moved the Late Evening light-test point closer to dusk so this phase remains readable while still feeling distinct from daylight.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Night Visibility Floor",
+    description:
+      "Adjusted deep-night and evening lighting baselines to preserve day-phase contrast while keeping late-cycle gameplay readable instead of dropping into near-black visibility.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Late Evening Test",
+    description:
+      "Adjusted the Late Evening light-test preset to sit closer to dusk so evening validation is easier without dropping into near-night darkness.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Edge Phase Lighting",
+    description:
+      "Adjusted Early Hours and Late Evening light-test presets so those two phase overrides stay brighter and easier to inspect while validating world readability.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Light Phase Test Selector",
+    description:
+      "Added a top-header light phase selector so you can force Early Hours, Dawn, Morning, Afternoon, Dusk, or Late Evening lighting while validating world visibility and atmosphere.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-23",
+    title: "Village Militia Claim Hides",
+    description:
+      "Fixed village timers so once militia is claimed, the claim action disappears instead of staying available for another click.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Tribe Controls Spacing Polish",
+    description:
+      "Refined Tribe action controls with cleaner button/icon spacing and sizing, including a clearer create-tribe form flow and tighter Members/Invites action alignment in the detail panel.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Tribe Leaderboard Visual Sync",
+    description:
+      "Tribe rankings and tribe detail panels now share the same modern leaderboard styling language as Players, including refreshed row cards, cleaner headers, and a more consistent member/invite detail layout.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Devotion Split Card Refresh",
+    description:
+      "Faith Devotion tiles now show a dedicated devoted-wonder chip, You vs Owner FP/sec cards, and a visual split bar with direct Change Devotion and View Wonder actions.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Faith Tile Mobile Readability",
+    description:
+      "Wonder faith details on compact structure tiles now prioritize Total FP on its own row and use denser stat labels, so key values like Followers stay legible on smaller screens.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
     title: "Stable First Map Camera",
     description:
       "World map now opens in its intended tactical camera framing on the first load, so it no longer starts in a close-up offset view before settling after a scene switch.",
