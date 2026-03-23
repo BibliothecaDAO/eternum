@@ -12,6 +12,7 @@ import { formatAmount } from "./format-amount";
 import { HelpInfo } from "./help-info";
 import { InfoLabel } from "./info-label";
 import { QuestInfo } from "./quest-info";
+import { SpireTravelInfo } from "./spire-travel-info";
 import { StaminaSummary } from "./stamina-summary";
 
 interface FoodCosts {
@@ -44,6 +45,7 @@ interface TooltipContentProps {
 const ACTION_STATE_LABELS: Record<ActionType, string> = {
   [ActionType.Move]: "Move",
   [ActionType.Attack]: "Attack",
+  [ActionType.SpireTravel]: "Spire Travel",
   [ActionType.Build]: "Construct",
   [ActionType.Help]: "Transfer",
   [ActionType.Explore]: "Explore",
@@ -107,6 +109,8 @@ export const TooltipContent = memo(
           <ChestInfo />
         ) : actionType === ActionType.CreateArmy ? (
           <CreateArmyInfo />
+        ) : actionType === ActionType.SpireTravel ? (
+          <SpireTravelInfo />
         ) : actionType === ActionType.Help ? (
           <HelpInfo />
         ) : (

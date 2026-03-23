@@ -10,6 +10,27 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Spire Uses Layer Toggle Call",
+    description:
+      "Improved Spire traversal so the client uses the dedicated layer-toggle contract flow for cross-layer movement through adjacent Spires.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Spire Travel Keeps Map Layer",
+    description:
+      "Fixed Spire travel so moving to the other layer no longer forces the worldmap view to switch layers, keeping your current tactical map context on screen.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Army Spire Traversal Action",
+    description:
+      "Armies adjacent to a Spire now get a dedicated Spire action highlight; selecting it opens combat preview if an ethereal defender is present, or a direct travel window into the Ethereal Layer.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-23",
     title: "Removed Light Test Dropdown",
     description:
       "Removed the temporary top-header light override selector so world lighting follows the live cycle only, keeping gameplay UI focused and less cluttered.",
