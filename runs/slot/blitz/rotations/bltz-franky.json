@@ -10,19 +10,19 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23423614823-1.json",
-  "latestLaunchRequestId": "23423614823-1",
+  "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23424087187-1.json",
+  "latestLaunchRequestId": "23424087187-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T06:15:13.008Z",
+  "updatedAt": "2026-03-23T06:16:24.687Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23423614823,
+    "workflowRunId": 23424087187,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23423614823",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23424087187",
     "ref": "codex/factory-v2-rotation-review",
-    "sha": "fde0c2223bf3b9ee06b81fad792173bba2f557a7"
+    "sha": "60d7d04c4c495bd705d30a30169b93ab91e37d13"
   },
   "autoRetry": {
     "enabled": true,
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T06:20:13.008Z",
-    "lastEvaluatedAt": "2026-03-23T06:15:13.008Z"
+    "nextEvaluationAt": "2026-03-23T06:21:24.687Z",
+    "lastEvaluatedAt": "2026-03-23T06:16:24.687Z"
   },
   "steps": [
     {
@@ -39,54 +39,42 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-03-23T05:58:50.456Z",
-      "finishedAt": "2026-03-23T05:59:05.342Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-03-23T05:59:08.146Z",
-      "finishedAt": "2026-03-23T06:02:30.120Z"
+      "latestEvent": "Creating games is complete"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-03-23T06:02:38.070Z",
-      "finishedAt": "2026-03-23T06:02:43.262Z"
+      "latestEvent": "Waiting for games is complete"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
       "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-03-23T06:02:46.248Z",
-      "finishedAt": "2026-03-23T06:03:26.430Z"
+      "latestEvent": "Applying settings is complete"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-03-23T06:03:34.290Z",
-      "finishedAt": "2026-03-23T06:03:47.671Z"
+      "latestEvent": "Setting up loot chests is complete"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-03-23T06:03:55.573Z",
-      "finishedAt": "2026-03-23T06:07:38.422Z"
+      "latestEvent": "Finishing setup is complete"
     }
   ],
   "summary": {
