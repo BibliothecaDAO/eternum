@@ -4,7 +4,6 @@ import { factoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import { FactoryV2DeveloperTools } from "./factory-v2-developer-tools";
-import { FactoryV2DeployerWalletCard } from "./factory-v2-deployer-wallet-card";
 import { FactoryV2ModeSwitch } from "./factory-v2-mode-switch";
 import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
@@ -36,12 +35,8 @@ export const FactoryV2Content = () => {
           <div
             className={cn("rounded-[30px] px-4 py-5 backdrop-blur-xl md:px-6 md:py-6", appearance.mainSurfaceClassName)}
           >
-            <div className="mx-auto max-w-4xl space-y-5">
-              <FactoryV2DeployerWalletCard
-                chain={factory.selectedEnvironment?.chain ?? "slot"}
-                environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
-              />
-              <div className="mx-auto max-w-xl space-y-5">
+            <div className="mx-auto max-w-xl space-y-5">
+              <div className="space-y-5">
                 <FactoryV2ModeSwitch
                   modes={factoryModeDefinitions}
                   selectedMode={factory.selectedMode}
@@ -120,6 +115,8 @@ export const FactoryV2Content = () => {
               onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
               onToggleSingleRealmMode={factory.toggleSingleRealmMode}
               onFandomizeGameName={factory.fandomizeGameName}
+              deployerChain={factory.selectedEnvironment?.chain ?? "slot"}
+              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
               onLaunch={() => {
                 void launchSelectedPreset();
               }}

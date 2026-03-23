@@ -13,12 +13,12 @@ import {
   getRunHeadline,
   getRunProgressLabel,
   getRunStatusMeta,
-  getStepDetailMessage,
   getSimpleStepTitle,
+  getStepDetailMessage,
   getStepStatusMessage,
   getStepStatusMeta,
-  resolveRunProgressMetrics,
   resolveRunPrimaryAction,
+  resolveRunProgressMetrics,
 } from "../presenters";
 import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
 import { FactoryV2PrizeFundingCard } from "./factory-v2-prize-funding-card";

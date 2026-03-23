@@ -79,7 +79,7 @@ describe("FactoryV2DeployerWalletCard", () => {
     expect(container.textContent).toContain("125.2500");
     expect(container.textContent).toContain("LORDS");
     expect(container.textContent).toContain("42.0000");
-    expect(container.textContent).toContain("Copy address");
-    expect(container.textContent).toContain("Refresh balances");
+    expect(container.textContent).toContain("Copy");
+    expect(container.textContent).toContain("Refresh");
   });
 });

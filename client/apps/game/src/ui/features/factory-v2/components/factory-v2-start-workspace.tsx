@@ -30,6 +30,7 @@ import {
 import type {
   FactoryDurationOption,
   FactoryGameMode,
+  FactoryLaunchChain,
   FactoryLaunchPreset,
   FactoryLaunchTargetKind,
   FactoryRotationEvaluationIntervalMinutes,
@@ -37,6 +38,7 @@ import type {
   FactorySeriesGameDraft,
   FactorySeriesRetryIntervalMinutes,
 } from "../types";
+import { FactoryV2DeployerWalletCard } from "./factory-v2-deployer-wallet-card";
 import { FactoryV2MoreOptions } from "./factory-v2-more-options";
 
 const getPresetFacts = (preset: FactoryLaunchPreset) =>
@@ -130,6 +132,8 @@ type FactoryV2StartWorkspaceProps = {
   onToggleTwoPlayerMode: () => void;
   onToggleSingleRealmMode: () => void;
   onFandomizeGameName: () => void;
+  deployerChain: FactoryLaunchChain;
+  deployerEnvironmentLabel: string;
   onLaunch: () => void;
   isWatcherBusy: boolean;
 };
@@ -327,6 +331,8 @@ const FactoryV2ConfiguredStartWorkspace = ({
   onToggleTwoPlayerMode,
   onToggleSingleRealmMode,
   onFandomizeGameName,
+  deployerChain,
+  deployerEnvironmentLabel,
   onLaunch,
   appearance,
   workspace,
@@ -452,6 +458,8 @@ const FactoryV2ConfiguredStartWorkspace = ({
             onToggleMapOptions={onToggleMapOptions}
             onMapOptionValueChange={onMapOptionValueChange}
           />
+
+          <FactoryV2DeployerWalletCard chain={deployerChain} environmentLabel={deployerEnvironmentLabel} />
 
           <FactoryV2LaunchActionBar
             launchSummaryItems={workspace.launchSummaryItems}

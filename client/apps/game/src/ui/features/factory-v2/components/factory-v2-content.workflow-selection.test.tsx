@@ -29,10 +29,6 @@ vi.mock("./factory-v2-mode-switch", () => ({
   FactoryV2ModeSwitch: () => <div>Mode switch</div>,
 }));
 
-vi.mock("./factory-v2-deployer-wallet-card", () => ({
-  FactoryV2DeployerWalletCard: ({ chain }: { chain: string }) => <div>Deployer {chain}</div>,
-}));
-
 vi.mock("./factory-v2-start-workspace", () => ({
   FactoryV2StartWorkspace: ({ onLaunch }: { onLaunch: () => void }) => (
     <div>
@@ -162,7 +158,6 @@ describe("FactoryV2Content workflow selection", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("Deployer slot");
     expect(container.textContent).toContain("Start workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
 
@@ -207,7 +202,6 @@ describe("FactoryV2Content workflow selection", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("Deployer slot");
     expect(container.textContent).toContain("Watch workspace");
     expect(container.textContent).not.toContain("Start workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");

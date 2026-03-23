@@ -29,10 +29,6 @@ vi.mock("./factory-v2-mode-switch", () => ({
   FactoryV2ModeSwitch: () => <div>Mode switch</div>,
 }));
 
-vi.mock("./factory-v2-deployer-wallet-card", () => ({
-  FactoryV2DeployerWalletCard: ({ chain }: { chain: string }) => <div>Deployer {chain}</div>,
-}));
-
 vi.mock("./factory-v2-start-workspace", () => ({
   FactoryV2StartWorkspace: ({ onLaunch }: { onLaunch: () => void }) => <button onClick={onLaunch}>Launch</button>,
 }));
@@ -153,7 +149,6 @@ describe("FactoryV2Content network handling", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("Deployer mainnet");
     const launchButton = Array.from(container.querySelectorAll("button")).find((button) =>
       button.textContent?.includes("Launch"),
     );
@@ -179,7 +174,6 @@ describe("FactoryV2Content network handling", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("Deployer mainnet");
     await act(async () => {
       const watchButton = Array.from(container.querySelectorAll("button")).find((button) =>
         button.textContent?.includes("Check a game"),

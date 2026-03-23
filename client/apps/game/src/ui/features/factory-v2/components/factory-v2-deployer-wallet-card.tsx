@@ -1,6 +1,6 @@
 import { displayAddress } from "@/ui/utils/utils";
-import type { FactoryLaunchChain } from "../types";
 import { useFactoryV2DeployerWallet } from "../hooks/use-factory-v2-deployer-wallet";
+import type { FactoryLaunchChain } from "../types";
 
 interface FactoryV2DeployerWalletCardProps {
   chain: FactoryLaunchChain;
@@ -11,29 +11,23 @@ export const FactoryV2DeployerWalletCard = ({ chain, environmentLabel }: Factory
   const wallet = useFactoryV2DeployerWallet(chain);
 
   return (
-    <section className="rounded-[26px] border border-white/12 bg-black/10 px-4 py-4 backdrop-blur-xl md:px-5">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div className="space-y-2">
-            <div>
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-white/55">Deployer wallet</p>
-              <h3 className="text-base font-semibold text-white">
-                {environmentLabel} deployer · <span className="text-white/65">{displayAddress(wallet.address)}</span>
-              </h3>
+    <section className="rounded-[20px] border border-white/10 bg-black/8 px-3 py-3 backdrop-blur-xl md:px-4">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-[0.58rem] font-semibold uppercase tracking-[0.28em] text-white/48">Deployer wallet</p>
+            <div className="text-[0.8rem] font-semibold text-white">
+              {environmentLabel} deployer <span className="text-white/55">· {displayAddress(wallet.address)}</span>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-white/45">Address</p>
-              <p className="mt-2 break-all font-mono text-sm text-white/90">{wallet.address}</p>
-            </div>
+            <p className="break-all font-mono text-[0.62rem] leading-4 text-white/56">{wallet.address}</p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => {
                 void wallet.copyAddress();
               }}
-              className="rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/85 transition hover:bg-white/12"
+              className="rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/12"
             >
               {resolveCopyActionLabel(wallet.copyState)}
             </button>
@@ -43,21 +37,23 @@ export const FactoryV2DeployerWalletCard = ({ chain, environmentLabel }: Factory
                 void wallet.refreshBalances();
               }}
               disabled={wallet.isRefreshing}
-              className="rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/85 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {wallet.isRefreshing ? "Refreshing..." : "Refresh balances"}
+              {wallet.isRefreshing ? "Refreshing..." : "Refresh"}
             </button>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           {wallet.balances.map((balance) => (
-            <article key={balance.symbol} className="rounded-2xl border border-white/10 bg-black/15 px-3 py-3">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/45">{balance.symbol}</p>
-              <p className="mt-2 text-xl font-semibold text-white">
-                {balance.isLoading ? "..." : balance.displayBalance}
-              </p>
-              <p className="mt-1 text-xs text-white/45">{balance.error ?? `Available on ${chain}`}</p>
+            <article key={balance.symbol} className="rounded-2xl border border-white/8 bg-black/14 px-2.5 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-white/45">
+                  {balance.symbol}
+                </p>
+                <p className="text-sm font-semibold text-white">{balance.isLoading ? "..." : balance.displayBalance}</p>
+              </div>
+              <p className="mt-1 text-[0.65rem] text-white/42">{balance.error ?? ``}</p>
             </article>
           ))}
         </div>
@@ -73,6 +69,6 @@ function resolveCopyActionLabel(copyState: "idle" | "copied" | "error") {
     case "error":
       return "Copy failed";
     default:
-      return "Copy address";
+      return "Copy";
   }
 }

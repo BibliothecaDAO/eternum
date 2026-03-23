@@ -19,6 +19,10 @@ vi.mock("./factory-v2-more-options", () => ({
   FactoryV2MoreOptions: () => <div>More options</div>,
 }));
 
+vi.mock("./factory-v2-deployer-wallet-card", () => ({
+  FactoryV2DeployerWalletCard: () => <div>Deployer wallet</div>,
+}));
+
 const waitForAsyncWork = async () => {
   await Promise.resolve();
   await Promise.resolve();
@@ -119,6 +123,8 @@ const buildProps = (
   onToggleTwoPlayerMode: vi.fn(),
   onToggleSingleRealmMode: vi.fn(),
   onFandomizeGameName: vi.fn(),
+  deployerChain: "slot",
+  deployerEnvironmentLabel: "Slot",
   onLaunch: vi.fn(),
   isWatcherBusy: false,
   ...overrides,
