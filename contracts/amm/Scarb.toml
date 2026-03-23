@@ -1,0 +1,27 @@
+[package]
+name = "eternum_amm"
+version = "1.0.0"
+edition = "2024_07"
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+starknet = "2.13.1"
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v2.0.0" }
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v2.0.0" }
+openzeppelin_upgrades = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v2.0.0" }
+openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v2.0.0" }
+openzeppelin_utils = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v2.0.0" }
+
+[dev-dependencies]
+snforge_std = "0.51.2"
+assert_macros = "2.13"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120
