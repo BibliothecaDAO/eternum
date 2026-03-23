@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-thrum-725/23422454488-1.json",
   "latestLaunchRequestId": "23422454488-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "configure-worlds",
   "createdAt": "2026-03-23T05:12:07.827Z",
-  "updatedAt": "2026-03-23T05:12:51.244Z",
+  "updatedAt": "2026-03-23T05:12:54.408Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,9 +62,10 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-23T05:12:54.408Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -238,5 +239,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-thrum-725.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:12:25.259Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23422454488-1",
+    "workflowRunId": 23422454488,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-worlds",
+    "acquiredAt": "2026-03-23T05:12:54.408Z",
+    "expiresAt": "2026-03-23T05:57:54.408Z"
   }
 }
