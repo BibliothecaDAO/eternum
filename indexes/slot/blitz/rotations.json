@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T05:12:51.244Z",
+  "updatedAt": "2026-03-23T05:12:54.408Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -11,10 +11,11 @@
       "path": "runs/slot/blitz/rotations/bltz-thrum-725.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-thrum-725/23422454488-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T05:12:51.244Z",
+      "updatedAt": "2026-03-23T05:12:54.408Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-worlds",
-      "hasRunningStep": false,
+      "currentStepId": "configure-worlds",
+      "activeLeaseExpiresAt": "2026-03-23T05:57:54.408Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
