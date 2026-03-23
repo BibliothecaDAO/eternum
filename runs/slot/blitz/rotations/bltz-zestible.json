@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23463679403-1.json",
   "latestLaunchRequestId": "23463679403-1",
-  "currentStepId": null,
+  "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-23T22:42:40.349Z",
+  "updatedAt": "2026-03-23T22:42:49.143Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -82,9 +82,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-23T22:42:49.143Z"
     }
   ],
   "summary": {
@@ -1237,5 +1238,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23463679403-1",
+    "workflowRunId": 23463679403,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-03-23T22:42:49.143Z",
+    "expiresAt": "2026-03-23T23:27:49.143Z"
   }
 }
