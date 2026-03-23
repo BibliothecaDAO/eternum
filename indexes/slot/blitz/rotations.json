@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T06:15:13.008Z",
+  "updatedAt": "2026-03-23T06:16:24.687Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -100,9 +100,9 @@
       "environment": "slot.blitz",
       "rotationName": "bltz-franky",
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
-      "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23423614823-1.json",
+      "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23424087187-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T06:15:13.008Z",
+      "updatedAt": "2026-03-23T06:16:24.687Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -114,8 +114,8 @@
       },
       "evaluation": {
         "intervalMinutes": 5,
-        "nextEvaluationAt": "2026-03-23T06:20:13.008Z",
-        "lastEvaluatedAt": "2026-03-23T06:15:13.008Z"
+        "nextEvaluationAt": "2026-03-23T06:21:24.687Z",
+        "lastEvaluatedAt": "2026-03-23T06:16:24.687Z"
       },
       "games": [
         {
