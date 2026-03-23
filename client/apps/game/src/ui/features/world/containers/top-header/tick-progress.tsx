@@ -13,7 +13,7 @@ const PHASES = [
   { key: "morning", name: "Morning", lightProgress: 37.5 },
   { key: "afternoon", name: "Afternoon", lightProgress: 56.25 },
   { key: "dusk", name: "Dusk", lightProgress: 68.75 },
-  { key: "late-evening", name: "Late Evening", lightProgress: 73.5 },
+  { key: "late-evening", name: "Late Evening", lightProgress: 79 },
 ] as const;
 
 type LightPhaseSelection = "live" | (typeof PHASES)[number]["key"];

@@ -10,6 +10,27 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Clearer Dusk vs Evening",
+    description:
+      "Dusk now stays warmer while Late Evening shifts cooler with stronger moon-rim separation, making both phases easier to tell apart without sacrificing map readability.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Moon Rim Night Separation",
+    description:
+      "Night lighting now adds a cool moon rim directional pass so units and structures separate better from the terrain without flattening daytime lighting.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Cooler Night Color Grade",
+    description:
+      "Night and late-evening lighting now shift to cooler blue tones with lower saturation instead of relying on darkness alone, making time-of-day changes clearer without hurting visibility.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
     title: "Brighter Late Evening Override",
     description:
       "Moved the Late Evening light-test point closer to dusk so this phase remains readable while still feeling distinct from daylight.",
