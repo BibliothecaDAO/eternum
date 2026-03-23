@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-knicker",
   "seriesName": "bltz-knicker",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexers",
   "inputPath": "inputs/slot/blitz/rotations/bltz-knicker/23416494782-1.json",
   "latestLaunchRequestId": "23416494782-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T00:12:41.396Z",
-  "updatedAt": "2026-03-23T00:41:27.724Z",
+  "updatedAt": "2026-03-23T00:41:31.857Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,7 +27,6 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-23T00:56:27.724Z",
     "lastRetryAt": "2026-03-23T00:40:12.594Z"
   },
   "evaluation": {
@@ -74,9 +73,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup needs attention"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-23T00:41:31.857Z"
     }
   ],
   "summary": {
@@ -1047,5 +1047,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-knicker.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T00:12:59.485Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23416494782-1",
+    "workflowRunId": 23416494782,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-03-23T00:41:31.857Z",
+    "expiresAt": "2026-03-23T01:26:31.857Z"
   }
 }
