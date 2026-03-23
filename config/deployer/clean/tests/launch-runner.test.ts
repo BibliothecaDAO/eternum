@@ -125,6 +125,9 @@ mock.module("starknet", () => ({
       return waitForTransactionMock(transactionHash);
     }
   },
+  RpcProvider: class RpcProvider {
+    constructor(_options: unknown) {}
+  },
   shortString: {
     encodeShortString: (value: string) => `felt:${value}`,
   },
@@ -217,7 +220,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     mock.restore();
   });
 
-  test("submits create_game three times on mainnet with the legacy action budget and nonce delay", async () => {
+  test("submits create_game fifteen times on mainnet with legacy triple-submit across five retries", async () => {
     const summary = await runLaunchStep({
       environmentId: "mainnet.blitz",
       stepId: "create-world",
@@ -229,18 +232,18 @@ describe("runLaunchStep mainnet launch steps", () => {
       privateKey,
     });
 
-    expect(createGameExecuteMock).toHaveBeenCalledTimes(3);
+    expect(createGameExecuteMock).toHaveBeenCalledTimes(15);
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
       contractAddress: factoryAddress,
       entrypoint: "create_game",
       calldata: ["felt:alpha", 70, "180", "0x0", 0],
     });
-    expect(waitForTransactionMock.mock.calls).toEqual([["0xcreate1"], ["0xcreate2"], ["0xcreate3"]]);
-    expect(createGameDelayMock.mock.calls).toEqual([[10000], [10000]]);
-    expect(summary.createGameTxHash).toBe("0xcreate3");
+    expect(waitForTransactionMock.mock.calls).toHaveLength(15);
+    expect(createGameDelayMock.mock.calls).toHaveLength(14);
+    expect(summary.createGameTxHash).toBe("0xcreate15");
   });
 
-  test("submits create_game once on slot with the slot action budget", async () => {
+  test("submits create_game five times on slot across five retries", async () => {
     const summary = await runLaunchStep({
       environmentId: "slot.blitz",
       stepId: "create-world",
@@ -252,15 +255,15 @@ describe("runLaunchStep mainnet launch steps", () => {
       privateKey,
     });
 
-    expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
+    expect(createGameExecuteMock).toHaveBeenCalledTimes(5);
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
       contractAddress: factoryAddress,
       entrypoint: "create_game",
       calldata: ["felt:alpha", 300, "180", "0x0", 0],
     });
-    expect(waitForTransactionMock.mock.calls).toEqual([["0xcreate1"]]);
+    expect(waitForTransactionMock.mock.calls).toHaveLength(5);
     expect(createGameDelayMock).not.toHaveBeenCalled();
-    expect(summary.createGameTxHash).toBe("0xcreate1");
+    expect(summary.createGameTxHash).toBe("0xcreate5");
   });
 
   test("runs the village pass role bundle for mainnet eternum and stores one tx hash", async () => {

@@ -226,6 +226,10 @@ function shouldRunSeriesLikeGameStep(
   return stepId === "create-indexers" || !hasCompletedSeriesLikeGameStep(game, stepId);
 }
 
+function requiresContiguousSeriesGameCreation(stepId: LaunchSeriesStepId): boolean {
+  return stepId === "create-worlds";
+}
+
 async function waitBetweenSeriesLikeGameCalls(delayMs: number, isFirstExecution: boolean): Promise<void> {
   if (isFirstExecution || delayMs <= 0) {
     return;
@@ -307,6 +311,8 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
       games: [...nextGames, ...summary.games.slice(nextGames.length)],
     } as TSummary);
 
+    let shouldStopAfterFailure = false;
+
     try {
       const gameSummary = await runLaunchStep({
         ...buildSeriesLikeGameRequest(request, inFlightSummary, runningGame),
@@ -316,17 +322,23 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
     } catch (error) {
       failureCount += 1;
       nextGames[nextGames.length - 1] = updateSeriesLikeGameFailure(runningGame, stepId, error);
+      shouldStopAfterFailure = requiresContiguousSeriesGameCreation(stepId);
     }
 
     persistSummary({
       ...summary,
       games: [...nextGames, ...summary.games.slice(nextGames.length)],
     } as TSummary);
+
+    if (shouldStopAfterFailure) {
+      break;
+    }
   }
 
+  const finalGames = [...nextGames, ...summary.games.slice(nextGames.length)];
   const nextSummary = persistSummary({
     ...summary,
-    games: nextGames,
+    games: finalGames,
   } as TSummary);
 
   if (failureCount > 0) {

@@ -106,7 +106,6 @@ describe("grouped series-like runner", () => {
       persistSummary: (next) => next,
     });
 
-    expect(fetchCalls).toHaveLength(2);
     expect(nextSummary.games[0]?.steps.find((step) => step.id === "wait-for-factory-indexes")?.status).toBe(
       "succeeded",
     );

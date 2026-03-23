@@ -364,6 +364,10 @@ function buildCreateGameCalldata(runtime: LaunchRuntime, request: LaunchGameRequ
   ];
 }
 
+function resolveTotalCreateGameSubmissionCount(runtime: LaunchRuntime): number {
+  return runtime.createGame.submissionCount * runtime.createGame.retryCount;
+}
+
 function buildCreateGameAttemptLabel(attemptNumber: number, totalAttempts: number): string {
   if (totalAttempts === 1) {
     return "create_game";
@@ -455,7 +459,7 @@ async function submitCreateGameAttempts(
   request: LaunchGameRequest,
   account: Account,
 ): Promise<string> {
-  const totalAttempts = runtime.createGame.submissionCount;
+  const totalAttempts = resolveTotalCreateGameSubmissionCount(runtime);
   const retryDelayMs = runtime.createGame.retryDelayMs;
   let lastTransactionHash = "";
 

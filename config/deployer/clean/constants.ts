@@ -5,6 +5,7 @@ export const DEFAULT_VERSION = "180";
 export const DEFAULT_SLOT_MAX_ACTIONS = 300;
 export const DEFAULT_MAINNET_MAX_ACTIONS = 70;
 export const DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT = 3;
+export const DEFAULT_CREATE_GAME_RETRY_COUNT = 5;
 export const DEFAULT_CREATE_GAME_RETRY_DELAY_MS = 10_000;
 export const DEFAULT_GAME_LAUNCH_WORKFLOW_FILE = "game-launch.yml";
 export const DEFAULT_FACTORY_RUN_STORE_BRANCH = "factory-runs";
@@ -51,6 +52,7 @@ const SLOT_DEFAULTS = {
   createGame: {
     maxActions: DEFAULT_SLOT_MAX_ACTIONS,
     submissionCount: 1,
+    retryCount: DEFAULT_CREATE_GAME_RETRY_COUNT,
     retryDelayMs: 0,
   },
 };
@@ -61,6 +63,7 @@ const MAINNET_DEFAULTS = {
   createGame: {
     maxActions: DEFAULT_MAINNET_MAX_ACTIONS,
     submissionCount: DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT,
+    retryCount: DEFAULT_CREATE_GAME_RETRY_COUNT,
     retryDelayMs: DEFAULT_CREATE_GAME_RETRY_DELAY_MS,
   },
 };

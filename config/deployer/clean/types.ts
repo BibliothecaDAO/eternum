@@ -35,6 +35,7 @@ export type SeriesLaunchChildStepStatus = "pending" | "running" | "succeeded" | 
 export interface CreateGameDefaults {
   maxActions: number;
   submissionCount: number;
+  retryCount: number;
   retryDelayMs: number;
 }
 
