@@ -77,6 +77,7 @@ export const getStructuresDataFromTorii = async (
   const playerStructuresModels = [
     "s1_eternum-Structure",
     "s1_eternum-Resource",
+    "s1_eternum-VillageTroop",
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
     "s1_eternum-ProductionBoostBonus",
