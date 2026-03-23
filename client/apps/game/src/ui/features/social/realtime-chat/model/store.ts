@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { AudioManager } from "@/audio/core/AudioManager";
 import { RealtimeClient } from "@bibliothecadao/types";
 import type {
   DirectMessage,
@@ -528,6 +529,10 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.sender.playerId);
       const shouldIncrement = !isOwnMessage && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
 
+      if (!isOwnMessage && replacementIndex === -1) {
+        AudioManager.getInstance().play("ui.msg_receive");
+      }
+
       const unreadCount = isShellOpen && isActiveZone ? 0 : zoneState.unreadCount + (shouldIncrement ? 1 : 0);
       const nextUnreadTotal = shouldIncrement ? unreadWorldTotal + 1 : unreadWorldTotal;
 
@@ -555,6 +560,10 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const isActiveThread = activeThreadId === normalizedMessage.threadId;
       const shouldIncrement = !isOwnMessage && (!isShellOpen || !isActiveThread);
       const unreadCount = shouldIncrement ? threadState.unreadCount + 1 : threadState.unreadCount;
+
+      if (!isOwnMessage) {
+        AudioManager.getInstance().play("ui.msg_receive");
+      }
 
       const updatedAt =
         normalizedMessage.createdAt instanceof Date
@@ -784,6 +793,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       try {
         client.send(message);
+        AudioManager.getInstance().play("ui.msg_send");
       } catch (error) {
         set((state) => {
           const zoneState = state.worldZones[zoneId];
@@ -816,6 +826,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         },
       };
       client.send(message);
+      AudioManager.getInstance().play("ui.msg_send");
     },
     acknowledgeDirectRead: async (receipt: DirectMessageReadReceipt) => {
       const { client } = get();

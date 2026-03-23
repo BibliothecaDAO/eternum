@@ -2,6 +2,7 @@ import { TransactionType } from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { AudioManager } from "@/audio/core/AudioManager";
 import { getTxMessage as getBaseMessage, getTxIcon } from "@/ui/components/transaction-center/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
@@ -31,6 +32,7 @@ export function TransactionNotification() {
       const description = getTxMessage(receipt.type);
       const txCount = receipt.transactionCount ? ` (${receipt.transactionCount} transactions)` : "";
       toast("⏳ Transaction pending", { description: description + txCount });
+      AudioManager.getInstance().play("ui.toast_info");
     };
 
     const handleTransactionComplete = (receipt: any) => {
@@ -38,6 +40,7 @@ export function TransactionNotification() {
       const description = getTxMessage(receipt.type);
       const txCount = receipt.transactionCount ? ` (${receipt.transactionCount} transactions)` : "";
       toast("Completed Action", { description: description + txCount });
+      AudioManager.getInstance().play("ui.tx_success");
     };
 
     const handleTransactionFailed = (error: string | TransactionFailurePayload, meta?: TransactionFailurePayload) => {
@@ -55,6 +58,7 @@ export function TransactionNotification() {
       const description = `${action}${txCount} - ${message}`;
       console.error("Transaction failed:", message);
       toast("❌ Transaction failed", { description });
+      AudioManager.getInstance().play("ui.tx_fail");
     };
 
     provider.on("transactionPending", handleTransactionPending);

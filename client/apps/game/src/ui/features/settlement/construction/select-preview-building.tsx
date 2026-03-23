@@ -1,4 +1,5 @@
 import { usePlayResourceSound } from "@/audio";
+import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
@@ -749,6 +750,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     } else {
                       setPreviewBuilding({ type: building, resource: resourceId });
                       playResourceSound(resourceId);
+                      AudioManager.getInstance().play("ui.summon");
                     }
                   }}
                   active={previewBuilding?.resource === resourceId}
@@ -861,6 +863,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         setPreviewBuilding(null);
                       } else {
                         setPreviewBuilding({ type: building });
+                        AudioManager.getInstance().play("ui.summon");
                         if (building === BuildingType.ResourceWheat) {
                           playResourceSound(ResourcesIds.Wheat);
                         }
@@ -1022,6 +1025,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                     setPreviewBuilding(null);
                                   } else {
                                     setPreviewBuilding({ type: building });
+                                    AudioManager.getInstance().play("ui.summon");
                                   }
                                 }}
                                 active={previewBuilding?.type === building}

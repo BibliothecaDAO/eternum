@@ -5,7 +5,7 @@ import { TransactionType } from "./types";
  * Transactions in the same category can be batched together.
  */
 export enum TransactionCostCategory {
-  HIGH = "HIGH", // VRF, combat, complex operations - max 3
+  HIGH = "HIGH", // VRF, combat, complex operations - max 6
   MEDIUM = "MEDIUM", // State writes, resource transfers - max 5
   LOW = "LOW", // Simple state changes - max 10
 }
@@ -262,6 +262,39 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
 export function getTransactionCategory(type?: TransactionType): TransactionCostCategory {
   if (!type) return DEFAULT_CATEGORY;
   return TRANSACTION_COST_CATEGORY[type] ?? DEFAULT_CATEGORY;
+}
+
+/**
+ * Configuration for per-category and per-type batch delays.
+ */
+export interface BatchDelayConfig {
+  categoryDelays?: Partial<Record<TransactionCostCategory, number>>;
+  typeOverrides?: Partial<Record<TransactionType, number>>;
+  defaultDelay?: number;
+}
+
+export const DEFAULT_BATCH_DELAYS: BatchDelayConfig = {
+  defaultDelay: 1000,
+  categoryDelays: {
+    [TransactionCostCategory.HIGH]: 0,
+    [TransactionCostCategory.MEDIUM]: 500,
+    [TransactionCostCategory.LOW]: 1000,
+  },
+};
+
+/**
+ * Get the batch delay for a given transaction type, respecting type overrides,
+ * category delays, and the default delay (in that priority order).
+ */
+export function getDelayForTransaction(type: TransactionType | undefined, config: BatchDelayConfig): number {
+  if (type && config.typeOverrides?.[type] !== undefined) {
+    return config.typeOverrides[type]!;
+  }
+  const category = getTransactionCategory(type);
+  if (config.categoryDelays?.[category] !== undefined) {
+    return config.categoryDelays[category]!;
+  }
+  return config.defaultDelay ?? 1000;
 }
 
 /**

@@ -90,6 +90,7 @@ export const useAutomation = () => {
   const realms = useAutomationStore((state) => state.realms);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
+  const recordStatus = useAutomationStore((state) => state.recordStatus);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
   const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
@@ -260,6 +261,12 @@ export const useAutomation = () => {
             realmId: activeRealmConfig.realmId,
             realmName: realmLabel,
           });
+          recordStatus(activeRealmConfig.realmId, {
+            status: "skipped",
+            message: "Idle preset",
+            attemptedAt: Date.now(),
+            consecutiveFailures: 0,
+          });
           continue;
         }
 
@@ -340,6 +347,12 @@ export const useAutomation = () => {
 
         if (!planHasExecutableCalls(plan)) {
           console.log("[Automation] No executable automation calls detected", planLogPayload);
+          recordStatus(activeRealmConfig.realmId, {
+            status: "skipped",
+            message: "No executable calls",
+            attemptedAt: Date.now(),
+            consecutiveFailures: 0,
+          });
           continue;
         }
 
@@ -352,27 +365,35 @@ export const useAutomation = () => {
         });
       }
 
-      // Phase 2: Execute all plans in parallel (enqueue all at once before any user actions can interleave)
+      // Phase 2: Execute all plans in parallel (each realm gets its own independent transaction)
+      console.log(
+        `[Automation] Planning complete: ${executablePlans.length} executable out of ${realmList.length} realms`,
+      );
       if (executablePlans.length > 0) {
         console.log(`[Automation] Executing ${executablePlans.length} production plans in parallel`);
 
         const results = await Promise.allSettled(
           executablePlans.map(async ({ plan, realmConfig, realmLabel, planLogPayload }) => {
-            console.log("[Automation] Executing production plan", planLogPayload);
-            const callset = plan.callset;
-            await execute_realm_production_plan({
-              signer: starknetSignerAccount as StarknetAccount,
-              realm_entity_id: plan.realmId,
-              resource_to_resource: callset.resourceToResource.map((item) => ({
-                resource_id: item.resourceId,
-                cycles: item.cycles,
-              })),
-              labor_to_resource: callset.laborToResource.map((item) => ({
-                resource_id: item.resourceId,
-                cycles: item.cycles,
-              })),
-            });
-            return { plan, realmConfig, realmLabel, planLogPayload };
+            try {
+              console.log("[Automation] Executing production plan", planLogPayload);
+              const callset = plan.callset;
+              await execute_realm_production_plan({
+                signer: starknetSignerAccount as StarknetAccount,
+                realm_entity_id: plan.realmId,
+                skipQueue: true,
+                resource_to_resource: callset.resourceToResource.map((item) => ({
+                  resource_id: item.resourceId,
+                  cycles: item.cycles,
+                })),
+                labor_to_resource: callset.laborToResource.map((item) => ({
+                  resource_id: item.resourceId,
+                  cycles: item.cycles,
+                })),
+              });
+              return { plan, realmConfig, realmLabel, planLogPayload };
+            } catch (error) {
+              throw { error, realmConfig, realmLabel };
+            }
           }),
         );
 
@@ -382,6 +403,12 @@ export const useAutomation = () => {
             const { plan, realmConfig, realmLabel, planLogPayload } = result.value;
             const summary = buildExecutionSummary(plan, Date.now());
             recordExecution(realmConfig.realmId, summary);
+            recordStatus(realmConfig.realmId, {
+              status: "success",
+              message: undefined,
+              attemptedAt: Date.now(),
+              consecutiveFailures: 0,
+            });
             console.log("[Automation] Automation execution complete", {
               realmId: plan.realmId,
               realmName: realmLabel,
@@ -406,10 +433,29 @@ export const useAutomation = () => {
               toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
             }
           } else {
-            // Extract realm info from the error if possible
-            const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
-            console.error(`Automation: Failed to execute plan`, errorMessage);
-            toast.error(`Automation failed. Check console for details.`);
+            const rejection = result.reason as {
+              error?: unknown;
+              realmConfig?: (typeof executablePlans)[0]["realmConfig"];
+              realmLabel?: string;
+            };
+            const rawError = rejection?.error ?? result.reason;
+            const errorMessage = rawError instanceof Error ? rawError.message : String(rawError);
+            const realmConfig = rejection?.realmConfig;
+            const realmLabel = rejection?.realmLabel ?? "Unknown realm";
+
+            console.error(`Automation: Failed to execute plan for ${realmLabel}`, errorMessage);
+
+            if (realmConfig) {
+              const prev = getRealmConfig(realmConfig.realmId);
+              recordStatus(realmConfig.realmId, {
+                status: "failed",
+                message: errorMessage,
+                attemptedAt: Date.now(),
+                consecutiveFailures: (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
+              });
+            }
+
+            toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
           }
         }
       }
@@ -423,6 +469,7 @@ export const useAutomation = () => {
     realms,
     execute_realm_production_plan,
     recordExecution,
+    recordStatus,
     starknetSignerAccount,
     setRealmPreset,
     getRealmConfig,

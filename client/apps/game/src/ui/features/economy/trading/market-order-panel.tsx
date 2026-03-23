@@ -211,7 +211,7 @@ const OrderRow = memo(
   }) => {
     const dojo = useDojo();
 
-    const playLordsSound = useUISound("resources.lords.add");
+    const playTradeExecuteSound = useUISound("ui.trade_execute");
 
     const { currentDefaultTick } = useBlockTimestamp();
 
@@ -312,7 +312,7 @@ const OrderRow = memo(
       } catch (error) {
         console.error("Failed to accept order", error);
       } finally {
-        playLordsSound();
+        playTradeExecuteSound();
         setUpdateBalance(!updateBalance);
         setLoading(false);
       }
@@ -452,7 +452,7 @@ const OrderCreation = memo(
     const [showConfirmation, setShowConfirmation] = useState(false);
     const { currentBlockTimestamp } = useBlockTimestamp();
 
-    const playLordsSound = useUISound("resources.lords.add");
+    const playTradePlaceSound = useUISound("ui.trade_place");
 
     const {
       account: { account },
@@ -537,7 +537,7 @@ const OrderCreation = memo(
 
       try {
         await create_order(calldata);
-        playLordsSound();
+        playTradePlaceSound();
       } catch (error) {
         console.error("Failed to create order:", error);
       } finally {

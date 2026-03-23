@@ -10,80 +10,45 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
-    title: "Child Indexer Controls",
+    title: "Stable First Map Camera",
     description:
-      "Factory V2 now lets operators check or retry indexers per child game inside series and rotations, so a live torii can be confirmed without restarting the whole parent run.",
+      "World map now opens in its intended tactical camera framing on the first load, so it no longer starts in a close-up offset view before settling after a scene switch.",
     type: "fix",
   },
   {
-    date: "2026-03-23",
-    title: "Visible Deployer Wallet",
+    date: "2026-03-22",
+    title: "Less Skewed Map Camera",
     description:
-      "Factory V2 now keeps the selected chain’s deployer wallet at the top of the screen with a copy button and live STRK and LORDS balances, so operators can check funding before they launch or recover games.",
+      "World map now uses a narrower camera field of view and a steadier tilt curve across zoom bands, so the map reads more like a tactical RTS view and less like an exaggerated perspective shot.",
     type: "improvement",
   },
   {
-    date: "2026-03-23",
-    title: "Quieter Rotation Controls",
+    date: "2026-03-22",
+    title: "Hidden Map Hex Fill",
     description:
-      "Factory V2 now hides rotation maintenance controls while a run is actively progressing, so Run now and Stop auto retry only appear once the run is no longer mid-launch.",
-    type: "fix",
-  },
-  {
-    date: "2026-03-23",
-    title: "Safer Rotation Retries",
-    description:
-      "Factory V2 now retries grouped rotation and series indexer failures with the correct grouped step id, so Retry no longer sends an invalid single-game recovery request.",
-    type: "fix",
-  },
-  {
-    date: "2026-03-23",
-    title: "Rotation Schedule Wording",
-    description:
-      "Factory V2 now labels rotation timing as evaluation cadence instead of a generic next check, so the watch view no longer implies it knows your worker cron schedule.",
-    type: "fix",
-  },
-  {
-    date: "2026-03-23",
-    title: "Rotation Interval Preview Fix",
-    description:
-      "Fixed Factory V2 rotation previews so the second queued game now keeps the same selected interval as the rest of the rotation schedule.",
+      "World map interaction now keeps the hex hover outline without rendering the filled green interaction surface, so the map no longer shows a chunk-shaped overlay on top of the terrain.",
     type: "fix",
   },
   {
     date: "2026-03-22",
-    title: "Factory Prize Funding",
+    title: "Simpler Map Ground",
     description:
-      "Factory V2 now lets operators fund Blitz game prizes from the watch flow with a confirmation secret, and series funding defaults to only the completed games that have not already been paid.",
-    type: "feature",
+      "World map ground now uses a flat backdrop instead of the paper texture, making it easier to spot whether terrain chunk shading differences are coming from the terrain layer itself.",
+    type: "improvement",
   },
   {
     date: "2026-03-22",
-    title: "Rotation Retry Controls",
+    title: "Tactical Map Camera Tilt",
     description:
-      "Factory V2 now preserves live rotation state when scheduled checks run and lets admins stop series or rotation auto-retries from the watch flow with a confirmation secret.",
-    type: "fix",
+      "World map camera bands now tilt more consistently as you zoom out, so far views read more like a tactical map instead of flattening and then pitching back down.",
+    type: "improvement",
   },
   {
     date: "2026-03-22",
-    title: "Factory Rotation Runs",
+    title: "Stable Worldmap Zoom",
     description:
-      "Factory V2 now supports rotation launches that keep future games queued ahead automatically, with run-now checks, retry-aware recovery, and a watch view that shows the live queue at a glance.",
-    type: "feature",
-  },
-  {
-    date: "2026-03-21",
-    title: "Factory Series Runs",
-    description:
-      "Factory V2 now lets you launch and monitor whole series from one shared form, append new games onto an existing parent series run, and keep automatic recovery focused on only the unfinished work.",
-    type: "feature",
-  },
-  {
-    date: "2026-03-21",
-    title: "Safer Factory Indexer Tier Changes",
-    description:
-      "Factory admin indexer tier changes now require a confirmation secret and stay marked as pending until the deploy workflow finishes, so manual or scheduled scaling no longer looks complete before it really is.",
-    type: "fix",
+      "World map zoom now runs through one smoother camera system for mouse wheel, minimap zoom, and keyboard shortcuts, so focus points stay steadier and zoom-driven refreshes stop fighting each other.",
+    type: "improvement",
   },
   {
     date: "2026-03-21",

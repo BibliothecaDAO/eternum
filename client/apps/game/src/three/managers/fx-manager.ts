@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import {
   createWorldFxBackend,
+  type FXRenderMode,
   type IconFxAnimationRuntime,
   type WorldFxBackend,
   type WorldFxHandle,
@@ -14,6 +15,7 @@ interface FXConfig {
   textureUrl: string;
   animate: (fx: IconFxAnimationRuntime, elapsed: number) => boolean;
   isInfinite?: boolean;
+  renderMode?: FXRenderMode;
 }
 
 interface FXManagerOptions {
@@ -45,6 +47,22 @@ export class FXManager {
 
   public hasActiveLabelFx(): boolean {
     return this.activeLabelFx.size > 0;
+  }
+
+  public ensureInfiniteIconFx(type: FXType, textureUrl: string, options?: { renderMode?: FXRenderMode }): void {
+    if (this.fxConfigs.has(type)) return;
+    this.registerFX(type, {
+      textureUrl,
+      animate: (fx, t) => {
+        const fadeIn = Math.min(t / 0.25, 1);
+        fx.setOpacity(fadeIn);
+        const pulse = 1 + Math.sin(t * 3.2) * 0.04;
+        fx.setScale(fx.baseSize * pulse, fx.baseSize * pulse, fx.baseSize * pulse);
+        return true;
+      },
+      isInfinite: true,
+      renderMode: options?.renderMode,
+    });
   }
 
   public playFxAtCoords(
@@ -81,6 +99,7 @@ export class FXManager {
       animateLabelDots: Boolean(labelText),
       isInfinite: isInfinite || config.isInfinite,
       labelText,
+      renderMode: config.renderMode,
       size: size ?? this.defaultSize,
       texture,
       type,
@@ -178,6 +197,32 @@ export class FXManager {
       },
       isInfinite: true,
       textureUrl: "textures/travel.png",
+    });
+
+    this.registerFX("attack", {
+      textureUrl: "textures/attack.png",
+      animate: (fx, t) => {
+        const fadeIn = Math.min(t / 0.25, 1);
+        fx.setOpacity(0.78 * fadeIn);
+        const pulse = 1 + Math.sin(t * 4.4) * 0.08;
+        fx.setScale(fx.baseSize * pulse, fx.baseSize * pulse, fx.baseSize * pulse);
+        return true;
+      },
+      isInfinite: true,
+      renderMode: "ground",
+    });
+
+    this.registerFX("defense", {
+      textureUrl: "textures/defense.png",
+      animate: (fx, t) => {
+        const fadeIn = Math.min(t / 0.25, 1);
+        fx.setOpacity(0.72 * fadeIn);
+        const pulse = 1 + Math.sin(t * 3.5 + Math.PI * 0.3) * 0.06;
+        fx.setScale(fx.baseSize * pulse, fx.baseSize * pulse, fx.baseSize * pulse);
+        return true;
+      },
+      isInfinite: true,
+      renderMode: "ground",
     });
   }
 

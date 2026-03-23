@@ -1,4 +1,9 @@
 import { sqlApi } from "@/services/api";
+import {
+  createPendingWorldmapFxKey,
+  dispatchPendingWorldmapFxStart,
+  dispatchPendingWorldmapFxStop,
+} from "@/utils/pending-worldmap-fx";
 import { Position as PositionInterface } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -166,52 +171,68 @@ export const ArmyCreate = ({
 
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
+    let pendingFxKey: string | null = null;
 
-    const homeDirection =
-      army?.position && army?.structure
-        ? getDirectionBetweenAdjacentHexes(
-            { col: army.position.x, row: army.position.y },
-            { col: army.structure.base.coord_x, row: army.structure.base.coord_y },
-          )
-        : null;
+    try {
+      const homeDirection =
+        army?.position && army?.structure
+          ? getDirectionBetweenAdjacentHexes(
+              { col: army.position.x, row: army.position.y },
+              { col: army.structure.base.coord_x, row: army.structure.base.coord_y },
+            )
+          : null;
 
-    if (isExplorer) {
-      if (army) {
-        if (army.isHome && homeDirection !== null) {
-          await armyManager.addTroopsToExplorer(
-            account,
-            army.entityId,
-            troopType,
-            troopTier,
-            troopCount,
-            homeDirection,
-          );
+      if (isExplorer) {
+        if (army) {
+          if (army.isHome && homeDirection !== null) {
+            await armyManager.addTroopsToExplorer(
+              account,
+              army.entityId,
+              troopType,
+              troopTier,
+              troopCount,
+              homeDirection,
+            );
+          }
+        } else {
+          if (selectedDirection === null) {
+            console.error("No direction selected");
+            return;
+          }
+          pendingFxKey = createPendingWorldmapFxKey("create-army");
+          dispatchPendingWorldmapFxStart({
+            key: pendingFxKey,
+            kind: "create-army",
+            structureId: owner_entity,
+            direction: selectedDirection,
+            troopResourceId: getTroopResourceId(troopType, troopTier),
+          });
+          await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
         }
       } else {
-        if (selectedDirection === null) {
-          console.error("No direction selected");
-          setIsLoading(false);
-          return;
+        if (guardSlot !== undefined) {
+          await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
+          queryClient
+            .invalidateQueries({
+              queryKey: ["guards", String(owner_entity)],
+              exact: true,
+              refetchType: "active",
+            })
+            .catch((error) => {
+              console.error("Failed to refresh guards after defense update:", error);
+            });
         }
-        await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
       }
-    } else {
-      if (guardSlot !== undefined) {
-        await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
-        queryClient
-          .invalidateQueries({
-            queryKey: ["guards", String(owner_entity)],
-            exact: true,
-            refetchType: "active",
-          })
-          .catch((error) => {
-            console.error("Failed to refresh guards after defense update:", error);
-          });
-      }
-    }
 
-    setTroopCount(0);
-    setIsLoading(false);
+      setTroopCount(0);
+    } catch (error) {
+      if (pendingFxKey) {
+        dispatchPendingWorldmapFxStop({ key: pendingFxKey });
+      }
+      console.error("Failed to create army:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const maxAffordableTroops = useMemo(() => {
@@ -521,7 +542,7 @@ export const ArmyCreate = ({
 };
 
 // TODO Unify this. Push all useComponentValues up to the top level
-export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: ArmyManagementCardProps) => {
+export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardProps) => {
   const {
     account: { account },
     network: { provider },
@@ -534,13 +555,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const [isLoading, setIsLoading] = useState(false);
 
   const [editName, setEditName] = useState(false);
-  const [naming, setNaming] = useState(army?.name || "");
-
-  useEffect(() => {
-    if (army?.name) {
-      setNaming(army.name);
-    }
-  }, [army?.name]);
+  const [naming, setNaming] = useState("");
 
   return (
     army && (
@@ -573,7 +588,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
                     try {
                       await provider.set_entity_name({ signer: account, entity_id: army.entityId, name: naming });
-                      army.name = naming;
                     } catch (e) {
                       console.error(e);
                     }
