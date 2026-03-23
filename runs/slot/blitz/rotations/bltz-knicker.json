@@ -8,32 +8,32 @@
   "rotationName": "bltz-knicker",
   "seriesName": "bltz-knicker",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-knicker/23415890438-1.json",
-  "latestLaunchRequestId": "23415890438-1",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "create-indexers",
+  "inputPath": "inputs/slot/blitz/rotations/bltz-knicker/23416494782-1.json",
+  "latestLaunchRequestId": "23416494782-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T00:12:41.396Z",
-  "updatedAt": "2026-03-23T00:40:12.594Z",
+  "updatedAt": "2026-03-23T00:41:27.724Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23415890438,
+    "workflowRunId": 23416494782,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23415890438",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23416494782",
     "ref": "codex/factory-v2-rotation-review",
     "sha": "94c62037602c4c92b9b5dd7c3ea6ee9ccbb66f4c"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-23T00:55:12.594Z",
+    "nextRetryAt": "2026-03-23T00:56:27.724Z",
     "lastRetryAt": "2026-03-23T00:40:12.594Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-23T00:39:43.515Z",
-    "lastEvaluatedAt": "2026-03-23T00:24:43.515Z"
+    "nextEvaluationAt": "2026-03-23T00:56:27.724Z",
+    "lastEvaluatedAt": "2026-03-23T00:41:27.724Z"
   },
   "steps": [
     {
@@ -41,55 +41,42 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series succeeded",
-      "startedAt": "2026-03-23T00:12:45.133Z",
-      "finishedAt": "2026-03-23T00:13:00.884Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games succeeded",
-      "startedAt": "2026-03-23T00:13:03.528Z",
-      "finishedAt": "2026-03-23T00:17:19.871Z"
+      "latestEvent": "Creating games is complete"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games succeeded",
-      "startedAt": "2026-03-23T00:17:26.704Z",
-      "finishedAt": "2026-03-23T00:17:32.636Z"
+      "latestEvent": "Waiting for games is complete"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
       "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings succeeded",
-      "startedAt": "2026-03-23T00:17:35.340Z",
-      "finishedAt": "2026-03-23T00:18:39.167Z"
+      "latestEvent": "Applying settings is complete"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests succeeded",
-      "startedAt": "2026-03-23T00:18:42.866Z",
-      "finishedAt": "2026-03-23T00:19:06.173Z"
+      "latestEvent": "Setting up loot chests is complete"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-01\" on slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-01\"\n\u001b[2m[+199ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-01\" in 186ms (0x004df935...42c720)\n\u001b[2m[+207ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x004df935...42c720\n\u001b[2m[+208ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+1.3s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+7.1s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #808: https://github.com/BibliothecaDAO/eternum/actions/runs/23416069543\n\u001b[2m[+7.4s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #808 status: in_progress\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #808 status: completed (success)\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Indexer workflow succeeded in 1m 09s (https://github.com/BibliothecaDAO/eternum/actions/runs/23416069543)\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Launch summary written to /home/runner/work/eternum/eternum/.context/game-launch/slot-blitz-bltz-knicker-01.json\n\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-02\" on slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-02\"\n\u001b[2m[+92ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-02\" in 80ms (0x07278703...0a5352)\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x07278703...0a5352\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+1.2s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+7.0s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #809: https://github.com/BibliothecaDAO/eternum/actions/runs/23416095792\n\u001b[2m[+7.2s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #809 status: in_progress\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #809 status: completed (success)\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Indexer workflow succeeded in 1m 09s (https://github.com/BibliothecaDAO/eternum/actions/runs/23416095792)\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Launch summary written to /home/runner/work/eternum/eternum/.context/game-launch/slot-blitz-bltz-knicker-02.json\n\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-03\" on slot.blitz\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-03\"\n\u001b[2m[+90ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-03\" in 79ms (0x075f54ee...ffec7c)\n\u001b[2m[+96ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x075f54ee...ffec7c\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+8.6s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 8.5s: Failed to dispatch factory-torii-deployer.yml: 500 Internal Server Error - {\"message\":\"Failed to run workflow dispatch\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"500\"}\n\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-04\" on slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-04\"\n\u001b[2m[+90ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-04\" in 79ms (0x06e55f73...15305a)\n\u001b[2m[+95ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x06e55f73...15305a\n\u001b[2m[+95ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+2.7s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+14.3s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #811: https://github.com/BibliothecaDAO/eternum/actions/runs/23416123783\n\u001b[2m[+14.5s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #811 status: queued\n\u001b[2m[+24.9s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #811 status: in_progress\n\u001b[2m[+1m 22s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #811 status: completed (success)\n\u001b[2m[+1m 22s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Indexer workflow succeeded in 1m 22s (https://github.com/BibliothecaDAO/eternum/actions/runs/23416123783)\n\u001b[2m[+1m 22s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Launch summary written to /home/runner/work/eternum/eternum/.context/game-launch/slot-blitz-bltz-knicker-04.json\n\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-05\" on slot.blitz\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-05\"\n\u001b[2m[+92ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-05\" in 82ms (0x00246083...2a983d)\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x00246083...2a983d\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+1.1s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+7.0s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #812: https://github.com/BibliothecaDAO/eternum/actions/runs/23416151498\n\u001b[2m[+7.2s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #812 status: in_progress\n\u001b[2m[+1m 15s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #812 status: completed (success)\n\u001b[2m[+1m 15s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Indexer workflow succeeded in 1m 14s (https://github.com/BibliothecaDAO/eternum/actions/runs/23416151498)\n\u001b[2m[+1m 15s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Launch summary written to /home/runner/work/eternum/eternum/.context/game-launch/slot-blitz-bltz-knicker-05.json\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:243:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-03-23T00:19:32.129Z",
-      "finishedAt": "2026-03-23T00:24:43.515Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-01\" on slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-01\"\n\u001b[2m[+199ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-01\" in 186ms (0x004df935...42c720)\n\u001b[2m[+207ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x004df935...42c720\n\u001b[2m[+208ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+1.3s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+7.1s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #808: https://github.com/BibliothecaDAO/eternum/actions/runs/23416069543\n\u001b[2m[+7.4s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #808 status: in_progress\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #808 status: completed (success)\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Indexer workflow succeeded in 1m 09s (https://github.com/BibliothecaDAO/eternum/actions/runs/23416069543)\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Launch summary written to /home/runner/work/eternum/eternum/.context/game-launch/slot-blitz-bltz-knicker-01.json\n\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-02\" on slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-02\"\n\u001b[2m[+92ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-02\" in 80ms (0x07278703...0a5352)\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x07278703...0a5352\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+1.2s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+7.0s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #809: https://github.com/BibliothecaDAO/eternum/actions/runs/23416095792\n\u001b[2m[+7.2s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #809 status: in_progress\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #809 status: completed (success)\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Indexer workflow succeeded in 1m 09s (https://github.com/BibliothecaDAO/eternum/actions/runs/23416095792)\n\u001b[2m[+1m 10s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Launch summary written to /home/runner/work/eternum/eternum/.context/game-launch/slot-blitz-bltz-knicker-02.json\n\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-03\" on slot.blitz\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-03\"\n\u001b[2m[+90ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-03\" in 79ms (0x075f54ee...ffec7c)\n\u001b[2m[+96ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x075f54ee...ffec7c\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+8.6s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 8.5s: Failed to dispatch factory-torii-deployer.yml: 500 Internal Server Error - {\"message\":\"Failed to run workflow dispatch\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"500\"}\n\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-04\" on slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-04\"\n\u001b[2m[+90ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-04\" in 79ms (0x06e55f73...15305a)\n\u001b[2m[+95ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x06e55f73...15305a\n\u001b[2m[+95ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+2.7s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+14.3s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #811: https://github.com/BibliothecaDAO/eternum/actions/runs/23416123783\n\u001b[2m[+14.5s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #811 status: queued\n\u001b[2m[+24.9s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #811 status: in_progress\n\u001b[2m[+1m 22s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #811 status: completed (success)\n\u001b[2m[+1m 22s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Indexer workflow succeeded in 1m 22s (https://github.com/BibliothecaDAO/eternum/actions/runs/23416123783)\n\u001b[2m[+1m 22s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Launch summary written to /home/runner/work/eternum/eternum/.context/game-launch/slot-blitz-bltz-knicker-04.json\n\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-knicker-05\" on slot.blitz\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+10ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-knicker-05\"\n\u001b[2m[+92ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-knicker-05\" in 82ms (0x00246083...2a983d)\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x00246083...2a983d\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Dispatching factory-torii-deployer.yml on ref codex/factory-v2-rotation-review\n\u001b[2m[+1.1s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory-torii-deployer.yml run to appear\n\u001b[2m[+7.0s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Tracking factory-torii-deployer.yml run #812: https://github.com/BibliothecaDAO/eternum/actions/runs/23416151498\n\u001b[2m[+7.2s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #812 status: in_progress\n\u001b[2m[+1m 15s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m factory-torii-deployer.yml run #812 status: completed (success)\n\u001b[2m[+1m 15s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Indexer workflow succeeded in 1m 14s (https://github.com/BibliothecaDAO/eternum/actions/runs/23416151498)\n\u001b[2m[+1m 15s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Launch summary written to /home/runner/work/eternum/eternum/.context/game-launch/slot-blitz-bltz-knicker-05.json\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:243:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Finishing setup needs attention"
     }
   ],
   "summary": {
