@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { buildFactoryRunRequestContext, buildLaunchGameRequest, resolveLaunchGameStepId } from "../cli/launch-request";
+import {
+  buildFactoryRunRequestContext,
+  buildLaunchGameRequest,
+  buildLaunchRotationRequest,
+  resolveLaunchGameStepId,
+} from "../cli/launch-request";
 
 describe("launch request helpers", () => {
   test("builds a launch request from shared CLI args", () => {
@@ -87,6 +92,20 @@ describe("launch request helpers", () => {
         twoPlayerMode: true,
       },
     });
+  });
+
+  test("parses targeted child game names for grouped recovery", () => {
+    expect(
+      buildLaunchRotationRequest({
+        environment: "slot.blitz",
+        "rotation-name": "bltz-knicker",
+        "first-game-start-time": "2026-03-18T10:00:00Z",
+        "game-interval-minutes": "60",
+        "max-games": "12",
+        "evaluation-interval-minutes": "15",
+        "target-game-names-json": JSON.stringify(["bltz-knicker-03"]),
+      }).targetGameNames,
+    ).toEqual(["bltz-knicker-03"]);
   });
 
   test("rejects unsupported launch step ids", () => {

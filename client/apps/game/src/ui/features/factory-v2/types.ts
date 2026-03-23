@@ -165,6 +165,7 @@ export interface FactorySeriesChildRun {
   latestEvent: string;
   currentStepId: FactoryRunStepId | null;
   worldAddress?: string;
+  indexerCreated?: boolean;
   indexerTier?: string;
   prizeFunding?: FactoryPrizeFundingState;
 }

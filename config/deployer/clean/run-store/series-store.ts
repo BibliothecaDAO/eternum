@@ -64,6 +64,48 @@ function buildFactorySeriesRunSteps(summary: LaunchSeriesSummary): FactorySeries
   return summary.games[0]?.steps.map((step) => buildFactorySeriesRunStep(step.id)) ?? [];
 }
 
+function resolveSeriesSummaryStepStatus(
+  summary: LaunchSeriesSummary,
+  stepId: LaunchSeriesStepId,
+): FactoryRunStepStatus {
+  if (stepId === "create-series") {
+    return summary.seriesCreated ? "succeeded" : "pending";
+  }
+
+  const stepStates = summary.games.map((game) => game.steps.find((step) => step.id === stepId)).filter(Boolean);
+  if (stepStates.some((step) => step?.status === "running")) {
+    return "running";
+  }
+
+  if (stepStates.some((step) => step?.status === "failed")) {
+    return "failed";
+  }
+
+  if (stepStates.length > 0 && stepStates.every((step) => step?.status === "succeeded")) {
+    return "succeeded";
+  }
+
+  return "pending";
+}
+
+function resolveSeriesSummaryStepEvent(summary: LaunchSeriesSummary, stepId: LaunchSeriesStepId): string {
+  if (stepId === "create-series" && summary.seriesCreated) {
+    return "Series is ready to accept child games";
+  }
+
+  switch (resolveSeriesSummaryStepStatus(summary, stepId)) {
+    case "running":
+      return `${resolveSeriesStepTitle(stepId)} is running`;
+    case "failed":
+      return `${resolveSeriesStepTitle(stepId)} needs attention`;
+    case "succeeded":
+      return `${resolveSeriesStepTitle(stepId)} is complete`;
+    case "pending":
+    default:
+      return "Waiting to run";
+  }
+}
+
 function buildPersistedSeriesLaunchRequest(
   request: FactorySeriesRunRequestContext["request"],
   summary: LaunchSeriesSummary,
@@ -78,6 +120,7 @@ function buildPersistedSeriesLaunchRequest(
       startTime: game.startTime,
       seriesGameNumber: game.seriesGameNumber,
     })),
+    targetGameNames: undefined,
     resumeSummary: undefined,
   };
 }
@@ -486,16 +529,12 @@ export async function recordFactorySeriesLaunchStepSucceeded(
       const nextSummary = persistSeriesLaunchSummary(
         mergeSeriesSummary(current.summary, resolveSeriesSummaryFromWorkspace(request)),
       );
+      const nextStepStatus = resolveSeriesSummaryStepStatus(nextSummary, request.stepId);
+      const nextStepEvent = resolveSeriesSummaryStepEvent(nextSummary, request.stepId);
       const nextRun = finalizeSeriesRunRecord(
         {
           ...updateFactorySeriesRunContext(releaseFactorySeriesRunLease(current, context), context, nextSummary),
-          steps: markSeriesStepStatus(
-            current.steps,
-            request.stepId,
-            "succeeded",
-            buildSeriesStepSucceededEvent(request.stepId),
-            context.timestamp,
-          ),
+          steps: markSeriesStepStatus(current.steps, request.stepId, nextStepStatus, nextStepEvent, context.timestamp),
           summary: nextSummary,
           artifacts: {
             summaryPath:

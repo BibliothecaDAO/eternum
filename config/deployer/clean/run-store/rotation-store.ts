@@ -124,6 +124,7 @@ function buildPersistedRotationLaunchRequest(
     gameIntervalMinutes: summary.gameIntervalMinutes,
     maxGames: summary.maxGames,
     advanceWindowGames: summary.advanceWindowGames,
+    targetGameNames: undefined,
     evaluationIntervalMinutes: summary.evaluationIntervalMinutes,
     autoRetryEnabled: summary.autoRetryEnabled,
     autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
@@ -617,14 +618,16 @@ export async function recordFactoryRotationLaunchStepSucceeded(
       const nextSummary = persistRotationLaunchSummary(
         mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request)),
       );
+      const nextStepStatus = resolveRotationSummaryStepStatus(nextSummary, request.stepId);
+      const nextStepEvent = resolveRotationSummaryStepEvent(nextSummary, request.stepId);
       const nextRun = finalizeRotationRunRecord(
         {
           ...updateFactoryRotationRunContext(releaseFactoryRotationRunLease(current, context), context, nextSummary),
           steps: markRotationStepStatus(
             current.steps,
             request.stepId,
-            "succeeded",
-            buildRotationStepSucceededEvent(request.stepId),
+            nextStepStatus,
+            nextStepEvent,
             context.timestamp,
           ),
           summary: nextSummary,

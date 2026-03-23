@@ -29,6 +29,10 @@ vi.mock("./factory-v2-mode-switch", () => ({
   FactoryV2ModeSwitch: () => <div>Mode switch</div>,
 }));
 
+vi.mock("./factory-v2-deployer-wallet-card", () => ({
+  FactoryV2DeployerWalletCard: ({ chain }: { chain: string }) => <div>Deployer {chain}</div>,
+}));
+
 vi.mock("./factory-v2-start-workspace", () => ({
   FactoryV2StartWorkspace: ({ onLaunch }: { onLaunch: () => void }) => (
     <div>
@@ -120,6 +124,7 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   continueSelectedRun: vi.fn(async () => true),
   retrySelectedRun: vi.fn(async () => true),
   bringIndexerLiveForSelectedRun: vi.fn(async () => true),
+  bringIndexerLiveForSelectedRunChild: vi.fn(async () => true),
   refreshSelectedRun: vi.fn(async () => true),
   fundSelectedRunPrize: vi.fn(async () => true),
   resolveRunByName: vi.fn(async () => false),
@@ -157,6 +162,7 @@ describe("FactoryV2Content workflow selection", () => {
       await waitForAsyncWork();
     });
 
+    expect(container.textContent).toContain("Deployer slot");
     expect(container.textContent).toContain("Start workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
 
@@ -201,6 +207,7 @@ describe("FactoryV2Content workflow selection", () => {
       await waitForAsyncWork();
     });
 
+    expect(container.textContent).toContain("Deployer slot");
     expect(container.textContent).toContain("Watch workspace");
     expect(container.textContent).not.toContain("Start workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");

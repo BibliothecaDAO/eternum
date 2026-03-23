@@ -324,12 +324,14 @@ interface ContinueFactorySeriesRunRequest {
   environment: FactoryWorkerEnvironmentId;
   seriesName: string;
   launchStep: FactoryWorkerSeriesLaunchScope;
+  gameNames?: string[];
 }
 
 interface ContinueFactoryRotationRunRequest {
   environment: FactoryWorkerEnvironmentId;
   rotationName: string;
   launchStep: FactoryWorkerRotationLaunchScope;
+  gameNames?: string[];
 }
 
 interface CancelFactorySeriesAutoRetryRequest {
@@ -533,7 +535,7 @@ export async function continueFactorySeriesRun(request: ContinueFactorySeriesRun
     `${buildFactorySeriesRunPath(request.environment, request.seriesName)}/actions/continue`,
     {
       method: "POST",
-      body: JSON.stringify({ launchStep: request.launchStep }),
+      body: JSON.stringify({ launchStep: request.launchStep, gameNames: request.gameNames }),
     },
   );
 }
@@ -543,7 +545,7 @@ export async function continueFactoryRotationRun(request: ContinueFactoryRotatio
     `${buildFactoryRotationRunPath(request.environment, request.rotationName)}/actions/continue`,
     {
       method: "POST",
-      body: JSON.stringify({ launchStep: request.launchStep }),
+      body: JSON.stringify({ launchStep: request.launchStep, gameNames: request.gameNames }),
     },
   );
 }

@@ -168,6 +168,7 @@ export interface LaunchSeriesRequest {
   environmentId: DeploymentEnvironmentId;
   seriesName: string;
   games: LaunchSeriesGameRequest[];
+  targetGameNames?: string[];
   rpcUrl?: string;
   factoryAddress?: string;
   accountAddress?: string;
@@ -210,6 +211,7 @@ export interface LaunchRotationRequest {
   gameIntervalMinutes: number;
   maxGames: number;
   advanceWindowGames?: number;
+  targetGameNames?: string[];
   evaluationIntervalMinutes: number;
   rpcUrl?: string;
   factoryAddress?: string;

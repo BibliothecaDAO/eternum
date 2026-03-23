@@ -515,7 +515,7 @@ async function handleContinueFactorySeriesRun(request, env, route) {
     return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
   }
 
-  const workflowRequest = buildContinueSeriesWorkflowRequest(route, run, inputRecord, body.launchStep);
+  const workflowRequest = buildContinueSeriesWorkflowRequest(route, run, inputRecord, body.launchStep, body.gameNames);
   validateSeriesLaunchWorkflowScopeForEnvironment(workflowRequest.environment, workflowRequest.launchStep);
   const workflowRun = await dispatchGameLaunchWorkflow(
     resolveWorkflowGitHubClient(github, inputRecord, body),
@@ -714,7 +714,13 @@ async function handleContinueFactoryRotationRun(request, env, route) {
     return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
   }
 
-  const workflowRequest = buildContinueRotationWorkflowRequest(route, run, inputRecord, body.launchStep);
+  const workflowRequest = buildContinueRotationWorkflowRequest(
+    route,
+    run,
+    inputRecord,
+    body.launchStep,
+    body.gameNames,
+  );
   validateRotationLaunchWorkflowScopeForEnvironment(workflowRequest.environment, workflowRequest.launchStep);
   const workflowRun = await dispatchGameLaunchWorkflow(
     resolveWorkflowGitHubClient(github, inputRecord, body),
@@ -900,6 +906,7 @@ function validateContinueFactorySeriesRunBody(body) {
   }
 
   validateSeriesLaunchWorkflowScope(body.launchStep);
+  validateContinueTargetGameNames(body.gameNames, body.launchStep);
   validateWorkflowRef(body.workflowRef);
 }
 
@@ -909,7 +916,20 @@ function validateContinueFactoryRotationRunBody(body) {
   }
 
   validateRotationLaunchWorkflowScope(body.launchStep);
+  validateContinueTargetGameNames(body.gameNames, body.launchStep);
   validateWorkflowRef(body.workflowRef);
+}
+
+function validateContinueTargetGameNames(gameNames, launchStep) {
+  if (gameNames === undefined) {
+    return;
+  }
+
+  validatePrizeFundingGameNames(gameNames);
+
+  if (launchStep !== "create-indexers") {
+    throw new HttpError(400, 'gameNames is only supported when launchStep is "create-indexers"');
+  }
 }
 
 function validateCancelFactoryAutoRetryBody(body) {
@@ -975,12 +995,16 @@ function buildContinueWorkflowRequest(route, run, inputRecord, launchStep) {
   };
 }
 
-function buildContinueSeriesWorkflowRequest(route, run, inputRecord, launchStep) {
+function buildContinueSeriesWorkflowRequest(route, run, inputRecord, launchStep, requestedGameNames) {
   const rawRequest = resolveLaunchInputRequest(inputRecord);
   const normalizedLaunchStep = resolveSeriesRecoveryLaunchScope(run, launchStep);
   const environment = inputRecord.environment || rawRequest.environmentId || route.environment;
   const seriesName = inputRecord.seriesName || rawRequest.seriesName || route.seriesName;
   const games = Array.isArray(rawRequest.games) ? rawRequest.games : [];
+  const targetGameNames = resolveContinueTargetGameNames(run.summary?.games, requestedGameNames, normalizedLaunchStep, {
+    label: "series",
+    runName: seriesName || route.seriesName,
+  });
 
   if (!environment || !seriesName || games.length === 0) {
     logFactoryError("series_launch_input_invalid", {
@@ -1006,15 +1030,20 @@ function buildContinueSeriesWorkflowRequest(route, run, inputRecord, launchStep)
     blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
     autoRetryEnabled: rawRequest.autoRetryEnabled,
     autoRetryIntervalMinutes: rawRequest.autoRetryIntervalMinutes,
+    targetGameNames,
     launchStep: normalizedLaunchStep,
   };
 }
 
-function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchStep) {
+function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchStep, requestedGameNames) {
   const rawRequest = resolveLaunchInputRequest(inputRecord);
   const normalizedLaunchStep = resolveRotationRecoveryLaunchScope(run, launchStep);
   const environment = inputRecord.environment || rawRequest.environmentId || route.environment;
   const rotationName = inputRecord.rotationName || rawRequest.rotationName || route.rotationName;
+  const targetGameNames = resolveContinueTargetGameNames(run.summary?.games, requestedGameNames, normalizedLaunchStep, {
+    label: "rotation",
+    runName: rotationName || route.rotationName,
+  });
 
   if (!environment || !rotationName) {
     logFactoryError("rotation_launch_input_invalid", {
@@ -1044,12 +1073,34 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
     autoRetryEnabled: rawRequest.autoRetryEnabled,
     autoRetryIntervalMinutes: rawRequest.autoRetryIntervalMinutes,
+    targetGameNames,
     launchStep: normalizedLaunchStep,
   };
 }
 
 function buildNudgeRotationWorkflowRequest(route, run, inputRecord) {
   return buildContinueRotationWorkflowRequest(route, run, inputRecord, "full");
+}
+
+function resolveContinueTargetGameNames(games, requestedGameNames, launchStep, context) {
+  if (requestedGameNames === undefined) {
+    return undefined;
+  }
+
+  if (launchStep !== "create-indexers") {
+    throw new HttpError(400, 'gameNames is only supported when launchStep resolves to "create-indexers"');
+  }
+
+  const availableGameNames = new Set((Array.isArray(games) ? games : []).map((game) => game.gameName));
+  const normalizedGameNames = requestedGameNames.map((gameName) => gameName.trim());
+
+  for (const gameName of normalizedGameNames) {
+    if (!availableGameNames.has(gameName)) {
+      throw new HttpError(400, `Game "${gameName}" does not belong to ${context.label} "${context.runName}"`);
+    }
+  }
+
+  return normalizedGameNames;
 }
 
 function resolveRecoveryLaunchScope(run, requestedLaunchStep) {
@@ -1864,6 +1915,7 @@ function buildGameLaunchWorkflowInputs(request) {
         : "",
       auto_retry_enabled: request.autoRetryEnabled === false ? "false" : "true",
       auto_retry_interval_minutes: request.autoRetryIntervalMinutes ? String(request.autoRetryIntervalMinutes) : "",
+      target_game_names_json: request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : "",
       launch_step: request.launchStep,
     };
   }
@@ -1892,6 +1944,7 @@ function buildGameLaunchWorkflowInputs(request) {
         : "",
       auto_retry_enabled: request.autoRetryEnabled === false ? "false" : "true",
       auto_retry_interval_minutes: request.autoRetryIntervalMinutes ? String(request.autoRetryIntervalMinutes) : "",
+      target_game_names_json: request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : "",
       launch_step: request.launchStep,
     };
   }
@@ -1903,6 +1956,7 @@ function buildGameLaunchWorkflowInputs(request) {
     game_start_time: request.gameStartTime,
     series_name: "",
     series_games_json: "",
+    target_game_names_json: "",
     rotation_name: "",
     first_game_start_time: "",
     game_interval_minutes: "",

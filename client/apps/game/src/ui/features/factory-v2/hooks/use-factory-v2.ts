@@ -993,6 +993,7 @@ export const useFactoryV2 = () => {
 
     const environmentId = assertSupportedEnvironment(selectedRun.environment);
     const indexerStepId = resolveIndexerRecoveryStepId(selectedRun);
+    const targetGameNames = resolveRunIndexerRecoveryGameNames(selectedRun);
 
     if (!environmentId || !indexerStepId) {
       return;
@@ -1009,7 +1010,7 @@ export const useFactoryV2 = () => {
       },
       async () => {
         try {
-          await continueRun(environmentId, selectedRun, indexerStepId);
+          await continueRun(environmentId, selectedRun, indexerStepId, { gameNames: targetGameNames });
         } catch (error) {
           const openedConflictingRun = await openConflictingRunIfPresent(
             error,
@@ -1027,6 +1028,57 @@ export const useFactoryV2 = () => {
         }
 
         acceptRunStepLocally(environmentId, selectedRun, indexerStepId, "Got it. Bringing the indexer online again.");
+      },
+    );
+  };
+
+  const bringIndexerLiveForSelectedRunChild = async (gameName: string) => {
+    if (!selectedRun || isWatcherBusy || (selectedRun.kind !== "series" && selectedRun.kind !== "rotation")) {
+      return;
+    }
+
+    const environmentId = assertSupportedEnvironment(selectedRun.environment);
+    const indexerStepId = resolveIndexerRecoveryStepId(selectedRun);
+    const targetChild = selectedRun.children?.find((child) => child.gameName === gameName);
+
+    if (!environmentId || !indexerStepId || !targetChild || !canRetryChildIndexer(targetChild)) {
+      return;
+    }
+
+    await runWatchedAction(
+      {
+        kind: "reindex",
+        runName: selectedRun.name,
+        title: `Checking ${targetChild.gameName}`,
+        detail: "Checking whether this game indexer is already live.",
+        workflowName: indexerStepId,
+        statusLabel: "Checking",
+      },
+      async () => {
+        try {
+          await continueRun(environmentId, selectedRun, indexerStepId, { gameNames: [targetChild.gameName] });
+        } catch (error) {
+          const openedConflictingRun = await openConflictingRunIfPresent(
+            error,
+            environmentId,
+            selectedRun.name,
+            selectedRun.kind,
+            "This run is already checking that child indexer again. We opened it for you.",
+          );
+
+          if (openedConflictingRun) {
+            return;
+          }
+
+          throw error;
+        }
+
+        acceptRunStepLocally(
+          environmentId,
+          selectedRun,
+          indexerStepId,
+          `Got it. Checking ${targetChild.gameName} again.`,
+        );
       },
     );
   };
@@ -1283,6 +1335,7 @@ export const useFactoryV2 = () => {
     cancelSelectedRunAutoRetry,
     fundSelectedRunPrize,
     bringIndexerLiveForSelectedRun,
+    bringIndexerLiveForSelectedRunChild,
     refreshSelectedRun,
     resolveRunByName,
   };
@@ -1510,12 +1563,14 @@ export const useFactoryV2 = () => {
     environmentId: FactoryWorkerEnvironmentId,
     run: FactoryRun,
     launchScope: "full" | FactoryWorkerLaunchStepId,
+    options?: { gameNames?: string[] },
   ) {
     if (run.kind === "series") {
       await continueFactorySeriesRun({
         environment: environmentId,
         seriesName: run.name,
         launchStep: launchScope as FactoryWorkerSeriesLaunchScope,
+        gameNames: options?.gameNames,
       });
       return;
     }
@@ -1525,6 +1580,7 @@ export const useFactoryV2 = () => {
         environment: environmentId,
         rotationName: run.name,
         launchStep: launchScope as FactoryWorkerRotationLaunchScope,
+        gameNames: options?.gameNames,
       });
       return;
     }
@@ -2173,6 +2229,19 @@ function requestFactoryAdminSecret(runKind: Extract<FactoryRun["kind"], "series"
 
 function canCancelRunAutoRetry(run: FactoryRun) {
   return (run.kind === "series" || run.kind === "rotation") && run.autoRetry?.enabled && !run.autoRetry.cancelledAt;
+}
+
+function resolveRunIndexerRecoveryGameNames(run: FactoryRun): string[] | undefined {
+  if (run.kind !== "series" && run.kind !== "rotation") {
+    return undefined;
+  }
+
+  const gameNames = (run.children ?? []).filter(canRetryChildIndexer).map((child) => child.gameName);
+  return gameNames.length > 0 ? gameNames : undefined;
+}
+
+function canRetryChildIndexer(child: NonNullable<FactoryRun["children"]>[number]) {
+  return Boolean(child?.worldAddress || child?.indexerCreated);
 }
 
 function canFundRunPrize(run: FactoryRun): run is FactoryPrizeFundingEligibleRun {

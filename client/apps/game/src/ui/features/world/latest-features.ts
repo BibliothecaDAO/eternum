@@ -10,6 +10,20 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Child Indexer Controls",
+    description:
+      "Factory V2 now lets operators check or retry indexers per child game inside series and rotations, so a live torii can be confirmed without restarting the whole parent run.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Visible Deployer Wallet",
+    description:
+      "Factory V2 now keeps the selected chain’s deployer wallet at the top of the screen with a copy button and live STRK and LORDS balances, so operators can check funding before they launch or recover games.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
     title: "Quieter Rotation Controls",
     description:
       "Factory V2 now hides rotation maintenance controls while a run is actively progressing, so Run now and Stop auto retry only appear once the run is no longer mid-launch.",

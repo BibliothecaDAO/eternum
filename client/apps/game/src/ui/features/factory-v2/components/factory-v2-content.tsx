@@ -4,6 +4,7 @@ import { factoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import { FactoryV2DeveloperTools } from "./factory-v2-developer-tools";
+import { FactoryV2DeployerWalletCard } from "./factory-v2-deployer-wallet-card";
 import { FactoryV2ModeSwitch } from "./factory-v2-mode-switch";
 import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
@@ -35,21 +36,27 @@ export const FactoryV2Content = () => {
           <div
             className={cn("rounded-[30px] px-4 py-5 backdrop-blur-xl md:px-6 md:py-6", appearance.mainSurfaceClassName)}
           >
-            <div className="mx-auto max-w-xl space-y-5">
-              <FactoryV2ModeSwitch
-                modes={factoryModeDefinitions}
-                selectedMode={factory.selectedMode}
-                environmentOptions={factory.environmentOptions}
-                selectedEnvironmentId={factory.selectedEnvironmentId}
-                onSelectEnvironment={factory.selectEnvironment}
-                onSelectMode={factory.selectMode}
+            <div className="mx-auto max-w-4xl space-y-5">
+              <FactoryV2DeployerWalletCard
+                chain={factory.selectedEnvironment?.chain ?? "slot"}
+                environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
               />
-              <FactoryV2WorkflowSwitch
-                mode={factory.selectedMode}
-                selectedView={selectedWorkflow}
-                canWatch
-                onSelect={selectWorkflow}
-              />
+              <div className="mx-auto max-w-xl space-y-5">
+                <FactoryV2ModeSwitch
+                  modes={factoryModeDefinitions}
+                  selectedMode={factory.selectedMode}
+                  environmentOptions={factory.environmentOptions}
+                  selectedEnvironmentId={factory.selectedEnvironmentId}
+                  onSelectEnvironment={factory.selectEnvironment}
+                  onSelectMode={factory.selectMode}
+                />
+                <FactoryV2WorkflowSwitch
+                  mode={factory.selectedMode}
+                  selectedView={selectedWorkflow}
+                  canWatch
+                  onSelect={selectWorkflow}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -145,6 +152,9 @@ export const FactoryV2Content = () => {
               }}
               onBringIndexerLive={() => {
                 void factory.bringIndexerLiveForSelectedRun();
+              }}
+              onBringChildIndexerLive={(gameName) => {
+                void factory.bringIndexerLiveForSelectedRunChild(gameName);
               }}
               onRefresh={() => {
                 void factory.refreshSelectedRun();

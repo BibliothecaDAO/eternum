@@ -5,13 +5,14 @@ import {
   heartbeatFactoryAccountLease,
   recordFactoryLaunchStarted,
   recordFactoryRotationLaunchStarted,
+  recordFactoryRotationLaunchStepSucceeded,
   recordFactoryLaunchStepFailed,
   recordFactoryLaunchStepStarted,
   recordFactoryLaunchStepSucceeded,
   releaseFactoryAccountLeaseRecord,
 } from "../run-store";
 import { resolveRepoPath } from "../shared/repo";
-import type { LaunchGameSummary } from "../types";
+import type { LaunchGameSummary, LaunchRotationSummary } from "../types";
 
 const ENV_KEYS = [
   "GITHUB_ACTIONS",
@@ -36,6 +37,7 @@ const summaryPaths = [
   resolveSummaryPath("slot.blitz", "bltz-flux-730"),
   resolveSummaryPath("mainnet.blitz", "bltz-mainnet-730"),
   resolveRotationSummaryPath("slot.blitz", "bltz-rotationx"),
+  resolveRotationSummaryPath("slot.blitz", "bltz-recovery-case"),
 ];
 
 beforeEach(() => {
@@ -422,6 +424,141 @@ describe("factory run store", () => {
     );
   });
 
+  test("returns grouped rotation indexers to pending after the selected child recovers", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    branchStore.writeJson("runs/slot/blitz/rotations/bltz-recovery-case.json", {
+      version: 1,
+      kind: "rotation",
+      runId: "slot.blitz:rotation:bltz-recovery-case",
+      environment: "slot.blitz",
+      chain: "slot",
+      gameType: "blitz",
+      rotationName: "bltz-recovery-case",
+      seriesName: "bltz-recovery-case",
+      status: "attention",
+      executionMode: "guided_recovery",
+      requestedLaunchStep: "create-indexers",
+      inputPath: "inputs/slot/blitz/rotations/bltz-recovery-case/101-1.json",
+      latestLaunchRequestId: "101-1",
+      currentStepId: "create-indexers",
+      createdAt: "2098-12-31T23:50:00.000Z",
+      updatedAt: "2098-12-31T23:55:00.000Z",
+      workflow: { workflowName: "game-launch.yml" },
+      autoRetry: { enabled: true, intervalMinutes: 15, nextRetryAt: "2099-01-01T00:10:00.000Z" },
+      evaluation: { intervalMinutes: 15, nextEvaluationAt: "2099-01-01T00:10:00.000Z" },
+      steps: [
+        buildRotationTestRunStep("create-series", "succeeded"),
+        buildRotationTestRunStep("create-worlds", "succeeded"),
+        buildRotationTestRunStep("wait-for-factory-indexes", "succeeded"),
+        buildRotationTestRunStep("configure-worlds", "succeeded"),
+        buildRotationTestRunStep("grant-lootchest-roles", "succeeded"),
+        buildRotationTestRunStep("grant-village-pass-roles", "succeeded"),
+        buildRotationTestRunStep("create-banks", "succeeded"),
+        buildRotationTestRunStep("create-indexers", "failed"),
+        buildRotationTestRunStep("sync-paymaster", "pending"),
+      ],
+      summary: {
+        environment: "slot.blitz",
+        chain: "slot",
+        gameType: "blitz",
+        rotationName: "bltz-recovery-case",
+        seriesName: "bltz-recovery-case",
+        firstGameStartTime: 4_070_908_800,
+        firstGameStartTimeIso: "2099-01-01T00:00:00.000Z",
+        gameIntervalMinutes: 60,
+        maxGames: 12,
+        advanceWindowGames: 5,
+        evaluationIntervalMinutes: 15,
+        rpcUrl: "https://rpc.example",
+        factoryAddress: "0x123",
+        autoRetryEnabled: true,
+        autoRetryIntervalMinutes: 15,
+        dryRun: false,
+        configMode: "batched",
+        seriesCreated: true,
+        games: [
+          {
+            ...buildRotationTestGame("bltz-recovery-case-01", 1, 4_070_908_800),
+            status: "succeeded",
+            steps: [{ id: "create-indexers", status: "succeeded" }],
+          },
+          {
+            ...buildRotationTestGame("bltz-recovery-case-02", 2, 4_070_912_400),
+            currentStepId: "create-indexers",
+            latestEvent: "create-indexers failed",
+            status: "failed",
+            steps: [{ id: "create-indexers", status: "failed" }],
+          },
+        ],
+        outputPath: ".context/game-launch/rotation-slot-blitz-bltz-recovery-case.json",
+      },
+      artifacts: {
+        summaryPath: ".context/game-launch/rotation-slot-blitz-bltz-recovery-case.json",
+        seriesCreated: true,
+        seriesCreatedAt: "2098-12-31T23:50:00.000Z",
+      },
+    });
+
+    writeRotationSummaryFile({
+      environment: "slot.blitz",
+      chain: "slot",
+      gameType: "blitz",
+      rotationName: "bltz-recovery-case",
+      seriesName: "bltz-recovery-case",
+      firstGameStartTime: 4_070_908_800,
+      firstGameStartTimeIso: "2099-01-01T00:00:00.000Z",
+      gameIntervalMinutes: 60,
+      maxGames: 12,
+      advanceWindowGames: 5,
+      evaluationIntervalMinutes: 15,
+      rpcUrl: "https://rpc.example",
+      factoryAddress: "0x123",
+      autoRetryEnabled: true,
+      autoRetryIntervalMinutes: 15,
+      dryRun: false,
+      configMode: "batched",
+      seriesCreated: true,
+      games: [
+        {
+          ...buildRotationTestGame("bltz-recovery-case-01", 1, 4_070_908_800),
+          status: "succeeded",
+          steps: [{ id: "create-indexers", status: "succeeded" }],
+        },
+        {
+          ...buildRotationTestGame("bltz-recovery-case-02", 2, 4_070_912_400),
+          status: "succeeded",
+          steps: [{ id: "create-indexers", status: "succeeded" }],
+        },
+      ],
+      outputPath: ".context/game-launch/rotation-slot-blitz-bltz-recovery-case.json",
+    });
+
+    await recordFactoryRotationLaunchStepSucceeded({
+      environmentId: "slot.blitz",
+      rotationName: "bltz-recovery-case",
+      requestedLaunchStep: "create-indexers",
+      stepId: "create-indexers",
+      request: {
+        environmentId: "slot.blitz",
+        rotationName: "bltz-recovery-case",
+        firstGameStartTime: "2099-01-01T00:00:00Z",
+        gameIntervalMinutes: 60,
+        maxGames: 12,
+        advanceWindowGames: 5,
+        evaluationIntervalMinutes: 15,
+      },
+    });
+
+    const runRecord = branchStore.readJson("runs/slot/blitz/rotations/bltz-recovery-case.json");
+    const createIndexersStep = runRecord.steps.find((step: { id: string }) => step.id === "create-indexers");
+
+    expect(runRecord.status).toBe("running");
+    expect(createIndexersStep?.status).toBe("pending");
+    expect(createIndexersStep?.latestEvent).toContain("Waiting to run");
+  });
+
   test("marks a failed step as needing attention", async () => {
     const branchStore = createBranchStoreFetch();
     globalThis.fetch = branchStore.fetch;
@@ -691,6 +828,14 @@ describe("factory run store", () => {
 function writeLaunchSummaryFile(summary: LaunchGameSummary): void {
   fs.mkdirSync(resolveRepoPath(".context/game-launch"), { recursive: true });
   fs.writeFileSync(resolveSummaryPath(summary.environment, summary.gameName), `${JSON.stringify(summary, null, 2)}\n`);
+}
+
+function writeRotationSummaryFile(summary: LaunchRotationSummary): void {
+  fs.mkdirSync(resolveRepoPath(".context/game-launch"), { recursive: true });
+  fs.writeFileSync(
+    resolveRotationSummaryPath(summary.environment, summary.rotationName),
+    `${JSON.stringify(summary, null, 2)}\n`,
+  );
 }
 
 function resolveSummaryPath(environmentId: string, gameName: string): string {

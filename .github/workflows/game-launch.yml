@@ -114,6 +114,10 @@ on:
         description: "Multi-game auto-retry interval in minutes"
         required: false
         type: string
+      target_game_names_json:
+        description: "Optional JSON array of child game names to target during grouped indexer recovery"
+        required: false
+        type: string
       launch_step:
         description: "Launch scope. Use full for the first trial, or target one step for recovery."
         required: false
@@ -166,6 +170,7 @@ jobs:
       GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON: ${{ github.event.inputs.blitz_registration_overrides_json }}
       GAME_LAUNCH_AUTO_RETRY_ENABLED: ${{ github.event.inputs.auto_retry_enabled }}
       GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES: ${{ github.event.inputs.auto_retry_interval_minutes }}
+      GAME_LAUNCH_TARGET_GAME_NAMES_JSON: ${{ github.event.inputs.target_game_names_json }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
       FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
@@ -324,6 +329,10 @@ jobs:
 
             if [ -n "${GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES}" ]; then
               args+=(--auto-retry-interval-minutes "${GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES}")
+            fi
+
+            if [ -n "${GAME_LAUNCH_TARGET_GAME_NAMES_JSON}" ]; then
+              args+=(--target-game-names-json "${GAME_LAUNCH_TARGET_GAME_NAMES_JSON}")
             fi
           fi
 

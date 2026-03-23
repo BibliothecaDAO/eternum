@@ -572,6 +572,121 @@ describe("factory worker recovery signals", () => {
     });
   });
 
+  test("dispatches targeted rotation indexer recovery for selected child games", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-knicker.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.blitz:rotation:bltz-knicker",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          rotationName: "bltz-knicker",
+          seriesName: "bltz-knicker",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "create-indexers",
+          inputPath: "inputs/slot/blitz/rotations/bltz-knicker/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-indexers",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [
+            {
+              id: "create-series",
+              title: "Create series",
+              status: "succeeded",
+              workflowStepName: "Create series",
+              latestEvent: "Create series succeeded",
+            },
+            {
+              id: "create-indexers",
+              title: "Create indexers",
+              status: "failed",
+              workflowStepName: "Create indexers",
+              latestEvent: "Create indexers failed",
+            },
+          ],
+          autoRetry: { enabled: true, intervalMinutes: 15 },
+          evaluation: { intervalMinutes: 15, nextEvaluationAt: offsetTimestamp(15 * 60_000) },
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            rotationName: "bltz-knicker",
+            seriesName: "bltz-knicker",
+            firstGameStartTime: 1774195200,
+            firstGameStartTimeIso: "2026-03-22T16:00:00.000Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 15,
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [{ gameName: "bltz-knicker-01" }, { gameName: "bltz-knicker-02" }, { gameName: "bltz-knicker-03" }],
+          },
+          artifacts: {
+            summaryPath: ".context/game-launch/rotation-slot-blitz-bltz-knicker.json",
+            seriesCreated: true,
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/inputs/slot/blitz/rotations/bltz-knicker/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.blitz",
+          rotationName: "bltz-knicker",
+          request: {
+            environmentId: "slot.blitz",
+            rotationName: "bltz-knicker",
+            firstGameStartTime: "2026-03-22T16:00:00Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 15,
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs/slot.blitz/bltz-knicker/actions/continue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          launchStep: "create-indexers",
+          gameNames: ["bltz-knicker-03"],
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.launch_step).toBe("create-indexers");
+    expect(dispatchBody.inputs.target_game_names_json).toBe(JSON.stringify(["bltz-knicker-03"]));
+  });
+
   test("requires the admin secret for manual indexer tier updates", async () => {
     let didCallGitHub = false;
     globalThis.fetch = async () => {

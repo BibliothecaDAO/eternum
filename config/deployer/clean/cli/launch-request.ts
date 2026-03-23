@@ -242,6 +242,40 @@ function resolveSeriesGamesJson(args: Args): LaunchSeriesRequest["games"] {
   });
 }
 
+function resolveTargetGameNamesJson(args: Args): string[] | undefined {
+  const rawValue = resolveOptionalArg(args, "target-game-names-json", ["GAME_LAUNCH_TARGET_GAME_NAMES_JSON"]);
+
+  if (!rawValue) {
+    return undefined;
+  }
+
+  let parsedValue: unknown;
+
+  try {
+    parsedValue = JSON.parse(rawValue);
+  } catch {
+    throw new Error("target game names JSON must be valid JSON");
+  }
+
+  if (!Array.isArray(parsedValue) || parsedValue.length === 0) {
+    throw new Error("target game names JSON must be a non-empty array");
+  }
+
+  const normalizedGameNames = parsedValue.map((entry, index) => {
+    if (typeof entry !== "string" || !entry.trim()) {
+      throw new Error(`target game names JSON entry ${index + 1} must be a non-empty string`);
+    }
+
+    return entry.trim();
+  });
+
+  if (new Set(normalizedGameNames).size !== normalizedGameNames.length) {
+    throw new Error("target game names JSON cannot contain duplicate game names");
+  }
+
+  return normalizedGameNames;
+}
+
 function requireSeriesLaunchArgs(args: Args): {
   environmentId: LaunchSeriesRequest["environmentId"];
   seriesName: string;
@@ -384,6 +418,7 @@ export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
     environmentId: requiredArgs.environmentId,
     seriesName: requiredArgs.seriesName,
     games: requiredArgs.games,
+    targetGameNames: resolveTargetGameNamesJson(args),
     ...resolveSharedLaunchRequestOptions(args),
     maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled: resolveOptionalBooleanArg(args, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
@@ -407,6 +442,7 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     gameIntervalMinutes: requiredArgs.gameIntervalMinutes,
     maxGames: requiredArgs.maxGames,
     advanceWindowGames: requiredArgs.advanceWindowGames,
+    targetGameNames: resolveTargetGameNamesJson(args),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
     ...resolveSharedLaunchRequestOptions(args),
     maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,

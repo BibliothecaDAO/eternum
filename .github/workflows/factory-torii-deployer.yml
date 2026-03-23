@@ -267,7 +267,7 @@ jobs:
           cat "$out_file"
           echo "-------------------------------------------"
 
-      - name: Create Torii slot instance
+      - name: Ensure Torii slot instance exists
         if: ${{ github.event.inputs.operation != 'update-tier' }}
         env:
           TEAM: ${{ github.event.inputs.slot_team }}
@@ -278,9 +278,17 @@ jobs:
           REPLICAS: ${{ github.event.inputs.torii_replicas }}
         run: |
           set -euo pipefail
-          echo "Creating Torii slot: $NAME"
+          echo "Ensuring Torii slot is live: $NAME"
           echo "Team: $TEAM | Tier: $TIER | Version: $VERSION"
           echo "Config: $CONFIG"
+
+          if slot d describe "$NAME" torii >/tmp/torii-describe.log 2>&1; then
+            echo "Torii slot already exists. Nothing to create."
+            cat /tmp/torii-describe.log
+            exit 0
+          fi
+
+          echo "Torii slot does not exist yet. Creating it now."
           slot d create -f \
             --team "$TEAM" \
             --tier "$TIER" \

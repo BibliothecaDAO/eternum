@@ -49,6 +49,7 @@ type FactoryV2WatchWorkspaceProps = {
   onContinue: () => void;
   onRetry: () => void;
   onBringIndexerLive: () => void;
+  onBringChildIndexerLive: (gameName: string) => void;
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
@@ -93,6 +94,7 @@ export const FactoryV2WatchWorkspace = ({
   onContinue,
   onRetry,
   onBringIndexerLive,
+  onBringChildIndexerLive,
   onRefresh,
   onNudge,
   onStopAutoRetry,
@@ -225,6 +227,7 @@ export const FactoryV2WatchWorkspace = ({
         notice={notice}
         showAllSteps={showAllSteps}
         stepSummaryOptions={stepSummaryOptions}
+        onBringChildIndexerLive={onBringChildIndexerLive}
         onFundPrize={onFundPrize}
         onToggleShowAllSteps={() => setShowAllSteps((open) => !open)}
       />
@@ -359,6 +362,7 @@ const FactoryV2WatchWorkspaceContent = ({
   notice,
   showAllSteps,
   stepSummaryOptions,
+  onBringChildIndexerLive,
   onFundPrize,
   onToggleShowAllSteps,
 }: {
@@ -370,6 +374,7 @@ const FactoryV2WatchWorkspaceContent = ({
   notice: string | null;
   showAllSteps: boolean;
   stepSummaryOptions: FactoryV2StepSummaryActionOptions;
+  onBringChildIndexerLive: (gameName: string) => void;
   onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
   onToggleShowAllSteps: () => void;
 }) => {
@@ -394,6 +399,7 @@ const FactoryV2WatchWorkspaceContent = ({
         statusMeta={state.statusMeta}
         actionBarProps={state.actionBarProps}
         stepSummaryOptions={stepSummaryOptions}
+        onBringChildIndexerLive={onBringChildIndexerLive}
         onFundPrize={onFundPrize}
         onToggleShowAllSteps={onToggleShowAllSteps}
       />
@@ -435,6 +441,7 @@ const FactoryV2WatchRunCard = ({
   statusMeta,
   actionBarProps,
   stepSummaryOptions,
+  onBringChildIndexerLive,
   onFundPrize,
   onToggleShowAllSteps,
 }: {
@@ -456,6 +463,7 @@ const FactoryV2WatchRunCard = ({
   statusMeta: ReturnType<typeof getRunStatusMeta> | null;
   actionBarProps: FactoryV2WatchActionBarProps | null;
   stepSummaryOptions: FactoryV2StepSummaryActionOptions;
+  onBringChildIndexerLive: (gameName: string) => void;
   onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
   onToggleShowAllSteps: () => void;
 }) => (
@@ -512,7 +520,12 @@ const FactoryV2WatchRunCard = ({
       {selectedRun.kind === "series" ? (
         <>
           <FactoryV2AutoRetryCard autoRetry={selectedRun.autoRetry} />
-          <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
+          <FactoryV2MultiGameChildrenCard
+            kind={selectedRun.kind}
+            children={selectedRun.children ?? []}
+            canManageIndexers={!isFactoryRunInProgress(selectedRun) && !Boolean(actionBarProps?.isWatcherBusy)}
+            onBringChildIndexerLive={onBringChildIndexerLive}
+          />
         </>
       ) : null}
 
@@ -520,7 +533,12 @@ const FactoryV2WatchRunCard = ({
         <>
           <FactoryV2AutoRetryCard autoRetry={selectedRun.autoRetry} />
           <FactoryV2RotationScheduleCard run={selectedRun} />
-          <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
+          <FactoryV2MultiGameChildrenCard
+            kind={selectedRun.kind}
+            children={selectedRun.children ?? []}
+            canManageIndexers={!isFactoryRunInProgress(selectedRun) && !Boolean(actionBarProps?.isWatcherBusy)}
+            onBringChildIndexerLive={onBringChildIndexerLive}
+          />
         </>
       ) : null}
 
@@ -708,9 +726,13 @@ const FactoryV2RotationMetric = ({ label, value }: { label: string; value: strin
 const FactoryV2MultiGameChildrenCard = ({
   kind,
   children,
+  canManageIndexers,
+  onBringChildIndexerLive,
 }: {
   kind: FactoryRun["kind"];
   children: FactoryRun["children"];
+  canManageIndexers: boolean;
+  onBringChildIndexerLive: (gameName: string) => void;
 }) => {
   if (!children || children.length === 0) {
     return null;
@@ -725,28 +747,43 @@ const FactoryV2MultiGameChildrenCard = ({
         <p className="text-[13px] leading-5 text-black/52">{copy.description}</p>
       </div>
       <div className="space-y-2">
-        {children.map((child) => (
-          <div
-            key={child.id}
-            className="flex flex-col gap-2 rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-left sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-black/8 bg-white/72 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/48">
-                  Game {child.seriesGameNumber}
-                </span>
-                <span className="truncate text-[13px] font-semibold text-black">{child.gameName}</span>
+        {children.map((child) => {
+          const indexerAction = resolveChildIndexerAction(child, canManageIndexers, onBringChildIndexerLive);
+
+          return (
+            <div
+              key={child.id}
+              className="flex flex-col gap-2 rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-left sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-black/8 bg-white/72 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/48">
+                    Game {child.seriesGameNumber}
+                  </span>
+                  <span className="truncate text-[13px] font-semibold text-black">{child.gameName}</span>
+                </div>
+                <p className="mt-1 text-[12px] leading-5 text-black/50">{child.latestEvent}</p>
+                {child.worldAddress ? (
+                  <p className="mt-1 truncate text-[11px] leading-5 text-black/38">{child.worldAddress}</p>
+                ) : null}
               </div>
-              <p className="mt-1 text-[12px] leading-5 text-black/50">{child.latestEvent}</p>
-              {child.worldAddress ? (
-                <p className="mt-1 truncate text-[11px] leading-5 text-black/38">{child.worldAddress}</p>
-              ) : null}
+              <div className="flex shrink-0 items-center gap-2 self-start">
+                {indexerAction ? (
+                  <button
+                    type="button"
+                    onClick={indexerAction.onPress}
+                    className="rounded-full border border-black/10 bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                  >
+                    {indexerAction.label}
+                  </button>
+                ) : null}
+                <div className="rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/52">
+                  {child.status}
+                </div>
+              </div>
             </div>
-            <div className="shrink-0 self-start rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/52">
-              {child.status}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -764,6 +801,38 @@ function resolveMultiGameChildrenCopy(kind: FactoryRun["kind"]) {
     title: "Series games",
     description: "Each child game keeps its own status inside the parent run.",
   };
+}
+
+function resolveChildIndexerAction(
+  child: NonNullable<FactoryRun["children"]>[number],
+  canManageIndexers: boolean,
+  onBringChildIndexerLive: (gameName: string) => void,
+): FactoryV2StepManualAction | null {
+  if (!canManageIndexers || !canOperateOnChildIndexer(child)) {
+    return null;
+  }
+
+  return {
+    label: resolveChildIndexerActionLabel(child),
+    description: "Check whether this game indexer is live or bring it back online.",
+    onPress: () => onBringChildIndexerLive(child.gameName),
+  };
+}
+
+function canOperateOnChildIndexer(child: NonNullable<FactoryRun["children"]>[number]) {
+  return Boolean(child.worldAddress || child.indexerCreated);
+}
+
+function resolveChildIndexerActionLabel(child: NonNullable<FactoryRun["children"]>[number]) {
+  if (child.indexerCreated) {
+    return "Check indexer";
+  }
+
+  if (child.currentStepId === "create-indexers" || child.status === "failed") {
+    return "Retry indexer";
+  }
+
+  return "Turn on indexer";
 }
 
 const FactoryV2WatchPendingCard = ({

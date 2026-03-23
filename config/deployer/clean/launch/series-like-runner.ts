@@ -133,8 +133,51 @@ function buildSeriesLikeGameRequest(
   };
 }
 
-function shouldSkipSeriesLikeGameStep(game: SeriesLaunchGameSummary, stepId: LaunchSeriesStepId): boolean {
+function hasCompletedSeriesLikeGameStep(game: SeriesLaunchGameSummary, stepId: LaunchSeriesStepId): boolean {
   return game.steps.some((step) => step.id === stepId && step.status === "succeeded");
+}
+
+function resolveTargetedSeriesLikeGameNames(
+  request: SeriesLikeRequest,
+  summary: SeriesLikeSummary,
+  stepId: LaunchSeriesStepId,
+): Set<string> | null {
+  if (!request.targetGameNames || request.targetGameNames.length === 0) {
+    return null;
+  }
+
+  if (stepId !== "create-indexers") {
+    throw new Error('Targeted game selection is only supported for "create-indexers"');
+  }
+
+  const availableGameNames = new Set(summary.games.map((game) => game.gameName));
+  const missingGameNames = request.targetGameNames.filter((gameName) => !availableGameNames.has(gameName));
+
+  if (missingGameNames.length > 0) {
+    throw new Error(
+      `Requested game${missingGameNames.length === 1 ? "" : "s"} not found in ${
+        summary.seriesName
+      }: ${missingGameNames.join(", ")}`,
+    );
+  }
+
+  return new Set(request.targetGameNames);
+}
+
+function shouldRunSeriesLikeGameStep(
+  game: SeriesLaunchGameSummary,
+  stepId: LaunchSeriesStepId,
+  targetedGameNames: Set<string> | null,
+): boolean {
+  if (!targetedGameNames) {
+    return !hasCompletedSeriesLikeGameStep(game, stepId);
+  }
+
+  if (!targetedGameNames.has(game.gameName)) {
+    return false;
+  }
+
+  return stepId === "create-indexers" || !hasCompletedSeriesLikeGameStep(game, stepId);
 }
 
 async function waitBetweenSeriesLikeGameCalls(delayMs: number, isFirstExecution: boolean): Promise<void> {
@@ -195,13 +238,14 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
   persistSummary: (summary: TSummary) => TSummary;
 }): Promise<TSummary> {
   const mappedGameStepId = SERIES_GAME_STEP_BY_GROUPED_STEP[stepId];
+  const targetedGameNames = resolveTargetedSeriesLikeGameNames(request, summary, stepId);
   const delayMs = resolveSeriesLikeStepDelayMs(request);
   const nextGames: SeriesLaunchGameSummary[] = [];
   let executedChildren = 0;
   let failureCount = 0;
 
   for (const game of summary.games) {
-    if (shouldSkipSeriesLikeGameStep(game, stepId)) {
+    if (!shouldRunSeriesLikeGameStep(game, stepId, targetedGameNames)) {
       nextGames.push(game);
       continue;
     }

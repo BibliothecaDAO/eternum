@@ -169,6 +169,7 @@ function mapFactorySeriesChildRun(game: FactoryWorkerSeriesGameRecord): FactoryS
     latestEvent: game.latestEvent,
     currentStepId: mapFactoryStepId(game.currentStepId),
     worldAddress: game.artifacts.worldAddress,
+    indexerCreated: game.artifacts.indexerCreated,
     indexerTier: game.artifacts.indexerTier,
     prizeFunding: mapFactoryPrizeFunding(game.artifacts.prizeFunding),
   };
