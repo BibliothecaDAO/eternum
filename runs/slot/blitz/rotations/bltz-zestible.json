@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23461904125-1",
   "currentStepId": "create-series",
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-23T21:51:58.351Z",
+  "updatedAt": "2026-03-23T21:52:03.460Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -37,9 +37,10 @@
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Creating series",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Creating series started",
+      "startedAt": "2026-03-23T21:52:03.460Z"
     },
     {
       "id": "create-worlds",
@@ -318,5 +319,13 @@
   "artifacts": {
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": false
+  },
+  "activeLease": {
+    "launchRequestId": "23461904125-1",
+    "workflowRunId": 23461904125,
+    "workflowRunAttempt": 1,
+    "stepId": "create-series",
+    "acquiredAt": "2026-03-23T21:52:03.460Z",
+    "expiresAt": "2026-03-23T22:37:03.460Z"
   }
 }
