@@ -5,26 +5,16 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, formatTime } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
 const PHASES = [
-  { key: "early-hours", name: "Early Hours", lightProgress: 11.5 },
-  { key: "dawn", name: "Dawn", lightProgress: 18.75 },
-  { key: "morning", name: "Morning", lightProgress: 37.5 },
-  { key: "afternoon", name: "Afternoon", lightProgress: 56.25 },
-  { key: "dusk", name: "Dusk", lightProgress: 68.75 },
-  { key: "late-evening", name: "Late Evening", lightProgress: 79 },
+  { name: "Early Hours" },
+  { name: "Dawn" },
+  { name: "Morning" },
+  { name: "Afternoon" },
+  { name: "Dusk" },
+  { name: "Late Evening" },
 ] as const;
-
-type LightPhaseSelection = "live" | (typeof PHASES)[number]["key"];
-
-const resolveForcedPhase = (selection: LightPhaseSelection) => {
-  if (selection === "live") {
-    return null;
-  }
-
-  return PHASES.find((phase) => phase.key === selection) ?? null;
-};
 
 export const TickProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -32,8 +22,6 @@ export const TickProgress = memo(() => {
   const setCycleTime = useUIStore((state) => state.setCycleTime);
   const { currentBlockTimestamp } = useBlockTimestamp();
   const mode = useGameModeConfig();
-  const [lightPhaseSelection, setLightPhaseSelection] = useState<LightPhaseSelection>("live");
-
   const cycleTime = configManager.getTick(TickIds.Armies);
   const hasValidCycle = cycleTime > 0;
   const dayDuration = hasValidCycle ? cycleTime * PHASES.length : 1;
@@ -58,10 +46,6 @@ export const TickProgress = memo(() => {
     };
   }, [currentBlockTimestamp, cycleTime, dayDuration, hasValidCycle]);
 
-  const forcedPhase = useMemo(() => resolveForcedPhase(lightPhaseSelection), [lightPhaseSelection]);
-
-  const cycleProgressForLighting = forcedPhase?.lightProgress ?? phaseData.dayProgress;
-
   const timeLeftInPhase = useMemo(() => {
     if (!hasValidCycle) {
       return 0;
@@ -71,9 +55,9 @@ export const TickProgress = memo(() => {
   }, [hasValidCycle, currentBlockTimestamp, cycleTime]);
 
   useEffect(() => {
-    setCycleProgress(Math.min(Math.max(cycleProgressForLighting, 0), 100));
+    setCycleProgress(Math.min(Math.max(phaseData.dayProgress, 0), 100));
     setCycleTime(cycleTime);
-  }, [cycleProgressForLighting, cycleTime, setCycleProgress, setCycleTime]);
+  }, [phaseData.dayProgress, cycleTime, setCycleProgress, setCycleTime]);
 
   useEffect(() => {
     if (lastProgressRef.current > phaseData.phaseProgress) {
@@ -91,17 +75,12 @@ export const TickProgress = memo(() => {
         <div>
           A day in Realms is <span className="font-bold">{formatTime(dayDuration)}</span> ({PHASES.length} phases)
         </div>
-        {forcedPhase ? (
-          <div>
-            Light override: <span className="font-bold">{forcedPhase.name}</span>
-          </div>
-        ) : null}
         <div>
           Time left in {phaseData.phaseName}: <span className="font-bold">{formatTime(timeLeftInPhase)}</span>
         </div>
       </div>
     ),
-    [phaseData.phaseName, dayDuration, forcedPhase, timeLeftInPhase],
+    [phaseData.phaseName, dayDuration, timeLeftInPhase],
   );
 
   const handleMouseEnter = useCallback(() => {
@@ -114,10 +93,6 @@ export const TickProgress = memo(() => {
   const handleMouseLeave = useCallback(() => {
     setTooltip(null);
   }, [setTooltip]);
-
-  const handleLightPhaseSelection = useCallback((value: string) => {
-    setLightPhaseSelection(value as LightPhaseSelection);
-  }, []);
 
   const size = 32;
   const center = size / 2;
@@ -183,19 +158,6 @@ export const TickProgress = memo(() => {
         </div>
       </div>
       <span className="text-sm">{phaseData.phaseProgress.toFixed(0)}%</span>
-      <select
-        value={lightPhaseSelection}
-        onChange={(event) => handleLightPhaseSelection(event.target.value)}
-        className="h-6 rounded border border-gold/40 bg-dark-wood/90 px-1 text-[10px] text-gold focus:outline-none"
-        aria-label="Light phase override"
-      >
-        <option value="live">Light: Live</option>
-        {PHASES.map((phase) => (
-          <option key={phase.key} value={phase.key}>
-            {phase.name}
-          </option>
-        ))}
-      </select>
     </div>
   );
 });
