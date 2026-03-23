@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23422454488-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:12:07.827Z",
-  "updatedAt": "2026-03-23T22:00:25.122Z",
+  "updatedAt": "2026-03-23T22:20:27.530Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -147,9 +147,9 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T22:00:24.773Z",
+          "pendingIndexerTierRequestedAt": "2026-03-23T22:20:27.186Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-23T22:00:24.773Z",
+          "lastIndexerTierDispatchFailedAt": "2026-03-23T22:20:27.186Z",
           "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
         },
         "durationSeconds": 3600
@@ -197,9 +197,9 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T22:00:24.773Z",
+          "pendingIndexerTierRequestedAt": "2026-03-23T22:20:27.186Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-23T22:00:24.773Z",
+          "lastIndexerTierDispatchFailedAt": "2026-03-23T22:20:27.186Z",
           "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
         },
         "durationSeconds": 3600
@@ -247,9 +247,9 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T22:00:24.773Z",
+          "pendingIndexerTierRequestedAt": "2026-03-23T22:20:27.186Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-23T22:00:24.773Z",
+          "lastIndexerTierDispatchFailedAt": "2026-03-23T22:20:27.186Z",
           "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
         },
         "durationSeconds": 3600
