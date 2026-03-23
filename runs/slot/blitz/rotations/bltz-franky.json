@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23423614823-1.json",
   "latestLaunchRequestId": "23423614823-1",
-  "currentStepId": "grant-lootchest-roles",
+  "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T06:03:34.290Z",
+  "updatedAt": "2026-03-23T06:03:47.671Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T06:08:26.430Z",
-    "lastEvaluatedAt": "2026-03-23T06:03:26.430Z"
+    "nextEvaluationAt": "2026-03-23T06:08:47.671Z",
+    "lastEvaluatedAt": "2026-03-23T06:03:47.671Z"
   },
   "steps": [
     {
@@ -73,10 +73,11 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-03-23T06:03:34.290Z"
+      "latestEvent": "Setting up loot chests is complete",
+      "startedAt": "2026-03-23T06:03:34.290Z",
+      "finishedAt": "2026-03-23T06:03:47.671Z"
     },
     {
       "id": "create-indexers",
@@ -112,7 +113,7 @@
         "startTimeIso": "2026-03-23T06:20:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -258,8 +259,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-03-23T06:03:40.959Z"
           },
           {
             "id": "create-indexers",
@@ -270,7 +272,8 @@
         "artifacts": {
           "createGameTxHash": "0x75549b43a72f81d9740777cc05e90c34fac56297620961c30db2ed40c8b9d4e",
           "worldAddress": "0x04273c47365f1d433d6bf5469d365015f0fe206d69b3d9ff9714f2bf2400ab1b",
-          "configureTxHash": "0xe8c218805a8bfb1e14d7f5b796b1ece90a6e63e405c6ac0ff1c1190bca4b5a"
+          "configureTxHash": "0xe8c218805a8bfb1e14d7f5b796b1ece90a6e63e405c6ac0ff1c1190bca4b5a",
+          "lootChestRoleTxHash": "0x2ef25ef17606df4df5d1637852667b96532206c08beefb502a284e7ab0a2a91"
         },
         "durationSeconds": 3600
       },
@@ -280,7 +283,7 @@
         "startTimeIso": "2026-03-23T07:20:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -426,8 +429,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-03-23T06:03:42.469Z"
           },
           {
             "id": "create-indexers",
@@ -438,7 +442,8 @@
         "artifacts": {
           "createGameTxHash": "0x5014a062c879e7779f4e5447b946fdd71e7a668e2d8f5bcadf3874a6f2acb9a",
           "worldAddress": "0x01196695f7825c4e2099ec8888ee9c9d3a0f3568a7ebf12db5792d4e76590ef5",
-          "configureTxHash": "0x6ff0c1d0ae4671c01b37638dc6da5fab19019541e99aae9130eaea787c82a5f"
+          "configureTxHash": "0x6ff0c1d0ae4671c01b37638dc6da5fab19019541e99aae9130eaea787c82a5f",
+          "lootChestRoleTxHash": "0x6d1265817fba9626b39be8eb6c9412fdb67bd3c53dc83c40062f6a5364771b5"
         },
         "durationSeconds": 3600
       },
@@ -448,7 +453,7 @@
         "startTimeIso": "2026-03-23T08:20:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -594,8 +599,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-03-23T06:03:43.981Z"
           },
           {
             "id": "create-indexers",
@@ -606,7 +612,8 @@
         "artifacts": {
           "createGameTxHash": "0x2eaff789a98f001eb868c1d593a81d5dc4e0c7e3eb059c33d612a5d22fdc4e8",
           "worldAddress": "0x013229dffb1735c758574807c9bb4730a11593be4e72be6c7e113d462985de06",
-          "configureTxHash": "0x7863d6c2f69ec3b019a625e8e7afa043f9bc5a31f4d9986616c941ce328b483"
+          "configureTxHash": "0x7863d6c2f69ec3b019a625e8e7afa043f9bc5a31f4d9986616c941ce328b483",
+          "lootChestRoleTxHash": "0x259d4eda6c0578d090b3e5677b35430cecb4177f788455f8574289bc6c8b16b"
         },
         "durationSeconds": 3600
       }
@@ -618,13 +625,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23423614823-1",
-    "workflowRunId": 23423614823,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-roles",
-    "acquiredAt": "2026-03-23T06:03:34.290Z",
-    "expiresAt": "2026-03-23T06:48:34.290Z"
   }
 }
