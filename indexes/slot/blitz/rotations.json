@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T21:52:25.567Z",
+  "updatedAt": "2026-03-23T21:58:33.716Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -214,11 +214,10 @@
       "path": "runs/slot/blitz/rotations/bltz-zestible.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23461904125-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T21:52:25.567Z",
+      "updatedAt": "2026-03-23T21:58:33.716Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-worlds",
-      "activeLeaseExpiresAt": "2026-03-23T22:37:25.567Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-indexes",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-indexes",
       "autoRetry": {
@@ -227,33 +226,38 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-23T22:07:21.461Z",
-        "lastEvaluatedAt": "2026-03-23T21:52:21.461Z"
+        "nextEvaluationAt": "2026-03-23T22:13:33.716Z",
+        "lastEvaluatedAt": "2026-03-23T21:58:33.716Z"
       },
       "games": [
         {
           "gameName": "bltz-zestible-01",
           "startTime": 1774303800,
+          "durationSeconds": 3600,
           "artifacts": {}
         },
         {
           "gameName": "bltz-zestible-02",
           "startTime": 1774307400,
+          "durationSeconds": 3600,
           "artifacts": {}
         },
         {
           "gameName": "bltz-zestible-03",
           "startTime": 1774311000,
+          "durationSeconds": 3600,
           "artifacts": {}
         },
         {
           "gameName": "bltz-zestible-04",
           "startTime": 1774314600,
+          "durationSeconds": 3600,
           "artifacts": {}
         },
         {
           "gameName": "bltz-zestible-05",
           "startTime": 1774318200,
+          "durationSeconds": 3600,
           "artifacts": {}
         }
       ]
