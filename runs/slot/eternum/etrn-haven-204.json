@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "slot.eternum:etrn-haven-204",
+  "environment": "slot.eternum",
+  "chain": "slot",
+  "gameType": "eternum",
+  "gameName": "etrn-haven-204",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/slot/eternum/etrn-haven-204/23440921826-1.json",
+  "latestLaunchRequestId": "23440921826-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-03-23T13:56:48.548Z",
+  "updatedAt": "2026-03-23T13:56:48.548Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23440921826,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23440921826",
+    "ref": "codex/factory-v2-rotation-review",
+    "sha": "ae6e30ce7a412c93733e43b10a7c8ac181d69eaf"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-village-pass-role",
+      "title": "Setting up village pass",
+      "status": "pending",
+      "workflowStepName": "Setting up village pass",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-banks",
+      "title": "Preparing banks",
+      "status": "pending",
+      "workflowStepName": "Preparing banks",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {
+    "scheduledStartTime": "2026-03-23T14:00:00.000Z"
+  }
+}
