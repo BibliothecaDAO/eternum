@@ -137,6 +137,10 @@ function hasCompletedSeriesLikeGameStep(game: SeriesLaunchGameSummary, stepId: L
   return game.steps.some((step) => step.id === stepId && step.status === "succeeded");
 }
 
+function hasSeriesLikeGameStep(game: SeriesLaunchGameSummary, stepId: LaunchSeriesStepId): boolean {
+  return resolveSeriesLikeGameStepIndex(game, stepId) >= 0;
+}
+
 function resolveSeriesLikeGameStepIndex(game: SeriesLaunchGameSummary, stepId: LaunchSeriesStepId): number {
   return game.steps.findIndex((step) => step.id === stepId);
 }
@@ -153,10 +157,18 @@ function resolveRequiredSeriesLikeGameStepId(
   return game.steps[stepIndex - 1]?.id ?? null;
 }
 
-function hasCompletedSeriesLikeGamePrerequisite(game: SeriesLaunchGameSummary, stepId: LaunchSeriesStepId): boolean {
+function hasCompletedSeriesLikeGamePrerequisite(
+  summary: SeriesLikeSummary,
+  game: SeriesLaunchGameSummary,
+  stepId: LaunchSeriesStepId,
+): boolean {
   const requiredStepId = resolveRequiredSeriesLikeGameStepId(game, stepId);
   if (!requiredStepId) {
     return true;
+  }
+
+  if (requiredStepId === "create-series") {
+    return summary.seriesCreated;
   }
 
   return hasCompletedSeriesLikeGameStep(game, requiredStepId);
@@ -190,11 +202,16 @@ function resolveTargetedSeriesLikeGameNames(
 }
 
 function shouldRunSeriesLikeGameStep(
+  summary: SeriesLikeSummary,
   game: SeriesLaunchGameSummary,
   stepId: LaunchSeriesStepId,
   targetedGameNames: Set<string> | null,
 ): boolean {
-  if (!hasCompletedSeriesLikeGamePrerequisite(game, stepId)) {
+  if (!hasSeriesLikeGameStep(game, stepId)) {
+    return false;
+  }
+
+  if (!hasCompletedSeriesLikeGamePrerequisite(summary, game, stepId)) {
     return false;
   }
 
@@ -274,7 +291,7 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
   let failureCount = 0;
 
   for (const game of summary.games) {
-    if (!shouldRunSeriesLikeGameStep(game, stepId, targetedGameNames)) {
+    if (!shouldRunSeriesLikeGameStep(summary, game, stepId, targetedGameNames)) {
       nextGames.push(game);
       continue;
     }

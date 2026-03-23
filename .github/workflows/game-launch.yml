@@ -794,8 +794,8 @@ jobs:
 
       - name: Grant village pass roles
         if:
-          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'grant-village-pass-role') }}
+          ${{ github.event.inputs.launch_kind == 'game' && endsWith(github.event.inputs.environment, '.eternum') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-village-pass-role') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -804,8 +804,8 @@ jobs:
       - name: Grant village pass roles for series
         if:
           ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'grant-village-pass-roles')
-          }}
+          endsWith(github.event.inputs.environment, '.eternum') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'grant-village-pass-roles') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -813,8 +813,8 @@ jobs:
 
       - name: Create banks
         if:
-          ${{ github.event.inputs.launch_step == 'create-banks' || (github.event.inputs.launch_step == 'full' &&
-          endsWith(github.event.inputs.environment, '.eternum')) }}
+          ${{ endsWith(github.event.inputs.environment, '.eternum') && (github.event.inputs.launch_step ==
+          'create-banks' || github.event.inputs.launch_step == 'full') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh

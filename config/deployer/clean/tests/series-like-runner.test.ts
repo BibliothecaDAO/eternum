@@ -10,6 +10,50 @@ afterEach(() => {
 });
 
 describe("grouped series-like runner", () => {
+  test("treats the parent series as the create-worlds prerequisite", async () => {
+    const request = buildSeriesRequest({
+      dryRun: true,
+    });
+    const initialSummary = buildInitialSeriesLaunchSummary(request);
+    const summary = {
+      ...initialSummary,
+      seriesCreated: true,
+    };
+
+    const nextSummary = await runGroupedSeriesLikeGameStep({
+      request,
+      summary,
+      stepId: "create-worlds",
+      persistSummary: (next) => next,
+    });
+
+    for (const game of nextSummary.games) {
+      expect(game.status).toBe("succeeded");
+      expect(game.latestEvent).toBe("Completed create-worlds");
+      expect(game.steps.find((step) => step.id === "create-worlds")?.status).toBe("succeeded");
+    }
+  });
+
+  test("skips unsupported blitz grouped steps that are not part of the child plan", async () => {
+    const request = buildSeriesRequest({
+      dryRun: true,
+    });
+    const initialSummary = buildInitialSeriesLaunchSummary(request);
+    const summary = {
+      ...initialSummary,
+      seriesCreated: true,
+    };
+
+    const nextSummary = await runGroupedSeriesLikeGameStep({
+      request,
+      summary,
+      stepId: "grant-village-pass-roles",
+      persistSummary: (next) => next,
+    });
+
+    expect(nextSummary.games).toEqual(summary.games);
+  });
+
   test("skips wait-for-factory-indexes for children whose create-worlds step never succeeded", async () => {
     const fetchCalls: string[] = [];
     globalThis.fetch = async (url) => {
