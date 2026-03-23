@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-23",
+    title: "Stable First Map Camera",
+    description:
+      "World map now opens in its intended tactical camera framing on the first load, so it no longer starts in a close-up offset view before settling after a scene switch.",
+    type: "fix",
+  },
+  {
     date: "2026-03-22",
     title: "Less Skewed Map Camera",
     description:
