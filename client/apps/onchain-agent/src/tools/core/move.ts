@@ -20,7 +20,7 @@ import { addressesEqual, extractTxError } from "./tx-context.js";
 // ── Input / Result Types ─────────────────────────────────────────────
 
 /** Input for the move_army tool (display coordinates). */
-export interface MoveArmyInput {
+interface MoveArmyInput {
   /** Entity ID of the army to move. */
   armyId: number;
   /** Target X in display coordinates. */
@@ -30,7 +30,7 @@ export interface MoveArmyInput {
 }
 
 /** Result returned by {@link moveArmy}. */
-export interface MoveArmyResult {
+interface MoveArmyResult {
   /** Whether the move completed (fully or partially). */
   success: boolean;
   /** Human-readable summary of what happened. */
@@ -43,6 +43,10 @@ export interface MoveArmyResult {
   travelCount: number;
   /** True if the army stopped before reaching the target (stamina, error). */
   stoppedEarly: boolean;
+  /** Stamina spent on this move. */
+  staminaUsed: number;
+  /** Estimated stamina remaining after the move. */
+  staminaRemaining: number;
 }
 
 // ── Core Function ────────────────────────────────────────────────────
@@ -88,7 +92,7 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
 
   const projectedStamina = projectExplorerStamina(explorer, ctx.gameConfig.stamina);
   if (projectedStamina <= 0) {
-    return fail(`No stamina (${projectedStamina}). Wait for regen.`);
+    return fail(`No stamina (${projectedStamina}). Wait for regen.`, projectedStamina);
   }
 
   // ── 2. Build grid index + inject synthetic unexplored tiles via BFS ──
@@ -181,14 +185,14 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
       }
     }
     if (!pathResult) {
-      return fail(`No path to any tile adjacent to (${dispX},${dispY}).`);
+      return fail(`No path to any tile adjacent to (${dispX},${dispY}).`, projectedStamina);
     }
   } else {
     pathResult = findPathNative(start, target, gridForPath, pathOptions);
   }
 
   if (!pathResult) {
-    return fail(`No path to (${dispX},${dispY}).`);
+    return fail(`No path to (${dispX},${dispY}).`, projectedStamina);
   }
 
   // ── 5. Truncate path if stamina budget exceeded ──
@@ -206,7 +210,7 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
       truncateAt = i + 1;
     }
     if (truncateAt === 0) {
-      return fail(`Not enough stamina (${projectedStamina}) for even 1 step. Need ${staminaConfig.exploreCost || 30}.`);
+      return fail(`Not enough stamina (${projectedStamina}) for even 1 step. Need ${staminaConfig.exploreCost || 30}.`, projectedStamina);
     }
     pathResult = {
       ...pathResult,
@@ -297,6 +301,22 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
   const endDisplayX = toDisplayX(endPos.x, ctx.mapCenter);
   const endDisplayY = toDisplayY(endPos.y, ctx.mapCenter);
 
+  // Compute stamina used: if we completed the full path, use pathResult.staminaCost.
+  // If stopped early, compute cost for the steps actually taken.
+  let staminaUsed: number;
+  if (!stoppedEarly) {
+    staminaUsed = pathResult.staminaCost;
+  } else {
+    staminaUsed = 0;
+    for (let i = 0; i < lastReachedIdx; i++) {
+      const stepPos = pathResult.path[i + 1];
+      const stepKey = `${stepPos.x},${stepPos.y}`;
+      const isExplore = !explored.has(stepKey);
+      staminaUsed += isExplore ? (staminaConfig.exploreCost || 30) : (staminaConfig.travelCost || 20);
+    }
+  }
+  const staminaRemaining = Math.max(0, projectedStamina - staminaUsed);
+
   const stepsDetail =
     exploreCount > 0 && travelCount > 0
       ? `${totalSteps} steps (${exploreCount} explored, ${travelCount} traveled)`
@@ -312,13 +332,15 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
       exploreCount: 0,
       travelCount: 0,
       stoppedEarly: true,
+      staminaUsed: 0,
+      staminaRemaining: projectedStamina,
     };
   }
 
-  let msg = `Moved ${stepsDetail} to (${endDisplayX},${endDisplayY}).`;
+  let msg = `Moved ${stepsDetail} to (${endDisplayX},${endDisplayY}). Stamina: ${staminaRemaining}/${projectedStamina}`;
   if (stoppedEarly) {
     const remaining = pathResult.directions.length - lastReachedIdx;
-    msg += ` Ran out of stamina — ${remaining} steps remaining to target.`;
+    msg += ` — ran out, ${remaining} steps remaining to target.`;
   }
 
   return {
@@ -328,13 +350,15 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
     exploreCount,
     travelCount,
     stoppedEarly,
+    staminaUsed,
+    staminaRemaining,
   };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /** Shorthand for building a failure result. */
-function fail(message: string): MoveArmyResult {
+function fail(message: string, stamina?: number): MoveArmyResult {
   return {
     success: false,
     message,
@@ -342,5 +366,7 @@ function fail(message: string): MoveArmyResult {
     exploreCount: 0,
     travelCount: 0,
     stoppedEarly: false,
+    staminaUsed: 0,
+    staminaRemaining: stamina ?? 0,
   };
 }
