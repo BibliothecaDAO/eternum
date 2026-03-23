@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T21:58:37.456Z",
+  "updatedAt": "2026-03-23T21:58:44.850Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -214,11 +214,10 @@
       "path": "runs/slot/blitz/rotations/bltz-zestible.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23461904125-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T21:58:37.456Z",
+      "updatedAt": "2026-03-23T21:58:44.850Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "wait-for-factory-indexes",
-      "activeLeaseExpiresAt": "2026-03-23T22:43:37.456Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-worlds",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-worlds",
       "autoRetry": {
@@ -227,8 +226,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-23T22:13:33.716Z",
-        "lastEvaluatedAt": "2026-03-23T21:58:33.716Z"
+        "nextEvaluationAt": "2026-03-23T22:13:44.850Z",
+        "lastEvaluatedAt": "2026-03-23T21:58:44.850Z"
       },
       "games": [
         {
