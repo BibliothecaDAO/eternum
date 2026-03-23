@@ -196,22 +196,14 @@ function buildTickPrompt(mapCtx: MapContext, toolErrors: ToolError[], memory: st
   const briefing = mapCtx.protocol?.briefing();
   if (!briefing) return "Map not yet loaded. Wait for next tick.";
 
-  const parts = [
-    "## Tick",
-    "",
-    JSON.stringify(briefing, null, 2),
-  ];
+  const parts = ["## Tick", "", JSON.stringify(briefing, null, 2)];
 
   if (memory) {
     parts.push("", "## Memory", memory);
   }
 
   if (toolErrors.length > 0) {
-    parts.push(
-      "",
-      "## Recent Errors",
-      ...toolErrors.map((e) => `- ${e.tool}: ${e.error}`),
-    );
+    parts.push("", "## Recent Errors", ...toolErrors.map((e) => `- ${e.tool}: ${e.error}`));
   }
 
   parts.push(
@@ -266,7 +258,10 @@ export async function main() {
   const toolErrors: ToolError[] = [];
 
   // 4. Tools — core tools + read/grep/find/ls scoped to dataDir
-  const tools: AgentTool[] = [...createReadOnlyTools(config.dataDir), ...createCoreTools(toolCtx, mapCtx, config.dataDir)];
+  const tools: AgentTool[] = [
+    ...createReadOnlyTools(config.dataDir),
+    ...createCoreTools(toolCtx, mapCtx, config.dataDir),
+  ];
 
   // 5. System prompt
   const systemPrompt = buildSystemPrompt(config.dataDir);
@@ -388,6 +383,13 @@ export async function main() {
       evolving = true;
       const briefing = mapCtx.protocol?.briefing() ?? {};
       evolve(model, config.dataDir, briefing)
+        .then(() => {
+          // Clear message history after evolution. The agent's learnings
+          // are persisted in memory.md and strategy in tasks/*.md — the
+          // raw conversation history is no longer needed.
+          agent.clearMessages();
+          console.error(`[CONTEXT] Cleared message history after evolution (tick ${tickCount})`);
+        })
         .catch((err) => console.error("Evolution error:", err instanceof Error ? err.message : err))
         .finally(() => {
           evolving = false;
