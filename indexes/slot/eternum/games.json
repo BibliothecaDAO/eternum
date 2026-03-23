@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-03-23T17:11:56.005Z",
+  "updatedAt": "2026-03-23T17:12:00.977Z",
   "entries": {
     "etrn-haven-204": {
       "kind": "game",
@@ -27,12 +27,13 @@
       "path": "runs/slot/eternum/etrn-bloom-897.json",
       "inputPath": "inputs/slot/eternum/etrn-bloom-897/23450170365-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T17:11:56.005Z",
+      "updatedAt": "2026-03-23T17:12:00.977Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-23T17:57:00.977Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-03-23T17:30:00.000Z",
       "artifacts": {}
     }
