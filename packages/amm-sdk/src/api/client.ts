@@ -16,6 +16,12 @@ import {
   decodePriceCandle,
   decodeSwapEvent,
   decodeUserPosition,
+  type RawLiquidityEvent,
+  type RawPool,
+  type RawPoolStats,
+  type RawPriceCandle,
+  type RawSwapEvent,
+  type RawUserPosition,
   unwrapApiData,
 } from "./codec";
 
@@ -58,14 +64,14 @@ export class AmmApiClient {
 
   /** Get all pools. */
   async getPools(): Promise<Pool[]> {
-    const response = await this.fetch<Pool[] | { data: Pool[] }>("/pools");
+    const response = await this.fetch<RawPool[] | { data: RawPool[] }>("/pools");
     return unwrapApiData(response).map((pool) => decodePool(pool));
   }
 
   /** Get a specific pool by token address. */
   async getPool(tokenAddress: string): Promise<Pool | null> {
     try {
-      const response = await this.fetch<Pool | { data: Pool }>(`/pools/${tokenAddress}`);
+      const response = await this.fetch<RawPool | { data: RawPool }>(`/pools/${tokenAddress}`);
       return decodePool(unwrapApiData(response));
     } catch {
       return null;
@@ -77,7 +83,7 @@ export class AmmApiClient {
     tokenAddress: string,
     opts?: PaginationOpts & TimeRangeOpts,
   ): Promise<PaginatedResponse<SwapEvent>> {
-    const response = await this.fetch<PaginatedResponse<SwapEvent>>(`/pools/${tokenAddress}/swaps`, {
+    const response = await this.fetch<PaginatedResponse<RawSwapEvent>>(`/pools/${tokenAddress}/swaps`, {
       limit: opts?.limit,
       offset: opts?.offset,
       from: opts?.from,
@@ -98,7 +104,7 @@ export class AmmApiClient {
     tokenAddress: string,
     opts?: PaginationOpts & TimeRangeOpts,
   ): Promise<PaginatedResponse<LiquidityEvent>> {
-    const response = await this.fetch<PaginatedResponse<LiquidityEvent>>(`/pools/${tokenAddress}/liquidity`, {
+    const response = await this.fetch<PaginatedResponse<RawLiquidityEvent>>(`/pools/${tokenAddress}/liquidity`, {
       limit: opts?.limit,
       offset: opts?.offset,
       from: opts?.from,
@@ -116,7 +122,7 @@ export class AmmApiClient {
 
   /** Get price candle history for a pool. */
   async getPriceHistory(tokenAddress: string, interval: CandleInterval, opts?: TimeRangeOpts): Promise<PriceCandle[]> {
-    const response = await this.fetch<PriceCandle[] | { data: PriceCandle[] }>(`/pools/${tokenAddress}/candles`, {
+    const response = await this.fetch<RawPriceCandle[] | { data: RawPriceCandle[] }>(`/pools/${tokenAddress}/candles`, {
       interval,
       from: opts?.from,
       to: opts?.to,
@@ -126,13 +132,13 @@ export class AmmApiClient {
 
   /** Get aggregate stats for a pool. */
   async getPoolStats(tokenAddress: string): Promise<PoolStats> {
-    const response = await this.fetch<PoolStats | { data: PoolStats }>(`/pools/${tokenAddress}/stats`);
+    const response = await this.fetch<RawPoolStats | { data: RawPoolStats }>(`/pools/${tokenAddress}/stats`);
     return decodePoolStats(unwrapApiData(response));
   }
 
   /** Get a user's LP positions across all pools. */
   async getUserPositions(userAddress: string): Promise<UserPosition[]> {
-    const response = await this.fetch<UserPosition[] | { data: UserPosition[] }>(`/users/${userAddress}/positions`);
+    const response = await this.fetch<RawUserPosition[] | { data: RawUserPosition[] }>(`/users/${userAddress}/positions`);
     return unwrapApiData(response).map((position) => decodeUserPosition(position));
   }
 }

@@ -101,25 +101,16 @@ export class SwapTransactions {
 
   /** Build approve + swap LORDS -> token Calls. */
   swapLordsForTokenWithApproval(props: SwapWithApprovalProps): Call[] {
-    return [
-      buildApproveCall(props.lordsAddress, props.ammAddress, props.lordsAmount),
-      this.swapLordsForToken(props),
-    ];
+    return [buildApproveCall(props.lordsAddress, props.ammAddress, props.lordsAmount), this.swapLordsForToken(props)];
   }
 
   /** Build approve + swap token -> LORDS Calls. */
   swapTokenForLordsWithApproval(props: SwapTokenForLordsWithApprovalProps): Call[] {
-    return [
-      buildApproveCall(props.tokenAddress, props.ammAddress, props.tokenAmount),
-      this.swapTokenForLords(props),
-    ];
+    return [buildApproveCall(props.tokenAddress, props.ammAddress, props.tokenAmount), this.swapTokenForLords(props)];
   }
 
   /** Build approve + swap token -> token Calls. */
   swapTokenForTokenWithApproval(props: SwapTokenForTokenWithApprovalProps): Call[] {
-    return [
-      buildApproveCall(props.tokenInAddress, props.ammAddress, props.amountIn),
-      this.swapTokenForToken(props),
-    ];
+    return [buildApproveCall(props.tokenInAddress, props.ammAddress, props.amountIn), this.swapTokenForToken(props)];
   }
 }

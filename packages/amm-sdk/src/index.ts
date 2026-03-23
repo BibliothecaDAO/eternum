@@ -83,7 +83,7 @@ export class AmmClient {
 
     // Compute post-swap reserves
     const newInputReserve = inputReserve + amountIn;
-    const newOutputReserve = outputReserve - grossAmountOut - protocolFee;
+    const newOutputReserve = outputReserve - grossAmountOut;
     const spotPriceAfter = isLordsInput
       ? Number(newInputReserve) / Number(newOutputReserve)
       : Number(newOutputReserve) / Number(newInputReserve);

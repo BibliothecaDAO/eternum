@@ -33,9 +33,46 @@ interface BuildSwapMutationsParams {
   tokenOut: string;
 }
 
+interface SwapAccountingFailureContext {
+  blockNumber: bigint;
+  eventIndex: number;
+  txHash: string;
+}
+
+export class MissingPoolContextError extends Error {
+  readonly errorType = "missing_pool_context";
+
+  constructor(
+    readonly tokenAddress: string,
+    readonly availablePools: string[],
+    readonly tokenIn: string,
+    readonly tokenOut: string,
+  ) {
+    super(`pool ${tokenAddress} is missing from swap accounting context`);
+    this.name = "MissingPoolContextError";
+  }
+}
+
+export class RoutedSwapAccountingMismatchError extends Error {
+  readonly errorType = "routed_swap_output_mismatch";
+
+  constructor(
+    readonly tokenIn: string,
+    readonly tokenOut: string,
+    readonly amountIn: bigint,
+    readonly expectedAmountOut: bigint,
+    readonly actualAmountOut: bigint,
+  ) {
+    super("routed swap output does not match derived pool math");
+    this.name = "RoutedSwapAccountingMismatchError";
+  }
+}
+
+export type SwapAccountingError = MissingPoolContextError | RoutedSwapAccountingMismatchError;
+
 export function buildSwapMutations(params: BuildSwapMutationsParams): SwapMutation[] {
   if (params.tokenIn.toLowerCase() === params.lordsAddress.toLowerCase()) {
-    const pool = requirePool(params.poolsByToken, params.tokenOut);
+    const pool = requirePool(params.poolsByToken, params.tokenOut, params.tokenIn, params.tokenOut);
     return [
       buildDirectSwapMutation({
         amountIn: params.amountIn,
@@ -50,7 +87,7 @@ export function buildSwapMutations(params: BuildSwapMutationsParams): SwapMutati
   }
 
   if (params.tokenOut.toLowerCase() === params.lordsAddress.toLowerCase()) {
-    const pool = requirePool(params.poolsByToken, params.tokenIn);
+    const pool = requirePool(params.poolsByToken, params.tokenIn, params.tokenIn, params.tokenOut);
     return [
       buildDirectSwapMutation({
         amountIn: params.amountIn,
@@ -64,8 +101,8 @@ export function buildSwapMutations(params: BuildSwapMutationsParams): SwapMutati
     ];
   }
 
-  const inputPool = requirePool(params.poolsByToken, params.tokenIn);
-  const outputPool = requirePool(params.poolsByToken, params.tokenOut);
+  const inputPool = requirePool(params.poolsByToken, params.tokenIn, params.tokenIn, params.tokenOut);
+  const outputPool = requirePool(params.poolsByToken, params.tokenOut, params.tokenIn, params.tokenOut);
 
   const firstHopGrossOutput = getInputPrice(
     inputPool.feeNum,
@@ -88,7 +125,13 @@ export function buildSwapMutations(params: BuildSwapMutationsParams): SwapMutati
   const secondHopNetOutput = secondHopGrossOutput - secondHopProtocolFee;
 
   if (secondHopNetOutput !== params.amountOut) {
-    throw new Error("routed swap output does not match derived pool math");
+    throw new RoutedSwapAccountingMismatchError(
+      params.tokenIn,
+      params.tokenOut,
+      params.amountIn,
+      params.amountOut,
+      secondHopNetOutput,
+    );
   }
 
   return [
@@ -167,12 +210,53 @@ function computeProtocolFee(outputAmount: bigint, pool: IndexedPoolState): bigin
   return (outputAmount * pool.protocolFeeNum) / pool.protocolFeeDenom;
 }
 
-function requirePool(poolsByToken: Record<string, IndexedPoolState>, tokenAddress: string): IndexedPoolState {
+function requirePool(
+  poolsByToken: Record<string, IndexedPoolState>,
+  tokenAddress: string,
+  tokenIn: string,
+  tokenOut: string,
+): IndexedPoolState {
   const pool = poolsByToken[tokenAddress];
 
   if (!pool) {
-    throw new Error(`pool ${tokenAddress} is missing from swap accounting context`);
+    throw new MissingPoolContextError(tokenAddress, Object.keys(poolsByToken), tokenIn, tokenOut);
   }
 
   return pool;
+}
+
+export function isSwapAccountingError(error: unknown): error is SwapAccountingError {
+  return error instanceof MissingPoolContextError || error instanceof RoutedSwapAccountingMismatchError;
+}
+
+export function describeSwapAccountingFailure(
+  error: SwapAccountingError,
+  context: SwapAccountingFailureContext,
+): Record<string, string | number | string[]> {
+  if (error instanceof MissingPoolContextError) {
+    return {
+      availablePools: error.availablePools,
+      blockNumber: context.blockNumber.toString(),
+      errorType: error.errorType,
+      eventIndex: context.eventIndex,
+      recoveryAction: "backfill_or_reindex_from_pool_creation",
+      tokenAddress: error.tokenAddress,
+      tokenIn: error.tokenIn,
+      tokenOut: error.tokenOut,
+      txHash: context.txHash,
+    };
+  }
+
+  return {
+    actualAmountOut: error.actualAmountOut.toString(),
+    amountIn: error.amountIn.toString(),
+    blockNumber: context.blockNumber.toString(),
+    errorType: error.errorType,
+    eventIndex: context.eventIndex,
+    expectedAmountOut: error.expectedAmountOut.toString(),
+    recoveryAction: "verify_lords_address_and_replay_from_safe_block",
+    tokenIn: error.tokenIn,
+    tokenOut: error.tokenOut,
+    txHash: context.txHash,
+  };
 }

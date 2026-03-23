@@ -2,7 +2,12 @@
 
 import { describe, expect, it } from "vitest";
 
-import { buildSwapMutations } from "./swap-accounting";
+import {
+  buildSwapMutations,
+  describeSwapAccountingFailure,
+  MissingPoolContextError,
+  RoutedSwapAccountingMismatchError,
+} from "./swap-accounting";
 
 const LORDS_ADDRESS = "0x1";
 
@@ -91,5 +96,79 @@ describe("buildSwapMutations", () => {
     expect(mutations[1].nextLordsReserve).toBeGreaterThan(8_000n);
     expect(mutations[1].nextTokenReserve).toBeLessThan(16_000n);
     expect(mutations[1].amountOut).toBe(1590n);
+  });
+
+  it("raises a structured missing-pool error when swap context is incomplete", () => {
+    let capturedError: unknown;
+
+    try {
+      buildSwapMutations({
+        amountIn: 500n,
+        amountOut: 450n,
+        lordsAddress: LORDS_ADDRESS,
+        poolsByToken: {},
+        protocolFee: 0n,
+        tokenIn: LORDS_ADDRESS,
+        tokenOut: "0x2",
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(MissingPoolContextError);
+    expect(capturedError).toMatchObject({
+      availablePools: [],
+      errorType: "missing_pool_context",
+      tokenAddress: "0x2",
+    });
+    expect(
+      describeSwapAccountingFailure(capturedError as MissingPoolContextError, {
+        blockNumber: 42n,
+        eventIndex: 7,
+        txHash: "0xabc",
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        blockNumber: "42",
+        errorType: "missing_pool_context",
+        eventIndex: 7,
+        recoveryAction: "backfill_or_reindex_from_pool_creation",
+        tokenAddress: "0x2",
+        txHash: "0xabc",
+      }),
+    );
+  });
+
+  it("raises a structured mismatch error when routed output disagrees with pool math", () => {
+    expect(() =>
+      buildSwapMutations({
+        amountIn: 500n,
+        amountOut: 1591n,
+        lordsAddress: LORDS_ADDRESS,
+        poolsByToken: {
+          "0x2": {
+            feeNum: 3n,
+            feeDenom: 1000n,
+            lordsReserve: 10_000n,
+            protocolFeeNum: 1n,
+            protocolFeeDenom: 100n,
+            tokenAddress: "0x2",
+            tokenReserve: 5_000n,
+          },
+          "0x3": {
+            feeNum: 3n,
+            feeDenom: 1000n,
+            lordsReserve: 8_000n,
+            protocolFeeNum: 1n,
+            protocolFeeDenom: 100n,
+            tokenAddress: "0x3",
+            tokenReserve: 16_000n,
+          },
+        },
+        protocolFee: 0n,
+        tokenIn: "0x2",
+        tokenOut: "0x3",
+      }),
+    ).toThrowError(RoutedSwapAccountingMismatchError);
   });
 });

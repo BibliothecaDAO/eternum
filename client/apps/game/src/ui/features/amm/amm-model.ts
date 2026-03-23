@@ -10,19 +10,19 @@ const TOKEN_NAMES: Record<string, string> = {
   "0x6": "Ironwood",
 };
 
-export interface DirectAmmSwapRoute {
+interface DirectAmmSwapRoute {
   isLordsInput: boolean;
   kind: "direct";
   pool: Pool;
 }
 
-export interface RoutedAmmSwapRoute {
+interface RoutedAmmSwapRoute {
   inputPool: Pool;
   kind: "routed";
   outputPool: Pool;
 }
 
-export type AmmSwapRoute = DirectAmmSwapRoute | RoutedAmmSwapRoute;
+type AmmSwapRoute = DirectAmmSwapRoute | RoutedAmmSwapRoute;
 
 export function buildAmmTokenOptions(pools: Pool[], lordsAddress: string): TokenOption[] {
   return [

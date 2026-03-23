@@ -4,10 +4,15 @@ import { drizzleStorage, useDrizzleStorage, drizzle } from "@apibara/plugin-driz
 import { eq, and, sql } from "drizzle-orm";
 import * as schema from "../src/schema";
 import { ammAbi, EVENT_NAME } from "../src/abi";
-import { buildSwapMutations } from "./swap-accounting";
+import { buildSwapMutations, describeSwapAccountingFailure, isSwapAccountingError } from "./swap-accounting";
+import { resolveIndexerRuntimeConfig } from "./runtime-config";
 
 /** LORDS token address — used to determine which pool a swap belongs to */
-const LORDS_ADDRESS = process.env.LORDS_ADDRESS ?? "";
+const runtimeConfig = resolveIndexerRuntimeConfig({
+  ammAddress: process.env.AMM_ADDRESS ?? "",
+  lordsAddress: process.env.LORDS_ADDRESS ?? "",
+});
+const LORDS_ADDRESS = runtimeConfig.lordsAddress;
 
 /** Candle intervals in milliseconds */
 const CANDLE_INTERVALS: Record<string, number> = {
@@ -28,7 +33,7 @@ function getCandleOpenTime(timestamp: Date, intervalMs: number): Date {
   return new Date(aligned);
 }
 
-const ammAddress = (process.env.AMM_ADDRESS ?? "") as `0x${string}`;
+const ammAddress = runtimeConfig.ammAddress as `0x${string}`;
 
 const db = drizzle({
   type: "node-postgres",
@@ -160,15 +165,32 @@ export default defineIndexer(StarknetStream)({
             (entry): entry is readonly [string, NonNullable<(typeof entry)[1]>] => entry[1] !== null,
           ),
         );
-        const mutations = buildSwapMutations({
-          lordsAddress: LORDS_ADDRESS,
-          tokenIn,
-          tokenOut,
-          amountIn,
-          amountOut,
-          protocolFee,
-          poolsByToken,
-        });
+        let mutations;
+
+        try {
+          mutations = buildSwapMutations({
+            lordsAddress: LORDS_ADDRESS,
+            tokenIn,
+            tokenOut,
+            amountIn,
+            amountOut,
+            protocolFee,
+            poolsByToken,
+          });
+        } catch (error) {
+          if (isSwapAccountingError(error)) {
+            console.error(
+              JSON.stringify(
+                describeSwapAccountingFailure(error, {
+                  blockNumber,
+                  eventIndex,
+                  txHash,
+                }),
+              ),
+            );
+          }
+          throw error;
+        }
 
         for (const mutation of mutations) {
           await txDb

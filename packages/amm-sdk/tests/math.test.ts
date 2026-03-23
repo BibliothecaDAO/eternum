@@ -52,9 +52,7 @@ describe("getOutputPrice", () => {
   });
 
   it("should throw when output exceeds reserve", () => {
-    expect(() => getOutputPrice(FEE_NUM, FEE_DENOM, 150_001n, 170_000n, 150_000n)).toThrow(
-      "output exceeds reserve",
-    );
+    expect(() => getOutputPrice(FEE_NUM, FEE_DENOM, 150_001n, 170_000n, 150_000n)).toThrow("output exceeds reserve");
   });
 
   it("should round up to favor the pool", () => {

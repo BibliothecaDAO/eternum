@@ -286,12 +286,13 @@ pub mod EternumAMM {
 
             let net_output = output - protocol_fee;
 
-            // Update reserves — protocol fee leaves the pool entirely
+            // Update reserves by the gross output once. The fee transfer below moves value
+            // out of the AMM contract, but that transfer is already included in `output`.
             if is_lords_input {
                 self.pool_lords_reserve.write(token, new_lords_reserve);
-                self.pool_token_reserve.write(token, new_token_reserve - protocol_fee);
+                self.pool_token_reserve.write(token, new_token_reserve);
             } else {
-                self.pool_lords_reserve.write(token, new_lords_reserve - protocol_fee);
+                self.pool_lords_reserve.write(token, new_lords_reserve);
                 self.pool_token_reserve.write(token, new_token_reserve);
             }
 

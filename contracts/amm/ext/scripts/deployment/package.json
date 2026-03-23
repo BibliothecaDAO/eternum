@@ -1,0 +1,29 @@
+{
+  "name": "amm-deployment-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy:local": "source ../../../../common/.env.local && bun --env-file=../../../../common/.env.local ./deploy.js",
+    "deploy:slot": "source ../../../../common/.env.slot && bun --env-file=../../../../common/.env.slot ./deploy.js",
+    "deploy:slottest": "source ../../../../common/.env.slottest && bun --env-file=../../../../common/.env.slottest ./deploy.js",
+    "deploy:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./deploy.js",
+    "deploy:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./deploy.js",
+    "declare:local": "source ../../../../common/.env.local && bun --env-file=../../../../common/.env.local ./declare.js",
+    "declare:slot": "source ../../../../common/.env.slot && bun --env-file=../../../../common/.env.slot ./declare.js",
+    "declare:slottest": "source ../../../../common/.env.slottest && bun --env-file=../../../../common/.env.slottest ./declare.js",
+    "declare:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./declare.js",
+    "declare:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./declare.js",
+    "link-indexer:local": "source ../../../../common/.env.local && bun --env-file=../../../../common/.env.local ./link-indexer.js",
+    "link-indexer:slot": "source ../../../../common/.env.slot && bun --env-file=../../../../common/.env.slot ./link-indexer.js",
+    "link-indexer:slottest": "source ../../../../common/.env.slottest && bun --env-file=../../../../common/.env.slottest ./link-indexer.js",
+    "link-indexer:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./link-indexer.js",
+    "link-indexer:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./link-indexer.js",
+    "test": "node --test ./link-indexer-env.test.js"
+  },
+  "dependencies": {
+    "colors": "^1.4.0",
+    "dotenv": "^16.4.7",
+    "starknet": "catalog:"
+  }
+}

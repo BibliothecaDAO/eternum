@@ -1,6 +1,6 @@
+use core::num::traits::Zero;
 use eternum_amm::amm::{IEternumAMMDispatcher, IEternumAMMDispatcherTrait};
 use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use core::num::traits::Zero;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address, stop_cheat_caller_address,
 };
@@ -39,9 +39,7 @@ fn deploy_mock_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
     addr
 }
 
-fn deploy_amm(
-    owner: ContractAddress, lords: ContractAddress, fee_recipient: ContractAddress,
-) -> ContractAddress {
+fn deploy_amm(owner: ContractAddress, lords: ContractAddress, fee_recipient: ContractAddress) -> ContractAddress {
     let lp_class = declare("LPToken").unwrap().contract_class();
     let amm_class = declare("EternumAMM").unwrap().contract_class();
     let mut calldata = array![];
@@ -192,9 +190,7 @@ fn test_add_liquidity_proportional() {
 
     // BOB adds liquidity: 500 LORDS with excess tokens
     start_cheat_caller_address(s.amm_addr, BOB());
-    let (lords_used, token_used, lp_minted) = s
-        .amm
-        .add_liquidity(s.token, 500 * E18, 10000 * E18, 0, 0, DEADLINE);
+    let (lords_used, token_used, lp_minted) = s.amm.add_liquidity(s.token, 500 * E18, 10000 * E18, 0, 0, DEADLINE);
     stop_cheat_caller_address(s.amm_addr);
 
     // Should maintain 1:5 ratio: 500 LORDS, 2500 tokens
@@ -432,10 +428,94 @@ fn test_protocol_fee() {
 
     assert!(protocol_fee_received > 0, "fee recipient should receive fee");
     assert!(token_out > 0, "user should still receive tokens");
-
     // The total output (user + fee) should equal what would have been output without protocol fee extraction
-    // from reserves. Protocol fee = gross_output * 1/100
-    // So user gets 99% of the gross output
+// from reserves. Protocol fee = gross_output * 1/100
+// So user gets 99% of the gross output
+}
+
+#[test]
+fn test_protocol_fee_lords_for_token_keeps_reserve_equal_to_contract_balance() {
+    let s = setup_with_protocol_fee(1, 100);
+
+    start_cheat_caller_address(s.amm_addr, ALICE());
+    s.amm.add_liquidity(s.token, 10000 * E18, 10000 * E18, 0, 0, DEADLINE);
+    stop_cheat_caller_address(s.amm_addr);
+
+    start_cheat_caller_address(s.amm_addr, BOB());
+    s.amm.swap_lords_for_token(s.token, 1000 * E18, 0, DEADLINE);
+    stop_cheat_caller_address(s.amm_addr);
+
+    let lords_erc20 = IERC20Dispatcher { contract_address: s.lords };
+    let token_erc20 = IERC20Dispatcher { contract_address: s.token };
+    let (lords_reserve, token_reserve) = s.amm.get_reserves(s.token);
+
+    assert!(lords_reserve == lords_erc20.balance_of(s.amm_addr), "lords reserve must equal AMM balance");
+    assert!(token_reserve == token_erc20.balance_of(s.amm_addr), "token reserve must equal AMM balance");
+}
+
+#[test]
+fn test_protocol_fee_token_for_lords_keeps_reserve_equal_to_contract_balance() {
+    let s = setup_with_protocol_fee(1, 100);
+
+    start_cheat_caller_address(s.amm_addr, ALICE());
+    s.amm.add_liquidity(s.token, 10000 * E18, 10000 * E18, 0, 0, DEADLINE);
+    stop_cheat_caller_address(s.amm_addr);
+
+    start_cheat_caller_address(s.amm_addr, BOB());
+    s.amm.swap_token_for_lords(s.token, 1000 * E18, 0, DEADLINE);
+    stop_cheat_caller_address(s.amm_addr);
+
+    let lords_erc20 = IERC20Dispatcher { contract_address: s.lords };
+    let token_erc20 = IERC20Dispatcher { contract_address: s.token };
+    let (lords_reserve, token_reserve) = s.amm.get_reserves(s.token);
+
+    assert!(lords_reserve == lords_erc20.balance_of(s.amm_addr), "lords reserve must equal AMM balance");
+    assert!(token_reserve == token_erc20.balance_of(s.amm_addr), "token reserve must equal AMM balance");
+}
+
+#[test]
+fn test_protocol_fee_token_to_token_keeps_pools_aligned_with_balances() {
+    let s = setup_with_protocol_fee(1, 100);
+    let token2 = deploy_mock_erc20("Mock Resource 2", "RES2");
+
+    start_cheat_caller_address(s.amm_addr, OWNER());
+    s.amm.create_pool(token2, 3, 1000, 1, 100);
+    stop_cheat_caller_address(s.amm_addr);
+
+    let token2_mock = IMockERC20Dispatcher { contract_address: token2 };
+    let token2_erc20 = IERC20Dispatcher { contract_address: token2 };
+    let mint_amount = 1_000_000 * E18;
+    token2_mock.mint(ALICE(), mint_amount);
+    token2_mock.mint(BOB(), mint_amount);
+
+    start_cheat_caller_address(token2, ALICE());
+    token2_erc20.approve(s.amm_addr, mint_amount);
+    stop_cheat_caller_address(token2);
+
+    start_cheat_caller_address(token2, BOB());
+    token2_erc20.approve(s.amm_addr, mint_amount);
+    stop_cheat_caller_address(token2);
+
+    start_cheat_caller_address(s.amm_addr, ALICE());
+    s.amm.add_liquidity(s.token, 10000 * E18, 10000 * E18, 0, 0, DEADLINE);
+    s.amm.add_liquidity(token2, 10000 * E18, 20000 * E18, 0, 0, DEADLINE);
+    stop_cheat_caller_address(s.amm_addr);
+
+    start_cheat_caller_address(s.amm_addr, BOB());
+    s.amm.swap_token_for_token(s.token, token2, 1000 * E18, 0, DEADLINE);
+    stop_cheat_caller_address(s.amm_addr);
+
+    let lords_erc20 = IERC20Dispatcher { contract_address: s.lords };
+    let token1_erc20 = IERC20Dispatcher { contract_address: s.token };
+    let (lords_reserve_1, token_reserve_1) = s.amm.get_reserves(s.token);
+    let (lords_reserve_2, token_reserve_2) = s.amm.get_reserves(token2);
+
+    assert!(token_reserve_1 == token1_erc20.balance_of(s.amm_addr), "token1 reserve must equal AMM balance");
+    assert!(token_reserve_2 == token2_erc20.balance_of(s.amm_addr), "token2 reserve must equal AMM balance");
+    assert!(
+        lords_reserve_1 + lords_reserve_2 == lords_erc20.balance_of(s.amm_addr),
+        "total lords reserves must equal AMM balance",
+    );
 }
 
 #[test]

@@ -2,7 +2,7 @@ import type { LiquidityEvent, Pool, PoolStats, PriceCandle, SwapEvent, UserPosit
 
 type ApiEnvelope<T> = { data: T };
 
-type RawPool = {
+export type RawPool = {
   tokenAddress: string;
   lpTokenAddress: string;
   lordsReserve: string | number;
@@ -16,7 +16,7 @@ type RawPool = {
   feeDenom?: string | number;
 };
 
-type RawSwapEvent = {
+export type RawSwapEvent = {
   txHash: string;
   user?: string;
   userAddress?: string;
@@ -29,7 +29,7 @@ type RawSwapEvent = {
   blockTimestamp?: string;
 };
 
-type RawLiquidityEvent = {
+export type RawLiquidityEvent = {
   txHash: string;
   provider?: string;
   providerAddress?: string;
@@ -43,7 +43,7 @@ type RawLiquidityEvent = {
   blockTimestamp?: string;
 };
 
-type RawPriceCandle = {
+export type RawPriceCandle = {
   timestamp?: string | number;
   openTime?: string;
   open: string | number;
@@ -53,7 +53,7 @@ type RawPriceCandle = {
   volume: string | number;
 };
 
-type RawPoolStats = {
+export type RawPoolStats = {
   tokenAddress: string;
   lordsReserve: string | number;
   tokenReserve: string | number;
@@ -66,7 +66,7 @@ type RawPoolStats = {
   spotPrice?: number;
 };
 
-type RawUserPosition = {
+export type RawUserPosition = {
   tokenAddress: string;
   lpBalance: string | number;
   poolShare: number;

@@ -8,7 +8,8 @@
     "start": "apibara start",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "api:dev": "tsx api/server.ts"
+    "api:dev": "tsx api/server.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@apibara/indexer": "2.1.0-beta.58",
@@ -25,6 +26,7 @@
     "@types/pg": "^8.11.0",
     "drizzle-kit": "^0.30.0",
     "typescript": "^5.4.0",
-    "tsx": "^4.0.0"
+    "tsx": "^4.0.0",
+    "vitest": "^3.0.0"
   }
 }
