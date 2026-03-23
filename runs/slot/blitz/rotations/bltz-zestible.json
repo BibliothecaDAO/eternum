@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23463003838-1.json",
   "latestLaunchRequestId": "23463003838-1",
-  "currentStepId": "configure-worlds",
+  "currentStepId": "grant-lootchest-roles",
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-23T22:23:53.025Z",
+  "updatedAt": "2026-03-23T22:24:17.558Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-23T22:38:49.404Z",
-    "lastEvaluatedAt": "2026-03-23T22:23:49.404Z"
+    "nextEvaluationAt": "2026-03-23T22:39:17.558Z",
+    "lastEvaluatedAt": "2026-03-23T22:24:17.558Z"
   },
   "steps": [
     {
@@ -64,10 +64,11 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-03-23T22:23:53.025Z"
+      "latestEvent": "Applying settings is complete",
+      "startedAt": "2026-03-23T22:23:53.025Z",
+      "finishedAt": "2026-03-23T22:24:17.558Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -1045,9 +1046,126 @@
         "startTimeIso": "2026-03-24T03:10:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "village-spawn-resources",
+            "description": "Set discoverable village spawn resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -1068,8 +1186,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-03-23T22:24:13.523Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -1084,7 +1203,8 @@
         ],
         "artifacts": {
           "worldAddress": "0x01e7cb591128490f7a6200777b3e67e148c66628135dab483f63da15c4b88abb",
-          "createGameTxHash": "0x7785d19631073efa2d6fee2d5ced82897245e1ce71b3a4b4c5310eb0cd32841"
+          "createGameTxHash": "0x7785d19631073efa2d6fee2d5ced82897245e1ce71b3a4b4c5310eb0cd32841",
+          "configureTxHash": "0x1fa1378a8037bf25b9ff869936dcbc935d7d7bc879a2b406472453791102ced"
         },
         "durationSeconds": 5400
       }
@@ -1096,13 +1216,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23463003838-1",
-    "workflowRunId": 23463003838,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-worlds",
-    "acquiredAt": "2026-03-23T22:23:53.025Z",
-    "expiresAt": "2026-03-23T23:08:53.025Z"
   }
 }
