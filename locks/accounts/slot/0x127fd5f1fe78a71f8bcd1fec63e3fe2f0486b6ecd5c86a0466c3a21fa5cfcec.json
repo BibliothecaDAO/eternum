@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-franky",
-    "launchRequestId": "23457847452-1",
+    "gameName": "bltz-zestible",
+    "launchRequestId": "23461904125-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23457847452,
+    "workflowRunId": 23461904125,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "1b5e8dec-0498-4690-996e-4e8701559de4"
+    "stepId": "create-world",
+    "leaseId": "f1ca2753-aaed-4ab3-a874-9314b658cb82"
   },
-  "acquiredAt": "2026-03-23T20:14:01.004Z",
-  "heartbeatAt": "2026-03-23T20:14:10.976Z",
-  "expiresAt": "2026-03-23T20:14:10.976Z",
-  "releasedAt": "2026-03-23T20:14:10.976Z"
+  "acquiredAt": "2026-03-23T21:52:29.295Z",
+  "heartbeatAt": "2026-03-23T21:52:29.295Z",
+  "expiresAt": "2026-03-23T22:02:29.295Z"
 }
