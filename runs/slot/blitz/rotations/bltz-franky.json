@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23423614823-1.json",
   "latestLaunchRequestId": "23423614823-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T05:59:08.146Z",
+  "updatedAt": "2026-03-23T06:02:30.120Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T06:04:05.342Z",
-    "lastEvaluatedAt": "2026-03-23T05:59:05.342Z"
+    "nextEvaluationAt": "2026-03-23T06:07:30.120Z",
+    "lastEvaluatedAt": "2026-03-23T06:02:30.120Z"
   },
   "steps": [
     {
@@ -46,10 +46,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-23T05:59:08.146Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-03-23T05:59:08.146Z",
+      "finishedAt": "2026-03-23T06:02:30.120Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -106,8 +107,8 @@
         "startTimeIso": "2026-03-23T06:20:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -117,8 +118,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T06:00:18.615Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -141,7 +143,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "createGameTxHash": "0x75549b43a72f81d9740777cc05e90c34fac56297620961c30db2ed40c8b9d4e"
+        },
+        "durationSeconds": 3600
       },
       {
         "gameName": "bltz-franky-02",
@@ -149,8 +154,8 @@
         "startTimeIso": "2026-03-23T07:20:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -160,8 +165,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T06:01:23.913Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -184,7 +190,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "createGameTxHash": "0x5014a062c879e7779f4e5447b946fdd71e7a668e2d8f5bcadf3874a6f2acb9a"
+        },
+        "durationSeconds": 3600
       },
       {
         "gameName": "bltz-franky-03",
@@ -192,8 +201,8 @@
         "startTimeIso": "2026-03-23T08:20:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -203,8 +212,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T06:02:26.471Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -227,7 +237,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "createGameTxHash": "0x2eaff789a98f001eb868c1d593a81d5dc4e0c7e3eb059c33d612a5d22fdc4e8"
+        },
+        "durationSeconds": 3600
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
@@ -237,13 +250,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23423614823-1",
-    "workflowRunId": 23423614823,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-23T05:59:08.146Z",
-    "expiresAt": "2026-03-23T06:44:08.146Z"
   }
 }
