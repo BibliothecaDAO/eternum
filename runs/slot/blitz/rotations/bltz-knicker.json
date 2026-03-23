@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23415890438-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T00:12:41.396Z",
-  "updatedAt": "2026-03-23T00:24:43.515Z",
+  "updatedAt": "2026-03-23T00:40:12.594Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,7 +27,8 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-23T00:39:43.515Z"
+    "nextRetryAt": "2026-03-23T00:55:12.594Z",
+    "lastRetryAt": "2026-03-23T00:40:12.594Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
