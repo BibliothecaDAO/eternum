@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-franky",
   "seriesName": "bltz-franky",
-  "status": "complete",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexers",
   "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23461067376-1.json",
   "latestLaunchRequestId": "23461067376-1",
-  "currentStepId": null,
+  "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T21:30:17.940Z",
+  "updatedAt": "2026-03-23T21:30:23.106Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,6 +31,7 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
+    "nextEvaluationAt": "2026-03-23T21:35:23.106Z",
     "lastEvaluatedAt": "2026-03-23T21:30:17.940Z"
   },
   "steps": [
@@ -72,9 +73,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-23T21:30:23.106Z"
     }
   ],
   "summary": {
@@ -102,9 +104,9 @@
         "startTime": 1774246800,
         "startTimeIso": "2026-03-23T06:20:00.000Z",
         "seriesGameNumber": 1,
-        "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
-        "status": "succeeded",
+        "currentStepId": "create-indexers",
+        "latestEvent": "Finishing setup started",
+        "status": "running",
         "configSteps": [
           {
             "id": "world-admin",
@@ -255,9 +257,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "succeeded",
-            "latestEvent": "Completed create-indexers",
-            "updatedAt": "2026-03-23T06:05:08.255Z"
+            "status": "running",
+            "latestEvent": "Finishing setup started",
+            "updatedAt": "2026-03-23T21:30:23.106Z"
           }
         ],
         "artifacts": {
@@ -1463,5 +1465,12 @@
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
   },
-  "completedAt": "2026-03-23T21:30:17.940Z"
+  "activeLease": {
+    "launchRequestId": "23461067376-1",
+    "workflowRunId": 23461067376,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-03-23T21:30:23.106Z",
+    "expiresAt": "2026-03-23T22:15:23.106Z"
+  }
 }
