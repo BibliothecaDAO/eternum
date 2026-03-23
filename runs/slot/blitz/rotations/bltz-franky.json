@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23443316480-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T15:05:53.297Z",
+  "updatedAt": "2026-03-23T15:06:05.837Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -292,7 +292,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T14:50:56.821Z"
+          "pendingIndexerTierRequestedAt": "2026-03-23T15:06:01.239Z"
         },
         "durationSeconds": 3600
       },
@@ -486,7 +486,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T14:50:58.422Z"
+          "pendingIndexerTierRequestedAt": "2026-03-23T15:06:02.802Z"
         },
         "durationSeconds": 3600
       },
@@ -680,7 +680,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T14:50:59.938Z"
+          "pendingIndexerTierRequestedAt": "2026-03-23T15:06:04.047Z"
         },
         "durationSeconds": 3600
       },
