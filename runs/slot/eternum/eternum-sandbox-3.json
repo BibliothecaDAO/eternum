@@ -10,9 +10,9 @@
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/eternum-sandbox-3/23450981151-1.json",
   "latestLaunchRequestId": "23450981151-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "create-world",
   "createdAt": "2026-03-23T17:30:20.276Z",
-  "updatedAt": "2026-03-23T17:30:25.395Z",
+  "updatedAt": "2026-03-23T17:31:43.785Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -68,19 +68,25 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-23T17:30:25.395Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-23T17:30:25.395Z",
+      "finishedAt": "2026-03-23T17:31:43.785Z"
     }
   ],
-  "artifacts": {},
-  "activeLease": {
-    "launchRequestId": "23450981151-1",
-    "workflowRunId": 23450981151,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-23T17:30:25.395Z",
-    "expiresAt": "2026-03-23T18:15:25.395Z"
+  "artifacts": {
+    "summaryPath": ".context/game-launch/slot-eternum-eternum-sandbox-3.json",
+    "worldAddress": "0x05c945cfdfb54a30ff70e9d04044d492c65ba06325fdfb993a023d2e00f42ed8",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "next",
+      "runId": 23451057855,
+      "runNumber": 927,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23451057855",
+      "status": "completed",
+      "conclusion": "success"
+    }
   }
 }
