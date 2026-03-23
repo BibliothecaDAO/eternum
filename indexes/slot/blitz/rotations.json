@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T11:26:35.598Z",
+  "updatedAt": "2026-03-23T11:26:49.997Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -101,23 +101,23 @@
       "rotationName": "bltz-franky",
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23434939691-1.json",
-      "status": "running",
-      "updatedAt": "2026-03-23T11:26:35.598Z",
+      "status": "attention",
+      "updatedAt": "2026-03-23T11:26:49.997Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "create-worlds",
-      "activeLeaseExpiresAt": "2026-03-23T12:11:35.598Z",
-      "hasRunningStep": true,
-      "recoverableFailedStepId": null,
+      "hasRunningStep": false,
+      "recoverableFailedStepId": "create-worlds",
       "recoverablePendingStepId": "wait-for-factory-indexes",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
+        "nextRetryAt": "2026-03-23T11:41:49.997Z",
         "lastRetryAt": "2026-03-23T11:25:12.412Z"
       },
       "evaluation": {
         "intervalMinutes": 5,
-        "nextEvaluationAt": "2026-03-23T11:31:30.254Z",
-        "lastEvaluatedAt": "2026-03-23T11:26:30.254Z"
+        "nextEvaluationAt": "2026-03-23T11:31:49.997Z",
+        "lastEvaluatedAt": "2026-03-23T11:26:49.997Z"
       },
       "games": [
         {
