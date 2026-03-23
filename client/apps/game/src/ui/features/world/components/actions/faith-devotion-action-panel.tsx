@@ -55,6 +55,27 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
+const formatFaithPerSecond = (value: number): string => {
+  if (Number.isInteger(value)) {
+    return value.toLocaleString();
+  }
+
+  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+};
+
+const resolveFaithSplitPercentages = (
+  structureOwnerFpPerSec: number,
+  wonderOwnerFpPerSec: number,
+): { structureOwnerPercent: number; wonderOwnerPercent: number } => {
+  const totalFpPerSec = structureOwnerFpPerSec + wonderOwnerFpPerSec;
+  if (totalFpPerSec <= 0) {
+    return { structureOwnerPercent: 70, wonderOwnerPercent: 30 };
+  }
+
+  const structureOwnerPercent = Math.round((structureOwnerFpPerSec / totalFpPerSec) * 100);
+  return { structureOwnerPercent, wonderOwnerPercent: 100 - structureOwnerPercent };
+};
+
 interface FaithDevotionActionPanelProps {
   structureEntityId: ID;
   variant?: "compact" | "tab";
@@ -137,6 +158,7 @@ export const FaithDevotionActionPanel = ({
       />,
     );
   }, [structureEntityId, structureName, toggleModal]);
+
   const openWonderDetailModal = useCallback(() => {
     toggleModal(
       <WonderFaithDetailModal
@@ -146,6 +168,21 @@ export const FaithDevotionActionPanel = ({
       />,
     );
   }, [structureEntityId, structureName, toggleModal]);
+
+  const currentWonderId = devotionStatus?.wonderId ?? null;
+  const openCurrentWonderDetailModal = useCallback(() => {
+    if (currentWonderId === null) {
+      return;
+    }
+
+    toggleModal(
+      <WonderFaithDetailModal
+        wonderId={currentWonderId}
+        fallbackWonderName={currentWonderLabel}
+        onClose={() => toggleModal(null)}
+      />,
+    );
+  }, [currentWonderId, currentWonderLabel, toggleModal]);
 
   if (isLoadingStructure) {
     return (
@@ -213,9 +250,15 @@ export const FaithDevotionActionPanel = ({
 
   const buttonLabel = devotionStatus ? "Change Devotion" : "Devote to Wonder";
   const canDevote = isMine && !isLoadingWonders;
+  const structureOwnerFpPerSec = devotionStatus?.fpToStructureOwnerPerSec ?? 0;
+  const wonderOwnerFpPerSec = devotionStatus?.fpToWonderOwnerPerSec ?? 0;
+  const { structureOwnerPercent, wonderOwnerPercent } = resolveFaithSplitPercentages(
+    structureOwnerFpPerSec,
+    wonderOwnerFpPerSec,
+  );
 
   return (
-    <div className={cn("flex h-full flex-col justify-between gap-3", className)}>
+    <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
       <div className="flex flex-col gap-1 text-left">
         <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Faith</span>
         <span className={cn("font-semibold text-gold", variant === "compact" ? "text-sm" : "text-base")}>Devotion</span>
@@ -223,41 +266,88 @@ export const FaithDevotionActionPanel = ({
 
       <div className="rounded-md border border-gold/25 bg-black/35 p-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xxs uppercase tracking-[0.25em] text-gold/60">Current Wonder</span>
+          <span className="text-xxs uppercase tracking-[0.25em] text-gold/60">Devotion</span>
           {isLoadingDevotionStatus && <Loader className="h-3.5 w-3.5 animate-spin text-gold/60" />}
         </div>
-        <p className="mt-1 truncate text-xs font-semibold text-gold">{currentWonderLabel}</p>
+        <div
+          className={cn(
+            "mt-2 inline-flex max-w-full items-center rounded-md border px-2 py-1 text-xs font-semibold",
+            devotionStatus ? "border-gold/35 bg-gold/10 text-gold" : "border-gold/20 bg-black/30 text-gold/75",
+          )}
+        >
+          <span className="truncate">{devotionStatus ? `Devoted to ${currentWonderLabel}` : "Not devoted yet"}</span>
+        </div>
 
         {devotionStatus ? (
-          <div className="mt-2 grid grid-cols-1 gap-1 text-xxs text-gold/70">
-            <span>
-              Your FP/sec:{" "}
-              <span className="font-mono text-gold">{devotionStatus.fpToStructureOwnerPerSec.toLocaleString()}</span>
-            </span>
-            <span>
-              Wonder owner FP/sec:{" "}
-              <span className="font-mono text-gold">{devotionStatus.fpToWonderOwnerPerSec.toLocaleString()}</span>
-            </span>
-          </div>
+          <>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <DevotionSplitStat label="You" value={`${formatFaithPerSecond(structureOwnerFpPerSec)} FP/s`} />
+              <DevotionSplitStat label="Owner" value={`${formatFaithPerSecond(wonderOwnerFpPerSec)} FP/s`} />
+            </div>
+
+            <div className="mt-2">
+              <div className="h-1.5 overflow-hidden rounded-full border border-gold/25 bg-black/40">
+                <div className="h-full bg-gold/75" style={{ width: `${structureOwnerPercent}%` }} />
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[10px] uppercase tracking-[0.12em] text-gold/65">
+                <span>You {structureOwnerPercent}%</span>
+                <span>Owner {wonderOwnerPercent}%</span>
+              </div>
+            </div>
+          </>
         ) : (
-          <p className="mt-2 text-xxs text-gold/65">This structure is not devoted yet.</p>
+          <p className="mt-3 text-xxs text-gold/65">
+            Choose a Wonder to start generating Faith Points for both you and the Wonder owner.
+          </p>
         )}
       </div>
 
-      <Button
-        size="xs"
-        variant="outline"
-        forceUppercase={false}
-        className="w-full border-gold/40 bg-gold/10 text-gold hover:bg-gold/15 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={!canDevote}
-        onClick={openDevotionModal}
-      >
-        <Sparkles className="h-3.5 w-3.5" />
-        <span>{isMine ? buttonLabel : "Only owner can devote"}</span>
-      </Button>
+      {devotionStatus ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            size="xs"
+            variant="outline"
+            forceUppercase={false}
+            className="border-gold/40 bg-gold/10 text-gold hover:bg-gold/15 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!canDevote}
+            onClick={openDevotionModal}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>{isMine ? buttonLabel : "Only owner can devote"}</span>
+          </Button>
+          <Button
+            size="xs"
+            variant="outline"
+            forceUppercase={false}
+            className="border-gold/30 bg-black/30 text-gold/90 hover:bg-gold/10"
+            onClick={openCurrentWonderDetailModal}
+          >
+            View Wonder
+          </Button>
+        </div>
+      ) : (
+        <Button
+          size="xs"
+          variant="outline"
+          forceUppercase={false}
+          className="w-full border-gold/40 bg-gold/10 text-gold hover:bg-gold/15 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!canDevote}
+          onClick={openDevotionModal}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          <span>{isMine ? buttonLabel : "Only owner can devote"}</span>
+        </Button>
+      )}
     </div>
   );
 };
+
+const DevotionSplitStat = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded border border-gold/20 bg-black/30 px-2 py-1.5">
+    <div className="text-[10px] uppercase tracking-[0.16em] text-gold/60">{label}</div>
+    <div className="mt-1 font-mono text-sm font-semibold text-gold">{value}</div>
+  </div>
+);
 
 const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotionModalProps) => {
   const queryClient = useQueryClient();

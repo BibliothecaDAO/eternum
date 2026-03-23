@@ -73,6 +73,34 @@ export const latestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-03-23",
+    title: "Tribe Controls Spacing Polish",
+    description:
+      "Refined Tribe action controls with cleaner button/icon spacing and sizing, including a clearer create-tribe form flow and tighter Members/Invites action alignment in the detail panel.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Tribe Leaderboard Visual Sync",
+    description:
+      "Tribe rankings and tribe detail panels now share the same modern leaderboard styling language as Players, including refreshed row cards, cleaner headers, and a more consistent member/invite detail layout.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Devotion Split Card Refresh",
+    description:
+      "Faith Devotion tiles now show a dedicated devoted-wonder chip, You vs Owner FP/sec cards, and a visual split bar with direct Change Devotion and View Wonder actions.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Faith Tile Mobile Readability",
+    description:
+      "Wonder faith details on compact structure tiles now prioritize Total FP on its own row and use denser stat labels, so key values like Followers stay legible on smaller screens.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
     title: "Stable First Map Camera",
     description:
       "World map now opens in its intended tactical camera framing on the first load, so it no longer starts in a close-up offset view before settling after a scene switch.",
