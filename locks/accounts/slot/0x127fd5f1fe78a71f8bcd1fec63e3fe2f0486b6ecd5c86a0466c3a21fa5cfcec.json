@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.eternum",
-    "gameName": "etrn-haven-204",
-    "launchRequestId": "23449962521-1",
+    "gameName": "etrn-bloom-897",
+    "launchRequestId": "23450170365-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23449962521,
+    "workflowRunId": 23450170365,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "d5710e0b-69e4-4e89-8566-99b407f648f4"
+    "leaseId": "1fa9fd17-8b95-46c4-89ac-0658ea1d47e9"
   },
-  "acquiredAt": "2026-03-23T17:07:44.422Z",
-  "heartbeatAt": "2026-03-23T17:07:48.643Z",
-  "expiresAt": "2026-03-23T17:07:48.643Z",
-  "releasedAt": "2026-03-23T17:07:48.643Z"
+  "acquiredAt": "2026-03-23T17:12:04.500Z",
+  "heartbeatAt": "2026-03-23T17:12:04.500Z",
+  "expiresAt": "2026-03-23T17:22:04.500Z"
 }
