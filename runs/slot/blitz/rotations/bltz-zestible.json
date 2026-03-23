@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23465616064-1.json",
   "latestLaunchRequestId": "23465616064-1",
-  "currentStepId": "grant-lootchest-roles",
+  "currentStepId": null,
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-23T23:42:45.161Z",
+  "updatedAt": "2026-03-23T23:42:55.804Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-23T23:57:36.238Z",
-    "lastEvaluatedAt": "2026-03-23T23:42:36.238Z"
+    "nextEvaluationAt": "2026-03-23T23:57:55.804Z",
+    "lastEvaluatedAt": "2026-03-23T23:42:55.804Z"
   },
   "steps": [
     {
@@ -73,10 +73,11 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-03-23T23:42:45.161Z"
+      "latestEvent": "Setting up loot chests is complete",
+      "startedAt": "2026-03-23T23:42:45.161Z",
+      "finishedAt": "2026-03-23T23:42:55.804Z"
     },
     {
       "id": "create-indexers",
@@ -1423,13 +1424,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23465616064-1",
-    "workflowRunId": 23465616064,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-roles",
-    "acquiredAt": "2026-03-23T23:42:45.161Z",
-    "expiresAt": "2026-03-24T00:27:45.161Z"
   }
 }
