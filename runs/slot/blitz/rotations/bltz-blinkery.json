@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-blinkery",
   "seriesName": "bltz-blinkery",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/slot/blitz/rotations/bltz-blinkery/23423814592-1.json",
   "latestLaunchRequestId": "23423814592-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:48:13.927Z",
-  "updatedAt": "2026-03-23T06:06:22.528Z",
+  "updatedAt": "2026-03-23T06:06:26.664Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,7 +27,6 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-23T06:21:22.528Z",
     "lastRetryAt": "2026-03-23T06:05:12.425Z"
   },
   "evaluation": {
@@ -46,9 +45,10 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games needs attention"
+      "latestEvent": "Creating games started",
+      "startedAt": "2026-03-23T06:06:26.664Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -285,5 +285,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-blinkery.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:48:32.882Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23423814592-1",
+    "workflowRunId": 23423814592,
+    "workflowRunAttempt": 1,
+    "stepId": "create-worlds",
+    "acquiredAt": "2026-03-23T06:06:26.664Z",
+    "expiresAt": "2026-03-23T06:51:26.664Z"
   }
 }
