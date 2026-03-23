@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "runId": "slot.eternum:eternum-sandbox-3",
+  "environment": "slot.eternum",
+  "chain": "slot",
+  "gameType": "eternum",
+  "gameName": "eternum-sandbox-3",
+  "status": "running",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "create-indexer",
+  "inputPath": "inputs/slot/eternum/eternum-sandbox-3/23450981151-1.json",
+  "latestLaunchRequestId": "23450981151-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-03-23T17:30:20.276Z",
+  "updatedAt": "2026-03-23T17:30:20.276Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23450981151,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23450981151",
+    "ref": "next",
+    "sha": "053bdc32d1436a621f3753b97ce31d7cdf5c7fbd"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-village-pass-role",
+      "title": "Setting up village pass",
+      "status": "pending",
+      "workflowStepName": "Setting up village pass",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-banks",
+      "title": "Preparing banks",
+      "status": "pending",
+      "workflowStepName": "Preparing banks",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {}
+}
