@@ -9,6 +9,7 @@ packages:
   - client/apps/heavy-load
   - client/apps/eternum-mobile
   - client/apps/onchain-agent
+  - client/apps/amm-indexer
   - config
   - packages/*
   - contracts/season_pass/scripts/deployment

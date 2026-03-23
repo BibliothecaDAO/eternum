@@ -21,6 +21,8 @@ const FactoryV2Page = lazy(() =>
   import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
 );
 
+const LazyAmmDashboard = lazy(() => import("./ui/features/amm/amm-dashboard"));
+
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
   const [backgroundImage] = useState(() => getRandomBackgroundImage());
@@ -88,6 +90,16 @@ function App() {
               element={
                 <Suspense fallback={<LoadingScreen />}>
                   <FactoryV2Page />
+                </Suspense>
+              }
+            />
+
+            {/* Standalone AMM dashboard */}
+            <Route
+              path="/amm"
+              element={
+                <Suspense fallback={<LoadingScreen />}>
+                  <LazyAmmDashboard />
                 </Suspense>
               }
             />

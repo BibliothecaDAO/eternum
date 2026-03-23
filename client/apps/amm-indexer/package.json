@@ -18,7 +18,8 @@
     "drizzle-orm": "^0.39.0",
     "pg": "^8.13.0",
     "hono": "^4.0.0",
-    "@hono/node-server": "^1.0.0"
+    "@hono/node-server": "^1.0.0",
+    "@bibliothecadao/amm-sdk": "workspace:*"
   },
   "devDependencies": {
     "@types/pg": "^8.11.0",
