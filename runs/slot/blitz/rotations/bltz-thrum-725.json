@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-thrum-725/23422454488-1.json",
   "latestLaunchRequestId": "23422454488-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-03-23T05:12:07.827Z",
-  "updatedAt": "2026-03-23T05:12:38.753Z",
+  "updatedAt": "2026-03-23T05:12:46.706Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -54,9 +54,10 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for games started",
+      "startedAt": "2026-03-23T05:12:46.706Z"
     },
     {
       "id": "configure-worlds",
@@ -237,5 +238,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-thrum-725.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:12:25.259Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23422454488-1",
+    "workflowRunId": 23422454488,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-indexes",
+    "acquiredAt": "2026-03-23T05:12:46.706Z",
+    "expiresAt": "2026-03-23T05:57:46.706Z"
   }
 }
