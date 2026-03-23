@@ -1,5 +1,6 @@
 import { EternumProvider } from "@bibliothecadao/provider";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
+import { setTimeout as sleep } from "node:timers/promises";
 import { Account, shortString } from "starknet";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import { executeConfigSteps } from "../config/executor";
@@ -8,13 +9,16 @@ import {
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
   DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
-  DEFAULT_MAX_ACTIONS,
   DEFAULT_NAMESPACE,
   DEFAULT_VERSION,
   DEFAULT_VRF_PROVIDER_ADDRESS,
 } from "../constants";
-import { buildDefaultBanks, grantVillagePassRoleToRealmInternalSystems } from "../eternum";
-import { resolveDeploymentEnvironment } from "../environment";
+import { buildDefaultBanks, grantVillagePassRolesToWorldSystems } from "../eternum";
+import {
+  isEternumDeploymentEnvironment,
+  isMainnetDeploymentEnvironment,
+  resolveDeploymentEnvironment,
+} from "../environment";
 import {
   isZeroAddress,
   patchManifestWithFactory,
@@ -22,17 +26,21 @@ import {
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
 import { createIndexer } from "../indexing/indexer";
+import { syncPaymasterPolicy } from "../paymaster";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
 import type {
   ConfigStepHooks,
+  CreateGameDefaults,
   DeploymentEnvironment,
   FactoryWorldProfile,
   IndexerRequest,
   LaunchGameRequest,
+  LaunchGameStepId,
+  LaunchGameStepRequest,
   LaunchGameSummary,
 } from "../types";
-import { writeLaunchSummary } from "./io";
+import { loadLaunchSummaryIfPresent, writeLaunchSummary } from "./io";
 import { createProgressReporter, formatDuration } from "./progress";
 import { parseStartTime, toIsoUtc } from "./time";
 
@@ -43,6 +51,7 @@ type LaunchConfig = ReturnType<typeof applyDeploymentConfigOverrides>;
 type LaunchConfigSteps = ReturnType<typeof resolveFactoryWorldConfigSteps>;
 type ConfiguredWorldProvider = Pick<EternumProvider, "grant_collectible_minter_role" | "create_banks"> &
   EternumProvider;
+type SilentConfigLogger = { log: () => void; info: () => void };
 
 interface LaunchRuntime {
   progress: LaunchProgress;
@@ -55,7 +64,7 @@ interface LaunchRuntime {
   vrfProviderAddress: string;
   executionMode: NonNullable<LaunchGameRequest["executionMode"]>;
   version: string;
-  maxActions: number;
+  createGame: CreateGameDefaults;
 }
 
 interface LaunchAccountContext {
@@ -71,12 +80,30 @@ interface ConfiguredWorldContext {
   patchedProvider: ConfiguredWorldProvider;
 }
 
+interface PreparedLaunchExecution {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  summary: LaunchGameSummary;
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+}
+
+interface ConfiguredLaunchDependencies {
+  accountContext: LaunchAccountContext;
+  worldContext: ConfiguredWorldContext;
+}
+
+const SILENT_CONFIG_LOGGER: SilentConfigLogger = {
+  log: () => undefined,
+  info: () => undefined,
+};
+
 function asProviderSigner(account: Account): ProviderSigner {
   return account as unknown as ProviderSigner;
 }
 
-function createAccount(address: string, privateKey: string, rpcUrl: string, vrfProviderAddress: string) {
-  const baseManifest = getGameManifest("slot" as Chain);
+function createAccount(address: string, privateKey: string, chain: Chain, rpcUrl: string, vrfProviderAddress: string) {
+  const baseManifest = getGameManifest(chain);
   const provider = new EternumProvider(baseManifest as any, rpcUrl, vrfProviderAddress);
   const account = new Account({
     provider: provider.provider as StarknetAccountOptions["provider"],
@@ -95,13 +122,30 @@ function shortenHash(value: string): string {
   return `${value.slice(0, 10)}...${value.slice(-6)}`;
 }
 
+function resolveLaunchFactoryAddress(request: LaunchGameRequest, environment: DeploymentEnvironment): string {
+  const factoryAddress = request.factoryAddress || environment.factoryAddress;
+
+  if (factoryAddress) {
+    return factoryAddress;
+  }
+
+  throw new Error(`Factory address is required for ${environment.id}. Set FACTORY_ADDRESS or pass --factory-address.`);
+}
+
+function resolveCreateGameSettings(request: LaunchGameRequest, environment: DeploymentEnvironment): CreateGameDefaults {
+  return {
+    ...environment.createGame,
+    maxActions: request.maxActions ?? environment.createGame.maxActions,
+  };
+}
+
 function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgress): LaunchRuntime {
   const environment = resolveDeploymentEnvironment(request.environmentId);
 
   return {
     progress,
     environment,
-    factoryAddress: request.factoryAddress || environment.factoryAddress,
+    factoryAddress: resolveLaunchFactoryAddress(request, environment),
     rpcUrl: request.rpcUrl || environment.rpcUrl,
     startTime: parseStartTime(request.startTime),
     cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
@@ -109,7 +153,7 @@ function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgres
     vrfProviderAddress: request.vrfProviderAddress || DEFAULT_VRF_PROVIDER_ADDRESS,
     executionMode: request.executionMode || "batched",
     version: request.version || DEFAULT_VERSION,
-    maxActions: request.maxActions ?? DEFAULT_MAX_ACTIONS,
+    createGame: resolveCreateGameSettings(request, environment),
   };
 }
 
@@ -140,6 +184,8 @@ function resolveLaunchConfiguration(
     singleRealmMode: request.singleRealmMode,
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
+    mapConfigOverrides: request.mapConfigOverrides,
+    blitzRegistrationOverrides: request.blitzRegistrationOverrides,
   });
   const configSteps = resolveFactoryWorldConfigSteps({
     environmentId: runtime.environment.id,
@@ -175,6 +221,45 @@ function createLaunchSummary(runtime: LaunchRuntime, request: LaunchGameRequest)
   };
 }
 
+function hydrateExistingLaunchSummary(summary: LaunchGameSummary): LaunchGameSummary {
+  const existingSummary = loadLaunchSummaryIfPresent(summary.environment, summary.gameName);
+  if (!existingSummary) {
+    return summary;
+  }
+
+  return {
+    ...existingSummary,
+    environment: summary.environment,
+    chain: summary.chain,
+    gameType: summary.gameType,
+    gameName: summary.gameName,
+    startTime: summary.startTime,
+    startTimeIso: summary.startTimeIso,
+    rpcUrl: summary.rpcUrl,
+    factoryAddress: summary.factoryAddress,
+    configMode: summary.configMode,
+    dryRun: summary.dryRun,
+    outputPath: summary.outputPath || existingSummary.outputPath,
+  };
+}
+
+function prepareLaunchExecution(request: LaunchGameRequest): PreparedLaunchExecution {
+  const runtime = createLaunchRuntime(request, createProgressReporter());
+
+  validateWorldName(request.gameName);
+  logLaunchPreparation(runtime, request.gameName);
+
+  const { deploymentConfig, configSteps } = resolveLaunchConfiguration(runtime, request);
+
+  return {
+    runtime,
+    request,
+    summary: hydrateExistingLaunchSummary(createLaunchSummary(runtime, request)),
+    deploymentConfig,
+    configSteps,
+  };
+}
+
 function buildIndexerRequest(options: {
   env: string;
   rpcUrl: string;
@@ -196,29 +281,24 @@ function buildIndexerRequest(options: {
   };
 }
 
-function buildDryRunSummary(
-  runtime: LaunchRuntime,
-  request: LaunchGameRequest,
-  summary: LaunchGameSummary,
-  configSteps: LaunchConfigSteps,
-): LaunchGameSummary {
-  runtime.progress.log("Dry run enabled; no transactions will be sent");
-  summary.configSteps = configSteps.map((step) => ({
+function buildDryRunSummary(execution: PreparedLaunchExecution): LaunchGameSummary {
+  execution.runtime.progress.log("Dry run enabled; no transactions will be sent");
+  execution.summary.configSteps = execution.configSteps.map((step) => ({
     id: step.id,
     description: step.description,
   }));
-  summary.indexerRequest = buildIndexerRequest({
-    env: runtime.environment.toriiEnv,
-    rpcUrl: runtime.rpcUrl,
-    namespaces: runtime.toriiNamespaces,
-    worldName: request.gameName,
+  execution.summary.indexerRequest = buildIndexerRequest({
+    env: execution.runtime.environment.toriiEnv,
+    rpcUrl: execution.runtime.rpcUrl,
+    namespaces: execution.runtime.toriiNamespaces,
+    worldName: execution.request.gameName,
     worldAddress: "<pending>",
-    workflowFile: request.workflowFile,
-    ref: request.ref,
+    workflowFile: execution.request.workflowFile,
+    ref: execution.request.ref,
   });
-  summary.outputPath = writeLaunchSummary(summary);
-  runtime.progress.log(`Dry run summary written to ${summary.outputPath}`);
-  return summary;
+  execution.summary.outputPath = writeLaunchSummary(execution.summary);
+  execution.runtime.progress.log(`Dry run summary written to ${execution.summary.outputPath}`);
+  return execution.summary;
 }
 
 function resolveLaunchAccountContext(runtime: LaunchRuntime, request: LaunchGameRequest): LaunchAccountContext {
@@ -229,7 +309,13 @@ function resolveLaunchAccountContext(runtime: LaunchRuntime, request: LaunchGame
     fallbackPrivateKey: runtime.environment.privateKey,
     context: `environment "${runtime.environment.id}"`,
   });
-  const { account } = createAccount(accountAddress, privateKey, runtime.rpcUrl, runtime.vrfProviderAddress);
+  const { account } = createAccount(
+    accountAddress,
+    privateKey,
+    runtime.environment.chain as Chain,
+    runtime.rpcUrl,
+    runtime.vrfProviderAddress,
+  );
 
   return {
     accountAddress,
@@ -239,19 +325,56 @@ function resolveLaunchAccountContext(runtime: LaunchRuntime, request: LaunchGame
   };
 }
 
+async function resolveIndexedWorldContext(
+  runtime: LaunchRuntime,
+  request: LaunchGameRequest,
+): Promise<ConfiguredWorldContext> {
+  return createConfiguredWorldContext(runtime, await waitForIndexedWorld(runtime, request));
+}
+
+function updateWorldAddress(summary: LaunchGameSummary, worldContext: ConfiguredWorldContext): void {
+  summary.worldAddress = worldContext.worldProfile.worldAddress;
+}
+
+async function resolveConfiguredLaunchDependencies(
+  execution: PreparedLaunchExecution,
+): Promise<ConfiguredLaunchDependencies> {
+  const accountContext = resolveLaunchAccountContext(execution.runtime, execution.request);
+  const worldContext = await resolveIndexedWorldContext(execution.runtime, execution.request);
+
+  updateWorldAddress(execution.summary, worldContext);
+
+  return { accountContext, worldContext };
+}
+
 function buildCreateGameCalldata(runtime: LaunchRuntime, request: LaunchGameRequest): Array<string | number> {
   return [
     shortString.encodeShortString(request.gameName),
-    runtime.maxActions,
+    runtime.createGame.maxActions,
     runtime.version,
     request.seriesName ? shortString.encodeShortString(request.seriesName) : "0x0",
     request.seriesGameNumber ?? 0,
   ];
 }
 
-async function createGame(runtime: LaunchRuntime, request: LaunchGameRequest, account: Account): Promise<string> {
+function buildCreateGameAttemptLabel(attemptNumber: number, totalAttempts: number): string {
+  if (totalAttempts === 1) {
+    return "create_game";
+  }
+
+  return `create_game (${attemptNumber}/${totalAttempts})`;
+}
+
+async function submitCreateGameAttempt(
+  runtime: LaunchRuntime,
+  request: LaunchGameRequest,
+  account: Account,
+  attemptNumber: number,
+  totalAttempts: number,
+): Promise<string> {
+  const attemptLabel = buildCreateGameAttemptLabel(attemptNumber, totalAttempts);
   const result = await runtime.progress.run(
-    "create_game",
+    attemptLabel,
     () =>
       account.execute({
         contractAddress: runtime.factoryAddress,
@@ -259,9 +382,14 @@ async function createGame(runtime: LaunchRuntime, request: LaunchGameRequest, ac
         calldata: buildCreateGameCalldata(runtime, request),
       }),
     {
-      start: `Submitting create_game via ${shortenHash(runtime.factoryAddress)}`,
+      start:
+        totalAttempts === 1
+          ? `Submitting create_game via ${shortenHash(runtime.factoryAddress)}`
+          : `Submitting create_game attempt ${attemptNumber}/${totalAttempts} via ${shortenHash(runtime.factoryAddress)}`,
       success: (receipt, elapsedMs) =>
-        `create_game submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`,
+        totalAttempts === 1
+          ? `create_game submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`
+          : `create_game attempt ${attemptNumber}/${totalAttempts} submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`,
     },
   );
 
@@ -272,11 +400,65 @@ async function waitForCreateGameConfirmation(
   progress: LaunchProgress,
   account: Account,
   transactionHash: string,
+  attemptNumber: number,
+  totalAttempts: number,
 ): Promise<void> {
-  await progress.run("wait for create_game confirmation", () => account.waitForTransaction(transactionHash), {
-    start: `Waiting for create_game confirmation (${shortenHash(transactionHash)})`,
-    success: (_, elapsedMs) => `create_game confirmed in ${formatDuration(elapsedMs)}`,
-  });
+  await progress.run(
+    buildCreateGameAttemptLabel(attemptNumber, totalAttempts),
+    () => account.waitForTransaction(transactionHash),
+    {
+      start:
+        totalAttempts === 1
+          ? `Waiting for create_game confirmation (${shortenHash(transactionHash)})`
+          : `Waiting for create_game attempt ${attemptNumber}/${totalAttempts} confirmation (${shortenHash(transactionHash)})`,
+      success: (_, elapsedMs) =>
+        totalAttempts === 1
+          ? `create_game confirmed in ${formatDuration(elapsedMs)}`
+          : `create_game attempt ${attemptNumber}/${totalAttempts} confirmed in ${formatDuration(elapsedMs)}`,
+    },
+  );
+}
+
+function shouldWaitBeforeNextCreateGameAttempt(
+  attemptNumber: number,
+  totalAttempts: number,
+  retryDelayMs: number,
+): boolean {
+  return retryDelayMs > 0 && attemptNumber < totalAttempts;
+}
+
+async function waitBeforeNextCreateGameAttempt(
+  progress: LaunchProgress,
+  attemptNumber: number,
+  totalAttempts: number,
+  retryDelayMs: number,
+): Promise<void> {
+  if (!shouldWaitBeforeNextCreateGameAttempt(attemptNumber, totalAttempts, retryDelayMs)) {
+    return;
+  }
+
+  progress.log(
+    `Waiting ${formatDuration(retryDelayMs)} before create_game attempt ${attemptNumber + 1}/${totalAttempts} to avoid nonce issues`,
+  );
+  await sleep(retryDelayMs);
+}
+
+async function submitCreateGameAttempts(
+  runtime: LaunchRuntime,
+  request: LaunchGameRequest,
+  account: Account,
+): Promise<string> {
+  const totalAttempts = runtime.createGame.submissionCount;
+  const retryDelayMs = runtime.createGame.retryDelayMs;
+  let lastTransactionHash = "";
+
+  for (let attemptNumber = 1; attemptNumber <= totalAttempts; attemptNumber += 1) {
+    lastTransactionHash = await submitCreateGameAttempt(runtime, request, account, attemptNumber, totalAttempts);
+    await waitForCreateGameConfirmation(runtime.progress, account, lastTransactionHash, attemptNumber, totalAttempts);
+    await waitBeforeNextCreateGameAttempt(runtime.progress, attemptNumber, totalAttempts, retryDelayMs);
+  }
+
+  return lastTransactionHash;
 }
 
 async function waitForIndexedWorld(runtime: LaunchRuntime, request: LaunchGameRequest): Promise<FactoryWorldProfile> {
@@ -332,6 +514,202 @@ function buildConfigExecutionHooks(progress: LaunchProgress): ConfigStepHooks<Et
   };
 }
 
+function buildConfigExecutionContext(params: {
+  deploymentConfig: LaunchConfig;
+  account: Account;
+  patchedProvider: EternumProvider;
+  logger?: SilentConfigLogger | typeof console;
+}) {
+  return {
+    account: params.account,
+    provider: params.patchedProvider,
+    config: params.deploymentConfig,
+    logger: params.logger || console,
+  };
+}
+
+async function executeWorldConfig(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+  mode: NonNullable<LaunchGameRequest["executionMode"]>;
+  startMessage?: string;
+  successLabel?: string;
+}) {
+  return params.runtime.progress.run(
+    "configure world",
+    () =>
+      executeConfigSteps({
+        context: buildConfigExecutionContext(params),
+        steps: params.configSteps,
+        mode: params.mode,
+        suppressStepLogs: params.request.verboseConfigLogs !== true,
+        hooks: buildConfigExecutionHooks(params.runtime.progress),
+      }),
+    {
+      start: params.startMessage || `Applying ${params.configSteps.length} config steps in ${params.mode} mode`,
+      success: (executionResult, elapsedMs) =>
+        executionResult.transactionHash
+          ? `${params.successLabel || "World configuration completed"} in ${formatDuration(elapsedMs)} (${shortenHash(
+              executionResult.transactionHash,
+            )})`
+          : `${params.successLabel || "World configuration completed"} in ${formatDuration(elapsedMs)}`,
+    },
+  );
+}
+
+function shouldRetryWorldConfigInSmallerBatches(params: {
+  runtime: LaunchRuntime;
+  mode: NonNullable<LaunchGameRequest["executionMode"]>;
+  configSteps: LaunchConfigSteps;
+}): boolean {
+  return (
+    params.mode === "batched" &&
+    isMainnetDeploymentEnvironment(params.runtime.environment) &&
+    params.configSteps.length > 1
+  );
+}
+
+async function measureConfigStepBatchCallCounts(params: {
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+}): Promise<number[]> {
+  params.patchedProvider.beginBatch({ signer: params.account });
+  const callCounts: number[] = [];
+  let previousQueuedCallCount = 0;
+
+  try {
+    for (const step of params.configSteps) {
+      await step.execute(
+        buildConfigExecutionContext({
+          ...params,
+          logger: SILENT_CONFIG_LOGGER,
+        }),
+      );
+      const queuedCallCount = params.patchedProvider.getQueuedBatchCallCount();
+      callCounts.push(Math.max(queuedCallCount - previousQueuedCallCount, 1));
+      previousQueuedCallCount = queuedCallCount;
+    }
+  } finally {
+    await params.patchedProvider.endBatch({ flush: false });
+  }
+
+  return callCounts;
+}
+
+function resolveConfigRetrySplitIndex(stepCallCounts: number[]): number {
+  const targetCallCount = stepCallCounts.reduce((total, count) => total + count, 0) / 2;
+  let bestIndex = 1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  let runningCallCount = 0;
+
+  for (let index = 1; index < stepCallCounts.length; index += 1) {
+    runningCallCount += stepCallCounts[index - 1] || 0;
+    const distance = Math.abs(targetCallCount - runningCallCount);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  }
+
+  return bestIndex;
+}
+
+async function splitConfigStepsForRetry(params: {
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+}): Promise<[LaunchConfigSteps, LaunchConfigSteps]> {
+  const stepCallCounts = await measureConfigStepBatchCallCounts(params);
+  const splitIndex = resolveConfigRetrySplitIndex(stepCallCounts);
+  return [params.configSteps.slice(0, splitIndex), params.configSteps.slice(splitIndex)];
+}
+
+function describeConfigRetryBatch(batchPath: number[]): string {
+  return batchPath.length === 0 ? "full batched submission" : `batch ${batchPath.join(".")}`;
+}
+
+function buildConfigRetryBatchStartMessage(configSteps: LaunchConfigSteps, batchPath: number[]): string {
+  return `Applying ${configSteps.length} config steps in batched mode (${describeConfigRetryBatch(batchPath)})`;
+}
+
+function buildConfigRetryBatchSuccessLabel(batchPath: number[]): string {
+  return `World configuration ${describeConfigRetryBatch(batchPath)} completed`;
+}
+
+async function retryWorldConfigInSmallerBatches(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+  batchPath: number[];
+}): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
+  const [firstBatchSteps, secondBatchSteps] = await splitConfigStepsForRetry(params);
+  const failedBatchLabel = describeConfigRetryBatch(params.batchPath);
+  params.runtime.progress.log(`Retrying ${failedBatchLabel} as smaller batched submissions`);
+
+  const firstBatch = await executeWorldConfigWithAdaptiveRetries({
+    ...params,
+    configSteps: firstBatchSteps,
+    batchPath: [...params.batchPath, 1],
+  });
+
+  const secondBatch = await executeWorldConfigWithAdaptiveRetries({
+    ...params,
+    configSteps: secondBatchSteps,
+    batchPath: [...params.batchPath, 2],
+  });
+
+  return {
+    transactionHash: secondBatch.transactionHash || firstBatch.transactionHash,
+    steps: [...firstBatch.steps, ...secondBatch.steps],
+  };
+}
+
+async function executeWorldConfigWithAdaptiveRetries(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  deploymentConfig: LaunchConfig;
+  configSteps: LaunchConfigSteps;
+  account: Account;
+  patchedProvider: EternumProvider;
+  batchPath: number[];
+}): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
+  try {
+    const result = await executeWorldConfig({
+      ...params,
+      mode: "batched",
+      startMessage: buildConfigRetryBatchStartMessage(params.configSteps, params.batchPath),
+      successLabel: buildConfigRetryBatchSuccessLabel(params.batchPath),
+    });
+
+    return {
+      transactionHash: result.transactionHash,
+      steps: result.steps,
+    };
+  } catch (error) {
+    if (
+      !shouldRetryWorldConfigInSmallerBatches({
+        runtime: params.runtime,
+        mode: "batched",
+        configSteps: params.configSteps,
+      })
+    ) {
+      throw error;
+    }
+
+    return retryWorldConfigInSmallerBatches(params);
+  }
+}
+
 async function configureWorld(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
@@ -340,34 +718,35 @@ async function configureWorld(params: {
   account: Account;
   patchedProvider: EternumProvider;
 }): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
-  const result = await params.runtime.progress.run(
-    "configure world",
-    () =>
-      executeConfigSteps({
-        context: {
-          account: params.account,
-          provider: params.patchedProvider,
-          config: params.deploymentConfig,
-          logger: console,
-        },
-        steps: params.configSteps,
-        mode: params.runtime.executionMode,
-        suppressStepLogs: params.request.verboseConfigLogs !== true,
-        hooks: buildConfigExecutionHooks(params.runtime.progress),
-      }),
-    {
-      start: `Applying ${params.configSteps.length} config steps in ${params.runtime.executionMode} mode`,
-      success: (executionResult, elapsedMs) =>
-        executionResult.transactionHash
-          ? `World configuration completed in ${formatDuration(elapsedMs)} (${shortenHash(executionResult.transactionHash)})`
-          : `World configuration completed in ${formatDuration(elapsedMs)}`,
-    },
-  );
+  try {
+    const result = await executeWorldConfig({
+      ...params,
+      mode: params.runtime.executionMode,
+    });
 
-  return {
-    transactionHash: result.transactionHash,
-    steps: result.steps,
-  };
+    return {
+      transactionHash: result.transactionHash,
+      steps: result.steps,
+    };
+  } catch (error) {
+    if (
+      !shouldRetryWorldConfigInSmallerBatches({
+        runtime: params.runtime,
+        mode: params.runtime.executionMode,
+        configSteps: params.configSteps,
+      })
+    ) {
+      throw error;
+    }
+
+    params.runtime.progress.log(
+      "Retrying world configuration in smaller batched submissions after batched mainnet failure",
+    );
+    return retryWorldConfigInSmallerBatches({
+      ...params,
+      batchPath: [],
+    });
+  }
 }
 
 function resolveLootChestAddress(chain: Chain, config: LaunchConfig): string | undefined {
@@ -420,20 +799,20 @@ async function grantLootChestMinterRoleIfNeeded(params: {
   return (receipt as { transaction_hash?: string }).transaction_hash;
 }
 
-async function grantVillagePassRoleToRealmInternalSystemsIfNeeded(params: {
+async function grantVillagePassRolesIfNeeded(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
   accountAddress: string;
   privateKey: string;
 }): Promise<string | undefined> {
-  if (params.runtime.environment.gameType !== "eternum") {
+  if (!isEternumDeploymentEnvironment(params.runtime.environment)) {
     return undefined;
   }
 
   const result = await params.runtime.progress.run(
-    "grant village pass minter role",
+    "grant village pass roles",
     () =>
-      grantVillagePassRoleToRealmInternalSystems({
+      grantVillagePassRolesToWorldSystems({
         chain: `${params.runtime.environment.chain}.eternum`,
         gameName: params.request.gameName,
         rpcUrl: params.runtime.rpcUrl,
@@ -442,15 +821,48 @@ async function grantVillagePassRoleToRealmInternalSystemsIfNeeded(params: {
         cartridgeApiBase: params.runtime.cartridgeApiBase,
       }),
     {
-      start: "Granting village pass MINTER_ROLE to realm_internal_systems",
+      start: "Granting village pass roles to realm_internal_systems and village_systems",
       success: (summary, elapsedMs) =>
         summary.transactionHash
-          ? `Village pass role granted in ${formatDuration(elapsedMs)} (${shortenHash(summary.transactionHash)})`
+          ? `Village pass roles granted in ${formatDuration(elapsedMs)} (${shortenHash(summary.transactionHash)})`
           : `Village pass role grant prepared in ${formatDuration(elapsedMs)}`,
     },
   );
 
   return result.transactionHash;
+}
+
+function shouldSyncPaymaster(runtime: LaunchRuntime): boolean {
+  return isMainnetDeploymentEnvironment(runtime.environment);
+}
+
+async function syncPaymasterIfNeeded(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+}): Promise<boolean | undefined> {
+  if (!shouldSyncPaymaster(params.runtime)) {
+    params.runtime.progress.log("Skipping paymaster sync for non-mainnet environment");
+    return undefined;
+  }
+
+  const result = await params.runtime.progress.run(
+    "sync paymaster",
+    () =>
+      syncPaymasterPolicy({
+        chain: params.runtime.environment.chain,
+        gameName: params.request.gameName,
+        cartridgeApiBase: params.runtime.cartridgeApiBase,
+      }),
+    {
+      start: "Syncing paymaster policy for the launched world",
+      success: (summary, elapsedMs) =>
+        summary.updated
+          ? `Paymaster policy synced in ${formatDuration(elapsedMs)} (${summary.actionCount} actions)`
+          : `Paymaster policy prepared in ${formatDuration(elapsedMs)} (${summary.actionCount} actions)`,
+    },
+  );
+
+  return result.updated;
 }
 
 async function createBanksIfNeeded(params: {
@@ -459,7 +871,7 @@ async function createBanksIfNeeded(params: {
   patchedProvider: ConfiguredWorldProvider;
   providerSigner: ProviderSigner;
 }): Promise<string | undefined> {
-  if (params.runtime.environment.gameType !== "eternum") {
+  if (!isEternumDeploymentEnvironment(params.runtime.environment)) {
     params.runtime.progress.log("Bank creation not required for blitz worlds");
     return undefined;
   }
@@ -528,64 +940,177 @@ async function createIndexerIfNeeded(
   };
 }
 
-function finalizeLaunchSummary(runtime: LaunchRuntime, summary: LaunchGameSummary): LaunchGameSummary {
-  summary.outputPath = writeLaunchSummary(summary);
-  runtime.progress.log(`Launch summary written to ${summary.outputPath}`);
-  return summary;
+function finalizeLaunchSummary(execution: PreparedLaunchExecution): LaunchGameSummary {
+  execution.summary.outputPath = writeLaunchSummary(execution.summary);
+  execution.runtime.progress.log(`Launch summary written to ${execution.summary.outputPath}`);
+  return execution.summary;
 }
 
-export async function launchGame(request: LaunchGameRequest): Promise<LaunchGameSummary> {
-  const runtime = createLaunchRuntime(request, createProgressReporter());
+async function runCreateWorldStep(
+  execution: PreparedLaunchExecution,
+  accountContext = resolveLaunchAccountContext(execution.runtime, execution.request),
+): Promise<LaunchAccountContext> {
+  execution.summary.createGameTxHash = await submitCreateGameAttempts(
+    execution.runtime,
+    execution.request,
+    accountContext.account,
+  );
 
-  validateWorldName(request.gameName);
-  logLaunchPreparation(runtime, request.gameName);
+  return accountContext;
+}
 
-  const { deploymentConfig, configSteps } = resolveLaunchConfiguration(runtime, request);
-  const summary = createLaunchSummary(runtime, request);
+async function runWaitForFactoryIndexStep(execution: PreparedLaunchExecution): Promise<ConfiguredWorldContext> {
+  const worldContext = await resolveIndexedWorldContext(execution.runtime, execution.request);
+  updateWorldAddress(execution.summary, worldContext);
+  return worldContext;
+}
 
-  if (request.dryRun) {
-    return buildDryRunSummary(runtime, request, summary, configSteps);
-  }
-
-  const accountContext = resolveLaunchAccountContext(runtime, request);
-  summary.createGameTxHash = await createGame(runtime, request, accountContext.account);
-  await waitForCreateGameConfirmation(runtime.progress, accountContext.account, summary.createGameTxHash);
-
-  const worldContext = createConfiguredWorldContext(runtime, await waitForIndexedWorld(runtime, request));
-  summary.worldAddress = worldContext.worldProfile.worldAddress;
-
+async function runConfigureWorldStep(
+  execution: PreparedLaunchExecution,
+  dependencies?: ConfiguredLaunchDependencies,
+): Promise<ConfiguredLaunchDependencies> {
+  const resolvedDependencies = dependencies ?? (await resolveConfiguredLaunchDependencies(execution));
   const configResult = await configureWorld({
-    runtime,
-    request,
-    deploymentConfig,
-    configSteps,
-    account: accountContext.account,
-    patchedProvider: worldContext.patchedProvider,
+    runtime: execution.runtime,
+    request: execution.request,
+    deploymentConfig: execution.deploymentConfig,
+    configSteps: execution.configSteps,
+    account: resolvedDependencies.accountContext.account,
+    patchedProvider: resolvedDependencies.worldContext.patchedProvider,
   });
-  summary.configureTxHash = configResult.transactionHash;
-  summary.configSteps = configResult.steps;
 
-  summary.lootChestRoleTxHash = await grantLootChestMinterRoleIfNeeded({
-    runtime,
-    request,
-    deploymentConfig,
-    patchedManifest: worldContext.patchedManifest,
-    patchedProvider: worldContext.patchedProvider,
-    providerSigner: accountContext.providerSigner,
+  execution.summary.configureTxHash = configResult.transactionHash;
+  execution.summary.configSteps = configResult.steps;
+
+  return resolvedDependencies;
+}
+
+async function runGrantLootChestRoleStep(
+  execution: PreparedLaunchExecution,
+  dependencies?: ConfiguredLaunchDependencies,
+): Promise<ConfiguredLaunchDependencies> {
+  const resolvedDependencies = dependencies ?? (await resolveConfiguredLaunchDependencies(execution));
+  execution.summary.lootChestRoleTxHash = await grantLootChestMinterRoleIfNeeded({
+    runtime: execution.runtime,
+    request: execution.request,
+    deploymentConfig: execution.deploymentConfig,
+    patchedManifest: resolvedDependencies.worldContext.patchedManifest,
+    patchedProvider: resolvedDependencies.worldContext.patchedProvider,
+    providerSigner: resolvedDependencies.accountContext.providerSigner,
   });
-  summary.villagePassRoleTxHash = await grantVillagePassRoleToRealmInternalSystemsIfNeeded({
-    runtime,
-    request,
+
+  return resolvedDependencies;
+}
+
+async function runGrantVillagePassRoleStep(
+  execution: PreparedLaunchExecution,
+  accountContext = resolveLaunchAccountContext(execution.runtime, execution.request),
+): Promise<LaunchAccountContext> {
+  execution.summary.villagePassRoleTxHash = await grantVillagePassRolesIfNeeded({
+    runtime: execution.runtime,
+    request: execution.request,
     accountAddress: accountContext.accountAddress,
     privateKey: accountContext.privateKey,
   });
-  summary.createBanksTxHash = await createBanksIfNeeded({
-    runtime,
-    request,
-    patchedProvider: worldContext.patchedProvider,
-    providerSigner: accountContext.providerSigner,
+
+  return accountContext;
+}
+
+async function runCreateBanksStep(
+  execution: PreparedLaunchExecution,
+  dependencies?: ConfiguredLaunchDependencies,
+): Promise<ConfiguredLaunchDependencies> {
+  const resolvedDependencies = dependencies ?? (await resolveConfiguredLaunchDependencies(execution));
+  execution.summary.createBanksTxHash = await createBanksIfNeeded({
+    runtime: execution.runtime,
+    request: execution.request,
+    patchedProvider: resolvedDependencies.worldContext.patchedProvider,
+    providerSigner: resolvedDependencies.accountContext.providerSigner,
   });
 
-  Object.assign(summary, await createIndexerIfNeeded(runtime, request, worldContext.worldProfile.worldAddress));
-  return finalizeLaunchSummary(runtime, summary);
+  return resolvedDependencies;
+}
+
+async function runCreateIndexerStep(
+  execution: PreparedLaunchExecution,
+  worldContext?: ConfiguredWorldContext,
+): Promise<ConfiguredWorldContext> {
+  const resolvedWorldContext = worldContext ?? (await resolveIndexedWorldContext(execution.runtime, execution.request));
+  updateWorldAddress(execution.summary, resolvedWorldContext);
+  Object.assign(
+    execution.summary,
+    await createIndexerIfNeeded(execution.runtime, execution.request, resolvedWorldContext.worldProfile.worldAddress),
+  );
+
+  return resolvedWorldContext;
+}
+
+async function runSyncPaymasterStep(execution: PreparedLaunchExecution): Promise<void> {
+  execution.summary.paymasterSynced = await syncPaymasterIfNeeded({
+    runtime: execution.runtime,
+    request: execution.request,
+  });
+}
+
+async function executeLaunchStep(execution: PreparedLaunchExecution, stepId: LaunchGameStepId): Promise<void> {
+  switch (stepId) {
+    case "create-world":
+      await runCreateWorldStep(execution);
+      return;
+    case "wait-for-factory-index":
+      await runWaitForFactoryIndexStep(execution);
+      return;
+    case "configure-world":
+      await runConfigureWorldStep(execution);
+      return;
+    case "grant-lootchest-role":
+      await runGrantLootChestRoleStep(execution);
+      return;
+    case "grant-village-pass-role":
+      await runGrantVillagePassRoleStep(execution);
+      return;
+    case "create-banks":
+      await runCreateBanksStep(execution);
+      return;
+    case "create-indexer":
+      await runCreateIndexerStep(execution);
+      return;
+    case "sync-paymaster":
+      await runSyncPaymasterStep(execution);
+      return;
+  }
+}
+
+export async function runLaunchStep(request: LaunchGameStepRequest): Promise<LaunchGameSummary> {
+  const execution = prepareLaunchExecution(request);
+
+  if (request.dryRun) {
+    return buildDryRunSummary(execution);
+  }
+
+  await executeLaunchStep(execution, request.stepId);
+  return finalizeLaunchSummary(execution);
+}
+
+export async function launchGame(request: LaunchGameRequest): Promise<LaunchGameSummary> {
+  const execution = prepareLaunchExecution(request);
+
+  if (request.dryRun) {
+    return buildDryRunSummary(execution);
+  }
+
+  const accountContext = await runCreateWorldStep(execution);
+  const worldContext = await runWaitForFactoryIndexStep(execution);
+  const configuredDependencies = await runConfigureWorldStep(execution, {
+    accountContext,
+    worldContext,
+  });
+
+  await runGrantLootChestRoleStep(execution, configuredDependencies);
+  await runGrantVillagePassRoleStep(execution, accountContext);
+  await runCreateBanksStep(execution, configuredDependencies);
+  await runCreateIndexerStep(execution, worldContext);
+  await runSyncPaymasterStep(execution);
+
+  return finalizeLaunchSummary(execution);
 }

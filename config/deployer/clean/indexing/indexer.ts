@@ -1,9 +1,9 @@
-import { spawnSync } from "node:child_process";
 import {
   DEFAULT_INDEXER_WORKFLOW_POLL_MS,
   DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS,
   DEFAULT_TORII_WORKFLOW_FILE,
 } from "../constants";
+import { buildGitHubHeaders, readErrorBody, resolveGitHubRepositoryContext, runCommand } from "../shared/github";
 import type { IndexerCreationResult, IndexerRequest, IndexerWorkflowRun } from "../types";
 
 interface CreateIndexerOptions {
@@ -48,22 +48,6 @@ interface GitHubWorkflowRunsResponse {
   workflow_runs?: GitHubWorkflowRunResponse[];
 }
 
-const GITHUB_API_VERSION = "2022-11-28";
-
-function runCommand(command: string, args: string[]): string | null {
-  const result = spawnSync(command, args, {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  if (result.status !== 0) {
-    return null;
-  }
-
-  const output = `${result.stdout || ""}`.trim();
-  return output || null;
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -82,46 +66,6 @@ function extractRefName(ref: string | undefined): string | undefined {
   }
 
   return ref;
-}
-
-function resolveGitHubToken(
-  onProgress: ((message: string) => void) | undefined,
-  commandRunner: (command: string, args: string[]) => string | null,
-): string | undefined {
-  if (process.env.GITHUB_TOKEN) {
-    return process.env.GITHUB_TOKEN;
-  }
-
-  if (process.env.GITHUB_ACTIONS === "true") {
-    return undefined;
-  }
-
-  const token = commandRunner("gh", ["auth", "token"]);
-  if (token) {
-    onProgress?.("Using GitHub token from gh auth token because GITHUB_TOKEN is not set");
-  }
-
-  return token || undefined;
-}
-
-function resolveGitHubRepository(
-  onProgress: ((message: string) => void) | undefined,
-  commandRunner: (command: string, args: string[]) => string | null,
-): string | undefined {
-  if (process.env.GITHUB_REPOSITORY) {
-    return process.env.GITHUB_REPOSITORY;
-  }
-
-  if (process.env.GITHUB_ACTIONS === "true") {
-    return undefined;
-  }
-
-  const repository = commandRunner("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
-  if (repository) {
-    onProgress?.("Using GitHub repository from gh repo view because GITHUB_REPOSITORY is not set");
-  }
-
-  return repository || undefined;
 }
 
 function resolveGitReference(
@@ -152,18 +96,18 @@ function resolveGitHubWorkflowDispatchConfig(
   options: Pick<CreateIndexerOptions, "onProgress" | "commandRunner">,
 ): GitHubWorkflowDispatchConfig | null {
   const commandRunner = options.commandRunner || runCommand;
-  const token = resolveGitHubToken(options.onProgress, commandRunner);
-  const repo = resolveGitHubRepository(options.onProgress, commandRunner);
+  const repositoryContext = resolveGitHubRepositoryContext({
+    onProgress: options.onProgress,
+    commandRunner,
+  });
   const ref = resolveGitReference(request, options.onProgress, commandRunner);
 
-  if (!token || !repo || !ref) {
+  if (!repositoryContext || !ref) {
     return null;
   }
 
   return {
-    token,
-    repo,
-    apiBaseUrl: process.env.GITHUB_API_URL || "https://api.github.com",
+    ...repositoryContext,
     ref,
     workflowFile: request.workflowFile || DEFAULT_TORII_WORKFLOW_FILE,
     sha: process.env.GITHUB_SHA,
@@ -196,24 +140,6 @@ function resolveWorkflowExecutionDependencies(options: CreateIndexerOptions): Wo
 
 async function parseJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
-}
-
-async function readErrorBody(response: Response): Promise<string> {
-  try {
-    const text = await response.text();
-    return text.trim();
-  } catch {
-    return "";
-  }
-}
-
-function buildGitHubHeaders(token: string): Record<string, string> {
-  return {
-    Accept: "application/vnd.github+json",
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-    "X-GitHub-Api-Version": GITHUB_API_VERSION,
-  };
 }
 
 function buildWorkflowDispatchBody(request: IndexerRequest, dispatchId: string, ref: string) {

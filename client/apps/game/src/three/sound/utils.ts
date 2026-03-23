@@ -70,19 +70,6 @@ export const getResourceSoundId = (resourceId?: ResourcesIds): string => {
   return RESOURCE_SOUND_MAP[resourceId] ?? DEFAULT_RESOURCE_SOUND_ID;
 };
 
-/**
- * @deprecated Use AudioManager.getInstance().play() directly. This function bypasses the audio system.
- */
-const playSound = (sound: string, hasSound: boolean, volume: number) => {
-  const audio = new Audio("/sound/" + sound);
-  if (!hasSound) {
-    audio.volume = 0;
-  } else {
-    audio.volume = volume / 100;
-  }
-  audio.play();
-};
-
 const BUILDING_SOUNDS: Partial<Record<BuildingType, string>> = {
   [BuildingType.ResourceLabor]: "building.construct.military",
   [BuildingType.WorkersHut]: "building.construct.workhut",

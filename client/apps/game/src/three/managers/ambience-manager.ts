@@ -129,7 +129,7 @@ export class AmbienceManager {
 
     // Weather-based ambient sounds - rain should loop continuously
     {
-      assetId: "ambient.rain.light",
+      assetId: "ambient.rain.heavy",
       timeOfDay: [TimeOfDay.DAWN, TimeOfDay.DAY, TimeOfDay.DUSK, TimeOfDay.EVENING, TimeOfDay.NIGHT],
       weather: [WeatherType.RAIN],
       baseVolume: 0.1,

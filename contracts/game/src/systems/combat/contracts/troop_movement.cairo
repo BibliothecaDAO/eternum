@@ -19,8 +19,8 @@ pub mod troop_movement_systems {
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
-        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
-        VictoryPointsGrantConfig, WorldConfigUtilImpl,
+        BlitzExplorationConfig, CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig,
+        TroopStaminaConfig, VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
     use crate::models::events::{
         ExploreFind, ExplorerExtractRewardStory, ExplorerMoveStory, PointsActivity, PointsRegisteredStory, Story,
@@ -38,6 +38,7 @@ pub mod troop_movement_systems {
     use crate::models::weight::Weight;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+    use crate::systems::utils::blitz_exploration::iBlitzExplorationRewardsImpl;
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
@@ -396,12 +397,25 @@ pub mod troop_movement_systems {
 
             // get relevant data to grant reward
             let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_exploration_config"),
+            );
+            let blitz_exploration_reward_profile_id =
+                iBlitzExplorationRewardsImpl::resolve_blitz_exploration_reward_profile_id(
+                blitz_exploration_config.reward_profile_id,
+            );
             let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
 
             // grant resource reward for exploration
             let (explore_reward_type, explore_reward_amount) = iExplorerImpl::exploration_reward(
-                ref world, Option::Some(explorer), current_tick, map_config, vrf_seed, blitz_mode_on,
+                ref world,
+                Option::Some(explorer),
+                current_tick,
+                map_config,
+                vrf_seed,
+                blitz_mode_on,
+                blitz_exploration_reward_profile_id,
             );
 
             let exploration_reward_receiver: ID = iExplorerImpl::exploration_reward_receiver(

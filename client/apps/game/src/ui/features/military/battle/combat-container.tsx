@@ -2,6 +2,11 @@ import { env } from "@/../env";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  createPendingWorldmapFxKey,
+  dispatchPendingWorldmapFxStart,
+  dispatchPendingWorldmapFxStop,
+} from "@/utils/pending-worldmap-fx";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
@@ -418,11 +423,25 @@ export const CombatContainer = ({
   const onAttack = async () => {
     if (!selectedHex) return;
 
+    let pendingFxKey: string | null = null;
     try {
       setLoading(true);
 
       if (attackerType === AttackerType.Structure) {
         if (selectedGuardSlot === null) return;
+      }
+
+      pendingFxKey = createPendingWorldmapFxKey("attack");
+      dispatchPendingWorldmapFxStart({
+        key: pendingFxKey,
+        kind: "attack",
+        attackerId: attackerEntityId,
+        defenderId: target?.id || undefined,
+        attackerHex: { col: selectedHex.col, row: selectedHex.row },
+        targetHex: { col: target.hex.x, row: target.hex.y },
+      });
+
+      if (attackerType === AttackerType.Structure) {
         await onGuardVsExplorerAttack();
       } else if (target?.targetType === TargetType.Army) {
         await onExplorerVsExplorerAttack();
@@ -434,6 +453,9 @@ export const CombatContainer = ({
       updateSelectedEntityId(null);
       toggleModal(null);
     } catch (error) {
+      if (pendingFxKey) {
+        dispatchPendingWorldmapFxStop({ key: pendingFxKey });
+      }
       console.error("Attack failed:", error);
     } finally {
       setLoading(false);

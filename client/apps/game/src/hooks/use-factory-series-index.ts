@@ -1,7 +1,7 @@
 import { getFactorySqlBaseUrl } from "@/runtime/world";
+import { decodePaddedFeltAscii, extractGameNumberFromRow, fetchFactoryRows } from "@/runtime/world/factory-sql";
 import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
-import { decodePaddedFeltAscii, extractGameNumberFromRow, fetchFactoryRows } from "./factory-sql";
 
 const FACTORY_SERIES_INDEX_QUERY = `
 SELECT

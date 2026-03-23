@@ -357,6 +357,45 @@ describe("createWebGPURendererBackend", () => {
     expect(backend.renderer).toBeUndefined();
   });
 
+  it("recovers from a transient webgpu depth texture frame failure by resizing and retrying once", async () => {
+    const renderer = createRendererSurface();
+    renderer.render = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        throw new TypeError("Cannot read properties of null (reading 'depthTexture')");
+      })
+      .mockImplementation(() => {});
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(async () => ({
+          activeMode: "webgpu" as const,
+          renderer: Object.assign(renderer, {
+            init: vi.fn(async () => {}),
+          }),
+        })),
+        now: vi.fn(() => 0),
+      },
+    );
+
+    await backend.initialize();
+
+    expect(() =>
+      backend.renderFrame?.({
+        mainCamera: { id: "main-camera" } as never,
+        mainScene: { id: "main-scene" } as never,
+      }),
+    ).not.toThrow();
+
+    expect(renderer.setSize).toHaveBeenCalledWith(window.innerWidth, window.innerHeight);
+    expect(renderer.render).toHaveBeenCalledTimes(2);
+  });
+
   it("resolves neutral tone mapping to NeutralToneMapping, distinct from aces-filmic", async () => {
     const renderer = createRendererSurface();
     const backend = createWebGPURendererBackend(

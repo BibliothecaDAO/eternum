@@ -152,6 +152,7 @@ export interface ExecuteRealmProductionPlanProps extends SystemSigner {
   realm_entity_id: BigNumberish;
   resource_to_resource?: ProductionPlanInstruction[];
   labor_to_resource?: ProductionPlanInstruction[];
+  skipQueue?: boolean;
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
@@ -801,6 +802,10 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   entry_token_class_hash: BigNumberish;
   entry_token_deploy_calldata: BigNumberish[];
   entry_token_ipfs_cid: ByteArray;
+}
+
+export interface SetBlitzExplorationConfigProps extends SystemSigner {
+  reward_profile_id: BigNumberish;
 }
 export interface MintTestRealmProps extends SystemSigner {
   token_id: BigNumberish;

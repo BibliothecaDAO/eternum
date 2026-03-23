@@ -1,20 +1,21 @@
 import * as path from "node:path";
 import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
 import {
+  resolveVillageSystemsAddress,
   isZeroAddress,
   patchManifestWithFactory,
   resolveFactoryWorldProfile,
   resolveRealmInternalSystemsAddress,
 } from "../factory/discovery";
-import { grantRole, type GrantRoleCall } from "../role-grants/grant-role";
+import { buildGrantRoleCall, grantRoles, type GrantRoleCall } from "../role-grants/grant-role";
 import { resolveEternumNetwork } from "../shared/chains";
 import type { GameManifestLike } from "../shared/manifest-types";
 import { resolveCommonAddressesPath } from "../shared/addresses";
 import { ensureRepoDirectory, loadRepoJsonFile, writeRepoJsonFile, writeRepoTextFile } from "../shared/repo";
 import { toSafeSlug } from "../shared/slug";
-import { MINTER_ROLE } from "./roles";
+import { DISTRIBUTOR_ROLE, MINTER_ROLE } from "./roles";
 
-export interface GrantVillagePassMinterRoleRequest {
+export interface GrantVillagePassRoleRequest {
   chain: string;
   gameName: string;
   rpcUrl?: string;
@@ -24,7 +25,7 @@ export interface GrantVillagePassMinterRoleRequest {
   dryRun?: boolean;
 }
 
-export interface GrantVillagePassMinterRoleSummary {
+export interface GrantVillagePassRoleSummary {
   chain: string;
   network: string;
   gameName: string;
@@ -32,6 +33,7 @@ export interface GrantVillagePassMinterRoleSummary {
   worldAddress: string;
   villagePassAddress: string;
   realmInternalSystemsAddress: string;
+  villageSystemsAddress: string;
   transactionHash?: string;
   dryRun: boolean;
   outputPath: string;
@@ -43,10 +45,15 @@ interface VillagePassGrantTarget {
   patchedManifest: GameManifestLike;
   villagePassAddress: string;
   realmInternalSystemsAddress: string;
+  villageSystemsAddress: string;
 }
 
 function buildCallPayload(call: GrantRoleCall): string {
   return `${call.contractAddress} ${call.entrypoint} ${call.calldata.join(" ")}`;
+}
+
+function buildMulticallPayload(calls: GrantRoleCall[]): string {
+  return calls.map(buildCallPayload).join("\n");
 }
 
 function loadBaseGameManifest(network: string): GameManifestLike {
@@ -77,9 +84,7 @@ function resolveVillagePassAddress(network: string): string {
   return villagePassAddress;
 }
 
-async function resolveVillagePassGrantTarget(
-  request: GrantVillagePassMinterRoleRequest,
-): Promise<VillagePassGrantTarget> {
+async function resolveVillagePassGrantTarget(request: GrantVillagePassRoleRequest): Promise<VillagePassGrantTarget> {
   const network = resolveEternumNetwork(request.chain);
   const cartridgeApiBase = request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE;
   const baseManifest = loadBaseGameManifest(network);
@@ -96,45 +101,53 @@ async function resolveVillagePassGrantTarget(
     patchedManifest,
     villagePassAddress: resolveVillagePassAddress(network),
     realmInternalSystemsAddress: resolveRealmInternalSystemsAddress(patchedManifest),
+    villageSystemsAddress: resolveVillageSystemsAddress(patchedManifest),
   };
+}
+
+function buildVillagePassRoleCalls(target: VillagePassGrantTarget): GrantRoleCall[] {
+  return [
+    buildGrantRoleCall(target.villagePassAddress, MINTER_ROLE, target.realmInternalSystemsAddress),
+    buildGrantRoleCall(target.villagePassAddress, DISTRIBUTOR_ROLE, target.villageSystemsAddress),
+  ];
 }
 
 function writeVillagePassRoleArtifacts(params: {
   chain: string;
   gameName: string;
   patchedManifest: GameManifestLike;
-  call: GrantRoleCall;
-  summary: Omit<GrantVillagePassMinterRoleSummary, "outputPath">;
+  calls: GrantRoleCall[];
+  summary: Omit<GrantVillagePassRoleSummary, "outputPath">;
 }): string {
-  ensureRepoDirectory(path.join(".context/village-pass-minter-role", params.chain));
+  ensureRepoDirectory(path.join(".context/village-pass-role", params.chain));
   const baseFilename = toSafeSlug(params.gameName);
 
   const outputPath = writeRepoJsonFile(
-    path.join(".context/village-pass-minter-role", params.chain, `${baseFilename}.json`),
+    path.join(".context/village-pass-role", params.chain, `${baseFilename}.json`),
     params.summary,
   );
   writeRepoJsonFile(
-    path.join(".context/village-pass-minter-role", params.chain, `${baseFilename}.patched-manifest.json`),
+    path.join(".context/village-pass-role", params.chain, `${baseFilename}.patched-manifest.json`),
     params.patchedManifest,
   );
   writeRepoJsonFile(
-    path.join(".context/village-pass-minter-role", params.chain, `${baseFilename}.grant-role-call.json`),
-    params.call,
+    path.join(".context/village-pass-role", params.chain, `${baseFilename}.grant-role-calls.json`),
+    params.calls,
   );
   writeRepoTextFile(
-    path.join(".context/village-pass-minter-role", params.chain, `${baseFilename}.grant-role-call.txt`),
-    buildCallPayload(params.call),
+    path.join(".context/village-pass-role", params.chain, `${baseFilename}.grant-role-calls.txt`),
+    buildMulticallPayload(params.calls),
   );
 
   return outputPath;
 }
 
 function buildVillagePassRoleSummary(params: {
-  request: GrantVillagePassMinterRoleRequest;
+  request: GrantVillagePassRoleRequest;
   target: VillagePassGrantTarget;
   rpcUrl: string;
   transactionHash?: string;
-}): Omit<GrantVillagePassMinterRoleSummary, "outputPath"> {
+}): Omit<GrantVillagePassRoleSummary, "outputPath"> {
   return {
     chain: params.request.chain,
     network: params.target.network,
@@ -143,20 +156,19 @@ function buildVillagePassRoleSummary(params: {
     worldAddress: params.target.worldAddress,
     villagePassAddress: params.target.villagePassAddress,
     realmInternalSystemsAddress: params.target.realmInternalSystemsAddress,
+    villageSystemsAddress: params.target.villageSystemsAddress,
     transactionHash: params.transactionHash,
     dryRun: params.request.dryRun === true,
   };
 }
 
-export async function grantVillagePassRoleToRealmInternalSystems(
-  request: GrantVillagePassMinterRoleRequest,
-): Promise<GrantVillagePassMinterRoleSummary> {
+export async function grantVillagePassRolesToWorldSystems(
+  request: GrantVillagePassRoleRequest,
+): Promise<GrantVillagePassRoleSummary> {
   const target = await resolveVillagePassGrantTarget(request);
-  const roleGrant = await grantRole({
+  const roleGrant = await grantRoles({
     chain: target.network,
-    contractAddress: target.villagePassAddress,
-    role: MINTER_ROLE,
-    recipient: target.realmInternalSystemsAddress,
+    calls: buildVillagePassRoleCalls(target),
     rpcUrl: request.rpcUrl,
     accountAddress: request.accountAddress,
     privateKey: request.privateKey,
@@ -174,7 +186,7 @@ export async function grantVillagePassRoleToRealmInternalSystems(
     chain: request.chain,
     gameName: request.gameName,
     patchedManifest: target.patchedManifest,
-    call: roleGrant.call,
+    calls: roleGrant.calls,
     summary: summaryWithoutOutput,
   });
 
@@ -183,5 +195,3 @@ export async function grantVillagePassRoleToRealmInternalSystems(
     outputPath,
   };
 }
-
-export const grantVillagePassMinterRole = grantVillagePassRoleToRealmInternalSystems;

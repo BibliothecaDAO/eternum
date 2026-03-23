@@ -223,6 +223,11 @@ pub trait ISettlementConfig<T> {
 }
 
 #[starknet::interface]
+pub trait IBlitzExplorationConfig<T> {
+    fn set_blitz_exploration_config(ref self: T, reward_profile_id: u8);
+}
+
+#[starknet::interface]
 pub trait ITroopConfig<T> {
     fn set_troop_config(
         ref self: T,
@@ -275,7 +280,7 @@ pub mod config_systems {
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
-        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BitcoinMineConfig,
+        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BitcoinMineConfig, BlitzExplorationConfig,
         BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig, BlitzRegistrationConfigImpl,
         BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, FaithConfig,
         HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
@@ -291,6 +296,7 @@ pub mod config_systems {
     use crate::models::position::{CENTER_COL, CoordImpl};
     use crate::models::resource::production::building::BuildingCategory;
     use crate::models::resource::resource::{ResourceList, ResourceMinMaxList};
+    use crate::systems::utils::blitz_exploration::iBlitzExplorationRewardsImpl;
     use crate::utils::achievements::index::AchievementTrait;
 
     // Constuctor
@@ -929,6 +935,19 @@ pub mod config_systems {
 
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
+            );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl BlitzExplorationConfigImpl of super::IBlitzExplorationConfig<ContractState> {
+        fn set_blitz_exploration_config(ref self: ContractState, reward_profile_id: u8) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            iBlitzExplorationRewardsImpl::assert_known_blitz_exploration_reward_profile_id(reward_profile_id);
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("blitz_exploration_config"), BlitzExplorationConfig { reward_profile_id },
             );
         }
     }

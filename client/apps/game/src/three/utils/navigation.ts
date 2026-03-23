@@ -107,7 +107,7 @@ export function selectNextStructure(
   return nextIndex;
 }
 
-export function navigateIntoFastTravelSpire(
+function navigateIntoFastTravelSpire(
   worldHexCoords: FastTravelHexCoords,
   spireMappings: readonly FastTravelSpireMapping[],
 ): boolean {
@@ -124,7 +124,7 @@ export function navigateIntoFastTravelSpire(
   return true;
 }
 
-export function navigateOutOfFastTravelSpire(
+function navigateOutOfFastTravelSpire(
   travelHexCoords: FastTravelHexCoords,
   spireMappings: readonly FastTravelSpireMapping[],
 ): boolean {

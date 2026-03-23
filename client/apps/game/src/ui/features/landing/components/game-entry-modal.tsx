@@ -6,26 +6,33 @@
  * 2. Settlement phase - If user is registered but hasn't settled
  * 3. Auto-transitions to game when ready
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  X,
-  Play,
+  AlertCircle,
+  Castle,
+  Check,
+  ExternalLink,
   Eye,
   Loader2,
-  Check,
-  Castle,
   MapPin,
   Pickaxe,
+  Play,
   Sparkles,
-  ExternalLink,
-  AlertCircle,
+  X,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
+import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useSyncStore } from "@/hooks/store/use-sync-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/use-season-pass-inventory";
+import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
+import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
 import { applyWorldSelection } from "@/runtime/world";
@@ -34,28 +41,21 @@ import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { getActiveWorld } from "@/runtime/world/store";
 import { sqlApi } from "@/services/api";
-import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
-import { useSyncStore } from "@/hooks/store/use-sync-store";
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
-import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/use-season-pass-inventory";
-import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
+import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
+import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getSeasonAddresses, type Chain } from "@contracts";
+import { Account, CallData, RpcProvider, uint256 } from "starknet";
 import {
   buildSettlementExecutionPlan,
   deriveSettlementStatus,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
-import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
-import { getSeasonAddresses, type Chain } from "@contracts";
-import { Account, CallData, RpcProvider, uint256 } from "starknet";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";

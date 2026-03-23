@@ -433,6 +433,14 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
+export type BlitzExplorationRewardProfileId = "official-60" | "official-90";
+
+export interface BlitzExplorationReward {
+  rewardId: ResourcesIds;
+  amount: number;
+  probabilityBps: number;
+}
+
 export interface Config {
   agent: {
     controller_address: string;
@@ -649,6 +657,10 @@ export interface Config {
     mode: {
       on: boolean;
     };
+    exploration: {
+      rewardProfileId: BlitzExplorationRewardProfileId;
+      rewards: BlitzExplorationReward[];
+    };
     registration: {
       fee_token: string;
       fee_recipient: string;
@@ -699,9 +711,35 @@ export interface Config {
     addresses: SeasonAddresses;
     manifest: Manifest;
   };
+}
 
-  // Previous prize distribution systems address (carried between runs)
-  prev_prize_distribution_address?: string | null;
+export type FactoryMapConfigOverrides = Partial<
+  Pick<
+    Config["exploration"],
+    | "shardsMinesWinProbability"
+    | "shardsMinesFailProbability"
+    | "agentFindProbability"
+    | "agentFindFailProbability"
+    | "campFindProbability"
+    | "campFindFailProbability"
+    | "holysiteFindProbability"
+    | "holysiteFindFailProbability"
+    | "bitcoinMineWinProbability"
+    | "bitcoinMineFailProbability"
+    | "hyperstructureWinProbAtCenter"
+    | "hyperstructureFailProbAtCenter"
+    | "hyperstructureFailProbIncreasePerHexDistance"
+    | "hyperstructureFailProbIncreasePerHyperstructureFound"
+    | "relicDiscoveryIntervalSeconds"
+    | "relicHexDistanceFromCenter"
+    | "relicChestRelicsPerChest"
+  >
+>;
+
+export interface FactoryBlitzRegistrationOverrides {
+  registration_count_max?: number;
+  fee_token?: string;
+  fee_amount?: string;
 }
 
 export interface RealmInfo {

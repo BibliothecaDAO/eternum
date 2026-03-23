@@ -28,6 +28,20 @@ describe("FXManager", () => {
     fxManager.destroy();
   });
 
+  it("can register and play a dynamic icon fx type", () => {
+    vi.spyOn(THREE.TextureLoader.prototype, "load").mockImplementation(() => new THREE.Texture());
+
+    const scene = new THREE.Scene();
+    const fxManager = new FXManager(scene, 1);
+
+    fxManager.ensureInfiniteIconFx("create-army-resource-34", "/images/resources/34.png");
+    const { instance } = fxManager.playFxAtCoords("create-army-resource-34", 0, 0, 0, 1, undefined, true);
+
+    expect(instance).toBeDefined();
+
+    fxManager.destroy();
+  });
+
   it("removes the unused batched shader path from the active FX manager implementation", () => {
     const source = readFXManagerSource();
 

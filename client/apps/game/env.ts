@@ -38,6 +38,11 @@ const envSchema = z.object({
     .url()
     .optional()
     .default("https://torii-creator.zerocredence.workers.dev/dispatch/torii"),
+  VITE_PUBLIC_FACTORY_WORKER_URL: z
+    .string()
+    .url()
+    .optional()
+    .default("https://realms-game-launch.zerocredence.workers.dev"),
   VITE_PUBLIC_EXPLORER_MAINNET: z.string().url().optional().default("https://voyager.online"),
   VITE_PUBLIC_EXPLORER_SEPOLIA: z.string().url().optional().default("https://sepolia.voyager.online"),
   VITE_PUBLIC_REALTIME_URL: z.string().url().optional().default("http://localhost:8080"),

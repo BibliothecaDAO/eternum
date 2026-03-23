@@ -37,11 +37,13 @@ type NativeConfigProvider = Pick<
   | "set_donkey_speed_config"
   | "set_hyperstructure_config"
   | "set_settlement_config"
+  | "set_faith_config"
   | "set_game_mode_config"
   | "set_factory_address"
   | "set_mmr_config"
   | "set_victory_points_config"
   | "set_discoverable_village_starting_resources_config"
+  | "set_blitz_exploration_config"
   | "set_blitz_registration_config"
 >;
 
@@ -240,7 +242,7 @@ function buildResourceFactoryCalls(config: NativeConfig) {
     realm_output_per_second: getNumericRecordValue(complexOutputsByResource, resourceType),
     village_output_per_second: getNumericRecordValue(complexOutputsByResource, resourceType) / 2,
     labor_output_per_resource: getNumericRecordValue(laborOutputsByResource, resourceType),
-    resource_output_per_simple_input: getNumericRecordValue(simpleOutputsByResource, resourceType),
+    resource_output_per_simple_input: getOptionalNumericRecordValue(simpleOutputsByResource, resourceType) ?? 0,
     simple_input_resources_list: getNumericRecordValue(simpleInputsByResource, resourceType),
     resource_output_per_complex_input: getNumericRecordValue(complexOutputsByResource, resourceType),
     complex_input_resources_list: complexInputResourcesList,
@@ -654,6 +656,31 @@ export const setSettlementConfig: NativeStep = async ({ account, provider, confi
   );
 };
 
+function buildFaithConfigPayload(config: NativeConfig) {
+  if (!config.faith) {
+    return null;
+  }
+
+  return {
+    enabled: config.faith.enabled,
+    wonder_base_fp_per_sec: config.faith.wonder_base_fp_per_sec,
+    holy_site_fp_per_sec: config.faith.holy_site_fp_per_sec,
+    realm_fp_per_sec: config.faith.realm_fp_per_sec,
+    village_fp_per_sec: config.faith.village_fp_per_sec,
+    owner_share_percent: config.faith.owner_share_percent * 100,
+    reward_token: config.faith.reward_token,
+  };
+}
+
+export const setFaithConfig: NativeStep = async ({ account, provider, config }) => {
+  const payload = buildFaithConfigPayload(config);
+  if (!payload) {
+    return;
+  }
+
+  await provider.set_faith_config(withSigner(account, payload));
+};
+
 export const setGameModeConfig: NativeStep = async ({ account, provider, config }) => {
   await provider.set_game_mode_config(
     withSigner(account, {
@@ -734,6 +761,34 @@ export const setDiscoverableVillageSpawnResourcesConfig: NativeStep = async ({ a
   );
 };
 
+const BLITZ_EXPLORATION_REWARD_PROFILE_IDS = {
+  "official-60": 1,
+  "official-90": 2,
+} as const;
+
+function resolveBlitzExplorationRewardProfileId(config: NativeConfig) {
+  return BLITZ_EXPLORATION_REWARD_PROFILE_IDS[config.blitz.exploration.rewardProfileId];
+}
+
+function buildBlitzExplorationConfigPayload(config: NativeConfig) {
+  if (!config.blitz.mode.on) {
+    return null;
+  }
+
+  return {
+    reward_profile_id: resolveBlitzExplorationRewardProfileId(config),
+  };
+}
+
+export const setBlitzExplorationConfig: NativeStep = async ({ account, provider, config }) => {
+  const payload = buildBlitzExplorationConfigPayload(config);
+  if (!payload) {
+    return;
+  }
+
+  await provider.set_blitz_exploration_config(withSigner(account, payload));
+};
+
 function buildBlitzRegistrationConfigPayload(provider: NativeConfigProvider, config: NativeConfig) {
   if (!config.blitz.mode.on) {
     return null;
@@ -809,11 +864,13 @@ export const NATIVE_FACTORY_WORLD_CONFIG_IMPLEMENTATIONS = {
   setSpeedConfig,
   setHyperstructureConfig,
   setSettlementConfig,
+  setFaithConfig,
   setGameModeConfig,
   setFactoryAddress,
   setMMRConfig,
   setVictoryPointsConfig,
   setDiscoverableVillageSpawnResourcesConfig,
+  setBlitzExplorationConfig,
   setBlitzRegistrationParametersConfig,
   setBlitzSeasonConfig,
   setBlitzRegistrationConfig,

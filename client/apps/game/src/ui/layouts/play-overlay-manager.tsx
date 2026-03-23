@@ -1,6 +1,7 @@
 import type { PointerEvent } from "react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
+import { useAudio } from "@/audio/hooks/useAudio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { shouldShowTransitionLoadingOverlay } from "@/ui/layouts/loading-flow";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
@@ -23,6 +24,20 @@ export const PlayOverlayManager = ({
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const showTransitionLoadingOverlay = shouldShowTransitionLoadingOverlay(showBlankOverlay, isLoadingScreenEnabled);
+
+  const { play } = useAudio();
+  const prevShowModalRef = useRef(showModal);
+
+  useEffect(() => {
+    const wasShowing = prevShowModalRef.current;
+    prevShowModalRef.current = showModal;
+
+    if (showModal && !wasShowing) {
+      play("ui.modal_open");
+    } else if (!showModal && wasShowing) {
+      play("ui.modal_close");
+    }
+  }, [showModal, play]);
 
   const handleModalOverlayPointerDown = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {

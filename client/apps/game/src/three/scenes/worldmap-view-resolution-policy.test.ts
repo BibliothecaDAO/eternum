@@ -12,7 +12,7 @@ describe("worldmap view resolution policy wiring", () => {
   it("derives semantic view from camera distance instead of assigning the target view directly", () => {
     const source = readHexagonSceneSource();
 
-    expect(source).toMatch(/resolveWorldmapViewFromDistance\(/);
+    expect(source).toMatch(/resolveWorldmapZoomBand\(/);
     expect(source).not.toMatch(/this\.currentCameraView = position;/);
   });
 });

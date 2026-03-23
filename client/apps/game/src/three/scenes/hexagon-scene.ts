@@ -41,11 +41,8 @@ import {
   PointLight,
   Quaternion,
   Raycaster,
-  RepeatWrapping,
-  SRGBColorSpace,
   Scene,
   Texture,
-  TextureLoader,
   Vector2,
   Vector3,
 } from "three";
@@ -62,8 +59,10 @@ import {
   resolveCameraTransitionCompletion,
   resolveCameraTransitionStart,
 } from "./hexagon-scene-camera-transition";
+import { resolveWorldmapCameraViewProfile } from "./worldmap-camera-view-profile";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
-import { resolveWorldmapViewFromDistance } from "./worldmap-zoom-controller";
+import { LightningEffectSystem } from "./lightning-effect-system";
+import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-policy";
 
 export { CameraView } from "./camera-view";
 type CameraTransitionStatus = "idle" | "transitioning";
@@ -93,6 +92,7 @@ export abstract class HexagonScene {
   protected lightHelper!: DirectionalLightHelper;
   protected stormLight!: PointLight;
   protected ambientPurpleLight!: AmbientLight;
+  protected lightningSystem!: LightningEffectSystem;
 
   private stormAmbientBaseIntensity?: number;
   private stormHemisphereBaseIntensity?: number;
@@ -101,22 +101,8 @@ export abstract class HexagonScene {
   private groundMesh!: Mesh;
   private groundMeshTexture: Texture | null = null;
   private uiStateUnsubscribe?: () => void;
-  private lightningEndTime: number = 0;
-  private originalLightningIntensity: number = 0;
-  private originalLightningColor: number = 0;
-  private originalStormLightningIntensity: number = 0;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private cameraTransitionListeners: Set<(status: CameraTransitionStatus) => void> = new Set();
-  private lastLightningTriggerProgress: number = -1;
-  private lightningSequenceTimeout: NodeJS.Timeout | null = null;
-  private lightningTriggerTimeout: ReturnType<typeof setTimeout> | null = null;
-  private currentStrikeIndex: number = 0;
-  private lightningStrikes: Array<{ delay: number; duration: number }> = [
-    { delay: 0, duration: 80 },
-    { delay: 200, duration: 60 },
-    { delay: 450, duration: 100 },
-    { delay: 700, duration: 40 },
-  ];
 
   protected cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
   protected cameraAngle = CAMERA_CONFIG.defaultAngle;
@@ -177,7 +163,7 @@ export abstract class HexagonScene {
     this.sceneOwnershipBootstrapped = true;
   }
 
-  private notifyControlsChanged(): void {
+  protected notifyControlsChanged(): void {
     publishCameraTransitionFrame({
       updateControls: () => this.controls.update(),
       syncDistanceVisuals: () => {
@@ -285,12 +271,14 @@ export abstract class HexagonScene {
   }
 
   private setupStormLighting(): void {
-    this.ambientPurpleLight = new AmbientLight(0x3a1a3a, 0.1);
-    this.scene.add(this.ambientPurpleLight);
-
-    this.stormLight = new PointLight(0xaa77ff, 1.5, 80);
-    this.stormLight.position.set(0, 20, 0);
-    this.scene.add(this.stormLight);
+    this.lightningSystem = new LightningEffectSystem({
+      scene: this.scene,
+      mainDirectionalLight: this.mainDirectionalLight,
+      thunderBoltManager: this.thunderBoltManager,
+    });
+    this.lightningSystem.setup();
+    this.stormLight = this.lightningSystem.getStormLight();
+    this.ambientPurpleLight = this.lightningSystem.getAmbientPurpleLight();
   }
 
   private setupLightHelper(): void {
@@ -934,21 +922,12 @@ export abstract class HexagonScene {
   }
 
   private createGroundMesh() {
-    const scale = 60;
     const metalness = 0;
     const roughness = 0.66;
 
     const geometry = new PlaneGeometry(2668, 1390.35);
-    const texture = new TextureLoader().load("/textures/paper/worldmap-bg-blitz.png", () => {
-      texture.colorSpace = SRGBColorSpace;
-      texture.wrapS = RepeatWrapping;
-      texture.wrapT = RepeatWrapping;
-      texture.repeat.set(scale, scale / 2.5);
-      texture.anisotropy = 4; // Sharper terrain at tilted viewing angles
-    });
-
     const material = new MeshStandardMaterial({
-      map: texture,
+      color: new Color(0x261838),
       metalness: metalness,
       roughness: roughness,
       side: DoubleSide,
@@ -964,7 +943,7 @@ export abstract class HexagonScene {
 
     this.scene.add(mesh);
     this.groundMesh = mesh;
-    this.groundMeshTexture = texture;
+    this.groundMeshTexture = null;
     this.setupGroundMeshGUI();
   }
 
@@ -1019,7 +998,7 @@ export abstract class HexagonScene {
     }
 
     const minDistance = 10;
-    const maxDistance = 40;
+    const maxDistance = 60;
     const t = Math.min(1, Math.max(0, (distance - minDistance) / (maxDistance - minDistance)));
     const opacity = 0.04 + t * 0.06;
 
@@ -1089,14 +1068,7 @@ export abstract class HexagonScene {
     const currentTime = performance.now();
     const elapsedTime = currentTime / 1000;
 
-    // Check if lightning should end
-    if (this.lightningEndTime > 0 && currentTime >= this.lightningEndTime) {
-      this.endLightning();
-    }
-
-    // Check for lightning trigger based on cycle timing instead of random
     const cycleProgress = this.state.cycleProgress || 0;
-    this.shouldTriggerLightningAtCycleProgress(cycleProgress);
 
     // Update day/night cycle with camera target for proper light positioning
     const cameraTarget = this.controls.target;
@@ -1121,18 +1093,15 @@ export abstract class HexagonScene {
       this.dayNightCycleManager.applyWeatherModulation(skyDarkness, fogDensity, sunOcclusion);
     }
 
-    // Make storm light follow camera to avoid shadow/light direction mismatch
-    // Position above and slightly behind camera target for consistent fill lighting
-    this.stormLight.position.set(cameraTarget.x, cameraTarget.y + 25, cameraTarget.z + 5);
-
-    // Only update normal storm effects if lightning is not active
-    // Reduced base intensity to avoid overpowering directional light shadows
-    // Also scale storm light with storm period intensity
-    if (this.lightningEndTime === 0) {
-      const baseStormIntensity = stormDepth > 0.05 ? 0.6 : 0.2;
-      const stormIntensity = baseStormIntensity + Math.sin(elapsedTime * 0.3) * 0.15;
-      this.stormLight.intensity = stormIntensity;
-    }
+    // Delegate lightning checks, storm light positioning, and intensity to the lightning system
+    this.lightningSystem.update({
+      cycleProgress,
+      cameraTargetX: cameraTarget.x,
+      cameraTargetY: cameraTarget.y,
+      cameraTargetZ: cameraTarget.z,
+      elapsedTime,
+      stormDepth,
+    });
 
     // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
     // When day-night is enabled, read the pre-flicker baseline from the manager to avoid
@@ -1158,85 +1127,6 @@ export abstract class HexagonScene {
     this.hemisphereLight.intensity = hemisphereBase * hemisphereFlicker;
   }
 
-  private startLightningSequence(): void {
-    // Clear any existing sequence
-    if (this.lightningSequenceTimeout) {
-      clearTimeout(this.lightningSequenceTimeout);
-    }
-
-    this.currentStrikeIndex = 0;
-    this.executeNextStrike();
-  }
-
-  private executeNextStrike(): void {
-    if (this.currentStrikeIndex >= this.lightningStrikes.length) {
-      // Sequence complete
-      this.currentStrikeIndex = 0;
-      return;
-    }
-
-    const strike = this.lightningStrikes[this.currentStrikeIndex];
-
-    // Schedule this strike
-    this.lightningSequenceTimeout = setTimeout(() => {
-      this.triggerSingleLightningStrike(strike.duration);
-      this.currentStrikeIndex++;
-      this.executeNextStrike(); // Schedule next strike
-    }, strike.delay);
-  }
-
-  private triggerSingleLightningStrike(duration: number): void {
-    // Store original values only once
-    if (this.lightningEndTime === 0) {
-      this.originalLightningIntensity = this.mainDirectionalLight.intensity;
-      this.originalLightningColor = this.mainDirectionalLight.color.getHex();
-      this.originalStormLightningIntensity = this.stormLight.intensity;
-    }
-
-    // Apply lightning effect
-    this.mainDirectionalLight.intensity = 3.5;
-    this.mainDirectionalLight.color.setHex(0xe6ccff);
-    this.stormLight.intensity = 4;
-
-    // Spawn thunder bolts around center
-    this.thunderBoltManager.spawnThunderBolts();
-
-    // Set end time for this strike
-    this.lightningEndTime = performance.now() + duration;
-  }
-
-  private endLightning(): void {
-    // Restore original values
-    this.mainDirectionalLight.intensity = this.originalLightningIntensity;
-    this.mainDirectionalLight.color.setHex(this.originalLightningColor);
-    this.stormLight.intensity = this.originalStormLightningIntensity;
-
-    // Reset lightning state
-    this.lightningEndTime = 0;
-  }
-
-  private shouldTriggerLightningAtCycleProgress(cycleProgress: number): boolean {
-    // Trigger lightning only at the start of each cycle (when progress is near 0)
-    const tolerance = 20; // 15% tolerance around cycle start to catch larger tick jumps
-
-    // Check if we're at the start of a cycle and haven't already triggered for this cycle
-    if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
-      this.lastLightningTriggerProgress = 0;
-      // Add 0.5 second delay before starting lightning sequence
-      this.lightningTriggerTimeout = setTimeout(() => {
-        this.startLightningSequence();
-      }, 2000);
-      return false; // Don't trigger immediately
-    }
-
-    // Reset the trigger flag when we're well into the cycle
-    if (cycleProgress > tolerance * 2) {
-      this.lastLightningTriggerProgress = -1;
-    }
-
-    return false;
-  }
-
   protected shouldEnableStormEffects(): boolean {
     // Override this method in child classes to control storm effects
     return true;
@@ -1248,20 +1138,7 @@ export abstract class HexagonScene {
 
   // Cleanup method for lightning sequence
   protected cleanupLightning(): void {
-    if (this.lightningTriggerTimeout) {
-      clearTimeout(this.lightningTriggerTimeout);
-      this.lightningTriggerTimeout = null;
-    }
-    if (this.lightningSequenceTimeout) {
-      clearTimeout(this.lightningSequenceTimeout);
-      this.lightningSequenceTimeout = null;
-    }
-    // Reset lightning state
-    if (this.lightningEndTime > 0) {
-      this.endLightning();
-    }
-    // Cleanup thunder bolts
-    this.thunderBoltManager.cleanup();
+    this.lightningSystem?.cleanup();
   }
 
   // Abstract methods
@@ -1466,7 +1343,7 @@ export abstract class HexagonScene {
   }
 
   private updateFogForDistance(distance: number): void {
-    if (!this.fogEnabledByQuality || !this.fogEnabledByUser || this.currentCameraView === CameraView.Close) {
+    if (!this.fogEnabledByQuality || !this.fogEnabledByUser) {
       if (this.scene.fog) {
         this.scene.fog = null;
       }
@@ -1478,8 +1355,9 @@ export abstract class HexagonScene {
     }
 
     const clipFar = Math.min(this.camera.far, distance * 3.5);
-    const startFactor = this.currentCameraView === CameraView.Medium ? 0.35 : 0.45;
-    const endFactor = this.currentCameraView === CameraView.Medium ? 0.85 : 0.9;
+    const normalizedDistance = Math.min(1, Math.max(0, (distance - 10) / 50));
+    const startFactor = 0.3 + normalizedDistance * 0.15;
+    const endFactor = 0.8 + normalizedDistance * 0.1;
 
     const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
     const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
@@ -1495,24 +1373,17 @@ export abstract class HexagonScene {
   }
 
   private applyTargetCameraView(position: CameraView): void {
-    switch (position) {
-      case CameraView.Close:
-        this.cameraDistance = 10;
-        this.cameraAngle = Math.PI / 6;
-        break;
-      case CameraView.Medium:
-        this.cameraDistance = 20;
-        this.cameraAngle = Math.PI / 3;
-        break;
-      case CameraView.Far:
-        this.cameraDistance = 40;
-        this.cameraAngle = (50 * Math.PI) / 180;
-        break;
-    }
+    const profile = resolveWorldmapCameraViewProfile(position);
+    this.cameraDistance = profile.distance;
+    this.cameraAngle = profile.angleRadians;
   }
 
   private applyResolvedCameraView(view: CameraView): void {
     if (!this.mainDirectionalLight) {
+      return;
+    }
+
+    if (this.sceneName === SceneName.WorldMap) {
       return;
     }
 
@@ -1532,8 +1403,8 @@ export abstract class HexagonScene {
   }
 
   private syncResolvedCameraViewFromDistance(distance: number): void {
-    const nextView = resolveWorldmapViewFromDistance({
-      currentView: this.currentCameraView,
+    const nextView = resolveWorldmapZoomBand({
+      currentBand: this.currentCameraView,
       distance,
     });
     if (nextView === this.currentCameraView) {

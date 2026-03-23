@@ -3,7 +3,7 @@
  * processing reads a consistent view, immune to concurrent mutations.
  */
 
-export interface SnapshotRegion {
+interface SnapshotRegion {
   centerCol: number;
   centerRow: number;
   halfCols: number;
@@ -11,7 +11,7 @@ export interface SnapshotRegion {
 }
 
 /** Opaque snapshot type — a frozen copy of biome data for a rectangular region. */
-export type ExploredTilesSnapshot = ReadonlyMap<number, ReadonlyMap<number, unknown>>;
+type ExploredTilesSnapshot = ReadonlyMap<number, ReadonlyMap<number, unknown>>;
 
 export function snapshotExploredTilesRegion<TBiome>(
   exploredTiles: Map<number, Map<number, TBiome>>,

@@ -1,10 +1,29 @@
-import type { Config as EternumConfig } from "@bibliothecadao/types";
+import type {
+  Config as EternumConfig,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
-export type DeploymentChain = "slot";
+export type DeploymentChain = "slot" | "mainnet";
 export type DeploymentGameType = "blitz" | "eternum";
-export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum";
+export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.blitz" | "mainnet.eternum";
 export type ExecutionMode = "batched" | "sequential";
+export type LaunchGameStepId =
+  | "create-world"
+  | "wait-for-factory-index"
+  | "configure-world"
+  | "grant-lootchest-role"
+  | "grant-village-pass-role"
+  | "create-banks"
+  | "create-indexer"
+  | "sync-paymaster";
+
+export interface CreateGameDefaults {
+  maxActions: number;
+  submissionCount: number;
+  retryDelayMs: number;
+}
 
 export interface DeploymentEnvironment {
   id: DeploymentEnvironmentId;
@@ -12,10 +31,11 @@ export interface DeploymentEnvironment {
   gameType: DeploymentGameType;
   toriiEnv: DeploymentChain;
   configPath: string;
-  factoryAddress: string;
+  factoryAddress?: string;
   rpcUrl: string;
-  accountAddress: string;
-  privateKey: string;
+  accountAddress?: string;
+  privateKey?: string;
+  createGame: CreateGameDefaults;
 }
 
 export interface ConfigLogger {
@@ -95,6 +115,8 @@ export interface LaunchGameRequest {
   singleRealmMode?: boolean;
   twoPlayerMode?: boolean;
   durationSeconds?: number;
+  mapConfigOverrides?: FactoryMapConfigOverrides;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
   vrfProviderAddress?: string;
@@ -114,6 +136,10 @@ export interface LaunchGameRequest {
   ref?: string;
 }
 
+export interface LaunchGameStepRequest extends LaunchGameRequest {
+  stepId: LaunchGameStepId;
+}
+
 export interface LaunchGameSummary {
   environment: DeploymentEnvironmentId;
   chain: DeploymentChain;
@@ -129,6 +155,7 @@ export interface LaunchGameSummary {
   lootChestRoleTxHash?: string;
   villagePassRoleTxHash?: string;
   createBanksTxHash?: string;
+  paymasterSynced?: boolean;
   indexerCreated: boolean;
   indexerMode?: IndexerCreationResult["mode"];
   indexerRequest?: IndexerRequest;

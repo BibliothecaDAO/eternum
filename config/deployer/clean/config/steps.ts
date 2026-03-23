@@ -5,11 +5,13 @@ import {
   setBattleConfig,
   setBankConfig,
   setBaseBuildingConfig,
+  setBlitzExplorationConfig,
   setBlitzRegistrationParametersConfig,
   setBuildingCategoryConfig,
   setCapacityConfig,
   setDiscoverableVillageSpawnResourcesConfig,
   setFactoryAddress,
+  setFaithConfig,
   setGameModeConfig,
   setHyperstructureConfig,
   setMapConfig,
@@ -49,8 +51,20 @@ function hasFactoryAddress(config: EternumConfig): boolean {
   return Boolean((config as EternumConfig & { factory_address?: string }).factory_address);
 }
 
+function isBlitzConfiguration(config: EternumConfig): boolean {
+  return Boolean(config.blitz?.mode?.on);
+}
+
+function isEternumConfiguration(config: EternumConfig): boolean {
+  return !isBlitzConfiguration(config);
+}
+
 function hasMmrConfig(config: EternumConfig): boolean {
   return Boolean((config as EternumConfig & { mmr?: unknown }).mmr);
+}
+
+function hasFaithConfig(config: EternumConfig): boolean {
+  return Boolean(config.faith);
 }
 
 function hasSupportedVrfConfig(config: EternumConfig): boolean {
@@ -108,8 +122,11 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
   defineStep("factory-address", "Set factory address", setFactoryAddress, {
     shouldRun: ({ config }) => hasFactoryAddress(config),
   }),
+  defineStep("blitz-exploration", "Set blitz exploration config", setBlitzExplorationConfig, {
+    shouldRun: ({ config }) => isBlitzConfiguration(config),
+  }),
   defineStep("mmr", "Set MMR config", setMMRConfig, {
-    shouldRun: ({ config }) => hasMmrConfig(config),
+    shouldRun: ({ config }) => isBlitzConfiguration(config) && hasMmrConfig(config),
   }),
   defineStep("victory-points", "Set victory points config", setVictoryPointsConfig),
   defineStep(
@@ -118,16 +135,22 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
     setDiscoverableVillageSpawnResourcesConfig,
   ),
   defineStep("blitz-registration", "Set blitz registration config", setBlitzRegistrationParametersConfig, {
-    environments: ["slot.blitz"],
+    shouldRun: ({ config }) => isBlitzConfiguration(config),
   }),
   defineStep("agent", "Set agent config", setAgentConfig),
-  defineStep("village-controllers", "Set village controllers config", setVillageControllersConfig),
-  defineStep("trade", "Set trade config", setTradeConfig),
+  defineStep("village-controllers", "Set village controllers config", setVillageControllersConfig, {
+    shouldRun: ({ config }) => isEternumConfiguration(config),
+  }),
+  defineStep("trade", "Set trade config", setTradeConfig, {
+    shouldRun: ({ config }) => isEternumConfiguration(config),
+  }),
   defineStep("season", "Set season config", setSeasonConfig),
   defineStep("resource-bridge-fees", "Set resource bridge fees config", setResourceBridgeFeesConfig),
   defineStep("battle", "Set battle config", setBattleConfig),
   defineStep("structure-max-level", "Set structure max level config", setStructureMaxLevelConfig),
-  defineStep("bank", "Set bank config", setBankConfig),
+  defineStep("bank", "Set bank config", setBankConfig, {
+    shouldRun: ({ config }) => isEternumConfiguration(config),
+  }),
   defineStep("tick", "Set tick config", setTickConfig),
   defineStep("map", "Set map config", setMapConfig),
   defineStep("quest", "Set quest config", setQuestConfig),
@@ -135,6 +158,9 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
   defineStep("speed", "Set speed config", setSpeedConfig),
   defineStep("hyperstructure", "Set hyperstructure config", setHyperstructureConfig),
   defineStep("settlement", "Set settlement config", setSettlementConfig),
+  defineStep("faith", "Set faith config", setFaithConfig, {
+    shouldRun: ({ config }) => isEternumConfiguration(config) && hasFaithConfig(config),
+  }),
   defineStep("starting-resources", "Set starting resources config", setStartingResourcesConfig),
   defineStep("weight", "Set weight config", setWeightConfig),
   defineStep("realm-upgrade", "Set realm upgrade config", setRealmUpgradeConfig),

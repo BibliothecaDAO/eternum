@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
+import { AudioManager } from "@/audio/core/AudioManager";
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { type ProcessedStoryEvent, useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -284,6 +286,25 @@ export function StoryEventToastBridge() {
         ),
         { duration: 12000 },
       );
+
+      // Play combat sounds when the player is involved in the battle
+      const playerAddress = useAccountStore.getState().account?.address?.toLowerCase();
+      if (playerAddress) {
+        const attackerAddr = String(event.battle_attacker_owner_address ?? "").toLowerCase();
+        const defenderAddr = String(event.battle_defender_owner_address ?? "").toLowerCase();
+        const isPlayerInvolved = attackerAddr === playerAddress || defenderAddr === playerAddress;
+
+        if (isPlayerInvolved) {
+          const winnerId = parseNumeric(event.battle_winner_id);
+          const attackerId = parseNumeric(event.battle_attacker_id);
+          const defenderId = parseNumeric(event.battle_defender_id);
+          const isPlayerAttacker = attackerAddr === playerAddress;
+          const playerEntityId = isPlayerAttacker ? attackerId : defenderId;
+          const isPlayerWinner = winnerId !== null && winnerId === playerEntityId;
+
+          AudioManager.getInstance().play(isPlayerWinner ? "combat.victory" : "combat.defeat");
+        }
+      }
     }
 
     // Prune old IDs to prevent unbounded memory growth
