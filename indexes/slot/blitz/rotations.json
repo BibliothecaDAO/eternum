@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T05:48:37.412Z",
+  "updatedAt": "2026-03-23T05:49:19.700Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -53,22 +53,22 @@
       "rotationName": "bltz-blinkery",
       "path": "runs/slot/blitz/rotations/bltz-blinkery.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-blinkery/23423347890-1.json",
-      "status": "running",
-      "updatedAt": "2026-03-23T05:48:37.412Z",
+      "status": "attention",
+      "updatedAt": "2026-03-23T05:49:19.700Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "create-worlds",
-      "activeLeaseExpiresAt": "2026-03-23T06:33:37.412Z",
-      "hasRunningStep": true,
-      "recoverableFailedStepId": null,
+      "hasRunningStep": false,
+      "recoverableFailedStepId": "create-worlds",
       "recoverablePendingStepId": "wait-for-factory-indexes",
       "autoRetry": {
         "enabled": true,
-        "intervalMinutes": 15
+        "intervalMinutes": 15,
+        "nextRetryAt": "2026-03-23T06:04:19.700Z"
       },
       "evaluation": {
         "intervalMinutes": 5,
-        "nextEvaluationAt": "2026-03-23T05:53:34.191Z",
-        "lastEvaluatedAt": "2026-03-23T05:48:34.191Z"
+        "nextEvaluationAt": "2026-03-23T05:54:19.700Z",
+        "lastEvaluatedAt": "2026-03-23T05:49:19.700Z"
       },
       "games": [
         {
