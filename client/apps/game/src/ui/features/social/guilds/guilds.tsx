@@ -333,8 +333,13 @@ export const Guilds = ({
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button isLoading={isLoading} variant="primary" className="sm:ml-auto" onClick={toggleIsCreatingGuild}>
-              Create Tribe
+            <Button
+              isLoading={isLoading}
+              variant={isCreatingGuild ? "outline" : "primary"}
+              className="sm:ml-auto min-w-[140px]"
+              onClick={toggleIsCreatingGuild}
+            >
+              {isCreatingGuild ? "Cancel" : "Create Tribe"}
             </Button>
           )}
         </div>

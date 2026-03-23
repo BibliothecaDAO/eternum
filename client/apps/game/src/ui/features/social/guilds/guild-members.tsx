@@ -153,7 +153,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
       {userIsGuildMaster && (
         <div className="mb-3 grid grid-cols-2 gap-2">
           <Button
-            className={viewGuildInvites ? "" : "bg-gold/10 border-gold/40"}
+            className={`flex items-center justify-center gap-1.5 ${viewGuildInvites ? "" : "bg-gold/10 border-gold/40"}`}
             variant="outline"
             size="xs"
             onClick={() => setViewGuildInvites(false)}
@@ -162,7 +162,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
             <span>Members ({memberCount})</span>
           </Button>
           <Button
-            className={viewGuildInvites ? "bg-gold/10 border-gold/40" : ""}
+            className={`flex items-center justify-center gap-1.5 ${viewGuildInvites ? "bg-gold/10 border-gold/40" : ""}`}
             variant="outline"
             size="xs"
             onClick={() => setViewGuildInvites(true)}
@@ -196,7 +196,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
       <div className="mt-4 flex flex-wrap gap-2">
         {userGuild?.entityId === selectedGuildEntityId && (
           <Button
-            className="flex-1"
+            className="flex-1 flex items-center justify-center gap-1.5"
             isLoading={isLoading}
             variant="red"
             onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
@@ -207,7 +207,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
         )}
         {!userGuild?.entityId && (selectedGuild?.isPublic || userIsInvited) && (
           <Button
-            className="flex-1"
+            className="flex-1 flex items-center justify-center gap-1.5"
             isLoading={isLoading}
             variant="primary"
             onClick={() => joinGuild(selectedGuildEntityId)}

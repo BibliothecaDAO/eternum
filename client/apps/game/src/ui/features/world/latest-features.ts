@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Tribe Controls Spacing Polish",
+    description:
+      "Refined Tribe action controls with cleaner button/icon spacing and sizing, including a clearer create-tribe form flow and tighter Members/Invites action alignment in the detail panel.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
     title: "Tribe Leaderboard Visual Sync",
     description:
       "Tribe rankings and tribe detail panels now share the same modern leaderboard styling language as Players, including refreshed row cards, cleaner headers, and a more consistent member/invite detail layout.",
