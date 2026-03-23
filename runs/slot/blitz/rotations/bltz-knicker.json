@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-knicker/23415890438-1.json",
   "latestLaunchRequestId": "23415890438-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-03-23T00:12:41.396Z",
-  "updatedAt": "2026-03-23T00:13:03.528Z",
+  "updatedAt": "2026-03-23T00:17:19.871Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-23T00:28:00.884Z",
-    "lastEvaluatedAt": "2026-03-23T00:13:00.884Z"
+    "nextEvaluationAt": "2026-03-23T00:32:19.871Z",
+    "lastEvaluatedAt": "2026-03-23T00:17:19.871Z"
   },
   "steps": [
     {
@@ -46,10 +46,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-23T00:13:03.528Z"
+      "latestEvent": "Creating games succeeded",
+      "startedAt": "2026-03-23T00:13:03.528Z",
+      "finishedAt": "2026-03-23T00:17:19.871Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -106,8 +107,8 @@
         "startTimeIso": "2026-03-23T01:00:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -117,8 +118,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T00:14:05.471Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -141,7 +143,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "createGameTxHash": "0x6c224fac55e4c242a793d74892a3143449884f57329c6cf8b7df54d485bc271"
+        },
+        "durationSeconds": 3600
       },
       {
         "gameName": "bltz-knicker-02",
@@ -149,8 +154,8 @@
         "startTimeIso": "2026-03-23T02:00:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -160,8 +165,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T00:14:56.013Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -184,7 +190,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "createGameTxHash": "0x49b0ac7b065e11e90501b2fa5a628eb2715a723a7178b7fc247ecea56c4df2e"
+        },
+        "durationSeconds": 3600
       },
       {
         "gameName": "bltz-knicker-03",
@@ -192,8 +201,8 @@
         "startTimeIso": "2026-03-23T03:00:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -203,8 +212,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T00:15:39.941Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -227,7 +237,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "createGameTxHash": "0x76cc73fbb62bc63e93680b5d8de8cca6a29987a4aa17832b0e0fb3b0414764"
+        },
+        "durationSeconds": 3600
       },
       {
         "gameName": "bltz-knicker-04",
@@ -235,8 +248,8 @@
         "startTimeIso": "2026-03-23T04:00:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -246,8 +259,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T00:16:28.855Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -270,7 +284,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "createGameTxHash": "0x4547ff8d51377b495d3068a69840b459fabb00de59d5725d6b726f57ef68746"
+        },
+        "durationSeconds": 3600
       },
       {
         "gameName": "bltz-knicker-05",
@@ -278,8 +295,8 @@
         "startTimeIso": "2026-03-23T05:00:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -289,8 +306,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T00:17:15.888Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -313,7 +331,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "createGameTxHash": "0x43d6f04837a6086f6c73d0c7f7e0dbbd7cfa3a2e6f3b1003034117b9d1086f5"
+        },
+        "durationSeconds": 3600
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-knicker.json",
@@ -323,13 +344,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-knicker.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T00:12:59.485Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23415890438-1",
-    "workflowRunId": 23415890438,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-23T00:13:03.528Z",
-    "expiresAt": "2026-03-23T00:58:03.528Z"
   }
 }
