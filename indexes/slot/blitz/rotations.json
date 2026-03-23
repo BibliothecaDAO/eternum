@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T05:49:19.700Z",
+  "updatedAt": "2026-03-23T05:58:46.782Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -84,6 +84,46 @@
         {
           "gameName": "bltz-blinkery-03",
           "startTime": 1774252800,
+          "artifacts": {}
+        }
+      ]
+    },
+    "bltz-franky": {
+      "kind": "rotation",
+      "environment": "slot.blitz",
+      "rotationName": "bltz-franky",
+      "path": "runs/slot/blitz/rotations/bltz-franky.json",
+      "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23423614823-1.json",
+      "status": "running",
+      "updatedAt": "2026-03-23T05:58:46.782Z",
+      "workflowRef": "codex/factory-v2-rotation-review",
+      "currentStepId": "create-series",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-series",
+      "autoRetry": {
+        "enabled": true,
+        "intervalMinutes": 15
+      },
+      "evaluation": {
+        "intervalMinutes": 5,
+        "nextEvaluationAt": "2026-03-23T06:03:46.782Z",
+        "lastEvaluatedAt": "2026-03-23T05:58:46.782Z"
+      },
+      "games": [
+        {
+          "gameName": "bltz-franky-01",
+          "startTime": 1774246800,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-franky-02",
+          "startTime": 1774250400,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-franky-03",
+          "startTime": 1774254000,
           "artifacts": {}
         }
       ]
