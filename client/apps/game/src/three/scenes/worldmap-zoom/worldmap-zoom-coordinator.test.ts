@@ -78,4 +78,22 @@ describe("WorldmapZoomCoordinator", () => {
     expect(snapshot.stableBand).toBe(CameraView.Close);
     expect(snapshot.status).toBe("idle");
   });
+
+  it("can sync the zoom state to a band without leaving an initial close-up transition behind", () => {
+    const coordinator = new WorldmapZoomCoordinator({
+      initialDistance: 10,
+      minDistance: 10,
+      maxDistance: 40,
+    });
+
+    coordinator.syncToBand(CameraView.Medium, 250);
+
+    expect(coordinator.getSnapshot()).toMatchObject({
+      actualDistance: 20,
+      targetDistance: 20,
+      resolvedBand: CameraView.Medium,
+      stableBand: CameraView.Medium,
+      status: "idle",
+    });
+  });
 });

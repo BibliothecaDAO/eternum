@@ -58,4 +58,11 @@ describe("worldmap zoom wiring", () => {
 
     expect(source).not.toMatch(/this\.worldmapScene\.requestChunkRefresh\(/);
   });
+
+  it("snaps the first worldmap entry to the intended medium camera band", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).toMatch(/if \(!this\.hasInitialized\) \{\s*this\.alignInitialWorldmapCameraView\(\);\s*\}/);
+    expect(source).toMatch(/this\.zoomCoordinator\.syncToBand\(CameraView\.Medium/);
+  });
 });
