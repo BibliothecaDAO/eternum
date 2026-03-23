@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-knicker",
-    "launchRequestId": "23415890438-1",
+    "gameName": "NOOBS-ONLY",
+    "launchRequestId": "23420186127-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23415890438,
+    "workflowRunId": 23420186127,
     "workflowRunAttempt": 1,
-    "stepId": "grant-village-pass-role",
-    "leaseId": "8adbb11c-2e68-4bf5-8f21-ad18f5af442f"
+    "stepId": "create-world",
+    "leaseId": "5ea58361-f1b6-4666-be7f-ac87caa859a8"
   },
-  "acquiredAt": "2026-03-23T00:19:16.516Z",
-  "heartbeatAt": "2026-03-23T00:19:21.747Z",
-  "expiresAt": "2026-03-23T00:19:21.747Z",
-  "releasedAt": "2026-03-23T00:19:21.747Z"
+  "acquiredAt": "2026-03-23T03:31:05.534Z",
+  "heartbeatAt": "2026-03-23T03:31:05.534Z",
+  "expiresAt": "2026-03-23T03:41:05.534Z"
 }
