@@ -5,14 +5,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "sg-63",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/sg-63/23463396411-1.json",
   "latestLaunchRequestId": "23463396411-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-23T22:32:59.979Z",
-  "updatedAt": "2026-03-23T22:36:00.496Z",
+  "updatedAt": "2026-03-23T22:37:09.399Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -62,10 +62,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-23T22:36:00.496Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-23T22:36:00.496Z",
+      "finishedAt": "2026-03-23T22:37:09.399Z"
     }
   ],
   "artifacts": {
@@ -73,14 +74,17 @@
     "createGameTxHash": "0x47e816b70d5838f4cbe867aa4cc4c37ca818e7822ae601c6387740d496610b1",
     "worldAddress": "0x022fd27d977148bd7be58f49cf288ed01b0e8be85eb57c467c0b097eab1c094f",
     "configureTxHash": "0x48ce7819f9d5283b6eb90f0f8d59536ccc7c17e4176aa65b709f7984cdcff2e",
-    "lootChestRoleTxHash": "0x72dcecf0832a3b65bfc25c58932bc7c8bda938b822bf4f1ffd37b1d4103c920"
+    "lootChestRoleTxHash": "0x72dcecf0832a3b65bfc25c58932bc7c8bda938b822bf4f1ffd37b1d4103c920",
+    "indexerCreated": true,
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "next",
+      "runId": 23463539092,
+      "runNumber": 980,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23463539092",
+      "status": "completed",
+      "conclusion": "success"
+    }
   },
-  "activeLease": {
-    "launchRequestId": "23463396411-1",
-    "workflowRunId": 23463396411,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-23T22:36:00.496Z",
-    "expiresAt": "2026-03-23T23:21:00.496Z"
-  }
+  "completedAt": "2026-03-23T22:37:09.399Z"
 }
