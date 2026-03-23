@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "sg-63",
-    "launchRequestId": "23463396411-1",
+    "gameName": "bltz-zestible",
+    "launchRequestId": "23463679403-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23463396411,
+    "workflowRunId": 23463679403,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "d0e54228-86f1-4673-885c-40f9a2787b57"
+    "stepId": "create-world",
+    "leaseId": "6c173d60-10e3-4f6a-a054-56c72d1fc872"
   },
-  "acquiredAt": "2026-03-23T22:35:46.736Z",
-  "heartbeatAt": "2026-03-23T22:35:50.694Z",
-  "expiresAt": "2026-03-23T22:35:50.694Z",
-  "releasedAt": "2026-03-23T22:35:50.694Z"
+  "acquiredAt": "2026-03-23T22:41:51.526Z",
+  "heartbeatAt": "2026-03-23T22:41:51.526Z",
+  "expiresAt": "2026-03-23T22:51:51.526Z"
 }
