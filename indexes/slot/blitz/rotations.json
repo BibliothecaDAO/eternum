@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T05:48:34.191Z",
+  "updatedAt": "2026-03-23T05:48:37.412Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -54,12 +54,13 @@
       "path": "runs/slot/blitz/rotations/bltz-blinkery.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-blinkery/23423347890-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T05:48:34.191Z",
+      "updatedAt": "2026-03-23T05:48:37.412Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "create-worlds",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-23T06:33:37.412Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-worlds",
+      "recoverablePendingStepId": "wait-for-factory-indexes",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15
