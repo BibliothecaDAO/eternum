@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23463679403-1.json",
   "latestLaunchRequestId": "23463679403-1",
-  "currentStepId": null,
+  "currentStepId": "configure-worlds",
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-23T22:42:10.584Z",
+  "updatedAt": "2026-03-23T22:42:13.661Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -64,9 +64,10 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-23T22:42:13.661Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -1233,5 +1234,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23463679403-1",
+    "workflowRunId": 23463679403,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-worlds",
+    "acquiredAt": "2026-03-23T22:42:13.661Z",
+    "expiresAt": "2026-03-23T23:27:13.661Z"
   }
 }
