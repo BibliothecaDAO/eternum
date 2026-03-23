@@ -10,19 +10,19 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23424087187-1.json",
-  "latestLaunchRequestId": "23424087187-1",
-  "currentStepId": null,
+  "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23424366558-1.json",
+  "latestLaunchRequestId": "23424366558-1",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T06:25:18.150Z",
+  "updatedAt": "2026-03-23T06:26:24.023Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23424087187,
+    "workflowRunId": 23424366558,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23424087187",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23424366558",
     "ref": "codex/factory-v2-rotation-review",
-    "sha": "60d7d04c4c495bd705d30a30169b93ab91e37d13"
+    "sha": "ae4d01a6dbdb88fce163ed4028131607885ea155"
   },
   "autoRetry": {
     "enabled": true,
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T06:30:13.123Z",
-    "lastEvaluatedAt": "2026-03-23T06:25:13.123Z"
+    "nextEvaluationAt": "2026-03-23T06:31:24.023Z",
+    "lastEvaluatedAt": "2026-03-23T06:26:24.023Z"
   },
   "steps": [
     {
@@ -39,54 +39,42 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-03-23T06:16:28.707Z",
-      "finishedAt": "2026-03-23T06:16:33.707Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-03-23T06:16:36.842Z",
-      "finishedAt": "2026-03-23T06:16:46.672Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-03-23T06:16:54.899Z",
-      "finishedAt": "2026-03-23T06:16:59.948Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-03-23T06:17:03.425Z",
-      "finishedAt": "2026-03-23T06:17:13.369Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-03-23T06:17:21.683Z",
-      "finishedAt": "2026-03-23T06:17:31.695Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-03-23T06:17:39.859Z",
-      "finishedAt": "2026-03-23T06:17:44.788Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -686,6 +674,49 @@
           }
         },
         "durationSeconds": 3600
+      },
+      {
+        "gameName": "bltz-franky-04",
+        "startTime": 1774257600,
+        "startTimeIso": "2026-03-23T09:20:00.000Z",
+        "seriesGameNumber": 4,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
