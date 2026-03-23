@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "slot.eternum:etrn-bloom-897",
+  "launchRequestId": "23450170365-1",
+  "environment": "slot.eternum",
+  "chain": "slot",
+  "gameType": "eternum",
+  "gameName": "etrn-bloom-897",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-23T17:11:56.005Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23450170365,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23450170365",
+    "ref": "codex/factory-v2-rotation-review",
+    "sha": "ae6e30ce7a412c93733e43b10a7c8ac181d69eaf"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "slot.eternum",
+    "gameName": "etrn-bloom-897",
+    "startTime": "2026-03-23T17:30:00.000Z",
+    "factoryAddress": "",
+    "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+    "privateKey": "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912",
+    "mapConfigOverrides": {
+      "shardsMinesWinProbability": 6554,
+      "shardsMinesFailProbability": 58981,
+      "campFindProbability": 6554,
+      "campFindFailProbability": 58981,
+      "holysiteFindProbability": 6554,
+      "holysiteFindFailProbability": 58981
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 300
+  }
+}
