@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "environment": "slot.eternum",
+  "kind": "game",
+  "updatedAt": "2026-03-23T13:56:48.548Z",
+  "entries": {
+    "etrn-haven-204": {
+      "kind": "game",
+      "environment": "slot.eternum",
+      "gameName": "etrn-haven-204",
+      "path": "runs/slot/eternum/etrn-haven-204.json",
+      "inputPath": "inputs/slot/eternum/etrn-haven-204/23440921826-1.json",
+      "status": "running",
+      "updatedAt": "2026-03-23T13:56:48.548Z",
+      "workflowRef": "codex/factory-v2-rotation-review",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-03-23T14:00:00.000Z",
+      "artifacts": {}
+    }
+  }
+}
