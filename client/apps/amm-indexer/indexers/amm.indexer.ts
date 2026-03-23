@@ -1,13 +1,10 @@
 import { defineIndexer } from "apibara/indexer";
-import {
-  StarknetStream,
-  getSelector,
-  decodeEvent,
-} from "@apibara/starknet";
+import { StarknetStream, getSelector, decodeEvent } from "@apibara/starknet";
 import { drizzleStorage, useDrizzleStorage, drizzle } from "@apibara/plugin-drizzle";
 import { eq, and, sql } from "drizzle-orm";
 import * as schema from "../src/schema";
 import { ammAbi, EVENT_NAME } from "../src/abi";
+import { buildSwapMutations } from "./swap-accounting";
 
 /** LORDS token address — used to determine which pool a swap belongs to */
 const LORDS_ADDRESS = process.env.LORDS_ADDRESS ?? "";
@@ -21,18 +18,6 @@ const CANDLE_INTERVALS: Record<string, number> = {
   "4h": 14_400_000,
   "1d": 86_400_000,
 };
-
-/**
- * Compute the pool's price as lords_reserve / token_reserve.
- * Returns a string with 18 decimal places.
- */
-function computePrice(lordsReserve: bigint, tokenReserve: bigint): string {
-  if (tokenReserve === 0n) return "0";
-  const scaled = (lordsReserve * 10n ** 18n) / tokenReserve;
-  const intPart = scaled / 10n ** 18n;
-  const fracPart = scaled % 10n ** 18n;
-  return `${intPart}.${fracPart.toString().padStart(18, "0")}`;
-}
 
 /**
  * Get the candle open time for a given timestamp and interval.
@@ -140,119 +125,127 @@ export default defineIndexer(StarknetStream)({
         const amountIn = BigInt(decoded.args.amount_in.toString());
         const amountOut = BigInt(decoded.args.amount_out.toString());
         const protocolFee = BigInt(decoded.args.protocol_fee.toString());
+        const touchedPoolAddresses = Array.from(
+          new Set([tokenIn, tokenOut].filter((address) => address.toLowerCase() !== LORDS_ADDRESS.toLowerCase())),
+        );
+        const poolsByTokenEntries = await Promise.all(
+          touchedPoolAddresses.map(async (tokenAddress) => {
+            const rows = await txDb
+              .select()
+              .from(schema.pools)
+              .where(eq(schema.pools.tokenAddress, tokenAddress))
+              .limit(1);
+            const pool = rows[0];
 
-        // Determine the pool token address
-        const isLordsInput =
-          tokenIn.toLowerCase() === LORDS_ADDRESS.toLowerCase();
-        const poolTokenAddress = isLordsInput ? tokenOut : tokenIn;
+            if (!pool) {
+              return [tokenAddress, null] as const;
+            }
 
-        // Read current pool state
-        const poolRows = await txDb
-          .select()
-          .from(schema.pools)
-          .where(eq(schema.pools.tokenAddress, poolTokenAddress))
-          .limit(1);
+            return [
+              tokenAddress,
+              {
+                tokenAddress,
+                lordsReserve: BigInt(pool.lordsReserve),
+                tokenReserve: BigInt(pool.tokenReserve),
+                feeNum: BigInt(pool.lpFeeNum),
+                feeDenom: BigInt(pool.lpFeeDenom),
+                protocolFeeNum: BigInt(pool.protocolFeeNum),
+                protocolFeeDenom: BigInt(pool.protocolFeeDenom),
+              },
+            ] as const;
+          }),
+        );
+        const poolsByToken = Object.fromEntries(
+          poolsByTokenEntries.filter(
+            (entry): entry is readonly [string, NonNullable<(typeof entry)[1]>] => entry[1] !== null,
+          ),
+        );
+        const mutations = buildSwapMutations({
+          lordsAddress: LORDS_ADDRESS,
+          tokenIn,
+          tokenOut,
+          amountIn,
+          amountOut,
+          protocolFee,
+          poolsByToken,
+        });
 
-        let priceBeforeSwap = "0";
-        let priceAfterSwap = "0";
-
-        if (poolRows.length > 0) {
-          const pool = poolRows[0];
-          const lordsReserve = BigInt(pool.lordsReserve);
-          const tokenReserve = BigInt(pool.tokenReserve);
-
-          priceBeforeSwap = computePrice(lordsReserve, tokenReserve);
-
-          let newLordsReserve: bigint;
-          let newTokenReserve: bigint;
-
-          if (isLordsInput) {
-            newLordsReserve = lordsReserve + amountIn;
-            newTokenReserve = tokenReserve - amountOut - protocolFee;
-          } else {
-            newLordsReserve = lordsReserve - amountOut - protocolFee;
-            newTokenReserve = tokenReserve + amountIn;
-          }
-
-          priceAfterSwap = computePrice(newLordsReserve, newTokenReserve);
-
+        for (const mutation of mutations) {
           await txDb
             .update(schema.pools)
             .set({
-              lordsReserve: newLordsReserve.toString(),
-              tokenReserve: newTokenReserve.toString(),
+              lordsReserve: mutation.nextLordsReserve.toString(),
+              tokenReserve: mutation.nextTokenReserve.toString(),
             })
-            .where(eq(schema.pools.tokenAddress, poolTokenAddress));
-        }
+            .where(eq(schema.pools.tokenAddress, mutation.tokenAddress));
 
-        await txDb.insert(schema.swaps).values({
-          tokenAddress: poolTokenAddress,
-          userAddress: user,
-          tokenIn,
-          tokenOut,
-          amountIn: amountIn.toString(),
-          amountOut: amountOut.toString(),
-          protocolFee: protocolFee.toString(),
-          priceBeforeSwap,
-          priceAfterSwap,
-          blockNumber,
-          blockTimestamp,
-          txHash,
-          eventIndex,
-        });
+          await txDb.insert(schema.swaps).values({
+            tokenAddress: mutation.tokenAddress,
+            userAddress: user,
+            tokenIn: mutation.tokenIn,
+            tokenOut: mutation.tokenOut,
+            amountIn: mutation.amountIn.toString(),
+            amountOut: mutation.amountOut.toString(),
+            protocolFee: mutation.protocolFee.toString(),
+            priceBeforeSwap: mutation.priceBeforeSwap,
+            priceAfterSwap: mutation.priceAfterSwap,
+            blockNumber,
+            blockTimestamp,
+            txHash,
+            eventIndex,
+          });
 
-        // Update candles for all intervals
-        for (const [interval, intervalMs] of Object.entries(CANDLE_INTERVALS)) {
-          const openTime = getCandleOpenTime(blockTimestamp, intervalMs);
-          const closeTime = new Date(openTime.getTime() + intervalMs);
+          for (const [interval, intervalMs] of Object.entries(CANDLE_INTERVALS)) {
+            const openTime = getCandleOpenTime(blockTimestamp, intervalMs);
+            const closeTime = new Date(openTime.getTime() + intervalMs);
+            const existingCandle = await txDb
+              .select()
+              .from(schema.priceCandles)
+              .where(
+                and(
+                  eq(schema.priceCandles.tokenAddress, mutation.tokenAddress),
+                  eq(schema.priceCandles.interval, interval),
+                  eq(schema.priceCandles.openTime, openTime),
+                ),
+              )
+              .limit(1);
 
-          const existingCandle = await txDb
-            .select()
-            .from(schema.priceCandles)
-            .where(
-              and(
-                eq(schema.priceCandles.tokenAddress, poolTokenAddress),
-                eq(schema.priceCandles.interval, interval),
-                eq(schema.priceCandles.openTime, openTime),
-              ),
-            )
-            .limit(1);
+            if (existingCandle.length > 0) {
+              const candle = existingCandle[0];
+              const currentHigh = parseFloat(candle.high);
+              const currentLow = parseFloat(candle.low);
+              const swapPrice = parseFloat(mutation.priceAfterSwap);
 
-          if (existingCandle.length > 0) {
-            const candle = existingCandle[0];
-            const currentHigh = parseFloat(candle.high);
-            const currentLow = parseFloat(candle.low);
-            const swapPrice = parseFloat(priceAfterSwap);
-
-            await txDb
-              .update(schema.priceCandles)
-              .set({
-                high: Math.max(currentHigh, swapPrice).toString(),
-                low: Math.min(currentLow, swapPrice).toString(),
-                close: priceAfterSwap,
-                volume: (BigInt(candle.volume) + amountIn).toString(),
-                tradeCount: candle.tradeCount + 1,
-              })
-              .where(eq(schema.priceCandles.id, candle.id));
-          } else {
-            await txDb.insert(schema.priceCandles).values({
-              tokenAddress: poolTokenAddress,
-              interval,
-              openTime,
-              closeTime,
-              open: priceBeforeSwap,
-              high:
-                parseFloat(priceAfterSwap) > parseFloat(priceBeforeSwap)
-                  ? priceAfterSwap
-                  : priceBeforeSwap,
-              low:
-                parseFloat(priceAfterSwap) < parseFloat(priceBeforeSwap)
-                  ? priceAfterSwap
-                  : priceBeforeSwap,
-              close: priceAfterSwap,
-              volume: amountIn.toString(),
-              tradeCount: 1,
-            });
+              await txDb
+                .update(schema.priceCandles)
+                .set({
+                  high: Math.max(currentHigh, swapPrice).toString(),
+                  low: Math.min(currentLow, swapPrice).toString(),
+                  close: mutation.priceAfterSwap,
+                  volume: (BigInt(candle.volume) + mutation.amountIn).toString(),
+                  tradeCount: candle.tradeCount + 1,
+                })
+                .where(eq(schema.priceCandles.id, candle.id));
+            } else {
+              await txDb.insert(schema.priceCandles).values({
+                tokenAddress: mutation.tokenAddress,
+                interval,
+                openTime,
+                closeTime,
+                open: mutation.priceBeforeSwap,
+                high:
+                  parseFloat(mutation.priceAfterSwap) > parseFloat(mutation.priceBeforeSwap)
+                    ? mutation.priceAfterSwap
+                    : mutation.priceBeforeSwap,
+                low:
+                  parseFloat(mutation.priceAfterSwap) < parseFloat(mutation.priceBeforeSwap)
+                    ? mutation.priceAfterSwap
+                    : mutation.priceBeforeSwap,
+                close: mutation.priceAfterSwap,
+                volume: mutation.amountIn.toString(),
+                tradeCount: 1,
+              });
+            }
           }
         }
       }
@@ -370,9 +363,7 @@ export default defineIndexer(StarknetStream)({
           event,
         });
 
-        console.log(
-          `FeeRecipientChanged: ${decoded.args.old_recipient} -> ${decoded.args.new_recipient}`,
-        );
+        console.log(`FeeRecipientChanged: ${decoded.args.old_recipient} -> ${decoded.args.new_recipient}`);
       }
     }
   },

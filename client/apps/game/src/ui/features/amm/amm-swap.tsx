@@ -3,101 +3,97 @@ import { useAmm } from "@/hooks/use-amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
 import { AmmTokenInput, type TokenOption } from "./amm-token-input";
 import { AmmSwapConfirmation } from "./amm-swap-confirmation";
-import { useCallback, useMemo, useState } from "react";
-import {
-  formatTokenAmount,
-  parseTokenAmount,
-  getInputPrice,
-  computePriceImpact,
-  computeMinimumReceived,
-  computeSpotPrice,
-  type Pool,
-} from "@bibliothecadao/amm-sdk";
-
-const MOCK_TOKENS: TokenOption[] = [
-  { address: "0x1", name: "LORDS" },
-  { address: "0x2", name: "Wood" },
-  { address: "0x3", name: "Stone" },
-  { address: "0x4", name: "Coal" },
-  { address: "0x5", name: "Copper" },
-  { address: "0x6", name: "Ironwood" },
-];
-
-const MOCK_POOL: Pool = {
-  tokenAddress: "0x2",
-  lpTokenAddress: "0x100",
-  lordsReserve: 1000000000000000000000n,
-  tokenReserve: 5000000000000000000000n,
-  totalLpSupply: 2000000000000000000000n,
-  feeNum: 3n,
-  feeDenom: 1000n,
-  protocolFeeNum: 1n,
-  protocolFeeDenom: 1000n,
-};
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatTokenAmount, parseTokenAmount, type Pool } from "@bibliothecadao/amm-sdk";
+import { useQuery } from "@tanstack/react-query";
+import { buildAmmTokenOptions, resolveAmmSwapRoute, resolveAmmTokenName, resolveSelectedAmmPool } from "./amm-model";
 
 export const AmmSwap = () => {
-  const { client, executeSwap } = useAmm();
+  const { client, config, executeSwap, isConfigured } = useAmm();
   const slippageBps = useAmmStore((s) => s.slippageBps);
   const selectedPool = useAmmStore((s) => s.selectedPool);
+  const setSelectedPool = useAmmStore((s) => s.setSelectedPool);
 
   const [payAmount, setPayAmount] = useState(0);
   const [receiveAmount, setReceiveAmount] = useState(0);
-  const [payToken, setPayToken] = useState("0x1");
-  const [receiveToken, setReceiveToken] = useState("0x2");
+  const [payToken, setPayToken] = useState(config.lordsAddress);
+  const [receiveToken, setReceiveToken] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const isLordsInput = payToken === "0x1";
-  const pool = MOCK_POOL;
+  const { data: pools = [] } = useQuery<Pool[]>({
+    queryKey: ["amm-pools"],
+    queryFn: async () => client?.api.getPools() ?? [],
+    enabled: Boolean(client),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const activePool = useMemo(() => resolveSelectedAmmPool(pools, selectedPool), [pools, selectedPool]);
+  const tokens = useMemo<TokenOption[]>(
+    () => buildAmmTokenOptions(pools, config.lordsAddress),
+    [pools, config.lordsAddress],
+  );
+
+  useEffect(() => {
+    if (!activePool) {
+      return;
+    }
+
+    if (!receiveToken || (payToken !== activePool.tokenAddress && receiveToken !== activePool.tokenAddress)) {
+      setPayToken(config.lordsAddress);
+      setReceiveToken(activePool.tokenAddress);
+      setPayAmount(0);
+      setReceiveAmount(0);
+    }
+  }, [activePool, config.lordsAddress, payToken, receiveToken]);
+
+  const route = useMemo(
+    () => resolveAmmSwapRoute(pools, config.lordsAddress, payToken, receiveToken),
+    [pools, config.lordsAddress, payToken, receiveToken],
+  );
 
   const swapQuote = useMemo(() => {
-    if (payAmount <= 0) return null;
+    if (payAmount <= 0 || !client || !route) return null;
+
     try {
       const amountInBigint = parseTokenAmount(payAmount.toString());
-      const [inputReserve, outputReserve] = isLordsInput
-        ? [pool.lordsReserve, pool.tokenReserve]
-        : [pool.tokenReserve, pool.lordsReserve];
 
-      const amountOut = getInputPrice(pool.feeNum, pool.feeDenom, amountInBigint, inputReserve, outputReserve);
+      if (route.kind === "direct") {
+        const directQuote = client.quoteSwap(route.pool, amountInBigint, route.isLordsInput, BigInt(slippageBps));
 
-      const priceImpact = computePriceImpact(
-        amountInBigint,
-        inputReserve,
-        outputReserve,
-        pool.feeNum,
-        pool.feeDenom,
-      );
+        return {
+          amountOut: directQuote.amountOut,
+          minimumReceived: directQuote.minimumReceived,
+          priceImpact: directQuote.priceImpact,
+          spotPrice: directQuote.spotPriceBefore,
+        };
+      }
 
-      const minReceived = computeMinimumReceived(amountOut, BigInt(slippageBps));
-      const spotPrice = computeSpotPrice(pool.lordsReserve, pool.tokenReserve);
+      const firstHopQuote = client.quoteSwap(route.inputPool, amountInBigint, false, 0n);
+      const secondHopQuote = client.quoteSwap(route.outputPool, firstHopQuote.amountOut, true, BigInt(slippageBps));
+      const effectivePrice = amountInBigint > 0n ? Number(secondHopQuote.amountOut) / Number(amountInBigint) : 0;
 
       return {
-        amountOut,
-        priceImpact,
-        minReceived,
-        spotPrice,
+        amountOut: secondHopQuote.amountOut,
+        minimumReceived: secondHopQuote.minimumReceived,
+        priceImpact: firstHopQuote.priceImpact + secondHopQuote.priceImpact,
+        spotPrice: effectivePrice,
       };
     } catch {
       return null;
     }
-  }, [payAmount, isLordsInput, pool, slippageBps]);
+  }, [client, payAmount, route, slippageBps]);
 
-  const handlePayAmountChange = useCallback(
-    (amount: number) => {
-      setPayAmount(amount);
-      if (amount > 0 && swapQuote) {
-        setReceiveAmount(parseFloat(formatTokenAmount(swapQuote.amountOut)));
-      } else {
-        setReceiveAmount(0);
-      }
-    },
-    [swapQuote],
-  );
+  const handlePayAmountChange = useCallback((amount: number) => {
+    setPayAmount(amount);
+  }, []);
 
-  // Recompute receive amount whenever quote changes
-  useMemo(() => {
+  useEffect(() => {
     if (swapQuote && payAmount > 0) {
       setReceiveAmount(parseFloat(formatTokenAmount(swapQuote.amountOut)));
+      return;
     }
+    setReceiveAmount(0);
   }, [swapQuote, payAmount]);
 
   const handleInvert = useCallback(() => {
@@ -108,32 +104,79 @@ export const AmmSwap = () => {
     setReceiveAmount(0);
   }, [payToken, receiveToken]);
 
+  const handlePayTokenChange = useCallback(
+    (token: string) => {
+      setPayToken(token);
+      if (token !== config.lordsAddress) {
+        setSelectedPool(token);
+      }
+      setPayAmount(0);
+      setReceiveAmount(0);
+    },
+    [config.lordsAddress, setSelectedPool],
+  );
+
+  const handleReceiveTokenChange = useCallback(
+    (token: string) => {
+      setReceiveToken(token);
+      if (token !== config.lordsAddress) {
+        setSelectedPool(token);
+      }
+      setPayAmount(0);
+      setReceiveAmount(0);
+    },
+    [config.lordsAddress, setSelectedPool],
+  );
+
   const handleSwapConfirm = useCallback(async () => {
-    if (!swapQuote) return;
+    if (!client || !route || !swapQuote) return;
     const amountIn = parseTokenAmount(payAmount.toString());
-    const calls = isLordsInput
-      ? client.swap.swapLordsForToken({
-          ammAddress: client.ammAddress,
-          tokenAddress: receiveToken,
-          lordsAmount: amountIn,
-          minTokenOut: swapQuote.minReceived,
-        })
-      : client.swap.swapTokenForLords({
-          ammAddress: client.ammAddress,
-          tokenAddress: payToken,
-          tokenAmount: amountIn,
-          minLordsOut: swapQuote.minReceived,
-        });
+    const calls =
+      route.kind === "routed"
+        ? client.swap.swapTokenForTokenWithApproval({
+            ammAddress: client.ammAddress,
+            tokenInAddress: route.inputPool.tokenAddress,
+            tokenOutAddress: route.outputPool.tokenAddress,
+            amountIn,
+            minAmountOut: swapQuote.minimumReceived,
+          })
+        : route.isLordsInput
+          ? client.swap.swapLordsForTokenWithApproval({
+              ammAddress: client.ammAddress,
+              lordsAddress: client.lordsAddress,
+              tokenAddress: route.pool.tokenAddress,
+              lordsAmount: amountIn,
+              minTokenOut: swapQuote.minimumReceived,
+            })
+          : client.swap.swapTokenForLordsWithApproval({
+              ammAddress: client.ammAddress,
+              tokenAddress: route.pool.tokenAddress,
+              tokenAmount: amountIn,
+              minLordsOut: swapQuote.minimumReceived,
+            });
 
     await executeSwap(calls);
     setShowConfirmation(false);
     setPayAmount(0);
     setReceiveAmount(0);
-  }, [swapQuote, payAmount, isLordsInput, client, receiveToken, payToken, executeSwap]);
+  }, [client, executeSwap, payAmount, route, swapQuote]);
 
-  const canSwap = payAmount > 0 && receiveAmount > 0;
-  const lpFeePercent = (Number(pool.feeNum) / Number(pool.feeDenom)) * 100;
-  const protocolFeePercent = (Number(pool.protocolFeeNum) / Number(pool.protocolFeeDenom)) * 100;
+  const activePoolForFees = route?.kind === "direct" ? route.pool : route?.outputPool;
+  const canSwap = Boolean(isConfigured && client && route && payAmount > 0 && receiveAmount > 0);
+  const lpFeePercent = activePoolForFees
+    ? (Number(activePoolForFees.feeNum) / Number(activePoolForFees.feeDenom)) * 100
+    : 0;
+  const protocolFeePercent = activePoolForFees
+    ? (Number(activePoolForFees.protocolFeeNum) / Number(activePoolForFees.protocolFeeDenom)) * 100
+    : 0;
+
+  if (!isConfigured || !client) {
+    return <div className="text-sm text-gold/40">AMM is not configured.</div>;
+  }
+
+  if (!activePool) {
+    return <div className="text-sm text-gold/40">No pools available.</div>;
+  }
 
   return (
     <div className="space-y-3">
@@ -141,9 +184,9 @@ export const AmmSwap = () => {
         amount={payAmount}
         onAmountChange={handlePayAmountChange}
         token={payToken}
-        onTokenChange={setPayToken}
+        onTokenChange={handlePayTokenChange}
         balance="0"
-        tokens={MOCK_TOKENS}
+        tokens={tokens}
         label="You pay"
       />
 
@@ -162,9 +205,9 @@ export const AmmSwap = () => {
         amount={receiveAmount}
         onAmountChange={setReceiveAmount}
         token={receiveToken}
-        onTokenChange={setReceiveToken}
+        onTokenChange={handleReceiveTokenChange}
         balance="0"
-        tokens={MOCK_TOKENS}
+        tokens={tokens}
         label="You receive"
         readOnly
       />
@@ -183,7 +226,7 @@ export const AmmSwap = () => {
           </div>
           <div className="flex justify-between">
             <span className="text-gold/60">Minimum Received</span>
-            <span className="text-gold">{formatTokenAmount(swapQuote.minReceived)}</span>
+            <span className="text-gold">{formatTokenAmount(swapQuote.minimumReceived)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gold/60">LP Fee</span>
@@ -203,12 +246,12 @@ export const AmmSwap = () => {
       {showConfirmation && swapQuote && (
         <AmmSwapConfirmation
           sellingAmount={payAmount.toString()}
-          sellingToken={MOCK_TOKENS.find((t) => t.address === payToken)?.name ?? payToken}
+          sellingToken={resolveAmmTokenName(payToken, config.lordsAddress)}
           receivingAmount={receiveAmount.toString()}
-          receivingToken={MOCK_TOKENS.find((t) => t.address === receiveToken)?.name ?? receiveToken}
+          receivingToken={resolveAmmTokenName(receiveToken, config.lordsAddress)}
           priceImpact={swapQuote.priceImpact.toFixed(2)}
           slippageTolerance={(slippageBps / 100).toFixed(1)}
-          minimumReceived={formatTokenAmount(swapQuote.minReceived)}
+          minimumReceived={formatTokenAmount(swapQuote.minimumReceived)}
           onConfirm={handleSwapConfirm}
           onCancel={() => setShowConfirmation(false)}
         />

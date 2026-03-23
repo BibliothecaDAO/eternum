@@ -4,18 +4,23 @@ import { useQuery } from "@tanstack/react-query";
 import { formatTokenAmount, type SwapEvent } from "@bibliothecadao/amm-sdk";
 
 export const AmmTradeHistory = () => {
-  const { client } = useAmm();
+  const { client, isConfigured } = useAmm();
   const selectedPool = useAmmStore((s) => s.selectedPool);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["amm-trade-history", selectedPool],
     queryFn: async () => {
-      if (!selectedPool) return { data: [] as SwapEvent[], pagination: { total: 0, limit: 50, offset: 0 } };
+      if (!selectedPool || !client) return { data: [] as SwapEvent[], pagination: { total: 0, limit: 50, offset: 0 } };
       return client.api.getSwapHistory(selectedPool, { limit: 50 });
     },
+    enabled: Boolean(client),
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  if (!isConfigured || !client) {
+    return <div className="p-4 text-center text-gold/40 text-sm">AMM is not configured</div>;
+  }
 
   if (isLoading) {
     return (

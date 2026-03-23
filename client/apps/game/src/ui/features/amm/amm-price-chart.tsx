@@ -11,16 +11,17 @@ const INTERVALS: { label: string; value: CandleInterval }[] = [
 ];
 
 export const AmmPriceChart = () => {
-  const { client } = useAmm();
+  const { client, isConfigured } = useAmm();
   const selectedPool = useAmmStore((s) => s.selectedPool);
   const [interval, setInterval] = useState<CandleInterval>("1h");
 
   const { data: candles, isLoading } = useQuery<PriceCandle[]>({
     queryKey: ["amm-candles", selectedPool, interval],
     queryFn: async () => {
-      if (!selectedPool) return [];
+      if (!selectedPool || !client) return [];
       return client.api.getPriceHistory(selectedPool, interval);
     },
+    enabled: Boolean(client) && Boolean(selectedPool),
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -59,6 +60,14 @@ export const AmmPriceChart = () => {
     );
   }
 
+  if (!isConfigured || !client) {
+    return (
+      <div className="bg-gold/10 rounded-xl p-4">
+        <div className="flex items-center justify-center h-[200px] text-gold/40 text-sm">AMM is not configured</div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gold/10 rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
@@ -85,11 +94,7 @@ export const AmmPriceChart = () => {
       ) : (
         <div>
           <div className="text-lg font-bold text-gold mb-2">{chartData.currentPrice.toFixed(4)} LORDS</div>
-          <svg
-            viewBox={`0 0 ${chartData.width} ${chartData.height}`}
-            className="w-full"
-            preserveAspectRatio="none"
-          >
+          <svg viewBox={`0 0 ${chartData.width} ${chartData.height}`} className="w-full" preserveAspectRatio="none">
             <polyline fill="none" stroke="#dfaa54" strokeWidth="2" points={chartData.points} />
           </svg>
         </div>

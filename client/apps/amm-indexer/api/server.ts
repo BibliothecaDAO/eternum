@@ -72,11 +72,7 @@ app.get("/api/v1/pools", async (c) => {
 // GET /api/v1/pools/:tokenAddress — single pool
 app.get("/api/v1/pools/:tokenAddress", async (c) => {
   const tokenAddress = c.req.param("tokenAddress");
-  const rows = await db
-    .select()
-    .from(schema.pools)
-    .where(eq(schema.pools.tokenAddress, tokenAddress))
-    .limit(1);
+  const rows = await db.select().from(schema.pools).where(eq(schema.pools.tokenAddress, tokenAddress)).limit(1);
 
   if (rows.length === 0) {
     return c.json({ error: "Pool not found" }, 404);
@@ -90,10 +86,7 @@ app.get("/api/v1/pools/:tokenAddress/swaps", async (c) => {
   const pagination = parsePagination(c);
 
   const [totalResult, rows] = await Promise.all([
-    db
-      .select({ total: count() })
-      .from(schema.swaps)
-      .where(eq(schema.swaps.tokenAddress, tokenAddress)),
+    db.select({ total: count() }).from(schema.swaps).where(eq(schema.swaps.tokenAddress, tokenAddress)),
     db
       .select()
       .from(schema.swaps)
@@ -135,10 +128,7 @@ app.get("/api/v1/pools/:tokenAddress/candles", async (c) => {
   const from = c.req.query("from");
   const to = c.req.query("to");
 
-  const conditions = [
-    eq(schema.priceCandles.tokenAddress, tokenAddress),
-    eq(schema.priceCandles.interval, interval),
-  ];
+  const conditions = [eq(schema.priceCandles.tokenAddress, tokenAddress), eq(schema.priceCandles.interval, interval)];
 
   if (from) {
     conditions.push(gte(schema.priceCandles.openTime, new Date(from)));
@@ -162,11 +152,7 @@ app.get("/api/v1/pools/:tokenAddress/stats", async (c) => {
   const tokenAddress = c.req.param("tokenAddress");
 
   // Get pool
-  const poolRows = await db
-    .select()
-    .from(schema.pools)
-    .where(eq(schema.pools.tokenAddress, tokenAddress))
-    .limit(1);
+  const poolRows = await db.select().from(schema.pools).where(eq(schema.pools.tokenAddress, tokenAddress)).limit(1);
 
   if (poolRows.length === 0) {
     return c.json({ error: "Pool not found" }, 404);
@@ -184,12 +170,7 @@ app.get("/api/v1/pools/:tokenAddress/stats", async (c) => {
       tradeCount: count(),
     })
     .from(schema.swaps)
-    .where(
-      and(
-        eq(schema.swaps.tokenAddress, tokenAddress),
-        gte(schema.swaps.blockTimestamp, oneDayAgo),
-      ),
-    );
+    .where(and(eq(schema.swaps.tokenAddress, tokenAddress), gte(schema.swaps.blockTimestamp, oneDayAgo)));
 
   const volume24h = volumeResult[0]?.totalVolume ?? "0";
   const fees24h = volumeResult[0]?.totalFees ?? "0";
@@ -244,14 +225,43 @@ app.get("/api/v1/users/:address/positions", async (c) => {
     .where(eq(schema.liquidityEvents.providerAddress, address))
     .groupBy(schema.liquidityEvents.tokenAddress);
 
-  const result = positions.map((pos) => ({
-    tokenAddress: pos.tokenAddress,
-    netLpBalance: (BigInt(pos.totalLpMinted) - BigInt(pos.totalLpBurned)).toString(),
-    totalLordsAdded: pos.totalLordsAdded,
-    totalLordsRemoved: pos.totalLordsRemoved,
-    totalTokenAdded: pos.totalTokenAdded,
-    totalTokenRemoved: pos.totalTokenRemoved,
-  }));
+  const result = (
+    await Promise.all(
+      positions.map(async (pos) => {
+        const lpBalance = BigInt(pos.totalLpMinted) - BigInt(pos.totalLpBurned);
+
+        if (lpBalance <= 0n) {
+          return null;
+        }
+
+        const poolRows = await db
+          .select()
+          .from(schema.pools)
+          .where(eq(schema.pools.tokenAddress, pos.tokenAddress))
+          .limit(1);
+        const pool = poolRows[0];
+
+        if (!pool) {
+          return null;
+        }
+
+        const totalLpSupply = BigInt(pool.totalLpSupply);
+        const lordsReserve = BigInt(pool.lordsReserve);
+        const tokenReserve = BigInt(pool.tokenReserve);
+        const lordsValue = totalLpSupply > 0n ? (lordsReserve * lpBalance) / totalLpSupply : 0n;
+        const tokenValue = totalLpSupply > 0n ? (tokenReserve * lpBalance) / totalLpSupply : 0n;
+        const poolShare = totalLpSupply > 0n ? Number((lpBalance * 10000n) / totalLpSupply) / 100 : 0;
+
+        return {
+          tokenAddress: pos.tokenAddress,
+          lpBalance: lpBalance.toString(),
+          poolShare,
+          lordsValue: lordsValue.toString(),
+          tokenValue: tokenValue.toString(),
+        };
+      }),
+    )
+  ).filter((position): position is NonNullable<typeof position> => position !== null);
 
   return c.json({ data: result });
 });
@@ -263,10 +273,7 @@ app.get("/api/v1/quote", async (c) => {
   const amountInStr = c.req.query("amountIn");
 
   if (!tokenIn || !tokenOut || !amountInStr) {
-    return c.json(
-      { error: "Missing required params: tokenIn, tokenOut, amountIn" },
-      400,
-    );
+    return c.json({ error: "Missing required params: tokenIn, tokenOut, amountIn" }, 400);
   }
 
   const amountIn = BigInt(amountInStr);
@@ -277,11 +284,7 @@ app.get("/api/v1/quote", async (c) => {
   // Direct swap: LORDS -> Token or Token -> LORDS
   if (isLordsInput || isLordsOutput) {
     const poolToken = isLordsInput ? tokenOut : tokenIn;
-    const poolRows = await db
-      .select()
-      .from(schema.pools)
-      .where(eq(schema.pools.tokenAddress, poolToken))
-      .limit(1);
+    const poolRows = await db.select().from(schema.pools).where(eq(schema.pools.tokenAddress, poolToken)).limit(1);
 
     if (poolRows.length === 0) {
       return c.json({ error: "Pool not found" }, 404);
@@ -335,16 +338,8 @@ app.get("/api/v1/quote", async (c) => {
   }
 
   // Token-to-token swap: Token A -> LORDS -> Token B
-  const poolARows = await db
-    .select()
-    .from(schema.pools)
-    .where(eq(schema.pools.tokenAddress, tokenIn))
-    .limit(1);
-  const poolBRows = await db
-    .select()
-    .from(schema.pools)
-    .where(eq(schema.pools.tokenAddress, tokenOut))
-    .limit(1);
+  const poolARows = await db.select().from(schema.pools).where(eq(schema.pools.tokenAddress, tokenIn)).limit(1);
+  const poolBRows = await db.select().from(schema.pools).where(eq(schema.pools.tokenAddress, tokenOut)).limit(1);
 
   if (poolARows.length === 0 || poolBRows.length === 0) {
     return c.json({ error: "One or both pools not found" }, 404);

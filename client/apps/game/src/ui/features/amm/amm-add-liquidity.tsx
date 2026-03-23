@@ -3,6 +3,7 @@ import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { useAmm } from "@/hooks/use-amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
 import { useCallback, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   parseTokenAmount,
   formatTokenAmount,
@@ -11,33 +12,30 @@ import {
   computeAddLiquidity,
   type Pool,
 } from "@bibliothecadao/amm-sdk";
-
-const MOCK_POOL: Pool = {
-  tokenAddress: "0x2",
-  lpTokenAddress: "0x100",
-  lordsReserve: 1000000000000000000000n,
-  tokenReserve: 5000000000000000000000n,
-  totalLpSupply: 2000000000000000000000n,
-  feeNum: 3n,
-  feeDenom: 1000n,
-  protocolFeeNum: 1n,
-  protocolFeeDenom: 1000n,
-};
+import { resolveAmmPoolName, resolveSelectedAmmPool } from "./amm-model";
 
 export const AmmAddLiquidity = () => {
-  const { client, executeSwap } = useAmm();
+  const { client, executeSwap, isConfigured } = useAmm();
   const selectedPool = useAmmStore((s) => s.selectedPool);
 
   const [lordsAmount, setLordsAmount] = useState(0);
   const [tokenAmount, setTokenAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  const pool = MOCK_POOL;
+  const { data: pools = [] } = useQuery<Pool[]>({
+    queryKey: ["amm-pools"],
+    queryFn: async () => client?.api.getPools() ?? [],
+    enabled: Boolean(client),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const pool = useMemo(() => resolveSelectedAmmPool(pools, selectedPool), [pools, selectedPool]);
 
   const handleLordsChange = useCallback(
     (amount: number) => {
       setLordsAmount(amount);
-      if (amount > 0 && pool.lordsReserve > 0n) {
+      if (amount > 0 && pool && pool.lordsReserve > 0n) {
         try {
           const lordsBigint = parseTokenAmount(amount.toString());
           const tokenOptimal = quote(lordsBigint, pool.lordsReserve, pool.tokenReserve);
@@ -53,7 +51,7 @@ export const AmmAddLiquidity = () => {
   );
 
   const lpTokensToMint = useMemo(() => {
-    if (lordsAmount <= 0) return "0";
+    if (lordsAmount <= 0 || !pool) return "0";
     try {
       const lordsBigint = parseTokenAmount(lordsAmount.toString());
       const lp = computeLpMint(lordsBigint, pool.lordsReserve, pool.totalLpSupply);
@@ -64,7 +62,7 @@ export const AmmAddLiquidity = () => {
   }, [lordsAmount, pool]);
 
   const poolSharePercent = useMemo(() => {
-    if (lordsAmount <= 0) return "0";
+    if (lordsAmount <= 0 || !pool) return "0";
     try {
       const lordsBigint = parseTokenAmount(lordsAmount.toString());
       const lp = computeLpMint(lordsBigint, pool.lordsReserve, pool.totalLpSupply);
@@ -76,7 +74,7 @@ export const AmmAddLiquidity = () => {
   }, [lordsAmount, pool]);
 
   const handleAddLiquidity = useCallback(async () => {
-    if (lordsAmount <= 0 || tokenAmount <= 0) return;
+    if (!client || !pool || lordsAmount <= 0 || tokenAmount <= 0) return;
     setIsLoading(true);
     try {
       const lordsBigint = parseTokenAmount(lordsAmount.toString());
@@ -108,11 +106,20 @@ export const AmmAddLiquidity = () => {
     }
   }, [lordsAmount, tokenAmount, pool, client, executeSwap]);
 
-  const canAdd = lordsAmount > 0 && tokenAmount > 0;
+  const canAdd = Boolean(client && pool && lordsAmount > 0 && tokenAmount > 0);
+
+  if (!isConfigured || !client) {
+    return <div className="text-sm text-gold/40">AMM is not configured.</div>;
+  }
+
+  if (!pool) {
+    return <div className="text-sm text-gold/40">Select a pool to add liquidity.</div>;
+  }
 
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-gold">Add Liquidity</h3>
+      <div className="text-xs text-gold/60">Pool: {resolveAmmPoolName(pool.tokenAddress)}</div>
 
       <div className="bg-gold/10 rounded-xl p-3">
         <div className="text-xs text-gold/60 mb-1">LORDS</div>

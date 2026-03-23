@@ -9,6 +9,15 @@ import type {
   TimeRangeOpts,
   UserPosition,
 } from "../types";
+import {
+  decodeLiquidityEvent,
+  decodePool,
+  decodePoolStats,
+  decodePriceCandle,
+  decodeSwapEvent,
+  decodeUserPosition,
+  unwrapApiData,
+} from "./codec";
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -27,8 +36,7 @@ export class AmmApiClient {
   private baseUrl: string;
 
   constructor(indexerUrl: string) {
-    // Strip trailing slash
-    this.baseUrl = indexerUrl.replace(/\/+$/, "");
+    this.baseUrl = normalizeApiBaseUrl(indexerUrl);
   }
 
   private async fetch<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
@@ -50,13 +58,15 @@ export class AmmApiClient {
 
   /** Get all pools. */
   async getPools(): Promise<Pool[]> {
-    return this.fetch<Pool[]>("/pools");
+    const response = await this.fetch<Pool[] | { data: Pool[] }>("/pools");
+    return unwrapApiData(response).map((pool) => decodePool(pool));
   }
 
   /** Get a specific pool by token address. */
   async getPool(tokenAddress: string): Promise<Pool | null> {
     try {
-      return await this.fetch<Pool>(`/pools/${tokenAddress}`);
+      const response = await this.fetch<Pool | { data: Pool }>(`/pools/${tokenAddress}`);
+      return decodePool(unwrapApiData(response));
     } catch {
       return null;
     }
@@ -67,12 +77,20 @@ export class AmmApiClient {
     tokenAddress: string,
     opts?: PaginationOpts & TimeRangeOpts,
   ): Promise<PaginatedResponse<SwapEvent>> {
-    return this.fetch<PaginatedResponse<SwapEvent>>(`/pools/${tokenAddress}/swaps`, {
+    const response = await this.fetch<PaginatedResponse<SwapEvent>>(`/pools/${tokenAddress}/swaps`, {
       limit: opts?.limit,
       offset: opts?.offset,
       from: opts?.from,
       to: opts?.to,
     });
+    return {
+      data: response.data.map((swap) => decodeSwapEvent(swap)),
+      pagination: {
+        total: response.pagination.total,
+        limit: response.pagination.limit,
+        offset: response.pagination.offset,
+      },
+    };
   }
 
   /** Get liquidity event history for a pool. */
@@ -80,34 +98,46 @@ export class AmmApiClient {
     tokenAddress: string,
     opts?: PaginationOpts & TimeRangeOpts,
   ): Promise<PaginatedResponse<LiquidityEvent>> {
-    return this.fetch<PaginatedResponse<LiquidityEvent>>(`/pools/${tokenAddress}/liquidity`, {
+    const response = await this.fetch<PaginatedResponse<LiquidityEvent>>(`/pools/${tokenAddress}/liquidity`, {
       limit: opts?.limit,
       offset: opts?.offset,
       from: opts?.from,
       to: opts?.to,
     });
+    return {
+      data: response.data.map((event) => decodeLiquidityEvent(event)),
+      pagination: {
+        total: response.pagination.total,
+        limit: response.pagination.limit,
+        offset: response.pagination.offset,
+      },
+    };
   }
 
   /** Get price candle history for a pool. */
-  async getPriceHistory(
-    tokenAddress: string,
-    interval: CandleInterval,
-    opts?: TimeRangeOpts,
-  ): Promise<PriceCandle[]> {
-    return this.fetch<PriceCandle[]>(`/pools/${tokenAddress}/candles`, {
+  async getPriceHistory(tokenAddress: string, interval: CandleInterval, opts?: TimeRangeOpts): Promise<PriceCandle[]> {
+    const response = await this.fetch<PriceCandle[] | { data: PriceCandle[] }>(`/pools/${tokenAddress}/candles`, {
       interval,
       from: opts?.from,
       to: opts?.to,
     });
+    return unwrapApiData(response).map((candle) => decodePriceCandle(candle));
   }
 
   /** Get aggregate stats for a pool. */
   async getPoolStats(tokenAddress: string): Promise<PoolStats> {
-    return this.fetch<PoolStats>(`/pools/${tokenAddress}/stats`);
+    const response = await this.fetch<PoolStats | { data: PoolStats }>(`/pools/${tokenAddress}/stats`);
+    return decodePoolStats(unwrapApiData(response));
   }
 
   /** Get a user's LP positions across all pools. */
   async getUserPositions(userAddress: string): Promise<UserPosition[]> {
-    return this.fetch<UserPosition[]>(`/users/${userAddress}/positions`);
+    const response = await this.fetch<UserPosition[] | { data: UserPosition[] }>(`/users/${userAddress}/positions`);
+    return unwrapApiData(response).map((position) => decodeUserPosition(position));
   }
+}
+
+function normalizeApiBaseUrl(baseUrl: string): string {
+  const trimmed = baseUrl.replace(/\/+$/, "");
+  return trimmed.endsWith("/api/v1") ? trimmed : `${trimmed}/api/v1`;
 }

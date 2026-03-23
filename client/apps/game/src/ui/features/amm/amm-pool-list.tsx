@@ -2,6 +2,7 @@ import { useAmm } from "@/hooks/use-amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
 import { AmmPoolRow } from "./amm-pool-row";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { formatTokenAmount, computeSpotPrice, type Pool } from "@bibliothecadao/amm-sdk";
 
 const POOL_NAMES: Record<string, string> = {
@@ -13,7 +14,7 @@ const POOL_NAMES: Record<string, string> = {
 };
 
 export const AmmPoolList = () => {
-  const { client } = useAmm();
+  const { client, isConfigured } = useAmm();
   const selectedPool = useAmmStore((s) => s.selectedPool);
   const setSelectedPool = useAmmStore((s) => s.setSelectedPool);
 
@@ -23,10 +24,26 @@ export const AmmPoolList = () => {
     error,
   } = useQuery<Pool[]>({
     queryKey: ["amm-pools"],
-    queryFn: () => client.api.getPools(),
+    queryFn: async () => client?.api.getPools() ?? [],
+    enabled: Boolean(client),
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (!selectedPool && pools && pools.length > 0) {
+      setSelectedPool(pools[0].tokenAddress);
+    }
+  }, [pools, selectedPool, setSelectedPool]);
+
+  if (!isConfigured || !client) {
+    return (
+      <div className="p-4">
+        <div className="text-center text-gold/40 text-sm">AMM is not configured</div>
+        <div className="text-center text-gold/30 text-xs mt-1">Set the public AMM env vars to load pools</div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

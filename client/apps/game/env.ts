@@ -59,6 +59,20 @@ const envSchema = z.object({
     .optional()
     .default("https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii"),
 
+  // AMM
+  VITE_PUBLIC_AMM_ADDRESS: z
+    .union([z.string().startsWith("0x"), z.literal("")])
+    .optional()
+    .default(""),
+  VITE_PUBLIC_AMM_LORDS_ADDRESS: z
+    .union([z.string().startsWith("0x"), z.literal("")])
+    .optional()
+    .default(""),
+  VITE_PUBLIC_AMM_INDEXER_URL: z
+    .union([z.string().url(), z.literal("")])
+    .optional()
+    .default(""),
+
   // Action Dispatcher
   VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),
   VITE_PUBLIC_ACTION_DISPATCHER_SECRET: z.string().optional(),

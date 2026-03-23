@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Live AMM Dashboard",
+    description:
+      "The new AMM dashboard now loads real pools, charts, and trade history from the configured indexer and sends swap and liquidity transactions against the live AMM contracts instead of preview scaffolding.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-23",
     title: "Stable First Map Camera",
     description:
       "World map now opens in its intended tactical camera framing on the first load, so it no longer starts in a close-up offset view before settling after a scene switch.",

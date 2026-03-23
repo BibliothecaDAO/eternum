@@ -8,3 +8,10 @@ export { AmmAddLiquidity } from "./amm-add-liquidity";
 export { AmmRemoveLiquidity } from "./amm-remove-liquidity";
 export { AmmTradeHistory } from "./amm-trade-history";
 export { AmmPriceChart } from "./amm-price-chart";
+export {
+  buildAmmTokenOptions,
+  resolveAmmPoolName,
+  resolveAmmSwapRoute,
+  resolveAmmTokenName,
+  resolveSelectedAmmPool,
+} from "./amm-model";

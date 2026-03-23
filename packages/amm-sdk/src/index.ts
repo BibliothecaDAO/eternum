@@ -56,12 +56,22 @@ export class AmmClient {
    * @param isLordsInput Whether the input is LORDS (true) or token (false).
    * @param slippageBps Slippage tolerance in basis points (default 50 = 0.5%).
    */
-  quoteSwap(pool: Pool, amountIn: bigint, isLordsInput: boolean, slippageBps: bigint = DEFAULT_SLIPPAGE_BPS): SwapQuote {
+  quoteSwap(
+    pool: Pool,
+    amountIn: bigint,
+    isLordsInput: boolean,
+    slippageBps: bigint = DEFAULT_SLIPPAGE_BPS,
+  ): SwapQuote {
     const [inputReserve, outputReserve] = isLordsInput
       ? [pool.lordsReserve, pool.tokenReserve]
       : [pool.tokenReserve, pool.lordsReserve];
 
-    const amountOut = getInputPrice(pool.feeNum, pool.feeDenom, amountIn, inputReserve, outputReserve);
+    const grossAmountOut = getInputPrice(pool.feeNum, pool.feeDenom, amountIn, inputReserve, outputReserve);
+    const protocolFee =
+      pool.protocolFeeNum > 0n && pool.protocolFeeDenom > 0n
+        ? (grossAmountOut * pool.protocolFeeNum) / pool.protocolFeeDenom
+        : 0n;
+    const amountOut = grossAmountOut - protocolFee;
 
     const priceImpact = computePriceImpact(amountIn, inputReserve, outputReserve, pool.feeNum, pool.feeDenom);
 
@@ -73,7 +83,7 @@ export class AmmClient {
 
     // Compute post-swap reserves
     const newInputReserve = inputReserve + amountIn;
-    const newOutputReserve = outputReserve - amountOut;
+    const newOutputReserve = outputReserve - grossAmountOut - protocolFee;
     const spotPriceAfter = isLordsInput
       ? Number(newInputReserve) / Number(newOutputReserve)
       : Number(newOutputReserve) / Number(newInputReserve);
@@ -96,11 +106,7 @@ export type { NetworkConfig } from "./constants";
 export { AdminTransactions } from "./transactions/admin";
 export type { CreatePoolProps, SetPoolFeeProps, SetFeeRecipientProps, SetPausedProps } from "./transactions/admin";
 export { LiquidityTransactions } from "./transactions/liquidity";
-export type {
-  AddLiquidityProps,
-  AddLiquidityWithApprovalProps,
-  RemoveLiquidityProps,
-} from "./transactions/liquidity";
+export type { AddLiquidityProps, AddLiquidityWithApprovalProps, RemoveLiquidityProps } from "./transactions/liquidity";
 export { SwapTransactions } from "./transactions/swap";
 export type {
   SwapLordsForTokenProps,
@@ -123,12 +129,5 @@ export type {
   CandleInterval,
 } from "./types";
 export { formatTokenAmount, parseTokenAmount } from "./utils/format";
-export {
-  getInputPrice,
-  getOutputPrice,
-  quote,
-  computeAddLiquidity,
-  computeLpMint,
-  computeLpBurn,
-} from "./utils/math";
+export { getInputPrice, getOutputPrice, quote, computeAddLiquidity, computeLpMint, computeLpBurn } from "./utils/math";
 export { computePriceImpact, computeMinimumReceived, computeSpotPrice } from "./utils/price";

@@ -2,30 +2,30 @@ import { Button } from "@/ui/design-system/atoms";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { useAmm } from "@/hooks/use-amm";
 import { useCallback, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { parseTokenAmount, formatTokenAmount, computeLpBurn, type Pool } from "@bibliothecadao/amm-sdk";
-
-const MOCK_POOL: Pool = {
-  tokenAddress: "0x2",
-  lpTokenAddress: "0x100",
-  lordsReserve: 1000000000000000000000n,
-  tokenReserve: 5000000000000000000000n,
-  totalLpSupply: 2000000000000000000000n,
-  feeNum: 3n,
-  feeDenom: 1000n,
-  protocolFeeNum: 1n,
-  protocolFeeDenom: 1000n,
-};
+import { useAmmStore } from "@/hooks/store/use-amm-store";
+import { resolveAmmPoolName, resolveSelectedAmmPool } from "./amm-model";
 
 export const AmmRemoveLiquidity = () => {
-  const { client, executeSwap } = useAmm();
+  const { client, executeSwap, isConfigured } = useAmm();
+  const selectedPool = useAmmStore((s) => s.selectedPool);
 
   const [lpAmount, setLpAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  const pool = MOCK_POOL;
+  const { data: pools = [] } = useQuery<Pool[]>({
+    queryKey: ["amm-pools"],
+    queryFn: async () => client?.api.getPools() ?? [],
+    enabled: Boolean(client),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const pool = useMemo(() => resolveSelectedAmmPool(pools, selectedPool), [pools, selectedPool]);
 
   const burnResult = useMemo(() => {
-    if (lpAmount <= 0) return null;
+    if (lpAmount <= 0 || !pool) return null;
     try {
       const lpBigint = parseTokenAmount(lpAmount.toString());
       return computeLpBurn(lpBigint, pool.lordsReserve, pool.tokenReserve, pool.totalLpSupply);
@@ -35,7 +35,7 @@ export const AmmRemoveLiquidity = () => {
   }, [lpAmount, pool]);
 
   const handleRemove = useCallback(async () => {
-    if (lpAmount <= 0 || !burnResult) return;
+    if (!client || !pool || lpAmount <= 0 || !burnResult) return;
     setIsLoading(true);
     try {
       const lpBigint = parseTokenAmount(lpAmount.toString());
@@ -57,11 +57,20 @@ export const AmmRemoveLiquidity = () => {
     }
   }, [lpAmount, burnResult, pool, client, executeSwap]);
 
-  const canRemove = lpAmount > 0 && burnResult !== null;
+  const canRemove = Boolean(client && pool && lpAmount > 0 && burnResult !== null);
+
+  if (!isConfigured || !client) {
+    return <div className="text-sm text-gold/40">AMM is not configured.</div>;
+  }
+
+  if (!pool) {
+    return <div className="text-sm text-gold/40">Select a pool to remove liquidity.</div>;
+  }
 
   return (
     <div className="space-y-3 mt-6">
       <h3 className="text-sm font-bold text-gold">Remove Liquidity</h3>
+      <div className="text-xs text-gold/60">Pool: {resolveAmmPoolName(pool.tokenAddress)}</div>
 
       <div className="bg-gold/10 rounded-xl p-3">
         <div className="text-xs text-gold/60 mb-1">LP Tokens</div>
