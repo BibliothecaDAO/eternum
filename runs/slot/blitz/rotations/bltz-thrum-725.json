@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23422454488-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:12:07.827Z",
-  "updatedAt": "2026-03-23T05:13:51.023Z",
+  "updatedAt": "2026-03-23T21:20:57.993Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -110,7 +110,7 @@
         "startTimeIso": "2026-03-23T05:30:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed grant-village-pass-roles",
+        "latestEvent": "Failed to queue indexer tier update to pro: Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -145,7 +145,13 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {},
+        "artifacts": {
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-23T21:20:57.476Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-03-23T21:20:57.476Z",
+          "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
+        },
         "durationSeconds": 3600
       },
       {
@@ -154,7 +160,7 @@
         "startTimeIso": "2026-03-23T06:30:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed grant-village-pass-roles",
+        "latestEvent": "Failed to queue indexer tier update to pro: Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -189,7 +195,13 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {},
+        "artifacts": {
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-23T21:20:57.476Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-03-23T21:20:57.476Z",
+          "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
+        },
         "durationSeconds": 3600
       },
       {
@@ -198,7 +210,7 @@
         "startTimeIso": "2026-03-23T07:30:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed grant-village-pass-roles",
+        "latestEvent": "Failed to queue indexer tier update to pro: Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -233,7 +245,13 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {},
+        "artifacts": {
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-23T21:20:57.476Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-03-23T21:20:57.476Z",
+          "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
+        },
         "durationSeconds": 3600
       }
     ],
