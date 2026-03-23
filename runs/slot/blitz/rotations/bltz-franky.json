@@ -12,9 +12,9 @@
   "requestedLaunchStep": "wait-for-factory-indexes",
   "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23457847452-1.json",
   "latestLaunchRequestId": "23457847452-1",
-  "currentStepId": "wait-for-factory-indexes",
+  "currentStepId": "configure-worlds",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T20:12:55.455Z",
+  "updatedAt": "2026-03-23T20:13:01.193Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T20:17:51.289Z",
-    "lastEvaluatedAt": "2026-03-23T20:12:51.289Z"
+    "nextEvaluationAt": "2026-03-23T20:18:01.193Z",
+    "lastEvaluatedAt": "2026-03-23T20:13:01.193Z"
   },
   "steps": [
     {
@@ -52,10 +52,11 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games started",
-      "startedAt": "2026-03-23T20:12:55.455Z"
+      "latestEvent": "Waiting for games is complete",
+      "startedAt": "2026-03-23T20:12:55.455Z",
+      "finishedAt": "2026-03-23T20:13:01.193Z"
     },
     {
       "id": "configure-worlds",
@@ -687,7 +688,7 @@
         "startTimeIso": "2026-03-23T09:20:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -704,8 +705,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-03-23T20:12:58.938Z"
           },
           {
             "id": "configure-worlds",
@@ -734,7 +736,7 @@
         "startTimeIso": "2026-03-23T10:20:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -751,8 +753,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-03-23T20:12:59.215Z"
           },
           {
             "id": "configure-worlds",
@@ -782,7 +785,7 @@
         "startTimeIso": "2026-03-23T11:20:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -799,8 +802,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-03-23T20:12:59.488Z"
           },
           {
             "id": "configure-worlds",
@@ -830,7 +834,7 @@
         "startTimeIso": "2026-03-23T12:20:00.000Z",
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -847,8 +851,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-03-23T20:12:59.763Z"
           },
           {
             "id": "configure-worlds",
@@ -880,13 +885,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23457847452-1",
-    "workflowRunId": 23457847452,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-indexes",
-    "acquiredAt": "2026-03-23T20:12:55.455Z",
-    "expiresAt": "2026-03-23T20:57:55.455Z"
   }
 }
