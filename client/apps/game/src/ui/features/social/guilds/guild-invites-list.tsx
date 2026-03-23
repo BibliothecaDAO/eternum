@@ -54,20 +54,21 @@ const InviteRow = ({
   userIsGuildMaster: boolean;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const hasPlayerAddress = typeof player.address === "bigint";
 
   return (
     <div className="mb-1 flex w-full items-center justify-between rounded-lg border border-transparent bg-dark/40 px-3 py-2 transition-all duration-200 hover:border-gold/20 hover:bg-brown/40">
       <button
         className="min-w-0 flex-1 text-left"
         onClick={() => {
-          if (!player.address) return;
+          if (!hasPlayerAddress) return;
           viewPlayerInfo(ContractAddress(player.address));
         }}
       >
         <span className="truncate text-sm font-semibold text-gold">{player.name}</span>
       </button>
 
-      {userIsGuildMaster && player.address && (
+      {userIsGuildMaster && hasPlayerAddress ? (
         <Trash
           onClick={() => {
             removePlayerFromWhitelist(player.address);
@@ -85,7 +86,7 @@ const InviteRow = ({
           }
           onMouseLeave={() => setTooltip(null)}
         />
-      )}
+      ) : null}
     </div>
   );
 };

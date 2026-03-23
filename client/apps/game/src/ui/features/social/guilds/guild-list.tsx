@@ -6,7 +6,7 @@ import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import Globe from "lucide-react/dist/esm/icons/globe";
 import Lock from "lucide-react/dist/esm/icons/lock";
-import { ReactNode, useMemo } from "react";
+import { ReactElement, useMemo } from "react";
 
 interface GuildCustom extends GuildInfo {
   prize: {
@@ -32,7 +32,7 @@ export const GuildListHeader = ({
   activeSort: SortInterface;
   setActiveSort: (_sort: SortInterface) => void;
 }) => {
-  const sortingParams = useMemo<Array<{ label: ReactNode; sortKey: string; align: string }>>(() => {
+  const sortingParams = useMemo<Array<{ label: string | ReactElement; sortKey: string; align: string }>>(() => {
     return [
       { label: "Rank", sortKey: "rank", align: "justify-center text-center" },
       { label: "Name", sortKey: "name", align: "justify-start text-left" },
