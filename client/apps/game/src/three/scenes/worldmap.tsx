@@ -251,7 +251,10 @@ import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
 import { createProvisionalBiomeTracker, resolveArmySpawnBiome } from "./provisional-biome";
-import { resolveWorldmapCameraFieldOfViewDegrees } from "./worldmap-camera-view-profile";
+import {
+  resolveWorldmapCameraFieldOfViewDegrees,
+  resolveWorldmapCameraViewProfile,
+} from "./worldmap-camera-view-profile";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -1376,6 +1379,29 @@ export default class WorldmapScene extends WarpTravel {
     if (col !== undefined && row !== undefined) {
       this.moveCameraToColRow(col, row, 0);
     }
+    if (!this.hasInitialized) {
+      this.alignInitialWorldmapCameraView();
+    }
+  }
+
+  private alignInitialWorldmapCameraView(): void {
+    this.alignWorldmapCameraToBand(CameraView.Medium);
+    this.zoomCoordinator.syncToBand(CameraView.Medium, performance.now());
+    this.lastControlsCameraDistance = this.getCurrentCameraDistance();
+    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+  }
+
+  private alignWorldmapCameraToBand(view: CameraView): void {
+    const profile = resolveWorldmapCameraViewProfile(view);
+    const cameraHeight = Math.sin(profile.angleRadians) * profile.distance;
+    const cameraDepth = Math.cos(profile.angleRadians) * profile.distance;
+
+    this.controls.object.position.set(
+      this.controls.target.x,
+      this.controls.target.y + cameraHeight,
+      this.controls.target.z + cameraDepth,
+    );
+    this.notifyControlsChanged();
   }
 
   private focusCameraOnEvent(col: number, row: number, message: string) {

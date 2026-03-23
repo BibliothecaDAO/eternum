@@ -63,6 +63,35 @@ export class WorldmapZoomCoordinator {
     return this.getSnapshot();
   }
 
+  public syncToBand(band: CameraView, nowMs: number = 0): WorldmapCameraSnapshot {
+    return this.syncToDistance(resolveBandDistance(band), nowMs);
+  }
+
+  public syncToDistance(distance: number, nowMs: number = 0): WorldmapCameraSnapshot {
+    const nextDistance = clamp(distance, this.minDistance, this.maxDistance);
+    const nextBand = resolveDistanceBand(nextDistance);
+
+    this.bandState = {
+      resolvedBand: nextBand,
+      stableBand: nextBand,
+      settledFrameCount: 0,
+      lastZoomMovementAtMs: nowMs,
+    };
+    this.state = {
+      ...this.state,
+      actualDistance: nextDistance,
+      targetDistance: nextDistance,
+      status: "idle",
+      activeGestureId: null,
+      anchorMode: "screen_center",
+      anchorWorldPoint: null,
+      resolvedBand: nextBand,
+      stableBand: nextBand,
+    };
+
+    return this.getSnapshot();
+  }
+
   public tick(input: {
     cameraPosition: Vector3;
     target: Vector3;
