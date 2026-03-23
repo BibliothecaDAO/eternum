@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23423614823-1",
   "currentStepId": "create-series",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T05:58:46.782Z",
+  "updatedAt": "2026-03-23T05:58:50.456Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -37,9 +37,10 @@
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Creating series",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Creating series started",
+      "startedAt": "2026-03-23T05:58:50.456Z"
     },
     {
       "id": "create-worlds",
@@ -232,5 +233,13 @@
   "artifacts": {
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
     "seriesCreated": false
+  },
+  "activeLease": {
+    "launchRequestId": "23423614823-1",
+    "workflowRunId": 23423614823,
+    "workflowRunAttempt": 1,
+    "stepId": "create-series",
+    "acquiredAt": "2026-03-23T05:58:50.456Z",
+    "expiresAt": "2026-03-23T06:43:50.456Z"
   }
 }
