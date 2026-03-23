@@ -20,6 +20,7 @@ import {
   resolveRunPrimaryAction,
   resolveRunProgressMetrics,
 } from "../presenters";
+import { canFundFactoryRunPrize } from "../prize-funding";
 import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
 import { FactoryV2PrizeFundingCard } from "./factory-v2-prize-funding-card";
 
@@ -102,6 +103,7 @@ export const FactoryV2WatchWorkspace = ({
 }: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);
   const [showAllSteps, setShowAllSteps] = useState(false);
+  const [showsPrizeFunding, setShowsPrizeFunding] = useState(false);
   const [watchGameName, setWatchGameName] = useState(selectedRun?.name ?? "");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isFilteringRuns, setIsFilteringRuns] = useState(false);
@@ -110,6 +112,10 @@ export const FactoryV2WatchWorkspace = ({
   useEffect(() => {
     setShowAllSteps(selectedRun?.status === "attention");
   }, [selectedRun?.id, selectedRun?.status]);
+
+  useEffect(() => {
+    setShowsPrizeFunding(false);
+  }, [selectedRun?.id]);
 
   useEffect(() => {
     setWatchGameName(selectedRun?.name ?? activeRunName ?? "");
@@ -228,7 +234,9 @@ export const FactoryV2WatchWorkspace = ({
         showAllSteps={showAllSteps}
         stepSummaryOptions={stepSummaryOptions}
         onBringChildIndexerLive={onBringChildIndexerLive}
+        showsPrizeFunding={showsPrizeFunding}
         onFundPrize={onFundPrize}
+        onTogglePrizeFunding={() => setShowsPrizeFunding((current) => !current)}
         onToggleShowAllSteps={() => setShowAllSteps((open) => !open)}
       />
     </article>
@@ -363,7 +371,9 @@ const FactoryV2WatchWorkspaceContent = ({
   showAllSteps,
   stepSummaryOptions,
   onBringChildIndexerLive,
+  showsPrizeFunding,
   onFundPrize,
+  onTogglePrizeFunding,
   onToggleShowAllSteps,
 }: {
   appearance: ReturnType<typeof resolveFactoryModeAppearance>;
@@ -375,7 +385,9 @@ const FactoryV2WatchWorkspaceContent = ({
   showAllSteps: boolean;
   stepSummaryOptions: FactoryV2StepSummaryActionOptions;
   onBringChildIndexerLive: (gameName: string) => void;
+  showsPrizeFunding: boolean;
   onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
+  onTogglePrizeFunding: () => void;
   onToggleShowAllSteps: () => void;
 }) => {
   if (selectedRun) {
@@ -400,7 +412,9 @@ const FactoryV2WatchWorkspaceContent = ({
         actionBarProps={state.actionBarProps}
         stepSummaryOptions={stepSummaryOptions}
         onBringChildIndexerLive={onBringChildIndexerLive}
+        showsPrizeFunding={showsPrizeFunding}
         onFundPrize={onFundPrize}
+        onTogglePrizeFunding={onTogglePrizeFunding}
         onToggleShowAllSteps={onToggleShowAllSteps}
       />
     );
@@ -442,7 +456,9 @@ const FactoryV2WatchRunCard = ({
   actionBarProps,
   stepSummaryOptions,
   onBringChildIndexerLive,
+  showsPrizeFunding,
   onFundPrize,
+  onTogglePrizeFunding,
   onToggleShowAllSteps,
 }: {
   appearance: ReturnType<typeof resolveFactoryModeAppearance>;
@@ -464,7 +480,9 @@ const FactoryV2WatchRunCard = ({
   actionBarProps: FactoryV2WatchActionBarProps | null;
   stepSummaryOptions: FactoryV2StepSummaryActionOptions;
   onBringChildIndexerLive: (gameName: string) => void;
+  showsPrizeFunding: boolean;
   onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
+  onTogglePrizeFunding: () => void;
   onToggleShowAllSteps: () => void;
 }) => (
   <FactoryV2WatchSurfaceCard
@@ -542,11 +560,15 @@ const FactoryV2WatchRunCard = ({
         </>
       ) : null}
 
-      <FactoryV2PrizeFundingCard
-        run={selectedRun}
-        isBusy={Boolean(actionBarProps?.isWatcherBusy)}
-        onSubmit={onFundPrize}
-      />
+      {canFundFactoryRunPrize(selectedRun) ? (
+        <FactoryV2PrizeFundingSection
+          run={selectedRun}
+          isBusy={Boolean(actionBarProps?.isWatcherBusy)}
+          showsPrizeFunding={showsPrizeFunding}
+          onSubmit={onFundPrize}
+          onTogglePrizeFunding={onTogglePrizeFunding}
+        />
+      ) : null}
 
       <div className="space-y-2.5">
         <div className="mx-auto max-w-sm space-y-1 text-center">
@@ -596,6 +618,32 @@ const FactoryV2WatchRunCard = ({
       ) : null}
     </div>
   </FactoryV2WatchSurfaceCard>
+);
+
+const FactoryV2PrizeFundingSection = ({
+  run,
+  isBusy,
+  showsPrizeFunding,
+  onSubmit,
+  onTogglePrizeFunding,
+}: {
+  run: FactoryRun;
+  isBusy: boolean;
+  showsPrizeFunding: boolean;
+  onSubmit: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
+  onTogglePrizeFunding: () => void;
+}) => (
+  <div className="space-y-2">
+    <button
+      type="button"
+      data-testid="factory-prize-toggle"
+      onClick={onTogglePrizeFunding}
+      className="inline-flex w-full items-center justify-center rounded-full border border-black/10 bg-white/58 px-4 py-3 text-sm font-medium text-black/68 transition-colors hover:bg-white/72 hover:text-black"
+    >
+      {showsPrizeFunding ? "Hide prize funding" : "Open prize funding"}
+    </button>
+    {showsPrizeFunding ? <FactoryV2PrizeFundingCard run={run} isBusy={isBusy} onSubmit={onSubmit} /> : null}
+  </div>
 );
 
 const FactoryV2CurrentStepCard = ({

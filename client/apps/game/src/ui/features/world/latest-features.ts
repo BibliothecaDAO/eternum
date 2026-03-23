@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Selectable Prize Funding",
+    description:
+      "Factory V2 now keeps admin prize funding collapsed until you explicitly open it from the run view, so watch screens stay focused on launch and recovery status by default.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
     title: "Stable First Map Camera",
     description:
       "World map now opens in its intended tactical camera framing on the first load, so it no longer starts in a close-up offset view before settling after a scene switch.",

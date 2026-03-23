@@ -36,6 +36,19 @@ const setInputValue = (input: HTMLInputElement, value: string) => {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
+const openPrizeFundingSection = async (container: HTMLDivElement) => {
+  const toggleButton = container.querySelector('[data-testid="factory-prize-toggle"]') as HTMLButtonElement | null;
+
+  if (!toggleButton) {
+    throw new Error("Expected prize funding toggle to be rendered");
+  }
+
+  await act(async () => {
+    toggleButton.click();
+    await waitForAsyncWork();
+  });
+};
+
 const buildRun = (overrides: Partial<FactoryRun> = {}): FactoryRun => ({
   ...buildRunBase(),
   ...overrides,
@@ -598,6 +611,10 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       await waitForAsyncWork();
     });
 
+    expect(container.textContent).not.toContain("Admin prize funding");
+
+    await openPrizeFundingSection(container);
+
     const amountInput = container.querySelector('[data-testid="factory-prize-amount"]') as HTMLInputElement | null;
     const secretInput = container.querySelector('[data-testid="factory-prize-secret"]') as HTMLInputElement | null;
     const firstGameCheckbox = container.querySelector(
@@ -703,6 +720,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       await waitForAsyncWork();
     });
 
+    await openPrizeFundingSection(container);
+
     const submitButton = container.querySelector('[data-testid="factory-prize-submit"]') as HTMLButtonElement | null;
 
     expect(container.textContent).toContain("Admin prize funding");
@@ -795,6 +814,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       );
       await waitForAsyncWork();
     });
+
+    await openPrizeFundingSection(container);
 
     const firstGameCheckbox = container.querySelector(
       '[data-testid="factory-prize-game-bltz-ladder-loop-01"]',
