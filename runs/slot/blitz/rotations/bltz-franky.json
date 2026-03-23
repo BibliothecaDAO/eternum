@@ -12,9 +12,9 @@
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23455079190-1.json",
   "latestLaunchRequestId": "23455079190-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T19:04:16.957Z",
+  "updatedAt": "2026-03-23T19:06:49.601Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T19:09:11.819Z",
-    "lastEvaluatedAt": "2026-03-23T19:04:11.819Z"
+    "nextEvaluationAt": "2026-03-23T19:11:49.601Z",
+    "lastEvaluatedAt": "2026-03-23T19:06:49.601Z"
   },
   "steps": [
     {
@@ -45,10 +45,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-23T19:04:16.957Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-03-23T19:04:16.957Z",
+      "finishedAt": "2026-03-23T19:06:49.601Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -686,9 +687,9 @@
         "startTime": 1774257600,
         "startTimeIso": "2026-03-23T09:20:00.000Z",
         "seriesGameNumber": 4,
-        "currentStepId": "create-worlds",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400f\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Transaction execution has failed:\\n0: Error in the called contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nExecution failed. Failure reason:\\nError in contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nError in contract (contract address: 0x0242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb, class hash: 0x0761156a5dbb84da20f3e4072b3658c13d67e693f1155ae00f79339f786eb498, selector: 0x022a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5):\\n0x6465706c6f796d656e7420616c726561647920636f6d706c65746564 ('deployment already completed').\\n\"}",
-        "status": "failed",
+        "currentStepId": null,
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -698,10 +699,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "failed",
-            "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400f\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Transaction execution has failed:\\n0: Error in the called contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nExecution failed. Failure reason:\\nError in contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nError in contract (contract address: 0x0242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb, class hash: 0x0761156a5dbb84da20f3e4072b3658c13d67e693f1155ae00f79339f786eb498, selector: 0x022a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5):\\n0x6465706c6f796d656e7420616c726561647920636f6d706c65746564 ('deployment already completed').\\n\"}",
-            "updatedAt": "2026-03-23T18:47:13.676Z",
-            "errorMessage": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400f\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Transaction execution has failed:\\n0: Error in the called contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nExecution failed. Failure reason:\\nError in contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nError in contract (contract address: 0x0242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb, class hash: 0x0761156a5dbb84da20f3e4072b3658c13d67e693f1155ae00f79339f786eb498, selector: 0x022a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5):\\n0x6465706c6f796d656e7420616c726561647920636f6d706c65746564 ('deployment already completed').\\n\"}"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T19:04:24.622Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -724,7 +724,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x07767e3d06ad0c92ff1a4d59ea53a4ac93ed409b02308c84fc725946274dd045"
+        },
+        "durationSeconds": 5400
       },
       {
         "gameName": "bltz-franky-05",
@@ -732,8 +735,8 @@
         "startTimeIso": "2026-03-23T10:20:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -743,8 +746,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T19:05:20.827Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -767,7 +771,11 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x01c6d28ab4332fa623ee12b3c8802745b7c3f0f3d7fa4cb3b22a221ca0404e0f",
+          "createGameTxHash": "0x403b76d769fc7d7b2aaeea1a917ef39f18dec9f3aafcb739d399fd92ec64ba1"
+        },
+        "durationSeconds": 5400
       },
       {
         "gameName": "bltz-franky-06",
@@ -775,8 +783,8 @@
         "startTimeIso": "2026-03-23T11:20:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -786,8 +794,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T19:06:03.344Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -810,7 +819,11 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x054bc8739267dcb5cd53c7f55f6aa18c46ffbf601aeb91e934c5c891313dce47",
+          "createGameTxHash": "0x576111165db27ff01b2587f4a5513b5072093dbc34e7a89409f8763b75bd3f"
+        },
+        "durationSeconds": 5400
       },
       {
         "gameName": "bltz-franky-07",
@@ -818,8 +831,8 @@
         "startTimeIso": "2026-03-23T12:20:00.000Z",
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -829,8 +842,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-23T19:06:45.527Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -853,7 +867,11 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x04374fc1fc3de14743e208cb9c0c325e20f525aa973151e642036f91fa782f3a",
+          "createGameTxHash": "0x354ee6ee3c9c714219567c87d4ca2c6686036617df076384542528298c160e5"
+        },
+        "durationSeconds": 5400
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
@@ -863,13 +881,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23455079190-1",
-    "workflowRunId": 23455079190,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-23T19:04:16.957Z",
-    "expiresAt": "2026-03-23T19:49:16.957Z"
   }
 }
