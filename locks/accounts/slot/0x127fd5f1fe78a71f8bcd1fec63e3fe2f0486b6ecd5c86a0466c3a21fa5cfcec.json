@@ -5,15 +5,14 @@
   "owner": {
     "environment": "slot.blitz",
     "gameName": "NOOBS-ONLY",
-    "launchRequestId": "23420186127-1",
+    "launchRequestId": "23420245438-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23420186127,
+    "workflowRunId": 23420245438,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "5ea58361-f1b6-4666-be7f-ac87caa859a8"
+    "leaseId": "7b23c631-00a1-42d7-97c4-f500dcdfbf0d"
   },
-  "acquiredAt": "2026-03-23T03:31:05.534Z",
-  "heartbeatAt": "2026-03-23T03:31:11.856Z",
-  "expiresAt": "2026-03-23T03:31:11.856Z",
-  "releasedAt": "2026-03-23T03:31:11.856Z"
+  "acquiredAt": "2026-03-23T03:33:55.806Z",
+  "heartbeatAt": "2026-03-23T03:33:55.806Z",
+  "expiresAt": "2026-03-23T03:43:55.806Z"
 }
