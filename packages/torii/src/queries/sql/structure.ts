@@ -184,7 +184,7 @@ export const STRUCTURE_QUERIES = {
         s.owner as owner_address,
         s.\`metadata.realm_id\` as realm_id,
         s.resources_packed,
-        sos.name as owner_name,
+        COALESCE(NULLIF(NULLIF(an.name, ''), '0x0'), NULLIF(NULLIF(sos.name, ''), '0x0')) as owner_name,
         SUBSTR(s.internal_entity_id, INSTR(s.internal_entity_id, ':') + 1) as internal_entity_id,
     
         -- Guard army data
@@ -226,6 +226,7 @@ export const STRUCTURE_QUERIES = {
         COALESCE(defender_struct.\`base.coord_y\`, defender_explorer.\`coord.y\`) as latest_defender_coord_y
 
     FROM [s1_eternum-Structure] s
+    LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
     LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
     LEFT JOIN [s1_eternum-StructureBuildings] sb ON sb.entity_id = s.entity_id
     LEFT JOIN latest_battles lb ON lb.defender_id = s.entity_id
@@ -283,7 +284,7 @@ export const STRUCTURE_QUERIES = {
       et.\`troops.stamina.updated_tick\` as stamina_updated_tick,
       et.\`troops.battle_cooldown_end\` as battle_cooldown_end,
       s.owner as owner_address,
-      sos.name as owner_name,
+      COALESCE(NULLIF(NULLIF(an.name, ''), '0x0'), NULLIF(NULLIF(sos.name, ''), '0x0')) as owner_name,
       SUBSTR(et.internal_entity_id, INSTR(et.internal_entity_id, ':') + 1) as internal_entity_id,
     
       -- Battle data with coordinates
@@ -299,6 +300,7 @@ export const STRUCTURE_QUERIES = {
     
   FROM [s1_eternum-ExplorerTroops] et
   LEFT JOIN [s1_eternum-Structure] s ON s.entity_id = et.owner
+  LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
   LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
   LEFT JOIN latest_battles lb ON lb.defender_id = et.explorer_id
   LEFT JOIN latest_defenses ld ON ld.attacker_id = et.explorer_id

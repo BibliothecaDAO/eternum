@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Restored Owner Map Names",
+    description:
+      "Fixed Eternum map labels so army and structure owner tags resolve player names again instead of falling back to wallet addresses or blank text.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
     title: "Village Militia Claim Hides",
     description:
       "Fixed village timers so once militia is claimed, the claim action disappears instead of staying available for another click.",
