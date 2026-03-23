@@ -9,20 +9,20 @@
   "seriesName": "bltz-franky",
   "status": "complete",
   "executionMode": "guided_recovery",
-  "requestedLaunchStep": "wait-for-factory-indexes",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23457847452-1.json",
-  "latestLaunchRequestId": "23457847452-1",
+  "requestedLaunchStep": "create-indexers",
+  "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23461067376-1.json",
+  "latestLaunchRequestId": "23461067376-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T21:06:01.837Z",
+  "updatedAt": "2026-03-23T21:30:17.940Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23457847452,
+    "workflowRunId": 23461067376,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23457847452",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23461067376",
     "ref": "codex/factory-v2-rotation-review",
-    "sha": "2ccbd35b100adbcac2bf6512d1fb3c82bbce20c6"
+    "sha": "cc2973aaebb88a145ab6c93f7c5248aae3f602f5"
   },
   "autoRetry": {
     "enabled": true,
@@ -31,7 +31,7 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "lastEvaluatedAt": "2026-03-23T20:19:37.940Z"
+    "lastEvaluatedAt": "2026-03-23T21:30:17.940Z"
   },
   "steps": [
     {
@@ -53,36 +53,28 @@
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-03-23T20:12:55.455Z",
-      "finishedAt": "2026-03-23T20:13:01.193Z"
+      "latestEvent": "Waiting for games is complete"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
       "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-03-23T20:13:04.407Z",
-      "finishedAt": "2026-03-23T20:13:49.621Z"
+      "latestEvent": "Applying settings is complete"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-03-23T20:13:57.790Z",
-      "finishedAt": "2026-03-23T20:14:13.396Z"
+      "latestEvent": "Setting up loot chests is complete"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-03-23T20:14:21.917Z",
-      "finishedAt": "2026-03-23T20:19:37.940Z"
+      "latestEvent": "Finishing setup is complete"
     }
   ],
   "summary": {
@@ -1471,5 +1463,5 @@
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
   },
-  "completedAt": "2026-03-23T20:19:37.940Z"
+  "completedAt": "2026-03-23T21:30:17.940Z"
 }
