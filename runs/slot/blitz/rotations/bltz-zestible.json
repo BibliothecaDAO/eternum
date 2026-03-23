@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23464336716-1.json",
-  "latestLaunchRequestId": "23464336716-1",
-  "currentStepId": null,
+  "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23464989527-1.json",
+  "latestLaunchRequestId": "23464989527-1",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-23T23:20:21.737Z",
+  "updatedAt": "2026-03-23T23:21:31.965Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23464336716,
+    "workflowRunId": 23464989527,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23464336716",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23464989527",
     "ref": "codex/factory-v2-rotation-review",
     "sha": "cc2973aaebb88a145ab6c93f7c5248aae3f602f5"
   },
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-23T23:35:21.737Z",
-    "lastEvaluatedAt": "2026-03-23T23:20:21.737Z"
+    "nextEvaluationAt": "2026-03-23T23:36:31.965Z",
+    "lastEvaluatedAt": "2026-03-23T23:21:31.965Z"
   },
   "steps": [
     {
@@ -39,54 +39,42 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-03-23T23:01:46.709Z",
-      "finishedAt": "2026-03-23T23:01:51.471Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-03-23T23:01:54.540Z",
-      "finishedAt": "2026-03-23T23:02:03.767Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-03-23T23:02:11.797Z",
-      "finishedAt": "2026-03-23T23:02:16.519Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-03-23T23:02:19.514Z",
-      "finishedAt": "2026-03-23T23:02:28.873Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-03-23T23:02:37.003Z",
-      "finishedAt": "2026-03-23T23:02:46.414Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-03-23T23:02:54.389Z",
-      "finishedAt": "2026-03-23T23:02:59.209Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -1230,6 +1218,49 @@
           }
         },
         "durationSeconds": 5400
+      },
+      {
+        "gameName": "bltz-zestible-07",
+        "startTime": 1774325400,
+        "startTimeIso": "2026-03-24T04:10:00.000Z",
+        "seriesGameNumber": 7,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
