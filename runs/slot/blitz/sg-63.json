@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23463396411-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-23T22:32:59.979Z",
-  "updatedAt": "2026-03-23T22:34:29.762Z",
+  "updatedAt": "2026-03-23T22:34:36.995Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,9 +35,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-03-23T22:34:36.995Z"
     },
     {
       "id": "configure-world",
@@ -64,5 +65,13 @@
   "artifacts": {
     "summaryPath": ".context/game-launch/slot-blitz-sg-63.json",
     "createGameTxHash": "0x47e816b70d5838f4cbe867aa4cc4c37ca818e7822ae601c6387740d496610b1"
+  },
+  "activeLease": {
+    "launchRequestId": "23463396411-1",
+    "workflowRunId": 23463396411,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-23T22:34:36.995Z",
+    "expiresAt": "2026-03-23T23:19:36.995Z"
   }
 }
