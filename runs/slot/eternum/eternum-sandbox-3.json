@@ -10,9 +10,9 @@
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/eternum-sandbox-3/23450981151-1.json",
   "latestLaunchRequestId": "23450981151-1",
-  "currentStepId": "create-world",
+  "currentStepId": "create-indexer",
   "createdAt": "2026-03-23T17:30:20.276Z",
-  "updatedAt": "2026-03-23T17:30:20.276Z",
+  "updatedAt": "2026-03-23T17:30:25.395Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -68,10 +68,19 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-23T17:30:25.395Z"
     }
   ],
-  "artifacts": {}
+  "artifacts": {},
+  "activeLease": {
+    "launchRequestId": "23450981151-1",
+    "workflowRunId": 23450981151,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-03-23T17:30:25.395Z",
+    "expiresAt": "2026-03-23T18:15:25.395Z"
+  }
 }
