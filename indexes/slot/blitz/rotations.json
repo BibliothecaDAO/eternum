@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T06:06:26.664Z",
+  "updatedAt": "2026-03-23T06:07:38.422Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -101,11 +101,10 @@
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23423614823-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T06:03:55.573Z",
+      "updatedAt": "2026-03-23T06:07:38.422Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-03-23T06:48:55.573Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -114,27 +113,36 @@
       },
       "evaluation": {
         "intervalMinutes": 5,
-        "nextEvaluationAt": "2026-03-23T06:08:47.671Z",
-        "lastEvaluatedAt": "2026-03-23T06:03:47.671Z"
+        "nextEvaluationAt": "2026-03-23T06:12:38.422Z",
+        "lastEvaluatedAt": "2026-03-23T06:07:38.422Z"
       },
       "games": [
         {
           "gameName": "bltz-franky-01",
           "startTime": 1774246800,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic"
+          }
         },
         {
           "gameName": "bltz-franky-02",
           "startTime": 1774250400,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic"
+          }
         },
         {
           "gameName": "bltz-franky-03",
           "startTime": 1774254000,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic"
+          }
         }
       ]
     }
