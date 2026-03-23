@@ -5,15 +5,14 @@
   "owner": {
     "environment": "slot.blitz",
     "gameName": "bltz-franky",
-    "launchRequestId": "23452632459-1",
+    "launchRequestId": "23453502526-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23452632459,
+    "workflowRunId": 23453502526,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "5a3f679f-6413-4189-a2b3-f5bc0e34c634"
+    "leaseId": "5aec3189-42c6-489c-b93e-a6bdf96711e7"
   },
-  "acquiredAt": "2026-03-23T18:07:23.047Z",
-  "heartbeatAt": "2026-03-23T18:07:28.632Z",
-  "expiresAt": "2026-03-23T18:07:28.632Z",
-  "releasedAt": "2026-03-23T18:07:28.632Z"
+  "acquiredAt": "2026-03-23T18:27:16.475Z",
+  "heartbeatAt": "2026-03-23T18:27:16.475Z",
+  "expiresAt": "2026-03-23T18:37:16.475Z"
 }
