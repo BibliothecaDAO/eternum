@@ -257,6 +257,14 @@ pub mod EternumAMM {
             self.reentrancy_locked.write(false);
         }
 
+        fn _resolve_initial_liquidity_lock_amount(self: @ContractState, total_supply: u256) -> u256 {
+            if total_supply == 0 {
+                math::MINIMUM_LIQUIDITY
+            } else {
+                0
+            }
+        }
+
         /// Execute a swap within one pool. Updates reserves and returns (net_output, protocol_fee).
         /// Does NOT perform ERC20 transfers — caller is responsible.
         fn _swap_in_pool(
@@ -471,6 +479,7 @@ pub mod EternumAMM {
             let lp_token = ILPTokenDispatcher { contract_address: lp_token_addr };
             let lp_erc20 = IERC20Dispatcher { contract_address: lp_token_addr };
             let total_supply = lp_erc20.total_supply();
+            let initial_liquidity_lock = self._resolve_initial_liquidity_lock_amount(total_supply);
             let lp_mint_amount = math::compute_lp_mint(lords_used, lords_reserve, total_supply);
             assert!(lp_mint_amount > 0, "insufficient liquidity minted");
 
@@ -486,6 +495,9 @@ pub mod EternumAMM {
 
             lords.transfer_from(caller, this, lords_used);
             resource.transfer_from(caller, this, token_used);
+            if initial_liquidity_lock > 0 {
+                lp_token.mint(this, initial_liquidity_lock);
+            }
             lp_token.mint(caller, lp_mint_amount);
 
             self

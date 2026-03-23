@@ -1,5 +1,6 @@
 use core::num::traits::Zero;
 use eternum_amm::amm::{IEternumAMMDispatcher, IEternumAMMDispatcherTrait};
+use eternum_amm::math::MINIMUM_LIQUIDITY;
 use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address, stop_cheat_caller_address,
@@ -157,6 +158,7 @@ fn test_add_liquidity_first() {
     let s = setup();
     let lords_amount = 1000 * E18;
     let token_amount = 5000 * E18;
+    let expected_provider_lp = lords_amount - MINIMUM_LIQUIDITY;
 
     start_cheat_caller_address(s.amm_addr, ALICE());
     let (lords_used, token_used, lp_minted) = s.amm.add_liquidity(s.token, lords_amount, token_amount, 0, 0, DEADLINE);
@@ -165,18 +167,18 @@ fn test_add_liquidity_first() {
     // First LP sets the ratio; all amounts should be used
     assert!(lords_used == lords_amount, "all lords should be used");
     assert!(token_used == token_amount, "all tokens should be used");
-    // First LP mint = lords_amount
-    assert!(lp_minted == lords_amount, "lp minted should equal lords amount");
+    assert!(lp_minted == expected_provider_lp, "provider lp mint should exclude locked liquidity");
 
     // Verify reserves
     let (lords_reserve, token_reserve) = s.amm.get_reserves(s.token);
     assert!(lords_reserve == lords_amount, "lords reserve mismatch");
     assert!(token_reserve == token_amount, "token reserve mismatch");
 
-    // Verify LP token balance
+    // Verify LP token balances
     let lp_token_addr = s.amm.get_lp_token(s.token);
     let lp_erc20 = IERC20Dispatcher { contract_address: lp_token_addr };
-    assert!(lp_erc20.balance_of(ALICE()) == lp_minted, "LP balance mismatch");
+    assert!(lp_erc20.balance_of(ALICE()) == lp_minted, "provider LP balance mismatch");
+    assert!(lp_erc20.balance_of(s.amm_addr) == MINIMUM_LIQUIDITY, "AMM should hold locked minimum liquidity");
 }
 
 #[test]
@@ -230,9 +232,10 @@ fn test_remove_liquidity() {
     let (lords_out, token_out) = s.amm.remove_liquidity(s.token, half_lp, 0, 0, DEADLINE);
     stop_cheat_caller_address(s.amm_addr);
 
-    // Should get back half of reserves
-    assert!(lords_out == 500 * E18, "wrong lords out");
-    assert!(token_out == 2500 * E18, "wrong tokens out");
+    let expected_lords_out = half_lp;
+    let expected_token_out = half_lp * 5;
+    assert!(lords_out == expected_lords_out, "wrong lords out");
+    assert!(token_out == expected_token_out, "wrong tokens out");
 
     // Verify LP balance decreased
     assert!(lp_erc20.balance_of(ALICE()) == lp_minted - half_lp, "LP balance not decreased");
@@ -245,8 +248,37 @@ fn test_remove_liquidity() {
 
     // Verify remaining reserves
     let (lords_reserve, token_reserve) = s.amm.get_reserves(s.token);
-    assert!(lords_reserve == 500 * E18, "lords reserve mismatch");
-    assert!(token_reserve == 2500 * E18, "token reserve mismatch");
+    assert!(lords_reserve == (1000 * E18) - expected_lords_out, "lords reserve mismatch");
+    assert!(token_reserve == (5000 * E18) - expected_token_out, "token reserve mismatch");
+}
+
+#[test]
+fn test_remove_all_redeemable_liquidity_leaves_locked_minimum_in_pool() {
+    let s = setup();
+    let lords_amount = 1000 * E18;
+    let token_amount = 5000 * E18;
+
+    start_cheat_caller_address(s.amm_addr, ALICE());
+    let (_, _, lp_minted) = s.amm.add_liquidity(s.token, lords_amount, token_amount, 0, 0, DEADLINE);
+    stop_cheat_caller_address(s.amm_addr);
+
+    let lp_token_addr = s.amm.get_lp_token(s.token);
+    let lp_erc20 = IERC20Dispatcher { contract_address: lp_token_addr };
+    let locked_token_reserve = (MINIMUM_LIQUIDITY * token_amount) / lords_amount;
+
+    start_cheat_caller_address(s.amm_addr, ALICE());
+    let (lords_out, token_out) = s.amm.remove_liquidity(s.token, lp_minted, 0, 0, DEADLINE);
+    stop_cheat_caller_address(s.amm_addr);
+
+    assert!(lords_out == lords_amount - MINIMUM_LIQUIDITY, "wrong lords returned");
+    assert!(token_out == token_amount - locked_token_reserve, "wrong tokens returned");
+    assert!(lp_erc20.balance_of(ALICE()) == 0, "provider should burn all redeemable LP");
+    assert!(lp_erc20.balance_of(s.amm_addr) == MINIMUM_LIQUIDITY, "AMM should retain locked LP balance");
+    assert!(lp_erc20.total_supply() == MINIMUM_LIQUIDITY, "total supply should equal locked floor");
+
+    let (lords_reserve, token_reserve) = s.amm.get_reserves(s.token);
+    assert!(lords_reserve == MINIMUM_LIQUIDITY, "lords reserve should keep locked dust");
+    assert!(token_reserve == locked_token_reserve, "token reserve should keep proportional locked dust");
 }
 
 #[test]

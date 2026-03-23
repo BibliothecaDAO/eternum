@@ -129,5 +129,13 @@ export type {
   CandleInterval,
 } from "./types";
 export { formatTokenAmount, parseTokenAmount } from "./utils/format";
-export { getInputPrice, getOutputPrice, quote, computeAddLiquidity, computeLpMint, computeLpBurn } from "./utils/math";
+export {
+  MINIMUM_LIQUIDITY,
+  getInputPrice,
+  getOutputPrice,
+  quote,
+  computeAddLiquidity,
+  computeLpMint,
+  computeLpBurn,
+} from "./utils/math";
 export { computePriceImpact, computeMinimumReceived, computeSpotPrice } from "./utils/price";

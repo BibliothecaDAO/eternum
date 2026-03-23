@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  MINIMUM_LIQUIDITY,
   computeAddLiquidity,
   computeLpBurn,
   computeLpMint,
@@ -11,6 +12,8 @@ import { computeMinimumReceived, computePriceImpact, computeSpotPrice } from "..
 
 const FEE_NUM = 3n;
 const FEE_DENOM = 1000n;
+const HUGE = 0x100000000000000000000000000000000n;
+const DOUBLE_HUGE = 0x200000000000000000000000000000000n;
 
 describe("getInputPrice", () => {
   it("should compute correct output with no fee", () => {
@@ -33,6 +36,10 @@ describe("getInputPrice", () => {
 
   it("should throw on zero input amount", () => {
     expect(() => getInputPrice(FEE_NUM, FEE_DENOM, 0n, 100n, 100n)).toThrow("input amount must be > zero");
+  });
+
+  it("should support large no-fee values without overflowing", () => {
+    expect(getInputPrice(0n, 1n, HUGE, HUGE, DOUBLE_HUGE)).toBe(HUGE);
   });
 });
 
@@ -60,6 +67,10 @@ describe("getOutputPrice", () => {
     const cost = getOutputPrice(0n, 1n, 1n, 100n, 100n);
     expect(cost).toBe(2n);
   });
+
+  it("should support large no-fee values without overflowing", () => {
+    expect(getOutputPrice(0n, 1n, HUGE, DOUBLE_HUGE, DOUBLE_HUGE)).toBe(DOUBLE_HUGE + 1n);
+  });
 });
 
 describe("quote", () => {
@@ -67,6 +78,10 @@ describe("quote", () => {
     // Pool 1:10 ratio. Given 2 of token A, should need 20 of token B.
     const result = quote(2n, 1n, 10n);
     expect(result).toBe(20n);
+  });
+
+  it("should support large values without overflowing", () => {
+    expect(quote(HUGE, DOUBLE_HUGE, DOUBLE_HUGE)).toBe(HUGE);
   });
 });
 
@@ -95,15 +110,23 @@ describe("computeAddLiquidity", () => {
 });
 
 describe("computeLpMint", () => {
-  it("should return lords amount for first mint", () => {
-    const lp = computeLpMint(1000n, 0n, 0n);
-    expect(lp).toBe(1000n);
+  it("should lock minimum liquidity for first mint", () => {
+    const lp = computeLpMint(5000n, 0n, 0n);
+    expect(lp).toBe(4000n);
+  });
+
+  it("should reject initial liquidity that does not exceed the lock floor", () => {
+    expect(() => computeLpMint(MINIMUM_LIQUIDITY, 0n, 0n)).toThrow("insufficient initial liquidity");
   });
 
   it("should compute proportional mint for subsequent deposits", () => {
     // Pool: 100 LORDS, 50 LP outstanding. Adding 50 LORDS -> 25 LP.
     const lp = computeLpMint(50n, 100n, 50n);
     expect(lp).toBe(25n);
+  });
+
+  it("should support large subsequent mints without overflowing", () => {
+    expect(computeLpMint(HUGE, DOUBLE_HUGE, DOUBLE_HUGE)).toBe(HUGE);
   });
 });
 
@@ -121,6 +144,13 @@ describe("computeLpBurn", () => {
 
   it("should throw on zero lp amount", () => {
     expect(() => computeLpBurn(0n, 200n, 1000n, 100n)).toThrow("insufficient lp amount");
+  });
+
+  it("should support large burns without overflowing", () => {
+    expect(computeLpBurn(HUGE, DOUBLE_HUGE, DOUBLE_HUGE, HUGE)).toEqual({
+      lordsOut: DOUBLE_HUGE,
+      tokenOut: DOUBLE_HUGE,
+    });
   });
 });
 

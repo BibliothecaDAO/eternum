@@ -3,6 +3,8 @@
  * Ported from contracts/amm/src/math.cairo with u256 -> bigint.
  */
 
+export const MINIMUM_LIQUIDITY = 1000n;
+
 /**
  * Given an input amount of one token, compute how much of the other token you receive.
  * Fee is deducted from input before calculation.
@@ -108,12 +110,15 @@ export function computeAddLiquidity(
 
 /**
  * Compute LP tokens to mint for a given lords deposit.
- * First depositor: lp = lords_amount.
+ * First depositor: lp = lords_amount - minimum liquidity lock.
  * Subsequent: lp = (lords_added * total_supply) / lords_reserve.
  */
 export function computeLpMint(lordsAdded: bigint, lordsReserve: bigint, totalLpSupply: bigint): bigint {
   if (totalLpSupply === 0n) {
-    return lordsAdded;
+    if (lordsAdded <= MINIMUM_LIQUIDITY) {
+      throw new Error("insufficient initial liquidity");
+    }
+    return lordsAdded - MINIMUM_LIQUIDITY;
   }
   return (lordsAdded * totalLpSupply) / lordsReserve;
 }
