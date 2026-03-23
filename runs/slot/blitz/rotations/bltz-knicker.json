@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23415890438-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T00:12:41.396Z",
-  "updatedAt": "2026-03-23T00:13:00.884Z",
+  "updatedAt": "2026-03-23T00:13:03.528Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -46,9 +46,10 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Creating games",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Creating games started",
+      "startedAt": "2026-03-23T00:13:03.528Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -322,5 +323,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-knicker.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T00:12:59.485Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23415890438-1",
+    "workflowRunId": 23415890438,
+    "workflowRunAttempt": 1,
+    "stepId": "create-worlds",
+    "acquiredAt": "2026-03-23T00:13:03.528Z",
+    "expiresAt": "2026-03-23T00:58:03.528Z"
   }
 }
