@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-franky",
   "seriesName": "bltz-franky",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23424923998-1.json",
   "latestLaunchRequestId": "23424923998-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T06:46:39.488Z",
+  "updatedAt": "2026-03-23T06:46:44.628Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,7 +27,6 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-23T07:01:39.488Z",
     "lastRetryAt": "2026-03-23T06:45:12.768Z"
   },
   "evaluation": {
@@ -46,9 +45,10 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games needs attention"
+      "latestEvent": "Creating games started",
+      "startedAt": "2026-03-23T06:46:44.628Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -730,5 +730,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23424923998-1",
+    "workflowRunId": 23424923998,
+    "workflowRunAttempt": 1,
+    "stepId": "create-worlds",
+    "acquiredAt": "2026-03-23T06:46:44.628Z",
+    "expiresAt": "2026-03-23T07:31:44.628Z"
   }
 }
