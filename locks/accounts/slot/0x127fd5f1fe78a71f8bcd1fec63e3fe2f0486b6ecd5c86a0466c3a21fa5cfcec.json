@@ -3,17 +3,16 @@
   "chain": "slot",
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
-    "environment": "slot.blitz",
-    "gameName": "bltz-franky",
-    "launchRequestId": "23440466804-1",
+    "environment": "slot.eternum",
+    "gameName": "etrn-haven-204",
+    "launchRequestId": "23440921826-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23440466804,
+    "workflowRunId": 23440921826,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "a6ee26e5-bf51-4421-81e9-355fb8e355ea"
+    "leaseId": "d2e4880b-6dfe-46e8-aadf-6bd2b8aadaee"
   },
-  "acquiredAt": "2026-03-23T13:46:38.836Z",
-  "heartbeatAt": "2026-03-23T13:46:43.426Z",
-  "expiresAt": "2026-03-23T13:46:43.426Z",
-  "releasedAt": "2026-03-23T13:46:43.426Z"
+  "acquiredAt": "2026-03-23T13:56:57.245Z",
+  "heartbeatAt": "2026-03-23T13:56:57.245Z",
+  "expiresAt": "2026-03-23T14:06:57.245Z"
 }
