@@ -164,6 +164,7 @@ export interface FactorySeriesChildRun {
   status: FactorySeriesChildStatus;
   latestEvent: string;
   currentStepId: FactoryRunStepId | null;
+  configReady?: boolean;
   worldAddress?: string;
   indexerCreated?: boolean;
   indexerTier?: string;
@@ -199,6 +200,7 @@ export interface FactoryRun {
   status: FactoryRunStatus;
   summary: string;
   updatedAt: string;
+  worldAddress?: string;
   recovery?: FactoryRunRecovery;
   autoRetry?: FactoryAutoRetryState;
   prizeFunding?: FactoryPrizeFundingState;

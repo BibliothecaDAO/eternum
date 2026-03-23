@@ -60,6 +60,7 @@ function mapFactoryWorkerGameRun(record: FactoryWorkerGameRunRecord): FactoryRun
     status: resolveFactoryRunStatus(record.status, record.currentStepId),
     summary: resolveFactoryGameRunSummary(record.status, record.currentStepId),
     updatedAt: formatFactoryUpdatedAt(record.updatedAt),
+    worldAddress: record.artifacts.worldAddress,
     recovery: mapFactoryRunRecovery(record.recovery),
     prizeFunding: mapFactoryPrizeFunding(record.artifacts.prizeFunding),
     steps: record.steps.map(mapFactoryWorkerStep),
@@ -168,6 +169,7 @@ function mapFactorySeriesChildRun(game: FactoryWorkerSeriesGameRecord): FactoryS
     status: resolveFactorySeriesChildStatus(game.status),
     latestEvent: game.latestEvent,
     currentStepId: mapFactoryStepId(game.currentStepId),
+    configReady: hasSucceededFactorySeriesChildStep(game, "configure-worlds"),
     worldAddress: game.artifacts.worldAddress,
     indexerCreated: game.artifacts.indexerCreated,
     indexerTier: game.artifacts.indexerTier,
@@ -279,6 +281,10 @@ function resolveFactorySeriesChildStatus(status: FactoryWorkerSeriesGameRecord["
     default:
       return "pending";
   }
+}
+
+function hasSucceededFactorySeriesChildStep(game: FactoryWorkerSeriesGameRecord, stepId: string) {
+  return (game.steps ?? []).some((step) => step.id === stepId && step.status === "succeeded");
 }
 
 function mapFactoryRunRecovery(recovery: FactoryWorkerRunRecovery | undefined): FactoryRunRecovery | undefined {

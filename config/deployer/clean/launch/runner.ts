@@ -23,6 +23,7 @@ import {
   isZeroAddress,
   patchManifestWithFactory,
   resolvePrizeDistributionSystemsAddress,
+  resolveFactoryWorldProfile,
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
 import { createIndexer } from "../indexing/indexer";
@@ -343,6 +344,10 @@ function updateWorldAddress(summary: LaunchGameSummary, worldContext: Configured
   summary.worldAddress = worldContext.worldProfile.worldAddress;
 }
 
+function updateWorldAddressFromProfile(summary: LaunchGameSummary, worldProfile: FactoryWorldProfile): void {
+  summary.worldAddress = worldProfile.worldAddress;
+}
+
 async function resolveConfiguredLaunchDependencies(
   execution: PreparedLaunchExecution,
 ): Promise<ConfiguredLaunchDependencies> {
@@ -454,22 +459,95 @@ async function waitBeforeNextCreateGameAttempt(
   await sleep(retryDelayMs);
 }
 
+type CreateGameSubmissionResult = {
+  existingWorldProfile: FactoryWorldProfile | null;
+  lastTransactionHash: string | undefined;
+};
+
+async function resolveExistingWorldProfileBeforeCreateGameAttempt(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  attemptNumber: number;
+  totalAttempts: number;
+}): Promise<FactoryWorldProfile | null> {
+  const existingWorldProfile = await resolveFactoryWorldProfile(
+    params.runtime.environment.chain,
+    params.request.gameName,
+    params.runtime.cartridgeApiBase,
+  );
+
+  if (!existingWorldProfile) {
+    return null;
+  }
+
+  params.runtime.progress.log(
+    `Factory SQL already shows "${params.request.gameName}" at ${shortenHash(
+      existingWorldProfile.worldAddress,
+    )}. Skipping create_game attempt ${params.attemptNumber}/${params.totalAttempts}`,
+  );
+
+  return existingWorldProfile;
+}
+
 async function submitCreateGameAttempts(
   runtime: LaunchRuntime,
   request: LaunchGameRequest,
   account: Account,
-): Promise<string> {
+): Promise<CreateGameSubmissionResult> {
   const totalAttempts = resolveTotalCreateGameSubmissionCount(runtime);
   const retryDelayMs = runtime.createGame.retryDelayMs;
-  let lastTransactionHash = "";
+  let lastTransactionHash: string | undefined;
 
   for (let attemptNumber = 1; attemptNumber <= totalAttempts; attemptNumber += 1) {
+    const existingWorldProfile = await resolveExistingWorldProfileBeforeCreateGameAttempt({
+      runtime,
+      request,
+      attemptNumber,
+      totalAttempts,
+    });
+
+    if (existingWorldProfile) {
+      return {
+        existingWorldProfile,
+        lastTransactionHash,
+      };
+    }
+
     lastTransactionHash = await submitCreateGameAttempt(runtime, request, account, attemptNumber, totalAttempts);
     await waitForCreateGameConfirmation(runtime.progress, account, lastTransactionHash, attemptNumber, totalAttempts);
     await waitBeforeNextCreateGameAttempt(runtime.progress, attemptNumber, totalAttempts, retryDelayMs);
   }
 
-  return lastTransactionHash;
+  return {
+    existingWorldProfile: null,
+    lastTransactionHash,
+  };
+}
+
+function isAlreadyCompletedCreateWorldError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+
+  return /deployment already completed/i.test(message) || /world already registered/i.test(message);
+}
+
+async function resolveExistingWorldProfileForCompletedCreateWorld(params: {
+  runtime: LaunchRuntime;
+  request: LaunchGameRequest;
+  error: unknown;
+}): Promise<FactoryWorldProfile | null> {
+  if (!isAlreadyCompletedCreateWorldError(params.error)) {
+    return null;
+  }
+
+  params.runtime.progress.log(
+    `create_game reported an existing deployment for "${params.request.gameName}". Verifying via factory SQL before continuing`,
+  );
+
+  return resolveFactoryWorldProfile(
+    params.runtime.environment.chain,
+    params.request.gameName,
+    params.runtime.cartridgeApiBase,
+  );
 }
 
 async function waitForIndexedWorld(runtime: LaunchRuntime, request: LaunchGameRequest): Promise<FactoryWorldProfile> {
@@ -964,11 +1042,36 @@ async function runCreateWorldStep(
   execution: PreparedLaunchExecution,
   accountContext = resolveLaunchAccountContext(execution.runtime, execution.request),
 ): Promise<LaunchAccountContext> {
-  execution.summary.createGameTxHash = await submitCreateGameAttempts(
-    execution.runtime,
-    execution.request,
-    accountContext.account,
-  );
+  try {
+    const createGameSubmissionResult = await submitCreateGameAttempts(
+      execution.runtime,
+      execution.request,
+      accountContext.account,
+    );
+
+    execution.summary.createGameTxHash = createGameSubmissionResult.lastTransactionHash;
+
+    if (createGameSubmissionResult.existingWorldProfile) {
+      updateWorldAddressFromProfile(execution.summary, createGameSubmissionResult.existingWorldProfile);
+    }
+  } catch (error) {
+    const existingWorldProfile = await resolveExistingWorldProfileForCompletedCreateWorld({
+      runtime: execution.runtime,
+      request: execution.request,
+      error,
+    });
+
+    if (!existingWorldProfile) {
+      throw error;
+    }
+
+    updateWorldAddressFromProfile(execution.summary, existingWorldProfile);
+    execution.runtime.progress.log(
+      `Factory SQL already shows "${execution.request.gameName}" at ${shortenHash(
+        existingWorldProfile.worldAddress,
+      )}. Treating create_game as already completed`,
+    );
+  }
 
   return accountContext;
 }

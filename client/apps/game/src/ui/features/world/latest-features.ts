@@ -16,6 +16,55 @@ export const latestFeatures: LatestFeature[] = [
     type: "fix",
   },
   {
+    date: "2026-03-23",
+    title: "Broader Prize Funding",
+    description:
+      "Factory V2 prize funding now appears as soon as a game's world setup is ready, including eligible series, rotations, and Eternum runs, so admins no longer have to wait for the full parent run to finish.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-23",
+    title: "Child Indexer Controls",
+    description:
+      "Factory V2 now lets operators check or retry indexers per child game inside series and rotations, so a live torii can be confirmed without restarting the whole parent run.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Visible Deployer Wallet",
+    description:
+      "Factory V2 now keeps the selected chain’s deployer wallet at the top of the screen with a copy button and live STRK and LORDS balances, so operators can check funding before they launch or recover games.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Quieter Rotation Controls",
+    description:
+      "Factory V2 now hides rotation maintenance controls while a run is actively progressing, so Run now and Stop auto retry only appear once the run is no longer mid-launch.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Safer Rotation Retries",
+    description:
+      "Factory V2 now retries grouped rotation and series indexer failures with the correct grouped step id, so Retry no longer sends an invalid single-game recovery request.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Rotation Schedule Wording",
+    description:
+      "Factory V2 now labels rotation timing as evaluation cadence instead of a generic next check, so the watch view no longer implies it knows your worker cron schedule.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Rotation Interval Preview Fix",
+    description:
+      "Fixed Factory V2 rotation previews so the second queued game now keeps the same selected interval as the rest of the rotation schedule.",
+    type: "fix",
+  },
+  {
     date: "2026-03-22",
     title: "Less Skewed Map Camera",
     description:

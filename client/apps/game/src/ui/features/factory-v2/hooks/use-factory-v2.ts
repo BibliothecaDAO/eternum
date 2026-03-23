@@ -14,6 +14,7 @@ import {
   createFactorySeriesRun,
   FactoryWorkerApiError,
   fundFactoryGamePrize,
+  fundFactoryRotationPrizes,
   fundFactorySeriesPrizes,
   isFactoryWorkerEnvironmentSupported,
   listFactoryRuns,
@@ -62,6 +63,11 @@ import {
 import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
 import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import { getSimpleStepTitle, getStepStatusMessage, resolveRunPrimaryAction } from "../presenters";
+import {
+  canFundFactoryRunPrize,
+  resolveDefaultFactoryPrizeFundingGameNames,
+  type FactoryPrizeFundingEligibleRun,
+} from "../prize-funding";
 import type {
   FactoryGameMode,
   FactoryLaunchPreset,
@@ -96,10 +102,6 @@ interface GuidedRecoveryState {
   runId: string;
   lastContinueActionKey: string | null;
 }
-
-type FactoryPrizeFundingEligibleRun = FactoryRun & {
-  kind: "game" | "series";
-};
 
 interface FactoryPrizeFundingRequest {
   amount: string;
@@ -1618,6 +1620,17 @@ export const useFactoryV2 = () => {
     run: FactoryRun,
     request: FactoryPrizeFundingRequest,
   ) {
+    if (run.kind === "rotation") {
+      await fundFactoryRotationPrizes({
+        environment: environmentId,
+        rotationName: run.name,
+        amount: request.amount,
+        gameNames: request.selectedGameNames,
+        adminSecret: request.adminSecret,
+      });
+      return;
+    }
+
     if (run.kind === "series") {
       await fundFactorySeriesPrizes({
         environment: environmentId,
@@ -2245,11 +2258,11 @@ function canRetryChildIndexer(child: NonNullable<FactoryRun["children"]>[number]
 }
 
 function canFundRunPrize(run: FactoryRun): run is FactoryPrizeFundingEligibleRun {
-  return run.mode === "blitz" && run.status === "complete" && (run.kind === "game" || run.kind === "series");
+  return canFundFactoryRunPrize(run);
 }
 
 function resolveRequestedPrizeFundingGameNames(run: FactoryPrizeFundingEligibleRun, selectedGameNames: string[]) {
-  if (run.kind !== "series") {
+  if (run.kind === "game") {
     return [];
   }
 
@@ -2259,9 +2272,7 @@ function resolveRequestedPrizeFundingGameNames(run: FactoryPrizeFundingEligibleR
     return normalizedSelectedGameNames;
   }
 
-  return (run.children ?? [])
-    .filter((child) => child.status === "succeeded" && (child.prizeFunding?.transfers.length ?? 0) === 0)
-    .map((child) => child.gameName);
+  return resolveDefaultFactoryPrizeFundingGameNames(run);
 }
 
 type FactoryPrizeFundingSnapshot =
@@ -2270,7 +2281,7 @@ type FactoryPrizeFundingSnapshot =
       transferCount: number;
     }
   | {
-      kind: "series";
+      kind: "series_like";
       selectedGameNames: string[];
       transferCountsByGameName: Record<string, number>;
     };
@@ -2287,7 +2298,7 @@ function capturePrizeFundingSnapshot(
   }
 
   return {
-    kind: "series",
+    kind: "series_like",
     selectedGameNames,
     transferCountsByGameName: Object.fromEntries(
       selectedGameNames.map((gameName) => [

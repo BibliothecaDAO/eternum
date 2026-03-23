@@ -4,7 +4,13 @@ import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import { resolvePrizeDistributionAddressForFactoryGame } from "../factory/prize-distribution-address";
 import {
+  resolveDefaultSeriesLikePrizeFundingGameNames,
+  resolveGamePrizeFundingReadiness,
+  resolveSelectedSeriesLikePrizeFundingGameNames,
+} from "../prize-funding-readiness";
+import {
   recordFactoryGamePrizeFundingSucceeded,
+  recordFactoryRotationPrizeFundingSucceeded,
   recordFactorySeriesPrizeFundingSucceeded,
 } from "../run-store/prize-funding";
 import { requireGitHubBranchStoreConfig, readGitHubBranchJsonFile } from "../run-store/github";
@@ -74,7 +80,7 @@ function usage() {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <slot.blitz|mainnet.blitz> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
+      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <slot.blitz|mainnet.blitz|slot.eternum|mainnet.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
       "",
       "Optional:",
       "  --selected-games-json <json-array-of-game-names>",
@@ -306,66 +312,23 @@ function resolveCartridgeApiBase(
   );
 }
 
-function ensureBlitzRun(runRecord: PrizeFundingRunRecord) {
-  if (runRecord.gameType !== "blitz") {
-    throw new Error(`Prize funding is only supported for blitz runs. Received "${runRecord.gameType}"`);
-  }
-}
-
 function ensureGameRunReadyForPrizeFunding(runRecord: FactoryRunRecord) {
-  if (runRecord.status !== "complete") {
-    throw new Error(`Game "${runRecord.gameName}" must finish deploying before prize funding`);
-  }
+  const readiness = resolveGamePrizeFundingReadiness(runRecord);
 
-  if (!runRecord.artifacts.worldAddress) {
-    throw new Error(`Game "${runRecord.gameName}" is missing a world address`);
+  if (!readiness.ready) {
+    throw new Error(readiness.reason ?? `Game "${runRecord.gameName}" is not ready for prize funding`);
   }
 }
 
 function buildDefaultSeriesSelection(runRecord: FactorySeriesRunRecord | FactoryRotationRunRecord) {
-  return runRecord.summary.games
-    .filter((game) => game.status === "succeeded" && (game.artifacts.prizeFunding?.transfers?.length ?? 0) === 0)
-    .map((game) => game.gameName);
+  return resolveDefaultSeriesLikePrizeFundingGameNames(runRecord);
 }
 
 function resolveSeriesLikeSelectedGames(
   runRecord: FactorySeriesRunRecord | FactoryRotationRunRecord,
   requestedGameNames: string[],
 ) {
-  const selectedGameNames = requestedGameNames.length > 0 ? requestedGameNames : buildDefaultSeriesSelection(runRecord);
-
-  if (selectedGameNames.length === 0) {
-    throw new Error(`No eligible unfunded games are ready in "${resolveRunDisplayName(runRecord)}"`);
-  }
-
-  const selectedGameNameSet = new Set(selectedGameNames);
-  const orderedGames = runRecord.summary.games.filter((game) => selectedGameNameSet.has(game.gameName));
-
-  if (orderedGames.length !== selectedGameNameSet.size) {
-    throw new Error(`One or more selected games were not found in "${resolveRunDisplayName(runRecord)}"`);
-  }
-
-  for (const game of orderedGames) {
-    if (game.status !== "succeeded") {
-      throw new Error(`Game "${game.gameName}" must finish deploying before prize funding`);
-    }
-
-    if (!game.artifacts.worldAddress) {
-      throw new Error(`Game "${game.gameName}" is missing a world address`);
-    }
-  }
-
-  return orderedGames.map((game) => game.gameName);
-}
-
-function ensureSeriesRunReadyForPrizeFunding(runRecord: FactorySeriesRunRecord) {
-  if (runRecord.status !== "complete") {
-    throw new Error(`Series "${runRecord.seriesName}" must finish deploying before prize funding`);
-  }
-}
-
-function resolveRunDisplayName(runRecord: FactorySeriesRunRecord | FactoryRotationRunRecord) {
-  return runRecord.kind === "rotation" ? runRecord.rotationName : runRecord.seriesName;
+  return resolveSelectedSeriesLikePrizeFundingGameNames(runRecord, requestedGameNames);
 }
 
 async function resolvePrizeFundingTargets(
@@ -397,7 +360,6 @@ async function resolvePrizeFundingPlan(cliArgs: PrizeFundingCliArgs, rawCliArgs:
     cliArgs.environmentId,
     cliArgs.runName,
   );
-  ensureBlitzRun(runRecord);
 
   const rawRequest = resolveGameRequest(inputRecord);
   const rpcUrl = rawCliArgs["rpc-url"] || resolveRpcUrl(rawRequest, cliArgs.environmentId);
@@ -435,7 +397,6 @@ async function resolvePrizeFundingPlan(cliArgs: PrizeFundingCliArgs, rawCliArgs:
 
 function resolveSelectedGameNamesForRun(runRecord: PrizeFundingRunRecord, requestedGameNames: string[]) {
   if (runRecord.kind === "series") {
-    ensureSeriesRunReadyForPrizeFunding(runRecord);
     return resolveSeriesLikeSelectedGames(runRecord, requestedGameNames);
   }
 
@@ -506,7 +467,15 @@ async function persistPrizeFundingLedger(
   }
 
   if (plan.runKind === "rotation") {
-    throw new Error("Rotation prize funding is not enabled yet");
+    await recordFactoryRotationPrizeFundingSucceeded(
+      {
+        environmentId: plan.environmentId as FactoryRotationRunRecord["environment"],
+        rotationName: plan.runName,
+      },
+      plan.selectedGameNames,
+      transfer,
+    );
+    return;
   }
 
   await recordFactoryGamePrizeFundingSucceeded(

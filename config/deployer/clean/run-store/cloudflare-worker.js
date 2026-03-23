@@ -23,6 +23,8 @@ const DEFAULT_INDEXER_PRO_COOLDOWN_MS = 40 * 60_000;
 const DEFAULT_INDEXER_TIER_REQUEST_COOLDOWN_MS = 15 * 60_000;
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 const FACTORY_ENVIRONMENTS = ["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"];
+const GAME_PRIZE_FUNDING_STEP_ID = "configure-world";
+const SERIES_LIKE_PRIZE_FUNDING_STEP_ID = "configure-worlds";
 const RECOVERABLE_FACTORY_STEP_IDS = new Set([
   "create-world",
   "wait-for-factory-index",
@@ -137,6 +139,11 @@ async function handleRequest(request, env) {
 
       if (request.method === "POST" && rotationRunRoute.action === "nudge") {
         return await handleNudgeFactoryRotationRun(request, env, rotationRunRoute);
+      }
+
+      if (request.method === "POST" && rotationRunRoute.action === "fund-prize") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleFundFactoryRotationPrizes(request, env, rotationRunRoute);
       }
 
       if (request.method === "POST" && rotationRunRoute.action === "cancel-auto-retry") {
@@ -550,7 +557,7 @@ async function handleFundFactorySeriesPrizes(request, env, route) {
     );
   }
 
-  assertFactorySeriesRunReadyForPrizeFunding(run);
+  assertFactorySeriesLikeRunReadyForPrizeFunding(run);
   const selectedGameNames = resolveSelectedPrizeFundingGameNames(run, body.gameNames);
   const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
 
@@ -564,6 +571,54 @@ async function handleFundFactorySeriesPrizes(request, env, route) {
       environment: route.environment,
       runKind: "series",
       runName: route.seriesName,
+      amount: body.amount.trim(),
+      selectedGameNames,
+    },
+  );
+
+  return buildJsonResponse(
+    request,
+    env,
+    {
+      accepted: true,
+      selectedGameNames,
+      workflowRun,
+    },
+    202,
+  );
+}
+
+async function handleFundFactoryRotationPrizes(request, env, route) {
+  const body = await readJsonBody(request);
+  validateFactorySeriesPrizeFundingBody(body);
+
+  const github = createGitHubClient(env, body.workflowRef);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactoryRotationRunIfPresent(github, route.environment, route.rotationName, branch);
+
+  if (!run) {
+    return buildJsonResponse(
+      request,
+      env,
+      { error: resolveMissingRotationRunMessage(route.environment, route.rotationName) },
+      404,
+    );
+  }
+
+  assertFactorySeriesLikeRunReadyForPrizeFunding(run);
+  const selectedGameNames = resolveSelectedPrizeFundingGameNames(run, body.gameNames);
+  const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
+
+  if (!inputRecord) {
+    return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
+  }
+
+  const workflowRun = await dispatchFactoryPrizeFundingWorkflow(
+    resolveWorkflowGitHubClient(github, inputRecord, body),
+    {
+      environment: route.environment,
+      runKind: "rotation",
+      runName: route.rotationName,
       amount: body.amount.trim(),
       selectedGameNames,
     },
@@ -1153,73 +1208,128 @@ function resolveLaunchInputRequest(inputRecord) {
   return inputRecord;
 }
 
-function assertFactoryGameRunReadyForPrizeFunding(run) {
-  if (run.gameType !== "blitz") {
-    throw new HttpError(400, "Prize funding is only supported for blitz runs");
-  }
-
-  if (run.status !== "complete") {
-    throw new HttpError(409, `Game "${run.gameName}" must finish deploying before prize funding`);
-  }
-
+function resolveGamePrizeFundingReadiness(run) {
   if (!run.artifacts?.worldAddress) {
-    throw new HttpError(409, `Game "${run.gameName}" is missing a world address`);
+    return {
+      ready: false,
+      reason: `Game "${run.gameName}" is missing a world address`,
+    };
+  }
+
+  if (!hasSucceededRunStep(run.steps, GAME_PRIZE_FUNDING_STEP_ID)) {
+    return {
+      ready: false,
+      reason: `Game "${run.gameName}" must finish world configuration before prize funding`,
+    };
+  }
+
+  return { ready: true };
+}
+
+function resolveSeriesLikeGamePrizeFundingReadiness(game) {
+  if (!game.artifacts?.worldAddress) {
+    return {
+      ready: false,
+      reason: `Game "${game.gameName}" is missing a world address`,
+    };
+  }
+
+  if (!hasSucceededSeriesLikeGameStep(game.steps, SERIES_LIKE_PRIZE_FUNDING_STEP_ID)) {
+    return {
+      ready: false,
+      reason: `Game "${game.gameName}" must finish world configuration before prize funding`,
+    };
+  }
+
+  return { ready: true };
+}
+
+function resolveDefaultSeriesLikePrizeFundingGameNames(run) {
+  return run.summary.games
+    .filter((game) => {
+      const readiness = resolveSeriesLikeGamePrizeFundingReadiness(game);
+      return readiness.ready && (game.artifacts?.prizeFunding?.transfers?.length ?? 0) === 0;
+    })
+    .map((game) => game.gameName);
+}
+
+function resolveSelectedSeriesLikePrizeFundingGameNames(run, requestedGameNames) {
+  const selectedGameNames =
+    requestedGameNames.length > 0 ? requestedGameNames : resolveDefaultSeriesLikePrizeFundingGameNames(run);
+
+  if (selectedGameNames.length === 0) {
+    throw new Error(`No eligible unfunded games are ready in "${resolveSeriesLikeRunName(run)}"`);
+  }
+
+  const selectedGameNameSet = new Set(selectedGameNames);
+  const orderedGames = run.summary.games.filter((game) => selectedGameNameSet.has(game.gameName));
+
+  if (orderedGames.length !== selectedGameNameSet.size) {
+    throw new Error(`One or more selected games were not found in "${resolveSeriesLikeRunName(run)}"`);
+  }
+
+  for (const game of orderedGames) {
+    const readiness = resolveSeriesLikeGamePrizeFundingReadiness(game);
+
+    if (!readiness.ready) {
+      throw new Error(readiness.reason ?? `Game "${game.gameName}" is not ready for prize funding`);
+    }
+  }
+
+  return orderedGames.map((game) => game.gameName);
+}
+
+function assertFactoryGameRunReadyForPrizeFunding(run) {
+  const readiness = resolveGamePrizeFundingReadiness(run);
+
+  if (!readiness.ready) {
+    throw new HttpError(409, readiness.reason ?? `Game "${run.gameName}" is not ready for prize funding`);
   }
 }
 
-function assertFactorySeriesRunReadyForPrizeFunding(run) {
-  if (run.gameType !== "blitz") {
-    throw new HttpError(400, "Prize funding is only supported for blitz runs");
-  }
-
-  if (run.status !== "complete") {
-    throw new HttpError(409, `Series "${run.seriesName}" must finish deploying before prize funding`);
-  }
-
+function assertFactorySeriesLikeRunReadyForPrizeFunding(run) {
   if (!Array.isArray(run.summary?.games) || run.summary.games.length === 0) {
-    throw new HttpError(409, `Series "${run.seriesName}" does not have any games ready for prize funding`);
+    throw new HttpError(
+      409,
+      `${resolveSeriesLikeRunLabel(run)} "${resolveSeriesLikeRunName(run)}" does not have any games ready for prize funding`,
+    );
   }
 }
 
 function resolveSelectedPrizeFundingGameNames(run, requestedGameNames) {
-  const selectedGameNames =
-    Array.isArray(requestedGameNames) && requestedGameNames.length > 0
-      ? requestedGameNames.map((gameName) => gameName.trim())
-      : buildDefaultPrizeFundingGameNames(run);
-
-  if (selectedGameNames.length === 0) {
-    throw new HttpError(409, `No eligible unfunded games are ready in "${run.seriesName}"`);
+  try {
+    return resolveSelectedSeriesLikePrizeFundingGameNames(
+      run,
+      normalizeRequestedPrizeFundingGameNames(requestedGameNames),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Prize funding selection is invalid";
+    throw new HttpError(resolvePrizeFundingSelectionErrorStatus(message), message);
   }
-
-  const gamesByName = new Map(run.summary.games.map((game) => [game.gameName, game]));
-
-  for (const gameName of selectedGameNames) {
-    const game = gamesByName.get(gameName);
-
-    if (!game) {
-      throw new HttpError(400, `Game "${gameName}" was not found in "${run.seriesName}"`);
-    }
-
-    if (game.status !== "succeeded") {
-      throw new HttpError(409, `Game "${gameName}" must finish deploying before prize funding`);
-    }
-
-    if (!game.artifacts?.worldAddress) {
-      throw new HttpError(409, `Game "${gameName}" is missing a world address`);
-    }
-  }
-
-  return run.summary.games.filter((game) => selectedGameNames.includes(game.gameName)).map((game) => game.gameName);
 }
 
-function buildDefaultPrizeFundingGameNames(run) {
-  return run.summary.games
-    .filter((game) => game.status === "succeeded" && !hasPrizeFundingTransfers(game.artifacts?.prizeFunding))
-    .map((game) => game.gameName);
+function normalizeRequestedPrizeFundingGameNames(requestedGameNames) {
+  return Array.isArray(requestedGameNames) ? requestedGameNames.map((gameName) => gameName.trim()) : [];
 }
 
-function hasPrizeFundingTransfers(prizeFunding) {
-  return Array.isArray(prizeFunding?.transfers) && prizeFunding.transfers.length > 0;
+function resolveSeriesLikeRunLabel(run) {
+  return run.kind === "rotation" ? "Rotation" : "Series";
+}
+
+function resolveSeriesLikeRunName(run) {
+  return run.kind === "rotation" ? run.rotationName : run.seriesName;
+}
+
+function resolvePrizeFundingSelectionErrorStatus(message) {
+  return message.includes("not found") || message.includes("were not found") ? 400 : 409;
+}
+
+function hasSucceededRunStep(steps, stepId) {
+  return Array.isArray(steps) && steps.some((step) => step.id === stepId && step.status === "succeeded");
+}
+
+function hasSucceededSeriesLikeGameStep(steps, stepId) {
+  return Array.isArray(steps) && steps.some((step) => step.id === stepId && step.status === "succeeded");
 }
 
 function validateEnvironment(environment) {
@@ -1894,6 +2004,20 @@ function matchFactoryRotationRunRoute(pathname) {
     const rotationName = decodeURIComponent(parts[4]);
     validateEnvironment(environment);
     return { environment, rotationName, action: "nudge" };
+  }
+
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "rotation-runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "fund-prize"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const rotationName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, rotationName, action: "fund-prize" };
   }
 
   if (

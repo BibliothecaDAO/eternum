@@ -500,12 +500,13 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(onBringChildIndexerLive).toHaveBeenCalledWith("bltz-knicker-01");
   });
 
-  it("defaults series prize funding to completed unfunded games and forwards the secret", async () => {
+  it("defaults series prize funding to ready unfunded games and forwards the secret", async () => {
     const onFundPrize = vi.fn();
     const seriesRun = buildRun({
       kind: "series",
-      status: "complete",
-      summary: "Ready",
+      mode: "eternum",
+      status: "attention",
+      summary: "Needs attention",
       name: "bltz-weekend-cup",
       steps: [
         {
@@ -527,6 +528,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "succeeded",
           latestEvent: "Ready",
           currentStepId: null,
+          configReady: true,
           worldAddress: "0x111",
         },
         {
@@ -537,6 +539,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "succeeded",
           latestEvent: "Ready",
           currentStepId: null,
+          configReady: true,
           worldAddress: "0x222",
           prizeFunding: {
             transfers: [
@@ -560,6 +563,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "pending",
           latestEvent: "Pending",
           currentStepId: "configure-worlds",
+          configReady: false,
+          worldAddress: "0x333",
         },
       ],
     });
@@ -607,9 +612,11 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     const submitButton = container.querySelector('[data-testid="factory-prize-submit"]') as HTMLButtonElement | null;
 
     expect(container.textContent).toContain("Admin prize funding");
+    expect(container.textContent).toContain("trusted prize distribution address");
     expect(firstGameCheckbox?.checked).toBe(true);
     expect(secondGameCheckbox?.checked).toBe(false);
     expect(thirdGameCheckbox?.disabled).toBe(true);
+    expect(container.textContent).toContain("World config not finished");
 
     await act(async () => {
       if (!amountInput || !secretInput || !submitButton) {
@@ -627,6 +634,182 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       adminSecret: "factory-secret",
       selectedGameNames: ["bltz-weekend-cup-01"],
     });
+  });
+
+  it("shows prize funding for an incomplete game once world config has succeeded", async () => {
+    const onFundPrize = vi.fn();
+    const gameRun = buildRun({
+      mode: "eternum",
+      status: "attention",
+      summary: "Indexer failed after setup.",
+      worldAddress: "0xabc",
+      steps: [
+        {
+          id: "create-world" as const,
+          title: "Create world",
+          summary: "done",
+          workflowName: "create-world",
+          status: "succeeded" as const,
+          verification: "done",
+          latestEvent: "done",
+        },
+        {
+          id: "configure-world" as const,
+          title: "Configure world",
+          summary: "done",
+          workflowName: "configure-world",
+          status: "succeeded" as const,
+          verification: "done",
+          latestEvent: "done",
+        },
+        {
+          id: "create-indexer" as const,
+          title: "Create indexer",
+          summary: "failed",
+          workflowName: "create-indexer",
+          status: "failed" as const,
+          verification: "failed",
+          latestEvent: "failed",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="eternum"
+          runs={[gameRun]}
+          selectedRun={gameRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={onFundPrize}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const submitButton = container.querySelector('[data-testid="factory-prize-submit"]') as HTMLButtonElement | null;
+
+    expect(container.textContent).toContain("Admin prize funding");
+    expect(container.textContent).toContain("Fund this game");
+    expect(submitButton?.disabled).toBe(true);
+  });
+
+  it("shows rotation prize funding with only ready unfunded games selected by default", async () => {
+    const onFundPrize = vi.fn();
+    const rotationRun = buildRun({
+      kind: "rotation",
+      status: "attention",
+      summary: "Waiting for the next rotation check.",
+      name: "bltz-ladder-loop",
+      children: [
+        {
+          id: "rotation-child-1",
+          gameName: "bltz-ladder-loop-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "succeeded",
+          latestEvent: "Ready",
+          currentStepId: null,
+          configReady: true,
+          worldAddress: "0x111",
+        },
+        {
+          id: "rotation-child-2",
+          gameName: "bltz-ladder-loop-02",
+          seriesGameNumber: 2,
+          startTimeIso: "2026-03-18T13:00:00.000Z",
+          status: "failed",
+          latestEvent: "Indexer failed",
+          currentStepId: "create-indexers",
+          configReady: true,
+          worldAddress: "0x222",
+          prizeFunding: {
+            transfers: [
+              {
+                id: "0xpaid",
+                tokenAddress: "0x123",
+                amountRaw: "100",
+                amountDisplay: "1",
+                decimals: 18,
+                transactionHash: "0xpaid",
+                fundedAt: "2026-03-18T11:00:00.000Z",
+              },
+            ],
+          },
+        },
+        {
+          id: "rotation-child-3",
+          gameName: "bltz-ladder-loop-03",
+          seriesGameNumber: 3,
+          startTimeIso: "2026-03-18T14:00:00.000Z",
+          status: "running",
+          latestEvent: "Configuring",
+          currentStepId: "configure-worlds",
+          configReady: false,
+          worldAddress: "0x333",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[rotationRun]}
+          selectedRun={rotationRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={onFundPrize}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const firstGameCheckbox = container.querySelector(
+      '[data-testid="factory-prize-game-bltz-ladder-loop-01"]',
+    ) as HTMLInputElement | null;
+    const secondGameCheckbox = container.querySelector(
+      '[data-testid="factory-prize-game-bltz-ladder-loop-02"]',
+    ) as HTMLInputElement | null;
+    const thirdGameCheckbox = container.querySelector(
+      '[data-testid="factory-prize-game-bltz-ladder-loop-03"]',
+    ) as HTMLInputElement | null;
+
+    expect(container.textContent).toContain("Rotation games");
+    expect(firstGameCheckbox?.checked).toBe(true);
+    expect(secondGameCheckbox?.checked).toBe(false);
+    expect(thirdGameCheckbox?.disabled).toBe(true);
   });
 
   it("stops auto retry from the watch action bar for stalled multi-game runs", async () => {

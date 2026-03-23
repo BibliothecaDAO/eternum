@@ -114,6 +114,13 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
         currentStepId: "configure-worlds",
         latestEvent: "Applying config.",
         status: "running",
+        steps: [
+          {
+            id: "configure-worlds",
+            status: "succeeded",
+            latestEvent: "Applied config.",
+          },
+        ],
         artifacts: {
           worldAddress: "0xabc",
           indexerTier: "basic",
@@ -208,6 +215,13 @@ const buildRotationRunRecord = (
           currentStepId: "create-worlds",
           latestEvent: "Queued for setup.",
           status: "running",
+          steps: [
+            {
+              id: "configure-worlds",
+              status: "pending",
+              latestEvent: "Waiting for config.",
+            },
+          ],
           artifacts: {
             worldAddress: "0xabc",
             indexerTier: "basic",
@@ -226,6 +240,7 @@ describe("mapFactoryWorkerRun", () => {
 
     expect(run.status).toBe("waiting");
     expect(run.summary).toBe("Waiting for the next step.");
+    expect(run.worldAddress).toBeUndefined();
   });
 
   it("keeps failed steps retryable in the UI model", () => {
@@ -287,6 +302,7 @@ describe("mapFactoryWorkerRun", () => {
       gameName: "bltz-cup-01",
       seriesGameNumber: 1,
       status: "running",
+      configReady: true,
       worldAddress: "0xabc",
     });
   });

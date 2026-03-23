@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FactoryRun, FactorySeriesChildRun } from "../types";
+import {
+  canFundFactoryRunPrize,
+  isFactoryPrizeFundingChildReady,
+  resolveDefaultFactoryPrizeFundingGameNames,
+} from "../prize-funding";
 
 interface FactoryV2PrizeFundingCardProps {
   run: FactoryRun;
@@ -10,11 +15,15 @@ interface FactoryV2PrizeFundingCardProps {
 interface FactoryV2PrizeFundingSeriesGame {
   gameName: string;
   status: FactorySeriesChildRun["status"];
+  configReady: boolean;
+  worldAddress?: string;
+  isReady: boolean;
   fundedTransferCount: number;
 }
 
 interface FactoryV2PrizeFundingState {
-  kind: "game" | "series";
+  kind: "game" | "series_like";
+  gameGroupLabel: string;
   defaultSelectedGameNames: string[];
   games: FactoryV2PrizeFundingSeriesGame[];
 }
@@ -36,7 +45,7 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2Pr
     return null;
   }
 
-  const isSeriesFunding = fundingState.kind === "series";
+  const isSeriesFunding = fundingState.kind === "series_like";
   const canSubmit = isSeriesFunding ? selectedGameNames.length > 0 : true;
   const latestTransfer = resolveLatestPrizeFundingTransfer(run);
   const fundedCount = fundingState.games.filter((game) => game.fundedTransferCount > 0).length;
@@ -63,7 +72,7 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2Pr
       <div className="mx-auto max-w-sm space-y-1 text-center">
         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Admin prize funding</div>
         <p className="text-[13px] leading-5 text-black/52">
-          Send Blitz prizes to trusted prize distribution addresses after setup is complete.
+          Send prizes to each game&apos;s trusted prize distribution address as soon as world setup is ready.
         </p>
       </div>
 
@@ -110,6 +119,7 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2Pr
 
       {isSeriesFunding ? (
         <FactoryV2PrizeFundingSeriesSelector
+          gameGroupLabel={fundingState.gameGroupLabel}
           games={fundingState.games}
           selectedGameNames={selectedGameNames}
           isBusy={isBusy}
@@ -127,7 +137,7 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2Pr
         {isSeriesFunding ? (
           <p className="text-[13px] leading-5 text-black/52">
             This sends one multicall with one transfer per selected game. Already funded games stay visible so you can
-            explicitly resend them when needed.
+            explicitly resend them when needed, and games that are not ready stay visible until configuration finishes.
           </p>
         ) : (
           <p className="text-[13px] leading-5 text-black/52">
@@ -151,11 +161,13 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2Pr
 };
 
 const FactoryV2PrizeFundingSeriesSelector = ({
+  gameGroupLabel,
   games,
   selectedGameNames,
   isBusy,
   onToggleGame,
 }: {
+  gameGroupLabel: string;
   games: FactoryV2PrizeFundingSeriesGame[];
   selectedGameNames: string[];
   isBusy: boolean;
@@ -163,14 +175,15 @@ const FactoryV2PrizeFundingSeriesSelector = ({
 }) => (
   <div className="space-y-2 rounded-[20px] border border-black/8 bg-white/52 p-3">
     <div className="mx-auto max-w-sm space-y-1 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/42">Series games</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/42">{gameGroupLabel}</div>
       <p className="text-[13px] leading-5 text-black/52">
-        Completed unfunded games are selected by default. Funded games can still be reselected explicitly.
+        Eligible unfunded games are selected by default. Funded games stay reselectable and not-ready games stay
+        visible.
       </p>
     </div>
     <div className="space-y-2">
       {games.map((game) => {
-        const isSelectable = game.status === "succeeded";
+        const isSelectable = game.isReady;
         const isSelected = selectedGameNames.includes(game.gameName);
 
         return (
@@ -205,40 +218,47 @@ const FactoryV2PrizeFundingMetric = ({ label, value }: { label: string; value: s
 );
 
 function resolvePrizeFundingState(run: FactoryRun): FactoryV2PrizeFundingState | null {
-  if (run.mode !== "blitz" || run.status !== "complete") {
+  if (!canFundFactoryRunPrize(run)) {
     return null;
   }
 
   if (run.kind === "game") {
     return {
       kind: "game",
+      gameGroupLabel: "Games",
       defaultSelectedGameNames: [],
       games: [],
     };
   }
 
-  if (run.kind !== "series" || !run.children || run.children.length === 0) {
+  if (!run.children || run.children.length === 0) {
     return null;
   }
 
   const games = run.children.map((child) => ({
     gameName: child.gameName,
     status: child.status,
+    configReady: Boolean(child.configReady),
+    worldAddress: child.worldAddress,
+    isReady: isFactoryPrizeFundingChildReady(child),
     fundedTransferCount: child.prizeFunding?.transfers.length ?? 0,
   }));
 
   return {
-    kind: "series",
-    defaultSelectedGameNames: games
-      .filter((game) => game.status === "succeeded" && game.fundedTransferCount === 0)
-      .map((game) => game.gameName),
+    kind: "series_like",
+    gameGroupLabel: run.kind === "rotation" ? "Rotation games" : "Series games",
+    defaultSelectedGameNames: resolveDefaultFactoryPrizeFundingGameNames(run),
     games,
   };
 }
 
 function resolvePrizeFundingGameStatusLabel(game: FactoryV2PrizeFundingSeriesGame) {
-  if (game.status !== "succeeded") {
-    return "Setup incomplete";
+  if (!game.worldAddress) {
+    return "World not created yet";
+  }
+
+  if (!game.configReady) {
+    return "World config not finished";
   }
 
   if (game.fundedTransferCount > 0) {

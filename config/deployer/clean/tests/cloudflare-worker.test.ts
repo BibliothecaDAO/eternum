@@ -1136,7 +1136,7 @@ describe("factory worker prize funding", () => {
     expect(didCallGitHub).toBe(false);
   });
 
-  test("dispatches series prize funding with only unfunded completed games by default", async () => {
+  test("dispatches series prize funding with only ready unfunded games by default", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
@@ -1153,12 +1153,12 @@ describe("factory worker prize funding", () => {
           chain: "slot",
           gameType: "blitz",
           seriesName: "bltz-weekend-cup",
-          status: "complete",
-          executionMode: "fast_trial",
+          status: "attention",
+          executionMode: "guided_recovery",
           requestedLaunchStep: "full",
           inputPath: "inputs/slot/blitz/series/bltz-weekend-cup/101-1.json",
           latestLaunchRequestId: "101-1",
-          currentStepId: null,
+          currentStepId: "create-indexers",
           createdAt: offsetTimestamp(-60_000),
           updatedAt: offsetTimestamp(-30_000),
           workflow: {
@@ -1191,6 +1191,7 @@ describe("factory worker prize funding", () => {
                 currentStepId: null,
                 latestEvent: "Ready",
                 status: "succeeded",
+                steps: [{ id: "configure-worlds", status: "succeeded", latestEvent: "Configured" }],
                 artifacts: {
                   worldAddress: "0x111",
                 },
@@ -1204,6 +1205,7 @@ describe("factory worker prize funding", () => {
                 currentStepId: null,
                 latestEvent: "Ready",
                 status: "succeeded",
+                steps: [{ id: "configure-worlds", status: "succeeded", latestEvent: "Configured" }],
                 artifacts: {
                   worldAddress: "0x222",
                   prizeFunding: {
@@ -1230,7 +1232,10 @@ describe("factory worker prize funding", () => {
                 currentStepId: "configure-worlds",
                 latestEvent: "Configuring",
                 status: "running",
-                artifacts: {},
+                steps: [{ id: "configure-worlds", status: "running", latestEvent: "Configuring" }],
+                artifacts: {
+                  worldAddress: "0x333",
+                },
               },
             ],
           },
@@ -1289,6 +1294,356 @@ describe("factory worker prize funding", () => {
     expect(dispatchBody.inputs.run_name).toBe("bltz-weekend-cup");
     expect(dispatchBody.inputs.prize_amount).toBe("250");
     expect(dispatchBody.inputs.selected_games_json).toBe(JSON.stringify(["bltz-weekend-cup-01"]));
+  });
+
+  test("dispatches game prize funding for an incomplete eternum run once world configuration succeeds", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/eternum/etrn-prize-run.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "game",
+          runId: "slot.eternum:etrn-prize-run",
+          environment: "slot.eternum",
+          chain: "slot",
+          gameType: "eternum",
+          gameName: "etrn-prize-run",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/eternum/etrn-prize-run/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-indexer",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [
+            {
+              id: "create-world",
+              title: "Create world",
+              status: "succeeded",
+              workflowStepName: "Create world",
+              latestEvent: "Created",
+            },
+            {
+              id: "configure-world",
+              title: "Configure world",
+              status: "succeeded",
+              workflowStepName: "Configure world",
+              latestEvent: "Configured",
+            },
+            {
+              id: "create-indexer",
+              title: "Create indexer",
+              status: "failed",
+              workflowStepName: "Create indexer",
+              latestEvent: "Indexer failed",
+            },
+          ],
+          artifacts: {
+            worldAddress: "0x111",
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/inputs/slot/eternum/etrn-prize-run/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.eternum",
+          gameName: "etrn-prize-run",
+          request: {
+            environmentId: "slot.eternum",
+            gameName: "etrn-prize-run",
+            startTime: "2026-03-22T16:00:00.000Z",
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.eternum/etrn-prize-run/actions/fund-prize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-prize-funding.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.environment).toBe("slot.eternum");
+    expect(dispatchBody.inputs.run_kind).toBe("game");
+    expect(dispatchBody.inputs.run_name).toBe("etrn-prize-run");
+    expect(dispatchBody.inputs.selected_games_json).toBe("");
+  });
+
+  test("rejects game prize funding until world configuration succeeds", async () => {
+    let didDispatchFundingWorkflow = false;
+    globalThis.fetch = async (url, init) => {
+      if (
+        String(url).includes("/contents/runs/slot/eternum/etrn-prize-pending.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "game",
+          runId: "slot.eternum:etrn-prize-pending",
+          environment: "slot.eternum",
+          chain: "slot",
+          gameType: "eternum",
+          gameName: "etrn-prize-pending",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/eternum/etrn-prize-pending/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "configure-world",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [
+            {
+              id: "create-world",
+              title: "Create world",
+              status: "succeeded",
+              workflowStepName: "Create world",
+              latestEvent: "Created",
+            },
+            {
+              id: "configure-world",
+              title: "Configure world",
+              status: "running",
+              workflowStepName: "Configure world",
+              latestEvent: "Configuring",
+            },
+          ],
+          artifacts: {
+            worldAddress: "0x111",
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
+        didDispatchFundingWorkflow = true;
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.eternum/etrn-prize-pending/actions/fund-prize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Game "etrn-prize-pending" must finish world configuration before prize funding',
+    });
+    expect(didDispatchFundingWorkflow).toBe(false);
+  });
+
+  test("dispatches rotation prize funding with only ready unfunded games by default", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/eternum/rotations/etrn-season-loop.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.eternum:rotation:etrn-season-loop",
+          environment: "slot.eternum",
+          chain: "slot",
+          gameType: "eternum",
+          rotationName: "etrn-season-loop",
+          seriesName: "etrn-season-loop",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "create-indexers",
+          inputPath: "inputs/slot/eternum/rotations/etrn-season-loop/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-indexers",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          autoRetry: {
+            enabled: true,
+            intervalMinutes: 15,
+          },
+          evaluation: {
+            intervalMinutes: 30,
+            nextEvaluationAt: offsetTimestamp(15 * 60_000),
+          },
+          steps: [],
+          summary: {
+            environment: "slot.eternum",
+            chain: "slot",
+            gameType: "eternum",
+            rotationName: "etrn-season-loop",
+            seriesName: "etrn-season-loop",
+            firstGameStartTime: 1774195200,
+            firstGameStartTimeIso: "2026-03-22T16:00:00.000Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 30,
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [
+              {
+                gameName: "etrn-season-loop-01",
+                startTime: 1774195200,
+                startTimeIso: "2026-03-22T16:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 1,
+                currentStepId: null,
+                latestEvent: "Ready",
+                status: "succeeded",
+                steps: [{ id: "configure-worlds", status: "succeeded", latestEvent: "Configured" }],
+                artifacts: {
+                  worldAddress: "0x111",
+                },
+              },
+              {
+                gameName: "etrn-season-loop-02",
+                startTime: 1774198800,
+                startTimeIso: "2026-03-22T17:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 2,
+                currentStepId: "create-indexers",
+                latestEvent: "Indexer failed",
+                status: "failed",
+                steps: [{ id: "configure-worlds", status: "succeeded", latestEvent: "Configured" }],
+                artifacts: {
+                  worldAddress: "0x222",
+                  prizeFunding: {
+                    transfers: [
+                      {
+                        id: "0xpaid",
+                        tokenAddress: "0x123",
+                        amountRaw: "100",
+                        amountDisplay: "1",
+                        decimals: 18,
+                        transactionHash: "0xpaid",
+                        fundedAt: "2026-03-18T11:00:00.000Z",
+                      },
+                    ],
+                  },
+                },
+              },
+              {
+                gameName: "etrn-season-loop-03",
+                startTime: 1774202400,
+                startTimeIso: "2026-03-22T18:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 3,
+                currentStepId: "configure-worlds",
+                latestEvent: "Configuring",
+                status: "running",
+                steps: [{ id: "configure-worlds", status: "running", latestEvent: "Configuring" }],
+                artifacts: {
+                  worldAddress: "0x333",
+                },
+              },
+            ],
+          },
+          artifacts: {
+            summaryPath: ".context/game-launch/rotation-slot-eternum-etrn-season-loop.json",
+            seriesCreated: true,
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/inputs/slot/eternum/rotations/etrn-season-loop/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.eternum",
+          rotationName: "etrn-season-loop",
+          request: {
+            environmentId: "slot.eternum",
+            rotationName: "etrn-season-loop",
+            firstGameStartTime: "2026-03-22T16:00:00.000Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 30,
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs/slot.eternum/etrn-season-loop/actions/fund-prize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-prize-funding.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.environment).toBe("slot.eternum");
+    expect(dispatchBody.inputs.run_kind).toBe("rotation");
+    expect(dispatchBody.inputs.run_name).toBe("etrn-season-loop");
+    expect(dispatchBody.inputs.selected_games_json).toBe(JSON.stringify(["etrn-season-loop-01"]));
   });
 });
 

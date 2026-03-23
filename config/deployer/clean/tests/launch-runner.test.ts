@@ -40,6 +40,7 @@ const waitForFactoryWorldProfileMock = mock(async () => ({
   worldAddress: "0xworld",
   contractsBySelector: {},
 }));
+const resolveFactoryWorldProfileMock = mock(async () => null);
 const writeLaunchSummaryMock = mock(() => "/tmp/launch-summary.json");
 const resolveFactoryWorldConfigStepsMock = mock(() => []);
 const executeConfigStepsMock = mock(async ({ mode }: { mode?: string }) => ({
@@ -155,6 +156,7 @@ mock.module("../factory/discovery", () => ({
   isZeroAddress: () => false,
   patchManifestWithFactory: (manifest: unknown) => manifest,
   resolvePrizeDistributionSystemsAddress: () => "0xprize",
+  resolveFactoryWorldProfile: resolveFactoryWorldProfileMock,
   waitForFactoryWorldProfile: waitForFactoryWorldProfileMock,
 }));
 
@@ -205,6 +207,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     syncPaymasterPolicyMock.mockClear();
     createBanksMock.mockClear();
     waitForFactoryWorldProfileMock.mockClear();
+    resolveFactoryWorldProfileMock.mockClear();
     writeLaunchSummaryMock.mockClear();
     resolveFactoryWorldConfigStepsMock.mockClear();
     resolveFactoryWorldConfigStepsMock.mockImplementation(() => []);
@@ -264,6 +267,102 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(waitForTransactionMock.mock.calls).toHaveLength(5);
     expect(createGameDelayMock).not.toHaveBeenCalled();
     expect(summary.createGameTxHash).toBe("0xcreate5");
+  });
+
+  test("skips create_game when factory SQL already shows the world before the first attempt", async () => {
+    resolveFactoryWorldProfileMock.mockImplementationOnce(async () => ({
+      worldAddress: "0xexistingworld",
+      contractsBySelector: {},
+    }));
+
+    const summary = await runLaunchStep({
+      environmentId: "slot.blitz",
+      stepId: "create-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(createGameExecuteMock).not.toHaveBeenCalled();
+    expect(summary.worldAddress).toBe("0xexistingworld");
+    expect(summary.createGameTxHash).toBeUndefined();
+  });
+
+  test("stops create_game retries once factory SQL shows the world", async () => {
+    resolveFactoryWorldProfileMock
+      .mockImplementationOnce(async () => null)
+      .mockImplementationOnce(async () => ({
+        worldAddress: "0xexistingworld",
+        contractsBySelector: {},
+      }));
+
+    const summary = await runLaunchStep({
+      environmentId: "slot.blitz",
+      stepId: "create-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
+    expect(waitForTransactionMock).toHaveBeenCalledTimes(1);
+    expect(summary.worldAddress).toBe("0xexistingworld");
+    expect(summary.createGameTxHash).toBe("0xcreate1");
+  });
+
+  test("treats an already completed create_game as success when factory SQL already shows the world", async () => {
+    createGameExecuteMock.mockImplementationOnce(async () => {
+      throw new Error("deployment already completed");
+    });
+    resolveFactoryWorldProfileMock
+      .mockImplementationOnce(async () => null)
+      .mockImplementationOnce(async () => ({
+        worldAddress: "0xexistingworld",
+        contractsBySelector: {},
+      }));
+
+    const summary = await runLaunchStep({
+      environmentId: "slot.blitz",
+      stepId: "create-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(resolveFactoryWorldProfileMock).toHaveBeenCalledWith("slot", "alpha", "https://api.cartridge.gg");
+    expect(summary.worldAddress).toBe("0xexistingworld");
+    expect(summary.createGameTxHash).toBeUndefined();
+  });
+
+  test("keeps failing create_game when the duplicate message cannot be verified in factory SQL", async () => {
+    createGameExecuteMock.mockImplementationOnce(async () => {
+      throw new Error("deployment already completed");
+    });
+    resolveFactoryWorldProfileMock.mockImplementationOnce(async () => null).mockImplementationOnce(async () => null);
+
+    await expect(
+      runLaunchStep({
+        environmentId: "slot.blitz",
+        stepId: "create-world",
+        gameName: "alpha",
+        startTime,
+        rpcUrl: "https://rpc.example",
+        factoryAddress,
+        accountAddress,
+        privateKey,
+      }),
+    ).rejects.toThrow("deployment already completed");
+
+    expect(resolveFactoryWorldProfileMock).toHaveBeenCalledWith("slot", "alpha", "https://api.cartridge.gg");
   });
 
   test("runs the village pass role bundle for mainnet eternum and stores one tx hash", async () => {

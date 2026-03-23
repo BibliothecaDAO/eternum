@@ -146,6 +146,13 @@ export interface FactoryWorkerSeriesGameRecord {
   currentStepId: FactoryWorkerSeriesLaunchStepId | null;
   latestEvent: string;
   status: FactoryWorkerRunStepStatus;
+  steps?: Array<{
+    id: FactoryWorkerSeriesLaunchStepId;
+    status: FactoryWorkerRunStepStatus;
+    latestEvent: string;
+    updatedAt?: string;
+    errorMessage?: string;
+  }>;
   artifacts: {
     worldAddress?: string;
     indexerCreated?: boolean;
@@ -365,6 +372,14 @@ interface FundFactoryGamePrizeRequest {
 interface FundFactorySeriesPrizesRequest {
   environment: FactoryWorkerEnvironmentId;
   seriesName: string;
+  amount: string;
+  gameNames?: string[];
+  adminSecret: string;
+}
+
+interface FundFactoryRotationPrizesRequest {
+  environment: FactoryWorkerEnvironmentId;
+  rotationName: string;
   amount: string;
   gameNames?: string[];
   adminSecret: string;
@@ -599,6 +614,15 @@ export async function fundFactoryGamePrize(request: FundFactoryGamePrizeRequest)
 export async function fundFactorySeriesPrizes(request: FundFactorySeriesPrizesRequest): Promise<void> {
   const { adminSecret, environment, seriesName, amount, gameNames } = request;
   await fetchFactoryWorkerJson(`${buildFactorySeriesRunPath(environment, seriesName)}/actions/fund-prize`, {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify({ amount, gameNames }),
+  });
+}
+
+export async function fundFactoryRotationPrizes(request: FundFactoryRotationPrizesRequest): Promise<void> {
+  const { adminSecret, environment, rotationName, amount, gameNames } = request;
+  await fetchFactoryWorkerJson(`${buildFactoryRotationRunPath(environment, rotationName)}/actions/fund-prize`, {
     method: "POST",
     headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
     body: JSON.stringify({ amount, gameNames }),
