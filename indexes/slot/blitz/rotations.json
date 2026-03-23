@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T21:06:01.837Z",
+  "updatedAt": "2026-03-23T21:20:57.993Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -11,7 +11,7 @@
       "path": "runs/slot/blitz/rotations/bltz-thrum-725.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-thrum-725/23422454488-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T05:13:51.023Z",
+      "updatedAt": "2026-03-23T21:20:57.993Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "create-worlds",
       "hasRunningStep": false,
@@ -31,19 +31,28 @@
           "gameName": "bltz-thrum-725-01",
           "startTime": 1774243800,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "pendingIndexerTierTarget": "pro",
+            "pendingIndexerTierRequestedAt": "2026-03-23T21:20:57.476Z"
+          }
         },
         {
           "gameName": "bltz-thrum-725-02",
           "startTime": 1774247400,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "pendingIndexerTierTarget": "pro",
+            "pendingIndexerTierRequestedAt": "2026-03-23T21:20:57.476Z"
+          }
         },
         {
           "gameName": "bltz-thrum-725-03",
           "startTime": 1774251000,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "pendingIndexerTierTarget": "pro",
+            "pendingIndexerTierRequestedAt": "2026-03-23T21:20:57.476Z"
+          }
         }
       ]
     },
