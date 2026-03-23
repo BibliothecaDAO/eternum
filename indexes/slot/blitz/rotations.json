@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T08:45:12.825Z",
+  "updatedAt": "2026-03-23T08:45:20.287Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -102,7 +102,7 @@
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23427987712-1.json",
       "status": "attention",
-      "updatedAt": "2026-03-23T08:45:12.825Z",
+      "updatedAt": "2026-03-23T08:45:20.287Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "create-worlds",
       "hasRunningStep": false,
@@ -139,7 +139,7 @@
             "indexerCreated": true,
             "indexerTier": "basic",
             "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-03-23T08:25:17.612Z"
+            "pendingIndexerTierRequestedAt": "2026-03-23T08:45:17.768Z"
           }
         },
         {
@@ -150,7 +150,7 @@
             "indexerCreated": true,
             "indexerTier": "basic",
             "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-03-23T08:25:18.600Z"
+            "pendingIndexerTierRequestedAt": "2026-03-23T08:45:18.888Z"
           }
         },
         {
