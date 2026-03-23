@@ -348,14 +348,16 @@ export async function main() {
   const EVOLUTION_INTERVAL = 10; // evolve every N ticks
   let evolving = false;
   let agentBusy = false;
+  let tickMissed = false;
 
   function runAgentTick() {
     if (agentBusy) {
-      // Let the agent finish its current turn — the next prompt() will
-      // include fresh map data. Steering mid-turn just kills in-flight
-      // tool calls ("Skipped due to queued user message") and wastes work.
+      // Don't interrupt — the agent will get a fresh tick when it finishes.
+      tickMissed = true;
       return;
     }
+
+    tickMissed = false;
 
     // Rebuild system prompt once per tick (picks up evolution/operator edits)
     agent.setSystemPrompt(buildSystemPrompt(config.dataDir));
@@ -368,10 +370,13 @@ export async function main() {
     agent.prompt(prompt).then(
       () => {
         agentBusy = false;
+        // If a tick was missed while busy, fire one immediately
+        if (tickMissed) runAgentTick();
       },
       (err) => {
         agentBusy = false;
         console.error("Agent error:", err instanceof Error ? err.message : err);
+        if (tickMissed) runAgentTick();
       },
     );
   }
