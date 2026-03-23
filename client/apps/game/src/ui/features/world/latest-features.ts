@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Removed Light Test Dropdown",
+    description:
+      "Removed the temporary top-header light override selector so world lighting follows the live cycle only, keeping gameplay UI focused and less cluttered.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
     title: "Clearer Dusk vs Evening",
     description:
       "Dusk now stays warmer while Late Evening shifts cooler with stronger moon-rim separation, making both phases easier to tell apart without sacrificing map readability.",
