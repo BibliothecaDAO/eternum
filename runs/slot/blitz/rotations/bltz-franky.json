@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23423614823-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T06:07:38.422Z",
+  "updatedAt": "2026-03-23T06:10:15.474Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -297,7 +297,9 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23423781794",
             "status": "completed",
             "conclusion": "success"
-          }
+          },
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-03-23T06:10:14.095Z"
         },
         "durationSeconds": 3600
       },
