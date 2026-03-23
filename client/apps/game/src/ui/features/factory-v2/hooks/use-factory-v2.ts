@@ -1357,7 +1357,7 @@ function buildPendingLaunchKey(pendingLaunch: FactoryPendingLaunch) {
 }
 
 function normalizePendingLaunchKey(environmentId: string, gameName: string) {
-  return `${environmentId}:${gameName.trim().toLowerCase()}`;
+  return `${environmentId}:${(gameName ?? "").trim().toLowerCase()}`;
 }
 
 function arePendingLaunchesEqual(left: FactoryPendingLaunch[], right: FactoryPendingLaunch[]) {
@@ -1380,7 +1380,7 @@ function resolveMatchingRunByName(runs: FactoryRun[], requestedName: string) {
     return null;
   }
 
-  return runs.find((run) => run.name.trim().toLowerCase() === normalizedName) ?? null;
+  return runs.find((run) => run.name?.trim().toLowerCase() === normalizedName) ?? null;
 }
 
 function buildAcceptedRun(run: FactoryRun, stepId: FactoryWorkerLaunchStepId, latestEvent: string): FactoryRun {

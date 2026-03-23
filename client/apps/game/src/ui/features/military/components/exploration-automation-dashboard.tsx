@@ -13,8 +13,9 @@ import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
 
 const formatRelativeTime = (timestamp?: number | null): string => {
   if (!timestamp) return "never";
@@ -74,13 +75,118 @@ interface ExplorerPosition {
   y: number;
 }
 
+interface ExplorerEntryRowProps {
+  entry: ExplorationAutomationEntry;
+  pos: ExplorerPosition | undefined;
+  onGoTo: (entry: ExplorationAutomationEntry) => void;
+  onRunNow: (entry: ExplorationAutomationEntry) => void;
+  onToggleActive: (id: string) => void;
+  onRemove: (entry: ExplorationAutomationEntry) => void;
+}
+
+const ExplorerEntryRow = memo(({ entry, pos, onGoTo, onRunNow, onToggleActive, onRemove }: ExplorerEntryRowProps) => {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between rounded-lg border p-2 transition-all",
+        entry.active
+          ? entry.blockedReason
+            ? "border-amber-500/30 bg-amber-500/5"
+            : "border-emerald-500/30 bg-emerald-500/5"
+          : "border-gold/20 bg-black/30",
+      )}
+    >
+      {/* Left side - info */}
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="relative shrink-0">
+          <Bot className="w-4 h-4 text-gold/70" />
+          {entry.active && !entry.blockedReason && (
+            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          )}
+        </div>
+        <div className="flex flex-col min-w-0 flex-1 gap-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-gold/90">#{entry.explorerId}</span>
+            <span className={cn("text-[10px]", getStatusColor(entry))}>{getStatusLabel(entry)}</span>
+          </div>
+          {/* Progress bar for active entries */}
+          {entry.active && (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 rounded-full bg-black/40 overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-1000",
+                    entry.blockedReason ? "bg-amber-400" : "bg-emerald-400",
+                  )}
+                  style={{ width: `${getProgressPercent(entry)}%` }}
+                />
+              </div>
+              <span className="text-[9px] text-gold/50 tabular-nums w-6 text-right">
+                {getSecondsRemaining(entry)}s
+              </span>
+            </div>
+          )}
+          {!entry.active && <span className="text-[9px] text-gold/40">Paused</span>}
+        </div>
+      </div>
+
+      {/* Right side - actions */}
+      <div className="flex items-center gap-0.5 shrink-0">
+        <button
+          type="button"
+          onClick={() => onGoTo(entry)}
+          disabled={!pos}
+          className={cn(
+            "flex items-center justify-center rounded p-1.5 transition-all",
+            pos ? "text-gold/60 hover:bg-gold/10 hover:text-gold" : "text-gold/20 cursor-not-allowed",
+          )}
+          title="Go to location"
+        >
+          <MapPin className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onRunNow(entry)}
+          className="flex items-center justify-center rounded p-1.5 text-blue-400/70 transition-all hover:bg-blue-500/10 hover:text-blue-400"
+          title="Run now"
+        >
+          <RotateCw className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onToggleActive(entry.id)}
+          className={cn(
+            "flex items-center justify-center rounded p-1.5 transition-all",
+            entry.active
+              ? "text-gold/60 hover:bg-gold/10 hover:text-gold"
+              : "text-emerald-400/70 hover:bg-emerald-500/10 hover:text-emerald-400",
+          )}
+          title={entry.active ? "Pause" : "Resume"}
+        >
+          {entry.active ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3.5 h-3.5" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(entry)}
+          className="flex items-center justify-center rounded p-1.5 text-red-400/60 transition-all hover:bg-red-500/10 hover:text-red-400"
+          title="Remove"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+});
+ExplorerEntryRow.displayName = "ExplorerEntryRow";
+
 interface ExplorationAutomationContentProps {
   onNavigate?: () => void;
   compact?: boolean;
 }
 
 const ExplorationAutomationContent = ({ onNavigate, compact = false }: ExplorationAutomationContentProps) => {
-  const entries = useExplorationAutomationStore((s) => s.entries);
+  const entries = useExplorationAutomationStore(useShallow((s) => s.entries));
+  const list = useMemo(() => Object.values(entries).toSorted((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), [entries]);
   const toggleActive = useExplorationAutomationStore((s) => s.toggleActive);
   const runNow = useExplorationAutomationStore((s) => s.runNow);
   const remove = useExplorationAutomationStore((s) => s.remove);
@@ -92,30 +198,11 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
     setup: { components },
   } = useDojo();
 
-  const list = useMemo(() => Object.values(entries).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), [entries]);
+  const listRef = useRef(list);
+  useEffect(() => { listRef.current = list; }, [list]);
 
   // Get explorer positions
   const [explorerPositions, setExplorerPositions] = useState<Record<string, ExplorerPosition>>({});
-
-  useEffect(() => {
-    if (!components) return;
-
-    const positions: Record<string, ExplorerPosition> = {};
-    list.forEach((entry) => {
-      const explorerId = Number(entry.explorerId);
-      if (!Number.isFinite(explorerId) || explorerId <= 0) return;
-
-      const entity = getEntityIdFromKeys([BigInt(explorerId)]);
-      const explorer = getComponentValue(components.ExplorerTroops, entity);
-      if (explorer?.coord) {
-        positions[entry.id] = {
-          x: Number(explorer.coord.x),
-          y: Number(explorer.coord.y),
-        };
-      }
-    });
-    setExplorerPositions(positions);
-  }, [components, list]);
 
   const handlePauseAll = useCallback(() => {
     const activeCount = list.filter((e) => e.active).length;
@@ -166,15 +253,17 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
     [runNow],
   );
 
-  const activeCount = list.filter((e) => e.active).length;
-  const pausedCount = list.filter((e) => !e.active).length;
+  const { activeCount, pausedCount } = useMemo(() => {
+    const active = list.filter((e) => e.active).length;
+    return { activeCount: active, pausedCount: list.length - active };
+  }, [list]);
 
   // Update positions periodically
   useEffect(() => {
     const interval = setInterval(() => {
       if (!components) return;
       const positions: Record<string, ExplorerPosition> = {};
-      list.forEach((entry) => {
+      listRef.current.forEach((entry) => {
         const explorerId = Number(entry.explorerId);
         if (!Number.isFinite(explorerId) || explorerId <= 0) return;
 
@@ -191,7 +280,7 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [components, list]);
+  }, [components]);
 
   // Force re-render for relative times
   const [, setTick] = useState(0);
@@ -242,108 +331,24 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
         </div>
       ) : (
         <div className="space-y-1.5">
-          {list.map((entry) => {
-            const pos = explorerPositions[entry.id];
-            return (
-              <div
-                key={entry.id}
-                className={cn(
-                  "flex items-center justify-between rounded-lg border p-2 transition-all",
-                  entry.active
-                    ? entry.blockedReason
-                      ? "border-amber-500/30 bg-amber-500/5"
-                      : "border-emerald-500/30 bg-emerald-500/5"
-                    : "border-gold/20 bg-black/30",
-                )}
-              >
-                {/* Left side - info */}
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="relative shrink-0">
-                    <Bot className="w-4 h-4 text-gold/70" />
-                    {entry.active && !entry.blockedReason && (
-                      <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    )}
-                  </div>
-                  <div className="flex flex-col min-w-0 flex-1 gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-medium text-gold/90">#{entry.explorerId}</span>
-                      <span className={cn("text-[10px]", getStatusColor(entry))}>{getStatusLabel(entry)}</span>
-                    </div>
-                    {/* Progress bar for active entries */}
-                    {entry.active && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full bg-black/40 overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all duration-1000",
-                              entry.blockedReason ? "bg-amber-400" : "bg-emerald-400",
-                            )}
-                            style={{ width: `${getProgressPercent(entry)}%` }}
-                          />
-                        </div>
-                        <span className="text-[9px] text-gold/50 tabular-nums w-6 text-right">
-                          {getSecondsRemaining(entry)}s
-                        </span>
-                      </div>
-                    )}
-                    {!entry.active && <span className="text-[9px] text-gold/40">Paused</span>}
-                  </div>
-                </div>
-
-                {/* Right side - actions */}
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleGoToExplorer(entry)}
-                    disabled={!pos}
-                    className={cn(
-                      "flex items-center justify-center rounded p-1.5 transition-all",
-                      pos ? "text-gold/60 hover:bg-gold/10 hover:text-gold" : "text-gold/20 cursor-not-allowed",
-                    )}
-                    title="Go to location"
-                  >
-                    <MapPin className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRunNow(entry)}
-                    className="flex items-center justify-center rounded p-1.5 text-blue-400/70 transition-all hover:bg-blue-500/10 hover:text-blue-400"
-                    title="Run now"
-                  >
-                    <RotateCw className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleActive(entry.id)}
-                    className={cn(
-                      "flex items-center justify-center rounded p-1.5 transition-all",
-                      entry.active
-                        ? "text-gold/60 hover:bg-gold/10 hover:text-gold"
-                        : "text-emerald-400/70 hover:bg-emerald-500/10 hover:text-emerald-400",
-                    )}
-                    title={entry.active ? "Pause" : "Resume"}
-                  >
-                    {entry.active ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(entry)}
-                    className="flex items-center justify-center rounded p-1.5 text-red-400/60 transition-all hover:bg-red-500/10 hover:text-red-400"
-                    title="Remove"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {list.map((entry) => (
+            <ExplorerEntryRow
+              key={entry.id}
+              entry={entry}
+              pos={explorerPositions[entry.id]}
+              onGoTo={handleGoToExplorer}
+              onRunNow={handleRunNow}
+              onToggleActive={toggleActive}
+              onRemove={handleRemove}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 };
 
-export const ExplorationAutomationWindow = () => {
+export const ExplorationAutomationWindow = memo(() => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(explorationAutomation));
 
@@ -358,4 +363,5 @@ export const ExplorationAutomationWindow = () => {
       <ExplorationAutomationContent compact />
     </OSWindow>
   );
-};
+});
+ExplorationAutomationWindow.displayName = "ExplorationAutomationWindow";

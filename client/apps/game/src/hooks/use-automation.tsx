@@ -13,6 +13,7 @@ import {
   DONKEY_DEFAULT_RESOURCE_PERCENT,
   type ResourceAutomationPercentages,
   type RealmAutomationExecutionSummary,
+  type RealmAutomationConfig,
 } from "./store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
@@ -87,7 +88,6 @@ export const useAutomation = () => {
     account: { account: starknetSignerAccount },
   } = useDojo();
 
-  const realms = useAutomationStore((state) => state.realms);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
   const recordStatus = useAutomationStore((state) => state.recordStatus);
@@ -206,7 +206,7 @@ export const useAutomation = () => {
       return false;
     }
 
-    const realmList = Object.values(realms).filter(
+    const realmList = Object.values(useAutomationStore.getState().realms).filter(
       (realm) => realm.entityType === "realm" || realm.entityType === "village",
     );
     if (realmList.length === 0) {
@@ -466,7 +466,6 @@ export const useAutomation = () => {
     return anyExecuted;
   }, [
     components,
-    realms,
     execute_realm_production_plan,
     recordExecution,
     recordStatus,
@@ -536,36 +535,39 @@ export const useAutomation = () => {
   }, [setNextRunTimestamp]);
 
   useEffect(() => {
-    if (isGameOver()) {
-      stopAutomation();
-      return;
-    }
+    const computeSignature = (realms: Record<string, RealmAutomationConfig>) =>
+      Object.entries(realms)
+        .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
+        .map(([realmId, realm]) => {
+          const customKeys = Object.keys(realm.customPercentages ?? {})
+            .toSorted()
+            .join(",");
+          const presetId = realm.presetId ?? "smart";
+          return `${realmId}:${presetId}:${customKeys}`;
+        })
+        .toSorted()
+        .join("|");
 
-    const signature = Object.entries(realms)
-      .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
-      .map(([realmId, realm]) => {
-        const customKeys = Object.keys(realm.customPercentages ?? {})
-          .toSorted()
-          .join(",");
-        const presetId = realm.presetId ?? "smart";
-        return `${realmId}:${presetId}:${customKeys}`;
-      })
-      .toSorted()
-      .join("|");
+    const unsub = useAutomationStore.subscribe((state, prevState) => {
+      if (state.realms === prevState.realms) return;
+      if (isGameOver()) return;
 
-    if (signature !== realmResourcesSignatureRef.current) {
-      realmResourcesSignatureRef.current = signature;
-      const currentBlockMs = getBlockTimestamp().currentBlockTimestamp * 1000;
-      if (currentBlockMs >= automationEnabledAtRef.current) {
-        lastRunBlockTimestampRef.current = currentBlockMs;
-        automationEnabledAtRef.current = currentBlockMs + PROCESS_INTERVAL_MS;
-        nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
-        setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
-        void processRealmsRef.current();
+      const newSignature = computeSignature(state.realms);
+      if (newSignature !== realmResourcesSignatureRef.current) {
+        realmResourcesSignatureRef.current = newSignature;
+        const currentBlockMs = getBlockTimestamp().currentBlockTimestamp * 1000;
+        if (currentBlockMs >= automationEnabledAtRef.current) {
+          lastRunBlockTimestampRef.current = currentBlockMs;
+          automationEnabledAtRef.current = currentBlockMs + PROCESS_INTERVAL_MS;
+          nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
+          setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+          void processRealmsRef.current();
+        }
+        scheduleNextCheckRef.current?.();
       }
-      scheduleNextCheckRef.current?.();
-    }
-  }, [realms, isGameOver, stopAutomation]);
+    });
+    return unsub;
+  }, [isGameOver]);
 
   useEffect(() => {
     if (isGameOver()) {

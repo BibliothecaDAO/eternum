@@ -13,6 +13,7 @@ import {
 import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { Bot } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 const getPresetLabel = (presetId: string): string => {
   const preset = REALM_PRESETS.find((p) => p.id === presetId);
@@ -50,8 +51,13 @@ interface ProductionAutomationContentProps {
 }
 
 const ProductionAutomationContent = ({ compact = false }: ProductionAutomationContentProps) => {
-  const realms = useAutomationStore((state) => state.realms);
+  const realms = useAutomationStore(useShallow((state) => state.realms));
   const nextRunTimestamp = useAutomationStore((state) => state.nextRunTimestamp);
+
+  const list = useMemo(
+    () => Object.values(realms).toSorted((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)),
+    [realms],
+  );
 
   // Force re-render for relative times and progress bar
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -60,14 +66,11 @@ const ProductionAutomationContent = ({ compact = false }: ProductionAutomationCo
     return () => clearInterval(interval);
   }, []);
 
-  const list = useMemo(
-    () => Object.values(realms).toSorted((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)),
-    [realms],
-  );
-
-  const activeCount = list.filter((r) => r.presetId !== "idle" && r.lastStatus?.status === "success").length;
-  const failedCount = list.filter((r) => r.lastStatus?.status === "failed").length;
-  const skippedCount = list.filter((r) => r.presetId === "idle" || r.lastStatus?.status === "skipped").length;
+  const { activeCount, failedCount, skippedCount } = useMemo(() => ({
+    activeCount: list.filter((r) => r.presetId !== "idle" && r.lastStatus?.status === "success").length,
+    failedCount: list.filter((r) => r.lastStatus?.status === "failed").length,
+    skippedCount: list.filter((r) => r.presetId === "idle" || r.lastStatus?.status === "skipped").length,
+  }), [list]);
 
   // Progress bar: time to next automation run
   const progressPercent = useMemo(() => {

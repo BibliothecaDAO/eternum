@@ -82,6 +82,9 @@ export const useExplorationAutomationRunner = () => {
   }, []);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
+  const activeEntriesRef = useRef(activeEntries);
+
+  useEffect(() => { activeEntriesRef.current = activeEntries; }, [activeEntries]);
 
   const resolveExplorerEntity = useCallback(
     (explorerId: number) => {
@@ -95,6 +98,7 @@ export const useExplorationAutomationRunner = () => {
         return { explorer };
       }
 
+      console.warn(`[ExplorationAutomation] resolveExplorerEntity: primary lookup failed for explorerId=${explorerId}, falling back to linear scan`);
       const explorerIdMap = components.ExplorerTroops.values.explorer_id;
       for (const [entitySymbol, value] of explorerIdMap.entries()) {
         if (Number(value) === explorerId) {
@@ -187,7 +191,7 @@ export const useExplorationAutomationRunner = () => {
 
       // Use wall clock time for scheduling (matches store and UI expectations)
       const nowMs = Date.now();
-      const due = activeEntries.filter((entry) => {
+      const due = activeEntriesRef.current.filter((entry) => {
         const nextRunAt = normalizeNextRunAt(entry.nextRunAt);
         if (nextRunAt === null) return true;
         return nextRunAt <= nowMs;
@@ -388,7 +392,6 @@ export const useExplorationAutomationRunner = () => {
     };
   }, [
     account,
-    activeEntries,
     components,
     isSeasonOver,
     network?.contractComponents,

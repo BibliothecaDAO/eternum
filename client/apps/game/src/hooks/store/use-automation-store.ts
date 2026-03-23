@@ -380,14 +380,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             },
           };
         }),
-      getRealmConfig: (realmId) => {
-        const realm = get().realms[realmId];
-        if (!realm) return undefined;
-        return {
-          ...realm,
-          customPercentages: sanitizeCustomPercentages(realm.customPercentages, realm.entityType),
-        };
-      },
+      getRealmConfig: (realmId) => get().realms[realmId],
       setHydrated: (value) => set({ hydrated: value }),
       pruneForGame: (gameId) =>
         set((state) => {
