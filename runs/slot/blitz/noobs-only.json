@@ -11,9 +11,9 @@
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/blitz/noobs-only/23420483035-1.json",
   "latestLaunchRequestId": "23420483035-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "create-world",
   "createdAt": "2026-03-23T03:31:00.205Z",
-  "updatedAt": "2026-03-23T03:45:05.063Z",
+  "updatedAt": "2026-03-23T03:46:14.846Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -58,19 +58,27 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-23T03:45:05.063Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-23T03:45:05.063Z",
+      "finishedAt": "2026-03-23T03:46:14.846Z"
     }
   ],
-  "artifacts": {},
-  "activeLease": {
-    "launchRequestId": "23420483035-1",
-    "workflowRunId": 23420483035,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-23T03:45:05.063Z",
-    "expiresAt": "2026-03-23T04:30:05.063Z"
+  "artifacts": {
+    "summaryPath": ".context/game-launch/slot-blitz-noobs-only.json",
+    "durationSeconds": 5400,
+    "worldAddress": "0x05b769e8cdd8ed9d0b6a4a55b5d36bcc915e5c81c33f292c38c56bd4a93256b2",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerWorkflowRun": {
+      "workflowFile": "factory-torii-deployer.yml",
+      "ref": "codex/factory-v2-rotation-review",
+      "runId": 23420514529,
+      "runNumber": 819,
+      "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23420514529",
+      "status": "completed",
+      "conclusion": "success"
+    }
   }
 }
