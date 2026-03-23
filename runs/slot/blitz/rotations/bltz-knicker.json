@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23415890438-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T00:12:41.396Z",
-  "updatedAt": "2026-03-23T00:19:13.838Z",
+  "updatedAt": "2026-03-23T00:19:24.379Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-23T00:34:06.173Z",
-    "lastEvaluatedAt": "2026-03-23T00:19:06.173Z"
+    "nextEvaluationAt": "2026-03-23T00:34:24.379Z",
+    "lastEvaluatedAt": "2026-03-23T00:19:24.379Z"
   },
   "steps": [
     {
@@ -113,7 +113,7 @@
         "startTimeIso": "2026-03-23T01:00:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed grant-village-pass-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -283,7 +283,7 @@
         "startTimeIso": "2026-03-23T02:00:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed grant-village-pass-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -453,7 +453,7 @@
         "startTimeIso": "2026-03-23T03:00:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed grant-village-pass-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -623,7 +623,7 @@
         "startTimeIso": "2026-03-23T04:00:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed grant-village-pass-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -793,7 +793,7 @@
         "startTimeIso": "2026-03-23T05:00:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed grant-village-pass-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -965,13 +965,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-knicker.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T00:12:59.485Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23415890438-1",
-    "workflowRunId": 23415890438,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-village-pass-roles",
-    "acquiredAt": "2026-03-23T00:19:13.838Z",
-    "expiresAt": "2026-03-23T01:04:13.838Z"
   }
 }
