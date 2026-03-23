@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T19:56:00.446Z",
+  "updatedAt": "2026-03-23T20:11:03.153Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -102,7 +102,7 @@
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23455079190-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T19:56:00.446Z",
+      "updatedAt": "2026-03-23T20:11:03.153Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "wait-for-factory-indexes",
       "hasRunningStep": false,
@@ -127,7 +127,7 @@
             "indexerCreated": true,
             "indexerTier": "basic",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T19:55:56.183Z"
+            "pendingIndexerTierRequestedAt": "2026-03-23T20:10:56.548Z"
           }
         },
         {
@@ -138,7 +138,7 @@
             "indexerCreated": true,
             "indexerTier": "basic",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T19:55:57.560Z"
+            "pendingIndexerTierRequestedAt": "2026-03-23T20:10:59.476Z"
           }
         },
         {
@@ -149,7 +149,7 @@
             "indexerCreated": true,
             "indexerTier": "basic",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T19:55:58.868Z"
+            "pendingIndexerTierRequestedAt": "2026-03-23T20:11:01.120Z"
           }
         },
         {
