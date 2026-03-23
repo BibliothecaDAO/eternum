@@ -1,0 +1,29 @@
+{
+  "name": "@bibliothecadao/amm-indexer",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "apibara dev",
+    "build": "apibara build",
+    "start": "apibara start",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "api:dev": "tsx api/server.ts"
+  },
+  "dependencies": {
+    "@apibara/indexer": "2.1.0-beta.58",
+    "@apibara/starknet": "2.1.0-beta.58",
+    "@apibara/plugin-drizzle": "2.1.0-beta.57",
+    "apibara": "2.1.0-beta.57",
+    "drizzle-orm": "^0.39.0",
+    "pg": "^8.13.0",
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "^5.4.0",
+    "tsx": "^4.0.0"
+  }
+}
