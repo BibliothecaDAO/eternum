@@ -11,9 +11,9 @@
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/blitz/noobs-only/23420483035-1.json",
   "latestLaunchRequestId": "23420483035-1",
-  "currentStepId": "create-world",
+  "currentStepId": "create-indexer",
   "createdAt": "2026-03-23T03:31:00.205Z",
-  "updatedAt": "2026-03-23T03:45:01.415Z",
+  "updatedAt": "2026-03-23T03:45:05.063Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -58,10 +58,19 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-23T03:45:05.063Z"
     }
   ],
-  "artifacts": {}
+  "artifacts": {},
+  "activeLease": {
+    "launchRequestId": "23420483035-1",
+    "workflowRunId": 23420483035,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-03-23T03:45:05.063Z",
+    "expiresAt": "2026-03-23T04:30:05.063Z"
+  }
 }
