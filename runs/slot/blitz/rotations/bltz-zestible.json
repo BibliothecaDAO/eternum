@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23461904125-1.json",
   "latestLaunchRequestId": "23461904125-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": null,
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-23T22:00:31.407Z",
+  "updatedAt": "2026-03-23T22:01:36.550Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-23T22:15:22.631Z",
-    "lastEvaluatedAt": "2026-03-23T22:00:22.631Z"
+    "nextEvaluationAt": "2026-03-23T22:16:36.550Z",
+    "lastEvaluatedAt": "2026-03-23T22:01:36.550Z"
   },
   "steps": [
     {
@@ -82,10 +82,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-23T22:00:31.407Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-03-23T22:00:31.407Z",
+      "finishedAt": "2026-03-23T22:01:36.550Z"
     }
   ],
   "summary": {
@@ -114,7 +115,7 @@
         "startTimeIso": "2026-03-23T22:10:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -266,15 +267,32 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T22:00:46.625Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x01b321ec33a4d028706e75739a9cee0d5e15a15081ae25c2a254316ba9b50584",
           "createGameTxHash": "0x49f62056a4f7b40339e152e9488b6aeb82a4dc58a15942b4b240f2489910982",
           "configureTxHash": "0x35fbe472530190c631164fddde73541f9f685010c7c46b320d4fbc2cd888f6a",
-          "lootChestRoleTxHash": "0x6b4ea1d72c6284f2278193bd00ed31f78295dfa0855f739334c6e8450e3a025"
+          "lootChestRoleTxHash": "0x6b4ea1d72c6284f2278193bd00ed31f78295dfa0855f739334c6e8450e3a025",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-zestible-01/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-23T22:00:46.624Z",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-zestible-01",
+            "worldAddress": "0x01b321ec33a4d028706e75739a9cee0d5e15a15081ae25c2a254316ba9b50584",
+            "tier": "basic",
+            "externalContracts": []
+          }
         },
         "durationSeconds": 3600
       },
@@ -284,7 +302,7 @@
         "startTimeIso": "2026-03-23T23:10:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -436,15 +454,32 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T22:01:02.762Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x01db0eacae21676062780fff810cb34901f80bf4478758d583be3451aa00d0b7",
           "createGameTxHash": "0x78a5ef0ef78826b5aed1a4129cdf6b5b26dc8897a21b7cb143348ae38cac167",
           "configureTxHash": "0x1bbb53beabc3ee832e407dedeb58103cacd836d0fd7427eafbd7e77616003cd",
-          "lootChestRoleTxHash": "0x7548a2037a60b4ddb30e47b0eecbe30893cdccdcd0784d8b1d1531b44ff070e"
+          "lootChestRoleTxHash": "0x7548a2037a60b4ddb30e47b0eecbe30893cdccdcd0784d8b1d1531b44ff070e",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-zestible-02/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-23T22:01:02.761Z",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-zestible-02",
+            "worldAddress": "0x01db0eacae21676062780fff810cb34901f80bf4478758d583be3451aa00d0b7",
+            "tier": "basic",
+            "externalContracts": []
+          }
         },
         "durationSeconds": 3600
       },
@@ -454,7 +489,7 @@
         "startTimeIso": "2026-03-24T00:10:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -606,15 +641,32 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T22:01:12.823Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x0747dd212f5102bfdc8f7939c37cf3bfabc9e82b03c8e17fcfbb8ba6ae60eb3e",
           "createGameTxHash": "0x3432795c31002b75f353b14c54291f7c0d6c2348f259e0e5dd9c941c3115adc",
           "configureTxHash": "0x2c4fd26710f6ed544dbc81b9c87d5ccc8671cce8376f4acde964eb355829475",
-          "lootChestRoleTxHash": "0x121529ca1aa82638c67893514dac08927b7378b22f0227a2dace7c756f98a92"
+          "lootChestRoleTxHash": "0x121529ca1aa82638c67893514dac08927b7378b22f0227a2dace7c756f98a92",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-zestible-03/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-23T22:01:12.822Z",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-zestible-03",
+            "worldAddress": "0x0747dd212f5102bfdc8f7939c37cf3bfabc9e82b03c8e17fcfbb8ba6ae60eb3e",
+            "tier": "basic",
+            "externalContracts": []
+          }
         },
         "durationSeconds": 3600
       },
@@ -624,7 +676,7 @@
         "startTimeIso": "2026-03-24T01:10:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -776,15 +828,32 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T22:01:24.052Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x0730922442db427815293e4a7a55757509a7296d335ce1cc45b078c5e1252e65",
           "createGameTxHash": "0x741540c0b9bfa44aef2705c250acc80befeb5121f53bfe3ecf3b5708f042e02",
           "configureTxHash": "0x527ac47a8475307926e6b7f107c9b3f2a278be8ca13e81cae63b769933552f1",
-          "lootChestRoleTxHash": "0x6c25aba2f06627beea21c411d11a61371402f372f7133d0296e20c4ee7ebb2a"
+          "lootChestRoleTxHash": "0x6c25aba2f06627beea21c411d11a61371402f372f7133d0296e20c4ee7ebb2a",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-zestible-04/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-23T22:01:24.052Z",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-zestible-04",
+            "worldAddress": "0x0730922442db427815293e4a7a55757509a7296d335ce1cc45b078c5e1252e65",
+            "tier": "basic",
+            "externalContracts": []
+          }
         },
         "durationSeconds": 3600
       },
@@ -794,7 +863,7 @@
         "startTimeIso": "2026-03-24T02:10:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -946,15 +1015,32 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-23T22:01:35.119Z"
           }
         ],
         "artifacts": {
           "worldAddress": "0x06e0a1710964a6e8b4a14cba34756f0b7eaa9546512abccfc8df6d58b515cef3",
           "createGameTxHash": "0x7f55523252535e2855a70b354118203d3354577eefdda06cc8ef6432aa4b994",
           "configureTxHash": "0x1b837ed6d9ec192af00d3c5152188d8b1704bf32ea4a478127d0131c709aac",
-          "lootChestRoleTxHash": "0x271f784af631795edc0d24a40d32c1c7f8397cc4c6527fe5acd76a95349f80"
+          "lootChestRoleTxHash": "0x271f784af631795edc0d24a40d32c1c7f8397cc4c6527fe5acd76a95349f80",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-zestible-05/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-23T22:01:35.119Z",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-zestible-05",
+            "worldAddress": "0x06e0a1710964a6e8b4a14cba34756f0b7eaa9546512abccfc8df6d58b515cef3",
+            "tier": "basic",
+            "externalContracts": []
+          }
         },
         "durationSeconds": 3600
       }
@@ -966,13 +1052,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23461904125-1",
-    "workflowRunId": 23461904125,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-23T22:00:31.407Z",
-    "expiresAt": "2026-03-23T22:45:31.407Z"
   }
 }
