@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Village Militia Claim Hides",
+    description:
+      "Fixed village timers so once militia is claimed, the claim action disappears instead of staying available for another click.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
     title: "Tribe Controls Spacing Polish",
     description:
       "Refined Tribe action controls with cleaner button/icon spacing and sizing, including a clearer create-tribe form flow and tighter Members/Invites action alignment in the detail panel.",
