@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T22:00:31.407Z",
+  "updatedAt": "2026-03-23T22:01:36.550Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -214,11 +214,10 @@
       "path": "runs/slot/blitz/rotations/bltz-zestible.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23461904125-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T22:00:31.407Z",
+      "updatedAt": "2026-03-23T22:01:36.550Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-03-23T22:45:31.407Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -227,39 +226,59 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-23T22:15:22.631Z",
-        "lastEvaluatedAt": "2026-03-23T22:00:22.631Z"
+        "nextEvaluationAt": "2026-03-23T22:16:36.550Z",
+        "lastEvaluatedAt": "2026-03-23T22:01:36.550Z"
       },
       "games": [
         {
           "gameName": "bltz-zestible-01",
           "startTime": 1774303800,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-23T22:00:46.624Z"
+          }
         },
         {
           "gameName": "bltz-zestible-02",
           "startTime": 1774307400,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-23T22:01:02.761Z"
+          }
         },
         {
           "gameName": "bltz-zestible-03",
           "startTime": 1774311000,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-23T22:01:12.822Z"
+          }
         },
         {
           "gameName": "bltz-zestible-04",
           "startTime": 1774314600,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-23T22:01:24.052Z"
+          }
         },
         {
           "gameName": "bltz-zestible-05",
           "startTime": 1774318200,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-23T22:01:35.119Z"
+          }
         }
       ]
     }
