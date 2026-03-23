@@ -10,6 +10,41 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Brighter Late Evening Override",
+    description:
+      "Moved the Late Evening light-test point closer to dusk so this phase remains readable while still feeling distinct from daylight.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Night Visibility Floor",
+    description:
+      "Adjusted deep-night and evening lighting baselines to preserve day-phase contrast while keeping late-cycle gameplay readable instead of dropping into near-black visibility.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Late Evening Test",
+    description:
+      "Adjusted the Late Evening light-test preset to sit closer to dusk so evening validation is easier without dropping into near-night darkness.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Edge Phase Lighting",
+    description:
+      "Adjusted Early Hours and Late Evening light-test presets so those two phase overrides stay brighter and easier to inspect while validating world readability.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Light Phase Test Selector",
+    description:
+      "Added a top-header light phase selector so you can force Early Hours, Dawn, Morning, Afternoon, Dusk, or Late Evening lighting while validating world visibility and atmosphere.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-23",
     title: "Stable First Map Camera",
     description:
       "World map now opens in its intended tactical camera framing on the first load, so it no longer starts in a close-up offset view before settling after a scene switch.",

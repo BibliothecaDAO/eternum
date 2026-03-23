@@ -91,16 +91,16 @@ export class DayNightCycleManager {
   private readonly timeOfDayPresets: { [key: string]: TimeOfDayColors } = {
     deepNight: {
       // 0, 100
-      skyColor: 0x24153c,
-      groundColor: 0x12081f,
-      sunColor: 0x7b5fd6,
-      ambientColor: 0x38245d,
-      fogColor: 0x271847,
-      hemisphereIntensity: 0.85,
-      sunIntensity: 1.6,
-      ambientIntensity: 0.38,
+      skyColor: 0x3a2758,
+      groundColor: 0x1f1233,
+      sunColor: 0x9b7ee8,
+      ambientColor: 0x5d4588,
+      fogColor: 0x433164,
+      hemisphereIntensity: 1.0,
+      sunIntensity: 2.2,
+      ambientIntensity: 0.52,
       fogNear: 15,
-      fogFar: 52,
+      fogFar: 56,
     },
     dawn: {
       // 12.5
@@ -143,16 +143,16 @@ export class DayNightCycleManager {
     },
     evening: {
       // 87.5
-      skyColor: 0x55357a,
-      groundColor: 0x2b1845,
-      sunColor: 0xaf8cf5,
-      ambientColor: 0x694f98,
-      fogColor: 0x54357a,
-      hemisphereIntensity: 0.8,
-      sunIntensity: 1.8,
-      ambientIntensity: 0.4,
+      skyColor: 0x6a4a92,
+      groundColor: 0x3d275f,
+      sunColor: 0xc29eff,
+      ambientColor: 0x8269af,
+      fogColor: 0x70509a,
+      hemisphereIntensity: 1.0,
+      sunIntensity: 2.35,
+      ambientIntensity: 0.52,
       fogNear: 20,
-      fogFar: 48,
+      fogFar: 52,
     },
   };
 
