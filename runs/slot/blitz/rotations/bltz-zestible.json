@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23463679403-1.json",
   "latestLaunchRequestId": "23463679403-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": null,
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-23T22:42:49.143Z",
+  "updatedAt": "2026-03-23T22:42:54.004Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-23T22:57:40.349Z",
-    "lastEvaluatedAt": "2026-03-23T22:42:40.349Z"
+    "nextEvaluationAt": "2026-03-23T22:57:54.004Z",
+    "lastEvaluatedAt": "2026-03-23T22:42:54.004Z"
   },
   "steps": [
     {
@@ -82,10 +82,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-23T22:42:49.143Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-03-23T22:42:49.143Z",
+      "finishedAt": "2026-03-23T22:42:54.004Z"
     }
   ],
   "summary": {
@@ -1238,13 +1239,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23463679403-1",
-    "workflowRunId": 23463679403,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-23T22:42:49.143Z",
-    "expiresAt": "2026-03-23T23:27:49.143Z"
   }
 }
