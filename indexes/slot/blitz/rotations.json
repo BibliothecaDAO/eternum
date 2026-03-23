@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T06:03:34.290Z",
+  "updatedAt": "2026-03-23T06:03:47.671Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -95,11 +95,10 @@
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23423614823-1.json",
       "status": "running",
-      "updatedAt": "2026-03-23T06:03:34.290Z",
+      "updatedAt": "2026-03-23T06:03:47.671Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "grant-lootchest-roles",
-      "activeLeaseExpiresAt": "2026-03-23T06:48:34.290Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexers",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexers",
       "autoRetry": {
@@ -108,8 +107,8 @@
       },
       "evaluation": {
         "intervalMinutes": 5,
-        "nextEvaluationAt": "2026-03-23T06:08:26.430Z",
-        "lastEvaluatedAt": "2026-03-23T06:03:26.430Z"
+        "nextEvaluationAt": "2026-03-23T06:08:47.671Z",
+        "lastEvaluatedAt": "2026-03-23T06:03:47.671Z"
       },
       "games": [
         {
