@@ -10,30 +10,30 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-worlds",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23426677686-1.json",
-  "latestLaunchRequestId": "23426677686-1",
+  "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23427304744-1.json",
+  "latestLaunchRequestId": "23427304744-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T08:05:20.067Z",
+  "updatedAt": "2026-03-23T08:06:27.736Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23426677686,
+    "workflowRunId": 23427304744,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23426677686",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23427304744",
     "ref": "codex/factory-v2-rotation-review",
     "sha": "ae4d01a6dbdb88fce163ed4028131607885ea155"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-23T08:20:12.601Z",
+    "nextRetryAt": "2026-03-23T08:21:27.736Z",
     "lastRetryAt": "2026-03-23T08:05:12.601Z"
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T07:51:40.859Z",
-    "lastEvaluatedAt": "2026-03-23T07:46:40.859Z"
+    "nextEvaluationAt": "2026-03-23T08:11:27.736Z",
+    "lastEvaluatedAt": "2026-03-23T08:06:27.736Z"
   },
   "steps": [
     {
@@ -48,10 +48,7 @@
       "title": "Creating games",
       "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-franky-04\" on slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/5 via 0x242226ce...4d2deb\n[2026-03-23T07:46:36.765Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 30394-30396). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+818ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/5) failed after 799ms: RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400e\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Transaction execution has failed:\\n0: Error in the called contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nExecution failed. Failure reason:\\nError in contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nError in contract (contract address: 0x0242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb, class hash: 0x0761156a5dbb84da20f3e4072b3658c13d67e693f1155ae00f79339f786eb498, selector: 0x022a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5):\\n0x6465706c6f796d656e7420616c726561647920636f6d706c65746564 ('deployment already completed').\\n\"}\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:345:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-03-23T07:46:30.176Z",
-      "finishedAt": "2026-03-23T07:46:40.859Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-franky-04\" on slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/5 via 0x242226ce...4d2deb\n[2026-03-23T07:46:36.765Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 30394-30396). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+818ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/5) failed after 799ms: RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400e\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Transaction execution has failed:\\n0: Error in the called contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nExecution failed. Failure reason:\\nError in contract (contract address: 0x0127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec, class hash: 0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2, selector: 0x015d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad):\\nError in contract (contract address: 0x0242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb, class hash: 0x0761156a5dbb84da20f3e4072b3658c13d67e693f1155ae00f79339f786eb498, selector: 0x022a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5):\\n0x6465706c6f796d656e7420616c726561647920636f6d706c65746564 ('deployment already completed').\\n\"}\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:345:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Creating games needs attention"
     },
     {
       "id": "wait-for-factory-indexes",
