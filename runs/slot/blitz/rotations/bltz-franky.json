@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-franky",
   "seriesName": "bltz-franky",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23424366558-1.json",
   "latestLaunchRequestId": "23424366558-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T06:26:35.791Z",
+  "updatedAt": "2026-03-23T06:29:22.904Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -26,12 +26,13 @@
   },
   "autoRetry": {
     "enabled": true,
-    "intervalMinutes": 15
+    "intervalMinutes": 15,
+    "nextRetryAt": "2026-03-23T06:44:22.904Z"
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-23T06:31:32.821Z",
-    "lastEvaluatedAt": "2026-03-23T06:26:32.821Z"
+    "nextEvaluationAt": "2026-03-23T06:34:22.904Z",
+    "lastEvaluatedAt": "2026-03-23T06:29:22.904Z"
   },
   "steps": [
     {
@@ -46,10 +47,12 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-23T06:26:35.791Z"
+      "latestEvent": "Creating games failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-franky-04\" on slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/5 via 0x242226ce...4d2deb\n[2026-03-23T06:28:49.176Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 30392-30394). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+30.2s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/5) failed after 30.2s: RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400c\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      -32603: The error is not a valid RPC error: \"Post \\\"http://slot.prod.svc.us-east4/x/eternum-blitz-slot-4/katana/rpc/v0_9?raw=true\\\": net/http: request canceled (Client.Timeout exceeded while awaiting headers)\"\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:345:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-03-23T06:26:35.791Z",
+      "finishedAt": "2026-03-23T06:29:22.904Z",
+      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-franky-04\" on slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/5 via 0x242226ce...4d2deb\n[2026-03-23T06:28:49.176Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 30392-30394). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+30.2s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/5) failed after 30.2s: RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400c\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      -32603: The error is not a valid RPC error: \"Post \\\"http://slot.prod.svc.us-east4/x/eternum-blitz-slot-4/katana/rpc/v0_9?raw=true\\\": net/http: request canceled (Client.Timeout exceeded while awaiting headers)\"\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:345:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -683,9 +686,9 @@
         "startTime": 1774257600,
         "startTimeIso": "2026-03-23T09:20:00.000Z",
         "seriesGameNumber": 4,
-        "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "currentStepId": "create-worlds",
+        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400c\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      -32603: The error is not a valid RPC error: \"Post \\\"http://slot.prod.svc.us-east4/x/eternum-blitz-slot-4/katana/rpc/v0_9?raw=true\\\": net/http: request canceled (Client.Timeout exceeded while awaiting headers)\"",
+        "status": "failed",
         "configSteps": [],
         "steps": [
           {
@@ -695,8 +698,10 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "failed",
+            "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400c\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      -32603: The error is not a valid RPC error: \"Post \\\"http://slot.prod.svc.us-east4/x/eternum-blitz-slot-4/katana/rpc/v0_9?raw=true\\\": net/http: request canceled (Client.Timeout exceeded while awaiting headers)\"",
+            "updatedAt": "2026-03-23T06:29:19.240Z",
+            "errorMessage": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb\",\n        \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n        \"0x5\",\n        \"0x626c747a2d6672616e6b792d3034\",\n        \"0x12c\",\n        \"0xb4\",\n        \"0x626c747a2d6672616e6b79\",\n        \"0x4\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x400c\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x0\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      -32603: The error is not a valid RPC error: \"Post \\\"http://slot.prod.svc.us-east4/x/eternum-blitz-slot-4/katana/rpc/v0_9?raw=true\\\": net/http: request canceled (Client.Timeout exceeded while awaiting headers)\""
           },
           {
             "id": "wait-for-factory-indexes",
@@ -729,13 +734,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-franky.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T05:59:03.922Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23424366558-1",
-    "workflowRunId": 23424366558,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-23T06:26:35.791Z",
-    "expiresAt": "2026-03-23T07:11:35.791Z"
   }
 }
