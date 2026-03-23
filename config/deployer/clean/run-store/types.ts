@@ -95,8 +95,15 @@ export interface FactoryRunArtifacts {
   paymasterSynced?: boolean;
   indexerCreated?: boolean;
   indexerTier?: string;
+  indexerUrl?: string;
+  indexerVersion?: string;
+  indexerBranch?: string;
+  lastIndexerDescribeAt?: string;
   pendingIndexerTierTarget?: string;
   pendingIndexerTierRequestedAt?: string;
+  lastIndexerTierDispatchTarget?: string;
+  lastIndexerTierDispatchFailedAt?: string;
+  lastIndexerTierDispatchError?: string;
   indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
 }
@@ -284,6 +291,7 @@ export interface FactoryRotationRunRecord {
 export interface FactoryRunMaintenanceArtifacts {
   indexerCreated?: boolean;
   indexerTier?: string;
+  lastIndexerDescribeAt?: string;
   pendingIndexerTierTarget?: string;
   pendingIndexerTierRequestedAt?: string;
 }

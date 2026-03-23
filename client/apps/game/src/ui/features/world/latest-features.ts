@@ -10,6 +10,20 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-23",
+    title: "Clearer Launch Summaries",
+    description:
+      "Factory V2 launch cards now use clearer setup copy and compact game-status highlights, so you can see what is ready, moving, pending, or blocked without reading raw workflow text.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Clearer Child Step Status",
+    description:
+      "Factory V2 now shows completed, current, pending, and failed setup steps for each child game, and workflow errors render in copyable message boxes instead of raw event strings.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
     title: "Selectable Prize Funding",
     description:
       "Factory V2 now keeps admin prize funding collapsed until you explicitly open it from the run view, so watch screens stay focused on launch and recovery status by default.",

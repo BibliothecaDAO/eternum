@@ -267,6 +267,87 @@ jobs:
           cat "$out_file"
           echo "-------------------------------------------"
 
+      - name: Resolve Torii slot state
+        id: torii_state
+        env:
+          NAME:
+            ${{ github.event.inputs.operation == 'update-tier' && github.event.inputs.torii_name ||
+            steps.name.outputs.torii_name }}
+        run: |
+          set -euo pipefail
+
+          describe_log="$(mktemp)"
+          list_log="$(mktemp)"
+          state="indeterminate"
+          state_source="unresolved"
+          current_tier=""
+          describe_error=""
+
+          has_torii_project() {
+            awk -v project="$NAME" '
+              /^Project: / {
+                current_project = $2
+                next
+              }
+              /^Service: / {
+                if (current_project == project && $2 == "torii") {
+                  found = 1
+                }
+              }
+              END {
+                exit(found ? 0 : 1)
+              }
+            ' "$1"
+          }
+
+          capture_single_line() {
+            tr '\n' ' ' <"$1" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//'
+          }
+
+          if slot d describe "$NAME" torii >"$describe_log" 2>&1; then
+            state="existing"
+            state_source="describe"
+            current_tier="$(sed -n 's/^Tier: //p' "$describe_log" | head -n1 | tr '[:upper:]' '[:lower:]')"
+            echo "Resolved Torii state for $NAME via describe"
+            cat "$describe_log"
+          else
+            describe_error="$(capture_single_line "$describe_log")"
+
+            if grep -Eiq 'not found|code = NotFound|deployment .* not found' "$describe_log"; then
+              state="missing"
+              state_source="describe-not-found"
+              echo "Resolved Torii state for $NAME as missing via describe"
+              cat "$describe_log"
+            elif slot d list >"$list_log" 2>&1; then
+              if has_torii_project "$list_log"; then
+                state="existing"
+                state_source="list"
+                echo "Describe failed for $NAME, but slot d list confirmed the Torii deployment exists"
+                echo "$describe_error"
+              else
+                state="missing"
+                state_source="list"
+                echo "Describe failed for $NAME, and slot d list did not find the Torii deployment"
+                echo "$describe_error"
+              fi
+            else
+              state="indeterminate"
+              state_source="describe-and-list-failed"
+              echo "Unable to verify Torii state for $NAME"
+              echo "Describe error: $describe_error"
+              echo "List error: $(capture_single_line "$list_log")"
+            fi
+          fi
+
+          {
+            echo "state=$state"
+            echo "state_source=$state_source"
+            echo "current_tier=$current_tier"
+            echo "describe_error<<EOF"
+            echo "$describe_error"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Ensure Torii slot instance exists
         if: ${{ github.event.inputs.operation != 'update-tier' }}
         env:
@@ -276,16 +357,24 @@ jobs:
           NAME: ${{ steps.name.outputs.torii_name }}
           CONFIG: ${{ steps.render.outputs.config_path }}
           REPLICAS: ${{ github.event.inputs.torii_replicas }}
+          TORII_STATE: ${{ steps.torii_state.outputs.state }}
+          TORII_STATE_SOURCE: ${{ steps.torii_state.outputs.state_source }}
         run: |
           set -euo pipefail
           echo "Ensuring Torii slot is live: $NAME"
           echo "Team: $TEAM | Tier: $TIER | Version: $VERSION"
           echo "Config: $CONFIG"
 
-          if slot d describe "$NAME" torii >/tmp/torii-describe.log 2>&1; then
+          if [ "$TORII_STATE" = "existing" ]; then
             echo "Torii slot already exists. Nothing to create."
-            cat /tmp/torii-describe.log
+            echo "Resolution source: $TORII_STATE_SOURCE"
             exit 0
+          fi
+
+          if [ "$TORII_STATE" = "indeterminate" ]; then
+            echo "❌ Unable to verify whether Torii slot already exists for $NAME"
+            echo "Refusing to create a duplicate deployment while state is indeterminate"
+            exit 1
           fi
 
           echo "Torii slot does not exist yet. Creating it now."
@@ -301,10 +390,78 @@ jobs:
         env:
           NAME: ${{ github.event.inputs.torii_name }}
           TIER: ${{ github.event.inputs.torii_tier }}
+          CURRENT_TIER: ${{ steps.torii_state.outputs.current_tier }}
+          TORII_STATE: ${{ steps.torii_state.outputs.state }}
+          TORII_STATE_SOURCE: ${{ steps.torii_state.outputs.state_source }}
         run: |
           set -euo pipefail
-          echo "Updating Torii slot tier: $NAME -> $TIER"
+
+          if [ "$TORII_STATE" = "missing" ]; then
+            echo "❌ Torii slot does not exist: $NAME"
+            exit 1
+          fi
+
+          if [ "$TORII_STATE" = "indeterminate" ]; then
+            echo "❌ Unable to verify the Torii deployment state for $NAME"
+            echo "Refusing to update a deployment whose state could not be resolved"
+            exit 1
+          fi
+
+          if [ -n "$CURRENT_TIER" ] && [ "$CURRENT_TIER" = "$TIER" ]; then
+            echo "Torii slot is already at the requested tier: $NAME ($CURRENT_TIER)"
+            exit 0
+          fi
+
+          if [ -n "$CURRENT_TIER" ]; then
+            echo "Updating Torii slot tier: $NAME ($CURRENT_TIER -> $TIER)"
+          else
+            echo "Updating Torii slot tier: $NAME (current tier unavailable, resolved via $TORII_STATE_SOURCE)"
+          fi
+
           slot d update --tier "$TIER" "$NAME" torii
+
+      - name: Describe Torii slot after action
+        id: torii_post_state
+        if: ${{ success() }}
+        env:
+          NAME:
+            ${{ github.event.inputs.operation == 'update-tier' && github.event.inputs.torii_name ||
+            steps.name.outputs.torii_name }}
+        run: |
+          set -euo pipefail
+
+          describe_log="$(mktemp)"
+          final_tier=""
+          final_url=""
+          final_version=""
+          final_branch=""
+          post_state="unavailable"
+          post_error=""
+
+          if slot d describe "$NAME" torii >"$describe_log" 2>&1; then
+            post_state="available"
+            final_tier="$(sed -n 's/^Tier: //p' "$describe_log" | head -n1 | tr '[:upper:]' '[:lower:]')"
+            final_url="$(sed -n 's/^Url: //p' "$describe_log" | head -n1)"
+            final_version="$(sed -n 's/^Version: //p' "$describe_log" | head -n1)"
+            final_branch="$(sed -n 's/^Branch: //p' "$describe_log" | head -n1)"
+            echo "Final Torii state for $NAME"
+            cat "$describe_log"
+          else
+            post_error="$(tr '\n' ' ' <"$describe_log" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"
+            echo "Final Torii describe is unavailable for $NAME"
+            echo "$post_error"
+          fi
+
+          {
+            echo "post_state=$post_state"
+            echo "final_tier=$final_tier"
+            echo "final_url=$final_url"
+            echo "final_version=$final_version"
+            echo "final_branch=$final_branch"
+            echo "post_error<<EOF"
+            echo "$post_error"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       # - name: Commit and push torii config
       #   if: success()
@@ -335,6 +492,16 @@ jobs:
           VERSION: ${{ github.event.inputs.torii_version }}
           OPERATION: ${{ github.event.inputs.operation }}
           TIER: ${{ github.event.inputs.torii_tier }}
+          RESOLVED_STATE: ${{ steps.torii_state.outputs.state }}
+          RESOLVED_STATE_SOURCE: ${{ steps.torii_state.outputs.state_source }}
+          RESOLVED_CURRENT_TIER: ${{ steps.torii_state.outputs.current_tier }}
+          RESOLVED_ERROR: ${{ steps.torii_state.outputs.describe_error }}
+          FINAL_STATE: ${{ steps.torii_post_state.outputs.post_state }}
+          FINAL_TIER: ${{ steps.torii_post_state.outputs.final_tier }}
+          FINAL_URL: ${{ steps.torii_post_state.outputs.final_url }}
+          FINAL_VERSION: ${{ steps.torii_post_state.outputs.final_version }}
+          FINAL_BRANCH: ${{ steps.torii_post_state.outputs.final_branch }}
+          FINAL_ERROR: ${{ steps.torii_post_state.outputs.post_error }}
         run: |
           {
             echo "## Torii Deployment";
@@ -342,9 +509,34 @@ jobs:
             echo "- Name: \`$NAME\`";
             echo "- Env: \`$ENV_NAME\`";
             echo "- Tier: \`$TIER\`";
+            echo "- Resolved state: \`$RESOLVED_STATE\`";
+            echo "- Resolution source: \`$RESOLVED_STATE_SOURCE\`";
+            if [ -n "$RESOLVED_CURRENT_TIER" ]; then
+              echo "- Live tier before action: \`$RESOLVED_CURRENT_TIER\`";
+            fi
+            if [ -n "$RESOLVED_ERROR" ]; then
+              echo "- Describe fallback reason: \`$RESOLVED_ERROR\`";
+            fi
             if [ "$OPERATION" != "update-tier" ]; then
               echo "- Version: \`$VERSION\`";
               echo "- Config saved: \`$CONFIG\`";
+            fi
+            echo "- Final describe: \`$FINAL_STATE\`";
+            if [ "$FINAL_STATE" = "available" ]; then
+              if [ -n "$FINAL_TIER" ]; then
+                echo "- Live tier after action: \`$FINAL_TIER\`";
+              fi
+              if [ -n "$FINAL_VERSION" ]; then
+                echo "- Live version: \`$FINAL_VERSION\`";
+              fi
+              if [ -n "$FINAL_BRANCH" ]; then
+                echo "- Live branch: \`$FINAL_BRANCH\`";
+              fi
+              if [ -n "$FINAL_URL" ]; then
+                echo "- Live URL: \`$FINAL_URL\`";
+              fi
+            elif [ -n "$FINAL_ERROR" ]; then
+              echo "- Final describe error: \`$FINAL_ERROR\`";
             fi
             echo "- Deployed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')";
           } >> "$GITHUB_STEP_SUMMARY"

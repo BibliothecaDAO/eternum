@@ -301,6 +301,10 @@ function mergeLaunchArtifacts(
     paymasterSynced: summary.paymasterSynced ?? currentArtifacts.paymasterSynced,
     indexerCreated: summary.indexerCreated || currentArtifacts.indexerCreated,
     indexerTier: summary.indexerTier || currentArtifacts.indexerTier,
+    indexerUrl: summary.indexerUrl || currentArtifacts.indexerUrl,
+    indexerVersion: summary.indexerVersion || currentArtifacts.indexerVersion,
+    indexerBranch: summary.indexerBranch || currentArtifacts.indexerBranch,
+    lastIndexerDescribeAt: summary.lastIndexerDescribeAt || currentArtifacts.lastIndexerDescribeAt,
     indexerWorkflowRun: summary.indexerWorkflowRun || currentArtifacts.indexerWorkflowRun,
   };
 }

@@ -92,6 +92,9 @@ export interface FactoryWorldProfile {
 }
 
 export type IndexerTier = "basic" | "pro" | "legendary" | "epic";
+export type IndexerResolutionState = "existing" | "missing" | "indeterminate";
+export type IndexerResolutionSource = "describe" | "describe-not-found" | "list" | "describe-and-list-failed";
+export type IndexerCreationMode = "github-actions" | "slot-direct";
 
 export interface IndexerRequest {
   env: string;
@@ -115,8 +118,21 @@ export interface IndexerWorkflowRun {
   conclusion: string;
 }
 
+export interface IndexerLiveState {
+  state: IndexerResolutionState;
+  stateSource: IndexerResolutionSource;
+  currentTier?: IndexerTier;
+  url?: string;
+  version?: string;
+  branch?: string;
+  describeError?: string;
+  describedAt?: string;
+}
+
 export interface IndexerCreationResult {
-  mode: "github-actions";
+  mode: IndexerCreationMode;
+  action?: "created" | "already-live";
+  liveState?: IndexerLiveState;
   workflowRun?: IndexerWorkflowRun;
 }
 
@@ -268,6 +284,10 @@ export interface LaunchGameSummary {
   indexerCreated: boolean;
   indexerMode?: IndexerCreationResult["mode"];
   indexerTier?: IndexerTier;
+  indexerUrl?: string;
+  indexerVersion?: string;
+  indexerBranch?: string;
+  lastIndexerDescribeAt?: string;
   indexerRequest?: IndexerRequest;
   indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
@@ -302,8 +322,15 @@ export interface SeriesLaunchGameArtifacts {
   indexerCreated?: boolean;
   indexerMode?: IndexerCreationResult["mode"];
   indexerTier?: IndexerTier;
+  indexerUrl?: string;
+  indexerVersion?: string;
+  indexerBranch?: string;
+  lastIndexerDescribeAt?: string;
   pendingIndexerTierTarget?: IndexerTier;
   pendingIndexerTierRequestedAt?: string;
+  lastIndexerTierDispatchTarget?: IndexerTier;
+  lastIndexerTierDispatchFailedAt?: string;
+  lastIndexerTierDispatchError?: string;
   indexerRequest?: IndexerRequest;
   indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;

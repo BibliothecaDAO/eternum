@@ -305,6 +305,14 @@ describe("mapFactoryWorkerRun", () => {
       configReady: true,
       worldAddress: "0xabc",
     });
+    expect(run.children?.[0]?.steps).toEqual([
+      {
+        id: "configure-worlds",
+        status: "succeeded",
+        latestEvent: "Applied config.",
+        errorMessage: undefined,
+      },
+    ]);
   });
 
   it("maps rotation runs with evaluation state and queue details", () => {

@@ -176,6 +176,7 @@ jobs:
       FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
+      SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
@@ -206,9 +207,6 @@ jobs:
           pnpm --dir packages/provider build
 
       - name: Install Slot CLI
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'sync-paymaster') }}
         run: |
           set -euo pipefail
           curl -L https://slot.cartridge.sh | bash
@@ -883,8 +881,6 @@ jobs:
           'grant-village-pass-roles' || github.event.inputs.launch_step == 'create-banks' ||
           github.event.inputs.launch_step == 'create-indexer' || github.event.inputs.launch_step == 'create-indexers' ||
           github.event.inputs.launch_step == 'sync-paymaster') }}
-        env:
-          SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh

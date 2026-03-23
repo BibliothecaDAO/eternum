@@ -75,6 +75,7 @@ function buildMaintenanceIndexGame(game: {
   artifacts?: {
     indexerCreated?: boolean;
     indexerTier?: string;
+    lastIndexerDescribeAt?: string;
     pendingIndexerTierTarget?: string;
     pendingIndexerTierRequestedAt?: string;
   };
@@ -86,6 +87,7 @@ function buildMaintenanceIndexGame(game: {
     artifacts: {
       indexerCreated: game.artifacts?.indexerCreated,
       indexerTier: game.artifacts?.indexerTier,
+      lastIndexerDescribeAt: game.artifacts?.lastIndexerDescribeAt,
       pendingIndexerTierTarget: game.artifacts?.pendingIndexerTierTarget,
       pendingIndexerTierRequestedAt: game.artifacts?.pendingIndexerTierRequestedAt,
     },
@@ -119,6 +121,7 @@ function buildGameRunMaintenanceIndexEntry(run: FactoryRunRecord): FactoryGameRu
     artifacts: {
       indexerCreated: run.artifacts.indexerCreated,
       indexerTier: run.artifacts.indexerTier,
+      lastIndexerDescribeAt: run.artifacts.lastIndexerDescribeAt,
       pendingIndexerTierTarget: run.artifacts.pendingIndexerTierTarget,
       pendingIndexerTierRequestedAt: run.artifacts.pendingIndexerTierRequestedAt,
     },

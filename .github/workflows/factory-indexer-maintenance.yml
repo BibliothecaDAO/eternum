@@ -1,0 +1,75 @@
+name: Factory Indexer Maintenance
+run-name: >-
+  Factory Indexer Maintenance / ${{ inputs.environment || github.event.inputs.environment || 'mixed' }} / ${{
+  inputs.operation_count || github.event.inputs.operation_count || '0' }} ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Primary environment label for this batch"
+        required: false
+        default: "mixed"
+      operation_count:
+        description: "Number of maintenance operations in this batch"
+        required: false
+        default: "0"
+      operations_json:
+        description: "JSON array of tier maintenance operations"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CI: "true"
+
+jobs:
+  maintain-indexers:
+    name: Reconcile Indexers
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FACTORY_RUN_STORE_BRANCH: factory-runs
+      GITHUB_TOKEN: ${{ github.token }}
+      SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Install Slot CLI
+        run: |
+          set -euo pipefail
+          curl -L https://slot.cartridge.sh | bash
+          /home/runner/.config/.slot/bin/slotup
+          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
+          slot --version || true
+
+      - name: Reconcile indexer state
+        run: |
+          set -euo pipefail
+          bun config/deployer/clean/cli/indexer-maintenance.ts \
+            --operations-json '${{ github.event.inputs.operations_json }}'

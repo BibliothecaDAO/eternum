@@ -48,6 +48,21 @@ const executeConfigStepsMock = mock(async ({ mode }: { mode?: string }) => ({
   steps: [],
   transactionHash: mode === "batched" ? "0xconfigure" : undefined,
 }));
+const ensureSlotIndexerDeploymentMock = mock(async () => ({
+  mode: "slot-direct",
+  action: "created",
+  requestedTier: "basic",
+  previousTier: undefined,
+  liveState: {
+    state: "existing",
+    stateSource: "describe",
+    currentTier: "basic",
+    url: "https://torii.example",
+    version: "v1.8.15",
+    branch: "main",
+    describedAt: "2026-03-23T10:00:00.000Z",
+  },
+}));
 
 function buildQueuedConfigStep(id: string, queuedCallCount: number) {
   return {
@@ -160,12 +175,22 @@ mock.module("../factory/discovery", () => ({
   waitForFactoryWorldProfile: waitForFactoryWorldProfileMock,
 }));
 
-mock.module("../indexing/indexer", () => ({
-  createIndexer: async () => ({
-    mode: "workflow",
-    workflowRun: {
-      htmlUrl: "https://example.com/workflows/1",
-    },
+mock.module("../indexing/slot-torii", () => ({
+  ensureSlotIndexerDeployment: ensureSlotIndexerDeploymentMock,
+  resolveIndexerArtifactState: (liveState: {
+    state: string;
+    currentTier?: string;
+    url?: string;
+    version?: string;
+    branch?: string;
+    describedAt?: string;
+  }) => ({
+    indexerCreated: liveState.state === "existing",
+    indexerTier: liveState.currentTier,
+    indexerUrl: liveState.url,
+    indexerVersion: liveState.version,
+    indexerBranch: liveState.branch,
+    lastIndexerDescribeAt: liveState.describedAt,
   }),
 }));
 
@@ -216,6 +241,22 @@ describe("runLaunchStep mainnet launch steps", () => {
       mode: mode || "batched",
       steps: [],
       transactionHash: mode === "batched" ? "0xconfigure" : undefined,
+    }));
+    ensureSlotIndexerDeploymentMock.mockClear();
+    ensureSlotIndexerDeploymentMock.mockImplementation(async () => ({
+      mode: "slot-direct",
+      action: "created",
+      requestedTier: "basic",
+      previousTier: undefined,
+      liveState: {
+        state: "existing",
+        stateSource: "describe",
+        currentTier: "basic",
+        url: "https://torii.example",
+        version: "v1.8.15",
+        branch: "main",
+        describedAt: "2026-03-23T10:00:00.000Z",
+      },
     }));
   });
 
@@ -421,6 +462,38 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(waitForFactoryWorldProfileMock).toHaveBeenCalledTimes(1);
     expect(createBanksMock).toHaveBeenCalledTimes(1);
     expect(summary.createBanksTxHash).toBe("0xbanks");
+    expect(summary.worldAddress).toBe("0xworld");
+  });
+
+  test("creates the indexer directly via Slot and stores live torii state", async () => {
+    const summary = await runLaunchStep({
+      environmentId: "slot.blitz",
+      stepId: "create-indexer",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(ensureSlotIndexerDeploymentMock).toHaveBeenCalledTimes(1);
+    expect(ensureSlotIndexerDeploymentMock.mock.calls[0]?.[0]).toMatchObject({
+      env: "slot",
+      rpcUrl: "https://rpc.example",
+      namespaces: "s1_eternum",
+      worldName: "alpha",
+      worldAddress: "0xworld",
+      tier: "basic",
+    });
+    expect(summary.indexerCreated).toBe(true);
+    expect(summary.indexerMode).toBe("slot-direct");
+    expect(summary.indexerTier).toBe("basic");
+    expect(summary.indexerUrl).toBe("https://torii.example");
+    expect(summary.indexerVersion).toBe("v1.8.15");
+    expect(summary.indexerBranch).toBe("main");
+    expect(summary.lastIndexerDescribeAt).toBe("2026-03-23T10:00:00.000Z");
+    expect(summary.indexerWorkflowRun).toBeUndefined();
     expect(summary.worldAddress).toBe("0xworld");
   });
 

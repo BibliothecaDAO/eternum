@@ -6,6 +6,7 @@ import type {
   FactoryRun,
   FactoryRunRecovery,
   FactoryRunStatus,
+  FactorySeriesChildStep,
   FactoryRunStep,
   FactoryRunStepId,
   FactorySeriesChildRun,
@@ -126,7 +127,14 @@ function buildFactorySeriesRunSyncKey(record: FactoryWorkerSeriesRunRecord) {
     record.currentStepId ?? "none",
     record.status,
     ...record.steps.map((step) => `${step.id}:${step.status}:${step.finishedAt ?? step.startedAt ?? "none"}`),
-    ...record.summary.games.map((game) => `${game.gameName}:${game.status}:${game.currentStepId ?? "none"}`),
+    ...record.summary.games.map(
+      (game) =>
+        `${game.gameName}:${game.status}:${game.currentStepId ?? "none"}:${(game.steps || [])
+          .map(
+            (step) => `${step.id}:${step.status}:${step.updatedAt ?? "none"}:${step.errorMessage ?? step.latestEvent}`,
+          )
+          .join(",")}`,
+    ),
     record.autoRetry.enabled ? "auto:on" : "auto:off",
     record.autoRetry.nextRetryAt ?? "no-next-retry",
     record.autoRetry.lastRetryAt ?? "no-last-retry",
@@ -140,7 +148,14 @@ function buildFactoryRotationRunSyncKey(record: FactoryWorkerRotationRunRecord) 
     record.currentStepId ?? "none",
     record.status,
     ...record.steps.map((step) => `${step.id}:${step.status}:${step.finishedAt ?? step.startedAt ?? "none"}`),
-    ...record.summary.games.map((game) => `${game.gameName}:${game.status}:${game.currentStepId ?? "none"}`),
+    ...record.summary.games.map(
+      (game) =>
+        `${game.gameName}:${game.status}:${game.currentStepId ?? "none"}:${(game.steps || [])
+          .map(
+            (step) => `${step.id}:${step.status}:${step.updatedAt ?? "none"}:${step.errorMessage ?? step.latestEvent}`,
+          )
+          .join(",")}`,
+    ),
     record.autoRetry.enabled ? "auto:on" : "auto:off",
     record.autoRetry.nextRetryAt ?? "no-next-retry",
     record.evaluation.nextEvaluationAt ?? "no-next-evaluation",
@@ -169,11 +184,23 @@ function mapFactorySeriesChildRun(game: FactoryWorkerSeriesGameRecord): FactoryS
     status: resolveFactorySeriesChildStatus(game.status),
     latestEvent: game.latestEvent,
     currentStepId: mapFactoryStepId(game.currentStepId),
+    steps: (game.steps || []).map(mapFactorySeriesChildStep),
     configReady: hasSucceededFactorySeriesChildStep(game, "configure-worlds"),
     worldAddress: game.artifacts.worldAddress,
     indexerCreated: game.artifacts.indexerCreated,
     indexerTier: game.artifacts.indexerTier,
     prizeFunding: mapFactoryPrizeFunding(game.artifacts.prizeFunding),
+  };
+}
+
+function mapFactorySeriesChildStep(
+  step: NonNullable<FactoryWorkerSeriesGameRecord["steps"]>[number],
+): FactorySeriesChildStep {
+  return {
+    id: mapFactoryStepId(step.id) ?? "create-worlds",
+    status: resolveFactoryStepStatus(step.status),
+    latestEvent: step.latestEvent,
+    errorMessage: step.errorMessage,
   };
 }
 

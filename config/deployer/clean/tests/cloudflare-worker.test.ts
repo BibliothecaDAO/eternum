@@ -839,6 +839,37 @@ describe("factory worker recovery signals", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
+      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && (!init?.method || init.method === "GET")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "game",
+          updatedAt: offsetTimestamp(-30_000),
+          entries: {
+            "bltz-test-14": {
+              kind: "game",
+              environment: "slot.blitz",
+              gameName: "bltz-test-14",
+              path: "runs/slot/blitz/bltz-test-14.json",
+              inputPath: "inputs/slot/blitz/bltz-test-14/101-1.json",
+              status: "complete",
+              updatedAt: offsetTimestamp(-30_000),
+              workflowRef: "codex/factory-v2-rotation-review",
+              currentStepId: null,
+              hasRunningStep: false,
+              recoverableFailedStepId: null,
+              recoverablePendingStepId: null,
+              startTime: offsetTimestamp(-60_000),
+              durationSeconds: 3600,
+              artifacts: {
+                indexerCreated: true,
+                indexerTier: "basic",
+              },
+            },
+          },
+        });
+      }
+
       if (
         String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") &&
         (!init?.method || init.method === "GET")
@@ -870,20 +901,7 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && (!init?.method || init.method === "GET")) {
-        return new Response("{}", { status: 404 });
-      }
-
-      if (String(url).includes("/contents/inputs/slot/blitz/bltz-test-14/101-1.json")) {
-        return buildGitHubContentsResponse({
-          workflow: {
-            ref: "codex/factory-v2-rotation-review",
-          },
-          request: {},
-        });
-      }
-
-      if (String(url).includes("/actions/workflows/factory-torii-deployer.yml/dispatches")) {
+      if (String(url).includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
         return new Response(null, { status: 204 });
       }
 
@@ -925,16 +943,32 @@ describe("factory worker recovery signals", () => {
     );
     const updateBody = JSON.parse(String(updateCall?.init?.body));
     const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const operations = JSON.parse(String(dispatchBody.inputs.operations_json));
 
     expect(response.status).toBe(202);
+    expect(dispatchBody.ref).toBe("codex/factory-v2-rotation-review");
+    expect(dispatchBody.inputs.operation_count).toBe("1");
+    expect(operations).toEqual([
+      {
+        kind: "game",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/bltz-test-14.json",
+        runName: "bltz-test-14",
+        gameName: "bltz-test-14",
+        tier: "legendary",
+      },
+    ]);
     expect(nextRunRecord.artifacts.indexerTier).toBe("basic");
     expect(nextRunRecord.artifacts.pendingIndexerTierTarget).toBe("legendary");
     expect(nextRunRecord.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
   });
 
-  test("scheduled tier reconciliation uses the stored workflow ref and keeps reconciling after one child fails", async () => {
+  test("scheduled tier reconciliation batches operations per workflow ref and records batch failures once", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
-    let dispatchCount = 0;
     const startedAt = new Date(Date.now() - 60_000).toISOString();
 
     globalThis.fetch = async (url, init) => {
@@ -1044,17 +1078,11 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (value.includes("/actions/workflows/factory-torii-deployer.yml/dispatches")) {
-        dispatchCount += 1;
-
-        if (dispatchCount === 1) {
-          return new Response(JSON.stringify({ message: "dispatch exploded" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        return new Response(null, { status: 204 });
+      if (value.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(JSON.stringify({ message: "dispatch exploded" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       if (value.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && init?.method === "PUT") {
@@ -1083,7 +1111,7 @@ describe("factory worker recovery signals", () => {
     await Promise.all(scheduledTasks);
 
     const dispatchCalls = fetchCalls.filter((call) =>
-      call.url.includes("/actions/workflows/factory-torii-deployer.yml/dispatches"),
+      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
     );
     const updateCall = fetchCalls.find(
       (call) => call.url.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && call.init?.method === "PUT",
@@ -1097,16 +1125,43 @@ describe("factory worker recovery signals", () => {
       (game: { gameName: string }) => game.gameName === "bltz-knicker-02",
     );
     const firstDispatchBody = JSON.parse(String(dispatchCalls[0]?.init?.body));
+    const operations = JSON.parse(String(firstDispatchBody.inputs.operations_json));
 
-    expect(dispatchCalls).toHaveLength(2);
+    expect(dispatchCalls).toHaveLength(1);
     expect(firstDispatchBody.ref).toBe("codex/factory-v2-rotation-review");
+    expect(firstDispatchBody.inputs.operation_count).toBe("2");
+    expect(operations).toEqual([
+      {
+        kind: "series",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/series/bltz-knicker.json",
+        runName: "bltz-knicker",
+        gameName: "bltz-knicker-01",
+        tier: "legendary",
+      },
+      {
+        kind: "series",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/series/bltz-knicker.json",
+        runName: "bltz-knicker",
+        gameName: "bltz-knicker-02",
+        tier: "legendary",
+      },
+    ]);
     expect(fetchCalls.some((call) => call.url.includes("/contents/runs/slot/blitz/series?ref=factory-runs"))).toBe(
       false,
     );
     expect(firstGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
     expect(firstGame.artifacts.lastIndexerTierDispatchFailedAt).toEqual(expect.any(String));
     expect(firstGame.artifacts.lastIndexerTierDispatchError).toContain(
-      "Failed to dispatch factory-torii-deployer workflow",
+      "Failed to dispatch factory-indexer-maintenance workflow",
+    );
+    expect(firstGame.artifacts.pendingIndexerTierTarget).toBe("legendary");
+    expect(firstGame.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
+    expect(secondGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
+    expect(secondGame.artifacts.lastIndexerTierDispatchFailedAt).toEqual(expect.any(String));
+    expect(secondGame.artifacts.lastIndexerTierDispatchError).toContain(
+      "Failed to dispatch factory-indexer-maintenance workflow",
     );
     expect(secondGame.artifacts.pendingIndexerTierTarget).toBe("legendary");
     expect(secondGame.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));

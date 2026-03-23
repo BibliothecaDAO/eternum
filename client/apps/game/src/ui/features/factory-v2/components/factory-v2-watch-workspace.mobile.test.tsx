@@ -19,6 +19,8 @@ vi.mock("../mode-appearance", () => ({
   })),
 }));
 
+const clipboardWriteText = vi.fn();
+
 const waitForAsyncWork = async () => {
   await Promise.resolve();
   await Promise.resolve();
@@ -103,6 +105,11 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: clipboardWriteText },
+    });
+    clipboardWriteText.mockReset();
 
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -313,6 +320,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "running",
           latestEvent: "Queued for setup.",
           currentStepId: "configure-worlds",
+          steps: [],
           worldAddress: "0xabc",
         },
       ],
@@ -454,6 +462,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "succeeded",
           latestEvent: "Indexer is live",
           currentStepId: null,
+          steps: [],
           worldAddress: "0x111",
           indexerCreated: true,
         },
@@ -465,6 +474,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "failed",
           latestEvent: "Indexer needs attention",
           currentStepId: "create-indexers",
+          steps: [],
           worldAddress: "0x222",
         },
       ],
@@ -541,6 +551,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "succeeded",
           latestEvent: "Ready",
           currentStepId: null,
+          steps: [],
           configReady: true,
           worldAddress: "0x111",
         },
@@ -552,6 +563,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "succeeded",
           latestEvent: "Ready",
           currentStepId: null,
+          steps: [],
           configReady: true,
           worldAddress: "0x222",
           prizeFunding: {
@@ -576,6 +588,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "pending",
           latestEvent: "Pending",
           currentStepId: "configure-worlds",
+          steps: [],
           configReady: false,
           worldAddress: "0x333",
         },
@@ -745,6 +758,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "succeeded",
           latestEvent: "Ready",
           currentStepId: null,
+          steps: [],
           configReady: true,
           worldAddress: "0x111",
         },
@@ -756,6 +770,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "failed",
           latestEvent: "Indexer failed",
           currentStepId: "create-indexers",
+          steps: [],
           configReady: true,
           worldAddress: "0x222",
           prizeFunding: {
@@ -780,6 +795,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "running",
           latestEvent: "Configuring",
           currentStepId: "configure-worlds",
+          steps: [],
           configReady: false,
           worldAddress: "0x333",
         },
@@ -856,6 +872,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           status: "running",
           latestEvent: "Configuring world.",
           currentStepId: "configure-worlds",
+          steps: [],
           worldAddress: "0xabc",
         },
       ],
@@ -902,5 +919,285 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     });
 
     expect(onStopAutoRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows completed and pending child steps instead of a raw latest-event tx hash", async () => {
+    const rotationRun = buildRun({
+      kind: "rotation",
+      status: "attention",
+      name: "bltz-franky",
+      children: [
+        {
+          id: "rotation-child-1",
+          gameName: "bltz-franky-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "running",
+          latestEvent: "Completed create-indexers (0xdeadbeef)",
+          currentStepId: "configure-worlds",
+          steps: [
+            {
+              id: "create-worlds",
+              status: "succeeded",
+              latestEvent: "World created.",
+            },
+            {
+              id: "create-series",
+              status: "pending",
+              latestEvent: "Waiting for series.",
+            },
+            {
+              id: "wait-for-factory-indexes",
+              status: "succeeded",
+              latestEvent: "Indexed.",
+            },
+            {
+              id: "configure-worlds",
+              status: "running",
+              latestEvent: "Applying config.",
+            },
+            {
+              id: "create-indexers",
+              status: "pending",
+              latestEvent: "Waiting for indexer setup.",
+            },
+          ],
+          worldAddress: "0xabc",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[rotationRun]}
+          selectedRun={rotationRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Done");
+    expect(container.textContent).toContain("Deploying games");
+    expect(container.textContent).toContain("Now");
+    expect(container.textContent).toContain("Applying settings");
+    expect(container.textContent).toContain("Pending");
+    expect(container.textContent).toContain("Deploying indexers");
+    expect(container.textContent).not.toContain("Waiting for games");
+    expect(container.textContent).not.toContain("Creating series");
+    expect(container.textContent).not.toContain("0xdeadbeef");
+  });
+
+  it("renders child and parent errors inside copyable boxes", async () => {
+    const failedRun = buildRun({
+      kind: "series",
+      status: "attention",
+      steps: [
+        {
+          id: "create-worlds" as const,
+          title: "Create worlds",
+          summary: "Create worlds",
+          workflowName: "create-worlds",
+          status: "failed" as const,
+          verification: "estimate_fee timeout",
+          latestEvent: "estimate_fee timeout",
+        },
+      ],
+      children: [
+        {
+          id: "series-child-1",
+          gameName: "bltz-error-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "failed",
+          latestEvent: "deployment already completed",
+          currentStepId: "create-worlds",
+          steps: [
+            {
+              id: "create-worlds",
+              status: "failed",
+              latestEvent: "deployment already completed",
+              errorMessage: "deployment already completed",
+            },
+          ],
+          worldAddress: "0xabc",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[failedRun]}
+          selectedRun={failedRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const childErrorBox = container.querySelector('[data-testid="factory-child-error-bltz-error-01"]');
+
+    expect(childErrorBox?.textContent).toContain("Error details");
+    expect(childErrorBox?.textContent).toContain("deployment already completed");
+
+    const stepErrorBox = container.querySelector('[data-testid="factory-step-error-create-worlds"]');
+
+    expect(stepErrorBox?.textContent).toContain("estimate_fee timeout");
+
+    const copyButtons = Array.from(container.querySelectorAll("button")).filter((button) =>
+      button.textContent?.includes("Copy"),
+    );
+
+    await act(async () => {
+      copyButtons[0]?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith("deployment already completed");
+  });
+
+  it("shows compact multi-game highlights in the main launch card", async () => {
+    const seriesRun = buildRun({
+      kind: "series",
+      name: "bltz-knicker",
+      status: "running",
+      steps: [
+        {
+          id: "create-series" as const,
+          title: "Create series",
+          summary: "Series ready.",
+          workflowName: "create-series",
+          status: "succeeded" as const,
+          verification: "Series ready.",
+          latestEvent: "Series ready.",
+        },
+        {
+          id: "create-worlds" as const,
+          title: "Create worlds",
+          summary: "Deploying games.",
+          workflowName: "create-worlds",
+          status: "running" as const,
+          verification: "Deploying games.",
+          latestEvent: "Deploying games.",
+        },
+        {
+          id: "configure-worlds" as const,
+          title: "Configure worlds",
+          summary: "Pending.",
+          workflowName: "configure-worlds",
+          status: "pending" as const,
+          verification: "Pending.",
+          latestEvent: "Pending.",
+        },
+      ],
+      children: [
+        {
+          id: "series-child-1",
+          gameName: "bltz-knicker-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "succeeded",
+          latestEvent: "Ready",
+          currentStepId: null,
+          steps: [],
+          worldAddress: "0x111",
+        },
+        {
+          id: "series-child-2",
+          gameName: "bltz-knicker-02",
+          seriesGameNumber: 2,
+          startTimeIso: "2026-03-18T13:00:00.000Z",
+          status: "running",
+          latestEvent: "Configuring",
+          currentStepId: "configure-worlds",
+          steps: [],
+          worldAddress: "0x222",
+        },
+        {
+          id: "series-child-3",
+          gameName: "bltz-knicker-03",
+          seriesGameNumber: 3,
+          startTimeIso: "2026-03-18T14:00:00.000Z",
+          status: "pending",
+          latestEvent: "Queued",
+          currentStepId: "create-worlds",
+          steps: [],
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[seriesRun]}
+          selectedRun={seriesRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRetry={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
+
+    expect(selectedPanel?.textContent).toContain("1 ready");
+    expect(selectedPanel?.textContent).toContain("1 working");
+    expect(selectedPanel?.textContent).toContain("1 pending");
+    expect(selectedPanel?.textContent).toContain("We’re still moving through setup.");
   });
 });

@@ -18,6 +18,7 @@ const DEFAULT_FACTORY_RUN_RECOVERY_GRACE_MS = 15_000;
 const DEFAULT_FACTORY_SERIES_RUN_RECOVERY_GRACE_MS = 15_000;
 const DEFAULT_FACTORY_ROTATION_RUN_RECOVERY_GRACE_MS = 15_000;
 const DEFAULT_SERIES_AUTO_RETRY_INTERVAL_MINUTES = 15;
+const DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE = "factory-indexer-maintenance.yml";
 const DEFAULT_INDEXER_LEGENDARY_LEAD_MS = 30 * 60_000;
 const DEFAULT_INDEXER_PRO_COOLDOWN_MS = 40 * 60_000;
 const DEFAULT_INDEXER_TIER_REQUEST_COOLDOWN_MS = 15 * 60_000;
@@ -869,26 +870,27 @@ async function handleUpdateFactoryIndexerTier(request, env) {
   validateFactoryIndexerTierUpdateBody(body);
 
   const branch = resolveRunStoreBranch(env);
-  const github = createGitHubClient(env, body.workflowRef);
-  const run = await readFactoryRunIfPresent(github, body.environment, body.gameName, branch);
-  const inputRecord = run?.inputPath ? await readFactoryLaunchInputIfPresent(github, run.inputPath, branch) : null;
-  const workflowRun = await dispatchFactoryIndexerTierWorkflow(
-    resolveIndexerTierWorkflowGitHubClient(github, run, inputRecord, body.workflowRef),
-    {
-      environment: body.environment,
-      gameName: body.gameName,
-      tier: body.tier,
-    },
-  );
-
-  await markPendingIndexerTierUpdateForGame(
+  const github = createGitHubClient(env);
+  const dispatchTarget = await resolveIndexerMaintenanceDispatchTargetForGame(
     github,
     branch,
     body.environment,
     body.gameName,
     body.tier,
-    new Date().toISOString(),
+    body.workflowRef,
   );
+
+  if (!dispatchTarget) {
+    throw new HttpError(404, `Could not find a stored run for ${body.environment}/${body.gameName}`);
+  }
+
+  const requestedAt = new Date().toISOString();
+  const workflowRun = await dispatchFactoryIndexerMaintenanceWorkflow(dispatchTarget.github, {
+    environment: body.environment,
+    operations: [dispatchTarget.operation],
+  });
+
+  await markPendingIndexerTierUpdateForOperation(github, branch, dispatchTarget.operation, requestedAt);
 
   return buildJsonResponse(
     request,
@@ -2140,6 +2142,7 @@ function buildFactoryMaintenanceArtifactsSnapshot(artifacts) {
   return {
     indexerCreated: artifacts?.indexerCreated,
     indexerTier: artifacts?.indexerTier,
+    lastIndexerDescribeAt: artifacts?.lastIndexerDescribeAt,
     pendingIndexerTierTarget: artifacts?.pendingIndexerTierTarget,
     pendingIndexerTierRequestedAt: artifacts?.pendingIndexerTierRequestedAt,
   };
@@ -2664,6 +2667,150 @@ function resolveIndexerTierWorkflowGitHubClient(github, run, inputRecord, workfl
   };
 }
 
+function buildGameIndexerMaintenanceOperation(entry, tier) {
+  return {
+    kind: "game",
+    environmentId: entry.environment,
+    recordPath: entry.path,
+    runName: entry.gameName,
+    gameName: entry.gameName,
+    tier,
+  };
+}
+
+function buildSeriesIndexerMaintenanceOperation(entry, game, tier) {
+  return {
+    kind: "series",
+    environmentId: entry.environment,
+    recordPath: entry.path,
+    runName: entry.seriesName,
+    gameName: game.gameName,
+    tier,
+  };
+}
+
+function buildRotationIndexerMaintenanceOperation(entry, game, tier) {
+  return {
+    kind: "rotation",
+    environmentId: entry.environment,
+    recordPath: entry.path,
+    runName: entry.rotationName,
+    gameName: game.gameName,
+    tier,
+  };
+}
+
+async function resolveIndexerMaintenanceDispatchTargetForGame(
+  github,
+  branch,
+  environment,
+  gameName,
+  tier,
+  workflowRefOverride,
+) {
+  const gameEntries = await readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
+  const matchingGameEntry = gameEntries.find((entry) => entry.gameName === gameName);
+
+  if (matchingGameEntry) {
+    return {
+      github: resolveIndexerTierWorkflowGitHubClient(
+        github,
+        null,
+        null,
+        workflowRefOverride || matchingGameEntry.workflowRef,
+      ),
+      operation: buildGameIndexerMaintenanceOperation(matchingGameEntry, tier),
+    };
+  }
+
+  const seriesEntries = await readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
+  for (const entry of seriesEntries) {
+    const matchingGame = (entry.games || []).find((game) => game.gameName === gameName);
+    if (!matchingGame) {
+      continue;
+    }
+
+    return {
+      github: resolveIndexerTierWorkflowGitHubClient(github, null, null, workflowRefOverride || entry.workflowRef),
+      operation: buildSeriesIndexerMaintenanceOperation(entry, matchingGame, tier),
+    };
+  }
+
+  const rotationEntries = await readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(
+    github,
+    environment,
+    branch,
+  );
+  for (const entry of rotationEntries) {
+    const matchingGame = (entry.games || []).find((game) => game.gameName === gameName);
+    if (!matchingGame) {
+      continue;
+    }
+
+    return {
+      github: resolveIndexerTierWorkflowGitHubClient(github, null, null, workflowRefOverride || entry.workflowRef),
+      operation: buildRotationIndexerMaintenanceOperation(entry, matchingGame, tier),
+    };
+  }
+
+  const gameRun = await readFactoryRunIfPresent(github, environment, gameName, branch);
+  if (gameRun) {
+    return {
+      github: resolveIndexerTierWorkflowGitHubClient(github, gameRun, null, workflowRefOverride),
+      operation: {
+        kind: "game",
+        environmentId: environment,
+        recordPath: resolveFactoryRunRecordPath(environment, gameName),
+        runName: gameName,
+        gameName,
+        tier,
+      },
+    };
+  }
+
+  const seriesRuns = await readFactorySeriesRunsForEnvironment(github, environment, branch);
+  for (const run of seriesRuns) {
+    const matchingGame = (run.summary?.games || []).find((game) => game.gameName === gameName);
+    if (!matchingGame) {
+      continue;
+    }
+
+    return {
+      github: resolveIndexerTierWorkflowGitHubClient(github, run, null, workflowRefOverride),
+      operation: {
+        kind: "series",
+        environmentId: environment,
+        recordPath: resolveFactorySeriesRunRecordPath(environment, run.seriesName),
+        runName: run.seriesName,
+        gameName,
+        tier,
+      },
+    };
+  }
+
+  const rotationRuns = await readFactoryRotationRunsForEnvironment(github, environment, branch);
+  for (const run of rotationRuns) {
+    const matchingGame = (run.summary?.games || []).find((game) => game.gameName === gameName);
+    if (!matchingGame) {
+      continue;
+    }
+
+    return {
+      github: resolveIndexerTierWorkflowGitHubClient(github, run, null, workflowRefOverride),
+      operation: {
+        kind: "rotation",
+        environmentId: environment,
+        recordPath: resolveFactoryRotationRunRecordPath(environment, run.rotationName),
+        runName: run.rotationName,
+        gameName,
+        tier,
+      },
+    };
+  }
+
+  return null;
+}
+
 async function readBranchJsonWithMetadataIfPresent(github, path, branch) {
   const response = await github.fetch(`/repos/${github.repo}/contents/${path}?ref=${encodeURIComponent(branch)}`, {
     method: "GET",
@@ -2733,29 +2880,27 @@ function encodeTextToBase64(value) {
   return btoa(binary);
 }
 
-async function dispatchFactoryIndexerTierWorkflow(github, request) {
-  const workflowFile = "factory-torii-deployer.yml";
+async function dispatchFactoryIndexerMaintenanceWorkflow(github, request) {
+  const workflowFile = DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE;
   const response = await github.fetch(`/repos/${github.repo}/actions/workflows/${workflowFile}/dispatches`, {
     method: "POST",
     body: JSON.stringify({
       ref: github.workflowRef,
       inputs: {
-        operation: "update-tier",
-        env: request.environment,
-        torii_prefix: request.gameName,
-        torii_name: request.gameName,
-        torii_tier: request.tier,
-        launch_request_id: `indexer-tier-${Date.now()}`,
+        environment: request.environment,
+        operation_count: String(request.operations.length),
+        operations_json: JSON.stringify(request.operations),
       },
     }),
   });
 
   if (!response.ok) {
-    throw await toGitHubHttpError(response, "Failed to dispatch factory-torii-deployer workflow");
+    throw await toGitHubHttpError(response, "Failed to dispatch factory-indexer-maintenance workflow");
   }
 
   return {
     workflowFile,
+    operationCount: request.operations.length,
   };
 }
 
@@ -2987,15 +3132,20 @@ function isEligibleForRotationEvaluation(run) {
 }
 
 async function reconcileFactoryIndexerTiers(github, branch) {
+  const pendingOperations = [];
+
   for (const environment of FACTORY_ENVIRONMENTS) {
-    await reconcileFactoryGameRunIndexerTiers(github, branch, environment);
-    await reconcileFactorySeriesRunIndexerTiers(github, branch, environment);
-    await reconcileFactoryRotationRunIndexerTiers(github, branch, environment);
+    pendingOperations.push(...(await collectFactoryGameRunIndexerTierOperations(github, branch, environment)));
+    pendingOperations.push(...(await collectFactorySeriesRunIndexerTierOperations(github, branch, environment)));
+    pendingOperations.push(...(await collectFactoryRotationRunIndexerTierOperations(github, branch, environment)));
   }
+
+  await dispatchCollectedIndexerTierOperations(github, branch, pendingOperations);
 }
 
-async function reconcileFactoryGameRunIndexerTiers(github, branch, environment) {
+async function collectFactoryGameRunIndexerTierOperations(github, branch, environment) {
   const entries = await readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
+  const pendingOperations = [];
 
   for (const entry of entries) {
     if (!hasPendingIndexerTierForGameIndexEntry(entry)) {
@@ -3003,12 +3153,21 @@ async function reconcileFactoryGameRunIndexerTiers(github, branch, environment) 
     }
 
     try {
-      const run = await readFactoryRunIfPresent(github, environment, entry.gameName, branch);
-      if (!run) {
+      const desiredTier = resolvePendingIndexerTierTarget({
+        startTime: parseLaunchStartTime(entry.startTime),
+        durationSeconds: entry.durationSeconds,
+        artifacts: entry.artifacts,
+      });
+
+      if (!desiredTier) {
         continue;
       }
 
-      await reconcileFactoryGameRunIndexerTier(github, branch, environment, run);
+      pendingOperations.push({
+        workflowRef: entry.workflowRef || github.workflowRef,
+        environment,
+        operation: buildGameIndexerMaintenanceOperation(entry, desiredTier),
+      });
     } catch (error) {
       logFactoryError("game_indexer_tier_reconcile_failed", {
         environment,
@@ -3017,10 +3176,13 @@ async function reconcileFactoryGameRunIndexerTiers(github, branch, environment) 
       });
     }
   }
+
+  return pendingOperations;
 }
 
-async function reconcileFactorySeriesRunIndexerTiers(github, branch, environment) {
+async function collectFactorySeriesRunIndexerTierOperations(github, branch, environment) {
   const entries = await readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
+  const pendingOperations = [];
 
   for (const entry of entries) {
     if (!hasPendingIndexerTierForSeriesLikeIndexEntry(entry)) {
@@ -3028,12 +3190,23 @@ async function reconcileFactorySeriesRunIndexerTiers(github, branch, environment
     }
 
     try {
-      const run = await readFactorySeriesRunIfPresent(github, environment, entry.seriesName, branch);
-      if (!run) {
-        continue;
-      }
+      for (const game of entry.games || []) {
+        const desiredTier = resolvePendingIndexerTierTarget({
+          startTime: parseLaunchStartTime(game.startTime),
+          durationSeconds: game.durationSeconds,
+          artifacts: game.artifacts,
+        });
 
-      await reconcileFactorySeriesRunIndexerTier(github, branch, environment, run);
+        if (!desiredTier) {
+          continue;
+        }
+
+        pendingOperations.push({
+          workflowRef: entry.workflowRef || github.workflowRef,
+          environment,
+          operation: buildSeriesIndexerMaintenanceOperation(entry, game, desiredTier),
+        });
+      }
     } catch (error) {
       logFactoryError("series_indexer_tier_reconcile_failed", {
         environment,
@@ -3042,10 +3215,13 @@ async function reconcileFactorySeriesRunIndexerTiers(github, branch, environment
       });
     }
   }
+
+  return pendingOperations;
 }
 
-async function reconcileFactoryRotationRunIndexerTiers(github, branch, environment) {
+async function collectFactoryRotationRunIndexerTierOperations(github, branch, environment) {
   const entries = await readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
+  const pendingOperations = [];
 
   for (const entry of entries) {
     if (!hasPendingIndexerTierForSeriesLikeIndexEntry(entry)) {
@@ -3053,12 +3229,23 @@ async function reconcileFactoryRotationRunIndexerTiers(github, branch, environme
     }
 
     try {
-      const run = await readFactoryRotationRunIfPresent(github, environment, entry.rotationName, branch);
-      if (!run) {
-        continue;
-      }
+      for (const game of entry.games || []) {
+        const desiredTier = resolvePendingIndexerTierTarget({
+          startTime: parseLaunchStartTime(game.startTime),
+          durationSeconds: game.durationSeconds,
+          artifacts: game.artifacts,
+        });
 
-      await reconcileFactoryRotationRunIndexerTier(github, branch, environment, run);
+        if (!desiredTier) {
+          continue;
+        }
+
+        pendingOperations.push({
+          workflowRef: entry.workflowRef || github.workflowRef,
+          environment,
+          operation: buildRotationIndexerMaintenanceOperation(entry, game, desiredTier),
+        });
+      }
     } catch (error) {
       logFactoryError("rotation_indexer_tier_reconcile_failed", {
         environment,
@@ -3067,183 +3254,59 @@ async function reconcileFactoryRotationRunIndexerTiers(github, branch, environme
       });
     }
   }
+
+  return pendingOperations;
 }
 
-async function reconcileFactoryGameRunIndexerTier(github, branch, environment, run) {
-  if (!run.artifacts?.indexerCreated) {
-    return;
+function buildIndexerMaintenanceBatchKey(operation) {
+  return `${operation.workflowRef}::${operation.environment}`;
+}
+
+function groupIndexerMaintenanceOperations(pendingOperations) {
+  const groupedOperations = new Map();
+
+  for (const pendingOperation of pendingOperations) {
+    const key = buildIndexerMaintenanceBatchKey(pendingOperation);
+    const currentGroup = groupedOperations.get(key) || {
+      workflowRef: pendingOperation.workflowRef,
+      environment: pendingOperation.environment,
+      operations: [],
+    };
+    currentGroup.operations.push(pendingOperation.operation);
+    groupedOperations.set(key, currentGroup);
   }
 
-  const timing = resolveGameRunTiming(run);
-  const desiredTier = resolvePendingIndexerTierTarget({
-    startTime: timing.startTime,
-    durationSeconds: timing.durationSeconds,
-    artifacts: run.artifacts,
-  });
+  return Array.from(groupedOperations.values());
+}
 
-  if (!desiredTier) {
-    return;
-  }
+async function dispatchCollectedIndexerTierOperations(github, branch, pendingOperations) {
+  for (const batch of groupIndexerMaintenanceOperations(pendingOperations)) {
+    const workflowGitHub = resolveIndexerTierWorkflowGitHubClient(github, null, null, batch.workflowRef);
+    const dispatchResult = await requestIndexerMaintenanceDispatch(workflowGitHub, batch.operations);
 
-  const dispatchResult = await requestIndexerTierDispatch(
-    resolveIndexerTierWorkflowGitHubClient(github, run, null),
-    {
-      environment,
-      gameName: run.gameName,
-      tier: desiredTier,
-    },
-    {
-      runKind: "game",
-      runName: run.gameName,
-      environment,
-      gameName: run.gameName,
-      tier: desiredTier,
-    },
-  );
+    if (!dispatchResult.errorMessage) {
+      await markPendingIndexerTierUpdatesForOperations(github, branch, batch.operations, dispatchResult.at);
+      continue;
+    }
 
-  if (!dispatchResult.errorMessage) {
-    await markPendingIndexerTierUpdateForGame(
+    await markIndexerTierDispatchFailuresForOperations(
       github,
       branch,
-      environment,
-      run.gameName,
-      desiredTier,
+      batch.operations,
       dispatchResult.at,
+      dispatchResult.errorMessage,
     );
-    return;
   }
-
-  await markIndexerTierDispatchFailureForGame(
-    github,
-    branch,
-    environment,
-    run.gameName,
-    desiredTier,
-    dispatchResult.at,
-    dispatchResult.errorMessage,
-  );
 }
 
-async function reconcileFactorySeriesRunIndexerTier(github, branch, environment, run) {
-  const workflowGitHub = resolveIndexerTierWorkflowGitHubClient(github, run, null);
-  const updatedGames = [];
-  let hasChanges = false;
-
-  for (const game of run.summary?.games || []) {
-    const result = await reconcileSeriesLikeGameIndexerTier(workflowGitHub, environment, run, game);
-    updatedGames.push(result.game);
-    hasChanges = hasChanges || result.didUpdate;
-  }
-
-  if (!hasChanges) {
-    return;
-  }
-
-  await updateBranchJsonFile(
-    github,
-    resolveFactorySeriesRunRecordPath(environment, run.seriesName),
-    branch,
-    (currentRun) => ({
-      ...currentRun,
-      updatedAt: new Date().toISOString(),
-      summary: {
-        ...currentRun.summary,
-        games: updatedGames,
-      },
-    }),
-    `factory-runs: scale series indexer tiers for ${environment}/${run.seriesName}`,
-  );
-}
-
-async function reconcileFactoryRotationRunIndexerTier(github, branch, environment, run) {
-  const workflowGitHub = resolveIndexerTierWorkflowGitHubClient(github, run, null);
-  const updatedGames = [];
-  let hasChanges = false;
-
-  for (const game of run.summary?.games || []) {
-    const result = await reconcileSeriesLikeGameIndexerTier(workflowGitHub, environment, run, game);
-    updatedGames.push(result.game);
-    hasChanges = hasChanges || result.didUpdate;
-  }
-
-  if (!hasChanges) {
-    return;
-  }
-
-  await updateBranchJsonFile(
-    github,
-    resolveFactoryRotationRunRecordPath(environment, run.rotationName),
-    branch,
-    (currentRun) => ({
-      ...currentRun,
-      updatedAt: new Date().toISOString(),
-      summary: {
-        ...currentRun.summary,
-        games: updatedGames,
-      },
-    }),
-    `factory-runs: scale rotation indexer tiers for ${environment}/${run.rotationName}`,
-  );
-}
-
-async function reconcileSeriesLikeGameIndexerTier(github, environment, run, game) {
-  if (!game.artifacts?.indexerCreated) {
-    return {
-      game,
-      didUpdate: false,
-    };
-  }
-
-  const desiredTier = resolvePendingIndexerTierTarget({
-    startTime: parseLaunchStartTime(game.startTime),
-    durationSeconds: game.durationSeconds,
-    artifacts: game.artifacts,
-  });
-
-  if (!desiredTier) {
-    return {
-      game,
-      didUpdate: false,
-    };
-  }
-
-  const dispatchResult = await requestIndexerTierDispatch(
-    github,
-    {
-      environment,
-      gameName: game.gameName,
-      tier: desiredTier,
-    },
-    {
-      runKind: run.kind,
-      runName: run.seriesName || run.rotationName,
-      environment,
-      gameName: game.gameName,
-      tier: desiredTier,
-    },
-  );
-
-  return {
-    game: {
-      ...game,
-      artifacts: dispatchResult.errorMessage
-        ? buildIndexerTierDispatchFailureArtifacts(
-            game.artifacts,
-            desiredTier,
-            dispatchResult.at,
-            dispatchResult.errorMessage,
-          )
-        : buildPendingIndexerTierArtifacts(game.artifacts, desiredTier, dispatchResult.at),
-    },
-    didUpdate: true,
-  };
-}
-
-async function requestIndexerTierDispatch(github, request, context) {
+async function requestIndexerMaintenanceDispatch(github, operations) {
   const at = new Date().toISOString();
 
   try {
-    await dispatchFactoryIndexerTierWorkflow(github, request);
+    await dispatchFactoryIndexerMaintenanceWorkflow(github, {
+      environment: operations[0]?.environmentId || "mixed",
+      operations,
+    });
 
     return {
       at,
@@ -3252,8 +3315,10 @@ async function requestIndexerTierDispatch(github, request, context) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logFactoryError("indexer_tier_dispatch_failed", {
-      ...context,
+      environment: operations[0]?.environmentId || "mixed",
       workflowRef: github.workflowRef,
+      operationCount: operations.length,
+      gameNames: operations.map((operation) => operation.gameName).join(","),
       message: errorMessage,
     });
 
@@ -3262,17 +3327,6 @@ async function requestIndexerTierDispatch(github, request, context) {
       errorMessage,
     };
   }
-}
-
-function resolveGameRunTiming(run, inputRecord = null) {
-  const rawRequest = inputRecord ? resolveLaunchInputRequest(inputRecord) : {};
-  const startTime = run.artifacts?.scheduledStartTime ?? rawRequest.startTime ?? inputRecord?.startTime;
-  const parsedStartTime = parseLaunchStartTime(startTime);
-
-  return {
-    startTime: parsedStartTime,
-    durationSeconds: run.artifacts?.durationSeconds ?? rawRequest.durationSeconds,
-  };
 }
 
 function parseLaunchStartTime(value) {
@@ -3365,123 +3419,129 @@ function buildPendingIndexerTierArtifacts(artifacts, tier, requestedAt) {
 function buildIndexerTierDispatchFailureArtifacts(artifacts, tier, failedAt, errorMessage) {
   return {
     ...artifacts,
+    pendingIndexerTierTarget: tier,
+    pendingIndexerTierRequestedAt: failedAt,
     lastIndexerTierDispatchTarget: tier,
     lastIndexerTierDispatchFailedAt: failedAt,
     lastIndexerTierDispatchError: errorMessage,
   };
 }
 
-async function markPendingIndexerTierUpdateForGame(github, branch, environment, gameName, tier, requestedAt) {
-  const gameRun = await readFactoryRunIfPresent(github, environment, gameName, branch);
+function buildPendingIndexerTierEvent(tier) {
+  return `Queued indexer tier update to ${tier}`;
+}
 
-  if (gameRun) {
-    await updateBranchJsonFile(
-      github,
-      resolveFactoryRunRecordPath(environment, gameName),
-      branch,
-      (currentRun) => ({
-        ...currentRun,
-        updatedAt: new Date().toISOString(),
-        artifacts: buildPendingIndexerTierArtifacts(currentRun.artifacts, tier, requestedAt),
-      }),
-      `factory-runs: record pending indexer tier for ${environment}/${gameName}`,
-    );
-    return true;
+function buildFailedIndexerTierEvent(tier, errorMessage) {
+  return `Failed to queue indexer tier update to ${tier}: ${errorMessage}`;
+}
+
+async function markPendingIndexerTierUpdateForOperation(github, branch, operation, requestedAt) {
+  await updateBranchJsonFile(
+    github,
+    operation.recordPath,
+    branch,
+    (currentRun) =>
+      updateIndexerOperationRecord(currentRun, operation, buildPendingIndexerTierEvent(operation.tier), (artifacts) =>
+        buildPendingIndexerTierArtifacts(artifacts, operation.tier, requestedAt),
+      ),
+    `factory-runs: record pending indexer tier for ${operation.environmentId}/${operation.gameName}`,
+  );
+}
+
+function groupIndexerOperationsByRecordPath(operations) {
+  const groupedOperations = new Map();
+
+  for (const operation of operations) {
+    const currentGroup = groupedOperations.get(operation.recordPath) || [];
+    currentGroup.push(operation);
+    groupedOperations.set(operation.recordPath, currentGroup);
   }
 
-  const seriesRuns = await readFactorySeriesRunsForEnvironment(github, environment, branch);
-  const matchingSeriesRun = seriesRuns.find((run) =>
-    (run.summary?.games || []).some((game) => game.gameName === gameName),
-  );
+  return Array.from(groupedOperations.entries());
+}
 
-  if (matchingSeriesRun) {
+async function markPendingIndexerTierUpdatesForOperations(github, branch, operations, requestedAt) {
+  for (const [recordPath, groupedOperations] of groupIndexerOperationsByRecordPath(operations)) {
     await updateBranchJsonFile(
       github,
-      resolveFactorySeriesRunRecordPath(environment, matchingSeriesRun.seriesName),
+      recordPath,
       branch,
-      (currentRun) => ({
-        ...currentRun,
-        updatedAt: new Date().toISOString(),
+      (currentRun) =>
+        updateIndexerOperationRecordBatch(
+          currentRun,
+          groupedOperations,
+          (operation) => buildPendingIndexerTierEvent(operation.tier),
+          (operation, artifacts) => buildPendingIndexerTierArtifacts(artifacts, operation.tier, requestedAt),
+        ),
+      `factory-runs: record pending indexer tiers for ${groupedOperations[0].environmentId}/${groupedOperations
+        .map((operation) => operation.gameName)
+        .join(",")}`,
+    );
+  }
+}
+
+async function markIndexerTierDispatchFailuresForOperations(github, branch, operations, failedAt, errorMessage) {
+  for (const [recordPath, groupedOperations] of groupIndexerOperationsByRecordPath(operations)) {
+    await updateBranchJsonFile(
+      github,
+      recordPath,
+      branch,
+      (currentRun) =>
+        updateIndexerOperationRecordBatch(
+          currentRun,
+          groupedOperations,
+          (operation) => buildFailedIndexerTierEvent(operation.tier, errorMessage),
+          (operation, artifacts) =>
+            buildIndexerTierDispatchFailureArtifacts(artifacts, operation.tier, failedAt, errorMessage),
+        ),
+      `factory-runs: record indexer tier dispatch failures for ${groupedOperations[0].environmentId}/${groupedOperations
+        .map((operation) => operation.gameName)
+        .join(",")}`,
+    );
+  }
+}
+
+function updateIndexerOperationRecord(run, operation, latestEvent, updateArtifacts) {
+  const updatedAt = new Date().toISOString();
+
+  switch (operation.kind) {
+    case "game":
+      return {
+        ...run,
+        updatedAt,
+        artifacts: updateArtifacts(run.artifacts),
+      };
+    case "series":
+    case "rotation":
+      return {
+        ...run,
+        updatedAt,
         summary: {
-          ...currentRun.summary,
-          games: currentRun.summary.games.map((game) =>
-            game.gameName === gameName
+          ...run.summary,
+          games: (run.summary?.games || []).map((game) =>
+            game.gameName === operation.gameName
               ? {
                   ...game,
-                  artifacts: buildPendingIndexerTierArtifacts(game.artifacts, tier, requestedAt),
+                  latestEvent,
+                  artifacts: updateArtifacts(game.artifacts),
                 }
               : game,
           ),
         },
-      }),
-      `factory-runs: record pending series indexer tier for ${environment}/${gameName}`,
-    );
-
-    return true;
+      };
   }
-
-  const rotationRuns = await readFactoryRotationRunsForEnvironment(github, environment, branch);
-  const matchingRotationRun = rotationRuns.find((run) =>
-    (run.summary?.games || []).some((game) => game.gameName === gameName),
-  );
-
-  if (!matchingRotationRun) {
-    return false;
-  }
-
-  await updateBranchJsonFile(
-    github,
-    resolveFactoryRotationRunRecordPath(environment, matchingRotationRun.rotationName),
-    branch,
-    (currentRun) => ({
-      ...currentRun,
-      updatedAt: new Date().toISOString(),
-      summary: {
-        ...currentRun.summary,
-        games: currentRun.summary.games.map((game) =>
-          game.gameName === gameName
-            ? {
-                ...game,
-                artifacts: buildPendingIndexerTierArtifacts(game.artifacts, tier, requestedAt),
-              }
-            : game,
-        ),
-      },
-    }),
-    `factory-runs: record pending rotation indexer tier for ${environment}/${gameName}`,
-  );
-
-  return true;
 }
 
-async function markIndexerTierDispatchFailureForGame(
-  github,
-  branch,
-  environment,
-  gameName,
-  tier,
-  failedAt,
-  errorMessage,
-) {
-  const gameRun = await readFactoryRunIfPresent(github, environment, gameName, branch);
+function updateIndexerOperationRecordBatch(run, operations, resolveLatestEvent, updateArtifacts) {
+  let nextRun = run;
 
-  if (!gameRun) {
-    return false;
+  for (const operation of operations) {
+    nextRun = updateIndexerOperationRecord(nextRun, operation, resolveLatestEvent(operation), (artifacts) =>
+      updateArtifacts(operation, artifacts),
+    );
   }
 
-  await updateBranchJsonFile(
-    github,
-    resolveFactoryRunRecordPath(environment, gameName),
-    branch,
-    (currentRun) => ({
-      ...currentRun,
-      updatedAt: new Date().toISOString(),
-      artifacts: buildIndexerTierDispatchFailureArtifacts(currentRun.artifacts, tier, failedAt, errorMessage),
-    }),
-    `factory-runs: record indexer tier dispatch failure for ${environment}/${gameName}`,
-  );
-
-  return true;
+  return nextRun;
 }
 
 function ensureGitHubConfiguration(env) {

@@ -26,7 +26,7 @@ import {
   resolveFactoryWorldProfile,
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
-import { createIndexer } from "../indexing/indexer";
+import { ensureSlotIndexerDeployment, resolveIndexerArtifactState } from "../indexing/slot-torii";
 import { syncPaymasterPolicy } from "../paymaster";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
@@ -994,7 +994,18 @@ async function createIndexerIfNeeded(
   request: LaunchGameRequest,
   worldAddress: string,
 ): Promise<
-  Pick<LaunchGameSummary, "indexerCreated" | "indexerMode" | "indexerTier" | "indexerRequest" | "indexerWorkflowRun">
+  Pick<
+    LaunchGameSummary,
+    | "indexerCreated"
+    | "indexerMode"
+    | "indexerTier"
+    | "indexerUrl"
+    | "indexerVersion"
+    | "indexerBranch"
+    | "lastIndexerDescribeAt"
+    | "indexerRequest"
+    | "indexerWorkflowRun"
+  >
 > {
   if (request.skipIndexer) {
     runtime.progress.log("Skipping indexer creation");
@@ -1012,23 +1023,31 @@ async function createIndexerIfNeeded(
   });
   const result = await runtime.progress.run(
     "create indexer",
-    () =>
-      createIndexer(indexerRequest, {
-        onProgress: (message) => runtime.progress.log(message),
-      }),
+    async () => ensureSlotIndexerDeployment(indexerRequest, { onProgress: (message) => runtime.progress.log(message) }),
     {
       start: `Creating indexer for ${shortenHash(worldAddress)}`,
-      success: (indexerResult, elapsedMs) =>
-        `Indexer workflow succeeded in ${formatDuration(elapsedMs)} (${indexerResult.workflowRun?.htmlUrl || "missing-run-url"})`,
+      success: (indexerResult, elapsedMs) => {
+        const liveTier = indexerResult.liveState.currentTier || indexerResult.requestedTier;
+        const liveUrl = indexerResult.liveState.url;
+        const outcome = indexerResult.action === "already-live" ? "Indexer already live" : "Indexer deployed via Slot";
+        return `${outcome} in ${formatDuration(elapsedMs)} (${liveTier}${liveUrl ? `, ${liveUrl}` : ""})`;
+      },
     },
   );
+  const liveArtifacts = resolveIndexerArtifactState(result.liveState, {
+    fallbackTier: indexerRequest.tier,
+  });
 
   return {
-    indexerCreated: true,
+    indexerCreated: liveArtifacts.indexerCreated,
     indexerMode: result.mode,
-    indexerTier: indexerRequest.tier,
+    indexerTier: liveArtifacts.indexerTier,
+    indexerUrl: liveArtifacts.indexerUrl,
+    indexerVersion: liveArtifacts.indexerVersion,
+    indexerBranch: liveArtifacts.indexerBranch,
+    lastIndexerDescribeAt: liveArtifacts.lastIndexerDescribeAt,
     indexerRequest,
-    indexerWorkflowRun: result.workflowRun,
+    indexerWorkflowRun: undefined,
   };
 }
 

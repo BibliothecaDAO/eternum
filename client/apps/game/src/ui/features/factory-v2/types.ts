@@ -113,6 +113,13 @@ export interface FactoryRunStep {
   latestEvent: string;
 }
 
+export interface FactorySeriesChildStep {
+  id: FactoryRunStepId;
+  status: FactoryStepStatus;
+  latestEvent: string;
+  errorMessage?: string;
+}
+
 export interface FactoryRunRecovery {
   state: FactoryRunRecoveryState;
   canContinue: boolean;
@@ -164,6 +171,7 @@ export interface FactorySeriesChildRun {
   status: FactorySeriesChildStatus;
   latestEvent: string;
   currentStepId: FactoryRunStepId | null;
+  steps: FactorySeriesChildStep[];
   configReady?: boolean;
   worldAddress?: string;
   indexerCreated?: boolean;

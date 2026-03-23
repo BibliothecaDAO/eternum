@@ -12,6 +12,7 @@ import {
   getRunDetailMessage,
   getRunHeadline,
   getRunProgressLabel,
+  getRunStatusHighlights,
   getRunStatusMeta,
   getSimpleStepTitle,
   getStepDetailMessage,
@@ -21,7 +22,14 @@ import {
   resolveRunProgressMetrics,
 } from "../presenters";
 import { canFundFactoryRunPrize } from "../prize-funding";
-import type { FactoryGameMode, FactoryPollingState, FactoryRun, FactoryWatcherState } from "../types";
+import type {
+  FactoryGameMode,
+  FactoryPollingState,
+  FactoryRun,
+  FactoryRunStepId,
+  FactorySeriesChildStep,
+  FactoryWatcherState,
+} from "../types";
 import { FactoryV2PrizeFundingCard } from "./factory-v2-prize-funding-card";
 
 const FIRST_UPDATE_WAIT_MESSAGE = "This run just started. We are waiting for it to appear.";
@@ -403,6 +411,7 @@ const FactoryV2WatchWorkspaceContent = ({
         liveStatusLabel={state.liveStatusLabel}
         currentStepLabel={state.currentStepLabel}
         detailMessage={state.detailMessage}
+        statusHighlights={getRunStatusHighlights(selectedRun)}
         completedStep={state.completedStep}
         currentStep={state.currentStep}
         nextStep={state.nextStep}
@@ -447,6 +456,7 @@ const FactoryV2WatchRunCard = ({
   liveStatusLabel,
   currentStepLabel,
   detailMessage,
+  statusHighlights,
   completedStep,
   currentStep,
   nextStep,
@@ -471,6 +481,7 @@ const FactoryV2WatchRunCard = ({
   liveStatusLabel: string;
   currentStepLabel: string;
   detailMessage: string;
+  statusHighlights: string[];
   completedStep: FactoryRun["steps"][number] | null;
   currentStep: FactoryRun["steps"][number] | null;
   nextStep: FactoryRun["steps"][number] | null;
@@ -533,6 +544,7 @@ const FactoryV2WatchRunCard = ({
         currentStep={currentStep}
         currentStepLabel={currentStepLabel}
         detailMessage={detailMessage}
+        statusHighlights={statusHighlights}
       />
 
       {selectedRun.kind === "series" ? (
@@ -652,12 +664,14 @@ const FactoryV2CurrentStepCard = ({
   currentStep,
   currentStepLabel,
   detailMessage,
+  statusHighlights,
 }: {
   appearanceClassName: string;
   timelineRun: FactoryRun;
   currentStep: FactoryRun["steps"][number] | null;
   currentStepLabel: string;
   detailMessage: string;
+  statusHighlights: string[];
 }) => {
   const progress = resolveWatchProgressMetrics(timelineRun, currentStep);
   const isRunningStep = currentStep?.status === "running";
@@ -689,6 +703,18 @@ const FactoryV2CurrentStepCard = ({
       </div>
       <div className="mt-3 text-[15px] font-semibold text-black">{currentStepLabel}</div>
       <p className="mt-2 text-sm leading-6 text-black/56">{detailMessage}</p>
+      {statusHighlights.length > 0 ? (
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {statusHighlights.map((highlight) => (
+            <span
+              key={highlight}
+              className="rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/48"
+            >
+              {highlight}
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div className="mt-4 space-y-2">
         <div className="flex items-center justify-between gap-3 text-[11px] font-medium text-black/46">
           <span>{progress.progressLabel}</span>
@@ -797,37 +823,63 @@ const FactoryV2MultiGameChildrenCard = ({
       <div className="space-y-2">
         {children.map((child) => {
           const indexerAction = resolveChildIndexerAction(child, canManageIndexers, onBringChildIndexerLive);
+          const stepGroups = resolveChildStepGroups(child);
+          const errorMessage = resolveChildErrorMessage(child, stepGroups.failed);
+          const fallbackSummary = resolveChildFallbackSummary(child, stepGroups);
 
           return (
             <div
               key={child.id}
-              className="flex flex-col gap-2 rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-left sm:flex-row sm:items-center sm:justify-between"
+              className="space-y-3 rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-left"
             >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-black/8 bg-white/72 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/48">
-                    Game {child.seriesGameNumber}
-                  </span>
-                  <span className="truncate text-[13px] font-semibold text-black">{child.gameName}</span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-black/8 bg-white/72 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/48">
+                      Game {child.seriesGameNumber}
+                    </span>
+                    <span className="truncate text-[13px] font-semibold text-black">{child.gameName}</span>
+                  </div>
+                  {fallbackSummary ? (
+                    <p className="mt-1 text-[12px] leading-5 text-black/50">{fallbackSummary}</p>
+                  ) : null}
                 </div>
-                <p className="mt-1 text-[12px] leading-5 text-black/50">{child.latestEvent}</p>
-                {child.worldAddress ? (
-                  <p className="mt-1 truncate text-[11px] leading-5 text-black/38">{child.worldAddress}</p>
-                ) : null}
+                <div className="flex shrink-0 items-center gap-2 self-start">
+                  {indexerAction ? (
+                    <button
+                      type="button"
+                      onClick={indexerAction.onPress}
+                      className="rounded-full border border-black/10 bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
+                    >
+                      {indexerAction.label}
+                    </button>
+                  ) : null}
+                  <div className="rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/52">
+                    {resolveChildStatusLabel(child.status)}
+                  </div>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2 self-start">
-                {indexerAction ? (
-                  <button
-                    type="button"
-                    onClick={indexerAction.onPress}
-                    className="rounded-full border border-black/10 bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
-                  >
-                    {indexerAction.label}
-                  </button>
+
+              <div className="space-y-2">
+                {stepGroups.completed.length > 0 ? (
+                  <FactoryV2ChildStepGroup label="Done" steps={stepGroups.completed} tone="done" />
                 ) : null}
-                <div className="rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/52">
-                  {child.status}
-                </div>
+                {stepGroups.current.length > 0 ? (
+                  <FactoryV2ChildStepGroup label="Now" steps={stepGroups.current} tone="current" />
+                ) : null}
+                {stepGroups.pending.length > 0 ? (
+                  <FactoryV2ChildStepGroup label="Pending" steps={stepGroups.pending} tone="pending" />
+                ) : null}
+                {stepGroups.failed.length > 0 ? (
+                  <FactoryV2ChildStepGroup label="Needs attention" steps={stepGroups.failed} tone="failed" />
+                ) : null}
+                {errorMessage ? (
+                  <FactoryV2CopyableMessageBox
+                    label="Error details"
+                    message={errorMessage}
+                    dataTestId={`factory-child-error-${child.gameName}`}
+                  />
+                ) : null}
               </div>
             </div>
           );
@@ -841,13 +893,13 @@ function resolveMultiGameChildrenCopy(kind: FactoryRun["kind"]) {
   if (kind === "rotation") {
     return {
       title: "Rotation games",
-      description: "Each queued game keeps its own setup state inside this rotation.",
+      description: "See which queued games are ready, still moving, or need help inside this rotation.",
     };
   }
 
   return {
     title: "Series games",
-    description: "Each child game keeps its own status inside the parent run.",
+    description: "See which child games are ready, still moving, or need help inside this series.",
   };
 }
 
@@ -881,6 +933,177 @@ function resolveChildIndexerActionLabel(child: NonNullable<FactoryRun["children"
   }
 
   return "Turn on indexer";
+}
+
+function resolveChildStepGroups(child: NonNullable<FactoryRun["children"]>[number]) {
+  const steps = resolveChildTimelineSteps(child);
+
+  return {
+    completed: steps.filter((step) => step.status === "succeeded" || step.status === "already_done"),
+    current: steps.filter((step) => step.status === "running"),
+    pending: steps.filter((step) => step.status === "pending"),
+    failed: steps.filter((step) => step.status === "blocked" || step.status === "failed"),
+  };
+}
+
+const HIDDEN_CHILD_STEP_IDS = new Set<FactoryRunStepId>([
+  "launch-request",
+  "create-series",
+  "wait-factory-index",
+  "wait-for-factory-index",
+  "wait-for-factory-indexes",
+]);
+
+function resolveChildTimelineSteps(child: NonNullable<FactoryRun["children"]>[number]): FactorySeriesChildStep[] {
+  if (child.steps.length > 0) {
+    return child.steps.filter((step) => shouldShowChildTimelineStep(step.id));
+  }
+
+  if (!child.currentStepId || !shouldShowChildTimelineStep(child.currentStepId)) {
+    return [];
+  }
+
+  return [
+    {
+      id: child.currentStepId,
+      status: resolveChildStepStatusFromChildStatus(child.status),
+      latestEvent: child.latestEvent,
+    },
+  ];
+}
+
+function shouldShowChildTimelineStep(stepId: FactoryRunStepId) {
+  return !HIDDEN_CHILD_STEP_IDS.has(stepId);
+}
+
+function resolveChildStepStatusFromChildStatus(status: NonNullable<FactoryRun["children"]>[number]["status"]) {
+  switch (status) {
+    case "failed":
+      return "failed" as const;
+    case "running":
+      return "running" as const;
+    case "succeeded":
+      return "succeeded" as const;
+    case "pending":
+    default:
+      return "pending" as const;
+  }
+}
+
+function resolveChildFallbackSummary(
+  child: NonNullable<FactoryRun["children"]>[number],
+  stepGroups: ReturnType<typeof resolveChildStepGroups>,
+) {
+  const showsAnyStepGroup =
+    stepGroups.completed.length > 0 ||
+    stepGroups.current.length > 0 ||
+    stepGroups.pending.length > 0 ||
+    stepGroups.failed.length > 0;
+
+  if (showsAnyStepGroup) {
+    return null;
+  }
+
+  return normalizeCopyableMessage(child.latestEvent);
+}
+
+function resolveChildErrorMessage(
+  child: NonNullable<FactoryRun["children"]>[number],
+  failedSteps: FactorySeriesChildStep[],
+) {
+  for (const step of failedSteps) {
+    const message = resolveChildStepErrorMessage(step);
+    if (message) {
+      return message;
+    }
+  }
+
+  if (child.status !== "failed") {
+    return null;
+  }
+
+  return normalizeCopyableMessage(child.latestEvent);
+}
+
+function resolveChildStepErrorMessage(step: FactorySeriesChildStep) {
+  if (step.status !== "failed" && step.status !== "blocked") {
+    return null;
+  }
+
+  return normalizeCopyableMessage(step.errorMessage || step.latestEvent);
+}
+
+function resolveChildStatusLabel(status: NonNullable<FactoryRun["children"]>[number]["status"]) {
+  switch (status) {
+    case "succeeded":
+      return "Ready";
+    case "running":
+      return "Working";
+    case "failed":
+      return "Failed";
+    case "pending":
+    default:
+      return "Pending";
+  }
+}
+
+const FactoryV2ChildStepGroup = ({
+  label,
+  steps,
+  tone,
+}: {
+  label: string;
+  steps: FactorySeriesChildStep[];
+  tone: "done" | "current" | "pending" | "failed";
+}) => (
+  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start">
+    <div
+      className={cn("text-[10px] font-semibold uppercase tracking-[0.18em]", resolveChildStepGroupLabelClassName(tone))}
+    >
+      {label}
+    </div>
+    <div className="flex flex-wrap gap-1.5">
+      {steps.map((step) => (
+        <span
+          key={`${step.id}-${step.status}`}
+          className={cn(
+            "rounded-full border px-2 py-1 text-[10px] font-medium leading-4",
+            resolveChildStepChipClassName(tone),
+          )}
+        >
+          {getSimpleStepTitle({ id: step.id, title: step.id })}
+        </span>
+      ))}
+    </div>
+  </div>
+);
+
+function resolveChildStepGroupLabelClassName(tone: "done" | "current" | "pending" | "failed") {
+  switch (tone) {
+    case "done":
+      return "text-black/42";
+    case "current":
+      return "text-[#7a4b22]";
+    case "failed":
+      return "text-rose-700";
+    case "pending":
+    default:
+      return "text-black/44";
+  }
+}
+
+function resolveChildStepChipClassName(tone: "done" | "current" | "pending" | "failed") {
+  switch (tone) {
+    case "done":
+      return "border-black/8 bg-black/[0.04] text-black/56";
+    case "current":
+      return "border-[#d4b487]/65 bg-[rgba(255,249,239,0.92)] text-[#7a4b22]";
+    case "failed":
+      return "border-rose-300/60 bg-rose-50 text-rose-700";
+    case "pending":
+    default:
+      return "border-black/8 bg-white/68 text-black/50";
+  }
 }
 
 const FactoryV2WatchPendingCard = ({
@@ -1405,6 +1628,7 @@ const FactoryV2StepSummary = ({
   manualAction: FactoryV2StepManualAction | null;
 }) => {
   const statusMeta = getStepStatusMeta(step.status);
+  const errorMessage = resolveRunStepErrorMessage(step);
 
   return (
     <div className="flex items-start gap-3 rounded-[16px] border border-black/8 bg-black/[0.03] px-3.5 py-3">
@@ -1422,6 +1646,15 @@ const FactoryV2StepSummary = ({
           </div>
         </div>
         <div className="mt-2 text-sm leading-6 text-black/56">{getStepDetailMessage(step)}</div>
+        {errorMessage ? (
+          <div className="mt-3">
+            <FactoryV2CopyableMessageBox
+              label="Error details"
+              message={errorMessage}
+              dataTestId={`factory-step-error-${step.id}`}
+            />
+          </div>
+        ) : null}
         {manualAction ? (
           <div className="mt-3 space-y-2 rounded-[14px] border border-black/8 bg-white/55 px-3 py-2.5">
             <div className="text-[12px] leading-5 text-black/52">{manualAction.description}</div>
@@ -1438,6 +1671,100 @@ const FactoryV2StepSummary = ({
     </div>
   );
 };
+
+const FactoryV2CopyableMessageBox = ({
+  label,
+  message,
+  dataTestId,
+}: {
+  label: string;
+  message: string;
+  dataTestId?: string;
+}) => {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+
+  useEffect(() => {
+    if (copyState === "idle") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCopyState("idle");
+    }, 1_500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [copyState]);
+
+  const copyMessage = async () => {
+    if (!navigator.clipboard?.writeText) {
+      setCopyState("error");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+  };
+
+  return (
+    <div
+      data-testid={dataTestId}
+      className="space-y-2 rounded-[16px] border border-rose-300/50 bg-rose-50/80 px-3 py-2.5 shadow-[0_10px_24px_rgba(190,24,93,0.06)]"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-700">{label}</div>
+        <button
+          type="button"
+          onClick={() => {
+            void copyMessage();
+          }}
+          className="rounded-full border border-rose-200/80 bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-700 transition-colors hover:bg-white"
+        >
+          {resolveCopyableMessageActionLabel(copyState)}
+        </button>
+      </div>
+      <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-[12px] border border-rose-200/80 bg-white/70 px-3 py-2 text-[11px] leading-5 text-rose-950">
+        {message}
+      </pre>
+    </div>
+  );
+};
+
+function resolveCopyableMessageActionLabel(copyState: "idle" | "copied" | "error") {
+  switch (copyState) {
+    case "copied":
+      return "Copied";
+    case "error":
+      return "Copy failed";
+    default:
+      return "Copy";
+  }
+}
+
+function resolveRunStepErrorMessage(step: FactoryRun["steps"][number]) {
+  if (step.status !== "failed" && step.status !== "blocked") {
+    return null;
+  }
+
+  const rawMessage = normalizeCopyableMessage(step.latestEvent || step.verification);
+  const genericMessage = normalizeCopyableMessage(getStepStatusMessage(step.id, step.status));
+
+  if (!rawMessage || rawMessage === genericMessage) {
+    return null;
+  }
+
+  return rawMessage;
+}
+
+function normalizeCopyableMessage(message: string | null | undefined) {
+  const normalizedMessage = message?.trim();
+  return normalizedMessage ? normalizedMessage : null;
+}
 
 interface FactoryV2StepManualAction {
   label: string;
