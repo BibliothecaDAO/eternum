@@ -7,27 +7,26 @@
   "gameType": "blitz",
   "rotationName": "bltz-knicker",
   "seriesName": "bltz-knicker",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexers",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-knicker/23416597299-1.json",
-  "latestLaunchRequestId": "23416597299-1",
+  "inputPath": "inputs/slot/blitz/rotations/bltz-knicker/23416596674-1.json",
+  "latestLaunchRequestId": "23416596674-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T00:12:41.396Z",
-  "updatedAt": "2026-03-23T00:46:13.800Z",
+  "updatedAt": "2026-03-23T00:46:15.943Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23416597299,
+    "workflowRunId": 23416596674,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23416597299",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23416596674",
     "ref": "codex/factory-v2-rotation-review",
     "sha": "300ce3bd03303ebaad9801fa22affc6187b0465a"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-03-23T01:01:13.800Z",
     "lastRetryAt": "2026-03-23T00:40:12.594Z"
   },
   "evaluation": {
@@ -74,9 +73,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup needs attention"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-23T00:46:15.943Z"
     }
   ],
   "summary": {
@@ -1047,5 +1047,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-knicker.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T00:12:59.485Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23416596674-1",
+    "workflowRunId": 23416596674,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-03-23T00:46:15.943Z",
+    "expiresAt": "2026-03-23T01:31:15.943Z"
   }
 }
