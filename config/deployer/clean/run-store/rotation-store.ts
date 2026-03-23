@@ -16,6 +16,7 @@ import {
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
 import { resolveFactoryRotationRunId, resolveFactoryRotationRunRecordPath } from "./paths";
+import { applyTargetedSeriesLikeGameStepStatus } from "./series-like-step-status";
 import { resolveRotationStepTitle } from "./steps";
 import type {
   FactoryRotationEvaluationState,
@@ -395,8 +396,37 @@ function resolveRotationSummaryFromWorkspace(request: FactoryRotationRunRequestC
 function mergeRotationSummary(
   currentSummary: LaunchRotationSummary,
   nextSummary: LaunchRotationSummary | null,
+  options: {
+    stepId?: LaunchRotationStepId;
+    targetGameNames?: string[];
+    status?: FactoryRunStepStatus;
+    latestEvent?: string;
+    timestamp?: string;
+    errorMessage?: string;
+  } = {},
 ): LaunchRotationSummary {
-  return nextSummary || currentSummary;
+  const mergedSummary = nextSummary || currentSummary;
+  if (!options.stepId || !options.status || !options.latestEvent || !options.timestamp) {
+    return mergedSummary;
+  }
+
+  const nextGames = applyTargetedSeriesLikeGameStepStatus({
+    games: mergedSummary.games,
+    stepId: options.stepId,
+    targetGameNames: options.targetGameNames,
+    status: options.status,
+    latestEvent: options.latestEvent,
+    timestamp: options.timestamp,
+    errorMessage: options.errorMessage,
+  });
+  if (nextGames === mergedSummary.games) {
+    return mergedSummary;
+  }
+
+  return {
+    ...mergedSummary,
+    games: nextGames,
+  };
 }
 
 function buildRotationAutoRetrySchedule(
@@ -572,13 +602,21 @@ export async function recordFactoryRotationLaunchStepStarted(
     context,
     summary,
     options,
-    (current) =>
-      finalizeRotationRunRecord(
+    (current) => {
+      const nextSummary = mergeRotationSummary(current.summary, null, {
+        stepId: request.stepId,
+        targetGameNames: request.request.targetGameNames,
+        status: "running",
+        latestEvent: buildRotationStepStartedEvent(request.stepId),
+        timestamp: context.timestamp,
+      });
+
+      return finalizeRotationRunRecord(
         {
           ...updateFactoryRotationRunContext(
             ensureFactoryRotationRunLeaseAvailable(current, context),
             context,
-            current.summary,
+            nextSummary,
           ),
           activeLease: buildFactoryRotationRunLease(context, request.stepId),
           steps: markRotationStepStatus(
@@ -588,14 +626,15 @@ export async function recordFactoryRotationLaunchStepStarted(
             buildRotationStepStartedEvent(request.stepId),
             context.timestamp,
           ),
-          summary: current.summary,
+          summary: nextSummary,
           autoRetry: {
             ...current.autoRetry,
             nextRetryAt: undefined,
           },
         },
         context.timestamp,
-      ),
+      );
+    },
     `start ${request.stepId}`,
   );
 }
@@ -616,7 +655,13 @@ export async function recordFactoryRotationLaunchStepSucceeded(
     options,
     (current) => {
       const nextSummary = persistRotationLaunchSummary(
-        mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request)),
+        mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request), {
+          stepId: request.stepId,
+          targetGameNames: request.request.targetGameNames,
+          status: "succeeded",
+          latestEvent: buildRotationStepSucceededEvent(request.stepId),
+          timestamp: context.timestamp,
+        }),
       );
       const nextStepStatus = resolveRotationSummaryStepStatus(nextSummary, request.stepId);
       const nextStepEvent = resolveRotationSummaryStepEvent(nextSummary, request.stepId);
@@ -667,7 +712,14 @@ export async function recordFactoryRotationLaunchStepFailed(
     await resolvePlannedRotationSummary(request.request),
     options,
     (current) => {
-      const nextSummary = mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request));
+      const nextSummary = mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request), {
+        stepId: request.stepId,
+        targetGameNames: request.request.targetGameNames,
+        status: "failed",
+        latestEvent: buildRotationStepFailedEvent(request.stepId, request.errorMessage),
+        timestamp: context.timestamp,
+        errorMessage: request.errorMessage,
+      });
       const nextRun = finalizeRotationRunRecord(
         {
           ...updateFactoryRotationRunContext(releaseFactoryRotationRunLease(current, context), context, nextSummary),

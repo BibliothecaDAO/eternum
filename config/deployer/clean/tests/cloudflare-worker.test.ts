@@ -855,6 +855,15 @@ describe("factory worker recovery signals", () => {
         });
       }
 
+      if (String(url).includes("/contents/inputs/slot/blitz/bltz-test-14/101-1.json")) {
+        return buildGitHubContentsResponse({
+          workflow: {
+            ref: "codex/factory-v2-rotation-review",
+          },
+          request: {},
+        });
+      }
+
       if (String(url).includes("/actions/workflows/factory-torii-deployer.yml/dispatches")) {
         return new Response(null, { status: 204 });
       }
@@ -895,6 +904,139 @@ describe("factory worker recovery signals", () => {
     expect(nextRunRecord.artifacts.indexerTier).toBe("basic");
     expect(nextRunRecord.artifacts.pendingIndexerTierTarget).toBe("legendary");
     expect(nextRunRecord.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
+  });
+
+  test("scheduled tier reconciliation uses the stored workflow ref and keeps reconciling after one child fails", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    let dispatchCount = 0;
+    const startedAt = new Date(Date.now() - 60_000).toISOString();
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/runs/") && value.includes("?ref=factory-runs") && !value.includes(".json?ref=")) {
+        if (value.includes("/contents/runs/slot/blitz/series?ref=factory-runs")) {
+          return buildGitHubDirectoryResponse([{ type: "file", path: "runs/slot/blitz/series/bltz-knicker.json" }]);
+        }
+
+        return buildGitHubDirectoryResponse([]);
+      }
+
+      if (
+        value.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "series",
+          runId: "slot.blitz:series:bltz-knicker",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          seriesName: "bltz-knicker",
+          status: "running",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/series/bltz-knicker/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [],
+          summary: {
+            games: [
+              {
+                gameName: "bltz-knicker-01",
+                startTime: startedAt,
+                durationSeconds: 3600,
+                artifacts: {
+                  indexerCreated: true,
+                  indexerTier: "basic",
+                },
+              },
+              {
+                gameName: "bltz-knicker-02",
+                startTime: startedAt,
+                durationSeconds: 3600,
+                artifacts: {
+                  indexerCreated: true,
+                  indexerTier: "basic",
+                },
+              },
+            ],
+          },
+        });
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/series/bltz-knicker/101-1.json")) {
+        return buildGitHubContentsResponse({
+          workflow: {
+            ref: "codex/factory-v2-rotation-review",
+          },
+          request: {},
+        });
+      }
+
+      if (value.includes("/actions/workflows/factory-torii-deployer.yml/dispatches")) {
+        dispatchCount += 1;
+
+        if (dispatchCount === 1) {
+          return new Response(JSON.stringify({ message: "dispatch exploded" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(null, { status: 204 });
+      }
+
+      if (value.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const scheduledTasks: Promise<unknown>[] = [];
+    await worker.scheduled({}, buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next" }), {
+      waitUntil(promise: Promise<unknown>) {
+        scheduledTasks.push(promise);
+      },
+    });
+    await Promise.all(scheduledTasks);
+
+    const dispatchCalls = fetchCalls.filter((call) =>
+      call.url.includes("/actions/workflows/factory-torii-deployer.yml/dispatches"),
+    );
+    const updateCall = fetchCalls.find(
+      (call) => call.url.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && call.init?.method === "PUT",
+    );
+    const updateBody = JSON.parse(String(updateCall?.init?.body));
+    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+    const firstGame = nextRunRecord.summary.games.find(
+      (game: { gameName: string }) => game.gameName === "bltz-knicker-01",
+    );
+    const secondGame = nextRunRecord.summary.games.find(
+      (game: { gameName: string }) => game.gameName === "bltz-knicker-02",
+    );
+    const firstDispatchBody = JSON.parse(String(dispatchCalls[0]?.init?.body));
+
+    expect(dispatchCalls).toHaveLength(2);
+    expect(firstDispatchBody.ref).toBe("codex/factory-v2-rotation-review");
+    expect(firstGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
+    expect(firstGame.artifacts.lastIndexerTierDispatchFailedAt).toEqual(expect.any(String));
+    expect(firstGame.artifacts.lastIndexerTierDispatchError).toContain(
+      "Failed to dispatch factory-torii-deployer workflow",
+    );
+    expect(secondGame.artifacts.pendingIndexerTierTarget).toBe("legendary");
+    expect(secondGame.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
   });
 });
 
@@ -1097,6 +1239,13 @@ function buildGitHubContentsResponse(value: unknown) {
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
+}
+
+function buildGitHubDirectoryResponse(entries: unknown[]) {
+  return new Response(JSON.stringify(entries), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 function offsetTimestamp(offsetMs: number) {

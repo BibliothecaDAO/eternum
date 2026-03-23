@@ -385,6 +385,10 @@ jobs:
             if [ -n "${GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES}" ]; then
               run_store_args+=(--auto-retry-interval-minutes "${GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES}")
             fi
+
+            if [ -n "${GAME_LAUNCH_TARGET_GAME_NAMES_JSON}" ]; then
+              run_store_args+=(--target-game-names-json "${GAME_LAUNCH_TARGET_GAME_NAMES_JSON}")
+            fi
           fi
 
           if [ -n "${FACTORY_RUN_STORE_BRANCH}" ]; then

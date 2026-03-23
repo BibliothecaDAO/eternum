@@ -6,6 +6,8 @@ import {
   recordFactoryLaunchStarted,
   recordFactoryRotationLaunchStarted,
   recordFactoryRotationLaunchStepSucceeded,
+  recordFactorySeriesLaunchStarted,
+  recordFactorySeriesLaunchStepSucceeded,
   recordFactoryLaunchStepFailed,
   recordFactoryLaunchStepStarted,
   recordFactoryLaunchStepSucceeded,
@@ -559,6 +561,172 @@ describe("factory run store", () => {
     expect(createIndexersStep?.latestEvent).toContain("Waiting to run");
   });
 
+  test("rewrites a targeted series child indexer status without a refreshed workspace summary", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await recordFactorySeriesLaunchStarted({
+      environmentId: "slot.blitz",
+      seriesName: "bltz-series-recovery",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "slot.blitz",
+        seriesName: "bltz-series-recovery",
+        games: [
+          { gameName: "bltz-series-recovery-01", startTime: "2099-01-01T00:00:00Z" },
+          { gameName: "bltz-series-recovery-02", startTime: "2099-01-01T01:00:00Z" },
+        ],
+      },
+    });
+
+    const runPath = "runs/slot/blitz/series/bltz-series-recovery.json";
+    const staleRun = branchStore.readJson(runPath);
+    branchStore.writeJson(runPath, {
+      ...staleRun,
+      status: "attention",
+      currentStepId: "create-indexers",
+      steps: staleRun.steps.map((step: { id: string }) =>
+        step.id === "create-indexers"
+          ? markTestRunStepStatus(step, "failed", "Create indexers failed", "Timed out waiting for torii")
+          : step,
+      ),
+      summary: {
+        ...staleRun.summary,
+        games: [
+          markTestGameStepStatus(
+            staleRun.summary.games[0],
+            "create-indexers",
+            "succeeded",
+            "Create indexers succeeded",
+          ),
+          markTestGameStepStatus(
+            staleRun.summary.games[1],
+            "create-indexers",
+            "failed",
+            "factory-torii-deployer #816 failed",
+            "Timed out waiting for torii",
+          ),
+        ],
+      },
+    });
+
+    await recordFactorySeriesLaunchStepSucceeded({
+      environmentId: "slot.blitz",
+      seriesName: "bltz-series-recovery",
+      requestedLaunchStep: "create-indexers",
+      stepId: "create-indexers",
+      request: {
+        environmentId: "slot.blitz",
+        seriesName: "bltz-series-recovery",
+        targetGameNames: ["bltz-series-recovery-02"],
+        games: [
+          { gameName: "bltz-series-recovery-01", startTime: "2099-01-01T00:00:00Z" },
+          { gameName: "bltz-series-recovery-02", startTime: "2099-01-01T01:00:00Z" },
+        ],
+      },
+    });
+
+    const runRecord = branchStore.readJson(runPath);
+    const recoveredGame = runRecord.summary.games.find(
+      (game: { gameName: string }) => game.gameName === "bltz-series-recovery-02",
+    );
+
+    expect(recoveredGame?.status).toBe("succeeded");
+    expect(recoveredGame?.currentStepId).toBeNull();
+    expect(recoveredGame?.latestEvent).toContain("succeeded");
+    expect(recoveredGame?.artifacts?.indexerCreated).toBe(true);
+    expect(recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.status).toBe(
+      "succeeded",
+    );
+    expect(
+      recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.errorMessage,
+    ).toBeUndefined();
+  });
+
+  test("rewrites a targeted rotation child indexer status without a refreshed workspace summary", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await recordFactoryRotationLaunchStarted({
+      environmentId: "slot.blitz",
+      rotationName: "bltz-rotation-recovery",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "slot.blitz",
+        rotationName: "bltz-rotation-recovery",
+        firstGameStartTime: "2099-01-01T00:00:00Z",
+        gameIntervalMinutes: 60,
+        maxGames: 2,
+        advanceWindowGames: 2,
+        evaluationIntervalMinutes: 15,
+      },
+    });
+
+    const runPath = "runs/slot/blitz/rotations/bltz-rotation-recovery.json";
+    const staleRun = branchStore.readJson(runPath);
+    branchStore.writeJson(runPath, {
+      ...staleRun,
+      status: "attention",
+      currentStepId: "create-indexers",
+      steps: staleRun.steps.map((step: { id: string }) =>
+        step.id === "create-indexers"
+          ? markTestRunStepStatus(step, "failed", "Create indexers failed", "Timed out waiting for torii")
+          : step,
+      ),
+      summary: {
+        ...staleRun.summary,
+        games: [
+          markTestGameStepStatus(
+            staleRun.summary.games[0],
+            "create-indexers",
+            "succeeded",
+            "Create indexers succeeded",
+          ),
+          markTestGameStepStatus(
+            staleRun.summary.games[1],
+            "create-indexers",
+            "failed",
+            "factory-torii-deployer #816 failed",
+            "Timed out waiting for torii",
+          ),
+        ],
+      },
+    });
+
+    await recordFactoryRotationLaunchStepSucceeded({
+      environmentId: "slot.blitz",
+      rotationName: "bltz-rotation-recovery",
+      requestedLaunchStep: "create-indexers",
+      stepId: "create-indexers",
+      request: {
+        environmentId: "slot.blitz",
+        rotationName: "bltz-rotation-recovery",
+        firstGameStartTime: "2099-01-01T00:00:00Z",
+        gameIntervalMinutes: 60,
+        maxGames: 2,
+        advanceWindowGames: 2,
+        evaluationIntervalMinutes: 15,
+        targetGameNames: ["bltz-rotation-recovery-02"],
+      },
+    });
+
+    const runRecord = branchStore.readJson(runPath);
+    const recoveredGame = runRecord.summary.games.find(
+      (game: { gameName: string }) => game.gameName === "bltz-rotation-recovery-02",
+    );
+
+    expect(recoveredGame?.status).toBe("succeeded");
+    expect(recoveredGame?.currentStepId).toBeNull();
+    expect(recoveredGame?.latestEvent).toContain("succeeded");
+    expect(recoveredGame?.artifacts?.indexerCreated).toBe(true);
+    expect(recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.status).toBe(
+      "succeeded",
+    );
+    expect(
+      recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.errorMessage,
+    ).toBeUndefined();
+  });
+
   test("marks a failed step as needing attention", async () => {
     const branchStore = createBranchStoreFetch();
     globalThis.fetch = branchStore.fetch;
@@ -875,6 +1043,65 @@ function buildRotationTestGame(gameName: string, seriesGameNumber: number, start
   };
 }
 
+function markTestRunStepStatus(
+  step: {
+    id: string;
+    title: string;
+    workflowStepName: string;
+    latestEvent: string;
+    status: string;
+    errorMessage?: string;
+  },
+  status: string,
+  latestEvent: string,
+  errorMessage?: string,
+) {
+  return {
+    ...step,
+    status,
+    latestEvent,
+    errorMessage,
+  };
+}
+
+function markTestGameStepStatus(
+  game: {
+    currentStepId: string | null;
+    latestEvent: string;
+    status: string;
+    steps: Array<{ id: string; status: string; latestEvent?: string; errorMessage?: string; updatedAt?: string }>;
+    artifacts: Record<string, unknown>;
+  },
+  stepId: string,
+  status: string,
+  latestEvent: string,
+  errorMessage?: string,
+) {
+  return {
+    ...game,
+    currentStepId: status === "succeeded" ? null : stepId,
+    latestEvent,
+    status,
+    steps: game.steps.map((step) =>
+      step.id === stepId
+        ? {
+            ...step,
+            status,
+            latestEvent,
+            errorMessage,
+          }
+        : step,
+    ),
+    artifacts:
+      stepId === "create-indexers" && status === "succeeded"
+        ? {
+            ...game.artifacts,
+            indexerCreated: true,
+          }
+        : game.artifacts,
+  };
+}
+
 function createBranchStoreFetch() {
   let branchExists = false;
   let version = 0;
@@ -931,6 +1158,10 @@ function createBranchStoreFetch() {
             path: filePath,
           },
         });
+      }
+
+      if (url.includes("api.cartridge.gg") && url.includes("/torii/sql?query=")) {
+        return Response.json([]);
       }
 
       throw new Error(`Unexpected fetch request: ${url}`);
