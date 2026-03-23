@@ -5,15 +5,14 @@
   "owner": {
     "environment": "slot.blitz",
     "gameName": "bltz-zestible",
-    "launchRequestId": "23461904125-1",
+    "launchRequestId": "23463003838-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23461904125,
+    "workflowRunId": 23463003838,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "91698b5f-3e3e-47b0-b2da-484abf483531"
+    "stepId": "create-world",
+    "leaseId": "b9012546-bf71-4247-90cb-0681e2f8bfdb"
   },
-  "acquiredAt": "2026-03-23T22:00:01.815Z",
-  "heartbeatAt": "2026-03-23T22:00:19.949Z",
-  "expiresAt": "2026-03-23T22:00:19.949Z",
-  "releasedAt": "2026-03-23T22:00:19.949Z"
+  "acquiredAt": "2026-03-23T22:21:58.212Z",
+  "heartbeatAt": "2026-03-23T22:21:58.212Z",
+  "expiresAt": "2026-03-23T22:31:58.212Z"
 }
