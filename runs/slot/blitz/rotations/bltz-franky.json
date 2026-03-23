@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23426677686-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T07:46:40.859Z",
+  "updatedAt": "2026-03-23T07:50:15.319Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -678,7 +678,9 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23423848107",
             "status": "completed",
             "conclusion": "success"
-          }
+          },
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-03-23T07:50:14.065Z"
         },
         "durationSeconds": 3600
       },
