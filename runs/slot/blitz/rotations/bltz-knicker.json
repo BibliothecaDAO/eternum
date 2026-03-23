@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23415890438-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-03-23T00:12:41.396Z",
-  "updatedAt": "2026-03-23T00:17:32.636Z",
+  "updatedAt": "2026-03-23T00:17:35.340Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -64,9 +64,10 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-23T00:17:35.340Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -356,5 +357,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-knicker.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T00:12:59.485Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23415890438-1",
+    "workflowRunId": 23415890438,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-worlds",
+    "acquiredAt": "2026-03-23T00:17:35.340Z",
+    "expiresAt": "2026-03-23T01:02:35.340Z"
   }
 }
