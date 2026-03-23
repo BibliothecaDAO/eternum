@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-23T20:14:21.917Z",
+  "updatedAt": "2026-03-23T20:19:37.940Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -101,12 +101,11 @@
       "rotationName": "bltz-franky",
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23457847452-1.json",
-      "status": "running",
-      "updatedAt": "2026-03-23T20:14:21.917Z",
+      "status": "complete",
+      "updatedAt": "2026-03-23T20:19:37.940Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-03-23T20:59:21.917Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -116,8 +115,7 @@
       },
       "evaluation": {
         "intervalMinutes": 5,
-        "nextEvaluationAt": "2026-03-23T20:19:13.396Z",
-        "lastEvaluatedAt": "2026-03-23T20:14:13.396Z"
+        "lastEvaluatedAt": "2026-03-23T20:19:37.940Z"
       },
       "games": [
         {
@@ -157,25 +155,37 @@
           "gameName": "bltz-franky-04",
           "startTime": 1774257600,
           "durationSeconds": 5400,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic"
+          }
         },
         {
           "gameName": "bltz-franky-05",
           "startTime": 1774261200,
           "durationSeconds": 5400,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic"
+          }
         },
         {
           "gameName": "bltz-franky-06",
           "startTime": 1774264800,
           "durationSeconds": 5400,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic"
+          }
         },
         {
           "gameName": "bltz-franky-07",
           "startTime": 1774268400,
           "durationSeconds": 5400,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic"
+          }
         }
       ]
     }
