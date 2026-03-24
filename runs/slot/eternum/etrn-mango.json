@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-mango/23475224236-1.json",
   "latestLaunchRequestId": "23475224236-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-24T05:52:11.779Z",
-  "updatedAt": "2026-03-24T05:52:17.164Z",
+  "updatedAt": "2026-03-24T05:53:31.579Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-03-24T05:52:17.164Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-03-24T05:52:17.164Z",
+      "finishedAt": "2026-03-24T05:53:31.579Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -76,14 +77,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-03-24T05:55:00.000Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23475224236-1",
-    "workflowRunId": 23475224236,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-03-24T05:52:17.164Z",
-    "expiresAt": "2026-03-24T06:37:17.164Z"
+    "scheduledStartTime": 1774331700,
+    "summaryPath": ".context/game-launch/slot-eternum-etrn-mango.json",
+    "durationSeconds": 0,
+    "worldAddress": "0x059466b5d6939b132ab7fdd5a8518b8142e2d61b903e342b651517e8957d01cd",
+    "createGameTxHash": "0x64c055b85c060897b24d30a4cd8a83bc6835589aa8f5c076278944bde17c34b"
   }
 }
