@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-bakers/23495465469-1.json",
   "latestLaunchRequestId": "23495465469-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-24T14:44:30.319Z",
-  "updatedAt": "2026-03-24T14:49:25.637Z",
+  "updatedAt": "2026-03-24T14:49:59.645Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-24T15:04:16.951Z",
-    "lastEvaluatedAt": "2026-03-24T14:49:16.951Z"
+    "nextEvaluationAt": "2026-03-24T15:04:59.645Z",
+    "lastEvaluatedAt": "2026-03-24T14:49:59.645Z"
   },
   "steps": [
     {
@@ -82,10 +82,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-24T14:49:25.637Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-03-24T14:49:25.637Z",
+      "finishedAt": "2026-03-24T14:49:59.645Z"
     },
     {
       "id": "sync-paymaster",
@@ -122,7 +123,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -274,8 +275,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-24T14:49:39.957Z"
           },
           {
             "id": "sync-paymaster",
@@ -287,7 +289,23 @@
           "worldAddress": "0x012ceda5ea24aca14d7d07b3c30a528e3f7905de0c979521b72c6c9fb7e5a0a3",
           "createGameTxHash": "0x3e8313bc4c71752338ddeb41a693ccde2e65a9d61948cc215f6c6e246a08fdf",
           "configureTxHash": "0xb5c81981055d63ab2f121f2a3910d11cd023ae32566585b2f820f3f4ff4f2a",
-          "worldConfigTxHash": "0xb5c81981055d63ab2f121f2a3910d11cd023ae32566585b2f820f3f4ff4f2a"
+          "worldConfigTxHash": "0xb5c81981055d63ab2f121f2a3910d11cd023ae32566585b2f820f3f4ff4f2a",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-bakers-01/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-24T14:49:39.956Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-bakers-01",
+            "worldAddress": "0x012ceda5ea24aca14d7d07b3c30a528e3f7905de0c979521b72c6c9fb7e5a0a3",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -297,7 +315,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -449,8 +467,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-24T14:49:58.043Z"
           },
           {
             "id": "sync-paymaster",
@@ -462,7 +481,23 @@
           "worldAddress": "0x0205ab3fe1759782e01f8b08c999036ef9646248a9f5c7c3e05732b8312ce796",
           "createGameTxHash": "0x7eb35b3787c38c81e1069ddbfdfd506d15906781784a00903001df60cf31de3",
           "configureTxHash": "0x67baea899781da506031e83a998002add91867c6104397ce08d606a3a179afe",
-          "worldConfigTxHash": "0x67baea899781da506031e83a998002add91867c6104397ce08d606a3a179afe"
+          "worldConfigTxHash": "0x67baea899781da506031e83a998002add91867c6104397ce08d606a3a179afe",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-bakers-02/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-24T14:49:58.042Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-bakers-02",
+            "worldAddress": "0x0205ab3fe1759782e01f8b08c999036ef9646248a9f5c7c3e05732b8312ce796",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       }
     ],
@@ -473,13 +508,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-bakers.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T14:44:49.418Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23495465469-1",
-    "workflowRunId": 23495465469,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-24T14:49:25.637Z",
-    "expiresAt": "2026-03-24T15:34:25.637Z"
   }
 }
