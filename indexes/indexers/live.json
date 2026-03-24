@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T06:12:25.937Z",
+  "updatedAt": "2026-03-24T06:15:36.100Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -434,15 +434,11 @@
     "eternum-sandbox-2": {
       "gameName": "eternum-sandbox-2",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "basic",
-        "url": "https://api.cartridge.gg/x/eternum-sandbox-2/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T02:56:57.286Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment eternum-sandbox-2 not found"
       },
-      "updatedAt": "2026-03-24T02:56:57.286Z"
+      "updatedAt": "2026-03-24T06:15:36.100Z"
     },
     "bltz-thrum-725-01": {
       "gameName": "bltz-thrum-725-01",
