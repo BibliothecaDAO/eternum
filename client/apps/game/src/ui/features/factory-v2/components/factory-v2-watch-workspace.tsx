@@ -410,8 +410,8 @@ const FactoryV2WatchWorkspaceContent = ({
         launchPlaceholderName={state.launchPlaceholderName}
         pollingState={pollingState}
         headline={watcher?.title ?? `Opening ${state.launchPlaceholderName}`}
-        primaryNotice={watcher?.detail ?? notice ?? FIRST_UPDATE_WAIT_MESSAGE}
-        secondaryNotice={notice && notice !== (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE) ? notice : null}
+        primaryNotice={watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE}
+        noticeMessage={notice}
       />
     );
   }
@@ -570,7 +570,14 @@ const FactoryV2WatchRunCard = ({
 
       {actionBarProps ? <FactoryV2WatchActionBar {...actionBarProps} /> : null}
 
-      {secondaryNotice ? <p className="text-center text-sm leading-6 text-black/52">{secondaryNotice}</p> : null}
+      {secondaryNotice ? (
+        <FactoryV2CopyableMessageBox
+          label="Run details"
+          message={secondaryNotice}
+          dataTestId="factory-watch-run-notice"
+          compact
+        />
+      ) : null}
 
       <button
         type="button"
@@ -1029,14 +1036,14 @@ const FactoryV2WatchPendingCard = ({
   pollingState,
   headline,
   primaryNotice,
-  secondaryNotice,
+  noticeMessage,
 }: {
   appearance: ReturnType<typeof resolveFactoryModeAppearance>;
   launchPlaceholderName: string;
   pollingState: FactoryPollingState;
   headline: string;
   primaryNotice: string;
-  secondaryNotice: string | null;
+  noticeMessage: string | null;
 }) => (
   <FactoryV2WatchSurfaceCard
     appearanceClassName={appearance.featureSurfaceClassName}
@@ -1053,7 +1060,14 @@ const FactoryV2WatchPendingCard = ({
         <h3 className="text-[1.2rem] font-semibold tracking-tight text-black">{headline}</h3>
       </div>
       <p className="text-sm leading-6 text-black/56">{primaryNotice}</p>
-      {secondaryNotice ? <p className="text-sm leading-6 text-black/52">{secondaryNotice}</p> : null}
+      {noticeMessage && noticeMessage !== primaryNotice ? (
+        <FactoryV2CopyableMessageBox
+          label="Run details"
+          message={noticeMessage}
+          dataTestId="factory-watch-pending-notice"
+          compact
+        />
+      ) : null}
       <div
         className={cn(
           "rounded-[22px] border border-black/8 px-4 py-4 text-center shadow-[0_14px_34px_rgba(30,20,10,0.07)]",
@@ -1228,7 +1242,14 @@ const FactoryV2WatchSearchPanel = ({
       </div>
       {lookupDisabledReason ? <p className="text-sm leading-6 text-black/50">{lookupDisabledReason}</p> : null}
       {isResolvingRunName ? <p className="text-sm leading-6 text-black/50">Looking for that run.</p> : null}
-      {searchNotice ? <FactoryV2SearchNotice message={searchNotice} /> : null}
+      {searchNotice ? (
+        <FactoryV2CopyableMessageBox
+          label="Run details"
+          message={searchNotice}
+          dataTestId="factory-watch-search-notice"
+          compact
+        />
+      ) : null}
       {!lookupDisabledReason && !isResolvingRunName && !searchNotice ? (
         <p className="text-sm leading-6 text-black/46">Press Enter to check its status.</p>
       ) : null}
@@ -1263,12 +1284,6 @@ const FactoryV2WatchSearchPanel = ({
         </div>
       ) : null}
     </div>
-  </div>
-);
-
-const FactoryV2SearchNotice = ({ message }: { message: string }) => (
-  <div className="rounded-[16px] border border-rose-300/50 bg-rose-50/80 px-3 py-2.5 text-sm leading-6 text-rose-700 shadow-[0_10px_24px_rgba(190,24,93,0.06)]">
-    {message}
   </div>
 );
 
@@ -1589,10 +1604,12 @@ const FactoryV2CopyableMessageBox = ({
   label,
   message,
   dataTestId,
+  compact = false,
 }: {
   label: string;
   message: string;
   dataTestId?: string;
+  compact?: boolean;
 }) => {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
@@ -1627,21 +1644,40 @@ const FactoryV2CopyableMessageBox = ({
   return (
     <div
       data-testid={dataTestId}
-      className="space-y-2 rounded-[16px] border border-rose-300/50 bg-rose-50/80 px-3 py-2.5 shadow-[0_10px_24px_rgba(190,24,93,0.06)]"
+      className={cn(
+        "overflow-hidden border border-rose-300/50 bg-rose-50/80 text-left shadow-[0_10px_24px_rgba(190,24,93,0.06)]",
+        compact ? "space-y-1.5 rounded-[14px] px-2.5 py-2" : "space-y-2 rounded-[16px] px-3 py-2.5",
+      )}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-700">{label}</div>
+        <div
+          className={cn(
+            "font-semibold uppercase tracking-[0.18em] text-rose-700",
+            compact ? "text-[9px]" : "text-[10px]",
+          )}
+        >
+          {label}
+        </div>
         <button
           type="button"
+          data-testid={dataTestId ? `${dataTestId}-copy` : undefined}
           onClick={() => {
             void copyMessage();
           }}
-          className="rounded-full border border-rose-200/80 bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-700 transition-colors hover:bg-white"
+          className={cn(
+            "rounded-full border border-rose-200/80 bg-white/80 font-semibold uppercase tracking-[0.16em] text-rose-700 transition-colors hover:bg-white",
+            compact ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]",
+          )}
         >
           {resolveCopyableMessageActionLabel(copyState)}
         </button>
       </div>
-      <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-[12px] border border-rose-200/80 bg-white/70 px-3 py-2 text-[11px] leading-5 text-rose-950">
+      <pre
+        className={cn(
+          "overflow-auto whitespace-pre-wrap break-words rounded-[12px] border border-rose-200/80 bg-white/70 text-rose-950",
+          compact ? "max-h-24 px-2.5 py-2 text-[10px] leading-4" : "max-h-40 px-3 py-2 text-[11px] leading-5",
+        )}
+      >
         {message}
       </pre>
     </div>

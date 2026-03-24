@@ -237,6 +237,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
   });
 
   it("keeps recent runs visible even when the search panel is showing an error notice", async () => {
+    const noticeMessage = "Something went wrong while checking this game. We kept your place here.";
     const recentRun = buildRun({
       id: "recent-run-2",
       name: "bltz-recent-02",
@@ -256,7 +257,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
           isWatcherBusy={false}
           isResolvingRunName={false}
-          notice="Something went wrong while checking this game. We kept your place here."
+          notice={noticeMessage}
           lookupDisabledReason={null}
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
@@ -271,12 +272,24 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     });
 
     const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
+    const searchNotice = container.querySelector('[data-testid="factory-watch-search-notice"]');
 
-    expect(searchPanel?.textContent).toContain(
-      "Something went wrong while checking this game. We kept your place here.",
-    );
+    expect(searchPanel?.textContent).toContain(noticeMessage);
+    expect(searchNotice?.textContent).toContain("Run details");
+    expect(searchNotice?.textContent).toContain(noticeMessage);
     expect(searchPanel?.textContent).toContain("bltz-recent-02");
     expect(searchPanel?.textContent).toContain("Needs attention");
+
+    const copyButton = container.querySelector(
+      '[data-testid="factory-watch-search-notice-copy"]',
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      copyButton?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(noticeMessage);
   });
 
   it("shows the pending launch request as the first setup step", async () => {
@@ -745,9 +758,59 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
     const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
     const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
+    const searchNotice = container.querySelector('[data-testid="factory-watch-search-notice"]');
 
     expect(searchPanel?.textContent).toContain(missingRunNotice);
+    expect(searchNotice?.textContent).toContain(missingRunNotice);
     expect(selectedPanel?.textContent).not.toContain(missingRunNotice);
+  });
+
+  it("shows opening-run errors inside a compact copyable box", async () => {
+    const openingNotice = "Slot timed out while opening bltz-opening-01. Check again in a moment.";
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[]}
+          selectedRun={null}
+          activeRunName="bltz-opening-01"
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "checking", detail: "Updating automatically", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={openingNotice}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const pendingPanel = container.querySelector('[data-testid="factory-watch-pending-panel"]');
+    const pendingNotice = container.querySelector('[data-testid="factory-watch-pending-notice"]');
+
+    expect(pendingPanel?.textContent).toContain("Opening bltz-opening-01");
+    expect(pendingNotice?.textContent).toContain("Run details");
+    expect(pendingNotice?.textContent).toContain(openingNotice);
+
+    const copyButton = container.querySelector(
+      '[data-testid="factory-watch-pending-notice-copy"]',
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      copyButton?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(openingNotice);
   });
 
   it("hides continue when a game is already complete", async () => {
