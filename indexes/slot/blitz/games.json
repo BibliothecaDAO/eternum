@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-24T05:32:29.138Z",
+  "updatedAt": "2026-03-24T07:33:01.010Z",
   "entries": {
     "sg-64": {
       "kind": "game",
@@ -24,6 +24,22 @@
         "indexerTier": "legendary",
         "lastIndexerDescribeAt": "2026-03-24T05:32:29.138Z"
       }
+    },
+    "sg-65": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "sg-65",
+      "path": "runs/slot/blitz/sg-65.json",
+      "inputPath": "inputs/slot/blitz/sg-65/23478147463-1.json",
+      "status": "running",
+      "updatedAt": "2026-03-24T07:33:01.010Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "1774342800",
+      "artifacts": {}
     }
   }
 }
