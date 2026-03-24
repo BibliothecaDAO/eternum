@@ -21,6 +21,7 @@ pub mod village_systems {
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, Direction, NUM_DIRECTIONS};
     use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
+    use crate::models::resource::production::production::ProductionStrategyImpl;
     use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureVillageSlots, VillageTroop,
@@ -136,6 +137,7 @@ pub mod village_systems {
                 BuildingCategory::ResourceLabor,
                 BuildingImpl::center(),
             );
+            ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, village_id);
 
             AchievementTrait::progress(
                 world, caller.into(), Tasks::VILLAGE_SETTLEMENT, 1, starknet::get_block_timestamp(),
