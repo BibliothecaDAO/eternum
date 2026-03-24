@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23479959959-1",
   "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-24T08:00:10.872Z",
-  "updatedAt": "2026-03-24T08:35:47.157Z",
+  "updatedAt": "2026-03-24T08:35:50.638Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -90,9 +90,10 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Setting up gas coverage started",
+      "startedAt": "2026-03-24T08:35:50.638Z"
     }
   ],
   "summary": {
@@ -891,5 +892,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-escapade.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T08:00:40.047Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23479959959-1",
+    "workflowRunId": 23479959959,
+    "workflowRunAttempt": 1,
+    "stepId": "sync-paymaster",
+    "acquiredAt": "2026-03-24T08:35:50.638Z",
+    "expiresAt": "2026-03-24T09:20:50.638Z"
   }
 }
