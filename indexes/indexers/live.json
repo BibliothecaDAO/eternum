@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T15:38:45.871Z",
+  "updatedAt": "2026-03-24T15:47:55.774Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -410,28 +410,20 @@
     "bltz-vibe-915": {
       "gameName": "bltz-vibe-915",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "pro",
-        "url": "https://api.cartridge.gg/x/bltz-vibe-915/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:52:22.487Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-vibe-915 not found"
       },
-      "updatedAt": "2026-03-24T09:52:22.487Z"
+      "updatedAt": "2026-03-24T15:47:55.774Z"
     },
     "bltz-riff-79": {
       "gameName": "bltz-riff-79",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "pro",
-        "url": "https://api.cartridge.gg/x/bltz-riff-79/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T13:12:13.442Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-riff-79 not found"
       },
-      "updatedAt": "2026-03-24T13:12:13.442Z"
+      "updatedAt": "2026-03-24T15:47:55.774Z"
     }
   }
 }
