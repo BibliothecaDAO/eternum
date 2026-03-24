@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-mango/23475224236-1.json",
   "latestLaunchRequestId": "23475224236-1",
-  "currentStepId": "grant-village-pass-role",
+  "currentStepId": "create-banks",
   "createdAt": "2026-03-24T05:52:11.779Z",
-  "updatedAt": "2026-03-24T05:54:47.461Z",
+  "updatedAt": "2026-03-24T05:55:09.158Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "grant-village-pass-role",
       "title": "Setting up village pass",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up village pass",
-      "latestEvent": "Setting up village pass started",
-      "startedAt": "2026-03-24T05:54:47.461Z"
+      "latestEvent": "Setting up village pass succeeded",
+      "startedAt": "2026-03-24T05:54:47.461Z",
+      "finishedAt": "2026-03-24T05:55:09.158Z"
     },
     {
       "id": "create-banks",
@@ -91,14 +92,7 @@
     "createGameTxHash": "0x64c055b85c060897b24d30a4cd8a83bc6835589aa8f5c076278944bde17c34b",
     "configureTxHash": "0x12888223178a6cf38edc0d56422e9f7c69eb65971c8bc7579d906d8ae520c98",
     "worldConfigTxHash": "0x12888223178a6cf38edc0d56422e9f7c69eb65971c8bc7579d906d8ae520c98",
-    "lootChestRoleTxHash": "0x147f11c3a266cc464b4ad9d42262da86691ca79fa0b0fb1a3812a3bf92d1b1a"
-  },
-  "activeLease": {
-    "launchRequestId": "23475224236-1",
-    "workflowRunId": 23475224236,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-village-pass-role",
-    "acquiredAt": "2026-03-24T05:54:47.461Z",
-    "expiresAt": "2026-03-24T06:39:47.461Z"
+    "lootChestRoleTxHash": "0x147f11c3a266cc464b4ad9d42262da86691ca79fa0b0fb1a3812a3bf92d1b1a",
+    "villagePassRoleTxHash": "0x66da2beaf1b48fda31691b02946723920c5683de311b5b2960950a7755b7aba"
   }
 }
