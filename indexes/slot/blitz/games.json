@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-24T07:34:49.216Z",
+  "updatedAt": "2026-03-24T07:34:57.497Z",
   "entries": {
     "sg-64": {
       "kind": "game",
@@ -32,12 +32,13 @@
       "path": "runs/slot/blitz/sg-65.json",
       "inputPath": "inputs/slot/blitz/sg-65/23478147463-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T07:34:49.216Z",
+      "updatedAt": "2026-03-24T07:34:57.497Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-24T08:19:57.497Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-role",
+      "recoverablePendingStepId": "create-indexer",
       "startTime": 1774342800,
       "durationSeconds": 5400,
       "artifacts": {}
