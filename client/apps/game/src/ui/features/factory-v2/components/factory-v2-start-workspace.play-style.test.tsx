@@ -348,6 +348,8 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(launchButton).toBeDefined();
     expect(launchButton?.hasAttribute("disabled")).toBe(false);
     expect(container.textContent).toContain("append any new games and resume that shared run");
+    expect(container.textContent).toContain("Only used after a failed step.");
+    expect(container.textContent).toContain("This is how long the launcher waits before trying that game again.");
   });
 
   it("shows rotation controls and a queued preview when rotation is selected", async () => {
@@ -368,6 +370,10 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(container.textContent).toContain("Keep ahead");
     expect(container.textContent).toContain("Game interval");
     expect(container.textContent).toContain("Evaluate every");
+    expect(container.textContent).toContain(
+      "How often the rotation checks whether it needs to queue more games ahead.",
+    );
+    expect(container.textContent).toContain("Only used after a failed step.");
     expect(container.textContent).toContain("bltz-ladder-loop-01");
     expect(container.textContent).toContain("bltz-ladder-loop-02");
   });

@@ -3,6 +3,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import Clock3 from "lucide-react/dist/esm/icons/clock-3";
+import Info from "lucide-react/dist/esm/icons/info";
 import Rocket from "lucide-react/dist/esm/icons/rocket";
 import RotateCw from "lucide-react/dist/esm/icons/rotate-cw";
 import { formatFactoryDurationLabel } from "../duration";
@@ -1241,6 +1242,16 @@ const FactoryV2SeriesBasics = ({
         </div>
       </div>
     </div>
+
+    <FactoryV2ScheduleMeaningList
+      items={[
+        {
+          label: "Retry interval",
+          description:
+            "Only used after a failed step. This is how long the launcher waits before trying that game again.",
+        },
+      ]}
+    />
   </div>
 );
 
@@ -1360,6 +1371,20 @@ const FactoryV2RotationBasics = ({
         ))}
       </FactoryV2SelectField>
     </div>
+
+    <FactoryV2ScheduleMeaningList
+      items={[
+        {
+          label: "Evaluate every",
+          description: "How often the rotation checks whether it needs to queue more games ahead.",
+        },
+        {
+          label: "Retry interval",
+          description:
+            "Only used after a failed step. This is how long the launcher waits before trying that game again.",
+        },
+      ]}
+    />
   </div>
 );
 
@@ -1597,6 +1622,33 @@ const FactoryV2SelectField = ({
         {children}
       </select>
       <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/45" />
+    </div>
+  </div>
+);
+
+const FactoryV2ScheduleMeaningList = ({
+  items,
+}: {
+  items: Array<{
+    label: string;
+    description: string;
+  }>;
+}) => (
+  <div className="space-y-2 rounded-[20px] border border-black/8 bg-white/58 px-4 py-3">
+    {items.map((item) => (
+      <FactoryV2ScheduleMeaningItem key={item.label} label={item.label} description={item.description} />
+    ))}
+  </div>
+);
+
+const FactoryV2ScheduleMeaningItem = ({ label, description }: { label: string; description: string }) => (
+  <div className="flex items-start gap-3 text-left">
+    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-black/10 bg-white/72 text-black/42">
+      <Info className="h-3.5 w-3.5" />
+    </span>
+    <div className="min-w-0">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/42">{label}</div>
+      <p className="mt-1 text-[13px] leading-5 text-black/54">{description}</p>
     </div>
   </div>
 );
