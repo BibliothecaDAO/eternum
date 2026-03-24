@@ -52,15 +52,20 @@ export const AmmTokenInput = memo(
     const selectedToken = tokens.find((candidate) => candidate.address === token) ?? null;
 
     return (
-      <div className={cn(
-        "w-full rounded-2xl border border-gold/10 p-4 shadow-[0_16px_36px_-26px_rgba(0,0,0,0.95)] backdrop-blur-[10px]",
-        readOnly ? "bg-black/50" : "bg-black/35"
-      )}>
+      <div
+        className={cn(
+          "w-full rounded-2xl border border-gold/10 p-4 shadow-[0_16px_36px_-26px_rgba(0,0,0,0.95)] backdrop-blur-[10px]",
+          readOnly ? "bg-black/50" : "bg-black/35",
+        )}
+      >
         <div className="mb-2 text-[11px] uppercase tracking-[0.18em] text-gold/45">{label}</div>
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <NumberInput
-              className={cn("h-14 rounded-2xl border border-gold/10", readOnly ? "bg-black/20 opacity-60 cursor-not-allowed" : "bg-gold/12")}
+              className={cn(
+                "h-14 rounded-2xl border border-gold/10",
+                readOnly ? "bg-black/20 opacity-60 cursor-not-allowed" : "bg-gold/12",
+              )}
               value={amount}
               onChange={onAmountChange}
               arrows={false}

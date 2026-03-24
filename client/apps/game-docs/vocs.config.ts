@@ -104,6 +104,7 @@ export default defineConfig({
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
         { text: "Resource Addresses", link: "/overview/resource-addresses" },
+        { text: "The Agora (AMM)", link: "/overview/agora" },
       ],
     },
     {
