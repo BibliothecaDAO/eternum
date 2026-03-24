@@ -10,7 +10,7 @@ export const TradeHistoryRowHeader = () => {
   const headers = ["Time", "Type", "Taker", "Trade", "Price"];
 
   return (
-    <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow overflow-y-auto mb-4">
+    <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow mb-4">
       {headers.map((header, index) => (
         <div key={index} className="uppercase text-xs font-bold">
           {header}
@@ -37,7 +37,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const fullDateTime = `${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`;
 
   return (
-    <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow overflow-y-auto p-1">
+    <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow p-1">
       <div className="text-xs my-auto cursor-help" title={fullDateTime}>
         {relativeTime}
       </div>
