@@ -186,6 +186,105 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(actionBar?.className).toContain("sticky");
   });
 
+  it("shows recent runs in the picker without auto-selecting one", async () => {
+    const recentRun = buildRun({
+      id: "recent-run-1",
+      name: "bltz-recent-01",
+      status: "complete",
+      summary: "Complete",
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[recentRun]}
+          selectedRun={null}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const searchInput = container.querySelector("#factory-watch-game") as HTMLInputElement | null;
+    const emptyPanel = container.querySelector('[data-testid="factory-watch-empty-panel"]');
+
+    if (!searchInput) {
+      throw new Error("Expected watch search controls to be rendered");
+    }
+
+    expect(searchInput.value).toBe("");
+    expect(emptyPanel?.textContent).toContain("Type a run name and press Enter to check its status.");
+
+    const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
+    const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
+
+    expect(searchPanel?.textContent).toContain("bltz-recent-01");
+    expect(selectedPanel).toBeNull();
+    expect(emptyPanel?.textContent).toContain("Find a run");
+  });
+
+  it("keeps recent runs visible even when the search panel is showing an error notice", async () => {
+    const recentRun = buildRun({
+      id: "recent-run-2",
+      name: "bltz-recent-02",
+      status: "attention",
+      summary: "Needs attention",
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[recentRun]}
+          selectedRun={null}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice="Something went wrong while checking this game. We kept your place here."
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
+
+    expect(searchPanel?.textContent).toContain(
+      "Something went wrong while checking this game. We kept your place here.",
+    );
+    expect(searchPanel?.textContent).toContain("bltz-recent-02");
+    expect(searchPanel?.textContent).toContain("Needs attention");
+  });
+
   it("shows the pending launch request as the first setup step", async () => {
     const pendingRun = buildRun({
       id: "pending:slot.blitz:bltz-sprint-01",
@@ -923,6 +1022,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
+          adminSecret="factory-secret"
+          hasAdminSecret
           onFundPrize={onFundPrize}
         />,
       );
@@ -934,7 +1035,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     await openPrizeFundingSection(container);
 
     const amountInput = container.querySelector('[data-testid="factory-prize-amount"]') as HTMLInputElement | null;
-    const secretInput = container.querySelector('[data-testid="factory-prize-secret"]') as HTMLInputElement | null;
     const firstGameCheckbox = container.querySelector(
       '[data-testid="factory-prize-game-bltz-weekend-cup-01"]',
     ) as HTMLInputElement | null;
@@ -954,12 +1054,11 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(container.textContent).toContain("World config not finished");
 
     await act(async () => {
-      if (!amountInput || !secretInput || !submitButton) {
+      if (!amountInput || !submitButton) {
         throw new Error("Expected prize funding controls to be rendered");
       }
 
       setInputValue(amountInput, "250");
-      setInputValue(secretInput, "factory-secret");
       submitButton.click();
       await waitForAsyncWork();
     });
@@ -1203,6 +1302,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={onStopAutoRetry}
+          hasAdminSecret
           onFundPrize={vi.fn()}
         />,
       );

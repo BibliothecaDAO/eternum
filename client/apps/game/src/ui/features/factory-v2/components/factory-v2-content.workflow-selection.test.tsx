@@ -22,6 +22,8 @@ vi.mock("../mode-appearance", () => ({
     canvasClassName: "",
     backdropClassName: "",
     sectionDividerClassName: "",
+    quietSurfaceClassName: "",
+    secondaryButtonClassName: "",
   })),
 }));
 
@@ -100,6 +102,8 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   isWatcherBusy: false,
   isLoadingRuns: false,
   isResolvingRunName: false,
+  factoryAdminSecret: "",
+  hasSavedFactoryAdminSecret: false,
   notice: null,
   environmentUnavailableReason: null,
   moreOptions: {
@@ -115,6 +119,9 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   selectEnvironment: vi.fn(),
   selectPreset: vi.fn(),
   selectRun: vi.fn(),
+  setFactoryAdminSecret: vi.fn(),
+  saveFactoryAdminSecret: vi.fn(),
+  clearFactoryAdminSecret: vi.fn(),
   setDraftGameName: vi.fn(),
   setDraftStartAt: vi.fn(),
   setDraftDurationMinutes: vi.fn(),
@@ -170,6 +177,7 @@ describe("FactoryV2Content workflow selection", () => {
     });
 
     expect(container.textContent).toContain("Start workspace");
+    expect(container.textContent).toContain("Developer tools");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
 
     vi.mocked(useFactoryV2).mockReturnValue(
@@ -191,6 +199,7 @@ describe("FactoryV2Content workflow selection", () => {
     });
 
     expect(container.textContent).toContain("Start workspace");
+    expect(container.textContent).toContain("Developer tools");
     expect(container.textContent).not.toContain("Watch workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
   });
@@ -215,6 +224,7 @@ describe("FactoryV2Content workflow selection", () => {
 
     expect(container.textContent).toContain("Watch workspace");
     expect(container.textContent).not.toContain("Start workspace");
+    expect(container.textContent).not.toContain("Developer tools");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");
   });
 
@@ -250,6 +260,7 @@ describe("FactoryV2Content workflow selection", () => {
     });
 
     expect(container.textContent).toContain("Start workspace");
+    expect(container.textContent).toContain("Developer tools");
     expect(container.textContent).not.toContain("Watch workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
   });
@@ -274,6 +285,7 @@ describe("FactoryV2Content workflow selection", () => {
 
     expect(factory.launchSelectedPreset).toHaveBeenCalledTimes(1);
     expect(container.textContent).toContain("Watch workspace");
+    expect(container.textContent).not.toContain("Developer tools");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");
   });
 });

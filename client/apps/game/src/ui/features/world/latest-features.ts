@@ -10,6 +10,48 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-24",
+    title: "Cleaner Indexer Steps",
+    description:
+      "Factory V2 now keeps Manage indexers quieter by separating filters from selection tools, hiding actions until you pick a game, and reducing chip-heavy admin clutter.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "One Admin Secret",
+    description:
+      "Factory V2 now keeps the admin secret in one shared control at the top, so prize funding, retry controls, and indexer upkeep all reuse the same saved secret.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Smoother Indexer Flow",
+    description:
+      "Factory V2 now makes Manage indexers feel more like Create game, with a calmer refresh-first layout, live filters, one guided action button, and delete hidden behind its own confirm step.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Safer Launch Taps",
+    description:
+      "Factory V2 now keeps the hidden fv2/dev control below the game launch area and leaves more bottom breathing room, so the main launch button stays easier to tap on mobile.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Clearer Launch Timing",
+    description:
+      "Factory V2 now explains the difference between rotation evaluation checks and failed-step retry timing directly in the launch form, so those schedule fields are easier to set correctly.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Unselected Recent Runs",
+    description:
+      "Factory V2 now keeps recent runs visible in Find a run without auto-opening one, so you can browse the list first and only open a run when you explicitly choose it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
     title: "Cleaner Indexer Workspace",
     description:
       "Factory V2 now gives Manage indexers the same guided feel as Create game, with one reusable secret field, a cleaner tap-to-select live list, and manual name lookup hidden until it is actually needed.",

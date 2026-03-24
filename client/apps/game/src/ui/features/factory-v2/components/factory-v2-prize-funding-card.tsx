@@ -9,6 +9,7 @@ import {
 interface FactoryV2PrizeFundingCardProps {
   run: FactoryRun;
   isBusy: boolean;
+  adminSecret: string;
   onSubmit: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
 }
 
@@ -28,16 +29,14 @@ interface FactoryV2PrizeFundingState {
   games: FactoryV2PrizeFundingSeriesGame[];
 }
 
-export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2PrizeFundingCardProps) => {
+export const FactoryV2PrizeFundingCard = ({ run, isBusy, adminSecret, onSubmit }: FactoryV2PrizeFundingCardProps) => {
   const fundingState = useMemo(() => resolvePrizeFundingState(run), [run]);
   const fundingStateKey = useMemo(() => buildPrizeFundingStateKey(fundingState), [fundingState]);
   const [amount, setAmount] = useState("");
-  const [adminSecret, setAdminSecret] = useState("");
   const [selectedGameNames, setSelectedGameNames] = useState<string[]>(fundingState?.defaultSelectedGameNames ?? []);
 
   useEffect(() => {
     setAmount("");
-    setAdminSecret("");
     setSelectedGameNames(fundingState?.defaultSelectedGameNames ?? []);
   }, [fundingStateKey, run.id]);
 
@@ -63,8 +62,6 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2Pr
       adminSecret: normalizedSecret,
       selectedGameNames: isSeriesFunding ? selectedGameNames : [],
     });
-
-    setAdminSecret("");
   };
 
   return (
@@ -91,7 +88,7 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2Pr
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div>
         <label className="space-y-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/44">Prize amount</span>
           <input
@@ -101,17 +98,6 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, onSubmit }: FactoryV2Pr
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
             placeholder={isSeriesFunding ? "Per selected game" : "Token amount"}
-            className="w-full rounded-[18px] border border-black/10 bg-white/72 px-3 py-3 text-sm text-black shadow-[0_10px_24px_rgba(15,23,42,0.04)] outline-none transition-colors focus:border-[#9d6c35]/50"
-          />
-        </label>
-        <label className="space-y-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/44">Admin secret</span>
-          <input
-            data-testid="factory-prize-secret"
-            type="password"
-            value={adminSecret}
-            onChange={(event) => setAdminSecret(event.target.value)}
-            placeholder="Required to confirm funding"
             className="w-full rounded-[18px] border border-black/10 bg-white/72 px-3 py-3 text-sm text-black shadow-[0_10px_24px_rgba(15,23,42,0.04)] outline-none transition-colors focus:border-[#9d6c35]/50"
           />
         </label>

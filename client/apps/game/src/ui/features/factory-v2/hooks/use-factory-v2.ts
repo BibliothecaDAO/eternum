@@ -56,6 +56,11 @@ import {
   type FactoryPendingLaunch,
 } from "../pending-launch-storage";
 import {
+  clearFactoryV2AdminSecret as clearStoredFactoryAdminSecret,
+  readFactoryV2AdminSecret as readStoredFactoryAdminSecret,
+  writeFactoryV2AdminSecret as writeStoredFactoryAdminSecret,
+} from "../admin-secret-storage";
+import {
   buildFactorySeriesGameDrafts,
   DEFAULT_FACTORY_SERIES_GAME_COUNT,
   resolveNextFactorySeriesGameNumber,
@@ -140,6 +145,7 @@ export const useFactoryV2 = () => {
   const initialSuggestedGameName = buildSuggestedGameName(initialMode, []);
   const initialSuggestedSeriesName = buildSuggestedSeriesName(initialMode, []);
   const initialSuggestedRotationName = buildSuggestedRotationName(initialMode, []);
+  const initialFactoryAdminSecret = readStoredFactoryAdminSecret();
   const { account } = useAccountStore();
   const [selectedMode, setSelectedMode] = useState<FactoryGameMode>(initialMode);
   const [selectedEnvironmentId, setSelectedEnvironmentId] = useState(initialSelection.environmentId);
@@ -191,6 +197,10 @@ export const useFactoryV2 = () => {
   });
   const [isLoadingRuns, setIsLoadingRuns] = useState(false);
   const [isResolvingRunName, setIsResolvingRunName] = useState(false);
+  const [factoryAdminSecret, setFactoryAdminSecret] = useState(initialFactoryAdminSecret);
+  const [hasSavedFactoryAdminSecret, setHasSavedFactoryAdminSecret] = useState(
+    initialFactoryAdminSecret.trim().length > 0,
+  );
   const [liveIndexers, setLiveIndexers] = useState<FactoryWorkerLiveIndexerEntry[]>([]);
   const [liveIndexersUpdatedAt, setLiveIndexersUpdatedAt] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -224,7 +234,7 @@ export const useFactoryV2 = () => {
     mergePendingRunsIntoEnvironment(environmentRuns, visiblePendingRuns),
     acceptedRunState,
   );
-  const selectedRun = modeRuns.find((run) => run.id === selectedRunId) ?? modeRuns[0] ?? null;
+  const selectedRun = modeRuns.find((run) => run.id === selectedRunId) ?? null;
   const selectedPreset = presets.find((preset) => preset.id === selectedPresetId) ?? presets[0] ?? null;
   const matchingOwnedSeries = resolveMatchingOwnedSeries(ownedSeries, draftSeriesName);
   const nextSeriesGameNumber = resolveNextFactorySeriesGameNumber(matchingOwnedSeries?.lastGameNumber);
@@ -362,11 +372,15 @@ export const useFactoryV2 = () => {
   }, [presets, selectedMode, selectedPresetId]);
 
   useEffect(() => {
-    if (selectedRunId && modeRuns.some((run) => run.id === selectedRunId)) {
+    if (!selectedRunId) {
       return;
     }
 
-    setSelectedRunId(modeRuns[0]?.id ?? null);
+    if (modeRuns.some((run) => run.id === selectedRunId)) {
+      return;
+    }
+
+    setSelectedRunId(null);
   }, [modeRuns, selectedRunId]);
 
   useEffect(() => {
@@ -1132,9 +1146,10 @@ export const useFactoryV2 = () => {
       return;
     }
 
-    const adminSecret = requestFactoryAdminSecret(selectedRun.kind);
+    const adminSecret = factoryAdminSecret.trim();
 
     if (!adminSecret) {
+      setNotice("Add the factory admin secret above to stop auto-retry.");
       return;
     }
 
@@ -1399,6 +1414,28 @@ export const useFactoryV2 = () => {
     }
   };
 
+  const saveFactoryAdminSecret = () => {
+    const normalizedAdminSecret = factoryAdminSecret.trim();
+
+    if (!normalizedAdminSecret) {
+      clearStoredFactoryAdminSecret();
+      setFactoryAdminSecret("");
+      setHasSavedFactoryAdminSecret(false);
+      return;
+    }
+
+    if (writeStoredFactoryAdminSecret(normalizedAdminSecret)) {
+      setFactoryAdminSecret(normalizedAdminSecret);
+      setHasSavedFactoryAdminSecret(true);
+    }
+  };
+
+  const clearFactoryAdminSecret = () => {
+    clearStoredFactoryAdminSecret();
+    setFactoryAdminSecret("");
+    setHasSavedFactoryAdminSecret(false);
+  };
+
   return {
     selectedMode,
     modeDefinition,
@@ -1442,6 +1479,8 @@ export const useFactoryV2 = () => {
     isWatcherBusy,
     isLoadingRuns,
     isResolvingRunName,
+    factoryAdminSecret,
+    hasSavedFactoryAdminSecret,
     liveIndexers,
     liveIndexersUpdatedAt,
     notice,
@@ -1452,6 +1491,9 @@ export const useFactoryV2 = () => {
     selectLaunchKind,
     selectPreset,
     selectRun,
+    setFactoryAdminSecret,
+    saveFactoryAdminSecret,
+    clearFactoryAdminSecret,
     setDraftGameName,
     setDraftSeriesName: selectSeriesName,
     setDraftRotationName: selectRotationName,
@@ -2416,14 +2458,6 @@ function resolveEnvironmentUnavailableReason(environmentId?: string | null) {
   }
 
   return "This network is not ready here yet.";
-}
-
-function requestFactoryAdminSecret(runKind: Extract<FactoryRun["kind"], "series" | "rotation">) {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return window.prompt(`Enter the factory admin secret to stop auto-retry for this ${runKind}.`)?.trim() || null;
 }
 
 function canCancelRunAutoRetry(run: FactoryRun) {
