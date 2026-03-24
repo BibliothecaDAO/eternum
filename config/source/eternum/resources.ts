@@ -255,6 +255,14 @@ const STARTING_RESOURCES: ResourceCost[] = [
 ];
 
 const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
+  { resource: ResourcesIds.Wheat, amount: 500 },
+  { resource: ResourcesIds.Fish, amount: 500 },
+  { resource: ResourcesIds.Labor, amount: 600 },
+  { resource: ResourcesIds.Wood, amount: 90 },
+  { resource: ResourcesIds.Coal, amount: 60 },
+  { resource: ResourcesIds.Copper, amount: 30 },
+  { resource: ResourcesIds.Donkey, amount: 100 },
+
   { resource: ResourcesIds.Knight, amount: 500 },
   { resource: ResourcesIds.Crossbowman, amount: 500 },
   { resource: ResourcesIds.Paladin, amount: 500 },
