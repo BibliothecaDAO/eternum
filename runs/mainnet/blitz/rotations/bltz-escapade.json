@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23490511057-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T08:00:10.872Z",
-  "updatedAt": "2026-03-24T12:56:54.680Z",
+  "updatedAt": "2026-03-24T13:10:41.782Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -112,7 +112,7 @@
         "startTimeIso": "2026-03-24T10:30:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-escapade-01",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -309,7 +309,9 @@
                 "fundedAt": "2026-03-24T09:27:41.839Z"
               }
             ]
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-24T13:10:40.180Z"
         },
         "durationSeconds": 7200
       },
