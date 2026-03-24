@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T09:51:50.768Z",
+  "updatedAt": "2026-03-24T09:52:22.487Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -458,6 +458,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-apac-24-03-26 not found"
       },
       "updatedAt": "2026-03-24T09:39:07.486Z"
+    },
+    "bltz-vibe-915": {
+      "gameName": "bltz-vibe-915",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-vibe-915/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:52:22.487Z"
+      },
+      "updatedAt": "2026-03-24T09:52:22.487Z"
     }
   }
 }
