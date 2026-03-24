@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23466816261-1.json",
   "latestLaunchRequestId": "23466816261-1",
-  "currentStepId": "grant-lootchest-roles",
+  "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-24T00:24:04.374Z",
+  "updatedAt": "2026-03-24T00:24:15.607Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-24T00:38:56.237Z",
-    "lastEvaluatedAt": "2026-03-24T00:23:56.237Z"
+    "nextEvaluationAt": "2026-03-24T00:39:15.607Z",
+    "lastEvaluatedAt": "2026-03-24T00:24:15.607Z"
   },
   "steps": [
     {
@@ -73,10 +73,11 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-03-24T00:24:04.374Z"
+      "latestEvent": "Setting up loot chests is complete",
+      "startedAt": "2026-03-24T00:24:04.374Z",
+      "finishedAt": "2026-03-24T00:24:15.607Z"
     },
     {
       "id": "create-indexers",
@@ -1421,7 +1422,7 @@
         "startTimeIso": "2026-03-24T05:10:00.000Z",
         "seriesGameNumber": 8,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1567,8 +1568,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-03-24T00:24:11.978Z"
           },
           {
             "id": "create-indexers",
@@ -1579,7 +1581,8 @@
         "artifacts": {
           "worldAddress": "0x02d60ed03ff04f49d5654127180808d658560294294104afe1d1a84d8a7ebc66",
           "createGameTxHash": "0x21111797d31932a82791479d1a5828bc040ed4eb3886f4ba442be48f163826d",
-          "configureTxHash": "0xbdcaee76fc2f9cf8d98101fc7fce8aad84bcbcea375cb16cdebd36fa1e8294"
+          "configureTxHash": "0xbdcaee76fc2f9cf8d98101fc7fce8aad84bcbcea375cb16cdebd36fa1e8294",
+          "lootChestRoleTxHash": "0x202c06fc70bd43f5f142fce4ad01c880ff723256319ce02342b4cd2339f9472"
         },
         "durationSeconds": 5400
       }
@@ -1591,13 +1594,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23466816261-1",
-    "workflowRunId": 23466816261,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-roles",
-    "acquiredAt": "2026-03-24T00:24:04.374Z",
-    "expiresAt": "2026-03-24T01:09:04.374Z"
   }
 }
