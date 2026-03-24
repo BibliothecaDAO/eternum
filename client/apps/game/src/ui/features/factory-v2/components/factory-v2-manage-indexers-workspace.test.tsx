@@ -1,6 +1,7 @@
 import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { FactoryActionFeedback } from "../types";
 import { FactoryV2ManageIndexersWorkspace } from "./factory-v2-manage-indexers-workspace";
 
 const waitForAsyncWork = async () => {
@@ -76,15 +77,20 @@ function buildProps(
     environmentLabel: "Slot",
     liveIndexers: [],
     liveIndexersUpdatedAt: null,
+    hasLoadedLiveIndexersSnapshot: false,
     notice: null,
     isBusy: false,
     onLoadLiveIndexers: vi.fn(async () => {}),
     onRefreshLiveIndexers: vi.fn(async () => {}),
     onCreateIndexers: vi.fn(async () => {}),
     onUpdateIndexerTier: vi.fn(async () => {}),
-    onDeleteIndexers: vi.fn(async () => {}),
+    onDeleteIndexers: vi.fn(async () => null),
     ...overrides,
   };
+}
+
+function buildDeleteFeedback(ok: boolean, message: string): FactoryActionFeedback {
+  return { ok, message };
 }
 
 describe("FactoryV2ManageIndexersWorkspace", () => {
@@ -146,6 +152,52 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
     });
 
     expect(onLoadLiveIndexers).toHaveBeenCalledWith({
+      adminSecret: "saved-secret",
+      gameNames: [],
+    });
+  });
+
+  it("shows the empty snapshot state after a successful empty load", async () => {
+    await act(async () => {
+      root.render(
+        <FactoryV2ManageIndexersWorkspace
+          {...buildProps({
+            hasLoadedLiveIndexersSnapshot: true,
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("No indexers in this snapshot.");
+    expect(container.textContent).not.toContain("Opening saved indexers...");
+  });
+
+  it("lets operators trigger Check Slot before the first snapshot exists", async () => {
+    const onRefreshLiveIndexers = vi.fn(async () => {});
+
+    await act(async () => {
+      root.render(
+        <FactoryV2ManageIndexersWorkspace
+          {...buildProps({
+            adminSecret: "saved-secret",
+            onRefreshLiveIndexers,
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const refreshButton = container.querySelector('[data-testid="factory-indexer-refresh"]') as HTMLButtonElement;
+
+    expect(refreshButton.disabled).toBe(false);
+
+    await act(async () => {
+      refreshButton.click();
+      await waitForAsyncWork();
+    });
+
+    expect(onRefreshLiveIndexers).toHaveBeenCalledWith({
       adminSecret: "saved-secret",
       gameNames: [],
     });
@@ -458,5 +510,117 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
     expect(refreshButton.disabled).toBe(true);
     expect(createButton).toBeNull();
     expect(container.textContent).toContain("etrn-season-01");
+  });
+
+  it("shows a success message after delete is accepted", async () => {
+    const onDeleteIndexers = vi.fn(async () =>
+      buildDeleteFeedback(true, "Delete requested for etrn-season-01. Check Slot in a moment."),
+    );
+
+    await act(async () => {
+      root.render(
+        <FactoryV2ManageIndexersWorkspace
+          {...buildProps({
+            liveIndexers: [buildLiveIndexerEntry("etrn-season-01", { tier: "basic" })],
+            onDeleteIndexers,
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const row = container.querySelector('[data-testid="factory-indexer-select-etrn-season-01"]') as HTMLButtonElement;
+
+    await act(async () => {
+      row.click();
+      await waitForAsyncWork();
+    });
+
+    const openDeleteButton = container.querySelector(
+      '[data-testid="factory-indexer-open-delete"]',
+    ) as HTMLButtonElement;
+
+    await act(async () => {
+      openDeleteButton.click();
+      await waitForAsyncWork();
+    });
+
+    const confirmDeleteButton = container.querySelector(
+      '[data-testid="factory-indexer-confirm-delete"]',
+    ) as HTMLButtonElement;
+
+    await act(async () => {
+      confirmDeleteButton.click();
+      await waitForAsyncWork();
+    });
+
+    const deleteButton = container.querySelector('[data-testid="factory-indexer-action-delete"]') as HTMLButtonElement;
+
+    await act(async () => {
+      deleteButton.click();
+      await waitForAsyncWork();
+    });
+
+    expect(onDeleteIndexers).toHaveBeenCalledWith({
+      adminSecret: "factory-secret",
+      gameNames: ["etrn-season-01"],
+    });
+    expect(container.querySelector('[data-testid="factory-indexer-delete-feedback"]')?.textContent).toContain(
+      "Delete requested for etrn-season-01. Check Slot in a moment.",
+    );
+  });
+
+  it("shows an error message after delete fails", async () => {
+    const onDeleteIndexers = vi.fn(async () =>
+      buildDeleteFeedback(false, "Too many subrequests by single Worker invocation."),
+    );
+
+    await act(async () => {
+      root.render(
+        <FactoryV2ManageIndexersWorkspace
+          {...buildProps({
+            liveIndexers: [buildLiveIndexerEntry("etrn-season-01", { tier: "basic" })],
+            onDeleteIndexers,
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const row = container.querySelector('[data-testid="factory-indexer-select-etrn-season-01"]') as HTMLButtonElement;
+
+    await act(async () => {
+      row.click();
+      await waitForAsyncWork();
+    });
+
+    const openDeleteButton = container.querySelector(
+      '[data-testid="factory-indexer-open-delete"]',
+    ) as HTMLButtonElement;
+
+    await act(async () => {
+      openDeleteButton.click();
+      await waitForAsyncWork();
+    });
+
+    const confirmDeleteButton = container.querySelector(
+      '[data-testid="factory-indexer-confirm-delete"]',
+    ) as HTMLButtonElement;
+
+    await act(async () => {
+      confirmDeleteButton.click();
+      await waitForAsyncWork();
+    });
+
+    const deleteButton = container.querySelector('[data-testid="factory-indexer-action-delete"]') as HTMLButtonElement;
+
+    await act(async () => {
+      deleteButton.click();
+      await waitForAsyncWork();
+    });
+
+    expect(container.querySelector('[data-testid="factory-indexer-delete-feedback"]')?.textContent).toContain(
+      "Too many subrequests by single Worker invocation.",
+    );
   });
 });

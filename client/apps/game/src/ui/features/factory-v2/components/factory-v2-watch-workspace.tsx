@@ -1,7 +1,10 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import CircleHelp from "lucide-react/dist/esm/icons/circle-help";
+import Pause from "lucide-react/dist/esm/icons/pause";
+import Play from "lucide-react/dist/esm/icons/play";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
-import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import {
@@ -25,12 +28,15 @@ import {
 import { canFundFactoryRunPrize } from "../prize-funding";
 import type {
   FactoryGameMode,
+  FactoryLaunchChain,
   FactoryPollingState,
   FactoryRun,
+  FactoryRunRecoveryState,
   FactoryRunStepId,
   FactorySeriesChildStep,
   FactoryWatcherState,
 } from "../types";
+import { FactoryV2DeployerWalletCard } from "./factory-v2-deployer-wallet-card";
 import { FactoryV2PrizeFundingCard } from "./factory-v2-prize-funding-card";
 
 const FIRST_UPDATE_WAIT_MESSAGE = "This run just started. We are waiting for it to appear.";
@@ -41,6 +47,7 @@ const WATCH_SEARCH_DESCRIPTION = "Type the exact game, series, or rotation name 
 const WATCH_EMPTY_DESCRIPTION = "Type a run name and press Enter to check its status.";
 const WATCH_TIMELINE_TITLE = "Setup progress";
 const WATCH_TIMELINE_DESCRIPTION = "See what is done, what is happening now, and what comes next.";
+const PRIZE_FUNDING_SUCCESS_COOLDOWN_MS = 30_000;
 
 type FactoryV2WatchWorkspaceProps = {
   mode: FactoryGameMode;
@@ -60,9 +67,16 @@ type FactoryV2WatchWorkspaceProps = {
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
+  onDeleteRun?: () => void;
   adminSecret?: string;
   hasAdminSecret?: boolean;
-  onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
+  deployerChain?: FactoryLaunchChain;
+  deployerEnvironmentLabel?: string;
+  onFundPrize: (request: {
+    amount: string;
+    adminSecret: string;
+    selectedGameNames: string[];
+  }) => Promise<boolean> | boolean;
 };
 
 type FactoryV2WatchWorkspaceState = {
@@ -105,8 +119,11 @@ export const FactoryV2WatchWorkspace = ({
   onRefresh,
   onNudge,
   onStopAutoRetry,
+  onDeleteRun = () => {},
   adminSecret = "",
   hasAdminSecret = false,
+  deployerChain = "slot",
+  deployerEnvironmentLabel = "Slot",
   onFundPrize,
 }: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);
@@ -145,6 +162,7 @@ export const FactoryV2WatchWorkspace = ({
     onRefresh,
     onNudge,
     onStopAutoRetry,
+    onDeleteRun,
     hasAdminSecret,
     primaryButtonClassName: appearance.primaryButtonClassName,
     secondaryButtonClassName: appearance.secondaryButtonClassName,
@@ -206,6 +224,8 @@ export const FactoryV2WatchWorkspace = ({
         showAllSteps={showAllSteps}
         showsPrizeFunding={showsPrizeFunding}
         adminSecret={adminSecret}
+        deployerChain={deployerChain}
+        deployerEnvironmentLabel={deployerEnvironmentLabel}
         onFundPrize={onFundPrize}
         onTogglePrizeFunding={() => setShowsPrizeFunding((current) => !current)}
         onToggleShowAllSteps={() => setShowAllSteps((open) => !open)}
@@ -231,6 +251,7 @@ function resolveWatchWorkspaceState({
   onRefresh,
   onNudge,
   onStopAutoRetry,
+  onDeleteRun,
   hasAdminSecret,
   primaryButtonClassName,
   secondaryButtonClassName,
@@ -251,6 +272,7 @@ function resolveWatchWorkspaceState({
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
+  onDeleteRun: () => void;
   hasAdminSecret: boolean;
   primaryButtonClassName: string;
   secondaryButtonClassName: string;
@@ -300,11 +322,12 @@ function resolveWatchWorkspaceState({
     : null;
   const showsNudgeAction = shouldShowRotationNudgeAction(selectedRun, isAwaitingAcceptedUpdate);
   const showsStopAutoRetryAction = shouldShowStopAutoRetryAction(selectedRun, isAwaitingAcceptedUpdate);
+  const showsDeleteRunAction = shouldShowDeleteRunAction(selectedRun, isAwaitingAcceptedUpdate);
   const showsManualRefresh =
     !isAwaitingAcceptedUpdate && pollingState.status !== "checking" && pollingState.status !== "live";
   const secondaryNotice = runNotice && runNotice !== detailMessage && !watcher ? runNotice : null;
   const showsActionBar = Boolean(
-    visiblePrimaryAction || showsManualRefresh || showsNudgeAction || showsStopAutoRetryAction,
+    visiblePrimaryAction || showsManualRefresh || showsNudgeAction || showsStopAutoRetryAction || showsDeleteRunAction,
   );
 
   return {
@@ -332,6 +355,7 @@ function resolveWatchWorkspaceState({
           showsManualRefresh,
           showsNudgeAction,
           showsStopAutoRetryAction,
+          showsDeleteRunAction,
           isWatcherBusy,
           isBlocked: Boolean(lookupDisabledReason),
           hasAdminSecret,
@@ -341,6 +365,7 @@ function resolveWatchWorkspaceState({
           onRefresh,
           onNudge,
           onStopAutoRetry,
+          onDeleteRun,
         }
       : null,
   };
@@ -356,6 +381,8 @@ const FactoryV2WatchWorkspaceContent = ({
   showAllSteps,
   showsPrizeFunding,
   adminSecret,
+  deployerChain,
+  deployerEnvironmentLabel,
   onFundPrize,
   onTogglePrizeFunding,
   onToggleShowAllSteps,
@@ -369,7 +396,13 @@ const FactoryV2WatchWorkspaceContent = ({
   showAllSteps: boolean;
   showsPrizeFunding: boolean;
   adminSecret: string;
-  onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
+  deployerChain: FactoryLaunchChain;
+  deployerEnvironmentLabel: string;
+  onFundPrize: (request: {
+    amount: string;
+    adminSecret: string;
+    selectedGameNames: string[];
+  }) => Promise<boolean> | boolean;
   onTogglePrizeFunding: () => void;
   onToggleShowAllSteps: () => void;
 }) => {
@@ -396,6 +429,8 @@ const FactoryV2WatchWorkspaceContent = ({
         actionBarProps={state.actionBarProps}
         showsPrizeFunding={showsPrizeFunding}
         adminSecret={adminSecret}
+        deployerChain={deployerChain}
+        deployerEnvironmentLabel={deployerEnvironmentLabel}
         onFundPrize={onFundPrize}
         onTogglePrizeFunding={onTogglePrizeFunding}
         onToggleShowAllSteps={onToggleShowAllSteps}
@@ -440,6 +475,8 @@ const FactoryV2WatchRunCard = ({
   actionBarProps,
   showsPrizeFunding,
   adminSecret,
+  deployerChain,
+  deployerEnvironmentLabel,
   onFundPrize,
   onTogglePrizeFunding,
   onToggleShowAllSteps,
@@ -464,7 +501,13 @@ const FactoryV2WatchRunCard = ({
   actionBarProps: FactoryV2WatchActionBarProps | null;
   showsPrizeFunding: boolean;
   adminSecret: string;
-  onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
+  deployerChain: FactoryLaunchChain;
+  deployerEnvironmentLabel: string;
+  onFundPrize: (request: {
+    amount: string;
+    adminSecret: string;
+    selectedGameNames: string[];
+  }) => Promise<boolean> | boolean;
   onTogglePrizeFunding: () => void;
   onToggleShowAllSteps: () => void;
 }) => (
@@ -545,6 +588,8 @@ const FactoryV2WatchRunCard = ({
         />
       ) : null}
 
+      <FactoryV2DeployerWalletCard chain={deployerChain} environmentLabel={deployerEnvironmentLabel} />
+
       <div className="space-y-2.5">
         <div className="mx-auto max-w-sm space-y-1 text-center">
           <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
@@ -610,23 +655,95 @@ const FactoryV2PrizeFundingSection = ({
   isBusy: boolean;
   showsPrizeFunding: boolean;
   adminSecret: string;
-  onSubmit: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
+  onSubmit: (request: {
+    amount: string;
+    adminSecret: string;
+    selectedGameNames: string[];
+  }) => Promise<boolean> | boolean;
   onTogglePrizeFunding: () => void;
-}) => (
-  <div className="space-y-2">
-    <button
-      type="button"
-      data-testid="factory-prize-toggle"
-      onClick={onTogglePrizeFunding}
-      className="inline-flex w-full items-center justify-center rounded-full border border-black/10 bg-white/58 px-4 py-3 text-sm font-medium text-black/68 transition-colors hover:bg-white/72 hover:text-black"
-    >
-      {showsPrizeFunding ? "Hide prize funding" : "Open prize funding"}
-    </button>
-    {showsPrizeFunding ? (
-      <FactoryV2PrizeFundingCard run={run} isBusy={isBusy} adminSecret={adminSecret} onSubmit={onSubmit} />
-    ) : null}
-  </div>
-);
+}) => {
+  const [successfulSubmission, setSuccessfulSubmission] = useState<{
+    message: string;
+    cooldownEndsAt: number;
+  } | null>(null);
+  const [cooldownNow, setCooldownNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    setSuccessfulSubmission(null);
+    setCooldownNow(Date.now());
+  }, [run.id]);
+
+  useEffect(() => {
+    if (!successfulSubmission) {
+      return;
+    }
+
+    const syncCooldown = () => {
+      const now = Date.now();
+      setCooldownNow(now);
+
+      if (now >= successfulSubmission.cooldownEndsAt) {
+        setSuccessfulSubmission(null);
+      }
+    };
+
+    syncCooldown();
+
+    const intervalId = window.setInterval(syncCooldown, 1_000);
+    return () => window.clearInterval(intervalId);
+  }, [successfulSubmission]);
+
+  const cooldownSecondsRemaining = successfulSubmission
+    ? Math.max(0, Math.ceil((successfulSubmission.cooldownEndsAt - cooldownNow) / 1_000))
+    : 0;
+  const successMessage = cooldownSecondsRemaining > 0 ? (successfulSubmission?.message ?? null) : null;
+
+  const submitPrizeFunding = async (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => {
+    const submitted = await onSubmit(request);
+
+    if (!submitted) {
+      return;
+    }
+
+    setCooldownNow(Date.now());
+    setSuccessfulSubmission({
+      message: buildPrizeFundingSuccessMessage(run, request.selectedGameNames.length),
+      cooldownEndsAt: Date.now() + PRIZE_FUNDING_SUCCESS_COOLDOWN_MS,
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        data-testid="factory-prize-toggle"
+        onClick={onTogglePrizeFunding}
+        className="inline-flex w-full items-center justify-center rounded-full border border-black/10 bg-white/58 px-4 py-3 text-sm font-medium text-black/68 transition-colors hover:bg-white/72 hover:text-black"
+      >
+        {showsPrizeFunding ? "Hide prize funding" : "Open prize funding"}
+      </button>
+      {showsPrizeFunding ? (
+        <FactoryV2PrizeFundingCard
+          run={run}
+          isBusy={isBusy}
+          adminSecret={adminSecret}
+          successMessage={successMessage}
+          cooldownSecondsRemaining={cooldownSecondsRemaining}
+          onSubmit={submitPrizeFunding}
+        />
+      ) : null}
+    </div>
+  );
+};
+
+function buildPrizeFundingSuccessMessage(run: FactoryRun, selectedGameCount: number) {
+  if (run.kind === "game") {
+    return `Prize funding sent for ${run.name}. Wait 30 seconds before sending again.`;
+  }
+
+  const fundedGamesLabel = selectedGameCount === 1 ? "1 game" : `${selectedGameCount} games`;
+  return `Prize funding sent for ${fundedGamesLabel}. Wait 30 seconds before sending again.`;
+}
 
 const FactoryV2CurrentStepCard = ({
   appearanceClassName,
@@ -1307,6 +1424,7 @@ const FactoryV2WatchActionBar = ({
   showsManualRefresh,
   showsNudgeAction,
   showsStopAutoRetryAction,
+  showsDeleteRunAction,
   isWatcherBusy,
   isBlocked,
   hasAdminSecret,
@@ -1316,75 +1434,138 @@ const FactoryV2WatchActionBar = ({
   onRefresh,
   onNudge,
   onStopAutoRetry,
+  onDeleteRun,
 }: FactoryV2WatchActionBarProps) => {
   const stopAutoRetryDisabled = isWatcherBusy || isBlocked || !hasAdminSecret;
+  const deleteRunDisabled = isWatcherBusy || isBlocked || !hasAdminSecret;
+  const [showsActionHelp, setShowsActionHelp] = useState(false);
+  const hasAnyAction = Boolean(
+    visiblePrimaryAction || showsManualRefresh || showsNudgeAction || showsStopAutoRetryAction || showsDeleteRunAction,
+  );
 
   return (
-    <div
-      data-testid="factory-watch-action-bar"
-      className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-[24px] border border-black/10 bg-white/72 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_18px_42px_rgba(23,15,8,0.14)] backdrop-blur-xl md:static md:flex-row md:rounded-[20px] md:border-black/8 md:bg-transparent md:px-0 md:py-0 md:shadow-none md:backdrop-blur-0"
-    >
-      {visiblePrimaryAction ? (
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={isWatcherBusy || isBlocked}
-          className={cn(
-            "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-            primaryButtonClassName,
-          )}
-        >
-          {visiblePrimaryAction.label}
-        </button>
-      ) : null}
+    <div data-testid="factory-watch-action-bar" className="sticky bottom-3 z-10 md:static">
+      <div className="mx-auto flex w-fit flex-col items-center gap-2">
+        <div className="flex items-center justify-center gap-2 rounded-full border border-black/8 bg-[rgba(250,243,233,0.72)] px-2 py-2 shadow-[0_10px_24px_rgba(23,15,8,0.06)] backdrop-blur-md">
+          {visiblePrimaryAction ? (
+            <FactoryV2WatchActionButton
+              label={visiblePrimaryAction.label}
+              icon={<Play className="h-4 w-4" />}
+              onClick={onContinue}
+              disabled={isWatcherBusy || isBlocked}
+              className={primaryButtonClassName}
+            />
+          ) : null}
 
-      {showsManualRefresh ? (
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={isWatcherBusy || isBlocked}
-          className={cn(
-            "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-            secondaryButtonClassName,
-          )}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Check again
-        </button>
-      ) : null}
+          {showsManualRefresh ? (
+            <FactoryV2WatchActionButton
+              label="Check again"
+              icon={<RefreshCw className="h-4 w-4" />}
+              onClick={onRefresh}
+              disabled={isWatcherBusy || isBlocked}
+              className={secondaryButtonClassName}
+            />
+          ) : null}
 
-      {showsNudgeAction ? (
-        <button
-          type="button"
-          onClick={onNudge}
-          disabled={isWatcherBusy || isBlocked}
-          className={cn(
-            "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-            secondaryButtonClassName,
-          )}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Run now
-        </button>
-      ) : null}
+          {showsNudgeAction ? (
+            <FactoryV2WatchActionButton
+              label="Run now"
+              icon={<RefreshCw className="h-4 w-4" />}
+              onClick={onNudge}
+              disabled={isWatcherBusy || isBlocked}
+              className={secondaryButtonClassName}
+            />
+          ) : null}
 
-      {showsStopAutoRetryAction ? (
-        <button
-          type="button"
-          onClick={onStopAutoRetry}
-          disabled={stopAutoRetryDisabled}
-          className={cn(
-            "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-            "bg-rose-600 text-white hover:bg-rose-700",
-          )}
-        >
-          <RotateCcw className="h-4 w-4" />
-          Stop auto retry
-        </button>
-      ) : null}
+          {showsStopAutoRetryAction ? (
+            <FactoryV2WatchActionButton
+              label="Stop auto retry"
+              icon={<Pause className="h-4 w-4" />}
+              onClick={onStopAutoRetry}
+              disabled={stopAutoRetryDisabled}
+              className="border border-rose-200/70 bg-[rgba(255,241,242,0.88)] text-rose-700 hover:bg-[rgba(255,233,236,0.96)]"
+            />
+          ) : null}
+
+          {showsDeleteRunAction ? (
+            <FactoryV2WatchActionButton
+              label="Delete run"
+              icon={<Trash2 className="h-4 w-4" />}
+              onClick={onDeleteRun}
+              disabled={deleteRunDisabled}
+              className="border border-[#d8a18f] bg-[rgba(255,244,239,0.92)] text-[#7b241c] hover:bg-[rgba(255,233,225,0.98)]"
+            />
+          ) : null}
+
+          {hasAnyAction ? (
+            <FactoryV2WatchActionButton
+              label={showsActionHelp ? "Hide action guide" : "Show action guide"}
+              icon={<CircleHelp className="h-4 w-4" />}
+              onClick={() => setShowsActionHelp((current) => !current)}
+              disabled={false}
+              className="border border-black/10 bg-white/78 text-black/52 hover:bg-white hover:text-black/72"
+            />
+          ) : null}
+        </div>
+
+        {showsActionHelp ? (
+          <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-medium text-black/44">
+            {visiblePrimaryAction ? (
+              <FactoryV2WatchActionLegend icon={<Play className="h-3 w-3" />} label="Continue" />
+            ) : null}
+            {showsManualRefresh ? (
+              <FactoryV2WatchActionLegend icon={<RefreshCw className="h-3 w-3" />} label="Check again" />
+            ) : null}
+            {showsNudgeAction ? (
+              <FactoryV2WatchActionLegend icon={<RefreshCw className="h-3 w-3" />} label="Run now" />
+            ) : null}
+            {showsStopAutoRetryAction ? (
+              <FactoryV2WatchActionLegend icon={<Pause className="h-3 w-3" />} label="Pause retries" />
+            ) : null}
+            {showsDeleteRunAction ? (
+              <FactoryV2WatchActionLegend icon={<Trash2 className="h-3 w-3" />} label="Delete" />
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 };
+
+const FactoryV2WatchActionButton = ({
+  label,
+  icon,
+  onClick,
+  disabled,
+  className,
+}: {
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+  disabled: boolean;
+  className: string;
+}) => (
+  <button
+    type="button"
+    aria-label={label}
+    title={label}
+    onClick={onClick}
+    disabled={disabled}
+    className={cn(
+      "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-[0_4px_12px_rgba(23,15,8,0.03)] transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+      className,
+    )}
+  >
+    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">{icon}</span>
+  </button>
+);
+
+const FactoryV2WatchActionLegend = ({ icon, label }: { icon: ReactNode; label: string }) => (
+  <span className="inline-flex items-center gap-1 rounded-full border border-black/8 bg-white/58 px-2 py-1">
+    <span className="inline-flex h-3 w-3 items-center justify-center text-black/55">{icon}</span>
+    <span>{label}</span>
+  </span>
+);
 
 const FactoryV2StepMoment = ({
   label,
@@ -1762,6 +1943,7 @@ interface FactoryV2WatchActionBarProps {
   showsManualRefresh: boolean;
   showsNudgeAction: boolean;
   showsStopAutoRetryAction: boolean;
+  showsDeleteRunAction: boolean;
   isWatcherBusy: boolean;
   isBlocked: boolean;
   hasAdminSecret: boolean;
@@ -1771,17 +1953,35 @@ interface FactoryV2WatchActionBarProps {
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
+  onDeleteRun?: () => void;
 }
 
 function shouldShowStopAutoRetryAction(selectedRun: FactoryRun | null, isAwaitingAcceptedUpdate: boolean) {
-  return Boolean(
-    selectedRun &&
-    !isAwaitingAcceptedUpdate &&
-    (selectedRun.kind === "series" || selectedRun.kind === "rotation") &&
-    !isFactoryRunInProgress(selectedRun) &&
-    selectedRun.autoRetry?.enabled &&
-    !selectedRun.autoRetry.cancelledAt,
-  );
+  return Boolean(selectedRun && !isAwaitingAcceptedUpdate && canStopAutoRetryFromWatchActionBar(selectedRun));
+}
+
+function canStopAutoRetryFromWatchActionBar(run: FactoryRun) {
+  return isMultiGameRunWithActiveAutoRetry(run) && !isHealthyRunInProgress(run);
+}
+
+function isMultiGameRunWithActiveAutoRetry(run: FactoryRun) {
+  return (run.kind === "series" || run.kind === "rotation") && run.autoRetry?.enabled && !run.autoRetry.cancelledAt;
+}
+
+function isHealthyRunInProgress(run: FactoryRun) {
+  return isFactoryRunInProgress(run) && !isRecoverableInProgressRun(run);
+}
+
+function isRecoverableInProgressRun(run: FactoryRun) {
+  return run.recovery?.canContinue === true && isStalledRecoveryState(run.recovery?.state);
+}
+
+function isStalledRecoveryState(recoveryState: FactoryRunRecoveryState | undefined) {
+  return recoveryState === "stalled" || recoveryState === "failed";
+}
+
+function shouldShowDeleteRunAction(selectedRun: FactoryRun | null, isAwaitingAcceptedUpdate: boolean) {
+  return Boolean(selectedRun && !isAwaitingAcceptedUpdate && !selectedRun.id.startsWith("pending:"));
 }
 
 function shouldShowPrimaryRunAction(

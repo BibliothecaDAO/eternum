@@ -125,6 +125,11 @@ async function handleRequest(request, env) {
         return await handleFundFactoryGamePrize(request, env, runRoute);
       }
 
+      if (request.method === "POST" && runRoute.action === "delete") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleDeleteFactoryRun(request, env, runRoute);
+      }
+
       return buildJsonResponse(request, env, { error: "Not found" }, 404);
     }
 
@@ -146,6 +151,11 @@ async function handleRequest(request, env) {
       if (request.method === "POST" && seriesRunRoute.action === "cancel-auto-retry") {
         requireFactoryWorkerAdminAuthorization(request, env);
         return await handleCancelFactorySeriesAutoRetry(request, env, seriesRunRoute);
+      }
+
+      if (request.method === "POST" && seriesRunRoute.action === "delete") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleDeleteFactorySeriesRun(request, env, seriesRunRoute);
       }
 
       return buildJsonResponse(request, env, { error: "Not found" }, 404);
@@ -173,6 +183,11 @@ async function handleRequest(request, env) {
       if (request.method === "POST" && rotationRunRoute.action === "cancel-auto-retry") {
         requireFactoryWorkerAdminAuthorization(request, env);
         return await handleCancelFactoryRotationAutoRetry(request, env, rotationRunRoute);
+      }
+
+      if (request.method === "POST" && rotationRunRoute.action === "delete") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleDeleteFactoryRotationRun(request, env, rotationRunRoute);
       }
 
       return buildJsonResponse(request, env, { error: "Not found" }, 404);
@@ -718,6 +733,55 @@ async function handleCancelFactoryRotationAutoRetry(request, env, route) {
   });
 
   return buildJsonResponse(request, env, enrichFactoryRunResponse(nextRun), 200);
+}
+
+async function handleDeleteFactoryRun(request, env, route) {
+  const github = createGitHubClient(env);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactoryRunIfPresent(github, route.environment, route.gameName, branch);
+
+  if (!run) {
+    return buildJsonResponse(request, env, { error: resolveMissingRunMessage(route.environment, route.gameName) }, 404);
+  }
+
+  const deleted = await deleteFactoryStoredRun(github, branch, run);
+  return buildJsonResponse(request, env, { deleted }, 200);
+}
+
+async function handleDeleteFactorySeriesRun(request, env, route) {
+  const github = createGitHubClient(env);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactorySeriesRunIfPresent(github, route.environment, route.seriesName, branch);
+
+  if (!run) {
+    return buildJsonResponse(
+      request,
+      env,
+      { error: resolveMissingSeriesRunMessage(route.environment, route.seriesName) },
+      404,
+    );
+  }
+
+  const deleted = await deleteFactoryStoredRun(github, branch, run);
+  return buildJsonResponse(request, env, { deleted }, 200);
+}
+
+async function handleDeleteFactoryRotationRun(request, env, route) {
+  const github = createGitHubClient(env);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactoryRotationRunIfPresent(github, route.environment, route.rotationName, branch);
+
+  if (!run) {
+    return buildJsonResponse(
+      request,
+      env,
+      { error: resolveMissingRotationRunMessage(route.environment, route.rotationName) },
+      404,
+    );
+  }
+
+  const deleted = await deleteFactoryStoredRun(github, branch, run);
+  return buildJsonResponse(request, env, { deleted }, 200);
 }
 
 async function handleReadFactoryRotationRun(request, route, env) {
@@ -2218,6 +2282,20 @@ function matchFactoryRunRoute(pathname) {
     return { environment, gameName, action: "fund-prize" };
   }
 
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "delete"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const gameName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, gameName, action: "delete" };
+  }
+
   return null;
 }
 
@@ -2271,6 +2349,20 @@ function matchFactorySeriesRunRoute(pathname) {
     const seriesName = decodeURIComponent(parts[4]);
     validateEnvironment(environment);
     return { environment, seriesName, action: "cancel-auto-retry" };
+  }
+
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "series-runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "delete"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const seriesName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, seriesName, action: "delete" };
   }
 
   return null;
@@ -2340,6 +2432,20 @@ function matchFactoryRotationRunRoute(pathname) {
     const rotationName = decodeURIComponent(parts[4]);
     validateEnvironment(environment);
     return { environment, rotationName, action: "cancel-auto-retry" };
+  }
+
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "rotation-runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "delete"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const rotationName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, rotationName, action: "delete" };
   }
 
   return null;
@@ -2666,6 +2772,154 @@ async function updateFactoryMaintenanceIndexForRunRecord(github, branch, run) {
     }),
     `factory-runs: update ${entry.kind} maintenance index for ${entry.environment}/${entryKey}`,
   );
+}
+
+async function removeFactoryMaintenanceIndexEntry(github, branch, environment, kind, entryKey) {
+  const indexPath = resolveFactoryMaintenanceIndexPath(environment, kind);
+  const currentIndex = await readFactoryMaintenanceIndexIfPresent(github, environment, kind, branch);
+
+  if (!currentIndex?.entries?.[entryKey]) {
+    return;
+  }
+
+  await updateBranchJsonFileValue(
+    github,
+    indexPath,
+    branch,
+    (existingIndex) => {
+      const nextEntries = { ...(existingIndex?.entries || {}) };
+      delete nextEntries[entryKey];
+
+      return {
+        ...(existingIndex || buildEmptyFactoryMaintenanceIndex(environment, kind)),
+        version: 1,
+        environment,
+        kind,
+        updatedAt: new Date().toISOString(),
+        entries: nextEntries,
+      };
+    },
+    `factory-runs: remove ${kind} maintenance index for ${environment}/${entryKey}`,
+  );
+}
+
+async function removeFactoryLiveIndexerSnapshotEntries(github, branch, gameNames) {
+  const uniqueGameNames = Array.from(new Set((gameNames || []).filter(Boolean)));
+
+  if (uniqueGameNames.length === 0) {
+    return;
+  }
+
+  const currentSnapshot = (await readBranchJsonIfPresent(github, FACTORY_LIVE_INDEXER_SNAPSHOT_PATH, branch)) || {
+    version: 1,
+    updatedAt: null,
+    entries: {},
+  };
+
+  if (!uniqueGameNames.some((gameName) => currentSnapshot.entries?.[gameName])) {
+    return;
+  }
+
+  await updateBranchJsonFileValue(
+    github,
+    FACTORY_LIVE_INDEXER_SNAPSHOT_PATH,
+    branch,
+    (existingSnapshot) => {
+      const nextEntries = { ...(existingSnapshot?.entries || {}) };
+
+      for (const gameName of uniqueGameNames) {
+        delete nextEntries[gameName];
+      }
+
+      return {
+        ...(existingSnapshot || {
+          version: 1,
+          updatedAt: null,
+          entries: {},
+        }),
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        entries: nextEntries,
+      };
+    },
+    `factory-runs: remove live indexer snapshot entries for ${uniqueGameNames.join(",")}`,
+  );
+}
+
+function resolveFactoryRunInputDirectoryPath(inputPath) {
+  if (!inputPath || !inputPath.includes("/")) {
+    return null;
+  }
+
+  return inputPath.slice(0, inputPath.lastIndexOf("/"));
+}
+
+function resolveFactoryStoredRunDeletionTarget(run) {
+  if (run?.kind === "series") {
+    return {
+      kind: "series",
+      environment: run.environment,
+      runName: run.seriesName,
+      recordPath: resolveFactorySeriesRunRecordPath(run.environment, run.seriesName),
+      inputDirectoryPath: resolveFactoryRunInputDirectoryPath(run.inputPath),
+      maintenanceKind: "series",
+      maintenanceEntryKey: run.seriesName,
+      gameNames: (run.summary?.games || []).map((game) => game.gameName).filter(Boolean),
+    };
+  }
+
+  if (run?.kind === "rotation") {
+    return {
+      kind: "rotation",
+      environment: run.environment,
+      runName: run.rotationName,
+      recordPath: resolveFactoryRotationRunRecordPath(run.environment, run.rotationName),
+      inputDirectoryPath: resolveFactoryRunInputDirectoryPath(run.inputPath),
+      maintenanceKind: "rotation",
+      maintenanceEntryKey: run.rotationName,
+      gameNames: (run.summary?.games || []).map((game) => game.gameName).filter(Boolean),
+    };
+  }
+
+  return {
+    kind: "game",
+    environment: run.environment,
+    runName: run.gameName,
+    recordPath: resolveFactoryRunRecordPath(run.environment, run.gameName),
+    inputDirectoryPath: resolveFactoryRunInputDirectoryPath(run.inputPath),
+    maintenanceKind: "game",
+    maintenanceEntryKey: run.gameName,
+    gameNames: [run.gameName].filter(Boolean),
+  };
+}
+
+async function deleteFactoryStoredRun(github, branch, run) {
+  const target = resolveFactoryStoredRunDeletionTarget(run);
+  const deletedInputPaths = await deleteFactoryRunInputDirectoryFiles(github, branch, target.inputDirectoryPath);
+
+  await removeFactoryMaintenanceIndexEntry(
+    github,
+    branch,
+    target.environment,
+    target.maintenanceKind,
+    target.maintenanceEntryKey,
+  );
+  await deleteBranchFileIfPresent(
+    github,
+    target.recordPath,
+    branch,
+    `factory-runs: delete ${target.kind} run ${target.environment}/${target.runName}`,
+  );
+  await removeFactoryLiveIndexerSnapshotEntries(github, branch, target.gameNames);
+
+  return {
+    kind: target.kind,
+    environment: target.environment,
+    runName: target.runName,
+    deletedRecordPath: target.recordPath,
+    deletedInputPaths,
+    removedLiveIndexerGameNames: target.gameNames,
+  };
 }
 
 function resolveFactoryRecentRunListLimit(url) {
@@ -3452,6 +3706,30 @@ function resolveIndexerDeleteTargetGameNames(availableGames, requestedGameNames,
   return normalizedGameNames;
 }
 
+async function readBranchDirectoryEntriesIfPresent(github, directoryPath, branch) {
+  if (!directoryPath) {
+    return [];
+  }
+
+  const response = await github.fetch(
+    `/repos/${github.repo}/contents/${directoryPath}?ref=${encodeURIComponent(branch)}`,
+    {
+      method: "GET",
+    },
+  );
+
+  if (response.status === 404) {
+    return [];
+  }
+
+  if (!response.ok) {
+    throw await toGitHubHttpError(response, `Failed to list ${directoryPath}`);
+  }
+
+  const payload = await response.json();
+  return Array.isArray(payload) ? payload.filter((entry) => entry?.type === "file" && entry.path && entry.sha) : [];
+}
+
 async function readBranchJsonWithMetadataIfPresent(github, path, branch) {
   const response = await github.fetch(`/repos/${github.repo}/contents/${path}?ref=${encodeURIComponent(branch)}`, {
     method: "GET",
@@ -3478,6 +3756,41 @@ async function readBranchJsonWithMetadataIfPresent(github, path, branch) {
     logFactoryError("run_store_parse_failed", { path, branch });
     throw new HttpError(502, `Failed to parse JSON at ${path}`);
   }
+}
+
+async function deleteBranchFileIfPresent(github, path, branch, commitMessage = `Delete ${path}`) {
+  const existingRecord = await readBranchJsonWithMetadataIfPresent(github, path, branch);
+
+  if (!existingRecord?.sha) {
+    return false;
+  }
+
+  const response = await github.fetch(`/repos/${github.repo}/contents/${path}`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      branch,
+      message: commitMessage,
+      sha: existingRecord.sha,
+    }),
+  });
+
+  if (!response.ok) {
+    throw await toGitHubHttpError(response, `Failed to delete ${path}`);
+  }
+
+  return true;
+}
+
+async function deleteFactoryRunInputDirectoryFiles(github, branch, directoryPath) {
+  const inputEntries = await readBranchDirectoryEntriesIfPresent(github, directoryPath, branch);
+  const deletedInputPaths = [];
+
+  for (const entry of inputEntries) {
+    await deleteBranchFileIfPresent(github, entry.path, branch, `factory-runs: delete launch input ${entry.path}`);
+    deletedInputPaths.push(entry.path);
+  }
+
+  return deletedInputPaths;
 }
 
 async function updateBranchJsonFileValue(github, path, branch, updateValue, commitMessage = `Update ${path}`) {

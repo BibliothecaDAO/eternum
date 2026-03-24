@@ -10,6 +10,69 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-24",
+    title: "Cleaner Run Actions",
+    description:
+      "Factory V2 now centers watch actions into a compact icon row with a quick action guide, so recovery controls stay lighter, clearer, and easier to use on mobile.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Delete Factory Runs",
+    description:
+      "Factory V2 now gives admins a direct Delete run action for games, series, and rotations, so abandoned Factory records can be wiped clean and stop showing up in future checks or scheduler work.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-24",
+    title: "Retry Stop For Stalled Rotations",
+    description:
+      "Factory V2 now lets you stop auto-retry on stalled rotations even before the worker flips the run into the attention state, so queued follow-up deployments can be paused as soon as recovery is needed.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-24",
+    title: "Paused Retry Runs Stay Paused",
+    description:
+      "Factory V2 now removes the Continue recovery action after auto-retry is cancelled for a failed series or rotation, so a paused run no longer looks like it is still ready to retry.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-24",
+    title: "Wallet Under Prize Funding",
+    description:
+      "Factory V2 now places the deployer wallet card below the prize funding controls in Check game, keeping funding actions and the sending wallet details grouped together.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Clearer Delete Feedback",
+    description:
+      "Factory V2 now shows explicit success or error feedback right in the delete-indexer action area, so bulk deletes no longer disappear into a generic background notice.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Watch Workspace Wallet",
+    description:
+      "Factory V2 now shows the deployer wallet card in the Check game workspace too, so the account address and balances stay visible while you review or recover runs.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Prize Funding Cooldown",
+    description:
+      "Factory V2 now confirms successful prize funding requests and briefly pauses the funding button, making duplicate sends much harder when funding selected games or a single run.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-24",
+    title: "Correct Empty Indexer State",
+    description:
+      "Factory V2 now treats an empty saved indexer snapshot as a real result instead of a permanent loading state, so cleared snapshots show the proper empty message and can still be refreshed from Manage indexers.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-24",
     title: "Cleaner Retry Status",
     description:
       "Factory V2 now only shows the auto-retry card when a run actually needs recovery attention, so healthy series and rotations no longer look like they are stuck in a retry loop.",

@@ -4,7 +4,7 @@ import RotateCw from "lucide-react/dist/esm/icons/rotate-cw";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { FactoryWorkerIndexerTier, FactoryWorkerLiveIndexerEntry } from "../api/factory-worker";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
-import type { FactoryGameMode, FactoryWatcherKind, FactoryWatcherState } from "../types";
+import type { FactoryActionFeedback, FactoryGameMode, FactoryWatcherKind, FactoryWatcherState } from "../types";
 
 interface FactoryV2ManageIndexersWorkspaceProps {
   mode: FactoryGameMode;
@@ -14,6 +14,7 @@ interface FactoryV2ManageIndexersWorkspaceProps {
   environmentLabel: string;
   liveIndexers: FactoryWorkerLiveIndexerEntry[];
   liveIndexersUpdatedAt: string | null;
+  hasLoadedLiveIndexersSnapshot: boolean;
   notice: string | null;
   isBusy: boolean;
   onLoadLiveIndexers: (request: { adminSecret: string; gameNames: string[] }) => Promise<void> | void;
@@ -24,7 +25,10 @@ interface FactoryV2ManageIndexersWorkspaceProps {
     gameNames: string[];
     tier: FactoryWorkerIndexerTier;
   }) => Promise<void> | void;
-  onDeleteIndexers: (request: { adminSecret: string; gameNames: string[] }) => Promise<void> | void;
+  onDeleteIndexers: (request: {
+    adminSecret: string;
+    gameNames: string[];
+  }) => Promise<FactoryActionFeedback | null> | FactoryActionFeedback | null;
 }
 
 type FactoryManageIndexerFilter = "all" | "live" | "missing" | "needs-check";
@@ -54,6 +58,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
   environmentLabel,
   liveIndexers,
   liveIndexersUpdatedAt,
+  hasLoadedLiveIndexersSnapshot,
   notice,
   isBusy,
   onLoadLiveIndexers,
@@ -70,6 +75,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
   const [selectedTier, setSelectedTier] = useState<FactoryWorkerIndexerTier>("pro");
   const [showsDeletePanel, setShowsDeletePanel] = useState(false);
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [deleteFeedback, setDeleteFeedback] = useState<FactoryActionFeedback | null>(null);
   const autoLoadedSecretKeyRef = useRef<string | null>(null);
 
   const normalizedAdminSecret = adminSecret.trim();
@@ -94,7 +100,8 @@ export const FactoryV2ManageIndexersWorkspace = ({
 
   const hasSelectedGames = selectedGameNames.length > 0;
   const hasSecret = normalizedAdminSecret.length > 0;
-  const hasLoadedLiveIndexers = liveIndexersUpdatedAt !== null || liveIndexers.length > 0;
+  const hasLoadedLiveIndexers =
+    hasLoadedLiveIndexersSnapshot || liveIndexersUpdatedAt !== null || liveIndexers.length > 0;
   const canLoadIndexers = hasSecret && !isBusy;
   const canRecreateTypedNames = canLoadIndexers && lookupGameNames.length > 0;
   const canRecreateSelected = canLoadIndexers && actionTargets.recreatableGameNames.length > 0;
@@ -126,6 +133,10 @@ export const FactoryV2ManageIndexersWorkspace = ({
     setShowsDeletePanel(false);
     setDeleteConfirmed(false);
   }, [canDeleteSelected, showsDeletePanel]);
+
+  useEffect(() => {
+    setDeleteFeedback(null);
+  }, [selectedGameNames]);
 
   useEffect(() => {
     if (normalizedAdminSecret) {
@@ -190,14 +201,32 @@ export const FactoryV2ManageIndexersWorkspace = ({
     });
   };
 
-  const deleteSelectedIndexers = () => {
+  const deleteSelectedIndexers = async () => {
     if (!canDeleteSelected || !deleteConfirmed) {
       return;
     }
 
-    void onDeleteIndexers({
+    setDeleteFeedback(null);
+    const result = await onDeleteIndexers({
       adminSecret: normalizedAdminSecret,
       gameNames: actionTargets.deletableGameNames,
+    });
+
+    if (!result) {
+      return;
+    }
+
+    setDeleteFeedback(result);
+  };
+
+  const refreshLiveIndexerList = () => {
+    if (!canLoadIndexers) {
+      return;
+    }
+
+    void onRefreshLiveIndexers({
+      adminSecret: normalizedAdminSecret,
+      gameNames: [],
     });
   };
 
@@ -227,12 +256,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
                     aria-label="Check Slot"
                     title="Check Slot"
                     disabled={!canLoadIndexers}
-                    onClick={() => {
-                      void onRefreshLiveIndexers({
-                        adminSecret: normalizedAdminSecret,
-                        gameNames: [],
-                      });
-                    }}
+                    onClick={refreshLiveIndexerList}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white text-black/64 transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <RotateCw className={cn("h-4 w-4", accessWatcherStatus ? "animate-spin" : "")} aria-hidden="true" />
@@ -241,7 +265,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
 
                 {accessWatcherStatus ? <FactoryV2ManageIndexerWatcherCard watcherStatus={accessWatcherStatus} /> : null}
 
-                {notice ? (
+                {notice && notice !== deleteFeedback?.message ? (
                   <div className="rounded-[18px] border border-black/8 bg-white/74 px-4 py-3 text-sm text-black/62">
                     {notice}
                   </div>
@@ -380,10 +404,30 @@ export const FactoryV2ManageIndexersWorkspace = ({
                 {accessWatcherStatus ? (
                   <FactoryV2ManageIndexerWatcherCard watcherStatus={accessWatcherStatus} />
                 ) : (
-                  <FactoryV2IndexerEmptyState>Opening saved indexers...</FactoryV2IndexerEmptyState>
+                  <>
+                    <FactoryV2IndexerEmptyState>Opening saved indexers...</FactoryV2IndexerEmptyState>
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        data-testid="factory-indexer-refresh"
+                        disabled={!canLoadIndexers}
+                        onClick={refreshLiveIndexerList}
+                        className={cn(
+                          "inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                          appearance.secondaryButtonClassName,
+                        )}
+                      >
+                        <RotateCw
+                          className={cn("h-4 w-4", accessWatcherStatus ? "animate-spin" : "")}
+                          aria-hidden="true"
+                        />
+                        Check Slot
+                      </button>
+                    </div>
+                  </>
                 )}
 
-                {notice ? (
+                {notice && notice !== deleteFeedback?.message ? (
                   <div className="rounded-[18px] border border-black/8 bg-white/74 px-4 py-3 text-sm text-black/62">
                     {notice}
                   </div>
@@ -402,6 +446,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
               selectedTier={selectedTier}
               showsDeletePanel={showsDeletePanel}
               deleteConfirmed={deleteConfirmed}
+              deleteFeedback={deleteFeedback}
               onSelectTier={setSelectedTier}
               onToggleDeletePanel={toggleDeletePanel}
               onConfirmDelete={() => setDeleteConfirmed(true)}
@@ -457,6 +502,7 @@ const FactoryV2ManageIndexersActionBar = ({
   selectedTier,
   showsDeletePanel,
   deleteConfirmed,
+  deleteFeedback,
   onSelectTier,
   onToggleDeletePanel,
   onConfirmDelete,
@@ -476,6 +522,7 @@ const FactoryV2ManageIndexersActionBar = ({
   selectedTier: FactoryWorkerIndexerTier;
   showsDeletePanel: boolean;
   deleteConfirmed: boolean;
+  deleteFeedback: FactoryActionFeedback | null;
   onSelectTier: (tier: FactoryWorkerIndexerTier) => void;
   onToggleDeletePanel: () => void;
   onConfirmDelete: () => void;
@@ -620,6 +667,7 @@ const FactoryV2ManageIndexersActionBar = ({
       ) : null}
 
       {watcherStatus ? <FactoryV2ManageIndexerWatcherCard watcherStatus={watcherStatus} /> : null}
+      {deleteFeedback ? <FactoryV2ManageIndexerDeleteFeedback feedback={deleteFeedback} /> : null}
       {hasSelectedGames && actionTargets.deletableEntries.length > 0 && deleteConfirmed ? (
         <button
           type="button"
@@ -634,6 +682,21 @@ const FactoryV2ManageIndexersActionBar = ({
     </div>
   );
 };
+
+const FactoryV2ManageIndexerDeleteFeedback = ({ feedback }: { feedback: FactoryActionFeedback }) => (
+  <div
+    data-testid="factory-indexer-delete-feedback"
+    aria-live="polite"
+    className={cn(
+      "rounded-[18px] border px-4 py-3 text-sm leading-6",
+      feedback.ok
+        ? "border-emerald-700/15 bg-emerald-50/80 text-emerald-950"
+        : "border-[#a62f28]/18 bg-[#fff1ee] text-[#8d2a23]",
+    )}
+  >
+    {feedback.message}
+  </div>
+);
 
 const FactoryV2ManageIndexerActionCard = ({
   title,

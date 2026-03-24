@@ -18,6 +18,9 @@ import {
   createFactoryRotationRun,
   createFactoryRun,
   createFactorySeriesRun,
+  deleteFactoryRotationRun,
+  deleteFactoryRun,
+  deleteFactorySeriesRun,
   deleteFactoryIndexers,
   FactoryWorkerApiError,
   fundFactoryGamePrize,
@@ -79,6 +82,7 @@ import {
   resolveNextFactorySeriesGameNumber,
 } from "../series-drafts";
 import type {
+  FactoryActionFeedback,
   FactoryGameMode,
   FactoryLaunchPreset,
   FactoryLaunchTargetKind,
@@ -205,6 +209,7 @@ export const useFactoryV2 = () => {
   );
   const [liveIndexers, setLiveIndexers] = useState<FactoryWorkerLiveIndexerEntry[]>([]);
   const [liveIndexersUpdatedAt, setLiveIndexersUpdatedAt] = useState<string | null>(null);
+  const [hasLoadedLiveIndexersSnapshot, setHasLoadedLiveIndexersSnapshot] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const runsByEnvironmentRef = useRef<Record<string, FactoryRun[]>>({});
   const pendingLaunchesRef = useRef<FactoryPendingLaunch[]>(pendingLaunches);
@@ -1068,16 +1073,63 @@ export const useFactoryV2 = () => {
     );
   };
 
-  const fundSelectedRunPrize = async ({ amount, adminSecret, selectedGameNames }: FactoryPrizeFundingRequest) => {
-    if (!selectedRun || isWatcherBusy || !canFundRunPrize(selectedRun)) {
-      return;
+  const deleteSelectedRun = async () => {
+    if (!selectedRun || isWatcherBusy || isPendingRun(selectedRun)) {
+      return false;
     }
 
     const environmentId = assertSupportedEnvironment(selectedRun.environment);
 
     if (!environmentId) {
       setNotice(resolveEnvironmentUnavailableReason(selectedRun.environment));
-      return;
+      return false;
+    }
+
+    const adminSecret = factoryAdminSecret.trim();
+
+    if (!adminSecret) {
+      setNotice("Add the factory admin secret above to delete this run.");
+      return false;
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`Delete ${selectedRun.name} and all of its stored run records? This cannot be undone.`)
+    ) {
+      return false;
+    }
+
+    const deletedRun = selectedRun;
+
+    return runWatchedAction(
+      {
+        kind: "delete_run",
+        runName: deletedRun.name,
+        title: `Deleting ${deletedRun.name}`,
+        detail: "Removing this run from Factory records and scheduler indexes.",
+        workflowName: "delete-run",
+        statusLabel: "Deleting",
+      },
+      async () => {
+        await deleteRunRecord(environmentId, deletedRun, adminSecret);
+        await refreshEnvironmentRuns(environmentId);
+        clearGuidedRecoveryState(deletedRun.id);
+        setSelectedRunId((currentRunId) => (currentRunId === deletedRun.id ? null : currentRunId));
+        setNotice(`Deleted ${deletedRun.name} from Factory records.`);
+      },
+    );
+  };
+
+  const fundSelectedRunPrize = async ({ amount, adminSecret, selectedGameNames }: FactoryPrizeFundingRequest) => {
+    if (!selectedRun || isWatcherBusy || !canFundRunPrize(selectedRun)) {
+      return false;
+    }
+
+    const environmentId = assertSupportedEnvironment(selectedRun.environment);
+
+    if (!environmentId) {
+      setNotice(resolveEnvironmentUnavailableReason(selectedRun.environment));
+      return false;
     }
 
     const normalizedAmount = amount.trim();
@@ -1085,10 +1137,10 @@ export const useFactoryV2 = () => {
     const normalizedSelectedGameNames = resolveRequestedPrizeFundingGameNames(selectedRun, selectedGameNames);
 
     if (!normalizedAmount || !normalizedSecret) {
-      return;
+      return false;
     }
 
-    await runWatchedAction(
+    return runWatchedAction(
       {
         kind: "fund_prize",
         runName: selectedRun.name,
@@ -1150,6 +1202,7 @@ export const useFactoryV2 = () => {
         });
         setLiveIndexers(response.entries);
         setLiveIndexersUpdatedAt(response.updatedAt);
+        setHasLoadedLiveIndexersSnapshot(true);
       },
     );
   };
@@ -1200,6 +1253,7 @@ export const useFactoryV2 = () => {
 
         setLiveIndexers(refreshedSnapshot.entries);
         setLiveIndexersUpdatedAt(refreshedSnapshot.updatedAt);
+        setHasLoadedLiveIndexersSnapshot(true);
         setNotice(
           nextSnapshotFingerprint === previousSnapshotFingerprint
             ? "Slot checked. This list is already up to date."
@@ -1280,10 +1334,12 @@ export const useFactoryV2 = () => {
     const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
 
     if (isWatcherBusy || !environmentId || !normalizedSecret || normalizedGameNames.length === 0) {
-      return;
+      return null;
     }
 
-    await runWatchedAction(
+    const successMessage = buildDeleteIndexersSuccessMessage(normalizedGameNames);
+
+    const result = await runWatchedActionWithFeedback(
       {
         kind: "delete_indexers",
         runName: selectedEnvironment?.label ?? "indexers",
@@ -1302,9 +1358,11 @@ export const useFactoryV2 = () => {
           adminSecret: normalizedSecret,
         });
 
-        setNotice("Delete started. Update from Slot in a moment.");
+        setNotice(successMessage);
       },
     );
+
+    return result.ok ? { ok: true, message: successMessage } : result;
   };
 
   const resolveRunByName = async (requestedName: string) => {
@@ -1405,6 +1463,7 @@ export const useFactoryV2 = () => {
     hasSavedFactoryAdminSecret,
     liveIndexers,
     liveIndexersUpdatedAt,
+    hasLoadedLiveIndexersSnapshot,
     notice,
     environmentUnavailableReason,
     moreOptions,
@@ -1437,6 +1496,7 @@ export const useFactoryV2 = () => {
     continueSelectedRun,
     nudgeSelectedRun,
     cancelSelectedRunAutoRetry,
+    deleteSelectedRun,
     fundSelectedRunPrize,
     loadLiveIndexers,
     refreshLiveIndexerSnapshot,
@@ -1462,6 +1522,9 @@ export const useFactoryV2 = () => {
   }
 
   function clearTransientState() {
+    setLiveIndexers([]);
+    setLiveIndexersUpdatedAt(null);
+    setHasLoadedLiveIndexersSnapshot(false);
     setNotice(null);
     setAcceptedRunState(null);
     setGuidedRecoveryState(null);
@@ -1646,24 +1709,33 @@ export const useFactoryV2 = () => {
     return null;
   }
 
-  async function runWatchedAction(nextWatcher: FactoryWatcherState, action: () => Promise<void>) {
+  async function runWatchedActionWithFeedback(
+    nextWatcher: FactoryWatcherState,
+    action: () => Promise<void>,
+  ): Promise<FactoryActionFeedback> {
     setWatcher(nextWatcher);
     setNotice(null);
 
     try {
       await action();
-      return true;
+      return { ok: true, message: "" };
     } catch (error) {
-      setNotice(resolveWorkerErrorMessage(error));
+      const errorMessage = resolveWorkerErrorMessage(error);
+      setNotice(errorMessage);
       setPollingState((currentState) => ({
         status: "paused",
         detail: resolvePollingPauseMessage(error),
         lastCheckedAt: currentState.lastCheckedAt,
       }));
-      return false;
+      return { ok: false, message: errorMessage };
     } finally {
       setWatcher(null);
     }
+  }
+
+  async function runWatchedAction(nextWatcher: FactoryWatcherState, action: () => Promise<void>) {
+    const result = await runWatchedActionWithFeedback(nextWatcher, action);
+    return result.ok;
   }
 
   async function continueRun(
@@ -1695,6 +1767,32 @@ export const useFactoryV2 = () => {
       environment: environmentId,
       gameName: run.name,
       launchStep: resolveGameContinueLaunchStep(options?.launchStep),
+    });
+  }
+
+  async function deleteRunRecord(environmentId: FactoryWorkerEnvironmentId, run: FactoryRun, adminSecret: string) {
+    if (run.kind === "series") {
+      await deleteFactorySeriesRun({
+        environment: environmentId,
+        seriesName: run.name,
+        adminSecret,
+      });
+      return;
+    }
+
+    if (run.kind === "rotation") {
+      await deleteFactoryRotationRun({
+        environment: environmentId,
+        rotationName: run.name,
+        adminSecret,
+      });
+      return;
+    }
+
+    await deleteFactoryRun({
+      environment: environmentId,
+      gameName: run.name,
+      adminSecret,
     });
   }
 
@@ -2557,4 +2655,12 @@ function buildLiveIndexerSnapshotFingerprint(entries: FactoryWorkerLiveIndexerEn
       return `${entry.gameName}:${entry.liveState.state}:${entry.liveState.stateSource}`;
     })
     .join("|");
+}
+
+function buildDeleteIndexersSuccessMessage(gameNames: string[]) {
+  if (gameNames.length === 1) {
+    return `Delete requested for ${gameNames[0]}. Check Slot in a moment.`;
+  }
+
+  return `Delete requested for ${gameNames.length} indexers. Check Slot in a moment.`;
 }
