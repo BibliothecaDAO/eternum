@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T09:38:30.427Z",
+  "updatedAt": "2026-03-24T09:39:07.486Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -239,28 +239,20 @@
     "daily-unranked-2-210326": {
       "gameName": "daily-unranked-2-210326",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "epic",
-        "url": "https://api.cartridge.gg/x/daily-unranked-2-210326/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.009Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-unranked-2-210326 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:39:07.486Z"
     },
     "daily-ranked-eu-210326": {
       "gameName": "daily-ranked-eu-210326",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "epic",
-        "url": "https://api.cartridge.gg/x/daily-ranked-eu-210326/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.163Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-eu-210326 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:39:07.486Z"
     },
     "noobs-only": {
       "gameName": "noobs-only",
@@ -389,15 +381,11 @@
     "daily-ranked-us-240326": {
       "gameName": "daily-ranked-us-240326",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "epic",
-        "url": "https://api.cartridge.gg/x/daily-ranked-us-240326/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:58.231Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-us-240326 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:39:07.486Z"
     },
     "sg-64": {
       "gameName": "sg-64",
@@ -493,15 +481,11 @@
     "daily-ranked-apac-24-03-26": {
       "gameName": "daily-ranked-apac-24-03-26",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "basic",
-        "url": "https://api.cartridge.gg/x/daily-ranked-apac-24-03-26/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:58.879Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-apac-24-03-26 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:39:07.486Z"
     }
   }
 }
