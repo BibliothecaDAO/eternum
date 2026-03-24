@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T15:26:56.185Z",
+  "updatedAt": "2026-03-24T15:32:21.069Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -515,6 +515,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-riffer-02 not found"
       },
       "updatedAt": "2026-03-24T15:26:56.185Z"
+    },
+    "bltz-bakers-02": {
+      "gameName": "bltz-bakers-02",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-bakers-02/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T15:32:21.069Z"
+      },
+      "updatedAt": "2026-03-24T15:32:21.069Z"
     }
   }
 }
