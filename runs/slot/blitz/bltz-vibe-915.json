@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-vibe-915/23483034123-1.json",
   "latestLaunchRequestId": "23483034123-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-24T09:46:34.667Z",
-  "updatedAt": "2026-03-24T09:46:39.106Z",
+  "updatedAt": "2026-03-24T09:47:39.337Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-03-24T09:46:39.106Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-03-24T09:46:39.106Z",
+      "finishedAt": "2026-03-24T09:47:39.337Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -62,14 +63,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-03-24T01:00:00.000Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23483034123-1",
-    "workflowRunId": 23483034123,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-03-24T09:46:39.106Z",
-    "expiresAt": "2026-03-24T10:31:39.106Z"
+    "scheduledStartTime": 1774314000,
+    "summaryPath": ".context/game-launch/slot-blitz-bltz-vibe-915.json",
+    "durationSeconds": 5400,
+    "worldAddress": "0x0430864515a27c79718a0f7591b78b745b7660f79523dd19b5f6b3b7d3638a82",
+    "createGameTxHash": "0x7f48907887148b34735e984734b169ef745df459bfa8e79633ea78bf042fb92"
   }
 }
