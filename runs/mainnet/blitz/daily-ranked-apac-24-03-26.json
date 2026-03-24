@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "daily-ranked-APAC-24-03-26",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/daily-ranked-apac-24-03-26/23480285803-1.json",
   "latestLaunchRequestId": "23480285803-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-24T08:35:35.939Z",
-  "updatedAt": "2026-03-24T08:37:58.355Z",
+  "updatedAt": "2026-03-24T08:38:17.180Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,12 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-24T08:37:58.355Z"
+      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"daily-ranked-APAC-24-03-26\" on mainnet.blitz\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"daily-ranked-APAC-24-03-26\"\n\u001b[2m[+91ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"daily-ranked-APAC-24-03-26\" in 75ms (0x07168697...b3d124)\n\u001b[2m[+100ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x07168697...b3d124\n\u001b[2m[+178ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for daily-ranked-APAC-24-03-26 as missing via slot d describe\n\u001b[2m[+14.1s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for daily-ranked-APAC-24-03-26 as missing via slot d describe\n\u001b[2m[+14.1s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 14.0s: Torii deployment \"daily-ranked-APAC-24-03-26\" is not available after the Slot command completed\nError: Torii deployment \"daily-ranked-APAC-24-03-26\" is not available after the Slot command completed\n    at requireExistingToriiState (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:296:15)\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:377:21)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:851:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:849:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1011:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1045:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1060:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:147:25)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-03-24T08:37:58.355Z",
+      "finishedAt": "2026-03-24T08:38:17.180Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"daily-ranked-APAC-24-03-26\" on mainnet.blitz\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"daily-ranked-APAC-24-03-26\"\n\u001b[2m[+91ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"daily-ranked-APAC-24-03-26\" in 75ms (0x07168697...b3d124)\n\u001b[2m[+100ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x07168697...b3d124\n\u001b[2m[+178ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for daily-ranked-APAC-24-03-26 as missing via slot d describe\n\u001b[2m[+14.1s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for daily-ranked-APAC-24-03-26 as missing via slot d describe\n\u001b[2m[+14.1s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 14.0s: Torii deployment \"daily-ranked-APAC-24-03-26\" is not available after the Slot command completed\nError: Torii deployment \"daily-ranked-APAC-24-03-26\" is not available after the Slot command completed\n    at requireExistingToriiState (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:296:15)\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:377:21)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:851:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:849:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1011:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1045:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1060:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:147:25)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "sync-paymaster",
@@ -83,13 +85,5 @@
     "worldAddress": "0x0716869724e73af8d07f16042297886a108f3fbb686084d003aa8b8a02b3d124",
     "createGameTxHash": "0x33abafb54bd55dd9bf6526c39b78e736d278aa09b744d62501f6e51b9c8367b",
     "configureTxHash": "0x60624ddd0efa7a5dfd97e1634efca784ecdecc77279d609b1addd64468faa7e"
-  },
-  "activeLease": {
-    "launchRequestId": "23480285803-1",
-    "workflowRunId": 23480285803,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-24T08:37:58.355Z",
-    "expiresAt": "2026-03-24T09:22:58.355Z"
   }
 }
