@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23503383441-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-24T17:33:24.803Z",
+  "updatedAt": "2026-03-24T17:33:34.224Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,9 +81,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-24T17:33:34.224Z"
     },
     {
       "id": "sync-paymaster",
@@ -1104,5 +1105,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23503383441-1",
+    "workflowRunId": 23503383441,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-03-24T17:33:34.224Z",
+    "expiresAt": "2026-03-24T18:18:34.224Z"
   }
 }
