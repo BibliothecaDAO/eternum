@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/daily-ranked-apac-24-03-26/23480285803-1.json",
   "latestLaunchRequestId": "23480285803-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-24T08:35:35.939Z",
-  "updatedAt": "2026-03-24T08:35:40.553Z",
+  "updatedAt": "2026-03-24T08:36:59.011Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-03-24T08:35:40.553Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-03-24T08:35:40.553Z",
+      "finishedAt": "2026-03-24T08:36:59.011Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -69,14 +70,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "1774344600"
-  },
-  "activeLease": {
-    "launchRequestId": "23480285803-1",
-    "workflowRunId": 23480285803,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-03-24T08:35:40.553Z",
-    "expiresAt": "2026-03-24T09:20:40.553Z"
+    "scheduledStartTime": 1774344600,
+    "summaryPath": ".context/game-launch/mainnet-blitz-daily-ranked-apac-24-03-26.json",
+    "durationSeconds": 3600,
+    "worldAddress": "0x0716869724e73af8d07f16042297886a108f3fbb686084d003aa8b8a02b3d124",
+    "createGameTxHash": "0x33abafb54bd55dd9bf6526c39b78e736d278aa09b744d62501f6e51b9c8367b"
   }
 }
