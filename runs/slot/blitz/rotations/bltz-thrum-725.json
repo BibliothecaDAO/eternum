@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23422454488-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:12:07.827Z",
-  "updatedAt": "2026-03-24T06:20:39.245Z",
+  "updatedAt": "2026-03-24T06:22:02.385Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -110,7 +110,7 @@
         "startTimeIso": "2026-03-23T05:30:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for bltz-thrum-725-01: Torii deployment \"bltz-thrum-725-01\" does not exist",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -147,8 +147,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T06:20:38.013Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-03-24T06:22:02.112Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-03-24T06:22:02.112Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"bltz-thrum-725-01\" does not exist"
         },
         "durationSeconds": 3600
       },
@@ -158,7 +161,7 @@
         "startTimeIso": "2026-03-23T06:30:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for bltz-thrum-725-02: Torii deployment \"bltz-thrum-725-02\" does not exist",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -195,8 +198,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T06:20:38.013Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-03-24T06:22:02.147Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-03-24T06:22:02.147Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"bltz-thrum-725-02\" does not exist"
         },
         "durationSeconds": 3600
       },
@@ -206,7 +212,7 @@
         "startTimeIso": "2026-03-23T07:30:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for bltz-thrum-725-03: Torii deployment \"bltz-thrum-725-03\" does not exist",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -243,8 +249,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T06:20:38.013Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-03-24T06:22:02.385Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-03-24T06:22:02.385Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"bltz-thrum-725-03\" does not exist"
         },
         "durationSeconds": 3600
       }
