@@ -164,12 +164,6 @@ export const FactoryV2Content = () => {
               onContinue={() => {
                 void factory.continueSelectedRun();
               }}
-              onBringIndexerLive={() => {
-                void factory.bringIndexerLiveForSelectedRun();
-              }}
-              onBringChildIndexerLive={(gameName) => {
-                void factory.bringIndexerLiveForSelectedRunChild(gameName);
-              }}
               onRefresh={() => {
                 void factory.refreshSelectedRun();
               }}
@@ -179,11 +173,14 @@ export const FactoryV2Content = () => {
               onStopAutoRetry={() => {
                 void factory.cancelSelectedRunAutoRetry();
               }}
+              onDeleteRun={() => {
+                void factory.deleteSelectedRun();
+              }}
               adminSecret={factory.factoryAdminSecret}
               hasAdminSecret={factory.factoryAdminSecret.trim().length > 0}
-              onFundPrize={(request) => {
-                void factory.fundSelectedRunPrize(request);
-              }}
+              deployerChain={factory.selectedEnvironment?.chain ?? "slot"}
+              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              onFundPrize={(request) => factory.fundSelectedRunPrize(request)}
             />
           </div>
         ) : null}
@@ -198,6 +195,7 @@ export const FactoryV2Content = () => {
               environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
               liveIndexers={factory.liveIndexers}
               liveIndexersUpdatedAt={factory.liveIndexersUpdatedAt}
+              hasLoadedLiveIndexersSnapshot={factory.hasLoadedLiveIndexersSnapshot}
               notice={factory.notice}
               isBusy={factory.isWatcherBusy}
               onLoadLiveIndexers={(request) => {
@@ -213,7 +211,7 @@ export const FactoryV2Content = () => {
                 void factory.updateIndexerTiers(request);
               }}
               onDeleteIndexers={(request) => {
-                void factory.deleteIndexers(request);
+                return factory.deleteIndexers(request);
               }}
             />
           </div>

@@ -130,7 +130,7 @@ describe("FactoryV2DeveloperTools", () => {
     expect(container.textContent).toContain("Manifest contract");
   });
 
-  it("shows the resolved address and supports copy", async () => {
+  it("shows the resolved address and supports copying both addresses", async () => {
     vi.mocked(resolveFactoryManifestContractAddress).mockResolvedValue({
       kind: "success",
       worldName: "etrn-sunrise-01",
@@ -164,6 +164,17 @@ describe("FactoryV2DeveloperTools", () => {
     });
 
     expect(clipboardWriteText).toHaveBeenCalledWith("0xabc");
+
+    const worldCopyButton = container.querySelector(
+      '[data-testid="factory-developer-copy-world-address"]',
+    ) as HTMLButtonElement;
+
+    await act(async () => {
+      worldCopyButton.click();
+      await waitForAsyncWork();
+    });
+
+    expect(clipboardWriteText).toHaveBeenLastCalledWith("0x111");
   });
 
   it("reruns lookup when a suggestion is selected", async () => {

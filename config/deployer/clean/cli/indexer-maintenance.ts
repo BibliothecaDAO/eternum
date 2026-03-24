@@ -21,6 +21,7 @@ import {
   updateFactoryLiveIndexerSnapshotEntries,
 } from "../run-store/indexer-live-snapshot";
 import {
+  removeFactoryMaintenanceIndexEntry,
   recordFactoryRotationMaintenanceIndex,
   recordFactoryRunMaintenanceIndex,
   recordFactorySeriesMaintenanceIndex,
@@ -67,6 +68,7 @@ interface IndexerMaintenanceResult {
     | "tier-already-matched"
     | "deleted"
     | "already-missing"
+    | "stale-run-removed"
     | "failed";
   previousTier?: IndexerTier;
   currentTier?: IndexerTier;
@@ -494,6 +496,53 @@ function buildRunStoreCommitMessage(operation: IndexerMaintenanceOperation) {
     : `factory-runs: reconcile indexer tier for ${operation.environmentId}/${operation.gameName}`;
 }
 
+function resolveStaleMaintenanceEntryKey(operation: IndexerMaintenanceOperation): string {
+  if (!operation.runName) {
+    throw new Error("Stale run cleanup requires runName");
+  }
+
+  return operation.runName;
+}
+
+function resolveStaleRunLabel(operation: IndexerMaintenanceOperation): string {
+  const kindLabel = operation.kind || "run";
+  return `${kindLabel} "${operation.runName}"`;
+}
+
+function buildStaleRunRecordRemovedMessage(operations: IndexerMaintenanceOperation[]): string {
+  const leadOperation = operations[0]!;
+  const skippedOperationCount = operations.length;
+  const skippedLabel = skippedOperationCount === 1 ? "operation" : "operations";
+
+  return `Removed stale ${resolveStaleRunLabel(leadOperation)} from the ${leadOperation.environmentId} maintenance index because ${leadOperation.recordPath} no longer exists. Skipped ${skippedOperationCount} queued indexer maintenance ${skippedLabel}.`;
+}
+
+async function removeStaleRunMaintenanceIndexEntry(
+  config: ReturnType<typeof requireGitHubBranchStoreConfig>,
+  operations: IndexerMaintenanceOperation[],
+): Promise<IndexerMaintenanceResult[]> {
+  const leadOperation = operations[0]!;
+
+  if (!leadOperation.kind) {
+    throw new Error("Stale run cleanup requires kind");
+  }
+
+  await removeFactoryMaintenanceIndexEntry(
+    config,
+    leadOperation.environmentId as DeploymentEnvironmentId,
+    leadOperation.kind,
+    resolveStaleMaintenanceEntryKey(leadOperation),
+  );
+
+  return [
+    {
+      operation: leadOperation,
+      outcome: "stale-run-removed",
+      message: buildStaleRunRecordRemovedMessage(operations),
+    },
+  ];
+}
+
 async function recordUpdatedMaintenanceIndex(
   config: ReturnType<typeof requireGitHubBranchStoreConfig>,
   run: IndexerMaintenanceRunRecord,
@@ -802,7 +851,7 @@ async function processOperationGroup(
     : null;
 
   if (recordPath && !currentRun) {
-    throw new Error(`Could not find run record at ${recordPath}`);
+    return removeStaleRunMaintenanceIndexEntry(config, operations);
   }
 
   let nextRun: IndexerMaintenanceRunRecord = currentRun;
@@ -827,8 +876,20 @@ async function processOperationGroup(
   return results;
 }
 
+function resolveSummaryTargetName(result: IndexerMaintenanceResult) {
+  if (result.outcome === "stale-run-removed" && result.operation.runName) {
+    return result.operation.runName;
+  }
+
+  if (result.operation.action === "inspect-account") {
+    return "slot-account";
+  }
+
+  return result.operation.gameName || result.operation.runName || "unknown";
+}
+
 function formatSummaryLine(result: IndexerMaintenanceResult) {
-  return `- ${result.operation.environmentId} / ${result.operation.gameName}: ${result.message}`;
+  return `- ${result.operation.environmentId} / ${resolveSummaryTargetName(result)}: ${result.message}`;
 }
 
 function writeWorkflowSummary(results: IndexerMaintenanceResult[]) {

@@ -62,6 +62,7 @@ export type FactoryWatcherKind =
   | "update_indexer_tier"
   | "reindex"
   | "delete_indexers"
+  | "delete_run"
   | "nudge"
   | "cancel_auto_retry"
   | "fund_prize";
@@ -235,4 +236,9 @@ export interface FactoryPollingState {
   status: FactoryPollingStatus;
   detail: string;
   lastCheckedAt: number | null;
+}
+
+export interface FactoryActionFeedback {
+  ok: boolean;
+  message: string;
 }

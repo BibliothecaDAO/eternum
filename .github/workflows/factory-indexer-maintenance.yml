@@ -63,10 +63,12 @@ jobs:
       - name: Install Slot CLI
         run: |
           set -euo pipefail
+          slot_bin_dir="${HOME}/.config/.slot/bin"
           curl -L https://slot.cartridge.sh | bash
-          /home/runner/.config/.slot/bin/slotup
-          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
-          slot --version || true
+          "${slot_bin_dir}/slotup"
+          export PATH="${slot_bin_dir}:${PATH}"
+          echo "${slot_bin_dir}" >> $GITHUB_PATH
+          "${slot_bin_dir}/slot" --version
 
       - name: Apply indexer maintenance
         run: |

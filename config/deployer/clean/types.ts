@@ -58,28 +58,39 @@ export interface ConfigLogger {
   info?: (...args: unknown[]) => void;
 }
 
+export interface CleanConfigArtifacts {
+  worldConfigTxHash?: string;
+}
+
 export interface CleanConfigContext<Provider = unknown> {
   account: Account;
   provider: Provider;
   config: EternumConfig;
   logger?: ConfigLogger;
+  artifacts?: CleanConfigArtifacts;
+}
+
+export interface ConfigStepResult {
+  transactionHash?: string;
 }
 
 export interface ConfigStep<Provider = unknown> {
   id: string;
   description: string;
-  execute: (context: CleanConfigContext<Provider>) => Promise<void>;
+  execute: (context: CleanConfigContext<Provider>) => Promise<void | ConfigStepResult>;
 }
 
 export interface ExecutedConfigStep {
   id: string;
   description: string;
+  transactionHash?: string;
 }
 
 export interface ConfigExecutionResult {
   mode: ExecutionMode;
   steps: ExecutedConfigStep[];
   transactionHash?: string;
+  artifacts: CleanConfigArtifacts;
 }
 
 export interface ConfigStepHooks<Provider = unknown> {
@@ -285,6 +296,7 @@ export interface LaunchGameSummary {
   worldAddress?: string;
   createGameTxHash?: string;
   configureTxHash?: string;
+  worldConfigTxHash?: string;
   lootChestRoleTxHash?: string;
   villagePassRoleTxHash?: string;
   createBanksTxHash?: string;
@@ -323,6 +335,7 @@ export interface SeriesLaunchGameArtifacts {
   worldAddress?: string;
   createGameTxHash?: string;
   configureTxHash?: string;
+  worldConfigTxHash?: string;
   lootChestRoleTxHash?: string;
   villagePassRoleTxHash?: string;
   createBanksTxHash?: string;

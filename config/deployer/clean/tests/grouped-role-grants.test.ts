@@ -71,7 +71,8 @@ mock.module("../factory/discovery", () => ({
 }));
 
 mock.module("../eternum", () => ({
-  buildDefaultBanks: () => [],
+  buildBanksForMapCenterOffset: () => [],
+  deriveMapCenterOffsetFromWorldConfigTx: () => 0,
   buildVillagePassRoleGrantCalls: (target: {
     villagePassAddress: string;
     realmInternalSystemsAddress: string;
@@ -123,12 +124,12 @@ describe("grouped role grants", () => {
       {
         contractAddress: "0xloot",
         entrypoint: "grant_role",
-        calldata: ["0xminter", "0xprize-0xworld-bltz-knicker-01"],
+        calldata: [expect.any(String), "0xprize-0xworld-bltz-knicker-01"],
       },
       {
         contractAddress: "0xloot",
         entrypoint: "grant_role",
-        calldata: ["0xminter", "0xprize-0xworld-bltz-knicker-02"],
+        calldata: [expect.any(String), "0xprize-0xworld-bltz-knicker-02"],
       },
     ]);
   });

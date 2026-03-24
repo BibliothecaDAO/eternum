@@ -419,7 +419,7 @@ pub mod troop_movement_systems {
             );
 
             let exploration_reward_receiver: ID = iExplorerImpl::exploration_reward_receiver(
-                ref world, explorer, explore_reward_type,
+                ref world, blitz_mode_on, explorer, explore_reward_type,
             );
             let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_type);
             let mut reward_receiver_weight: Weight = WeightStoreImpl::retrieve(ref world, exploration_reward_receiver);
