@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "23475224236-1",
   "currentStepId": "create-banks",
   "createdAt": "2026-03-24T05:52:11.779Z",
-  "updatedAt": "2026-03-24T05:55:09.158Z",
+  "updatedAt": "2026-03-24T05:55:17.466Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,9 +72,10 @@
     {
       "id": "create-banks",
       "title": "Preparing banks",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Preparing banks",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Preparing banks started",
+      "startedAt": "2026-03-24T05:55:17.466Z"
     },
     {
       "id": "create-indexer",
@@ -94,5 +95,13 @@
     "worldConfigTxHash": "0x12888223178a6cf38edc0d56422e9f7c69eb65971c8bc7579d906d8ae520c98",
     "lootChestRoleTxHash": "0x147f11c3a266cc464b4ad9d42262da86691ca79fa0b0fb1a3812a3bf92d1b1a",
     "villagePassRoleTxHash": "0x66da2beaf1b48fda31691b02946723920c5683de311b5b2960950a7755b7aba"
+  },
+  "activeLease": {
+    "launchRequestId": "23475224236-1",
+    "workflowRunId": 23475224236,
+    "workflowRunAttempt": 1,
+    "stepId": "create-banks",
+    "acquiredAt": "2026-03-24T05:55:17.466Z",
+    "expiresAt": "2026-03-24T06:40:17.466Z"
   }
 }
