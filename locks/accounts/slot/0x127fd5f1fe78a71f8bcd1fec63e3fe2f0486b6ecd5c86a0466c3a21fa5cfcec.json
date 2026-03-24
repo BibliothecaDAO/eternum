@@ -3,17 +3,16 @@
   "chain": "slot",
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
-    "environment": "slot.eternum",
-    "gameName": "etrn-mango",
-    "launchRequestId": "23475224236-1",
+    "environment": "slot.blitz",
+    "gameName": "sg-65",
+    "launchRequestId": "23478147463-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23475224236,
+    "workflowRunId": 23478147463,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "369dd698-7637-444a-9245-41259c85d77b"
+    "stepId": "create-world",
+    "leaseId": "9bb51899-f875-4962-8bd9-4c81d9d2b2d4"
   },
-  "acquiredAt": "2026-03-24T05:55:20.788Z",
-  "heartbeatAt": "2026-03-24T05:55:34.578Z",
-  "expiresAt": "2026-03-24T05:55:34.578Z",
-  "releasedAt": "2026-03-24T05:55:34.578Z"
+  "acquiredAt": "2026-03-24T07:33:08.796Z",
+  "heartbeatAt": "2026-03-24T07:33:08.796Z",
+  "expiresAt": "2026-03-24T07:43:08.796Z"
 }
