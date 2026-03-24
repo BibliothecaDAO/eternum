@@ -52,6 +52,7 @@ import {
   getFactoryLaunchPresetsForMode,
   getFactoryPresetById,
   getPresetStartAtValue,
+  resolveFactoryEnvironmentIdForModeAndChain,
 } from "../catalog";
 import { buildFactoryCreateRotationRunRequest } from "../create-rotation-run-request";
 import { buildFactoryCreateRunRequest } from "../create-run-request";
@@ -590,7 +591,7 @@ export const useFactoryV2 = () => {
   ]);
 
   const selectMode = (mode: FactoryGameMode) => {
-    const nextEnvironmentId = getDefaultEnvironmentIdForMode(mode);
+    const nextEnvironmentId = resolveFactoryEnvironmentIdForModeAndChain(mode, selectedEnvironment?.chain ?? "slot");
     const nextPresetId = getDefaultPresetIdForModeSelection(mode);
     const nextPreset = getFactoryPresetById(nextPresetId);
     const nextRuns = runsByEnvironmentRef.current[nextEnvironmentId] ?? [];

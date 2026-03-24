@@ -154,6 +154,10 @@ export const getFactoryEnvironmentOptions = (mode: FactoryGameMode): FactoryEnvi
 export const getDefaultEnvironmentIdForMode = (mode: FactoryGameMode) =>
   getFactoryEnvironmentOptions(mode)[0]?.id ?? "";
 
+export const resolveFactoryEnvironmentIdForModeAndChain = (mode: FactoryGameMode, chain: FactoryLaunchChain) =>
+  getFactoryEnvironmentOptions(mode).find((environment) => environment.chain === chain)?.id ??
+  getDefaultEnvironmentIdForMode(mode);
+
 export const getFactoryLaunchPresetsForMode = (mode: FactoryGameMode) =>
   factoryLaunchPresets.filter((preset) => preset.mode === mode);
 
