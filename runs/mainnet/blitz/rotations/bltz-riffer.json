@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-riffer",
   "seriesName": "bltz-riffer",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-riffer/23497793036-1.json",
   "latestLaunchRequestId": "23497793036-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T14:17:28.787Z",
-  "updatedAt": "2026-03-24T15:32:03.348Z",
+  "updatedAt": "2026-03-24T15:32:09.346Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,7 +27,6 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 5,
-    "nextRetryAt": "2026-03-24T15:37:03.348Z",
     "lastRetryAt": "2026-03-24T15:30:26.418Z"
   },
   "evaluation": {
@@ -46,9 +45,10 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games needs attention"
+      "latestEvent": "Creating games started",
+      "startedAt": "2026-03-24T15:32:09.346Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -324,5 +324,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-riffer.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T14:17:51.317Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23497793036-1",
+    "workflowRunId": 23497793036,
+    "workflowRunAttempt": 1,
+    "stepId": "create-worlds",
+    "acquiredAt": "2026-03-24T15:32:09.346Z",
+    "expiresAt": "2026-03-24T16:17:09.346Z"
   }
 }
