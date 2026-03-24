@@ -52,7 +52,7 @@ describe("launch request helpers", () => {
         game: "bltz-test-1",
         "start-time": "2026-03-18T10:00:00Z",
       }).maxActions,
-    ).toBe(50);
+    ).toBe(70);
 
     expect(
       buildLaunchGameRequest({

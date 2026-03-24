@@ -293,14 +293,17 @@ jobs:
           }
 
           resolve_default_create_game_max_actions() {
-            local network="${GAME_LAUNCH_ENVIRONMENT%%.*}"
-
-            if [ "${network}" = "mainnet" ]; then
-              printf '50'
+            if [ -n "${GAME_LAUNCH_DEFAULT_MAX_ACTIONS:-}" ]; then
+              printf '%s' "${GAME_LAUNCH_DEFAULT_MAX_ACTIONS}"
               return 0
             fi
 
-            printf '300'
+            GAME_LAUNCH_DEFAULT_MAX_ACTIONS="$(
+              bun config/deployer/clean/cli/print-create-game-max-actions.ts \
+                --environment "${GAME_LAUNCH_ENVIRONMENT}"
+            )"
+            export GAME_LAUNCH_DEFAULT_MAX_ACTIONS
+            printf '%s' "${GAME_LAUNCH_DEFAULT_MAX_ACTIONS}"
           }
 
           resolve_configured_create_game_max_actions() {
