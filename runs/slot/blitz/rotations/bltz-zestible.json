@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-zestible",
   "seriesName": "bltz-zestible",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexers",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23469865609-1.json",
   "latestLaunchRequestId": "23469865609-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": null,
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-24T02:16:34.451Z",
+  "updatedAt": "2026-03-24T02:16:39.537Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,7 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-24T02:31:34.451Z",
-    "lastEvaluatedAt": "2026-03-24T02:16:30.341Z"
+    "lastEvaluatedAt": "2026-03-24T02:16:39.537Z"
   },
   "steps": [
     {
@@ -72,10 +71,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-24T02:16:34.451Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-03-24T02:16:34.451Z",
+      "finishedAt": "2026-03-24T02:16:39.537Z"
     }
   ],
   "summary": {
@@ -664,127 +664,10 @@
         "startTime": 1774314600,
         "startTimeIso": "2026-03-24T01:10:00.000Z",
         "seriesGameNumber": 4,
-        "currentStepId": "create-indexers",
-        "latestEvent": "Finishing setup started",
-        "status": "running",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "currentStepId": null,
+        "latestEvent": "Finishing setup succeeded",
+        "status": "succeeded",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -817,9 +700,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "running",
-            "latestEvent": "Finishing setup started",
-            "updatedAt": "2026-03-24T02:16:34.451Z"
+            "status": "succeeded",
+            "latestEvent": "Finishing setup succeeded",
+            "updatedAt": "2026-03-24T02:16:39.537Z"
           }
         ],
         "artifacts": {
@@ -833,7 +716,7 @@
           "indexerUrl": "https://api.cartridge.gg/x/bltz-zestible-04/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T01:58:10.500Z",
+          "lastIndexerDescribeAt": "2026-03-24T02:16:38.150Z",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -844,7 +727,7 @@
             "externalContracts": []
           }
         },
-        "durationSeconds": 3600
+        "durationSeconds": 5400
       },
       {
         "gameName": "bltz-zestible-05",
@@ -1603,12 +1486,5 @@
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
   },
-  "activeLease": {
-    "launchRequestId": "23469865609-1",
-    "workflowRunId": 23469865609,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-24T02:16:34.451Z",
-    "expiresAt": "2026-03-24T03:01:34.451Z"
-  }
+  "completedAt": "2026-03-24T02:16:39.537Z"
 }
