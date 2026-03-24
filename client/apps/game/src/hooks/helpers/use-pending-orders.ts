@@ -1,5 +1,4 @@
 import { MarketInterface } from "@bibliothecadao/types";
-import { useMemo } from "react";
 
 interface PendingOrdersResult {
   count: number;
@@ -23,12 +22,4 @@ export const filterPendingOrders = (
   }, 0);
 
   return { count: orders.length, totalLordsLocked, orders };
-};
-
-export const usePendingOrders = (
-  bidOffers: MarketInterface[],
-  askOffers: MarketInterface[],
-  entityId: number,
-): PendingOrdersResult => {
-  return useMemo(() => filterPendingOrders(bidOffers, askOffers, entityId), [bidOffers, askOffers, entityId]);
 };
