@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "runId": "mainnet.blitz:daily-ranked-us-24-03-26",
+  "launchRequestId": "23467221564-1",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "daily-ranked-US-24.03.26",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-24T00:35:44.879Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23467221564,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23467221564",
+    "ref": "next",
+    "sha": "ad20c29a14b37463bd99939692f9da76a4ff64ae"
+  },
+  "request": {
+    "environmentId": "mainnet.blitz",
+    "gameName": "daily-ranked-US-24.03.26",
+    "startTime": "1774315800",
+    "factoryAddress": "",
+    "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
+    "privateKey": "0x06a603ea042bf7989bcedb262e324d48e1a15c7139d79518ff79133939c04b73",
+    "blitzRegistrationOverrides": {
+      "fee_token": "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+      "fee_amount": "100000000000000000000"
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "maxActions": 70,
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false
+  }
+}
