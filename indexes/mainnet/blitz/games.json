@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-24T04:37:40.949Z",
+  "updatedAt": "2026-03-24T04:37:49.343Z",
   "entries": {
     "daily-unranked-1-24.03.26": {
       "kind": "game",
@@ -11,12 +11,13 @@
       "path": "runs/mainnet/blitz/daily-unranked-1-24-03-26.json",
       "inputPath": "inputs/mainnet/blitz/daily-unranked-1-24-03-26/23473267141-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T04:37:40.949Z",
+      "updatedAt": "2026-03-24T04:37:49.343Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-24T05:22:49.343Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-role",
+      "recoverablePendingStepId": "create-indexer",
       "startTime": 1774330200,
       "durationSeconds": 3600,
       "artifacts": {}
