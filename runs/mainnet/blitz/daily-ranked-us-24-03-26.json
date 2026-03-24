@@ -12,7 +12,7 @@
   "latestLaunchRequestId": "23467221564-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-24T00:35:44.879Z",
-  "updatedAt": "2026-03-24T00:37:01.952Z",
+  "updatedAt": "2026-03-24T00:37:09.377Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -35,9 +35,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-03-24T00:37:09.377Z"
     },
     {
       "id": "configure-world",
@@ -71,5 +72,13 @@
   "artifacts": {
     "summaryPath": ".context/game-launch/mainnet-blitz-daily-ranked-us-24-03-26.json",
     "createGameTxHash": "0x1dc65843eb47baff56c6454aaffbae5d1eb92f3458539429acbc0552ba3dae4"
+  },
+  "activeLease": {
+    "launchRequestId": "23467221564-1",
+    "workflowRunId": 23467221564,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-24T00:37:09.377Z",
+    "expiresAt": "2026-03-24T01:22:09.377Z"
   }
 }
