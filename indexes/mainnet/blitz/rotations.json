@@ -2,65 +2,8 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T15:37:20.931Z",
+  "updatedAt": "2026-03-24T15:38:30.573Z",
   "entries": {
-    "bltz-riffer": {
-      "kind": "rotation",
-      "environment": "mainnet.blitz",
-      "rotationName": "bltz-riffer",
-      "path": "runs/mainnet/blitz/rotations/bltz-riffer.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/bltz-riffer/23497793036-1.json",
-      "status": "attention",
-      "updatedAt": "2026-03-24T15:32:56.829Z",
-      "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-worlds",
-      "hasRunningStep": false,
-      "recoverableFailedStepId": "create-worlds",
-      "recoverablePendingStepId": "wait-for-factory-indexes",
-      "autoRetry": {
-        "enabled": true,
-        "intervalMinutes": 5,
-        "nextRetryAt": "2026-03-24T15:37:56.829Z",
-        "lastRetryAt": "2026-03-24T15:30:26.418Z"
-      },
-      "evaluation": {
-        "intervalMinutes": 5,
-        "nextEvaluationAt": "2026-03-24T15:37:56.829Z",
-        "lastEvaluatedAt": "2026-03-24T15:32:56.829Z"
-      },
-      "games": [
-        {
-          "gameName": "bltz-riffer-01",
-          "startTime": 1774362600,
-          "artifacts": {
-            "indexerCreated": false,
-            "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-03-24T14:22:09.798Z"
-          }
-        },
-        {
-          "gameName": "bltz-riffer-02",
-          "startTime": 1774366200,
-          "artifacts": {
-            "indexerCreated": false,
-            "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-03-24T15:26:53.845Z"
-          }
-        },
-        {
-          "gameName": "bltz-riffer-03",
-          "startTime": 1774369800,
-          "durationSeconds": 7200,
-          "artifacts": {}
-        },
-        {
-          "gameName": "bltz-riffer-04",
-          "startTime": 1774373400,
-          "durationSeconds": 7200,
-          "artifacts": {}
-        }
-      ]
-    },
     "bltz-bakers": {
       "kind": "rotation",
       "environment": "mainnet.blitz",
