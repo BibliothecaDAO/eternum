@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-bakers/23495465469-1.json",
   "latestLaunchRequestId": "23495465469-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-03-24T14:44:30.319Z",
-  "updatedAt": "2026-03-24T14:47:01.335Z",
+  "updatedAt": "2026-03-24T14:48:14.814Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-24T14:59:51.011Z",
-    "lastEvaluatedAt": "2026-03-24T14:44:51.011Z"
+    "nextEvaluationAt": "2026-03-24T15:03:14.814Z",
+    "lastEvaluatedAt": "2026-03-24T14:48:14.814Z"
   },
   "steps": [
     {
@@ -46,10 +46,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-24T14:44:54.892Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-03-24T14:44:54.892Z",
+      "finishedAt": "2026-03-24T14:48:14.814Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -114,8 +115,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-bakers-01: Torii deployment \"bltz-bakers-01\" does not exist",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -125,8 +126,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-24T14:46:40.552Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -155,12 +157,8 @@
           }
         ],
         "artifacts": {
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-03-24T14:47:01.335Z",
-          "indexerCreated": false,
-          "lastIndexerTierDispatchTarget": "legendary",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T14:47:01.335Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-bakers-01\" does not exist"
+          "worldAddress": "0x012ceda5ea24aca14d7d07b3c30a528e3f7905de0c979521b72c6c9fb7e5a0a3",
+          "createGameTxHash": "0x3e8313bc4c71752338ddeb41a693ccde2e65a9d61948cc215f6c6e246a08fdf"
         }
       },
       {
@@ -170,8 +168,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -181,8 +179,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-24T14:48:10.467Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -210,7 +209,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x0205ab3fe1759782e01f8b08c999036ef9646248a9f5c7c3e05732b8312ce796",
+          "createGameTxHash": "0x7eb35b3787c38c81e1069ddbfdfd506d15906781784a00903001df60cf31de3"
+        }
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-bakers.json",
@@ -220,13 +222,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-bakers.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T14:44:49.418Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23495465469-1",
-    "workflowRunId": 23495465469,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-24T14:44:54.892Z",
-    "expiresAt": "2026-03-24T15:29:54.892Z"
   }
 }
