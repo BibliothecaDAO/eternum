@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-24T09:49:11.270Z",
+  "updatedAt": "2026-03-24T09:50:36.412Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -11,7 +11,7 @@
       "path": "runs/slot/blitz/bltz-vibe-915.json",
       "inputPath": "inputs/slot/blitz/bltz-vibe-915/23483034123-1.json",
       "status": "complete",
-      "updatedAt": "2026-03-24T09:49:11.270Z",
+      "updatedAt": "2026-03-24T09:50:36.412Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -22,7 +22,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "basic",
-        "lastIndexerDescribeAt": "2026-03-24T09:49:09.684Z"
+        "lastIndexerDescribeAt": "2026-03-24T09:49:09.684Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-03-24T09:50:35.107Z"
       }
     }
   }
