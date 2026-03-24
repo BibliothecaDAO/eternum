@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23469865609-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-24T04:42:15.587Z",
+  "updatedAt": "2026-03-24T05:20:38.489Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -922,7 +922,7 @@
         "startTimeIso": "2026-03-24T03:10:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-zestible-06",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1099,7 +1099,9 @@
             "worldAddress": "0x01e7cb591128490f7a6200777b3e67e148c66628135dab483f63da15c4b88abb",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-24T05:20:35.625Z"
         },
         "durationSeconds": 5400
       },
