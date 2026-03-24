@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-riffer",
   "seriesName": "bltz-riffer",
-  "status": "running",
+  "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-riffer/23497793036-1.json",
   "latestLaunchRequestId": "23497793036-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T14:17:28.787Z",
-  "updatedAt": "2026-03-24T15:32:09.346Z",
+  "updatedAt": "2026-03-24T15:32:56.829Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 5,
+    "nextRetryAt": "2026-03-24T15:37:56.829Z",
     "lastRetryAt": "2026-03-24T15:30:26.418Z"
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-24T15:37:03.348Z",
-    "lastEvaluatedAt": "2026-03-24T15:32:03.348Z"
+    "nextEvaluationAt": "2026-03-24T15:37:56.829Z",
+    "lastEvaluatedAt": "2026-03-24T15:32:56.829Z"
   },
   "steps": [
     {
@@ -45,10 +46,12 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-24T15:32:09.346Z"
+      "latestEvent": "Creating games failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-riffer-01\" on mainnet.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+467ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Raw create_game calldata: [\"0x626c747a2d7269666665722d3031\",70,\"180\",\"0x626c747a2d726966666572\",1]\n\u001b[2m[+468ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n\u001b[2m[+2.6s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m create_game attempt 1/15 submitted in 2.1s (0x4d659b68...a2e0fd)\n\u001b[2m[+2.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for create_game attempt 1/15 confirmation (0x4d659b68...a2e0fd)\n[2026-03-24T15:32:29.705Z] INFO: txLife: \n[\n  \"CANDIDATE\"\n]\n[2026-03-24T15:32:34.802Z] INFO: txLife: \n[\n  \"CANDIDATE\"\n]\n[2026-03-24T15:32:39.902Z] INFO: txLife: \n[\n  \"CANDIDATE\"\n]\n[2026-03-24T15:32:44.994Z] INFO: txLife: \n[\n  \"CANDIDATE\"\n]\n\u001b[2m[+28.0s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 25.5s: Transaction fails block building validation\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-03-24T15:32:09.346Z",
+      "finishedAt": "2026-03-24T15:32:56.829Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-riffer-01\" on mainnet.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+467ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Raw create_game calldata: [\"0x626c747a2d7269666665722d3031\",70,\"180\",\"0x626c747a2d726966666572\",1]\n\u001b[2m[+468ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n\u001b[2m[+2.6s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m create_game attempt 1/15 submitted in 2.1s (0x4d659b68...a2e0fd)\n\u001b[2m[+2.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for create_game attempt 1/15 confirmation (0x4d659b68...a2e0fd)\n[2026-03-24T15:32:29.705Z] INFO: txLife: \n[\n  \"CANDIDATE\"\n]\n[2026-03-24T15:32:34.802Z] INFO: txLife: \n[\n  \"CANDIDATE\"\n]\n[2026-03-24T15:32:39.902Z] INFO: txLife: \n[\n  \"CANDIDATE\"\n]\n[2026-03-24T15:32:44.994Z] INFO: txLife: \n[\n  \"CANDIDATE\"\n]\n\u001b[2m[+28.0s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 25.5s: Transaction fails block building validation\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -112,7 +115,7 @@
         "startTimeIso": "2026-03-24T14:30:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": "create-worlds",
-        "latestEvent": "waitForTransaction timed-out with retries 200",
+        "latestEvent": "Transaction fails block building validation",
         "status": "failed",
         "configSteps": [],
         "steps": [
@@ -124,9 +127,9 @@
           {
             "id": "create-worlds",
             "status": "failed",
-            "latestEvent": "waitForTransaction timed-out with retries 200",
-            "updatedAt": "2026-03-24T15:24:04.935Z",
-            "errorMessage": "waitForTransaction timed-out with retries 200"
+            "latestEvent": "Transaction fails block building validation",
+            "updatedAt": "2026-03-24T15:32:44.995Z",
+            "errorMessage": "Transaction fails block building validation"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -324,13 +327,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-riffer.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T14:17:51.317Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23497793036-1",
-    "workflowRunId": 23497793036,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-24T15:32:09.346Z",
-    "expiresAt": "2026-03-24T16:17:09.346Z"
   }
 }
