@@ -2,80 +2,8 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T15:32:56.829Z",
+  "updatedAt": "2026-03-24T15:37:20.931Z",
   "entries": {
-    "bltz-escapade": {
-      "kind": "rotation",
-      "environment": "mainnet.blitz",
-      "rotationName": "bltz-escapade",
-      "path": "runs/mainnet/blitz/rotations/bltz-escapade.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23494134522-1.json",
-      "status": "running",
-      "updatedAt": "2026-03-24T15:05:27.049Z",
-      "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-worlds",
-      "activeLeaseExpiresAt": "2026-03-24T15:02:03.067Z",
-      "hasRunningStep": true,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-indexes",
-      "autoRetry": {
-        "enabled": true,
-        "intervalMinutes": 5,
-        "lastRetryAt": "2026-03-24T14:15:32.985Z"
-      },
-      "evaluation": {
-        "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-24T15:20:27.049Z",
-        "lastEvaluatedAt": "2026-03-24T15:05:27.049Z"
-      },
-      "games": [
-        {
-          "gameName": "bltz-escapade-01",
-          "startTime": 1774348200,
-          "durationSeconds": 7200,
-          "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "pro",
-            "lastIndexerDescribeAt": "2026-03-24T13:17:01.011Z"
-          }
-        },
-        {
-          "gameName": "bltz-escapade-02",
-          "startTime": 1774366200,
-          "durationSeconds": 7200,
-          "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "legendary",
-            "lastIndexerDescribeAt": "2026-03-24T15:02:22.669Z"
-          }
-        },
-        {
-          "gameName": "bltz-escapade-03",
-          "startTime": 1774384200,
-          "durationSeconds": 7200,
-          "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-03-24T08:35:33.220Z"
-          }
-        },
-        {
-          "gameName": "bltz-escapade-04",
-          "startTime": 1774402200,
-          "durationSeconds": 7200,
-          "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-03-24T08:35:45.560Z"
-          }
-        },
-        {
-          "gameName": "bltz-escapade-05",
-          "startTime": 1774420200,
-          "artifacts": {}
-        }
-      ]
-    },
     "bltz-riffer": {
       "kind": "rotation",
       "environment": "mainnet.blitz",
