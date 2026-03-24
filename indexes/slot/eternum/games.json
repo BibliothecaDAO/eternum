@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-03-23T17:12:41.544Z",
+  "updatedAt": "2026-03-24T05:52:11.779Z",
   "entries": {
     "etrn-haven-204": {
       "kind": "game",
@@ -34,6 +34,22 @@
       "recoverableFailedStepId": "create-world",
       "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-03-23T17:30:00.000Z",
+      "artifacts": {}
+    },
+    "etrn-mango": {
+      "kind": "game",
+      "environment": "slot.eternum",
+      "gameName": "etrn-mango",
+      "path": "runs/slot/eternum/etrn-mango.json",
+      "inputPath": "inputs/slot/eternum/etrn-mango/23475224236-1.json",
+      "status": "running",
+      "updatedAt": "2026-03-24T05:52:11.779Z",
+      "workflowRef": "codex/factory-v2-rotation-review",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-03-24T05:55:00.000Z",
       "artifacts": {}
     }
   }
