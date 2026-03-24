@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23461067376-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-24T01:56:47.659Z",
+  "updatedAt": "2026-03-24T02:27:13.350Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -186,7 +186,7 @@
         "startTimeIso": "2026-03-23T07:20:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Indexer tier already matched pro for bltz-franky-02",
+        "latestEvent": "Deleted indexer for bltz-franky-02",
         "status": "succeeded",
         "configSteps": [
           {
@@ -348,9 +348,8 @@
           "worldAddress": "0x01196695f7825c4e2099ec8888ee9c9d3a0f3568a7ebf12db5792d4e76590ef5",
           "configureTxHash": "0x6ff0c1d0ae4671c01b37638dc6da5fab19019541e99aae9130eaea787c82a5f",
           "lootChestRoleTxHash": "0x6d1265817fba9626b39be8eb6c9412fdb67bd3c53dc83c40062f6a5364771b5",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "github-actions",
-          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -368,11 +367,7 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23423812884",
             "status": "completed",
             "conclusion": "success"
-          },
-          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-02/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T01:56:46.980Z"
+          }
         },
         "durationSeconds": 3600
       },
@@ -382,7 +377,7 @@
         "startTimeIso": "2026-03-23T08:20:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Indexer tier already matched pro for bltz-franky-03",
+        "latestEvent": "Deleted indexer for bltz-franky-03",
         "status": "succeeded",
         "configSteps": [
           {
@@ -544,9 +539,8 @@
           "worldAddress": "0x013229dffb1735c758574807c9bb4730a11593be4e72be6c7e113d462985de06",
           "configureTxHash": "0x7863d6c2f69ec3b019a625e8e7afa043f9bc5a31f4d9986616c941ce328b483",
           "lootChestRoleTxHash": "0x259d4eda6c0578d090b3e5677b35430cecb4177f788455f8574289bc6c8b16b",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "github-actions",
-          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -564,11 +558,7 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23423848107",
             "status": "completed",
             "conclusion": "success"
-          },
-          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-03/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T01:56:47.225Z"
+          }
         },
         "durationSeconds": 3600
       },
@@ -578,7 +568,7 @@
         "startTimeIso": "2026-03-23T09:20:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Indexer tier already matched pro for bltz-franky-04",
+        "latestEvent": "Deleted indexer for bltz-franky-04",
         "status": "succeeded",
         "configSteps": [
           {
@@ -739,9 +729,8 @@
           "worldAddress": "0x07767e3d06ad0c92ff1a4d59ea53a4ac93ed409b02308c84fc725946274dd045",
           "configureTxHash": "0x344241847c212bf0a2da60479b9aae57bddc6d16bf81d7e41180e87fc709544",
           "lootChestRoleTxHash": "0x4105ea1b6984ba6e59db6b47c87b5a94fdeb562981ff2e85dbb4a8ffdd3cd5b",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "github-actions",
-          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -759,11 +748,7 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23457964977",
             "status": "completed",
             "conclusion": "success"
-          },
-          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-04/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T01:56:47.305Z"
+          }
         },
         "durationSeconds": 5400
       },
@@ -773,7 +758,7 @@
         "startTimeIso": "2026-03-23T10:20:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Indexer tier already matched pro for bltz-franky-05",
+        "latestEvent": "Deleted indexer for bltz-franky-05",
         "status": "succeeded",
         "configSteps": [
           {
@@ -935,9 +920,8 @@
           "createGameTxHash": "0x403b76d769fc7d7b2aaeea1a917ef39f18dec9f3aafcb739d399fd92ec64ba1",
           "configureTxHash": "0x30b91148e25f59541444982a9b6300e06273131b6d99b2aee0840f64daeeb83",
           "lootChestRoleTxHash": "0x3e918854f4e01cb33d9d9a44a27904b07bf1a8a3213da5f94b30c65050600dc",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "github-actions",
-          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -955,11 +939,7 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458015669",
             "status": "completed",
             "conclusion": "success"
-          },
-          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-05/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T01:56:47.506Z"
+          }
         },
         "durationSeconds": 5400
       },
@@ -969,7 +949,7 @@
         "startTimeIso": "2026-03-23T11:20:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Indexer tier already matched pro for bltz-franky-06",
+        "latestEvent": "Deleted indexer for bltz-franky-06",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1131,9 +1111,8 @@
           "createGameTxHash": "0x576111165db27ff01b2587f4a5513b5072093dbc34e7a89409f8763b75bd3f",
           "configureTxHash": "0x6fd8d661ed1f5ec06b25a42a947924cca9623908a53cef8b8c218b529ee94e9",
           "lootChestRoleTxHash": "0x607d0b585f805ddd262aff6739bf93310a6117f62d0339d878b8329e28fc7f6",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "github-actions",
-          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -1151,11 +1130,7 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458063693",
             "status": "completed",
             "conclusion": "success"
-          },
-          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-06/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T01:56:47.583Z"
+          }
         },
         "durationSeconds": 5400
       },
@@ -1165,7 +1140,7 @@
         "startTimeIso": "2026-03-23T12:20:00.000Z",
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Indexer tier already matched pro for bltz-franky-07",
+        "latestEvent": "Deleted indexer for bltz-franky-07",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1327,9 +1302,8 @@
           "createGameTxHash": "0x354ee6ee3c9c714219567c87d4ca2c6686036617df076384542528298c160e5",
           "configureTxHash": "0x372789b144e48414d1b8ce7554b27b11fac72eed6b93372a497a6b6e526da6",
           "lootChestRoleTxHash": "0x20ca6af052df5e024056276505d99e374e9b68796b4ba27f4fc38cd21273e16",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "github-actions",
-          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -1347,11 +1321,7 @@
             "htmlUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23458112242",
             "status": "completed",
             "conclusion": "success"
-          },
-          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-07/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T01:56:47.659Z"
+          }
         },
         "durationSeconds": 5400
       }
