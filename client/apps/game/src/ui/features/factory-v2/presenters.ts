@@ -315,7 +315,7 @@ function resolveRunWithoutCurrentStepCopy(run: FactoryRun) {
       return {
         headline: `This ${resolveRunSubject(run)} needs attention`,
         currentStepLabel: "Needs attention",
-        detailMessage: `This ${resolveRunSubject(run)} stopped, but it can continue from the last unfinished step.`,
+        detailMessage: resolveFailedRunDetailMessage(run),
       };
     case "waiting":
       return {
@@ -468,10 +468,7 @@ export const getRunDetailMessage = (run: FactoryRun) => {
       );
     case "blocked":
     case "failed":
-      return appendRunChildStatusSummary(
-        run,
-        `This ${resolveRunSubject(run)} stopped, but it can continue from the last unfinished step.`,
-      );
+      return appendRunChildStatusSummary(run, resolveFailedRunDetailMessage(run));
     case "pending":
       return appendRunChildStatusSummary(run, "The next setup step has not started yet.");
     case "succeeded":
@@ -516,9 +513,25 @@ export const resolveRunPrimaryAction = (run: FactoryRun): FactoryRunPrimaryActio
 };
 
 function resolveRunContinueStepId(run: FactoryRun): FactoryRecoveryStepId | null {
+  if (isContinuePausedForCancelledAutoRetry(run)) {
+    return null;
+  }
+
   if (!run.recovery?.canContinue || !run.recovery.continueStepId) {
     return null;
   }
 
   return run.recovery.continueStepId;
+}
+
+function resolveFailedRunDetailMessage(run: FactoryRun) {
+  if (isContinuePausedForCancelledAutoRetry(run)) {
+    return `This ${resolveRunSubject(run)} stopped and auto-retry is off.`;
+  }
+
+  return `This ${resolveRunSubject(run)} stopped, but it can continue from the last unfinished step.`;
+}
+
+function isContinuePausedForCancelledAutoRetry(run: FactoryRun) {
+  return Boolean((run.kind === "series" || run.kind === "rotation") && run.autoRetry?.cancelledAt);
 }

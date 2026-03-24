@@ -86,6 +86,11 @@ function updateSeriesLikeGameSuccess(
       lastIndexerDescribeAt: gameSummary.lastIndexerDescribeAt || game.artifacts.lastIndexerDescribeAt,
       indexerRequest: gameSummary.indexerRequest || game.artifacts.indexerRequest,
       indexerWorkflowRun: gameSummary.indexerWorkflowRun || game.artifacts.indexerWorkflowRun,
+      ...(gameSummary.worldConfigTxHash || game.artifacts.worldConfigTxHash
+        ? {
+            worldConfigTxHash: gameSummary.worldConfigTxHash || game.artifacts.worldConfigTxHash,
+          }
+        : {}),
     },
   };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 
 import {
   DEFAULT_FACTORY_DEVELOPER_CONTRACT_TARGET_ID,
@@ -41,8 +41,10 @@ export const useFactoryV2DeveloperLookup = ({
   const [lookupResult, setLookupResult] = useState<FactoryManifestContractLookupSuccess | null>(null);
   const [lookupFailure, setLookupFailure] = useState<FactoryManifestContractLookupFailure | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
+  const [worldAddressCopyStatus, setWorldAddressCopyStatus] = useState<"idle" | "copied" | "error">("idle");
   const lastGameNameSeedRef = useRef(initialGameName);
   const copyResetTimeoutRef = useRef<number | null>(null);
+  const worldAddressCopyResetTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const nextGameNameSeed = resolveDeveloperLookupGameNameSeed(selectedRunName, draftGameName);
@@ -63,6 +65,10 @@ export const useFactoryV2DeveloperLookup = ({
       if (copyResetTimeoutRef.current !== null) {
         window.clearTimeout(copyResetTimeoutRef.current);
       }
+
+      if (worldAddressCopyResetTimeoutRef.current !== null) {
+        window.clearTimeout(worldAddressCopyResetTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -76,6 +82,7 @@ export const useFactoryV2DeveloperLookup = ({
     setLookupResult(null);
     setLookupFailure(null);
     setCopyStatus("idle");
+    setWorldAddressCopyStatus("idle");
 
     const result = await resolveFactoryManifestContractAddress({
       chain,
@@ -125,25 +132,19 @@ export const useFactoryV2DeveloperLookup = ({
   };
 
   const copyResolvedAddress = async () => {
-    if (!lookupResult?.contractAddress) {
-      return;
-    }
+    await copyLookupValue({
+      value: lookupResult?.contractAddress,
+      onStatusChange: setCopyStatus,
+      resetTimeoutRef: copyResetTimeoutRef,
+    });
+  };
 
-    try {
-      await navigator.clipboard.writeText(lookupResult.contractAddress);
-      setCopyStatus("copied");
-    } catch {
-      setCopyStatus("error");
-    }
-
-    if (copyResetTimeoutRef.current !== null) {
-      window.clearTimeout(copyResetTimeoutRef.current);
-    }
-
-    copyResetTimeoutRef.current = window.setTimeout(() => {
-      setCopyStatus("idle");
-      copyResetTimeoutRef.current = null;
-    }, COPY_STATUS_RESET_MS);
+  const copyWorldAddress = async () => {
+    await copyLookupValue({
+      value: lookupResult?.worldAddress,
+      onStatusChange: setWorldAddressCopyStatus,
+      resetTimeoutRef: worldAddressCopyResetTimeoutRef,
+    });
   };
 
   return {
@@ -157,6 +158,7 @@ export const useFactoryV2DeveloperLookup = ({
     lookupResult,
     lookupFailure,
     copyStatus,
+    worldAddressCopyStatus,
     targetOptions: FACTORY_DEVELOPER_CONTRACT_TARGETS,
     setGameName,
     setSelectedTargetId,
@@ -165,5 +167,36 @@ export const useFactoryV2DeveloperLookup = ({
     applyWorldSuggestion,
     applyContractSuggestion,
     copyResolvedAddress,
+    copyWorldAddress,
   };
 };
+
+async function copyLookupValue({
+  value,
+  onStatusChange,
+  resetTimeoutRef,
+}: {
+  value: string | null | undefined;
+  onStatusChange: (status: "idle" | "copied" | "error") => void;
+  resetTimeoutRef: MutableRefObject<number | null>;
+}) {
+  if (!value) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(value);
+    onStatusChange("copied");
+  } catch {
+    onStatusChange("error");
+  }
+
+  if (resetTimeoutRef.current !== null) {
+    window.clearTimeout(resetTimeoutRef.current);
+  }
+
+  resetTimeoutRef.current = window.setTimeout(() => {
+    onStatusChange("idle");
+    resetTimeoutRef.current = null;
+  }, COPY_STATUS_RESET_MS);
+}

@@ -220,6 +220,19 @@ pub impl ProductionImpl of ProductionTrait {
 
 #[generate_trait]
 pub impl ProductionStrategyImpl of ProductionStrategyTrait {
+    fn seed_unbounded_structure_labor_output(ref world: WorldStorage, structure_id: ID) {
+        let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        let mut structure_labor_resource: SingleResource = SingleResourceStoreImpl::retrieve(
+            ref world, structure_id, ResourceTypes::LABOR, ref structure_weight, labor_resource_weight_grams, true,
+        );
+        let mut structure_labor_production: Production = structure_labor_resource.production;
+        structure_labor_production.output_amount_left = Bounded::MAX;
+        structure_labor_resource.production = structure_labor_production;
+        structure_labor_resource.store(ref world);
+        structure_weight.store(ref world, structure_id);
+    }
+
     fn _grant_producer_achievement(
         ref world: WorldStorage, owner: starknet::ContractAddress, resource_type: u8, amount: u128,
     ) {

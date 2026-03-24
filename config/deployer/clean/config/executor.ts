@@ -1,10 +1,12 @@
 import type { Account } from "starknet";
 import type {
+  CleanConfigArtifacts,
   CleanConfigContext,
   ConfigLogger,
   ConfigExecutionResult,
   ConfigStep,
   ConfigStepHooks,
+  ConfigStepResult,
   ExecutedConfigStep,
   ExecutionMode,
 } from "../types";
@@ -64,6 +66,10 @@ function buildStepContext<Provider>(
   return suppressStepLogs ? { ...context, logger: SILENT_LOGGER } : context;
 }
 
+function ensureConfigArtifacts(artifacts: CleanConfigArtifacts | undefined): CleanConfigArtifacts {
+  return artifacts ?? {};
+}
+
 async function executeStep<Provider>(params: {
   step: ConfigStep<Provider>;
   context: CleanConfigContext<Provider>;
@@ -75,8 +81,14 @@ async function executeStep<Provider>(params: {
 }): Promise<void> {
   const startedAt = Date.now();
   params.hooks?.onStepStart?.(params.step, params.index, params.total);
-  await params.step.execute(buildStepContext(params.context, params.suppressStepLogs));
-  params.executedSteps.push({ id: params.step.id, description: params.step.description });
+  const result = (await params.step.execute(
+    buildStepContext(params.context, params.suppressStepLogs),
+  )) as ConfigStepResult | void;
+  params.executedSteps.push({
+    id: params.step.id,
+    description: params.step.description,
+    transactionHash: result?.transactionHash,
+  });
   params.hooks?.onStepComplete?.(params.step, params.index, params.total, Date.now() - startedAt);
 }
 
@@ -129,13 +141,17 @@ export async function executeConfigSteps<Provider>({
   hooks,
   suppressStepLogs = false,
 }: ExecuteConfigStepsInput<Provider>): Promise<ConfigExecutionResult> {
+  const executionContext: CleanConfigContext<Provider> = {
+    ...context,
+    artifacts: ensureConfigArtifacts(context.artifacts),
+  };
   const executedSteps: ExecutedConfigStep[] = [];
-  const batchState = await beginBatchExecutionIfNeeded(mode, context);
+  const batchState = await beginBatchExecutionIfNeeded(mode, executionContext);
 
   try {
     await executeAllSteps({
       steps,
-      context,
+      context: executionContext,
       suppressStepLogs,
       hooks,
       executedSteps,
@@ -145,6 +161,7 @@ export async function executeConfigSteps<Provider>({
       mode,
       steps: executedSteps,
       transactionHash: await flushBatchExecution(batchState),
+      artifacts: executionContext.artifacts || {},
     };
   } catch (error) {
     await cancelBatchExecution(batchState);
