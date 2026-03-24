@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-zestible",
   "seriesName": "bltz-zestible",
-  "status": "complete",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexers",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23469865609-1.json",
   "latestLaunchRequestId": "23469865609-1",
-  "currentStepId": null,
+  "currentStepId": "create-indexers",
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-24T02:16:30.341Z",
+  "updatedAt": "2026-03-24T02:16:34.451Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,6 +30,7 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
+    "nextEvaluationAt": "2026-03-24T02:31:34.451Z",
     "lastEvaluatedAt": "2026-03-24T02:16:30.341Z"
   },
   "steps": [
@@ -71,9 +72,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-24T02:16:34.451Z"
     }
   ],
   "summary": {
@@ -662,9 +664,9 @@
         "startTime": 1774314600,
         "startTimeIso": "2026-03-24T01:10:00.000Z",
         "seriesGameNumber": 4,
-        "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-zestible-04",
-        "status": "succeeded",
+        "currentStepId": "create-indexers",
+        "latestEvent": "Finishing setup started",
+        "status": "running",
         "configSteps": [
           {
             "id": "world-admin",
@@ -815,9 +817,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "succeeded",
-            "latestEvent": "Completed create-indexers",
-            "updatedAt": "2026-03-23T22:01:24.052Z"
+            "status": "running",
+            "latestEvent": "Finishing setup started",
+            "updatedAt": "2026-03-24T02:16:34.451Z"
           }
         ],
         "artifacts": {
@@ -1601,5 +1603,12 @@
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
   },
-  "completedAt": "2026-03-24T02:16:30.341Z"
+  "activeLease": {
+    "launchRequestId": "23469865609-1",
+    "workflowRunId": 23469865609,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-03-24T02:16:34.451Z",
+    "expiresAt": "2026-03-24T03:01:34.451Z"
+  }
 }
