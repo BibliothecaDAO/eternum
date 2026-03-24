@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T12:16:51.114Z",
+  "updatedAt": "2026-03-24T12:16:55.548Z",
   "entries": {
     "bltz-escapade": {
       "kind": "rotation",
@@ -10,17 +10,17 @@
       "rotationName": "bltz-escapade",
       "path": "runs/mainnet/blitz/rotations/bltz-escapade.json",
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23488906865-1.json",
-      "status": "attention",
-      "updatedAt": "2026-03-24T12:16:51.114Z",
+      "status": "running",
+      "updatedAt": "2026-03-24T12:16:55.548Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "create-worlds",
-      "hasRunningStep": false,
-      "recoverableFailedStepId": "create-worlds",
+      "activeLeaseExpiresAt": "2026-03-24T13:01:55.548Z",
+      "hasRunningStep": true,
+      "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-indexes",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 5,
-        "nextRetryAt": "2026-03-24T12:21:51.114Z",
         "lastRetryAt": "2026-03-24T12:15:32.713Z"
       },
       "evaluation": {
