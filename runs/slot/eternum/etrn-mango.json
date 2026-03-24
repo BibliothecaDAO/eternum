@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-mango",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-mango/23475691470-1.json",
   "latestLaunchRequestId": "23475691470-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-24T05:52:11.779Z",
-  "updatedAt": "2026-03-24T06:09:22.465Z",
+  "updatedAt": "2026-03-24T06:09:27.834Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,11 +81,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Finishing setup succeeded",
       "startedAt": "2026-03-24T06:09:22.465Z",
-      "finishedAt": "2026-03-24T06:08:22.488Z"
+      "finishedAt": "2026-03-24T06:09:27.834Z"
     }
   ],
   "artifacts": {
@@ -104,14 +104,7 @@
     "indexerUrl": "https://api.cartridge.gg/x/etrn-mango/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-03-24T06:08:21.041Z"
+    "lastIndexerDescribeAt": "2026-03-24T06:09:26.241Z"
   },
-  "activeLease": {
-    "launchRequestId": "23475691470-1",
-    "workflowRunId": 23475691470,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-24T06:09:22.465Z",
-    "expiresAt": "2026-03-24T06:54:22.465Z"
-  }
+  "completedAt": "2026-03-24T06:09:27.834Z"
 }
