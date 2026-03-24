@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   acquireFactoryAccountLease,
   heartbeatFactoryAccountLease,
+  removeFactoryMaintenanceIndexEntry,
   recordFactoryLaunchStarted,
   recordFactoryRotationLaunchStarted,
   recordFactoryRotationLaunchStepSucceeded,
@@ -13,6 +14,7 @@ import {
   recordFactoryLaunchStepSucceeded,
   releaseFactoryAccountLeaseRecord,
 } from "../run-store";
+import { requireGitHubBranchStoreConfig } from "../run-store/github";
 import { resolveRepoPath } from "../shared/repo";
 import type { LaunchGameSummary, LaunchRotationSummary } from "../types";
 
@@ -140,6 +142,48 @@ describe("factory run store", () => {
       "create-indexer",
       "sync-paymaster",
     ]);
+  });
+
+  test("removes a stale rotation maintenance index entry", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    branchStore.writeJson("indexes/slot/blitz/rotations.json", {
+      version: 1,
+      environment: "slot.blitz",
+      kind: "rotation",
+      updatedAt: "2026-03-24T00:00:00.000Z",
+      entries: {
+        "bltz-blinkery": {
+          kind: "rotation",
+          environment: "slot.blitz",
+          rotationName: "bltz-blinkery",
+          path: "runs/slot/blitz/rotations/bltz-blinkery.json",
+          inputPath: "inputs/slot/blitz/rotations/bltz-blinkery/23423814592-1.json",
+          status: "attention",
+          updatedAt: "2026-03-24T00:00:00.000Z",
+          workflowRef: "codex/factory-v2-rotation-review",
+          currentStepId: "create-worlds",
+          hasRunningStep: false,
+          recoverableFailedStepId: "create-worlds",
+          recoverablePendingStepId: "wait-for-factory-indexes",
+          autoRetry: { enabled: true, intervalMinutes: 15 },
+          evaluation: { intervalMinutes: 5 },
+          games: [],
+        },
+      },
+    });
+
+    await removeFactoryMaintenanceIndexEntry(
+      requireGitHubBranchStoreConfig(),
+      "slot.blitz",
+      "rotation",
+      "bltz-blinkery",
+    );
+
+    const maintenanceIndex = branchStore.readJson("indexes/slot/blitz/rotations.json");
+
+    expect(maintenanceIndex.entries["bltz-blinkery"]).toBeUndefined();
   });
 
   test("keeps eternum launch steps and adds paymaster for mainnet eternum", async () => {
