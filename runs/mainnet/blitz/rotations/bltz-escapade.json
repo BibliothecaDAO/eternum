@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23481829106-1",
   "currentStepId": null,
   "createdAt": "2026-03-24T08:00:10.872Z",
-  "updatedAt": "2026-03-24T09:18:17.760Z",
+  "updatedAt": "2026-03-24T09:27:41.839Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -309,7 +309,20 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true
+          "paymasterSynced": true,
+          "prizeFunding": {
+            "transfers": [
+              {
+                "id": "0x5a60e1b8853fd1992d35f960c1b6627f05c34b0fc0f16d94179dba47365786a",
+                "tokenAddress": "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+                "amountRaw": "100000000000000000000",
+                "amountDisplay": "100",
+                "decimals": 18,
+                "transactionHash": "0x5a60e1b8853fd1992d35f960c1b6627f05c34b0fc0f16d94179dba47365786a",
+                "fundedAt": "2026-03-24T09:27:41.839Z"
+              }
+            ]
+          }
         },
         "durationSeconds": 7200
       },
