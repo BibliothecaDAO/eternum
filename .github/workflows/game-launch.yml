@@ -94,6 +94,100 @@ on:
           end_at."
         required: false
         type: string
+      rpc_url:
+        description: "Optional RPC URL override for this launch and later recovery."
+        required: false
+        type: string
+      factory_address:
+        description: "Optional factory address override for this launch and later recovery."
+        required: false
+        type: string
+      account_address:
+        description: "Optional account address override for this launch and later recovery."
+        required: false
+        type: string
+      execution_mode:
+        description: "Execution mode for config application."
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - batched
+          - sequential
+      cartridge_api_base:
+        description: "Optional Cartridge API base override."
+        required: false
+        type: string
+      torii_namespaces:
+        description: "Optional Torii namespaces override."
+        required: false
+        type: string
+      vrf_provider_address:
+        description: "Optional VRF provider override."
+        required: false
+        type: string
+      verbose_config_logs:
+        description: 'Optional override for verbose config logs ("true" or "false").'
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
+      version:
+        description: "Optional version felt override."
+        required: false
+        type: string
+      max_actions:
+        description: "Optional max actions override."
+        required: false
+        type: string
+      wait_timeout_ms:
+        description: "Optional factory index wait timeout override in milliseconds."
+        required: false
+        type: string
+      wait_poll_ms:
+        description: "Optional factory index poll interval override in milliseconds."
+        required: false
+        type: string
+      skip_indexer:
+        description: 'Optional override for indexer creation ("true" or "false").'
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
+      skip_lootchest_role_grant:
+        description: 'Optional override for loot chest role grant ("true" or "false").'
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
+      skip_banks:
+        description: 'Optional override for bank creation ("true" or "false").'
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
+      dry_run:
+        description: 'Optional override for dry run mode ("true" or "false").'
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
       map_config_overrides_json:
         description: "Optional JSON object with raw map config overrides."
         required: false
@@ -166,6 +260,22 @@ jobs:
       GAME_LAUNCH_SINGLE_REALM_MODE: ${{ github.event.inputs.single_realm_mode }}
       GAME_LAUNCH_TWO_PLAYER_MODE: ${{ github.event.inputs.two_player_mode }}
       GAME_LAUNCH_DURATION_SECONDS: ${{ github.event.inputs.duration_seconds }}
+      GAME_LAUNCH_RPC_URL: ${{ github.event.inputs.rpc_url }}
+      GAME_LAUNCH_FACTORY_ADDRESS: ${{ github.event.inputs.factory_address }}
+      GAME_LAUNCH_ACCOUNT_ADDRESS: ${{ github.event.inputs.account_address }}
+      GAME_LAUNCH_EXECUTION_MODE: ${{ github.event.inputs.execution_mode }}
+      GAME_LAUNCH_CARTRIDGE_API_BASE: ${{ github.event.inputs.cartridge_api_base }}
+      GAME_LAUNCH_TORII_NAMESPACES: ${{ github.event.inputs.torii_namespaces }}
+      GAME_LAUNCH_VRF_PROVIDER_ADDRESS: ${{ github.event.inputs.vrf_provider_address }}
+      GAME_LAUNCH_VERBOSE_CONFIG_LOGS: ${{ github.event.inputs.verbose_config_logs }}
+      GAME_LAUNCH_VERSION: ${{ github.event.inputs.version }}
+      GAME_LAUNCH_MAX_ACTIONS: ${{ github.event.inputs.max_actions }}
+      GAME_LAUNCH_WAIT_TIMEOUT_MS: ${{ github.event.inputs.wait_timeout_ms }}
+      GAME_LAUNCH_WAIT_POLL_MS: ${{ github.event.inputs.wait_poll_ms }}
+      GAME_LAUNCH_SKIP_INDEXER: ${{ github.event.inputs.skip_indexer }}
+      GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT: ${{ github.event.inputs.skip_lootchest_role_grant }}
+      GAME_LAUNCH_SKIP_BANKS: ${{ github.event.inputs.skip_banks }}
+      GAME_LAUNCH_DRY_RUN: ${{ github.event.inputs.dry_run }}
       GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON: ${{ github.event.inputs.map_config_overrides_json }}
       GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON: ${{ github.event.inputs.blitz_registration_overrides_json }}
       GAME_LAUNCH_AUTO_RETRY_ENABLED: ${{ github.event.inputs.auto_retry_enabled }}
@@ -231,7 +341,9 @@ jobs:
             exit 1
           fi
 
-          if [ "${GAME_LAUNCH_STEP}" != "sync-paymaster" ] && { [ -z "${DOJO_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; }; then
+          RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS="${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
+
+          if [ "${GAME_LAUNCH_STEP}" != "sync-paymaster" ] && { [ -z "${RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; }; then
             echo "Missing DOJO credentials for ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
           fi
@@ -239,10 +351,63 @@ jobs:
           mkdir -p .context/game-launch
 
           cat > .context/game-launch/launch-env.sh <<'EOF'
+          append_optional_arg() {
+            local -n target_args="$1"
+            local flag="$2"
+            local value="${3:-}"
+
+            if [ -n "${value}" ]; then
+              target_args+=("${flag}" "${value}")
+            fi
+          }
+
+          resolve_configured_factory_address() {
+            printf '%s' "${GAME_LAUNCH_FACTORY_ADDRESS:-${FACTORY_ADDRESS:-}}"
+          }
+
+          resolve_configured_account_address() {
+            printf '%s' "${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
+          }
+
+          append_replayable_launch_args() {
+            local -n target_args="$1"
+            local resolved_factory_address=""
+            local resolved_account_address=""
+            local resolved_execution_mode="${GAME_LAUNCH_EXECUTION_MODE:-batched}"
+
+            resolved_factory_address="$(resolve_configured_factory_address)"
+            resolved_account_address="$(resolve_configured_account_address)"
+
+            target_args+=(
+              --mode "${resolved_execution_mode}"
+            )
+
+            append_optional_arg target_args --rpc-url "${GAME_LAUNCH_RPC_URL}"
+            append_optional_arg target_args --factory-address "${resolved_factory_address}"
+            append_optional_arg target_args --account-address "${resolved_account_address}"
+            append_optional_arg target_args --dev-mode-on "${GAME_LAUNCH_DEV_MODE_ON}"
+            append_optional_arg target_args --single-realm-mode "${GAME_LAUNCH_SINGLE_REALM_MODE}"
+            append_optional_arg target_args --two-player-mode "${GAME_LAUNCH_TWO_PLAYER_MODE}"
+            append_optional_arg target_args --duration-seconds "${GAME_LAUNCH_DURATION_SECONDS}"
+            append_optional_arg target_args --cartridge-api-base "${GAME_LAUNCH_CARTRIDGE_API_BASE}"
+            append_optional_arg target_args --torii-namespaces "${GAME_LAUNCH_TORII_NAMESPACES}"
+            append_optional_arg target_args --vrf-provider-address "${GAME_LAUNCH_VRF_PROVIDER_ADDRESS}"
+            append_optional_arg target_args --verbose-config-logs "${GAME_LAUNCH_VERBOSE_CONFIG_LOGS}"
+            append_optional_arg target_args --version "${GAME_LAUNCH_VERSION}"
+            append_optional_arg target_args --max-actions "${GAME_LAUNCH_MAX_ACTIONS}"
+            append_optional_arg target_args --wait-timeout-ms "${GAME_LAUNCH_WAIT_TIMEOUT_MS}"
+            append_optional_arg target_args --wait-poll-ms "${GAME_LAUNCH_WAIT_POLL_MS}"
+            append_optional_arg target_args --skip-indexer "${GAME_LAUNCH_SKIP_INDEXER}"
+            append_optional_arg target_args --skip-lootchest-role-grant "${GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT}"
+            append_optional_arg target_args --skip-banks "${GAME_LAUNCH_SKIP_BANKS}"
+            append_optional_arg target_args --dry-run "${GAME_LAUNCH_DRY_RUN}"
+            append_optional_arg target_args --map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}"
+            append_optional_arg target_args --blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}"
+          }
+
           args=(
             --launch-kind "${GAME_LAUNCH_KIND}"
             --environment "${GAME_LAUNCH_ENVIRONMENT}"
-            --mode batched
           )
 
           GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
@@ -292,33 +457,7 @@ jobs:
             )
           fi
 
-          if [ -n "${FACTORY_ADDRESS}" ]; then
-            args+=(--factory-address "${FACTORY_ADDRESS}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_DEV_MODE_ON}" ]; then
-            args+=(--dev-mode-on "${GAME_LAUNCH_DEV_MODE_ON}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_SINGLE_REALM_MODE}" ]; then
-            args+=(--single-realm-mode "${GAME_LAUNCH_SINGLE_REALM_MODE}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_TWO_PLAYER_MODE}" ]; then
-            args+=(--two-player-mode "${GAME_LAUNCH_TWO_PLAYER_MODE}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_DURATION_SECONDS}" ]; then
-            args+=(--duration-seconds "${GAME_LAUNCH_DURATION_SECONDS}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}" ]; then
-            args+=(--map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}" ]; then
-            args+=(--blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}")
-          fi
+          append_replayable_launch_args args
 
           if [ "${GAME_LAUNCH_KIND}" = "series" ] || [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
             if [ -n "${GAME_LAUNCH_AUTO_RETRY_ENABLED}" ]; then
@@ -367,13 +506,7 @@ jobs:
             )
           fi
 
-          if [ -n "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}" ]; then
-            run_store_args+=(--map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}" ]; then
-            run_store_args+=(--blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}")
-          fi
+          append_replayable_launch_args run_store_args
 
           if [ "${GAME_LAUNCH_KIND}" = "series" ] || [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
             if [ -n "${GAME_LAUNCH_AUTO_RETRY_ENABLED}" ]; then
@@ -410,7 +543,7 @@ jobs:
           account_lease_args=(
             --environment "${GAME_LAUNCH_ENVIRONMENT}"
             --game "$(resolve_account_lease_owner_name)"
-            --account-address "${DOJO_ACCOUNT_ADDRESS}"
+            --account-address "$(resolve_configured_account_address)"
           )
 
           if [ -n "${FACTORY_RUN_STORE_BRANCH}" ]; then

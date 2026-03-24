@@ -344,6 +344,22 @@ describe("factory worker map config overrides", () => {
             environmentId: "mainnet.eternum",
             gameName: "etrn-test-10",
             startTime: "2026-03-18T10:00:00Z",
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            executionMode: "sequential",
+            durationSeconds: 3600,
+            cartridgeApiBase: "https://api.example",
+            toriiNamespaces: "s1_eternum,s2_eternum",
+            vrfProviderAddress: "0x456",
+            verboseConfigLogs: true,
+            version: "181",
+            maxActions: 55,
+            waitForFactoryIndexTimeoutMs: 123000,
+            waitForFactoryIndexPollMs: 7000,
+            skipIndexer: true,
+            skipLootChestRoleGrant: true,
+            skipBanks: true,
+            dryRun: false,
           },
         });
       }
@@ -370,6 +386,21 @@ describe("factory worker map config overrides", () => {
     expect(response.status).toBe(202);
     expect(dispatchBody.inputs.launch_step).toBe("sync-paymaster");
     expect(dispatchBody.inputs.environment).toBe("mainnet.eternum");
+    expect(dispatchBody.inputs.rpc_url).toBe("https://rpc.example");
+    expect(dispatchBody.inputs.factory_address).toBe("0x123");
+    expect(dispatchBody.inputs.execution_mode).toBe("sequential");
+    expect(dispatchBody.inputs.duration_seconds).toBe("3600");
+    expect(dispatchBody.inputs.cartridge_api_base).toBe("https://api.example");
+    expect(dispatchBody.inputs.torii_namespaces).toBe("s1_eternum,s2_eternum");
+    expect(dispatchBody.inputs.vrf_provider_address).toBe("0x456");
+    expect(dispatchBody.inputs.verbose_config_logs).toBe("true");
+    expect(dispatchBody.inputs.version).toBe("181");
+    expect(dispatchBody.inputs.max_actions).toBe("55");
+    expect(dispatchBody.inputs.wait_timeout_ms).toBe("123000");
+    expect(dispatchBody.inputs.wait_poll_ms).toBe("7000");
+    expect(dispatchBody.inputs.skip_indexer).toBe("true");
+    expect(dispatchBody.inputs.skip_lootchest_role_grant).toBe("true");
+    expect(dispatchBody.inputs.skip_banks).toBe("true");
   });
 
   test("rejects continue when a slot run has no recoverable resume step", async () => {

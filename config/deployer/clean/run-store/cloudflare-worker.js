@@ -1258,12 +1258,27 @@ function buildContinueWorkflowRequest(route, run, inputRecord, launchStep) {
     environment,
     gameName,
     gameStartTime: String(gameStartTime),
+    rpcUrl: rawRequest.rpcUrl,
+    factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
     singleRealmMode: rawRequest.singleRealmMode,
     twoPlayerMode: rawRequest.twoPlayerMode,
     durationSeconds: rawRequest.durationSeconds,
     mapConfigOverrides: rawRequest.mapConfigOverrides,
     blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
+    cartridgeApiBase: rawRequest.cartridgeApiBase,
+    toriiNamespaces: rawRequest.toriiNamespaces,
+    vrfProviderAddress: rawRequest.vrfProviderAddress,
+    executionMode: rawRequest.executionMode,
+    verboseConfigLogs: rawRequest.verboseConfigLogs,
+    version: rawRequest.version,
+    maxActions: rawRequest.maxActions,
+    waitForFactoryIndexTimeoutMs: rawRequest.waitForFactoryIndexTimeoutMs,
+    waitForFactoryIndexPollMs: rawRequest.waitForFactoryIndexPollMs,
+    skipIndexer: rawRequest.skipIndexer,
+    skipLootChestRoleGrant: rawRequest.skipLootChestRoleGrant,
+    skipBanks: rawRequest.skipBanks,
+    dryRun: rawRequest.dryRun,
     launchStep: normalizedLaunchStep,
   };
 }
@@ -1295,12 +1310,27 @@ function buildContinueSeriesWorkflowRequest(route, run, inputRecord, launchStep,
     environment,
     seriesName,
     games,
+    rpcUrl: rawRequest.rpcUrl,
+    factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
     singleRealmMode: rawRequest.singleRealmMode,
     twoPlayerMode: rawRequest.twoPlayerMode,
     durationSeconds: rawRequest.durationSeconds,
     mapConfigOverrides: rawRequest.mapConfigOverrides,
     blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
+    cartridgeApiBase: rawRequest.cartridgeApiBase,
+    toriiNamespaces: rawRequest.toriiNamespaces,
+    vrfProviderAddress: rawRequest.vrfProviderAddress,
+    executionMode: rawRequest.executionMode,
+    verboseConfigLogs: rawRequest.verboseConfigLogs,
+    version: rawRequest.version,
+    maxActions: rawRequest.maxActions,
+    waitForFactoryIndexTimeoutMs: rawRequest.waitForFactoryIndexTimeoutMs,
+    waitForFactoryIndexPollMs: rawRequest.waitForFactoryIndexPollMs,
+    skipIndexer: rawRequest.skipIndexer,
+    skipLootChestRoleGrant: rawRequest.skipLootChestRoleGrant,
+    skipBanks: rawRequest.skipBanks,
+    dryRun: rawRequest.dryRun,
     autoRetryEnabled: rawRequest.autoRetryEnabled,
     autoRetryIntervalMinutes: rawRequest.autoRetryIntervalMinutes,
     targetGameNames,
@@ -1338,12 +1368,27 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     maxGames: rawRequest.maxGames,
     advanceWindowGames: rawRequest.advanceWindowGames,
     evaluationIntervalMinutes: rawRequest.evaluationIntervalMinutes,
+    rpcUrl: rawRequest.rpcUrl,
+    factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
     singleRealmMode: rawRequest.singleRealmMode,
     twoPlayerMode: rawRequest.twoPlayerMode,
     durationSeconds: rawRequest.durationSeconds,
     mapConfigOverrides: rawRequest.mapConfigOverrides,
     blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
+    cartridgeApiBase: rawRequest.cartridgeApiBase,
+    toriiNamespaces: rawRequest.toriiNamespaces,
+    vrfProviderAddress: rawRequest.vrfProviderAddress,
+    executionMode: rawRequest.executionMode,
+    verboseConfigLogs: rawRequest.verboseConfigLogs,
+    version: rawRequest.version,
+    maxActions: rawRequest.maxActions,
+    waitForFactoryIndexTimeoutMs: rawRequest.waitForFactoryIndexTimeoutMs,
+    waitForFactoryIndexPollMs: rawRequest.waitForFactoryIndexPollMs,
+    skipIndexer: rawRequest.skipIndexer,
+    skipLootChestRoleGrant: rawRequest.skipLootChestRoleGrant,
+    skipBanks: rawRequest.skipBanks,
+    dryRun: rawRequest.dryRun,
     autoRetryEnabled: rawRequest.autoRetryEnabled,
     autoRetryIntervalMinutes: rawRequest.autoRetryIntervalMinutes,
     targetGameNames,
@@ -2695,6 +2740,27 @@ async function dispatchFactoryPrizeFundingWorkflow(github, request) {
   };
 }
 
+function buildReplayableWorkflowInputs(request) {
+  return {
+    rpc_url: request.rpcUrl || "",
+    factory_address: request.factoryAddress || "",
+    execution_mode: request.executionMode || "",
+    cartridge_api_base: request.cartridgeApiBase || "",
+    torii_namespaces: request.toriiNamespaces || "",
+    vrf_provider_address: request.vrfProviderAddress || "",
+    verbose_config_logs: toWorkflowBooleanInput(request.verboseConfigLogs),
+    version: request.version || "",
+    max_actions: request.maxActions !== undefined ? String(request.maxActions) : "",
+    wait_timeout_ms:
+      request.waitForFactoryIndexTimeoutMs !== undefined ? String(request.waitForFactoryIndexTimeoutMs) : "",
+    wait_poll_ms: request.waitForFactoryIndexPollMs !== undefined ? String(request.waitForFactoryIndexPollMs) : "",
+    skip_indexer: toWorkflowBooleanInput(request.skipIndexer),
+    skip_lootchest_role_grant: toWorkflowBooleanInput(request.skipLootChestRoleGrant),
+    skip_banks: toWorkflowBooleanInput(request.skipBanks),
+    dry_run: toWorkflowBooleanInput(request.dryRun),
+  };
+}
+
 function buildGameLaunchWorkflowInputs(request) {
   if (request.launchKind === "series") {
     return {
@@ -2716,6 +2782,7 @@ function buildGameLaunchWorkflowInputs(request) {
       auto_retry_interval_minutes: request.autoRetryIntervalMinutes ? String(request.autoRetryIntervalMinutes) : "",
       target_game_names_json: request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : "",
       launch_step: request.launchStep,
+      ...buildReplayableWorkflowInputs(request),
     };
   }
 
@@ -2745,6 +2812,7 @@ function buildGameLaunchWorkflowInputs(request) {
       auto_retry_interval_minutes: request.autoRetryIntervalMinutes ? String(request.autoRetryIntervalMinutes) : "",
       target_game_names_json: request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : "",
       launch_step: request.launchStep,
+      ...buildReplayableWorkflowInputs(request),
     };
   }
 
@@ -2773,6 +2841,7 @@ function buildGameLaunchWorkflowInputs(request) {
     auto_retry_enabled: "",
     auto_retry_interval_minutes: "",
     launch_step: request.launchStep,
+    ...buildReplayableWorkflowInputs(request),
   };
 }
 
