@@ -972,109 +972,6 @@ export const useFactoryV2 = () => {
     );
   };
 
-  const bringIndexerLiveForSelectedRun = async () => {
-    if (!selectedRun || isWatcherBusy) {
-      return;
-    }
-
-    const environmentId = assertSupportedEnvironment(selectedRun.environment);
-    const indexerStepId = resolveIndexerRecoveryStepId(selectedRun);
-    const targetGameNames = resolveRunIndexerRecoveryGameNames(selectedRun);
-
-    if (!environmentId || !indexerStepId) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "reindex",
-        runName: selectedRun.name,
-        title: `Bringing ${selectedRun.name} online`,
-        detail: "Starting the indexer again.",
-        workflowName: indexerStepId,
-        statusLabel: "Starting",
-      },
-      async () => {
-        try {
-          await continueRun(environmentId, selectedRun, {
-            launchStep: indexerStepId,
-            gameNames: targetGameNames,
-          });
-        } catch (error) {
-          const openedConflictingRun = await openConflictingRunIfPresent(
-            error,
-            environmentId,
-            selectedRun.name,
-            selectedRun.kind,
-            "This game is already being brought online again. We opened it for you.",
-          );
-
-          if (openedConflictingRun) {
-            return;
-          }
-
-          throw error;
-        }
-
-        acceptRunStepLocally(environmentId, selectedRun, indexerStepId, "Got it. Bringing the indexer online again.");
-      },
-    );
-  };
-
-  const bringIndexerLiveForSelectedRunChild = async (gameName: string) => {
-    if (!selectedRun || isWatcherBusy || (selectedRun.kind !== "series" && selectedRun.kind !== "rotation")) {
-      return;
-    }
-
-    const environmentId = assertSupportedEnvironment(selectedRun.environment);
-    const indexerStepId = resolveIndexerRecoveryStepId(selectedRun);
-    const targetChild = selectedRun.children?.find((child) => child.gameName === gameName);
-
-    if (!environmentId || !indexerStepId || !targetChild || !canRetryChildIndexer(targetChild)) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "reindex",
-        runName: selectedRun.name,
-        title: `Checking ${targetChild.gameName}`,
-        detail: "Checking whether this game indexer is already live.",
-        workflowName: indexerStepId,
-        statusLabel: "Checking",
-      },
-      async () => {
-        try {
-          await continueRun(environmentId, selectedRun, {
-            launchStep: indexerStepId,
-            gameNames: [targetChild.gameName],
-          });
-        } catch (error) {
-          const openedConflictingRun = await openConflictingRunIfPresent(
-            error,
-            environmentId,
-            selectedRun.name,
-            selectedRun.kind,
-            "This run is already checking that child indexer again. We opened it for you.",
-          );
-
-          if (openedConflictingRun) {
-            return;
-          }
-
-          throw error;
-        }
-
-        acceptRunStepLocally(
-          environmentId,
-          selectedRun,
-          indexerStepId,
-          `Got it. Checking ${targetChild.gameName} again.`,
-        );
-      },
-    );
-  };
-
   const refreshSelectedRun = async () => {
     if (!selectedRun || isWatcherBusy) {
       return;
@@ -1521,8 +1418,6 @@ export const useFactoryV2 = () => {
     createIndexers,
     updateIndexerTiers,
     deleteIndexers,
-    bringIndexerLiveForSelectedRun,
-    bringIndexerLiveForSelectedRunChild,
     refreshSelectedRun,
     resolveRunByName,
   };
@@ -2064,14 +1959,6 @@ function resolveLatestPendingLaunch(pendingLaunches: FactoryPendingLaunch[]) {
   }, null);
 }
 
-function resolveIndexerRecoveryStepId(run: FactoryRun) {
-  if (run.steps.some((step) => step.id === "create-indexers")) {
-    return "create-indexers";
-  }
-
-  return run.steps.some((step) => step.id === "create-indexer" || step.id === "wait-indexer") ? "create-indexer" : null;
-}
-
 function buildSuggestedGameName(mode: FactoryGameMode, runs: FactoryRun[]) {
   return buildFandomizedGameName(mode, runs.filter((run) => run.kind === "game").length + 1);
 }
@@ -2462,19 +2349,6 @@ function resolveEnvironmentUnavailableReason(environmentId?: string | null) {
 
 function canCancelRunAutoRetry(run: FactoryRun) {
   return (run.kind === "series" || run.kind === "rotation") && run.autoRetry?.enabled && !run.autoRetry.cancelledAt;
-}
-
-function resolveRunIndexerRecoveryGameNames(run: FactoryRun): string[] | undefined {
-  if (run.kind !== "series" && run.kind !== "rotation") {
-    return undefined;
-  }
-
-  const gameNames = (run.children ?? []).filter(canRetryChildIndexer).map((child) => child.gameName);
-  return gameNames.length > 0 ? gameNames : undefined;
-}
-
-function canRetryChildIndexer(child: NonNullable<FactoryRun["children"]>[number]) {
-  return Boolean(child?.worldAddress || child?.indexerCreated);
 }
 
 function canFundRunPrize(run: FactoryRun): run is FactoryPrizeFundingEligibleRun {

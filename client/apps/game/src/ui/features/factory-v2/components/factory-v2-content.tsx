@@ -164,12 +164,6 @@ export const FactoryV2Content = () => {
               onContinue={() => {
                 void factory.continueSelectedRun();
               }}
-              onBringIndexerLive={() => {
-                void factory.bringIndexerLiveForSelectedRun();
-              }}
-              onBringChildIndexerLive={(gameName) => {
-                void factory.bringIndexerLiveForSelectedRunChild(gameName);
-              }}
               onRefresh={() => {
                 void factory.refreshSelectedRun();
               }}

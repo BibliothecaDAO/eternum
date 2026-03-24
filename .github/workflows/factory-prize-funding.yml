@@ -75,6 +75,8 @@ jobs:
           pnpm --dir packages/provider build
 
       - name: Fund prize addresses
+        env:
+          SELECTED_GAMES_JSON: ${{ github.event.inputs.selected_games_json }}
         run: |
           set -euo pipefail
 
@@ -85,9 +87,10 @@ jobs:
             --amount "${{ github.event.inputs.prize_amount }}"
           )
 
-          if [ -n "${{ github.event.inputs.selected_games_json }}" ]; then
+          # Preserve the JSON string exactly as dispatched instead of letting shell parsing strip its quotes.
+          if [ -n "$SELECTED_GAMES_JSON" ]; then
             args+=(
-              --selected-games-json "${{ github.event.inputs.selected_games_json }}"
+              --selected-games-json "$SELECTED_GAMES_JSON"
             )
           fi
 

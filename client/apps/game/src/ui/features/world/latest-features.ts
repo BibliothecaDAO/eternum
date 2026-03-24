@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-24",
+    title: "Simpler Factory Run Controls",
+    description:
+      "Factory V2 no longer shows a separate Check indexer shortcut inside run status. Run recovery stays focused on the main deployment controls, while indexer management stays in the dedicated Manage indexers workspace.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-23",
     title: "Removed Light Test Dropdown",
     description:

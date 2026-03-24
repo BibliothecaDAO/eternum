@@ -130,8 +130,6 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   fandomizeGameName: vi.fn(),
   launchSelectedPreset: vi.fn(async () => true),
   continueSelectedRun: vi.fn(async () => true),
-  bringIndexerLiveForSelectedRun: vi.fn(async () => true),
-  bringIndexerLiveForSelectedRunChild: vi.fn(async () => true),
   refreshSelectedRun: vi.fn(async () => true),
   fundSelectedRunPrize: vi.fn(async () => true),
   liveIndexers: [],

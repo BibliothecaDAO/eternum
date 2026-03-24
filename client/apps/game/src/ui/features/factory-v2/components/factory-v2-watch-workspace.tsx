@@ -57,8 +57,6 @@ type FactoryV2WatchWorkspaceProps = {
   onSelectRun: (runId: string) => void;
   onResolveRunByName: (gameName: string) => Promise<boolean>;
   onContinue: () => void;
-  onBringIndexerLive: () => void;
-  onBringChildIndexerLive: (gameName: string) => void;
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
@@ -104,8 +102,6 @@ export const FactoryV2WatchWorkspace = ({
   onSelectRun,
   onResolveRunByName,
   onContinue,
-  onBringIndexerLive,
-  onBringChildIndexerLive,
   onRefresh,
   onNudge,
   onStopAutoRetry,
@@ -153,11 +149,6 @@ export const FactoryV2WatchWorkspace = ({
     primaryButtonClassName: appearance.primaryButtonClassName,
     secondaryButtonClassName: appearance.secondaryButtonClassName,
   });
-  const stepSummaryOptions = {
-    isWatcherBusy,
-    isBlocked: Boolean(lookupDisabledReason) || state.showsInFlightState,
-    onBringIndexerLive,
-  };
   const selectRunByName = (value: string) => {
     setWatchGameName(value);
     setIsFilteringRuns(true);
@@ -213,8 +204,6 @@ export const FactoryV2WatchWorkspace = ({
         pollingState={pollingState}
         notice={notice}
         showAllSteps={showAllSteps}
-        stepSummaryOptions={stepSummaryOptions}
-        onBringChildIndexerLive={onBringChildIndexerLive}
         showsPrizeFunding={showsPrizeFunding}
         adminSecret={adminSecret}
         onFundPrize={onFundPrize}
@@ -365,8 +354,6 @@ const FactoryV2WatchWorkspaceContent = ({
   pollingState,
   notice,
   showAllSteps,
-  stepSummaryOptions,
-  onBringChildIndexerLive,
   showsPrizeFunding,
   adminSecret,
   onFundPrize,
@@ -380,8 +367,6 @@ const FactoryV2WatchWorkspaceContent = ({
   pollingState: FactoryPollingState;
   notice: string | null;
   showAllSteps: boolean;
-  stepSummaryOptions: FactoryV2StepSummaryActionOptions;
-  onBringChildIndexerLive: (gameName: string) => void;
   showsPrizeFunding: boolean;
   adminSecret: string;
   onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
@@ -409,8 +394,6 @@ const FactoryV2WatchWorkspaceContent = ({
         showAllSteps={showAllSteps}
         statusMeta={state.statusMeta}
         actionBarProps={state.actionBarProps}
-        stepSummaryOptions={stepSummaryOptions}
-        onBringChildIndexerLive={onBringChildIndexerLive}
         showsPrizeFunding={showsPrizeFunding}
         adminSecret={adminSecret}
         onFundPrize={onFundPrize}
@@ -455,8 +438,6 @@ const FactoryV2WatchRunCard = ({
   showAllSteps,
   statusMeta,
   actionBarProps,
-  stepSummaryOptions,
-  onBringChildIndexerLive,
   showsPrizeFunding,
   adminSecret,
   onFundPrize,
@@ -481,8 +462,6 @@ const FactoryV2WatchRunCard = ({
   showAllSteps: boolean;
   statusMeta: ReturnType<typeof getRunStatusMeta> | null;
   actionBarProps: FactoryV2WatchActionBarProps | null;
-  stepSummaryOptions: FactoryV2StepSummaryActionOptions;
-  onBringChildIndexerLive: (gameName: string) => void;
   showsPrizeFunding: boolean;
   adminSecret: string;
   onFundPrize: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
@@ -543,12 +522,7 @@ const FactoryV2WatchRunCard = ({
       {selectedRun.kind === "series" ? (
         <>
           <FactoryV2AutoRetryCard autoRetry={selectedRun.autoRetry} />
-          <FactoryV2MultiGameChildrenCard
-            kind={selectedRun.kind}
-            children={selectedRun.children ?? []}
-            canManageIndexers={!isFactoryRunInProgress(selectedRun) && !Boolean(actionBarProps?.isWatcherBusy)}
-            onBringChildIndexerLive={onBringChildIndexerLive}
-          />
+          <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
         </>
       ) : null}
 
@@ -556,12 +530,7 @@ const FactoryV2WatchRunCard = ({
         <>
           <FactoryV2AutoRetryCard autoRetry={selectedRun.autoRetry} />
           <FactoryV2RotationScheduleCard run={selectedRun} />
-          <FactoryV2MultiGameChildrenCard
-            kind={selectedRun.kind}
-            children={selectedRun.children ?? []}
-            canManageIndexers={!isFactoryRunInProgress(selectedRun) && !Boolean(actionBarProps?.isWatcherBusy)}
-            onBringChildIndexerLive={onBringChildIndexerLive}
-          />
+          <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
         </>
       ) : null}
 
@@ -614,11 +583,7 @@ const FactoryV2WatchRunCard = ({
       {showAllSteps ? (
         <div className="space-y-2 rounded-[24px] border border-black/8 bg-white/38 p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
           {timelineRun.steps.map((step) => (
-            <FactoryV2StepSummary
-              key={step.id}
-              step={step}
-              manualAction={resolveStepSummaryAction(step, stepSummaryOptions)}
-            />
+            <FactoryV2StepSummary key={step.id} step={step} />
           ))}
         </div>
       ) : null}
@@ -798,13 +763,9 @@ const FactoryV2RotationMetric = ({ label, value }: { label: string; value: strin
 const FactoryV2MultiGameChildrenCard = ({
   kind,
   children,
-  canManageIndexers,
-  onBringChildIndexerLive,
 }: {
   kind: FactoryRun["kind"];
   children: FactoryRun["children"];
-  canManageIndexers: boolean;
-  onBringChildIndexerLive: (gameName: string) => void;
 }) => {
   if (!children || children.length === 0) {
     return null;
@@ -820,7 +781,6 @@ const FactoryV2MultiGameChildrenCard = ({
       </div>
       <div className="space-y-2">
         {children.map((child) => {
-          const indexerAction = resolveChildIndexerAction(child, canManageIndexers, onBringChildIndexerLive);
           const stepGroups = resolveChildStepGroups(child);
           const errorMessage = resolveChildErrorMessage(child, stepGroups.failed);
           const fallbackSummary = resolveChildFallbackSummary(child, stepGroups);
@@ -843,15 +803,6 @@ const FactoryV2MultiGameChildrenCard = ({
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-2 self-start">
-                  {indexerAction ? (
-                    <button
-                      type="button"
-                      onClick={indexerAction.onPress}
-                      className="rounded-full border border-black/10 bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white"
-                    >
-                      {indexerAction.label}
-                    </button>
-                  ) : null}
                   <div className="rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/52">
                     {resolveChildStatusLabel(child.status)}
                   </div>
@@ -899,38 +850,6 @@ function resolveMultiGameChildrenCopy(kind: FactoryRun["kind"]) {
     title: "Series games",
     description: "See which child games are ready, still moving, or need help inside this series.",
   };
-}
-
-function resolveChildIndexerAction(
-  child: NonNullable<FactoryRun["children"]>[number],
-  canManageIndexers: boolean,
-  onBringChildIndexerLive: (gameName: string) => void,
-): FactoryV2StepManualAction | null {
-  if (!canManageIndexers || !canOperateOnChildIndexer(child)) {
-    return null;
-  }
-
-  return {
-    label: resolveChildIndexerActionLabel(child),
-    description: "Check whether this game indexer is live or bring it back online.",
-    onPress: () => onBringChildIndexerLive(child.gameName),
-  };
-}
-
-function canOperateOnChildIndexer(child: NonNullable<FactoryRun["children"]>[number]) {
-  return Boolean(child.worldAddress || child.indexerCreated);
-}
-
-function resolveChildIndexerActionLabel(child: NonNullable<FactoryRun["children"]>[number]) {
-  if (child.indexerCreated) {
-    return "Check indexer";
-  }
-
-  if (child.currentStepId === "create-indexers" || child.status === "failed") {
-    return "Retry indexer";
-  }
-
-  return "Turn on indexer";
 }
 
 function resolveChildStepGroups(child: NonNullable<FactoryRun["children"]>[number]) {
@@ -1632,13 +1551,7 @@ const resolveMatchingRunsByName = (runs: FactoryRun[], requestedName: string) =>
   return runs.filter((run) => run.name.trim().toLowerCase().includes(normalizedName));
 };
 
-const FactoryV2StepSummary = ({
-  step,
-  manualAction,
-}: {
-  step: FactoryRun["steps"][number];
-  manualAction: FactoryV2StepManualAction | null;
-}) => {
+const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) => {
   const statusMeta = getStepStatusMeta(step.status);
   const errorMessage = resolveRunStepErrorMessage(step);
 
@@ -1665,18 +1578,6 @@ const FactoryV2StepSummary = ({
               message={errorMessage}
               dataTestId={`factory-step-error-${step.id}`}
             />
-          </div>
-        ) : null}
-        {manualAction ? (
-          <div className="mt-3 space-y-2 rounded-[14px] border border-black/8 bg-white/55 px-3 py-2.5">
-            <div className="text-[12px] leading-5 text-black/52">{manualAction.description}</div>
-            <button
-              type="button"
-              onClick={manualAction.onPress}
-              className="inline-flex w-full items-center justify-center rounded-full border border-black/12 bg-black/[0.05] px-3 py-1.5 text-[12px] font-semibold text-black transition-colors hover:bg-black/[0.08] sm:w-auto"
-            >
-              {manualAction.label}
-            </button>
           </div>
         ) : null}
       </div>
@@ -1778,18 +1679,6 @@ function normalizeCopyableMessage(message: string | null | undefined) {
   return normalizedMessage ? normalizedMessage : null;
 }
 
-interface FactoryV2StepManualAction {
-  label: string;
-  description: string;
-  onPress: () => void;
-}
-
-interface FactoryV2StepSummaryActionOptions {
-  isWatcherBusy: boolean;
-  isBlocked: boolean;
-  onBringIndexerLive: () => void;
-}
-
 interface FactoryV2WatchActionBarProps {
   visiblePrimaryAction: ReturnType<typeof resolveRunPrimaryAction> | null;
   showsManualRefresh: boolean;
@@ -1836,25 +1725,6 @@ function shouldShowRotationNudgeAction(selectedRun: FactoryRun | null, isAwaitin
 
 function isFactoryRunInProgress(selectedRun: FactoryRun | null) {
   return selectedRun?.status === "running" || selectedRun?.status === "waiting";
-}
-
-function resolveStepSummaryAction(
-  step: FactoryRun["steps"][number],
-  options: FactoryV2StepSummaryActionOptions,
-): FactoryV2StepManualAction | null {
-  if (step.status === "running" || options.isWatcherBusy || options.isBlocked) {
-    return null;
-  }
-
-  if (step.id !== "create-indexer" && step.id !== "create-indexers" && step.id !== "wait-indexer") {
-    return null;
-  }
-
-  return {
-    label: "Restart live updates",
-    description: "Use this if live updates disappeared or need to start again.",
-    onPress: options.onBringIndexerLive,
-  };
 }
 
 function resolveScheduledMaintenanceLabel(run: FactoryRun | null) {

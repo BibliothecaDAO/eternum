@@ -145,8 +145,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -211,8 +209,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -265,8 +261,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -363,8 +357,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -440,8 +432,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={onNudge}
           onStopAutoRetry={vi.fn()}
@@ -507,8 +497,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -560,8 +548,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -603,8 +589,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -660,8 +644,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -703,8 +685,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -743,8 +723,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -819,8 +797,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -831,101 +807,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     });
 
     expect(container.textContent).not.toContain("Continue");
-  });
-
-  it("lets operators check a child indexer without reopening the whole parent run", async () => {
-    const onBringChildIndexerLive = vi.fn();
-    const rotationRun = buildRun({
-      kind: "rotation",
-      status: "complete",
-      name: "bltz-knicker",
-      steps: [
-        {
-          id: "create-series" as const,
-          title: "Create series",
-          summary: "done",
-          workflowName: "create-series",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-        {
-          id: "create-indexers" as const,
-          title: "Create indexers",
-          summary: "done",
-          workflowName: "create-indexers",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-      ],
-      children: [
-        {
-          id: "rotation-child-1",
-          gameName: "bltz-knicker-01",
-          seriesGameNumber: 1,
-          startTimeIso: "2026-03-18T12:00:00.000Z",
-          status: "succeeded",
-          latestEvent: "Indexer is live",
-          currentStepId: null,
-          steps: [],
-          worldAddress: "0x111",
-          indexerCreated: true,
-        },
-        {
-          id: "rotation-child-2",
-          gameName: "bltz-knicker-02",
-          seriesGameNumber: 2,
-          startTimeIso: "2026-03-18T13:00:00.000Z",
-          status: "failed",
-          latestEvent: "Indexer needs attention",
-          currentStepId: "create-indexers",
-          steps: [],
-          worldAddress: "0x222",
-        },
-      ],
-    });
-
-    await act(async () => {
-      root.render(
-        <FactoryV2WatchWorkspace
-          mode="blitz"
-          runs={[rotationRun]}
-          selectedRun={rotationRun}
-          activeRunName={null}
-          acceptedRunMessage={null}
-          watcher={null}
-          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
-          isWatcherBusy={false}
-          isResolvingRunName={false}
-          notice={null}
-          lookupDisabledReason={null}
-          onSelectRun={vi.fn()}
-          onResolveRunByName={vi.fn(async () => false)}
-          onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={onBringChildIndexerLive}
-          onRefresh={vi.fn()}
-          onNudge={vi.fn()}
-          onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
-        />,
-      );
-      await waitForAsyncWork();
-    });
-
-    expect(container.textContent).toContain("Check indexer");
-    expect(container.textContent).toContain("Retry indexer");
-
-    const checkButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Check indexer"),
-    );
-
-    expect(checkButton).toBeTruthy();
-
-    checkButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-    expect(onBringChildIndexerLive).toHaveBeenCalledWith("bltz-knicker-01");
   });
 
   it("defaults series prize funding to ready unfunded games and forwards the secret", async () => {
@@ -1017,8 +898,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1125,8 +1004,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1222,8 +1099,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1297,8 +1172,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={onStopAutoRetry}
@@ -1386,8 +1259,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1462,8 +1333,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1581,8 +1450,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
