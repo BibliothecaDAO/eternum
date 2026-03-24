@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T16:03:46.593Z",
+  "updatedAt": "2026-03-24T17:32:40.799Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -289,6 +289,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-bakers-02 not found"
       },
       "updatedAt": "2026-03-24T16:03:46.593Z"
+    },
+    "bltz-warzone-01": {
+      "gameName": "bltz-warzone-01",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-warzone-01/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T17:32:40.799Z"
+      },
+      "updatedAt": "2026-03-24T17:32:40.799Z"
     }
   }
 }
