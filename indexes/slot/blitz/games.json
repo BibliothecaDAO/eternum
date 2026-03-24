@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-24T10:03:52.396Z",
+  "updatedAt": "2026-03-24T10:03:56.143Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -32,12 +32,13 @@
       "path": "runs/slot/blitz/bltz-riff-79.json",
       "inputPath": "inputs/slot/blitz/bltz-riff-79/23483669716-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T10:03:52.396Z",
+      "updatedAt": "2026-03-24T10:03:56.143Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": "configure-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-24T10:48:56.143Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "configure-world",
+      "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1774350000,
       "durationSeconds": 5400,
       "artifacts": {}
