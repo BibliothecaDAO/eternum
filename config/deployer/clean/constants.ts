@@ -3,7 +3,7 @@ import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 export const DEFAULT_NAMESPACE = "s1_eternum";
 export const DEFAULT_VERSION = "180";
 export const DEFAULT_SLOT_MAX_ACTIONS = 300;
-export const DEFAULT_MAINNET_MAX_ACTIONS = 70;
+export const DEFAULT_MAINNET_MAX_ACTIONS = 50;
 export const DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT = 3;
 export const DEFAULT_CREATE_GAME_RETRY_COUNT = 5;
 export const DEFAULT_CREATE_GAME_RETRY_DELAY_MS = 10_000;

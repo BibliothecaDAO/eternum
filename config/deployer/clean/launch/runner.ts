@@ -377,6 +377,18 @@ function buildCreateGameCalldata(runtime: LaunchRuntime, request: LaunchGameRequ
   ];
 }
 
+function buildCreateGameCall(runtime: LaunchRuntime, request: LaunchGameRequest) {
+  return {
+    contractAddress: runtime.factoryAddress,
+    entrypoint: "create_game" as const,
+    calldata: buildCreateGameCalldata(runtime, request),
+  };
+}
+
+function formatCreateGameCalldata(call: ReturnType<typeof buildCreateGameCall>): string {
+  return JSON.stringify(call.calldata);
+}
+
 function resolveTotalCreateGameSubmissionCount(runtime: LaunchRuntime): number {
   return runtime.createGame.submissionCount * runtime.createGame.retryCount;
 }
@@ -397,25 +409,20 @@ async function submitCreateGameAttempt(
   totalAttempts: number,
 ): Promise<string> {
   const attemptLabel = buildCreateGameAttemptLabel(attemptNumber, totalAttempts);
-  const result = await runtime.progress.run(
-    attemptLabel,
-    () =>
-      account.execute({
-        contractAddress: runtime.factoryAddress,
-        entrypoint: "create_game",
-        calldata: buildCreateGameCalldata(runtime, request),
-      }),
-    {
-      start:
-        totalAttempts === 1
-          ? `Submitting create_game via ${shortenHash(runtime.factoryAddress)}`
-          : `Submitting create_game attempt ${attemptNumber}/${totalAttempts} via ${shortenHash(runtime.factoryAddress)}`,
-      success: (receipt, elapsedMs) =>
-        totalAttempts === 1
-          ? `create_game submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`
-          : `create_game attempt ${attemptNumber}/${totalAttempts} submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`,
-    },
-  );
+  const call = buildCreateGameCall(runtime, request);
+
+  runtime.progress.log(`Raw create_game calldata: ${formatCreateGameCalldata(call)}`);
+
+  const result = await runtime.progress.run(attemptLabel, () => account.execute(call), {
+    start:
+      totalAttempts === 1
+        ? `Submitting create_game via ${shortenHash(runtime.factoryAddress)}`
+        : `Submitting create_game attempt ${attemptNumber}/${totalAttempts} via ${shortenHash(runtime.factoryAddress)}`,
+    success: (receipt, elapsedMs) =>
+      totalAttempts === 1
+        ? `create_game submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`
+        : `create_game attempt ${attemptNumber}/${totalAttempts} submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`,
+  });
 
   return result.transaction_hash;
 }

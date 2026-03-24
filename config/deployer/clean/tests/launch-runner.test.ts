@@ -272,11 +272,38 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
       contractAddress: factoryAddress,
       entrypoint: "create_game",
-      calldata: ["felt:alpha", 70, "180", "0x0", 0],
+      calldata: ["felt:alpha", 50, "180", "0x0", 0],
     });
     expect(waitForTransactionMock.mock.calls).toHaveLength(15);
     expect(createGameDelayMock.mock.calls).toHaveLength(14);
     expect(summary.createGameTxHash).toBe("0xcreate15");
+  });
+
+  test("logs raw create_game calldata before each submission attempt", async () => {
+    const capturedLogs: string[] = [];
+    const originalWrite = process.stderr.write.bind(process.stderr);
+
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      capturedLogs.push(typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"));
+      return true;
+    }) as typeof process.stderr.write;
+
+    try {
+      await runLaunchStep({
+        environmentId: "mainnet.blitz",
+        stepId: "create-world",
+        gameName: "alpha",
+        startTime,
+        rpcUrl: "https://rpc.example",
+        factoryAddress,
+        accountAddress,
+        privateKey,
+      });
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+
+    expect(capturedLogs.join("")).toContain('Raw create_game calldata: ["felt:alpha",50,"180","0x0",0]');
   });
 
   test("submits create_game five times on slot across five retries", async () => {
