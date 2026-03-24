@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "bltz-escapade",
-    "launchRequestId": "23492250728-1",
+    "launchRequestId": "23493419187-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23492250728,
+    "workflowRunId": 23493419187,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "f455c6cb-8416-49d0-9f9a-c94586a5bbe4"
+    "leaseId": "d6d93f93-b69f-4f76-b6e5-421ed27f0eb1"
   },
-  "acquiredAt": "2026-03-24T13:37:02.999Z",
-  "heartbeatAt": "2026-03-24T13:54:00.745Z",
-  "expiresAt": "2026-03-24T13:54:00.745Z",
-  "releasedAt": "2026-03-24T13:54:00.745Z"
+  "acquiredAt": "2026-03-24T14:02:02.050Z",
+  "heartbeatAt": "2026-03-24T14:02:02.050Z",
+  "expiresAt": "2026-03-24T14:12:02.050Z"
 }
