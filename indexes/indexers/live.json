@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T14:22:12.543Z",
+  "updatedAt": "2026-03-24T14:47:04.146Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -493,6 +493,15 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-riffer-01 not found"
       },
       "updatedAt": "2026-03-24T14:22:12.543Z"
+    },
+    "bltz-bakers-01": {
+      "gameName": "bltz-bakers-01",
+      "liveState": {
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-bakers-01 not found"
+      },
+      "updatedAt": "2026-03-24T14:47:04.146Z"
     }
   }
 }
