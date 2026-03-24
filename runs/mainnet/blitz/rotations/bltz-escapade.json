@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23490511057-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T08:00:10.872Z",
-  "updatedAt": "2026-03-24T13:15:36.852Z",
+  "updatedAt": "2026-03-24T13:17:01.011Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -115,7 +115,7 @@
         "startTimeIso": "2026-03-24T10:30:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier already matched pro for bltz-escapade-01",
         "status": "succeeded",
         "configSteps": [
           {
@@ -285,11 +285,11 @@
           "worldConfigTxHash": "0x6a2bdaca4cb85b841b66f8245121c7fbd52d78edf0dae187adac2a025075e0f",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "legendary",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-escapade-01/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T10:02:01.157Z",
+          "lastIndexerDescribeAt": "2026-03-24T13:17:01.011Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -312,9 +312,7 @@
                 "fundedAt": "2026-03-24T09:27:41.839Z"
               }
             ]
-          },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T13:15:34.900Z"
+          }
         },
         "durationSeconds": 7200
       },
