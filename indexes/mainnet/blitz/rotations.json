@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T15:06:48.624Z",
+  "updatedAt": "2026-03-24T15:06:49.917Z",
   "entries": {
     "bltz-escapade": {
       "kind": "rotation",
@@ -130,22 +130,22 @@
       "environment": "mainnet.blitz",
       "rotationName": "bltz-bakers",
       "path": "runs/mainnet/blitz/rotations/bltz-bakers.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/bltz-bakers/23495465469-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/bltz-bakers/23496582607-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T15:05:36.749Z",
+      "updatedAt": "2026-03-24T15:06:49.917Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": null,
+      "currentStepId": "create-worlds",
       "hasRunningStep": false,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
+      "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-24T15:20:36.749Z",
-        "lastEvaluatedAt": "2026-03-24T15:05:36.749Z"
+        "nextEvaluationAt": "2026-03-24T15:21:49.917Z",
+        "lastEvaluatedAt": "2026-03-24T15:06:49.917Z"
       },
       "games": [
         {
@@ -167,6 +167,12 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-03-24T14:49:58.042Z"
           }
+        },
+        {
+          "gameName": "bltz-bakers-03",
+          "startTime": 1774371600,
+          "durationSeconds": 3600,
+          "artifacts": {}
         }
       ]
     }
