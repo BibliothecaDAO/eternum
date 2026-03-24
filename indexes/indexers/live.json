@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T07:12:04.616Z",
+  "updatedAt": "2026-03-24T07:22:03.792Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -410,13 +410,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-zestible-08/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T04:42:17.952Z"
+        "describedAt": "2026-03-24T07:22:03.792Z"
       },
-      "updatedAt": "2026-03-24T04:42:17.952Z"
+      "updatedAt": "2026-03-24T07:22:03.792Z"
     },
     "daily-ranked-us-240326": {
       "gameName": "daily-ranked-us-240326",
@@ -447,7 +447,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-01 not found"
       },
-      "updatedAt": "2026-03-24T07:02:03.237Z"
+      "updatedAt": "2026-03-24T07:22:03.792Z"
     },
     "bltz-thrum-725-02": {
       "gameName": "bltz-thrum-725-02",
@@ -456,7 +456,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-02 not found"
       },
-      "updatedAt": "2026-03-24T07:02:03.237Z"
+      "updatedAt": "2026-03-24T07:22:03.792Z"
     },
     "bltz-thrum-725-03": {
       "gameName": "bltz-thrum-725-03",
@@ -465,7 +465,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-03 not found"
       },
-      "updatedAt": "2026-03-24T07:02:03.237Z"
+      "updatedAt": "2026-03-24T07:22:03.792Z"
     },
     "bltz-franky-02": {
       "gameName": "bltz-franky-02",
