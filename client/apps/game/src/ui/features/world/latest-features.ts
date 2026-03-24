@@ -9,6 +9,27 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-24",
+    title: "Stable World Session Rebinds",
+    description:
+      "Improved cross-world switching by rebinding controller chain/RPC settings to the selected world and cancelling stale cosmetic preloads, so right-click actions remain valid and repeated world swaps avoid texture drift or renderer crashes.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-24",
+    title: "Safer Cross-World Session Switches",
+    description:
+      "Fixed world-to-world session switching so right-click actions stay responsive and shared render caches are fully reset between worlds, preventing stale interactions and white-texture carryover without requiring a page refresh.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-24",
+    title: "Reliable World Action Clicks",
+    description:
+      "Fixed rapid world/local toggles by guarding duplicate view-switch requests and clearing interrupted world hydration waits, preventing dead world interactions and local-view loading lockups after fast double clicks.",
+    type: "fix",
+  },
+  {
     date: "2026-03-23",
     title: "Removed Light Test Dropdown",
     description:

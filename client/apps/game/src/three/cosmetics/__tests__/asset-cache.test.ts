@@ -153,4 +153,33 @@ describe("cosmetic asset cache", () => {
     expect(testMocks.releaseMaterialMock).toHaveBeenCalledTimes(2);
     expect((texture as any).dispose).toHaveBeenCalledTimes(1);
   });
+
+  it("drops stale in-flight loads after a cache reset", async () => {
+    const entry = registerCosmetic({
+      id: "army:Test:T1:stale-load",
+      category: "army-skin",
+      appliesTo: ["army:Test:T1"],
+      assetPaths: ["units/example.glb"],
+    });
+
+    let resolveGltfLoad: (() => void) | null = null;
+    testMocks.gltfLoadMock.mockImplementation((_path, onLoad) => {
+      resolveGltfLoad = () => {
+        const material = new threeMocks.MockMeshStandardMaterial();
+        const mesh = new threeMocks.MockMesh();
+        mesh.material = material;
+        onLoad({ scene: { traverse: (callback: (node: any) => void) => callback(mesh) } });
+      };
+    });
+
+    const preloadPromise = preloadAllCosmeticAssets({ quiet: true });
+
+    expect(getCosmeticAsset(entry.id)?.status).toBe("loading");
+    clearCosmeticAssetCache();
+    resolveGltfLoad?.();
+    await preloadPromise;
+
+    expect(getCosmeticAsset(entry.id)).toBeUndefined();
+    expect(testMocks.getStandardMaterialMock).not.toHaveBeenCalled();
+  });
 });

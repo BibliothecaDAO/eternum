@@ -23,11 +23,20 @@ export interface CosmeticAssetHandle {
   entry: CosmeticRegistryEntry;
   status: CosmeticAssetStatus;
   payload: CosmeticAssetPayload;
+  cacheGeneration: number;
   error?: Error;
   promise?: Promise<CosmeticAssetPayload>;
 }
 
 const assetCache = new Map<string, CosmeticAssetHandle>();
+let assetCacheGeneration = 0;
+
+class CosmeticAssetLoadCancelledError extends Error {
+  constructor(assetId: string) {
+    super(`[Cosmetics] Asset load cancelled due to cache reset: ${assetId}`);
+    this.name = "CosmeticAssetLoadCancelledError";
+  }
+}
 
 const createEmptyPayload = (): CosmeticAssetPayload => ({ gltfs: [], textures: [], materials: [] });
 
@@ -85,13 +94,25 @@ function applyMaterialPooling(gltf: GLTF, accumulator: Set<Material>) {
   });
 }
 
-async function loadCosmeticEntry(handle: CosmeticAssetHandle): Promise<CosmeticAssetPayload> {
+const isCosmeticAssetLoadCancelledError = (error: unknown): error is CosmeticAssetLoadCancelledError =>
+  error instanceof CosmeticAssetLoadCancelledError;
+
+const assertCosmeticHandleIsActive = (handle: CosmeticAssetHandle, cacheGeneration: number): void => {
+  const isCurrentGeneration = cacheGeneration === assetCacheGeneration;
+  const isCurrentHandleOwner = assetCache.get(handle.entry.id) === handle;
+  if (!isCurrentGeneration || !isCurrentHandleOwner) {
+    throw new CosmeticAssetLoadCancelledError(handle.entry.id);
+  }
+};
+
+async function loadCosmeticEntry(handle: CosmeticAssetHandle, cacheGeneration: number): Promise<CosmeticAssetPayload> {
   const gltfs: GLTF[] = [];
   const textures: Texture[] = [];
   const materials = new Set<Material>();
 
-  for (const path of handle.entry.assetPaths) {
-    try {
+  try {
+    for (const path of handle.entry.assetPaths) {
+      assertCosmeticHandleIsActive(handle, cacheGeneration);
       if (isGltfAsset(path)) {
         const gltf = await loadWithRetry<GLTF>(
           () =>
@@ -99,29 +120,39 @@ async function loadCosmeticEntry(handle: CosmeticAssetHandle): Promise<CosmeticA
               gltfLoader.load(path, resolve, undefined, reject);
             }),
         );
+        assertCosmeticHandleIsActive(handle, cacheGeneration);
         applyMaterialPooling(gltf, materials);
         gltfs.push(gltf);
       } else {
         const texture = await loadWithRetry(() => textureLoader.loadAsync(path));
+        assertCosmeticHandleIsActive(handle, cacheGeneration);
         textures.push(texture);
       }
-    } catch (error) {
-      handle.error = error as Error;
-      handle.status = "failed";
+    }
+
+    assertCosmeticHandleIsActive(handle, cacheGeneration);
+    const payload: CosmeticAssetPayload = {
+      gltfs,
+      textures,
+      materials: Array.from(materials),
+    };
+
+    handle.payload = payload;
+    handle.status = "ready";
+    handle.error = undefined;
+    return payload;
+  } catch (error) {
+    disposeCosmeticPayload({ gltfs: [], textures, materials: Array.from(materials) });
+    if (isCosmeticAssetLoadCancelledError(error)) {
+      handle.status = "idle";
+      handle.error = undefined;
       throw error;
     }
+
+    handle.error = error as Error;
+    handle.status = "failed";
+    throw error;
   }
-
-  const payload: CosmeticAssetPayload = {
-    gltfs,
-    textures,
-    materials: Array.from(materials),
-  };
-
-  handle.payload = payload;
-  handle.status = "ready";
-  handle.error = undefined;
-  return payload;
 }
 
 function startAssetLoad(handle: CosmeticAssetHandle): Promise<CosmeticAssetPayload> {
@@ -134,16 +165,16 @@ function startAssetLoad(handle: CosmeticAssetHandle): Promise<CosmeticAssetPaylo
   }
 
   handle.status = "loading";
-  handle.promise = loadCosmeticEntry(handle)
-    .catch((error) => {
-      handle.error = error as Error;
-      return Promise.reject(error);
-    })
-    .finally(() => {
+  const requestGeneration = assetCacheGeneration;
+  handle.cacheGeneration = requestGeneration;
+  const promise = loadCosmeticEntry(handle, requestGeneration).finally(() => {
+    if (handle.promise === promise) {
       handle.promise = undefined;
-    });
+    }
+  });
+  handle.promise = promise;
 
-  return handle.promise;
+  return promise;
 }
 
 function disposeCosmeticPayload(payload: CosmeticAssetPayload) {
@@ -168,6 +199,9 @@ export async function preloadAllCosmeticAssets(options?: PreloadOptions) {
     const handle = ensureCosmeticAsset(entry);
     return startAssetLoad(handle)
       .catch((error) => {
+        if (isCosmeticAssetLoadCancelledError(error)) {
+          return;
+        }
         if (!options?.quiet) {
           console.warn(`[Cosmetics] Failed to preload asset ${entry.id}`, error);
         }
@@ -188,6 +222,7 @@ export function ensureCosmeticAsset(entry: CosmeticRegistryEntry): CosmeticAsset
       entry,
       status: "idle",
       payload: createEmptyPayload(),
+      cacheGeneration: assetCacheGeneration,
     };
     assetCache.set(entry.id, handle);
   }
@@ -204,8 +239,13 @@ export function getCosmeticAsset(id: string): CosmeticAssetHandle | undefined {
 }
 
 export function clearCosmeticAssetCache() {
+  assetCacheGeneration += 1;
   assetCache.forEach((handle) => {
+    handle.cacheGeneration = assetCacheGeneration;
+    handle.status = "idle";
+    handle.error = undefined;
     disposeCosmeticPayload(handle.payload);
+    handle.payload = createEmptyPayload();
   });
   assetCache.clear();
 }
