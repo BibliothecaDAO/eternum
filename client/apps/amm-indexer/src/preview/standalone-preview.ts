@@ -275,4 +275,4 @@ export async function seedStandalonePreviewDatabase(params: SeedStandalonePrevie
   await applyTailStandaloneSwaps(params.db, now, nextBlockNumber, poolStates);
 }
 
-export { DEFAULT_STANDALONE_AMM_ADDRESS, DEFAULT_STANDALONE_AMM_LORDS_ADDRESS };
+export { DEFAULT_STANDALONE_AMM_LORDS_ADDRESS };

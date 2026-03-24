@@ -1,4 +1,4 @@
-export interface IndexerRuntimeConfig {
+interface IndexerRuntimeConfig {
   ammAddress: string;
   lordsAddress: string;
 }

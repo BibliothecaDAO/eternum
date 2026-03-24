@@ -1,7 +1,7 @@
 import { STANDALONE_AMM_RESOURCES } from "@bibliothecadao/amm-sdk";
 import { findResourceById } from "@bibliothecadao/types";
 
-export interface AmmAssetPresentation {
+interface AmmAssetPresentation {
   tokenAddress: string;
   displayName: string;
   shortLabel: string;

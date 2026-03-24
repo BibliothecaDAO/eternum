@@ -1,6 +1,6 @@
 import { getInputPrice } from "@bibliothecadao/amm-sdk";
 
-export interface IndexedPoolState {
+interface IndexedPoolState {
   feeDenom: bigint;
   feeNum: bigint;
   lordsReserve: bigint;
@@ -10,7 +10,7 @@ export interface IndexedPoolState {
   tokenReserve: bigint;
 }
 
-export interface SwapMutation {
+interface SwapMutation {
   amountIn: bigint;
   amountOut: bigint;
   nextLordsReserve: bigint;
@@ -68,7 +68,7 @@ export class RoutedSwapAccountingMismatchError extends Error {
   }
 }
 
-export type SwapAccountingError = MissingPoolContextError | RoutedSwapAccountingMismatchError;
+type SwapAccountingError = MissingPoolContextError | RoutedSwapAccountingMismatchError;
 
 export function buildSwapMutations(params: BuildSwapMutationsParams): SwapMutation[] {
   if (params.tokenIn.toLowerCase() === params.lordsAddress.toLowerCase()) {
