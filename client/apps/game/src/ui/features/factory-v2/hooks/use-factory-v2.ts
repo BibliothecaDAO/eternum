@@ -1,17 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactorySeries } from "@/hooks/use-factory-series";
 import type { Chain } from "@contracts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  clearFactoryV2AdminSecret as clearStoredFactoryAdminSecret,
+  readFactoryV2AdminSecret as readStoredFactoryAdminSecret,
+  writeFactoryV2AdminSecret as writeStoredFactoryAdminSecret,
+} from "../admin-secret-storage";
 import { mapAndSortFactoryWorkerRuns, mapFactoryWorkerRun } from "../api/factory-run-mapper";
 import {
   cancelFactoryRotationAutoRetry,
   cancelFactorySeriesAutoRetry,
-  continueFactoryRun,
   continueFactoryRotationRun,
+  continueFactoryRun,
   continueFactorySeriesRun,
   createFactoryIndexers,
-  createFactoryRun,
   createFactoryRotationRun,
+  createFactoryRun,
   createFactorySeriesRun,
   deleteFactoryIndexers,
   FactoryWorkerApiError,
@@ -22,16 +27,16 @@ import {
   listFactoryRuns,
   nudgeFactoryRotationRun,
   readFactoryLiveIndexers,
+  readFactoryRotationRunIfPresent,
   readFactoryRunByNameIfPresent,
   readFactoryRunIfPresent,
-  readFactoryRotationRunIfPresent,
   readFactorySeriesRunIfPresent,
   refreshFactoryLiveIndexers,
   updateFactoryIndexerTier,
-  type FactoryWorkerLiveIndexerEntry,
   type FactoryWorkerEnvironmentId,
   type FactoryWorkerGameLaunchScope,
   type FactoryWorkerLaunchStepId,
+  type FactoryWorkerLiveIndexerEntry,
   type FactoryWorkerRotationLaunchScope,
   type FactoryWorkerRunRecord,
   type FactoryWorkerSeriesLaunchScope,
@@ -45,40 +50,34 @@ import {
   getFactoryPresetById,
   getPresetStartAtValue,
 } from "../catalog";
-import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildFactoryCreateRotationRunRequest } from "../create-rotation-run-request";
+import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildFactoryCreateSeriesRunRequest } from "../create-series-run-request";
 import { buildBlitzDurationOptions, supportsFactoryDuration } from "../duration";
 import { buildFandomizedGameName } from "../funny-names";
+import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import {
   readFactoryPendingLaunches,
   writeFactoryPendingLaunches,
   type FactoryPendingLaunch,
 } from "../pending-launch-storage";
-import {
-  clearFactoryV2AdminSecret as clearStoredFactoryAdminSecret,
-  readFactoryV2AdminSecret as readStoredFactoryAdminSecret,
-  writeFactoryV2AdminSecret as writeStoredFactoryAdminSecret,
-} from "../admin-secret-storage";
-import {
-  buildFactorySeriesGameDrafts,
-  DEFAULT_FACTORY_SERIES_GAME_COUNT,
-  resolveNextFactorySeriesGameNumber,
-} from "../series-drafts";
-import {
-  buildFactoryRotationPreviewGames,
-  DEFAULT_FACTORY_ROTATION_ADVANCE_WINDOW_GAMES,
-  DEFAULT_FACTORY_ROTATION_GAME_INTERVAL_MINUTES,
-  DEFAULT_FACTORY_ROTATION_MAX_GAMES,
-} from "../rotation-drafts";
-import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
-import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import { getSimpleStepTitle, getStepStatusMessage, resolveRunPrimaryAction } from "../presenters";
 import {
   canFundFactoryRunPrize,
   resolveDefaultFactoryPrizeFundingGameNames,
   type FactoryPrizeFundingEligibleRun,
 } from "../prize-funding";
+import {
+  buildFactoryRotationPreviewGames,
+  DEFAULT_FACTORY_ROTATION_ADVANCE_WINDOW_GAMES,
+  DEFAULT_FACTORY_ROTATION_GAME_INTERVAL_MINUTES,
+  DEFAULT_FACTORY_ROTATION_MAX_GAMES,
+} from "../rotation-drafts";
+import {
+  buildFactorySeriesGameDrafts,
+  DEFAULT_FACTORY_SERIES_GAME_COUNT,
+  resolveNextFactorySeriesGameNumber,
+} from "../series-drafts";
 import type {
   FactoryGameMode,
   FactoryLaunchPreset,
@@ -91,12 +90,15 @@ import type {
   FactorySeriesRetryIntervalMinutes,
   FactoryWatcherState,
 } from "../types";
+import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
 
 const RUN_LOOKUP_ATTEMPTS = 8;
 const RUN_LOOKUP_DELAY_MS = 1_500;
 const RUN_POLL_INTERVAL_MS = 5_000;
 const PRIZE_FUNDING_LOOKUP_ATTEMPTS = 40;
 const PRIZE_FUNDING_LOOKUP_DELAY_MS = 3_000;
+const LIVE_INDEXER_REFRESH_ATTEMPTS = 12;
+const LIVE_INDEXER_REFRESH_DELAY_MS = 3_000;
 const FIRST_UPDATE_WAIT_MESSAGE = "This game just started. We are waiting for it to appear.";
 const AUTO_UPDATE_MESSAGE = "Updating automatically.";
 const EXISTING_GAME_NOTICE = "That game already exists. We opened it for you.";
@@ -1133,11 +1135,11 @@ export const useFactoryV2 = () => {
       {
         kind: "refresh_live_indexers",
         runName: selectedEnvironment?.label ?? "indexers",
-        title: "Loading live indexers",
+        title: "Loading indexers",
         detail:
           normalizedGameNames.length > 0
-            ? `Loading stored live indexer state for ${normalizedGameNames.length} listed games.`
-            : "Loading the stored live Slot indexer snapshot.",
+            ? `Loading the saved list for ${normalizedGameNames.length} typed names.`
+            : "Loading the saved indexer list.",
         workflowName: "factory-indexer-maintenance.yml",
         statusLabel: "Loading",
       },
@@ -1156,6 +1158,8 @@ export const useFactoryV2 = () => {
     const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
     const normalizedSecret = adminSecret.trim();
     const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
+    const previousSnapshotUpdatedAt = liveIndexersUpdatedAt;
+    const previousSnapshotFingerprint = buildLiveIndexerSnapshotFingerprint(liveIndexers);
 
     if (isWatcherBusy || !environmentId || !normalizedSecret) {
       return;
@@ -1165,13 +1169,13 @@ export const useFactoryV2 = () => {
       {
         kind: "refresh_live_indexers",
         runName: selectedEnvironment?.label ?? "indexers",
-        title: "Refreshing live indexers",
+        title: "Checking Slot",
         detail:
           normalizedGameNames.length > 0
-            ? `Refreshing live Slot state for ${normalizedGameNames.length} listed games.`
-            : "Refreshing every live Slot Torii deployment from the account.",
+            ? `Checking Slot for ${normalizedGameNames.length} typed names and updating this list.`
+            : "Checking Slot and updating this list.",
         workflowName: "factory-indexer-maintenance.yml",
-        statusLabel: "Refreshing",
+        statusLabel: "Checking",
       },
       async () => {
         await refreshFactoryLiveIndexers({
@@ -1179,7 +1183,28 @@ export const useFactoryV2 = () => {
           adminSecret: normalizedSecret,
           ...(normalizedGameNames.length > 0 ? { gameNames: normalizedGameNames } : {}),
         });
-        setNotice("Live indexer refresh started. Load the list again in a moment.");
+
+        const refreshedSnapshot = await waitForLiveIndexerSnapshotUpdate({
+          adminSecret: normalizedSecret,
+          gameNames: normalizedGameNames,
+          previousUpdatedAt: previousSnapshotUpdatedAt,
+          previousFingerprint: previousSnapshotFingerprint,
+        });
+
+        if (!refreshedSnapshot) {
+          setNotice("Still checking Slot. This list will update when the refresh finishes.");
+          return;
+        }
+
+        const nextSnapshotFingerprint = buildLiveIndexerSnapshotFingerprint(refreshedSnapshot.entries);
+
+        setLiveIndexers(refreshedSnapshot.entries);
+        setLiveIndexersUpdatedAt(refreshedSnapshot.updatedAt);
+        setNotice(
+          nextSnapshotFingerprint === previousSnapshotFingerprint
+            ? "Slot checked. This list is already up to date."
+            : "Slot checked. This list is up to date.",
+        );
       },
     );
   };
@@ -1211,7 +1236,7 @@ export const useFactoryV2 = () => {
           adminSecret: normalizedSecret,
           gameNames: normalizedGameNames,
         });
-        setNotice("Indexer creation started. Refresh the live list in a moment.");
+        setNotice("Indexer recreate started. Update from Slot in a moment.");
       },
     );
   };
@@ -1244,7 +1269,7 @@ export const useFactoryV2 = () => {
           gameNames: normalizedGameNames,
           tier,
         });
-        setNotice("Indexer tier update started. Refresh the live list in a moment.");
+        setNotice("Tier update started. Update from Slot in a moment.");
       },
     );
   };
@@ -1277,7 +1302,7 @@ export const useFactoryV2 = () => {
           adminSecret: normalizedSecret,
         });
 
-        setNotice("Indexer deletion started. Refresh the live list in a moment.");
+        setNotice("Delete started. Update from Slot in a moment.");
       },
     );
   };
@@ -1782,6 +1807,33 @@ export const useFactoryV2 = () => {
     }
 
     return false;
+  }
+
+  async function waitForLiveIndexerSnapshotUpdate({
+    adminSecret,
+    gameNames,
+    previousUpdatedAt,
+    previousFingerprint,
+  }: {
+    adminSecret: string;
+    gameNames: string[];
+    previousUpdatedAt: string | null;
+    previousFingerprint: string;
+  }) {
+    for (let attempt = 0; attempt < LIVE_INDEXER_REFRESH_ATTEMPTS; attempt += 1) {
+      await delay(LIVE_INDEXER_REFRESH_DELAY_MS);
+
+      const nextSnapshot = await readFactoryLiveIndexers({
+        adminSecret,
+        ...(gameNames.length > 0 ? { gameNames } : {}),
+      });
+
+      if (didLiveIndexerSnapshotChange(nextSnapshot, previousUpdatedAt, previousFingerprint)) {
+        return nextSnapshot;
+      }
+    }
+
+    return null;
   }
 
   function buildCreateRunRequest(environmentId: FactoryWorkerEnvironmentId, gameName: string) {
@@ -2480,4 +2532,29 @@ function delay(durationMs: number) {
   return new Promise<void>((resolve) => {
     window.setTimeout(resolve, durationMs);
   });
+}
+
+function didLiveIndexerSnapshotChange(
+  snapshot: { entries: FactoryWorkerLiveIndexerEntry[]; updatedAt: string | null },
+  previousUpdatedAt: string | null,
+  previousFingerprint: string,
+) {
+  if (snapshot.updatedAt && snapshot.updatedAt !== previousUpdatedAt) {
+    return true;
+  }
+
+  return buildLiveIndexerSnapshotFingerprint(snapshot.entries) !== previousFingerprint;
+}
+
+function buildLiveIndexerSnapshotFingerprint(entries: FactoryWorkerLiveIndexerEntry[]) {
+  return [...entries]
+    .sort((leftEntry, rightEntry) => leftEntry.gameName.localeCompare(rightEntry.gameName))
+    .map((entry) => {
+      if (entry.liveState.state === "existing") {
+        return `${entry.gameName}:existing:${entry.liveState.currentTier ?? ""}:${entry.liveState.url ?? ""}`;
+      }
+
+      return `${entry.gameName}:${entry.liveState.state}:${entry.liveState.stateSource}`;
+    })
+    .join("|");
 }

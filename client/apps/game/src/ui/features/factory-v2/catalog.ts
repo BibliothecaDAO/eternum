@@ -57,18 +57,6 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     },
   },
   {
-    id: "eternum-sandbox-world",
-    mode: "eternum",
-    name: "Live world",
-    description: "Use this when the real world is ready to go live.",
-    defaults: {
-      startRule: "next_hour",
-      devMode: false,
-      twoPlayerMode: false,
-      singleRealmMode: false,
-    },
-  },
-  {
     id: "blitz-open",
     mode: "blitz",
     name: "Regular Normal (1h:30m)",

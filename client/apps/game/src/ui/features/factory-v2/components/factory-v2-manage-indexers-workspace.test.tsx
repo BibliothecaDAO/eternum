@@ -109,7 +109,7 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("starts with access only and hides games and actions until a snapshot exists", async () => {
+  it("starts in the indexer loading state and hides actions until a snapshot exists", async () => {
     await act(async () => {
       root.render(
         <FactoryV2ManageIndexersWorkspace
@@ -121,8 +121,8 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("Access");
-    expect(container.textContent).not.toContain("Games");
+    expect(container.textContent).toContain("Indexers");
+    expect(container.textContent).toContain("Opening saved indexers...");
     expect(container.textContent).not.toContain("Action");
     expect(container.querySelector('[data-testid="factory-indexer-lookup-names"]')).toBeNull();
     expect(container.querySelector('[data-testid="factory-indexer-action-delete"]')).toBeNull();
@@ -130,7 +130,7 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
     expect(container.querySelector('[data-testid="factory-indexer-filter-all"]')).toBeNull();
   });
 
-  it("auto-loads the saved list when a stored admin secret already exists", async () => {
+  it("auto-loads indexers when an admin secret is present", async () => {
     const onLoadLiveIndexers = vi.fn(async () => {});
 
     await act(async () => {
@@ -138,10 +138,6 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
         <FactoryV2ManageIndexersWorkspace
           {...buildProps({
             adminSecret: "saved-secret",
-            hasSavedAdminSecret: true,
-            liveIndexers: [buildLiveIndexerEntry("bltz-franky-01", { tier: "pro" })],
-            liveIndexersUpdatedAt: "2026-03-24T10:00:00.000Z",
-            notice: "Loaded from the stored live snapshot.",
             onLoadLiveIndexers,
           })}
         />,
@@ -149,8 +145,6 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("bltz-franky-01");
-    expect(container.textContent).toContain("pro");
     expect(onLoadLiveIndexers).toHaveBeenCalledWith({
       adminSecret: "saved-secret",
       gameNames: [],
@@ -163,40 +157,47 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
         <FactoryV2ManageIndexersWorkspace
           {...buildProps({
             adminSecret: "",
+            liveIndexers: [buildLiveIndexerEntry("etrn-live-01", { tier: "basic" })],
+            liveIndexersUpdatedAt: "2026-03-24T10:00:00.000Z",
           })}
         />,
       );
       await waitForAsyncWork();
     });
 
-    let loadButton = container.querySelector('[data-testid="factory-indexer-load"]') as HTMLButtonElement;
     let refreshButton = container.querySelector('[data-testid="factory-indexer-refresh"]') as HTMLButtonElement;
 
-    expect(loadButton.disabled).toBe(true);
     expect(refreshButton.disabled).toBe(true);
-
-    await act(async () => {
-      root.render(<FactoryV2ManageIndexersWorkspace {...buildProps()} />);
-      await waitForAsyncWork();
-    });
-
-    loadButton = container.querySelector('[data-testid="factory-indexer-load"]') as HTMLButtonElement;
-    refreshButton = container.querySelector('[data-testid="factory-indexer-refresh"]') as HTMLButtonElement;
-
-    expect(loadButton.disabled).toBe(false);
-    expect(refreshButton.disabled).toBe(false);
-  });
-
-  it("loads and refreshes typed names only after the manual lookup is opened", async () => {
-    const onLoadLiveIndexers = vi.fn(async () => {});
-    const onRefreshLiveIndexers = vi.fn(async () => {});
 
     await act(async () => {
       root.render(
         <FactoryV2ManageIndexersWorkspace
           {...buildProps({
-            onLoadLiveIndexers,
+            liveIndexers: [buildLiveIndexerEntry("etrn-live-01", { tier: "basic" })],
+            liveIndexersUpdatedAt: "2026-03-24T10:00:00.000Z",
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    refreshButton = container.querySelector('[data-testid="factory-indexer-refresh"]') as HTMLButtonElement;
+
+    expect(refreshButton.disabled).toBe(false);
+  });
+
+  it("keeps the list actions separate from recreate-by-name", async () => {
+    const onRefreshLiveIndexers = vi.fn(async () => {});
+    const onCreateIndexers = vi.fn(async () => {});
+
+    await act(async () => {
+      root.render(
+        <FactoryV2ManageIndexersWorkspace
+          {...buildProps({
             onRefreshLiveIndexers,
+            onCreateIndexers,
+            liveIndexers: [buildLiveIndexerEntry("bltz-franky-01", { tier: "pro" })],
+            liveIndexersUpdatedAt: "2026-03-24T10:00:00.000Z",
           })}
         />,
       );
@@ -206,8 +207,6 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
     const openLookupButton = container.querySelector(
       '[data-testid="factory-indexer-open-lookup"]',
     ) as HTMLButtonElement;
-    const loadButton = container.querySelector('[data-testid="factory-indexer-load"]') as HTMLButtonElement;
-    const refreshButton = container.querySelector('[data-testid="factory-indexer-refresh"]') as HTMLButtonElement;
 
     await act(async () => {
       openLookupButton.click();
@@ -215,6 +214,10 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
     });
 
     const namesField = container.querySelector('[data-testid="factory-indexer-lookup-names"]') as HTMLTextAreaElement;
+    const recreateNamesButton = container.querySelector(
+      '[data-testid="factory-indexer-recreate-names"]',
+    ) as HTMLButtonElement;
+    const refreshButton = container.querySelector('[data-testid="factory-indexer-refresh"]') as HTMLButtonElement;
 
     await act(async () => {
       setControlValue(namesField, "bltz-franky-01\nbltz-franky-02\nbltz-franky-01");
@@ -222,16 +225,16 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
     });
 
     await act(async () => {
-      loadButton.click();
       refreshButton.click();
+      recreateNamesButton.click();
       await waitForAsyncWork();
     });
 
-    expect(onLoadLiveIndexers).toHaveBeenCalledWith({
-      adminSecret: "factory-secret",
-      gameNames: ["bltz-franky-01", "bltz-franky-02"],
-    });
     expect(onRefreshLiveIndexers).toHaveBeenCalledWith({
+      adminSecret: "factory-secret",
+      gameNames: [],
+    });
+    expect(onCreateIndexers).toHaveBeenCalledWith({
       adminSecret: "factory-secret",
       gameNames: ["bltz-franky-01", "bltz-franky-02"],
     });
@@ -303,8 +306,7 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.querySelector('[data-testid="factory-indexer-action-create"]')).toBeNull();
-    expect(container.querySelector('[data-testid="factory-indexer-open-delete"]')).toBeNull();
+    expect(container.querySelector('[data-testid="factory-indexer-action-panel"]')).toBeNull();
 
     const liveRow = container.querySelector('[data-testid="factory-indexer-select-etrn-live-01"]') as HTMLButtonElement;
 
@@ -313,11 +315,13 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.querySelector('[data-testid="factory-indexer-action-create"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="factory-indexer-action-panel"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="factory-indexer-action-update-tier"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="factory-indexer-open-delete"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="factory-indexer-action-create"]')).toBeNull();
   });
 
-  it("runs recreate, tier change, and delete against the selected indexers", async () => {
+  it("runs capability-specific actions only against the selected indexers that support them", async () => {
     const onCreateIndexers = vi.fn(async () => {});
     const onUpdateIndexerTier = vi.fn(async () => {});
     const onDeleteIndexers = vi.fn(async () => {});
@@ -329,7 +333,8 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
             environmentLabel: "Mainnet",
             liveIndexers: [
               buildLiveIndexerEntry("etrn-season-01", { tier: "basic" }),
-              buildLiveIndexerEntry("etrn-season-02", { tier: "pro" }),
+              buildLiveIndexerEntry("etrn-season-02", { state: "missing" }),
+              buildLiveIndexerEntry("etrn-season-03", { state: "indeterminate" }),
             ],
             liveIndexersUpdatedAt: "2026-03-24T10:00:00.000Z",
             onCreateIndexers,
@@ -346,26 +351,23 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
     const secondRow = container.querySelector(
       '[data-testid="factory-indexer-select-etrn-season-02"]',
     ) as HTMLButtonElement;
+    const thirdRow = container.querySelector(
+      '[data-testid="factory-indexer-select-etrn-season-03"]',
+    ) as HTMLButtonElement;
 
     await act(async () => {
       firstRow.click();
       secondRow.click();
+      thirdRow.click();
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("2 indexers selected");
+    expect(container.textContent).toContain("3 indexers selected");
 
     const createButton = container.querySelector('[data-testid="factory-indexer-action-create"]') as HTMLButtonElement;
 
     await act(async () => {
       createButton.click();
-      await waitForAsyncWork();
-    });
-
-    const tierModeButton = container.querySelector('[data-testid="factory-indexer-mode-tier"]') as HTMLButtonElement;
-
-    await act(async () => {
-      tierModeButton.click();
       await waitForAsyncWork();
     });
 
@@ -413,16 +415,16 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
 
     expect(onCreateIndexers).toHaveBeenCalledWith({
       adminSecret: "factory-secret",
-      gameNames: ["etrn-season-01", "etrn-season-02"],
+      gameNames: ["etrn-season-02", "etrn-season-03"],
     });
     expect(onUpdateIndexerTier).toHaveBeenCalledWith({
       adminSecret: "factory-secret",
-      gameNames: ["etrn-season-01", "etrn-season-02"],
+      gameNames: ["etrn-season-01"],
       tier: "legendary",
     });
     expect(onDeleteIndexers).toHaveBeenCalledWith({
       adminSecret: "factory-secret",
-      gameNames: ["etrn-season-01", "etrn-season-02"],
+      gameNames: ["etrn-season-01"],
     });
   });
 
