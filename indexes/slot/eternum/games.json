@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-03-24T05:53:48.304Z",
+  "updatedAt": "2026-03-24T05:54:09.041Z",
   "entries": {
     "etrn-haven-204": {
       "kind": "game",
@@ -43,11 +43,10 @@
       "path": "runs/slot/eternum/etrn-mango.json",
       "inputPath": "inputs/slot/eternum/etrn-mango/23475224236-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T05:53:48.304Z",
+      "updatedAt": "2026-03-24T05:54:09.041Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "configure-world",
-      "activeLeaseExpiresAt": "2026-03-24T06:38:48.304Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1774331700,
