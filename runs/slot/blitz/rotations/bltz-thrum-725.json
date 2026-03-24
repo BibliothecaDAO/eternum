@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23422454488-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-23T05:12:07.827Z",
-  "updatedAt": "2026-03-24T01:20:24.544Z",
+  "updatedAt": "2026-03-24T01:40:25.761Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -110,7 +110,7 @@
         "startTimeIso": "2026-03-23T05:30:00.000Z",
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Failed to queue indexer tier update to pro: Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -147,10 +147,7 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T01:20:24.120Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T01:20:24.120Z",
-          "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
+          "pendingIndexerTierRequestedAt": "2026-03-24T01:40:24.473Z"
         },
         "durationSeconds": 3600
       },
@@ -160,7 +157,7 @@
         "startTimeIso": "2026-03-23T06:30:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Failed to queue indexer tier update to pro: Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -197,10 +194,7 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T01:20:24.120Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T01:20:24.120Z",
-          "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
+          "pendingIndexerTierRequestedAt": "2026-03-24T01:40:24.473Z"
         },
         "durationSeconds": 3600
       },
@@ -210,7 +204,7 @@
         "startTimeIso": "2026-03-23T07:30:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Failed to queue indexer tier update to pro: Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -247,10 +241,7 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T01:20:24.120Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T01:20:24.120Z",
-          "lastIndexerTierDispatchError": "Failed to dispatch factory-indexer-maintenance workflow: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/workflows#create-a-workflow-dispatch-event\",\"status\":\"404\"}"
+          "pendingIndexerTierRequestedAt": "2026-03-24T01:40:24.473Z"
         },
         "durationSeconds": 3600
       }
