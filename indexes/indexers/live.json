@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T09:39:07.486Z",
+  "updatedAt": "2026-03-24T09:51:50.768Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -213,28 +213,20 @@
     "daily-ranked-apac-210326": {
       "gameName": "daily-ranked-apac-210326",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "epic",
-        "url": "https://api.cartridge.gg/x/daily-ranked-apac-210326/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:56.726Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-apac-210326 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:51:50.768Z"
     },
     "daily-ranked-apac": {
       "gameName": "daily-ranked-apac",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "epic",
-        "url": "https://api.cartridge.gg/x/daily-ranked-apac/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:56.808Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-apac not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:51:50.768Z"
     },
     "daily-unranked-2-210326": {
       "gameName": "daily-unranked-2-210326",
@@ -257,15 +249,11 @@
     "noobs-only": {
       "gameName": "noobs-only",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "basic",
-        "url": "https://api.cartridge.gg/x/noobs-only/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.245Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment noobs-only not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:51:50.768Z"
     },
     "bltz-franky-01": {
       "gameName": "bltz-franky-01",
@@ -346,15 +334,11 @@
     "sg-63": {
       "gameName": "sg-63",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "epic",
-        "url": "https://api.cartridge.gg/x/sg-63/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.989Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment sg-63 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:51:50.768Z"
     },
     "bltz-zestible-07": {
       "gameName": "bltz-zestible-07",
@@ -368,15 +352,11 @@
     "bltz-zestible-08": {
       "gameName": "bltz-zestible-08",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "pro",
-        "url": "https://api.cartridge.gg/x/bltz-zestible-08/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:58.148Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-08 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:51:50.768Z"
     },
     "daily-ranked-us-240326": {
       "gameName": "daily-ranked-us-240326",
@@ -390,15 +370,11 @@
     "sg-64": {
       "gameName": "sg-64",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "legendary",
-        "url": "https://api.cartridge.gg/x/sg-64/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:58.310Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment sg-64 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:51:50.768Z"
     },
     "etrn-mango": {
       "gameName": "etrn-mango",
@@ -416,15 +392,11 @@
     "sg-65": {
       "gameName": "sg-65",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "basic",
-        "url": "https://api.cartridge.gg/x/sg-65/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:58.480Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment sg-65 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:51:50.768Z"
     },
     "bltz-escapade-01": {
       "gameName": "bltz-escapade-01",
