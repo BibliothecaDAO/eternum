@@ -521,14 +521,14 @@ const FactoryV2WatchRunCard = ({
 
       {selectedRun.kind === "series" ? (
         <>
-          <FactoryV2AutoRetryCard autoRetry={selectedRun.autoRetry} />
+          <FactoryV2AutoRetryCard run={selectedRun} />
           <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
         </>
       ) : null}
 
       {selectedRun.kind === "rotation" ? (
         <>
-          <FactoryV2AutoRetryCard autoRetry={selectedRun.autoRetry} />
+          <FactoryV2AutoRetryCard run={selectedRun} />
           <FactoryV2RotationScheduleCard run={selectedRun} />
           <FactoryV2MultiGameChildrenCard kind={selectedRun.kind} children={selectedRun.children ?? []} />
         </>
@@ -708,8 +708,10 @@ const FactoryV2CurrentStepCard = ({
   );
 };
 
-const FactoryV2AutoRetryCard = ({ autoRetry }: { autoRetry: FactoryRun["autoRetry"] }) => {
-  if (!autoRetry?.enabled) {
+const FactoryV2AutoRetryCard = ({ run }: { run: FactoryRun }) => {
+  const { autoRetry } = run;
+
+  if (!shouldShowAutoRetryCard(run)) {
     return null;
   }
 
@@ -726,6 +728,18 @@ const FactoryV2AutoRetryCard = ({ autoRetry }: { autoRetry: FactoryRun["autoRetr
     </div>
   );
 };
+
+function shouldShowAutoRetryCard(run: FactoryRun) {
+  if (!run.autoRetry?.enabled) {
+    return false;
+  }
+
+  if (run.status === "attention") {
+    return true;
+  }
+
+  return run.status === "waiting" && run.recovery?.canContinue === true && Boolean(run.autoRetry.nextRetryAt);
+}
 
 const FactoryV2RotationScheduleCard = ({ run }: { run: FactoryRun }) => {
   if (run.kind !== "rotation" || !run.rotation || !run.evaluation) {

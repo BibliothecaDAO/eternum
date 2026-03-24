@@ -460,6 +460,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(container.textContent).toContain("Queued ahead");
     expect(container.textContent).toContain("Next evaluation");
     expect(container.textContent).toContain("Rotation games");
+    expect(container.textContent).not.toContain("Auto-retry");
     expect(container.textContent).not.toContain("Run now");
     expect(container.textContent).not.toContain("Stop auto retry");
   });

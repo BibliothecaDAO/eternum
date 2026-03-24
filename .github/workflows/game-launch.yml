@@ -292,6 +292,92 @@ jobs:
             printf '%s' "${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
           }
 
+          resolve_default_create_game_max_actions() {
+            local network="${GAME_LAUNCH_ENVIRONMENT%%.*}"
+
+            if [ "${network}" = "mainnet" ]; then
+              printf '50'
+              return 0
+            fi
+
+            printf '300'
+          }
+
+          resolve_configured_create_game_max_actions() {
+            if [ -n "${GAME_LAUNCH_MAX_ACTIONS:-}" ]; then
+              printf '%s' "${GAME_LAUNCH_MAX_ACTIONS}"
+              return 0
+            fi
+
+            resolve_default_create_game_max_actions
+          }
+
+          resolve_configured_create_game_version() {
+            printf '%s' "${GAME_LAUNCH_VERSION:-180}"
+          }
+
+          log_single_create_game_params() {
+            echo "Resolved create_game params:"
+            echo "  game_name=${GAME_LAUNCH_GAME_NAME}"
+            echo "  max_actions=$(resolve_configured_create_game_max_actions)"
+            echo "  factory_config_version=$(resolve_configured_create_game_version)"
+            echo "  series_name=0x0"
+            echo "  series_game_number=0"
+          }
+
+          log_series_create_game_params() {
+            GAME_LAUNCH_SERIES_GAMES_JSON="${GAME_LAUNCH_SERIES_GAMES_JSON}" \
+            GAME_LAUNCH_SERIES_NAME="${GAME_LAUNCH_SERIES_NAME}" \
+            GAME_LAUNCH_EFFECTIVE_MAX_ACTIONS="$(resolve_configured_create_game_max_actions)" \
+            GAME_LAUNCH_EFFECTIVE_VERSION="$(resolve_configured_create_game_version)" \
+            node <<'NODE'
+          const rawGames = process.env.GAME_LAUNCH_SERIES_GAMES_JSON || "[]";
+          const seriesName = process.env.GAME_LAUNCH_SERIES_NAME || "";
+          const maxActions = process.env.GAME_LAUNCH_EFFECTIVE_MAX_ACTIONS || "";
+          const version = process.env.GAME_LAUNCH_EFFECTIVE_VERSION || "";
+
+          const games = JSON.parse(rawGames);
+          console.log("Resolved create_game params:");
+          games.forEach((entry, index) => {
+            const seriesGameNumber = entry.seriesGameNumber ?? entry.series_game_number ?? "assigned by summary";
+            console.log(`  [${index + 1}] game_name=${entry.gameName}`);
+            console.log(`      max_actions=${maxActions}`);
+            console.log(`      factory_config_version=${version}`);
+            console.log(`      series_name=${seriesName}`);
+            console.log(`      series_game_number=${seriesGameNumber}`);
+          });
+          NODE
+          }
+
+          log_rotation_create_game_params() {
+            echo "Resolved create_game params:"
+            echo "  game_name=<rotation-generated from queued series game number>"
+            echo "  max_actions=$(resolve_configured_create_game_max_actions)"
+            echo "  factory_config_version=$(resolve_configured_create_game_version)"
+            echo "  series_name=${GAME_LAUNCH_ROTATION_NAME}"
+            echo "  series_game_number=<assigned by rotation summary>"
+          }
+
+          log_create_game_params_for_step() {
+            local step_id="$1"
+
+            case "${step_id}" in
+              create-world)
+                log_single_create_game_params
+                ;;
+              create-worlds)
+                if [ "${GAME_LAUNCH_KIND}" = "series" ]; then
+                  log_series_create_game_params
+                  return 0
+                fi
+
+                if [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
+                  log_rotation_create_game_params
+                fi
+                ;;
+            esac
+          }
+
           append_replayable_launch_args() {
             local -n target_args="$1"
             local resolved_factory_address=""
@@ -724,6 +810,7 @@ jobs:
             local exit_code=1
 
             record_launch_step_started "${step_id}"
+            log_create_game_params_for_step "${step_id}"
 
             if ! prepare_account_lease_for_step "${step_id}"; then
               record_launch_step_failed "${step_id}"

@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-24",
+    title: "Cleaner Retry Status",
+    description:
+      "Factory V2 now only shows the auto-retry card when a run actually needs recovery attention, so healthy series and rotations no longer look like they are stuck in a retry loop.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
     title: "Calmer Run Details Cards",
     description:
       "Factory V2 now shows run details in a softer info card instead of a red warning box, so normal status notes no longer read like deployment failures while real error details still stand out.",
