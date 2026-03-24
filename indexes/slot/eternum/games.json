@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-03-24T06:12:24.326Z",
+  "updatedAt": "2026-03-24T06:35:36.816Z",
   "entries": {
     "etrn-haven-204": {
       "kind": "game",
@@ -43,7 +43,7 @@
       "path": "runs/slot/eternum/etrn-mango.json",
       "inputPath": "inputs/slot/eternum/etrn-mango/23475691470-1.json",
       "status": "complete",
-      "updatedAt": "2026-03-24T06:12:24.326Z",
+      "updatedAt": "2026-03-24T06:35:36.816Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -54,7 +54,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-03-24T06:12:24.325Z"
+        "lastIndexerDescribeAt": "2026-03-24T06:12:24.325Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-03-24T06:35:35.463Z"
       }
     }
   }
