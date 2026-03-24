@@ -1,0 +1,539 @@
+{
+  "version": 1,
+  "updatedAt": "2026-03-24T09:11:00.241Z",
+  "entries": {
+    "eternum-game-mainnet-38-pro": {
+      "gameName": "eternum-game-mainnet-38-pro",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/eternum-game-mainnet-38-pro/torii",
+        "version": "v1.5.7-preview.0",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:57.874Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "eternum-resources-mainnet-5": {
+      "gameName": "eternum-resources-mainnet-5",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/eternum-resources-mainnet-5/torii",
+        "version": "v1.6.0-alpha.2",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:57.932Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "eternum-marketplace-mainnet19": {
+      "gameName": "eternum-marketplace-mainnet19",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/eternum-marketplace-mainnet19/torii",
+        "version": "v1.8.5",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.059Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "eternum-factory-slot-c": {
+      "gameName": "eternum-factory-slot-c",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/eternum-factory-slot-c/torii",
+        "version": "v1.7.0-alpha.5",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.144Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "eternum-factory-mainnet": {
+      "gameName": "eternum-factory-mainnet",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/eternum-factory-mainnet/torii",
+        "version": "v1.7.0-alpha.5",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.178Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "s0-game-8": {
+      "gameName": "s0-game-8",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/s0-game-8/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.217Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "s0-game-9": {
+      "gameName": "s0-game-9",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/s0-game-9/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.377Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "s0-game-10": {
+      "gameName": "s0-game-10",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/s0-game-10/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.508Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "s0-game-11": {
+      "gameName": "s0-game-11",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/s0-game-11/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.550Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "s0-game-12": {
+      "gameName": "s0-game-12",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/s0-game-12/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.582Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "s0-game-6": {
+      "gameName": "s0-game-6",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/s0-game-6/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.617Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "s0-game-5": {
+      "gameName": "s0-game-5",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/s0-game-5/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.656Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "s0-game-7": {
+      "gameName": "s0-game-7",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/s0-game-7/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.684Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "eternum-factory-slot-d": {
+      "gameName": "eternum-factory-slot-d",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/eternum-factory-slot-d/torii",
+        "version": "v1.8.2",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.710Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "etrn-vigil-878": {
+      "gameName": "etrn-vigil-878",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/etrn-vigil-878/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.738Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "etrn-titan-60": {
+      "gameName": "etrn-titan-60",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/etrn-titan-60/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:58.894Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "daily-ranked-apac-210326": {
+      "gameName": "daily-ranked-apac-210326",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/daily-ranked-apac-210326/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.092Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "daily-ranked-apac": {
+      "gameName": "daily-ranked-apac",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/daily-ranked-apac/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.120Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "daily-unranked-2-210326": {
+      "gameName": "daily-unranked-2-210326",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/daily-unranked-2-210326/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.150Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "daily-ranked-eu-210326": {
+      "gameName": "daily-ranked-eu-210326",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/daily-ranked-eu-210326/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.295Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "noobs-only": {
+      "gameName": "noobs-only",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/noobs-only/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.323Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-franky-01": {
+      "gameName": "bltz-franky-01",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-franky-01/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.349Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "eternum-sandbox-3": {
+      "gameName": "eternum-sandbox-3",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/eternum-sandbox-3/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.378Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-zestible-01": {
+      "gameName": "bltz-zestible-01",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-zestible-01/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.404Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-zestible-02": {
+      "gameName": "bltz-zestible-02",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-zestible-02/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.432Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-zestible-03": {
+      "gameName": "bltz-zestible-03",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-zestible-03/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.462Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-zestible-04": {
+      "gameName": "bltz-zestible-04",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-zestible-04/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.716Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-zestible-05": {
+      "gameName": "bltz-zestible-05",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-zestible-05/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.743Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-zestible-06": {
+      "gameName": "bltz-zestible-06",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-zestible-06/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.774Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "sg-63": {
+      "gameName": "sg-63",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/sg-63/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.809Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-zestible-07": {
+      "gameName": "bltz-zestible-07",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-zestible-07/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.842Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-zestible-08": {
+      "gameName": "bltz-zestible-08",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-zestible-08/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.870Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "daily-ranked-us-240326": {
+      "gameName": "daily-ranked-us-240326",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "epic",
+        "url": "https://api.cartridge.gg/x/daily-ranked-us-240326/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.898Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "sg-64": {
+      "gameName": "sg-64",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/sg-64/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.926Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "etrn-mango": {
+      "gameName": "etrn-mango",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/etrn-mango/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.962Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "sg-65": {
+      "gameName": "sg-65",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/sg-65/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:10:59.990Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-escapade-01": {
+      "gameName": "bltz-escapade-01",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/bltz-escapade-01/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:11:00.136Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-escapade-02": {
+      "gameName": "bltz-escapade-02",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/bltz-escapade-02/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:11:00.162Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-escapade-03": {
+      "gameName": "bltz-escapade-03",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/bltz-escapade-03/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:11:00.189Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "bltz-escapade-04": {
+      "gameName": "bltz-escapade-04",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/bltz-escapade-04/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:11:00.214Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    },
+    "daily-ranked-apac-24-03-26": {
+      "gameName": "daily-ranked-apac-24-03-26",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/daily-ranked-apac-24-03-26/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T09:11:00.240Z"
+      },
+      "updatedAt": "2026-03-24T09:11:00.241Z"
+    }
+  }
+}
