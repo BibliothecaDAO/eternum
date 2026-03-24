@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "daily-unranked-1-24.03.26",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/mainnet/blitz/daily-unranked-1-24-03-26/23474387804-1.json",
   "latestLaunchRequestId": "23474387804-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-03-24T04:35:44.180Z",
-  "updatedAt": "2026-03-24T05:20:41.349Z",
+  "updatedAt": "2026-03-24T05:20:45.243Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,12 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"daily-unranked-1-24.03.26\" on mainnet.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"daily-unranked-1-24.03.26\"\n\u001b[2m[+213ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"daily-unranked-1-24.03.26\" in 200ms (0x0721c491...53d8e4)\n\u001b[2m[+223ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x0721c491...53d8e4\n\u001b[2m[+356ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for daily-unranked-1-24.03.26 as missing via slot d describe\n\u001b[2m[+639ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 416ms: Failed to create Torii deployment \"daily-unranked-1-24.03.26\": Error: rpc error: code = InvalidArgument desc = project name is not valid: name must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/daily-unranked-1-24.03.26/torii ...\nError: Failed to create Torii deployment \"daily-unranked-1-24.03.26\": Error: rpc error: code = InvalidArgument desc = project name is not valid: name must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/daily-unranked-1-24.03.26/torii ...\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:374:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:851:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:849:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1011:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1045:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1060:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:147:25)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-03-24T05:05:45.247Z",
-      "finishedAt": "2026-03-24T05:05:50.748Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"daily-unranked-1-24.03.26\" on mainnet.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"daily-unranked-1-24.03.26\"\n\u001b[2m[+213ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"daily-unranked-1-24.03.26\" in 200ms (0x0721c491...53d8e4)\n\u001b[2m[+223ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x0721c491...53d8e4\n\u001b[2m[+356ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for daily-unranked-1-24.03.26 as missing via slot d describe\n\u001b[2m[+639ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 416ms: Failed to create Torii deployment \"daily-unranked-1-24.03.26\": Error: rpc error: code = InvalidArgument desc = project name is not valid: name must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/daily-unranked-1-24.03.26/torii ...\nError: Failed to create Torii deployment \"daily-unranked-1-24.03.26\": Error: rpc error: code = InvalidArgument desc = project name is not valid: name must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/daily-unranked-1-24.03.26/torii ...\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:374:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:851:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:849:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1011:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1045:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1060:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:147:25)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-24T05:20:45.243Z",
+      "finishedAt": "2026-03-24T05:05:50.748Z"
     },
     {
       "id": "sync-paymaster",
@@ -85,5 +84,13 @@
     "worldAddress": "0x0721c491d4966be6714ea5442bea1ea49cb61eb0c2a4c459a4e8ae299453d8e4",
     "createGameTxHash": "0x5dbebd3209053750c3f6fc61fb36f235d010c717fca0cae202a2078dafcda81",
     "configureTxHash": "0x3becaad0e21256ae388b3b3ca1a306735c4742301c87ed2fa0a868e7065da9c"
+  },
+  "activeLease": {
+    "launchRequestId": "23474387804-1",
+    "workflowRunId": 23474387804,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-03-24T05:20:45.243Z",
+    "expiresAt": "2026-03-24T06:05:45.243Z"
   }
 }
