@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-escapade",
   "seriesName": "bltz-escapade",
-  "status": "running",
+  "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23489892475-1.json",
   "latestLaunchRequestId": "23489892475-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T08:00:10.872Z",
-  "updatedAt": "2026-03-24T12:41:49.139Z",
+  "updatedAt": "2026-03-24T12:47:17.076Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 5,
+    "nextRetryAt": "2026-03-24T12:52:17.076Z",
     "lastRetryAt": "2026-03-24T12:40:32.563Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-24T12:56:44.557Z",
-    "lastEvaluatedAt": "2026-03-24T12:41:44.557Z"
+    "nextEvaluationAt": "2026-03-24T13:02:17.076Z",
+    "lastEvaluatedAt": "2026-03-24T12:47:17.076Z"
   },
   "steps": [
     {
@@ -45,10 +46,12 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-24T12:41:49.139Z"
+      "latestEvent": "Creating games failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-escapade-05\" on mainnet.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+317ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n[2026-03-24T12:41:55.988Z] ERROR: Insufficient transaction data: found 9 V3 transactions with tips in 3 blocks (block range: 8074629-8074631). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+2.2s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m create_game attempt 1/15 submitted in 1.9s (0x54a69a89...81d5c9)\n\u001b[2m[+2.2s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for create_game attempt 1/15 confirmation (0x54a69a89...81d5c9)\n[2026-03-24T12:46:57.849Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T12:47:02.919Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T12:47:07.986Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T12:47:13.056Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n\u001b[2m[+5m 17s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 5m 15s: Transaction TTL, evicted from the mempool, try to increase the tip\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-03-24T12:41:49.139Z",
+      "finishedAt": "2026-03-24T12:47:17.076Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-escapade-05\" on mainnet.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+317ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n[2026-03-24T12:41:55.988Z] ERROR: Insufficient transaction data: found 9 V3 transactions with tips in 3 blocks (block range: 8074629-8074631). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+2.2s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m create_game attempt 1/15 submitted in 1.9s (0x54a69a89...81d5c9)\n\u001b[2m[+2.2s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for create_game attempt 1/15 confirmation (0x54a69a89...81d5c9)\n[2026-03-24T12:46:57.849Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T12:47:02.919Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T12:47:07.986Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T12:47:13.056Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n\u001b[2m[+5m 17s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 5m 15s: Transaction TTL, evicted from the mempool, try to increase the tip\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -901,7 +904,7 @@
         "startTimeIso": "2026-03-25T06:30:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": "create-worlds",
-        "latestEvent": "waitForTransaction timed-out with retries 200",
+        "latestEvent": "Transaction TTL, evicted from the mempool, try to increase the tip",
         "status": "failed",
         "configSteps": [],
         "steps": [
@@ -913,9 +916,9 @@
           {
             "id": "create-worlds",
             "status": "failed",
-            "latestEvent": "waitForTransaction timed-out with retries 200",
-            "updatedAt": "2026-03-24T12:33:54.228Z",
-            "errorMessage": "waitForTransaction timed-out with retries 200"
+            "latestEvent": "Transaction TTL, evicted from the mempool, try to increase the tip",
+            "updatedAt": "2026-03-24T12:47:13.057Z",
+            "errorMessage": "Transaction TTL, evicted from the mempool, try to increase the tip"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -953,13 +956,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-escapade.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T08:00:40.047Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23489892475-1",
-    "workflowRunId": 23489892475,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-24T12:41:49.139Z",
-    "expiresAt": "2026-03-24T13:26:49.139Z"
   }
 }
