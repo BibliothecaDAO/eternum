@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23469865609-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-24T02:40:28.114Z",
+  "updatedAt": "2026-03-24T02:42:03.009Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -922,7 +922,7 @@
         "startTimeIso": "2026-03-24T03:10:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer tier updated basic -> legendary for bltz-zestible-06",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1086,11 +1086,11 @@
           "lootChestRoleTxHash": "0x4c1225cc97f3fb8650c6e14dc5bfbb6936e4b78255a1eb044f5ed31220c7b3e",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "legendary",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-zestible-06/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-23T22:25:09.003Z",
+          "lastIndexerDescribeAt": "2026-03-24T02:42:03.009Z",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -1099,9 +1099,7 @@
             "worldAddress": "0x01e7cb591128490f7a6200777b3e67e148c66628135dab483f63da15c4b88abb",
             "tier": "basic",
             "externalContracts": []
-          },
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-03-24T02:40:25.422Z"
+          }
         },
         "durationSeconds": 5400
       },
