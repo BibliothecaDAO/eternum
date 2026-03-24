@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T15:38:32.294Z",
+  "updatedAt": "2026-03-24T15:38:45.871Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -432,32 +432,6 @@
         "describedAt": "2026-03-24T13:12:13.442Z"
       },
       "updatedAt": "2026-03-24T13:12:13.442Z"
-    },
-    "bltz-bakers-01": {
-      "gameName": "bltz-bakers-01",
-      "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "legendary",
-        "url": "https://api.cartridge.gg/x/bltz-bakers-01/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T14:52:22.435Z"
-      },
-      "updatedAt": "2026-03-24T14:52:22.435Z"
-    },
-    "bltz-bakers-02": {
-      "gameName": "bltz-bakers-02",
-      "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "legendary",
-        "url": "https://api.cartridge.gg/x/bltz-bakers-02/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T15:32:21.069Z"
-      },
-      "updatedAt": "2026-03-24T15:32:21.069Z"
     }
   }
 }
