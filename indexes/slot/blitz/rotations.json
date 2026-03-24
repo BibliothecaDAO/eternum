@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T01:56:47.659Z",
+  "updatedAt": "2026-03-24T01:58:31.001Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -163,7 +163,7 @@
       "path": "runs/slot/blitz/rotations/bltz-zestible.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23466816261-1.json",
       "status": "complete",
-      "updatedAt": "2026-03-24T00:24:43.560Z",
+      "updatedAt": "2026-03-24T01:58:31.001Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -184,8 +184,8 @@
           "durationSeconds": 3600,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-03-23T22:00:46.624Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:57:12.117Z"
           }
         },
         {
@@ -194,8 +194,8 @@
           "durationSeconds": 3600,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-03-23T22:01:02.761Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:57:30.195Z"
           }
         },
         {
@@ -204,8 +204,8 @@
           "durationSeconds": 3600,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-03-23T22:01:12.822Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:57:50.334Z"
           }
         },
         {
@@ -214,8 +214,8 @@
           "durationSeconds": 3600,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-03-23T22:01:24.052Z"
+            "indexerTier": "legendary",
+            "lastIndexerDescribeAt": "2026-03-24T01:58:10.500Z"
           }
         },
         {
@@ -224,8 +224,8 @@
           "durationSeconds": 3600,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-03-23T22:01:35.119Z"
+            "indexerTier": "legendary",
+            "lastIndexerDescribeAt": "2026-03-24T01:58:31.001Z"
           }
         },
         {
