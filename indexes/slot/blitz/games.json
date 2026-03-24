@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-24T07:33:05.442Z",
+  "updatedAt": "2026-03-24T07:34:05.479Z",
   "entries": {
     "sg-64": {
       "kind": "game",
@@ -32,14 +32,14 @@
       "path": "runs/slot/blitz/sg-65.json",
       "inputPath": "inputs/slot/blitz/sg-65/23478147463-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T07:33:05.442Z",
+      "updatedAt": "2026-03-24T07:34:05.479Z",
       "workflowRef": "next",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-03-24T08:18:05.442Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "1774342800",
+      "startTime": 1774342800,
+      "durationSeconds": 5400,
       "artifacts": {}
     }
   }
