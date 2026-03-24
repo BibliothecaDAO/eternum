@@ -64,26 +64,6 @@ const ensureSlotIndexerDeploymentMock = mock(async () => ({
   },
 }));
 
-function buildQueuedConfigStep(id: string, queuedCallCount: number) {
-  return {
-    id,
-    description: id,
-    execute: async (context: {
-      account: unknown;
-      provider: { executeAndCheckTransaction: (signer: unknown, details: unknown[]) => Promise<unknown> };
-    }) => {
-      await context.provider.executeAndCheckTransaction(
-        context.account,
-        Array.from({ length: queuedCallCount }, (_value, index) => ({
-          contractAddress: "0xconfig",
-          entrypoint: `${id}-${index}`,
-          calldata: [],
-        })),
-      );
-    },
-  };
-}
-
 mock.module("@bibliothecadao/provider", () => ({
   EternumProvider: class EternumProvider {
     provider = {};
@@ -515,34 +495,41 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(summary.worldAddress).toBe("0xworld");
   });
 
-  test("keeps subdividing configure-world batches after another batched mainnet failure", async () => {
+  test("fails configure-world immediately after a batched mainnet config error", async () => {
     resolveFactoryWorldConfigStepsMock.mockImplementation(() => [
-      buildQueuedConfigStep("world-admin", 2),
-      buildQueuedConfigStep("tick", 3),
-      buildQueuedConfigStep("map", 2),
-      buildQueuedConfigStep("resource-factory", 3),
+      { id: "world-admin", description: "world-admin" },
+      { id: "tick", description: "tick" },
+      { id: "map", description: "map" },
+      { id: "resource-factory", description: "resource-factory" },
     ]);
 
-    let invocationCount = 0;
-    executeConfigStepsMock.mockImplementation(
-      async ({ mode, steps }: { mode?: string; steps?: Array<{ id: string }> }) => {
-        invocationCount += 1;
-        const stepIds = (steps || []).map((step) => step.id);
-        if (
-          invocationCount === 1 ||
-          (stepIds.length === 2 && stepIds[0] === "map" && stepIds[1] === "resource-factory")
-        ) {
-          throw new Error("RPC: starknet_addInvokeTransaction failed");
-        }
+    executeConfigStepsMock.mockImplementation(async () => {
+      throw new Error("RPC: starknet_addInvokeTransaction failed");
+    });
 
-        return {
-          mode: mode || "batched",
-          steps: (steps || []).map((step) => ({ id: step.id, description: step.id })),
-          transactionHash: `0xconfigure${invocationCount}`,
-        };
-      },
-    );
+    await expect(
+      runLaunchStep({
+        environmentId: "mainnet.blitz",
+        stepId: "configure-world",
+        gameName: "alpha",
+        startTime,
+        rpcUrl: "https://rpc.example",
+        factoryAddress,
+        accountAddress,
+        privateKey,
+      }),
+    ).rejects.toThrow("RPC: starknet_addInvokeTransaction failed");
 
+    expect(executeConfigStepsMock).toHaveBeenCalledTimes(1);
+    expect(
+      executeConfigStepsMock.mock.calls.map(([input]) => ({
+        mode: input.mode,
+        stepIds: input.steps.map((step: { id: string }) => step.id),
+      })),
+    ).toEqual([{ mode: "batched", stepIds: ["world-admin", "tick", "map", "resource-factory"] }]);
+  });
+
+  test("skips configure-world when stored run state already marked it succeeded", async () => {
     const summary = await runLaunchStep({
       environmentId: "mainnet.blitz",
       stepId: "configure-world",
@@ -552,28 +539,13 @@ describe("runLaunchStep mainnet launch steps", () => {
       factoryAddress,
       accountAddress,
       privateKey,
+      resumeSteps: [{ id: "configure-world", status: "succeeded", latestEvent: "World configuration completed" }],
     });
 
-    expect(
-      executeConfigStepsMock.mock.calls.map(([input]) => ({
-        mode: input.mode,
-        stepIds: input.steps.map((step: { id: string }) => step.id),
-      })),
-    ).toEqual([
-      { mode: "batched", stepIds: ["world-admin", "tick", "map", "resource-factory"] },
-      { mode: "batched", stepIds: ["world-admin", "tick"] },
-      { mode: "batched", stepIds: ["map", "resource-factory"] },
-      { mode: "batched", stepIds: ["map"] },
-      { mode: "batched", stepIds: ["resource-factory"] },
-    ]);
-    expect(summary.configMode).toBe("batched");
-    expect(summary.configureTxHash).toBe("0xconfigure5");
-    expect(summary.configSteps).toEqual([
-      { id: "world-admin", description: "world-admin" },
-      { id: "tick", description: "tick" },
-      { id: "map", description: "map" },
-      { id: "resource-factory", description: "resource-factory" },
-    ]);
+    expect(waitForFactoryWorldProfileMock).toHaveBeenCalledTimes(1);
+    expect(executeConfigStepsMock).not.toHaveBeenCalled();
+    expect(summary.worldAddress).toBe("0xworld");
+    expect(summary.configureTxHash).toBeUndefined();
   });
 
   test("syncs paymaster only for mainnet environments", async () => {

@@ -28,6 +28,7 @@ import {
 } from "../factory/discovery";
 import { ensureSlotIndexerDeployment, resolveIndexerArtifactState } from "../indexing/slot-torii";
 import { syncPaymasterPolicy } from "../paymaster";
+import { buildLootChestMinterRoleGrantCall, grantRoles, resolveLootChestMinterRoleGrantTarget } from "../role-grants";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
 import type {
@@ -50,10 +51,7 @@ type ProviderSigner = Parameters<EternumProvider["create_banks"]>[0]["signer"];
 type LaunchProgress = ReturnType<typeof createProgressReporter>;
 type LaunchConfig = ReturnType<typeof applyDeploymentConfigOverrides>;
 type LaunchConfigSteps = ReturnType<typeof resolveFactoryWorldConfigSteps>;
-type ConfiguredWorldProvider = Pick<EternumProvider, "grant_collectible_minter_role" | "create_banks"> &
-  EternumProvider;
-type SilentConfigLogger = { log: () => void; info: () => void };
-
+type ConfiguredWorldProvider = Pick<EternumProvider, "create_banks"> & EternumProvider;
 interface LaunchRuntime {
   progress: LaunchProgress;
   environment: DeploymentEnvironment;
@@ -94,10 +92,9 @@ interface ConfiguredLaunchDependencies {
   worldContext: ConfiguredWorldContext;
 }
 
-const SILENT_CONFIG_LOGGER: SilentConfigLogger = {
-  log: () => undefined,
-  info: () => undefined,
-};
+function hasSucceededResumeStep(request: LaunchGameRequest, stepId: LaunchGameStepId): boolean {
+  return (request.resumeSteps || []).some((step) => step.id === stepId && step.status === "succeeded");
+}
 
 function asProviderSigner(account: Account): ProviderSigner {
   return account as unknown as ProviderSigner;
@@ -650,155 +647,6 @@ async function executeWorldConfig(params: {
   );
 }
 
-function shouldRetryWorldConfigInSmallerBatches(params: {
-  runtime: LaunchRuntime;
-  mode: NonNullable<LaunchGameRequest["executionMode"]>;
-  configSteps: LaunchConfigSteps;
-}): boolean {
-  return (
-    params.mode === "batched" &&
-    isMainnetDeploymentEnvironment(params.runtime.environment) &&
-    params.configSteps.length > 1
-  );
-}
-
-async function measureConfigStepBatchCallCounts(params: {
-  deploymentConfig: LaunchConfig;
-  configSteps: LaunchConfigSteps;
-  account: Account;
-  patchedProvider: EternumProvider;
-}): Promise<number[]> {
-  params.patchedProvider.beginBatch({ signer: params.account });
-  const callCounts: number[] = [];
-  let previousQueuedCallCount = 0;
-
-  try {
-    for (const step of params.configSteps) {
-      await step.execute(
-        buildConfigExecutionContext({
-          ...params,
-          logger: SILENT_CONFIG_LOGGER,
-        }),
-      );
-      const queuedCallCount = params.patchedProvider.getQueuedBatchCallCount();
-      callCounts.push(Math.max(queuedCallCount - previousQueuedCallCount, 1));
-      previousQueuedCallCount = queuedCallCount;
-    }
-  } finally {
-    await params.patchedProvider.endBatch({ flush: false });
-  }
-
-  return callCounts;
-}
-
-function resolveConfigRetrySplitIndex(stepCallCounts: number[]): number {
-  const targetCallCount = stepCallCounts.reduce((total, count) => total + count, 0) / 2;
-  let bestIndex = 1;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  let runningCallCount = 0;
-
-  for (let index = 1; index < stepCallCounts.length; index += 1) {
-    runningCallCount += stepCallCounts[index - 1] || 0;
-    const distance = Math.abs(targetCallCount - runningCallCount);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestIndex = index;
-    }
-  }
-
-  return bestIndex;
-}
-
-async function splitConfigStepsForRetry(params: {
-  deploymentConfig: LaunchConfig;
-  configSteps: LaunchConfigSteps;
-  account: Account;
-  patchedProvider: EternumProvider;
-}): Promise<[LaunchConfigSteps, LaunchConfigSteps]> {
-  const stepCallCounts = await measureConfigStepBatchCallCounts(params);
-  const splitIndex = resolveConfigRetrySplitIndex(stepCallCounts);
-  return [params.configSteps.slice(0, splitIndex), params.configSteps.slice(splitIndex)];
-}
-
-function describeConfigRetryBatch(batchPath: number[]): string {
-  return batchPath.length === 0 ? "full batched submission" : `batch ${batchPath.join(".")}`;
-}
-
-function buildConfigRetryBatchStartMessage(configSteps: LaunchConfigSteps, batchPath: number[]): string {
-  return `Applying ${configSteps.length} config steps in batched mode (${describeConfigRetryBatch(batchPath)})`;
-}
-
-function buildConfigRetryBatchSuccessLabel(batchPath: number[]): string {
-  return `World configuration ${describeConfigRetryBatch(batchPath)} completed`;
-}
-
-async function retryWorldConfigInSmallerBatches(params: {
-  runtime: LaunchRuntime;
-  request: LaunchGameRequest;
-  deploymentConfig: LaunchConfig;
-  configSteps: LaunchConfigSteps;
-  account: Account;
-  patchedProvider: EternumProvider;
-  batchPath: number[];
-}): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
-  const [firstBatchSteps, secondBatchSteps] = await splitConfigStepsForRetry(params);
-  const failedBatchLabel = describeConfigRetryBatch(params.batchPath);
-  params.runtime.progress.log(`Retrying ${failedBatchLabel} as smaller batched submissions`);
-
-  const firstBatch = await executeWorldConfigWithAdaptiveRetries({
-    ...params,
-    configSteps: firstBatchSteps,
-    batchPath: [...params.batchPath, 1],
-  });
-
-  const secondBatch = await executeWorldConfigWithAdaptiveRetries({
-    ...params,
-    configSteps: secondBatchSteps,
-    batchPath: [...params.batchPath, 2],
-  });
-
-  return {
-    transactionHash: secondBatch.transactionHash || firstBatch.transactionHash,
-    steps: [...firstBatch.steps, ...secondBatch.steps],
-  };
-}
-
-async function executeWorldConfigWithAdaptiveRetries(params: {
-  runtime: LaunchRuntime;
-  request: LaunchGameRequest;
-  deploymentConfig: LaunchConfig;
-  configSteps: LaunchConfigSteps;
-  account: Account;
-  patchedProvider: EternumProvider;
-  batchPath: number[];
-}): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
-  try {
-    const result = await executeWorldConfig({
-      ...params,
-      mode: "batched",
-      startMessage: buildConfigRetryBatchStartMessage(params.configSteps, params.batchPath),
-      successLabel: buildConfigRetryBatchSuccessLabel(params.batchPath),
-    });
-
-    return {
-      transactionHash: result.transactionHash,
-      steps: result.steps,
-    };
-  } catch (error) {
-    if (
-      !shouldRetryWorldConfigInSmallerBatches({
-        runtime: params.runtime,
-        mode: "batched",
-        configSteps: params.configSteps,
-      })
-    ) {
-      throw error;
-    }
-
-    return retryWorldConfigInSmallerBatches(params);
-  }
-}
-
 async function configureWorld(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
@@ -807,45 +655,15 @@ async function configureWorld(params: {
   account: Account;
   patchedProvider: EternumProvider;
 }): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
-  try {
-    const result = await executeWorldConfig({
-      ...params,
-      mode: params.runtime.executionMode,
-    });
+  const result = await executeWorldConfig({
+    ...params,
+    mode: params.runtime.executionMode,
+  });
 
-    return {
-      transactionHash: result.transactionHash,
-      steps: result.steps,
-    };
-  } catch (error) {
-    if (
-      !shouldRetryWorldConfigInSmallerBatches({
-        runtime: params.runtime,
-        mode: params.runtime.executionMode,
-        configSteps: params.configSteps,
-      })
-    ) {
-      throw error;
-    }
-
-    params.runtime.progress.log(
-      "Retrying world configuration in smaller batched submissions after batched mainnet failure",
-    );
-    return retryWorldConfigInSmallerBatches({
-      ...params,
-      batchPath: [],
-    });
-  }
-}
-
-function resolveLootChestAddress(chain: Chain, config: LaunchConfig): string | undefined {
-  const fromConfig = (config as Record<string, any>)?.blitz?.registration?.collectibles_lootchest_address;
-  if (typeof fromConfig === "string" && !isZeroAddress(fromConfig)) {
-    return fromConfig;
-  }
-
-  const addresses = getSeasonAddresses(chain);
-  return addresses["Collectibles: Realms: Loot Chest"] || addresses.lootChests;
+  return {
+    transactionHash: result.transactionHash,
+    steps: result.steps,
+  };
 }
 
 async function grantLootChestMinterRoleIfNeeded(params: {
@@ -853,39 +671,46 @@ async function grantLootChestMinterRoleIfNeeded(params: {
   request: LaunchGameRequest;
   deploymentConfig: LaunchConfig;
   patchedManifest: GameManifestLike;
-  patchedProvider: ConfiguredWorldProvider;
-  providerSigner: ProviderSigner;
+  accountAddress: string;
+  privateKey: string;
 }): Promise<string | undefined> {
   if (params.request.skipLootChestRoleGrant) {
     params.runtime.progress.log("Skipping loot chest minter role grant");
     return undefined;
   }
 
-  const lootChestAddress = resolveLootChestAddress(params.runtime.environment.chain as Chain, params.deploymentConfig);
-  if (!lootChestAddress || isZeroAddress(lootChestAddress)) {
+  const roleGrantTarget = resolveLootChestMinterRoleGrantTarget({
+    chain: params.runtime.environment.chain as Chain,
+    config: params.deploymentConfig,
+    patchedManifest: params.patchedManifest,
+  });
+  if (!roleGrantTarget) {
     params.runtime.progress.log("Skipping loot chest minter role grant because no loot chest address was resolved");
     return undefined;
   }
 
-  const prizeDistributionSystemsAddress = resolvePrizeDistributionSystemsAddress(params.patchedManifest);
-  const receipt = await params.runtime.progress.run(
+  const roleGrant = await params.runtime.progress.run(
     "grant loot chest minter role",
     () =>
-      params.patchedProvider.grant_collectible_minter_role({
-        signer: params.providerSigner,
-        collectible_address: lootChestAddress,
-        minter_address: prizeDistributionSystemsAddress,
+      grantRoles({
+        chain: params.runtime.environment.chain,
+        calls: [buildLootChestMinterRoleGrantCall(roleGrantTarget)],
+        rpcUrl: params.runtime.rpcUrl,
+        accountAddress: params.accountAddress,
+        privateKey: params.privateKey,
+        context: `environment "${params.runtime.environment.id}"`,
+        dryRun: params.request.dryRun,
       }),
     {
-      start: `Granting loot chest minter role on ${shortenHash(lootChestAddress)}`,
-      success: (grantReceipt, elapsedMs) =>
+      start: `Granting loot chest minter role on ${shortenHash(roleGrantTarget.lootChestAddress)}`,
+      success: (result, elapsedMs) =>
         `Loot chest role granted in ${formatDuration(elapsedMs)} (${shortenHash(
-          (grantReceipt as { transaction_hash?: string }).transaction_hash || "unknown",
+          (result as { transactionHash?: string }).transactionHash || "unknown",
         )})`,
     },
   );
 
-  return (receipt as { transaction_hash?: string }).transaction_hash;
+  return roleGrant.transactionHash;
 }
 
 async function grantVillagePassRolesIfNeeded(params: {
@@ -1106,6 +931,14 @@ async function runConfigureWorldStep(
   dependencies?: ConfiguredLaunchDependencies,
 ): Promise<ConfiguredLaunchDependencies> {
   const resolvedDependencies = dependencies ?? (await resolveConfiguredLaunchDependencies(execution));
+
+  if (hasSucceededResumeStep(execution.request, "configure-world")) {
+    execution.runtime.progress.log(
+      "Skipping configure-world because the stored run already marked world configuration as succeeded",
+    );
+    return resolvedDependencies;
+  }
+
   const configResult = await configureWorld({
     runtime: execution.runtime,
     request: execution.request,
@@ -1131,8 +964,8 @@ async function runGrantLootChestRoleStep(
     request: execution.request,
     deploymentConfig: execution.deploymentConfig,
     patchedManifest: resolvedDependencies.worldContext.patchedManifest,
-    patchedProvider: resolvedDependencies.worldContext.patchedProvider,
-    providerSigner: resolvedDependencies.accountContext.providerSigner,
+    accountAddress: resolvedDependencies.accountContext.accountAddress,
+    privateKey: resolvedDependencies.accountContext.privateKey,
   });
 
   return resolvedDependencies;

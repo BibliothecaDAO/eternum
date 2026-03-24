@@ -145,7 +145,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -265,7 +264,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -343,7 +341,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -411,7 +408,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -425,6 +421,317 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
     expect(container.textContent).toContain("Run now");
     expect(container.textContent).toContain("Stop auto retry");
+  });
+
+  it("hides run now when a rotation is already complete", async () => {
+    const rotationRun = buildRun({
+      kind: "rotation",
+      status: "complete",
+      evaluation: {
+        intervalMinutes: 30,
+        nextEvaluationAt: "2026-03-18T12:30:00.000Z",
+        lastEvaluatedAt: "2026-03-18T12:00:00.000Z",
+        lastNudgedAt: null,
+      },
+      rotation: {
+        rotationName: "bltz-ladder-loop",
+        maxGames: 12,
+        advanceWindowGames: 5,
+        createdGameCount: 12,
+        queuedGameCount: 0,
+        gameIntervalMinutes: 60,
+        firstGameStartTimeIso: "2026-03-18T12:00:00.000Z",
+      },
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[rotationRun]}
+          selectedRun={rotationRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).not.toContain("Run now");
+  });
+
+  it("shows all set instead of updating automatically for completed runs", async () => {
+    const completedRun = buildRun({
+      status: "complete",
+      summary: "Ready",
+      steps: buildRunBase().steps.map((step) => ({
+        ...step,
+        status: "succeeded" as const,
+        verification: "done",
+        latestEvent: "done",
+      })),
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[completedRun]}
+          selectedRun={completedRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "live", detail: "Updating automatically.", lastCheckedAt: Date.now() }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("All set");
+    expect(container.textContent).not.toContain("Updating automatically");
+  });
+
+  it("shows waiting for retry instead of updating automatically for scheduled retry runs", async () => {
+    const retryRun = buildRun({
+      kind: "series",
+      status: "attention",
+      autoRetry: {
+        enabled: true,
+        intervalMinutes: 15,
+        nextRetryAt: "2026-03-18T12:15:00.000Z",
+        lastRetryAt: null,
+        cancelledAt: null,
+        cancelReason: null,
+      },
+      steps: [
+        {
+          id: "create-worlds" as const,
+          title: "Create worlds",
+          summary: "failed",
+          workflowName: "create-worlds",
+          status: "failed" as const,
+          verification: "failed",
+          latestEvent: "failed",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[retryRun]}
+          selectedRun={retryRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "live", detail: "Updating automatically.", lastCheckedAt: Date.now() }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Waiting for retry");
+    expect(container.textContent).not.toContain("Updating automatically");
+  });
+
+  it("keeps running fallback copy aligned when no current step is resolved", async () => {
+    const staleRunningRun = buildRun({
+      status: "running",
+      steps: buildRunBase().steps.map((step) => ({
+        ...step,
+        status: "succeeded" as const,
+        verification: "done",
+        latestEvent: "done",
+      })),
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[staleRunningRun]}
+          selectedRun={staleRunningRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
+
+    expect(selectedPanel?.textContent).toContain("In progress");
+    expect(selectedPanel?.textContent).toContain("Working through setup");
+    expect(selectedPanel?.textContent).toContain("We’re still moving through setup.");
+    expect(selectedPanel?.textContent).not.toContain("Everything is ready");
+  });
+
+  it("shows missing-run lookup errors in the search panel instead of the selected run card", async () => {
+    const selectedRun = buildRun();
+    const missingRunNotice = "No game, series, or rotation named bltz-missing-01 was found here yet.";
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[selectedRun]}
+          selectedRun={selectedRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={missingRunNotice}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const searchInput = container.querySelector("#factory-watch-game") as HTMLInputElement | null;
+
+    if (!searchInput) {
+      throw new Error("Expected watch search input to be rendered");
+    }
+
+    await act(async () => {
+      setInputValue(searchInput, "bltz-missing-01");
+      await waitForAsyncWork();
+    });
+
+    const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
+    const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
+
+    expect(searchPanel?.textContent).toContain(missingRunNotice);
+    expect(selectedPanel?.textContent).not.toContain(missingRunNotice);
+  });
+
+  it("hides continue when a game is already complete", async () => {
+    const completedRun = buildRun({
+      status: "complete",
+      recovery: {
+        state: "stalled",
+        canContinue: true,
+        continueStepId: "create-indexer",
+      },
+      steps: [
+        {
+          id: "create-world" as const,
+          title: "Create world",
+          summary: "done",
+          workflowName: "create-world",
+          status: "succeeded" as const,
+          verification: "done",
+          latestEvent: "done",
+        },
+        {
+          id: "create-indexer" as const,
+          title: "Create indexer",
+          summary: "done",
+          workflowName: "create-indexer",
+          status: "succeeded" as const,
+          verification: "done",
+          latestEvent: "done",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[completedRun]}
+          selectedRun={completedRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onBringIndexerLive={vi.fn()}
+          onBringChildIndexerLive={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).not.toContain("Continue");
   });
 
   it("lets operators check a child indexer without reopening the whole parent run", async () => {
@@ -497,7 +804,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={onBringChildIndexerLive}
           onRefresh={vi.fn()}
@@ -612,7 +918,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -721,7 +1026,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -819,7 +1123,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -895,7 +1198,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -984,7 +1286,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -1061,7 +1362,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
@@ -1181,7 +1481,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onRetry={vi.fn()}
           onBringIndexerLive={vi.fn()}
           onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}

@@ -33,6 +33,26 @@ export type FactoryWorkerRunRecoveryState = "active" | "transitioning" | "stalle
 export type FactoryWorkerIndexerTier = "basic" | "pro" | "legendary" | "epic";
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 
+export interface FactoryWorkerLiveIndexerEntry {
+  gameName: string;
+  updatedAt: string;
+  liveState: {
+    state: "existing" | "missing" | "indeterminate";
+    stateSource: "describe" | "describe-not-found" | "list" | "describe-and-list-failed";
+    currentTier?: FactoryWorkerIndexerTier;
+    url?: string;
+    version?: string;
+    branch?: string;
+    describeError?: string;
+    describedAt?: string;
+  };
+}
+
+interface FactoryWorkerLiveIndexerResponse {
+  updatedAt: string | null;
+  entries: FactoryWorkerLiveIndexerEntry[];
+}
+
 export interface FactoryWorkerPrizeFundingTransfer {
   id: string;
   tokenAddress: string;
@@ -324,20 +344,20 @@ export interface CreateFactoryRotationRunRequest {
 interface ContinueFactoryRunRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName: string;
-  launchStep: FactoryWorkerGameLaunchScope;
+  launchStep?: FactoryWorkerGameLaunchScope;
 }
 
 interface ContinueFactorySeriesRunRequest {
   environment: FactoryWorkerEnvironmentId;
   seriesName: string;
-  launchStep: FactoryWorkerSeriesLaunchScope;
+  launchStep?: FactoryWorkerSeriesLaunchScope;
   gameNames?: string[];
 }
 
 interface ContinueFactoryRotationRunRequest {
   environment: FactoryWorkerEnvironmentId;
   rotationName: string;
-  launchStep: FactoryWorkerRotationLaunchScope;
+  launchStep?: FactoryWorkerRotationLaunchScope;
   gameNames?: string[];
 }
 
@@ -357,9 +377,35 @@ interface CancelFactoryRotationAutoRetryRequest {
 
 interface UpdateFactoryIndexerTierRequest {
   environment: FactoryWorkerEnvironmentId;
-  gameName: string;
+  gameName?: string;
+  gameNames?: string[];
   tier: FactoryWorkerIndexerTier;
   adminSecret: string;
+}
+
+interface DeleteFactoryIndexersRequest {
+  environment: FactoryWorkerEnvironmentId;
+  runKind?: FactoryWorkerRunKind;
+  runName?: string;
+  gameNames: string[];
+  adminSecret: string;
+}
+
+interface CreateFactoryIndexersRequest {
+  environment: FactoryWorkerEnvironmentId;
+  gameNames: string[];
+  adminSecret: string;
+}
+
+interface ReadFactoryLiveIndexersRequest {
+  adminSecret: string;
+  gameNames?: string[];
+}
+
+interface RefreshFactoryLiveIndexersRequest {
+  environment: FactoryWorkerEnvironmentId;
+  adminSecret: string;
+  gameNames?: string[];
 }
 
 interface FundFactoryGamePrizeRequest {
@@ -541,7 +587,7 @@ export async function createFactoryRotationRun(request: CreateFactoryRotationRun
 export async function continueFactoryRun(request: ContinueFactoryRunRequest): Promise<void> {
   await fetchFactoryWorkerJson(`${buildFactoryRunPath(request.environment, request.gameName)}/actions/continue`, {
     method: "POST",
-    body: JSON.stringify({ launchStep: request.launchStep }),
+    body: JSON.stringify(request.launchStep ? { launchStep: request.launchStep } : {}),
   });
 }
 
@@ -550,7 +596,10 @@ export async function continueFactorySeriesRun(request: ContinueFactorySeriesRun
     `${buildFactorySeriesRunPath(request.environment, request.seriesName)}/actions/continue`,
     {
       method: "POST",
-      body: JSON.stringify({ launchStep: request.launchStep, gameNames: request.gameNames }),
+      body: JSON.stringify({
+        ...(request.launchStep ? { launchStep: request.launchStep } : {}),
+        ...(request.gameNames ? { gameNames: request.gameNames } : {}),
+      }),
     },
   );
 }
@@ -560,7 +609,10 @@ export async function continueFactoryRotationRun(request: ContinueFactoryRotatio
     `${buildFactoryRotationRunPath(request.environment, request.rotationName)}/actions/continue`,
     {
       method: "POST",
-      body: JSON.stringify({ launchStep: request.launchStep, gameNames: request.gameNames }),
+      body: JSON.stringify({
+        ...(request.launchStep ? { launchStep: request.launchStep } : {}),
+        ...(request.gameNames ? { gameNames: request.gameNames } : {}),
+      }),
     },
   );
 }
@@ -596,6 +648,44 @@ export async function cancelFactoryRotationAutoRetry(request: CancelFactoryRotat
 export async function updateFactoryIndexerTier(request: UpdateFactoryIndexerTierRequest): Promise<void> {
   const { adminSecret, ...body } = request;
   await fetchFactoryWorkerJson("/api/factory/indexers/tier", {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function createFactoryIndexers(request: CreateFactoryIndexersRequest): Promise<void> {
+  const { adminSecret, ...body } = request;
+  await fetchFactoryWorkerJson("/api/factory/indexers/create", {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteFactoryIndexers(request: DeleteFactoryIndexersRequest): Promise<void> {
+  const { adminSecret, ...body } = request;
+  await fetchFactoryWorkerJson("/api/factory/indexers/delete", {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function readFactoryLiveIndexers(
+  request: ReadFactoryLiveIndexersRequest,
+): Promise<FactoryWorkerLiveIndexerResponse> {
+  const { adminSecret, ...body } = request;
+  return fetchFactoryWorkerJson("/api/factory/indexers/live", {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function refreshFactoryLiveIndexers(request: RefreshFactoryLiveIndexersRequest): Promise<void> {
+  const { adminSecret, ...body } = request;
+  await fetchFactoryWorkerJson("/api/factory/indexers/live/refresh", {
     method: "POST",
     headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
     body: JSON.stringify(body),

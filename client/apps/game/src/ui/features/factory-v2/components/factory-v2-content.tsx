@@ -4,6 +4,7 @@ import { factoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import { FactoryV2DeveloperTools } from "./factory-v2-developer-tools";
+import { FactoryV2ManageIndexersWorkspace } from "./factory-v2-manage-indexers-workspace";
 import { FactoryV2ModeSwitch } from "./factory-v2-mode-switch";
 import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
@@ -144,9 +145,6 @@ export const FactoryV2Content = () => {
               onContinue={() => {
                 void factory.continueSelectedRun();
               }}
-              onRetry={() => {
-                void factory.retrySelectedRun();
-              }}
               onBringIndexerLive={() => {
                 void factory.bringIndexerLiveForSelectedRun();
               }}
@@ -164,6 +162,33 @@ export const FactoryV2Content = () => {
               }}
               onFundPrize={(request) => {
                 void factory.fundSelectedRunPrize(request);
+              }}
+            />
+          </div>
+        ) : null}
+
+        {selectedWorkflow === "manage" ? (
+          <div className="px-1 md:px-0">
+            <FactoryV2ManageIndexersWorkspace
+              environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              liveIndexers={factory.liveIndexers}
+              liveIndexersUpdatedAt={factory.liveIndexersUpdatedAt}
+              notice={factory.notice}
+              isBusy={factory.isWatcherBusy}
+              onLoadLiveIndexers={(request) => {
+                void factory.loadLiveIndexers(request);
+              }}
+              onRefreshLiveIndexers={(request) => {
+                void factory.refreshLiveIndexerSnapshot(request);
+              }}
+              onCreateIndexers={(request) => {
+                void factory.createIndexers(request);
+              }}
+              onUpdateIndexerTier={(request) => {
+                void factory.updateIndexerTiers(request);
+              }}
+              onDeleteIndexers={(request) => {
+                void factory.deleteIndexers(request);
               }}
             />
           </div>

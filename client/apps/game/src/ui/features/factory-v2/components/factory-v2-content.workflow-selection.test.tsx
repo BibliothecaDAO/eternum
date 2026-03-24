@@ -42,6 +42,10 @@ vi.mock("./factory-v2-watch-workspace", () => ({
   FactoryV2WatchWorkspace: () => <div>Watch workspace</div>,
 }));
 
+vi.mock("./factory-v2-manage-indexers-workspace", () => ({
+  FactoryV2ManageIndexersWorkspace: () => <div>Manage workspace</div>,
+}));
+
 vi.mock("./factory-v2-developer-tools", () => ({
   FactoryV2DeveloperTools: () => <div>Developer tools</div>,
 }));
@@ -51,13 +55,14 @@ vi.mock("./factory-v2-workflow-switch", () => ({
     selectedView,
     onSelect,
   }: {
-    selectedView: "start" | "watch";
-    onSelect: (view: "start" | "watch") => void;
+    selectedView: "start" | "watch" | "manage";
+    onSelect: (view: "start" | "watch" | "manage") => void;
   }) => (
     <div>
       <div data-testid="selected-workflow">{selectedView}</div>
-      <button onClick={() => onSelect("start")}>Start a game</button>
-      <button onClick={() => onSelect("watch")}>Check a game</button>
+      <button onClick={() => onSelect("start")}>Create game</button>
+      <button onClick={() => onSelect("watch")}>Check game</button>
+      <button onClick={() => onSelect("manage")}>Manage indexers</button>
     </div>
   ),
 }));
@@ -118,11 +123,17 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   fandomizeGameName: vi.fn(),
   launchSelectedPreset: vi.fn(async () => true),
   continueSelectedRun: vi.fn(async () => true),
-  retrySelectedRun: vi.fn(async () => true),
   bringIndexerLiveForSelectedRun: vi.fn(async () => true),
   bringIndexerLiveForSelectedRunChild: vi.fn(async () => true),
   refreshSelectedRun: vi.fn(async () => true),
   fundSelectedRunPrize: vi.fn(async () => true),
+  liveIndexers: [],
+  liveIndexersUpdatedAt: null,
+  loadLiveIndexers: vi.fn(async () => {}),
+  refreshLiveIndexerSnapshot: vi.fn(async () => {}),
+  createIndexers: vi.fn(async () => {}),
+  updateIndexerTiers: vi.fn(async () => {}),
+  deleteIndexers: vi.fn(async () => {}),
   resolveRunByName: vi.fn(async () => false),
   ...overrides,
 });

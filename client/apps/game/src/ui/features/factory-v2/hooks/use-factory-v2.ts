@@ -9,9 +9,11 @@ import {
   continueFactoryRun,
   continueFactoryRotationRun,
   continueFactorySeriesRun,
+  createFactoryIndexers,
   createFactoryRun,
   createFactoryRotationRun,
   createFactorySeriesRun,
+  deleteFactoryIndexers,
   FactoryWorkerApiError,
   fundFactoryGamePrize,
   fundFactoryRotationPrizes,
@@ -19,10 +21,14 @@ import {
   isFactoryWorkerEnvironmentSupported,
   listFactoryRuns,
   nudgeFactoryRotationRun,
+  readFactoryLiveIndexers,
   readFactoryRunByNameIfPresent,
   readFactoryRunIfPresent,
   readFactoryRotationRunIfPresent,
   readFactorySeriesRunIfPresent,
+  refreshFactoryLiveIndexers,
+  updateFactoryIndexerTier,
+  type FactoryWorkerLiveIndexerEntry,
   type FactoryWorkerEnvironmentId,
   type FactoryWorkerGameLaunchScope,
   type FactoryWorkerLaunchStepId,
@@ -109,6 +115,22 @@ interface FactoryPrizeFundingRequest {
   selectedGameNames: string[];
 }
 
+interface FactoryIndexerDeleteRequest {
+  adminSecret: string;
+  gameNames: string[];
+}
+
+interface FactoryIndexerTierUpdateRequest {
+  adminSecret: string;
+  gameNames: string[];
+  tier: "basic" | "pro" | "legendary" | "epic";
+}
+
+type FactoryWorkerContinueLaunchScope =
+  | FactoryWorkerGameLaunchScope
+  | FactoryWorkerSeriesLaunchScope
+  | FactoryWorkerRotationLaunchScope;
+
 export const useFactoryV2 = () => {
   const initialSelection = useInitialFactorySelection();
   const initialMode = initialSelection.mode;
@@ -169,6 +191,8 @@ export const useFactoryV2 = () => {
   });
   const [isLoadingRuns, setIsLoadingRuns] = useState(false);
   const [isResolvingRunName, setIsResolvingRunName] = useState(false);
+  const [liveIndexers, setLiveIndexers] = useState<FactoryWorkerLiveIndexerEntry[]>([]);
+  const [liveIndexersUpdatedAt, setLiveIndexersUpdatedAt] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const runsByEnvironmentRef = useRef<Record<string, FactoryRun[]>>({});
   const pendingLaunchesRef = useRef<FactoryPendingLaunch[]>(pendingLaunches);
@@ -496,7 +520,7 @@ export const useFactoryV2 = () => {
       return;
     }
 
-    const continueActionKey = buildGuidedRecoveryActionKey(selectedRun, primaryAction.launchScope);
+    const continueActionKey = buildGuidedRecoveryActionKey(selectedRun, primaryAction.stepId);
 
     if (guidedRecoveryState.lastContinueActionKey === continueActionKey) {
       return;
@@ -508,12 +532,12 @@ export const useFactoryV2 = () => {
         runName: selectedRun.name,
         title: `Continuing ${selectedRun.name}`,
         detail: "Picking up where this game stopped.",
-        workflowName: primaryAction.launchScope,
+        workflowName: primaryAction.stepId,
         statusLabel: "Working",
       },
       async () => {
         try {
-          await continueRun(environmentId, selectedRun, primaryAction.launchScope);
+          await continueRun(environmentId, selectedRun);
         } catch (error) {
           const openedConflictingRun = await openConflictingRunIfPresent(
             error,
@@ -912,7 +936,7 @@ export const useFactoryV2 = () => {
       },
       async () => {
         try {
-          await continueRun(environmentId, selectedRun, primaryAction.launchScope);
+          await continueRun(environmentId, selectedRun);
         } catch (error) {
           const openedConflictingRun = await openConflictingRunIfPresent(
             error,
@@ -930,60 +954,6 @@ export const useFactoryV2 = () => {
         }
         armGuidedRecovery(selectedRun.id);
         acceptRunStepLocally(environmentId, selectedRun, stepId, "Got it. We are trying again now.");
-      },
-    );
-  };
-
-  const retrySelectedRun = async () => {
-    if (!selectedRun || isWatcherBusy) {
-      return;
-    }
-
-    const primaryAction = resolveRunPrimaryAction(selectedRun);
-    const environmentId = assertSupportedEnvironment(selectedRun.environment);
-    const stepId = primaryAction?.kind === "retry" ? primaryAction.stepId : null;
-
-    if (!environmentId || primaryAction?.kind !== "retry" || !stepId) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "retry",
-        runName: selectedRun.name,
-        title: `Retrying ${selectedRun.name}`,
-        detail:
-          primaryAction.launchScope === "full" ? "Starting this game again from the top." : "Trying that part again.",
-        workflowName: primaryAction.launchScope,
-        statusLabel: "Retrying",
-      },
-      async () => {
-        try {
-          await continueRun(environmentId, selectedRun, primaryAction.launchScope);
-        } catch (error) {
-          const openedConflictingRun = await openConflictingRunIfPresent(
-            error,
-            environmentId,
-            selectedRun.name,
-            selectedRun.kind,
-            "This game is already moving again. We opened it for you.",
-          );
-
-          if (openedConflictingRun) {
-            return;
-          }
-
-          throw error;
-        }
-        acceptRunStepLocally(
-          environmentId,
-          selectedRun,
-          stepId,
-          primaryAction.launchScope === "full"
-            ? "Got it. Starting this game again from the top."
-            : "Got it. We are trying that part again.",
-        );
-        armGuidedRecovery(selectedRun.id);
       },
     );
   };
@@ -1012,7 +982,10 @@ export const useFactoryV2 = () => {
       },
       async () => {
         try {
-          await continueRun(environmentId, selectedRun, indexerStepId, { gameNames: targetGameNames });
+          await continueRun(environmentId, selectedRun, {
+            launchStep: indexerStepId,
+            gameNames: targetGameNames,
+          });
         } catch (error) {
           const openedConflictingRun = await openConflictingRunIfPresent(
             error,
@@ -1058,7 +1031,10 @@ export const useFactoryV2 = () => {
       },
       async () => {
         try {
-          await continueRun(environmentId, selectedRun, indexerStepId, { gameNames: [targetChild.gameName] });
+          await continueRun(environmentId, selectedRun, {
+            launchStep: indexerStepId,
+            gameNames: [targetChild.gameName],
+          });
         } catch (error) {
           const openedConflictingRun = await openConflictingRunIfPresent(
             error,
@@ -1233,6 +1209,167 @@ export const useFactoryV2 = () => {
     );
   };
 
+  const loadLiveIndexers = async ({ adminSecret, gameNames }: FactoryIndexerDeleteRequest) => {
+    const normalizedSecret = adminSecret.trim();
+    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
+
+    if (isWatcherBusy || !normalizedSecret) {
+      return;
+    }
+
+    await runWatchedAction(
+      {
+        kind: "refresh_live_indexers",
+        runName: selectedEnvironment?.label ?? "indexers",
+        title: "Loading live indexers",
+        detail:
+          normalizedGameNames.length > 0
+            ? `Loading stored live indexer state for ${normalizedGameNames.length} listed games.`
+            : "Loading the stored live Slot indexer snapshot.",
+        workflowName: "factory-indexer-maintenance.yml",
+        statusLabel: "Loading",
+      },
+      async () => {
+        const response = await readFactoryLiveIndexers({
+          adminSecret: normalizedSecret,
+          ...(normalizedGameNames.length > 0 ? { gameNames: normalizedGameNames } : {}),
+        });
+        setLiveIndexers(response.entries);
+        setLiveIndexersUpdatedAt(response.updatedAt);
+      },
+    );
+  };
+
+  const refreshLiveIndexerSnapshot = async ({ adminSecret, gameNames }: FactoryIndexerDeleteRequest) => {
+    const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
+    const normalizedSecret = adminSecret.trim();
+    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
+
+    if (isWatcherBusy || !environmentId || !normalizedSecret) {
+      return;
+    }
+
+    await runWatchedAction(
+      {
+        kind: "refresh_live_indexers",
+        runName: selectedEnvironment?.label ?? "indexers",
+        title: "Refreshing live indexers",
+        detail:
+          normalizedGameNames.length > 0
+            ? `Refreshing live Slot state for ${normalizedGameNames.length} listed games.`
+            : "Refreshing every live Slot Torii deployment from the account.",
+        workflowName: "factory-indexer-maintenance.yml",
+        statusLabel: "Refreshing",
+      },
+      async () => {
+        await refreshFactoryLiveIndexers({
+          environment: environmentId,
+          adminSecret: normalizedSecret,
+          ...(normalizedGameNames.length > 0 ? { gameNames: normalizedGameNames } : {}),
+        });
+        setNotice("Live indexer refresh started. Load the list again in a moment.");
+      },
+    );
+  };
+
+  const createIndexers = async ({ adminSecret, gameNames }: FactoryIndexerDeleteRequest) => {
+    const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
+    const normalizedSecret = adminSecret.trim();
+    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
+
+    if (isWatcherBusy || !environmentId || !normalizedSecret || normalizedGameNames.length === 0) {
+      return;
+    }
+
+    await runWatchedAction(
+      {
+        kind: "create_indexers",
+        runName: selectedEnvironment?.label ?? "indexers",
+        title: "Creating indexers",
+        detail:
+          normalizedGameNames.length === 1
+            ? `Creating or recreating the indexer for ${normalizedGameNames[0]}.`
+            : `Creating or recreating ${normalizedGameNames.length} listed indexers.`,
+        workflowName: "factory-indexer-maintenance.yml",
+        statusLabel: "Creating",
+      },
+      async () => {
+        await createFactoryIndexers({
+          environment: environmentId,
+          adminSecret: normalizedSecret,
+          gameNames: normalizedGameNames,
+        });
+        setNotice("Indexer creation started. Refresh the live list in a moment.");
+      },
+    );
+  };
+
+  const updateIndexerTiers = async ({ adminSecret, gameNames, tier }: FactoryIndexerTierUpdateRequest) => {
+    const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
+    const normalizedSecret = adminSecret.trim();
+    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
+
+    if (isWatcherBusy || !environmentId || !normalizedSecret || normalizedGameNames.length === 0) {
+      return;
+    }
+
+    await runWatchedAction(
+      {
+        kind: "update_indexer_tier",
+        runName: selectedEnvironment?.label ?? "indexers",
+        title: "Updating indexer tiers",
+        detail:
+          normalizedGameNames.length === 1
+            ? `Changing ${normalizedGameNames[0]} to ${tier}.`
+            : `Changing ${normalizedGameNames.length} listed indexers to ${tier}.`,
+        workflowName: "factory-indexer-maintenance.yml",
+        statusLabel: "Updating",
+      },
+      async () => {
+        await updateFactoryIndexerTier({
+          environment: environmentId,
+          adminSecret: normalizedSecret,
+          gameNames: normalizedGameNames,
+          tier,
+        });
+        setNotice("Indexer tier update started. Refresh the live list in a moment.");
+      },
+    );
+  };
+
+  const deleteIndexers = async ({ adminSecret, gameNames }: FactoryIndexerDeleteRequest) => {
+    const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
+    const normalizedSecret = adminSecret.trim();
+    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
+
+    if (isWatcherBusy || !environmentId || !normalizedSecret || normalizedGameNames.length === 0) {
+      return;
+    }
+
+    await runWatchedAction(
+      {
+        kind: "delete_indexers",
+        runName: selectedEnvironment?.label ?? "indexers",
+        title: "Deleting indexers",
+        detail:
+          normalizedGameNames.length === 1
+            ? `Deleting the Torii deployment for ${normalizedGameNames[0]}.`
+            : `Deleting ${normalizedGameNames.length} listed Torii deployments.`,
+        workflowName: "factory-indexer-maintenance.yml",
+        statusLabel: "Deleting",
+      },
+      async () => {
+        await deleteFactoryIndexers({
+          environment: environmentId,
+          gameNames: normalizedGameNames,
+          adminSecret: normalizedSecret,
+        });
+
+        setNotice("Indexer deletion started. Refresh the live list in a moment.");
+      },
+    );
+  };
+
   const resolveRunByName = async (requestedName: string) => {
     const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
     const trimmedName = requestedName.trim();
@@ -1305,6 +1442,8 @@ export const useFactoryV2 = () => {
     isWatcherBusy,
     isLoadingRuns,
     isResolvingRunName,
+    liveIndexers,
+    liveIndexersUpdatedAt,
     notice,
     environmentUnavailableReason,
     moreOptions,
@@ -1332,10 +1471,14 @@ export const useFactoryV2 = () => {
     fandomizeGameName,
     launchSelectedPreset,
     continueSelectedRun,
-    retrySelectedRun,
     nudgeSelectedRun,
     cancelSelectedRunAutoRetry,
     fundSelectedRunPrize,
+    loadLiveIndexers,
+    refreshLiveIndexerSnapshot,
+    createIndexers,
+    updateIndexerTiers,
+    deleteIndexers,
     bringIndexerLiveForSelectedRun,
     bringIndexerLiveForSelectedRunChild,
     refreshSelectedRun,
@@ -1564,14 +1707,13 @@ export const useFactoryV2 = () => {
   async function continueRun(
     environmentId: FactoryWorkerEnvironmentId,
     run: FactoryRun,
-    launchScope: "full" | FactoryWorkerLaunchStepId,
-    options?: { gameNames?: string[] },
+    options?: { gameNames?: string[]; launchStep?: FactoryWorkerContinueLaunchScope },
   ) {
     if (run.kind === "series") {
       await continueFactorySeriesRun({
         environment: environmentId,
         seriesName: run.name,
-        launchStep: launchScope as FactoryWorkerSeriesLaunchScope,
+        launchStep: resolveSeriesContinueLaunchStep(options?.launchStep),
         gameNames: options?.gameNames,
       });
       return;
@@ -1581,7 +1723,7 @@ export const useFactoryV2 = () => {
       await continueFactoryRotationRun({
         environment: environmentId,
         rotationName: run.name,
-        launchStep: launchScope as FactoryWorkerRotationLaunchScope,
+        launchStep: resolveRotationContinueLaunchStep(options?.launchStep),
         gameNames: options?.gameNames,
       });
       return;
@@ -1590,7 +1732,7 @@ export const useFactoryV2 = () => {
     await continueFactoryRun({
       environment: environmentId,
       gameName: run.name,
-      launchStep: launchScope as FactoryWorkerGameLaunchScope,
+      launchStep: resolveGameContinueLaunchStep(options?.launchStep),
     });
   }
 
@@ -1904,8 +2046,8 @@ function buildPendingRunId(environmentId: string, kind: FactoryLaunchTargetKind,
   return `pending:${kind}:${environmentId}:${name}`;
 }
 
-function buildGuidedRecoveryActionKey(run: FactoryRun, launchScope: string) {
-  return `${run.id}|${run.syncKey}|${launchScope}`;
+function buildGuidedRecoveryActionKey(run: FactoryRun, stepId: string) {
+  return `${run.id}|${run.syncKey}|${stepId}`;
 }
 
 function isPendingRun(run: FactoryRun) {
@@ -1926,6 +2068,50 @@ function buildVisiblePendingRuns({
   return pendingLaunches
     .filter((pendingLaunch) => pendingLaunch.environmentId === selectedEnvironmentId)
     .map((pendingLaunch) => buildPendingRun(pendingLaunch, watcher, pollingState));
+}
+
+function resolveGameContinueLaunchStep(
+  launchStep: FactoryWorkerContinueLaunchScope | undefined,
+): FactoryWorkerGameLaunchScope | undefined {
+  switch (launchStep) {
+    case "full":
+    case "create-world":
+    case "wait-for-factory-index":
+    case "configure-world":
+    case "grant-lootchest-role":
+    case "grant-village-pass-role":
+    case "create-banks":
+    case "create-indexer":
+    case "sync-paymaster":
+      return launchStep;
+    default:
+      return undefined;
+  }
+}
+
+function resolveSeriesContinueLaunchStep(
+  launchStep: FactoryWorkerContinueLaunchScope | undefined,
+): FactoryWorkerSeriesLaunchScope | undefined {
+  switch (launchStep) {
+    case "full":
+    case "create-series":
+    case "create-worlds":
+    case "wait-for-factory-indexes":
+    case "configure-worlds":
+    case "grant-lootchest-roles":
+    case "grant-village-pass-roles":
+    case "create-indexers":
+    case "sync-paymaster":
+      return launchStep;
+    default:
+      return undefined;
+  }
+}
+
+function resolveRotationContinueLaunchStep(
+  launchStep: FactoryWorkerContinueLaunchScope | undefined,
+): FactoryWorkerRotationLaunchScope | undefined {
+  return resolveSeriesContinueLaunchStep(launchStep);
 }
 
 function buildPendingRun(
@@ -2273,6 +2459,23 @@ function resolveRequestedPrizeFundingGameNames(run: FactoryPrizeFundingEligibleR
   }
 
   return resolveDefaultFactoryPrizeFundingGameNames(run);
+}
+
+function normalizeManagedIndexerGameNames(selectedGameNames: string[]) {
+  const seenGameNames = new Set<string>();
+  const orderedGameNames: string[] = [];
+
+  for (const rawGameName of selectedGameNames) {
+    const gameName = rawGameName.trim();
+    if (!gameName || seenGameNames.has(gameName)) {
+      continue;
+    }
+
+    seenGameNames.add(gameName);
+    orderedGameNames.push(gameName);
+  }
+
+  return orderedGameNames;
 }
 
 type FactoryPrizeFundingSnapshot =

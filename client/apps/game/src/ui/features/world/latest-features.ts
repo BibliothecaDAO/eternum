@@ -9,6 +9,55 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-24",
+    title: "Cleaner Indexer Workspace",
+    description:
+      "Factory V2 now gives Manage indexers the same guided feel as Create game, with one reusable secret field, a cleaner tap-to-select live list, and manual name lookup hidden until it is actually needed.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Simpler Indexer Actions",
+    description:
+      "Factory V2 now keeps indexer admin work in one simpler screen with one reusable saved secret, a selectable live list, and one shared action bar for recreate, tier changes, and delete.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Indexer Control Center",
+    description:
+      "Factory V2 now has a dedicated Manage indexers workspace where admins can load live Slot tiers, refresh the snapshot, recreate indexers, change tiers for listed games, and delete stale deployments from one place.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-23",
+    title: "Safer Indexer Controls",
+    description:
+      "Factory V2 now lets admins delete listed indexers from the watch view and stops scheduled indexer tier changes when auto-retry is explicitly turned off for a series or rotation.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Cleaner Run Lookup State",
+    description:
+      "Factory V2 now keeps missing-run errors beside the run search box and only shows `Everything is ready` when a run is actually complete, so watch screens no longer mix ready copy with in-progress state.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Truthful Run Status Labels",
+    description:
+      "Factory V2 now stops showing `Updating automatically` on finished runs or runs that are only waiting for the next retry, so the watch view reflects whether work is actually still moving.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Quieter Completed Runs",
+    description:
+      "Factory V2 now hides `Continue` and `Run now` on completed runs, so finished games do not keep showing maintenance actions that no longer apply.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-23",
     title: "Clearer Launch Summaries",
     description:

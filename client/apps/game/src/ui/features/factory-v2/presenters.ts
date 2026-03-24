@@ -1,7 +1,6 @@
 import type { FactoryRecoveryStepId, FactoryRun, FactoryRunStatus, FactoryRunStepId, FactoryStepStatus } from "./types";
 
 type FactoryRunStep = FactoryRun["steps"][number];
-type FactoryRunLaunchScope = "full" | FactoryRecoveryStepId;
 type FactoryStepCopy = {
   title: string;
   pending: string;
@@ -12,9 +11,8 @@ type FactoryStepCopy = {
 };
 
 interface FactoryRunPrimaryAction {
-  kind: "retry" | "continue";
+  kind: "continue";
   label: string;
-  launchScope: FactoryRunLaunchScope;
   stepId: FactoryRecoveryStepId;
 }
 
@@ -305,13 +303,40 @@ function capitalizeSummary(summary: string) {
   return summary.charAt(0).toUpperCase() + summary.slice(1);
 }
 
-const hasRetryableStep = (run: FactoryRun) =>
-  run.steps.some((step) => step.status === "blocked" || step.status === "failed");
+function resolveRunWithoutCurrentStepCopy(run: FactoryRun) {
+  switch (run.status) {
+    case "complete":
+      return {
+        headline: `This ${resolveRunSubject(run)} is ready`,
+        currentStepLabel: "Everything is ready",
+        detailMessage: `Everything is ready for this ${resolveRunSubject(run)}.`,
+      };
+    case "attention":
+      return {
+        headline: `This ${resolveRunSubject(run)} needs attention`,
+        currentStepLabel: "Needs attention",
+        detailMessage: `This ${resolveRunSubject(run)} stopped, but it can continue from the last unfinished step.`,
+      };
+    case "waiting":
+      return {
+        headline: "Waiting on the next setup step",
+        currentStepLabel: "Getting ready",
+        detailMessage: "We are waiting for the next setup update.",
+      };
+    case "running":
+    default:
+      return {
+        headline:
+          run.kind === "rotation" ? "Keeping this rotation filled" : `Getting this ${resolveRunSubject(run)} ready`,
+        currentStepLabel: "Working through setup",
+        detailMessage:
+          run.kind === "rotation"
+            ? "We’re checking this rotation, filling any missing games, and finishing setup where needed."
+            : "We’re still moving through setup.",
+      };
+  }
+}
 
-const resolveRetryableStep = (run: FactoryRun) =>
-  run.steps.find((step) => step.status === "blocked" || step.status === "failed") ?? null;
-
-const resolveFirstStep = (run: FactoryRun) => run.steps[0] ?? null;
 const resolveRunSubject = (run: FactoryRun) => {
   if (run.kind === "rotation") {
     return "rotation";
@@ -319,51 +344,6 @@ const resolveRunSubject = (run: FactoryRun) => {
 
   return run.kind === "series" ? "series" : "game";
 };
-
-const resolveRecoveryStepId = (stepId: FactoryRunStepId): FactoryRecoveryStepId | null => {
-  switch (stepId) {
-    case "create-series":
-      return "create-series";
-    case "create-world":
-      return "create-world";
-    case "create-worlds":
-      return "create-worlds";
-    case "wait-factory-index":
-    case "wait-for-factory-index":
-      return "wait-for-factory-index";
-    case "wait-for-factory-indexes":
-      return "wait-for-factory-indexes";
-    case "apply-config":
-    case "configure-world":
-      return "configure-world";
-    case "configure-worlds":
-      return "configure-worlds";
-    case "grant-lootchest-role":
-      return "grant-lootchest-role";
-    case "grant-lootchest-roles":
-      return "grant-lootchest-roles";
-    case "grant-village-pass":
-    case "grant-village-pass-role":
-      return "grant-village-pass-role";
-    case "grant-village-pass-roles":
-      return "grant-village-pass-roles";
-    case "create-banks":
-      return "create-banks";
-    case "sync-paymaster":
-      return "sync-paymaster";
-    case "create-indexer":
-      return "create-indexer";
-    case "create-indexers":
-      return "create-indexers";
-    case "wait-indexer":
-    case "publish-ready-state":
-      return "create-indexer";
-    default:
-      return null;
-  }
-};
-
-const shouldRetryFullLaunch = (run: FactoryRun, step: FactoryRunStep) => resolveFirstStep(run)?.id === step.id;
 
 export const getCurrentStep = (run: FactoryRun) =>
   run.steps.find((step) => step.status === "running") ??
@@ -439,7 +419,7 @@ export const getRunHeadline = (run: FactoryRun) => {
   const currentStep = getCurrentStep(run);
 
   if (!currentStep) {
-    return `This ${resolveRunSubject(run)} is ready`;
+    return resolveRunWithoutCurrentStepCopy(run).headline;
   }
 
   switch (currentStep.status) {
@@ -451,9 +431,7 @@ export const getRunHeadline = (run: FactoryRun) => {
       return run.kind === "series" ? "Getting this series ready" : "Getting this game ready";
     case "blocked":
     case "failed":
-      return shouldRetryFullLaunch(run, currentStep)
-        ? `This ${resolveRunSubject(run)} needs a fresh start`
-        : `This ${resolveRunSubject(run)} needs attention`;
+      return `This ${resolveRunSubject(run)} needs attention`;
     case "pending":
       return "Waiting on the next setup step";
     case "succeeded":
@@ -463,11 +441,21 @@ export const getRunHeadline = (run: FactoryRun) => {
   }
 };
 
+export const getRunCurrentStepLabel = (run: FactoryRun) => {
+  const currentStep = getCurrentStep(run);
+
+  if (currentStep) {
+    return getSimpleStepTitle(currentStep);
+  }
+
+  return resolveRunWithoutCurrentStepCopy(run).currentStepLabel;
+};
+
 export const getRunDetailMessage = (run: FactoryRun) => {
   const currentStep = getCurrentStep(run);
 
   if (!currentStep) {
-    return appendRunChildStatusSummary(run, `Everything is ready for this ${resolveRunSubject(run)}.`);
+    return appendRunChildStatusSummary(run, resolveRunWithoutCurrentStepCopy(run).detailMessage);
   }
 
   switch (currentStep.status) {
@@ -482,9 +470,7 @@ export const getRunDetailMessage = (run: FactoryRun) => {
     case "failed":
       return appendRunChildStatusSummary(
         run,
-        shouldRetryFullLaunch(run, currentStep)
-          ? `This ${resolveRunSubject(run)} launch stopped early, so it will need a full retry.`
-          : `This ${resolveRunSubject(run)} setup stalled on one step, so that step will need another try.`,
+        `This ${resolveRunSubject(run)} stopped, but it can continue from the last unfinished step.`,
       );
     case "pending":
       return appendRunChildStatusSummary(run, "The next setup step has not started yet.");
@@ -516,32 +502,12 @@ export const getRunStatusHighlights = (run: FactoryRun) => {
 };
 
 export const resolveRunPrimaryAction = (run: FactoryRun): FactoryRunPrimaryAction | null => {
-  const retryableStep = resolveRetryableStep(run);
-  const retryStepId = retryableStep ? resolveRecoveryStepId(retryableStep.id) : null;
-
-  if (retryableStep && retryStepId) {
-    return shouldRetryFullLaunch(run, retryableStep)
-      ? {
-          kind: "retry",
-          label: "Retry full launch",
-          launchScope: "full",
-          stepId: retryStepId,
-        }
-      : {
-          kind: "retry",
-          label: "Retry this step",
-          launchScope: retryStepId,
-          stepId: retryStepId,
-        };
-  }
-
   const continueStepId = resolveRunContinueStepId(run);
 
   if (continueStepId) {
     return {
       kind: "continue",
       label: "Continue",
-      launchScope: continueStepId,
       stepId: continueStepId,
     };
   }

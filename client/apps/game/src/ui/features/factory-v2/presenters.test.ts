@@ -48,20 +48,30 @@ function buildFactoryRun(overrides: Partial<FactoryRun> = {}): FactoryRun {
 }
 
 describe("factory run recovery actions", () => {
-  it("restarts the full launch when the first step fails", () => {
-    const run = buildFactoryRun();
+  it("continues from the first failed step when the first step fails", () => {
+    const run = buildFactoryRun({
+      recovery: {
+        state: "failed",
+        canContinue: true,
+        continueStepId: "create-world",
+      },
+    });
 
     expect(resolveRunPrimaryAction(run)).toEqual({
-      kind: "retry",
-      label: "Retry full launch",
-      launchScope: "full",
+      kind: "continue",
+      label: "Continue",
       stepId: "create-world",
     });
-    expect(getRunDetailMessage(run)).toBe("This game launch stopped early, so it will need a full retry.");
+    expect(getRunDetailMessage(run)).toBe("This game stopped, but it can continue from the last unfinished step.");
   });
 
-  it("keeps later failures on step-by-step recovery", () => {
+  it("continues from the stored failed step for later setup failures", () => {
     const run = buildFactoryRun({
+      recovery: {
+        state: "failed",
+        canContinue: true,
+        continueStepId: "wait-for-factory-index",
+      },
       steps: [
         {
           id: "create-world",
@@ -85,12 +95,11 @@ describe("factory run recovery actions", () => {
     });
 
     expect(resolveRunPrimaryAction(run)).toEqual({
-      kind: "retry",
-      label: "Retry this step",
-      launchScope: "wait-for-factory-index",
+      kind: "continue",
+      label: "Continue",
       stepId: "wait-for-factory-index",
     });
-    expect(getRunDetailMessage(run)).toBe("This game setup stalled on one step, so that step will need another try.");
+    expect(getRunDetailMessage(run)).toBe("This game stopped, but it can continue from the last unfinished step.");
   });
 
   it("does not show continue during a normal transition gap", () => {
@@ -159,7 +168,6 @@ describe("factory run recovery actions", () => {
     expect(resolveRunPrimaryAction(run)).toEqual({
       kind: "continue",
       label: "Continue",
-      launchScope: "wait-for-factory-index",
       stepId: "wait-for-factory-index",
     });
   });
@@ -277,9 +285,14 @@ describe("factory run recovery actions", () => {
     );
   });
 
-  it("keeps grouped indexer retries on the grouped launch step", () => {
+  it("keeps grouped indexer continues on the grouped launch step", () => {
     const run = buildFactoryRun({
       kind: "rotation",
+      recovery: {
+        state: "failed",
+        canContinue: true,
+        continueStepId: "create-indexers",
+      },
       steps: [
         {
           id: "create-indexers",
@@ -294,9 +307,8 @@ describe("factory run recovery actions", () => {
     });
 
     expect(resolveRunPrimaryAction(run)).toEqual({
-      kind: "retry",
-      label: "Retry full launch",
-      launchScope: "full",
+      kind: "continue",
+      label: "Continue",
       stepId: "create-indexers",
     });
   });

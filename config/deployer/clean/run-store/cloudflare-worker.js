@@ -19,6 +19,7 @@ const DEFAULT_FACTORY_SERIES_RUN_RECOVERY_GRACE_MS = 15_000;
 const DEFAULT_FACTORY_ROTATION_RUN_RECOVERY_GRACE_MS = 15_000;
 const DEFAULT_SERIES_AUTO_RETRY_INTERVAL_MINUTES = 15;
 const DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE = "factory-indexer-maintenance.yml";
+const FACTORY_LIVE_INDEXER_SNAPSHOT_PATH = "indexes/indexers/live.json";
 const DEFAULT_INDEXER_LEGENDARY_LEAD_MS = 30 * 60_000;
 const DEFAULT_INDEXER_PRO_COOLDOWN_MS = 40 * 60_000;
 const DEFAULT_INDEXER_TIER_REQUEST_COOLDOWN_MS = 15 * 60_000;
@@ -85,6 +86,26 @@ async function handleRequest(request, env) {
     if (request.method === "POST" && url.pathname === "/api/factory/indexers/tier") {
       requireFactoryWorkerAdminAuthorization(request, env);
       return await handleUpdateFactoryIndexerTier(request, env);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/factory/indexers/create") {
+      requireFactoryWorkerAdminAuthorization(request, env);
+      return await handleCreateFactoryIndexers(request, env);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/factory/indexers/delete") {
+      requireFactoryWorkerAdminAuthorization(request, env);
+      return await handleDeleteFactoryIndexers(request, env);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/factory/indexers/live") {
+      requireFactoryWorkerAdminAuthorization(request, env);
+      return await handleReadFactoryLiveIndexers(request, env);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/factory/indexers/live/refresh") {
+      requireFactoryWorkerAdminAuthorization(request, env);
+      return await handleRefreshFactoryLiveIndexers(request, env);
     }
 
     const runRoute = matchFactoryRunRoute(url.pathname);
@@ -375,7 +396,8 @@ async function handleContinueFactoryRun(request, env, route) {
     return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
   }
 
-  const workflowRequest = buildContinueWorkflowRequest(route, run, inputRecord, body.launchStep);
+  const launchStep = body.launchStep || resolveRequiredContinueLaunchStep(run, resolveFactoryContinueStepId, "run");
+  const workflowRequest = buildContinueWorkflowRequest(route, run, inputRecord, launchStep);
   validateLaunchWorkflowScopeForEnvironment(workflowRequest.environment, workflowRequest.launchStep);
   const workflowRun = await dispatchGameLaunchWorkflow(
     resolveWorkflowGitHubClient(github, inputRecord, body),
@@ -523,7 +545,9 @@ async function handleContinueFactorySeriesRun(request, env, route) {
     return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
   }
 
-  const workflowRequest = buildContinueSeriesWorkflowRequest(route, run, inputRecord, body.launchStep, body.gameNames);
+  const launchStep =
+    body.launchStep || resolveRequiredContinueLaunchStep(run, resolveFactorySeriesContinueStepId, "series");
+  const workflowRequest = buildContinueSeriesWorkflowRequest(route, run, inputRecord, launchStep, body.gameNames);
   validateSeriesLaunchWorkflowScopeForEnvironment(workflowRequest.environment, workflowRequest.launchStep);
   const workflowRun = await dispatchGameLaunchWorkflow(
     resolveWorkflowGitHubClient(github, inputRecord, body),
@@ -770,13 +794,9 @@ async function handleContinueFactoryRotationRun(request, env, route) {
     return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
   }
 
-  const workflowRequest = buildContinueRotationWorkflowRequest(
-    route,
-    run,
-    inputRecord,
-    body.launchStep,
-    body.gameNames,
-  );
+  const launchStep =
+    body.launchStep || resolveRequiredContinueLaunchStep(run, resolveFactorySeriesContinueStepId, "rotation");
+  const workflowRequest = buildContinueRotationWorkflowRequest(route, run, inputRecord, launchStep, body.gameNames);
   validateRotationLaunchWorkflowScopeForEnvironment(workflowRequest.environment, workflowRequest.launchStep);
   const workflowRun = await dispatchGameLaunchWorkflow(
     resolveWorkflowGitHubClient(github, inputRecord, body),
@@ -871,26 +891,27 @@ async function handleUpdateFactoryIndexerTier(request, env) {
 
   const branch = resolveRunStoreBranch(env);
   const github = createGitHubClient(env);
-  const dispatchTarget = await resolveIndexerMaintenanceDispatchTargetForGame(
+  const requestedGameNames = resolveRequestedIndexerGameNames(body);
+  const dispatchTargets = await resolveRequiredIndexerMaintenanceDispatchTargets(
     github,
     branch,
     body.environment,
-    body.gameName,
+    requestedGameNames,
     body.tier,
     body.workflowRef,
   );
 
-  if (!dispatchTarget) {
-    throw new HttpError(404, `Could not find a stored run for ${body.environment}/${body.gameName}`);
-  }
-
   const requestedAt = new Date().toISOString();
-  const workflowRun = await dispatchFactoryIndexerMaintenanceWorkflow(dispatchTarget.github, {
+  const workflowRun = await dispatchFactoryIndexerMaintenanceWorkflow(dispatchTargets[0].github, {
     environment: body.environment,
-    operations: [dispatchTarget.operation],
+    operations: dispatchTargets.map((target) => target.operation),
   });
 
-  await markPendingIndexerTierUpdateForOperation(github, branch, dispatchTarget.operation, requestedAt);
+  await Promise.all(
+    dispatchTargets.map((target) =>
+      markPendingIndexerTierUpdateForOperation(github, branch, target.operation, requestedAt),
+    ),
+  );
 
   return buildJsonResponse(
     request,
@@ -898,6 +919,123 @@ async function handleUpdateFactoryIndexerTier(request, env) {
     {
       accepted: true,
       workflowRun,
+    },
+    202,
+  );
+}
+
+async function handleCreateFactoryIndexers(request, env) {
+  const body = await readJsonBody(request);
+  validateFactoryIndexerCreateBody(body);
+
+  const github = createGitHubClient(env, body.workflowRef);
+  const operations = body.gameNames.map((gameName) => ({
+    action: "create",
+    environmentId: body.environment,
+    gameName,
+  }));
+  const workflowRun = await dispatchFactoryIndexerMaintenanceWorkflow(github, {
+    environment: body.environment,
+    operations,
+  });
+
+  return buildJsonResponse(
+    request,
+    env,
+    {
+      accepted: true,
+      workflowRun,
+      selectedGameNames: body.gameNames.map((gameName) => gameName.trim()),
+    },
+    202,
+  );
+}
+
+async function handleDeleteFactoryIndexers(request, env) {
+  const body = await readJsonBody(request);
+  validateFactoryIndexerDeleteBody(body);
+
+  const branch = resolveRunStoreBranch(env);
+  const github = createGitHubClient(env);
+  const dispatchTarget =
+    body.runKind && body.runName
+      ? await resolveIndexerDeleteDispatchTargetForRun(github, branch, body)
+      : await resolveDirectIndexerDeleteDispatchTarget(github, branch, body);
+  const workflowRun = await dispatchFactoryIndexerMaintenanceWorkflow(dispatchTarget.github, {
+    environment: body.environment,
+    operations: dispatchTarget.operations,
+  });
+
+  return buildJsonResponse(
+    request,
+    env,
+    {
+      accepted: true,
+      selectedGameNames: dispatchTarget.selectedGameNames,
+      workflowRun,
+    },
+    202,
+  );
+}
+
+async function handleReadFactoryLiveIndexers(request, env) {
+  const body = await readJsonBody(request);
+  validateFactoryLiveIndexerReadBody(body);
+
+  const github = createGitHubClient(env);
+  const branch = resolveRunStoreBranch(env);
+  const snapshot = (await readBranchJsonIfPresent(github, FACTORY_LIVE_INDEXER_SNAPSHOT_PATH, branch)) || {
+    version: 1,
+    updatedAt: null,
+    entries: {},
+  };
+  const requestedGameNames = Array.isArray(body.gameNames) ? body.gameNames.map((gameName) => gameName.trim()) : null;
+  const entries = Object.values(snapshot.entries || {})
+    .filter((entry) => !requestedGameNames || requestedGameNames.includes(entry.gameName))
+    .sort((left, right) => left.gameName.localeCompare(right.gameName));
+
+  return buildJsonResponse(
+    request,
+    env,
+    {
+      updatedAt: snapshot.updatedAt || null,
+      entries,
+    },
+    200,
+  );
+}
+
+async function handleRefreshFactoryLiveIndexers(request, env) {
+  const body = await readJsonBody(request);
+  validateFactoryLiveIndexerRefreshBody(body);
+
+  const github = createGitHubClient(env, body.workflowRef);
+  const requestedGameNames = Array.isArray(body.gameNames) ? body.gameNames.map((gameName) => gameName.trim()) : [];
+  const operations =
+    requestedGameNames.length > 0
+      ? requestedGameNames.map((gameName) => ({
+          action: "inspect",
+          environmentId: body.environment,
+          gameName,
+        }))
+      : [
+          {
+            action: "inspect-account",
+            environmentId: body.environment,
+          },
+        ];
+  const workflowRun = await dispatchFactoryIndexerMaintenanceWorkflow(github, {
+    environment: body.environment,
+    operations,
+  });
+
+  return buildJsonResponse(
+    request,
+    env,
+    {
+      accepted: true,
+      workflowRun,
+      selectedGameNames: requestedGameNames,
     },
     202,
   );
@@ -955,44 +1093,37 @@ function validateCreateFactoryRotationRunBody(body) {
 }
 
 function validateContinueFactoryRunBody(body) {
-  if (!body.launchStep) {
-    throw new HttpError(400, "launchStep must be provided");
+  if (body.launchStep !== undefined) {
+    validateLaunchWorkflowScope(body.launchStep);
   }
 
-  validateLaunchWorkflowScope(body.launchStep);
   validateWorkflowRef(body.workflowRef);
 }
 
 function validateContinueFactorySeriesRunBody(body) {
-  if (!body.launchStep) {
-    throw new HttpError(400, "launchStep must be provided");
+  if (body.launchStep !== undefined) {
+    validateSeriesLaunchWorkflowScope(body.launchStep);
   }
 
-  validateSeriesLaunchWorkflowScope(body.launchStep);
-  validateContinueTargetGameNames(body.gameNames, body.launchStep);
+  validateContinueTargetGameNames(body.gameNames);
   validateWorkflowRef(body.workflowRef);
 }
 
 function validateContinueFactoryRotationRunBody(body) {
-  if (!body.launchStep) {
-    throw new HttpError(400, "launchStep must be provided");
+  if (body.launchStep !== undefined) {
+    validateRotationLaunchWorkflowScope(body.launchStep);
   }
 
-  validateRotationLaunchWorkflowScope(body.launchStep);
-  validateContinueTargetGameNames(body.gameNames, body.launchStep);
+  validateContinueTargetGameNames(body.gameNames);
   validateWorkflowRef(body.workflowRef);
 }
 
-function validateContinueTargetGameNames(gameNames, launchStep) {
+function validateContinueTargetGameNames(gameNames) {
   if (gameNames === undefined) {
     return;
   }
 
   validatePrizeFundingGameNames(gameNames);
-
-  if (launchStep !== "create-indexers") {
-    throw new HttpError(400, 'gameNames is only supported when launchStep is "create-indexers"');
-  }
 }
 
 function validateCancelFactoryAutoRetryBody(body) {
@@ -1005,9 +1136,89 @@ function validateCancelFactoryAutoRetryBody(body) {
 
 function validateFactoryIndexerTierUpdateBody(body) {
   validateEnvironment(body.environment);
-  validateGameName(body.gameName);
   validateIndexerTier(body.tier);
   validateWorkflowRef(body.workflowRef);
+  validateIndexerGameSelection(body);
+}
+
+function validateFactoryIndexerCreateBody(body) {
+  validateEnvironment(body.environment);
+  validateWorkflowRef(body.workflowRef);
+  validateGameNameList(body.gameNames, {
+    missingListMessage: "gameNames is required",
+    duplicateLabel: "Game",
+    requireAtLeastOne: true,
+  });
+}
+
+function validateFactoryIndexerDeleteBody(body) {
+  validateEnvironment(body.environment);
+  validateWorkflowRef(body.workflowRef);
+  validateIndexerDeleteGameNames(body.gameNames);
+
+  if (body.runKind === undefined && body.runName === undefined) {
+    return;
+  }
+
+  validateIndexerDeleteRunKind(body.runKind);
+
+  if (body.runKind === "game") {
+    validateGameName(body.runName);
+    return;
+  }
+
+  validateSeriesName(body.runName);
+}
+
+function validateFactoryLiveIndexerReadBody(body) {
+  if (body.gameNames === undefined) {
+    return;
+  }
+
+  validateGameNameList(body.gameNames, {
+    missingListMessage: "gameNames must be an array when provided",
+    duplicateLabel: "Game",
+    requireAtLeastOne: false,
+  });
+}
+
+function validateFactoryLiveIndexerRefreshBody(body) {
+  validateEnvironment(body.environment);
+  validateWorkflowRef(body.workflowRef);
+
+  if (body.gameNames === undefined) {
+    return;
+  }
+
+  validateGameNameList(body.gameNames, {
+    missingListMessage: "gameNames must be an array when provided",
+    duplicateLabel: "Game",
+    requireAtLeastOne: false,
+  });
+}
+
+function validateIndexerGameSelection(body) {
+  const hasGameName = typeof body.gameName === "string" && body.gameName.trim().length > 0;
+  const hasGameNames = Array.isArray(body.gameNames);
+
+  if (!hasGameName && !hasGameNames) {
+    throw new HttpError(400, "gameName or gameNames is required");
+  }
+
+  if (hasGameName && hasGameNames) {
+    throw new HttpError(400, "Provide either gameName or gameNames, not both");
+  }
+
+  if (hasGameName) {
+    validateGameName(body.gameName);
+    return;
+  }
+
+  validateGameNameList(body.gameNames, {
+    missingListMessage: "gameNames is required",
+    duplicateLabel: "Game",
+    requireAtLeastOne: true,
+  });
 }
 
 function validateFactoryPrizeFundingBody(body) {
@@ -1346,7 +1557,7 @@ function validateEnvironment(environment) {
 }
 
 function validateGameName(gameName) {
-  if (!gameName.trim()) {
+  if (typeof gameName !== "string" || !gameName.trim()) {
     throw new HttpError(400, "gameName is required");
   }
 }
@@ -1412,8 +1623,27 @@ function validateSeriesGames(games) {
 }
 
 function validatePrizeFundingGameNames(gameNames) {
+  validateGameNameList(gameNames, {
+    missingListMessage: "gameNames must be an array",
+    duplicateLabel: "Prize funding game",
+  });
+}
+
+function validateIndexerDeleteGameNames(gameNames) {
+  validateGameNameList(gameNames, {
+    missingListMessage: "gameNames must be a non-empty array",
+    duplicateLabel: "Indexer delete game",
+    requireAtLeastOne: true,
+  });
+}
+
+function validateGameNameList(gameNames, options) {
   if (!Array.isArray(gameNames)) {
-    throw new HttpError(400, "gameNames must be an array");
+    throw new HttpError(400, options.missingListMessage);
+  }
+
+  if (options.requireAtLeastOne && gameNames.length === 0) {
+    throw new HttpError(400, options.missingListMessage);
   }
 
   const seenGameNames = new Set();
@@ -1426,7 +1656,7 @@ function validatePrizeFundingGameNames(gameNames) {
     const normalizedGameName = gameName.trim();
 
     if (seenGameNames.has(normalizedGameName)) {
-      throw new HttpError(400, `Prize funding game "${normalizedGameName}" was requested more than once`);
+      throw new HttpError(400, `${options.duplicateLabel} "${normalizedGameName}" was requested more than once`);
     }
 
     seenGameNames.add(normalizedGameName);
@@ -1504,6 +1734,12 @@ function validateIndexerTier(tier) {
   }
 }
 
+function validateIndexerDeleteRunKind(runKind) {
+  if (runKind !== "game" && runKind !== "series" && runKind !== "rotation") {
+    throw new HttpError(400, `Unsupported runKind "${runKind}"`);
+  }
+}
+
 function validateWorkflowRef(workflowRef) {
   if (workflowRef === undefined || workflowRef === null || workflowRef === "") {
     return;
@@ -1565,10 +1801,18 @@ function resolveFactoryRunRecovery(run) {
   }
 
   if (hasFailedFactoryRunStep(run)) {
+    if (!continueStepId) {
+      return {
+        state: "failed",
+        canContinue: false,
+        continueStepId: null,
+      };
+    }
+
     return {
       state: "failed",
-      canContinue: false,
-      continueStepId: null,
+      canContinue: true,
+      continueStepId,
     };
   }
 
@@ -1662,6 +1906,11 @@ function hasRunningFactoryRunStep(run) {
 }
 
 function resolveFactoryContinueStepId(run) {
+  const failedStep = run.steps.find((step) => step.status === "failed" && isRecoverableFactoryStepId(step.id));
+  if (failedStep) {
+    return failedStep.id;
+  }
+
   const currentStepId = run.currentStepId;
   if (isRecoverableFactoryStepId(currentStepId) && isPendingFactoryStep(run, currentStepId)) {
     return currentStepId;
@@ -1692,6 +1941,15 @@ function resolveFactorySeriesContinueStepId(run) {
 
   const pendingStep = run.steps.find((step) => step.status === "pending" && isRecoverableFactorySeriesStepId(step.id));
   return pendingStep?.id || null;
+}
+
+function resolveRequiredContinueLaunchStep(run, resolveContinueStepId, label) {
+  const continueStepId = resolveContinueStepId(run);
+  if (continueStepId) {
+    return continueStepId;
+  }
+
+  throw new HttpError(409, `This ${label} cannot continue right now`);
 }
 
 function isRecoverableFactorySeriesStepId(stepId) {
@@ -1872,6 +2130,10 @@ function hasPendingIndexerTierForSeriesLikeIndexEntry(entry) {
       artifacts: game.artifacts,
     }),
   );
+}
+
+function isSeriesLikeIndexerMaintenanceEnabled(entry) {
+  return entry?.autoRetry?.enabled !== false && !entry?.autoRetry?.cancelledAt;
 }
 
 function matchFactoryRunRoute(pathname) {
@@ -2658,7 +2920,7 @@ function resolveWorkflowGitHubClient(github, inputRecord, body) {
   };
 }
 
-function resolveIndexerTierWorkflowGitHubClient(github, run, inputRecord, workflowRefOverride) {
+function resolveIndexerMaintenanceWorkflowGitHubClient(github, run, inputRecord, workflowRefOverride) {
   const workflowRef = workflowRefOverride || inputRecord?.workflow?.ref || run?.workflow?.ref || github.workflowRef;
 
   return {
@@ -2667,37 +2929,102 @@ function resolveIndexerTierWorkflowGitHubClient(github, run, inputRecord, workfl
   };
 }
 
-function buildGameIndexerMaintenanceOperation(entry, tier) {
+function buildIndexerMaintenanceOperation({ action, kind, environment, recordPath, runName, gameName, tier }) {
   return {
+    action,
+    ...(kind ? { kind } : {}),
+    environmentId: environment,
+    ...(recordPath ? { recordPath } : {}),
+    ...(runName ? { runName } : {}),
+    ...(gameName ? { gameName } : {}),
+    ...(tier ? { tier } : {}),
+  };
+}
+
+function buildGameIndexerMaintenanceOperation(entry, tier) {
+  return buildIndexerMaintenanceOperation({
+    action: "set-tier",
     kind: "game",
-    environmentId: entry.environment,
+    environment: entry.environment,
     recordPath: entry.path,
     runName: entry.gameName,
     gameName: entry.gameName,
     tier,
-  };
+  });
 }
 
 function buildSeriesIndexerMaintenanceOperation(entry, game, tier) {
-  return {
+  return buildIndexerMaintenanceOperation({
+    action: "set-tier",
     kind: "series",
-    environmentId: entry.environment,
+    environment: entry.environment,
     recordPath: entry.path,
     runName: entry.seriesName,
     gameName: game.gameName,
     tier,
-  };
+  });
 }
 
 function buildRotationIndexerMaintenanceOperation(entry, game, tier) {
-  return {
+  return buildIndexerMaintenanceOperation({
+    action: "set-tier",
     kind: "rotation",
-    environmentId: entry.environment,
+    environment: entry.environment,
     recordPath: entry.path,
     runName: entry.rotationName,
     gameName: game.gameName,
     tier,
-  };
+  });
+}
+
+function buildGameIndexerDeleteOperation(environment, gameName) {
+  return buildIndexerMaintenanceOperation({
+    action: "delete",
+    kind: "game",
+    environment,
+    recordPath: resolveFactoryRunRecordPath(environment, gameName),
+    runName: gameName,
+    gameName,
+  });
+}
+
+function buildSeriesIndexerDeleteOperation(environment, seriesName, gameName) {
+  return buildIndexerMaintenanceOperation({
+    action: "delete",
+    kind: "series",
+    environment,
+    recordPath: resolveFactorySeriesRunRecordPath(environment, seriesName),
+    runName: seriesName,
+    gameName,
+  });
+}
+
+function buildRotationIndexerDeleteOperation(environment, rotationName, gameName) {
+  return buildIndexerMaintenanceOperation({
+    action: "delete",
+    kind: "rotation",
+    environment,
+    recordPath: resolveFactoryRotationRunRecordPath(environment, rotationName),
+    runName: rotationName,
+    gameName,
+  });
+}
+
+function buildDirectIndexerMaintenanceOperation(environment, gameName, tier) {
+  return buildIndexerMaintenanceOperation({
+    action: "set-tier",
+    environment,
+    gameName,
+    tier,
+  });
+}
+
+function buildDirectIndexerDeleteOperation(environment, gameName) {
+  return buildIndexerMaintenanceOperation({
+    action: "delete",
+    environment,
+    gameName,
+  });
 }
 
 async function resolveIndexerMaintenanceDispatchTargetForGame(
@@ -2713,7 +3040,7 @@ async function resolveIndexerMaintenanceDispatchTargetForGame(
 
   if (matchingGameEntry) {
     return {
-      github: resolveIndexerTierWorkflowGitHubClient(
+      github: resolveIndexerMaintenanceWorkflowGitHubClient(
         github,
         null,
         null,
@@ -2731,7 +3058,12 @@ async function resolveIndexerMaintenanceDispatchTargetForGame(
     }
 
     return {
-      github: resolveIndexerTierWorkflowGitHubClient(github, null, null, workflowRefOverride || entry.workflowRef),
+      github: resolveIndexerMaintenanceWorkflowGitHubClient(
+        github,
+        null,
+        null,
+        workflowRefOverride || entry.workflowRef,
+      ),
       operation: buildSeriesIndexerMaintenanceOperation(entry, matchingGame, tier),
     };
   }
@@ -2748,7 +3080,12 @@ async function resolveIndexerMaintenanceDispatchTargetForGame(
     }
 
     return {
-      github: resolveIndexerTierWorkflowGitHubClient(github, null, null, workflowRefOverride || entry.workflowRef),
+      github: resolveIndexerMaintenanceWorkflowGitHubClient(
+        github,
+        null,
+        null,
+        workflowRefOverride || entry.workflowRef,
+      ),
       operation: buildRotationIndexerMaintenanceOperation(entry, matchingGame, tier),
     };
   }
@@ -2756,15 +3093,16 @@ async function resolveIndexerMaintenanceDispatchTargetForGame(
   const gameRun = await readFactoryRunIfPresent(github, environment, gameName, branch);
   if (gameRun) {
     return {
-      github: resolveIndexerTierWorkflowGitHubClient(github, gameRun, null, workflowRefOverride),
-      operation: {
+      github: resolveIndexerMaintenanceWorkflowGitHubClient(github, gameRun, null, workflowRefOverride),
+      operation: buildIndexerMaintenanceOperation({
+        action: "set-tier",
         kind: "game",
-        environmentId: environment,
+        environment,
         recordPath: resolveFactoryRunRecordPath(environment, gameName),
         runName: gameName,
         gameName,
         tier,
-      },
+      }),
     };
   }
 
@@ -2776,15 +3114,16 @@ async function resolveIndexerMaintenanceDispatchTargetForGame(
     }
 
     return {
-      github: resolveIndexerTierWorkflowGitHubClient(github, run, null, workflowRefOverride),
-      operation: {
-        kind: "series",
-        environmentId: environment,
-        recordPath: resolveFactorySeriesRunRecordPath(environment, run.seriesName),
-        runName: run.seriesName,
-        gameName,
+      github: resolveIndexerMaintenanceWorkflowGitHubClient(github, run, null, workflowRefOverride),
+      operation: buildSeriesIndexerMaintenanceOperation(
+        {
+          environment,
+          path: resolveFactorySeriesRunRecordPath(environment, run.seriesName),
+          seriesName: run.seriesName,
+        },
+        matchingGame,
         tier,
-      },
+      ),
     };
   }
 
@@ -2796,19 +3135,176 @@ async function resolveIndexerMaintenanceDispatchTargetForGame(
     }
 
     return {
-      github: resolveIndexerTierWorkflowGitHubClient(github, run, null, workflowRefOverride),
-      operation: {
-        kind: "rotation",
-        environmentId: environment,
-        recordPath: resolveFactoryRotationRunRecordPath(environment, run.rotationName),
-        runName: run.rotationName,
-        gameName,
+      github: resolveIndexerMaintenanceWorkflowGitHubClient(github, run, null, workflowRefOverride),
+      operation: buildRotationIndexerMaintenanceOperation(
+        {
+          environment,
+          path: resolveFactoryRotationRunRecordPath(environment, run.rotationName),
+          rotationName: run.rotationName,
+        },
+        matchingGame,
         tier,
-      },
+      ),
     };
   }
 
-  return null;
+  return {
+    github: resolveIndexerMaintenanceWorkflowGitHubClient(github, null, null, workflowRefOverride),
+    operation: buildDirectIndexerMaintenanceOperation(environment, gameName, tier),
+  };
+}
+
+async function resolveRequiredIndexerMaintenanceDispatchTargets(
+  github,
+  branch,
+  environment,
+  gameNames,
+  tier,
+  workflowRefOverride,
+) {
+  const dispatchTargets = [];
+
+  for (const gameName of gameNames) {
+    dispatchTargets.push(
+      await resolveIndexerMaintenanceDispatchTargetForGame(
+        github,
+        branch,
+        environment,
+        gameName,
+        tier,
+        workflowRefOverride,
+      ),
+    );
+  }
+
+  return dispatchTargets;
+}
+
+async function resolveIndexerDeleteDispatchTargetForRun(github, branch, body) {
+  switch (body.runKind) {
+    case "game":
+      return resolveGameIndexerDeleteDispatchTarget(github, branch, body);
+    case "series":
+      return resolveSeriesIndexerDeleteDispatchTarget(github, branch, body);
+    case "rotation":
+      return resolveRotationIndexerDeleteDispatchTarget(github, branch, body);
+    default:
+      throw new HttpError(400, `Unsupported runKind "${body.runKind}"`);
+  }
+}
+
+async function resolveDirectIndexerDeleteDispatchTarget(github, branch, body) {
+  const selectedGameNames = body.gameNames.map((gameName) => gameName.trim());
+  const operations = [];
+
+  for (const gameName of selectedGameNames) {
+    const dispatchTarget = await resolveIndexerMaintenanceDispatchTargetForGame(
+      github,
+      branch,
+      body.environment,
+      gameName,
+      "basic",
+      body.workflowRef,
+    );
+    const operation = dispatchTarget?.operation?.recordPath
+      ? {
+          ...dispatchTarget.operation,
+          action: "delete",
+          tier: undefined,
+        }
+      : buildDirectIndexerDeleteOperation(body.environment, gameName);
+    operations.push(operation);
+  }
+
+  return {
+    github: resolveIndexerMaintenanceWorkflowGitHubClient(github, null, null, body.workflowRef),
+    selectedGameNames,
+    operations,
+  };
+}
+
+function resolveRequestedIndexerGameNames(body) {
+  if (typeof body.gameName === "string" && body.gameName.trim()) {
+    return [body.gameName.trim()];
+  }
+
+  return body.gameNames.map((gameName) => gameName.trim());
+}
+
+async function resolveGameIndexerDeleteDispatchTarget(github, branch, body) {
+  const run = await readFactoryRunIfPresent(github, body.environment, body.runName, branch);
+
+  if (!run) {
+    throw new HttpError(404, resolveMissingRunMessage(body.environment, body.runName));
+  }
+
+  const selectedGameNames = resolveIndexerDeleteTargetGameNames([run.gameName], body.gameNames, {
+    label: "game",
+    runName: run.gameName,
+  });
+
+  return {
+    github: resolveIndexerMaintenanceWorkflowGitHubClient(github, run, null, body.workflowRef),
+    selectedGameNames,
+    operations: selectedGameNames.map((gameName) => buildGameIndexerDeleteOperation(body.environment, gameName)),
+  };
+}
+
+async function resolveSeriesIndexerDeleteDispatchTarget(github, branch, body) {
+  const run = await readFactorySeriesRunIfPresent(github, body.environment, body.runName, branch);
+
+  if (!run) {
+    throw new HttpError(404, resolveMissingSeriesRunMessage(body.environment, body.runName));
+  }
+
+  const selectedGameNames = resolveIndexerDeleteTargetGameNames(run.summary?.games || [], body.gameNames, {
+    label: "series",
+    runName: run.seriesName,
+  });
+
+  return {
+    github: resolveIndexerMaintenanceWorkflowGitHubClient(github, run, null, body.workflowRef),
+    selectedGameNames,
+    operations: selectedGameNames.map((gameName) =>
+      buildSeriesIndexerDeleteOperation(body.environment, run.seriesName, gameName),
+    ),
+  };
+}
+
+async function resolveRotationIndexerDeleteDispatchTarget(github, branch, body) {
+  const run = await readFactoryRotationRunIfPresent(github, body.environment, body.runName, branch);
+
+  if (!run) {
+    throw new HttpError(404, resolveMissingRotationRunMessage(body.environment, body.runName));
+  }
+
+  const selectedGameNames = resolveIndexerDeleteTargetGameNames(run.summary?.games || [], body.gameNames, {
+    label: "rotation",
+    runName: run.rotationName,
+  });
+
+  return {
+    github: resolveIndexerMaintenanceWorkflowGitHubClient(github, run, null, body.workflowRef),
+    selectedGameNames,
+    operations: selectedGameNames.map((gameName) =>
+      buildRotationIndexerDeleteOperation(body.environment, run.rotationName, gameName),
+    ),
+  };
+}
+
+function resolveIndexerDeleteTargetGameNames(availableGames, requestedGameNames, context) {
+  const availableGameNames = new Set(
+    (availableGames || []).map((game) => (typeof game === "string" ? game : game.gameName)).filter(Boolean),
+  );
+  const normalizedGameNames = requestedGameNames.map((gameName) => gameName.trim());
+
+  for (const gameName of normalizedGameNames) {
+    if (!availableGameNames.has(gameName)) {
+      throw new HttpError(400, `Game "${gameName}" does not belong to ${context.label} "${context.runName}"`);
+    }
+  }
+
+  return normalizedGameNames;
 }
 
 async function readBranchJsonWithMetadataIfPresent(github, path, branch) {
@@ -3185,6 +3681,10 @@ async function collectFactorySeriesRunIndexerTierOperations(github, branch, envi
   const pendingOperations = [];
 
   for (const entry of entries) {
+    if (!isSeriesLikeIndexerMaintenanceEnabled(entry)) {
+      continue;
+    }
+
     if (!hasPendingIndexerTierForSeriesLikeIndexEntry(entry)) {
       continue;
     }
@@ -3224,6 +3724,10 @@ async function collectFactoryRotationRunIndexerTierOperations(github, branch, en
   const pendingOperations = [];
 
   for (const entry of entries) {
+    if (!isSeriesLikeIndexerMaintenanceEnabled(entry)) {
+      continue;
+    }
+
     if (!hasPendingIndexerTierForSeriesLikeIndexEntry(entry)) {
       continue;
     }
@@ -3281,7 +3785,7 @@ function groupIndexerMaintenanceOperations(pendingOperations) {
 
 async function dispatchCollectedIndexerTierOperations(github, branch, pendingOperations) {
   for (const batch of groupIndexerMaintenanceOperations(pendingOperations)) {
-    const workflowGitHub = resolveIndexerTierWorkflowGitHubClient(github, null, null, batch.workflowRef);
+    const workflowGitHub = resolveIndexerMaintenanceWorkflowGitHubClient(github, null, null, batch.workflowRef);
     const dispatchResult = await requestIndexerMaintenanceDispatch(workflowGitHub, batch.operations);
 
     if (!dispatchResult.errorMessage) {
@@ -3436,6 +3940,10 @@ function buildFailedIndexerTierEvent(tier, errorMessage) {
 }
 
 async function markPendingIndexerTierUpdateForOperation(github, branch, operation, requestedAt) {
+  if (!operation.recordPath) {
+    return;
+  }
+
   await updateBranchJsonFile(
     github,
     operation.recordPath,
@@ -3452,6 +3960,10 @@ function groupIndexerOperationsByRecordPath(operations) {
   const groupedOperations = new Map();
 
   for (const operation of operations) {
+    if (!operation.recordPath) {
+      continue;
+    }
+
     const currentGroup = groupedOperations.get(operation.recordPath) || [];
     currentGroup.push(operation);
     groupedOperations.set(operation.recordPath, currentGroup);

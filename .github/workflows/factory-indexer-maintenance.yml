@@ -15,7 +15,7 @@ on:
         required: false
         default: "0"
       operations_json:
-        description: "JSON array of tier maintenance operations"
+        description: "JSON array of indexer maintenance operations"
         required: true
         type: string
 
@@ -68,7 +68,7 @@ jobs:
           echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
           slot --version || true
 
-      - name: Reconcile indexer state
+      - name: Apply indexer maintenance
         run: |
           set -euo pipefail
           bun config/deployer/clean/cli/indexer-maintenance.ts \

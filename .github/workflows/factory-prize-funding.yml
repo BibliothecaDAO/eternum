@@ -10,15 +10,18 @@ on:
         options:
           - mainnet.blitz
           - slot.blitz
+          - mainnet.eternum
+          - slot.eternum
       run_kind:
-        description: "Fund a single game or a full series selection"
+        description: "Fund a single game, series selection, or rotation selection"
         required: true
         type: choice
         options:
           - game
           - series
+          - rotation
       run_name:
-        description: "Game or series name"
+        description: "Game, series, or rotation name"
         required: true
         type: string
       prize_amount:
@@ -26,7 +29,7 @@ on:
         required: true
         type: string
       selected_games_json:
-        description: "Optional JSON array of series game names to fund"
+        description: "Optional JSON array of child game names to fund"
         required: false
         type: string
 

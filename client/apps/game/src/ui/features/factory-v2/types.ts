@@ -57,7 +57,11 @@ export type FactoryWatcherKind =
   | "continue"
   | "retry"
   | "refresh"
+  | "refresh_live_indexers"
+  | "create_indexers"
+  | "update_indexer_tier"
   | "reindex"
+  | "delete_indexers"
   | "nudge"
   | "cancel_auto_retry"
   | "fund_prize";

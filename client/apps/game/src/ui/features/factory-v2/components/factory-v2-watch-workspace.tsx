@@ -7,6 +7,7 @@ import { resolveFactoryModeAppearance } from "../mode-appearance";
 import {
   getCompletedStep,
   getCurrentStep,
+  getRunCurrentStepLabel,
   getEnvironmentLabel,
   getNextStep,
   getRunDetailMessage,
@@ -56,7 +57,6 @@ type FactoryV2WatchWorkspaceProps = {
   onSelectRun: (runId: string) => void;
   onResolveRunByName: (gameName: string) => Promise<boolean>;
   onContinue: () => void;
-  onRetry: () => void;
   onBringIndexerLive: () => void;
   onBringChildIndexerLive: (gameName: string) => void;
   onRefresh: () => void;
@@ -81,6 +81,7 @@ type FactoryV2WatchWorkspaceState = {
   detailMessage: string;
   headline: string;
   liveStatusLabel: string;
+  searchNotice: string | null;
   secondaryNotice: string | null;
   launchPlaceholderName: string;
   actionBarProps: FactoryV2WatchActionBarProps | null;
@@ -101,7 +102,6 @@ export const FactoryV2WatchWorkspace = ({
   onSelectRun,
   onResolveRunByName,
   onContinue,
-  onRetry,
   onBringIndexerLive,
   onBringChildIndexerLive,
   onRefresh,
@@ -151,12 +151,12 @@ export const FactoryV2WatchWorkspace = ({
     watcher,
     pollingState,
     isWatcherBusy,
+    isResolvingRunName,
     notice,
     lookupDisabledReason,
     watchGameName,
     isFilteringRuns,
     onContinue,
-    onRetry,
     onRefresh,
     onNudge,
     onStopAutoRetry,
@@ -219,6 +219,7 @@ export const FactoryV2WatchWorkspace = ({
         isPickerOpen={isPickerOpen}
         lookupDisabledReason={lookupDisabledReason}
         isResolvingRunName={isResolvingRunName}
+        searchNotice={state.searchNotice}
         onSelectRun={chooseRun}
         onTogglePicker={() => {
           setIsFilteringRuns(false);
@@ -259,12 +260,12 @@ function resolveWatchWorkspaceState({
   watcher,
   pollingState,
   isWatcherBusy,
+  isResolvingRunName,
   notice,
   lookupDisabledReason,
   watchGameName,
   isFilteringRuns,
   onContinue,
-  onRetry,
   onRefresh,
   onNudge,
   onStopAutoRetry,
@@ -278,12 +279,12 @@ function resolveWatchWorkspaceState({
   watcher: FactoryWatcherState | null;
   pollingState: FactoryPollingState;
   isWatcherBusy: boolean;
+  isResolvingRunName: boolean;
   notice: string | null;
   lookupDisabledReason: string | null;
   watchGameName: string;
   isFilteringRuns: boolean;
   onContinue: () => void;
-  onRetry: () => void;
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
@@ -300,17 +301,26 @@ function resolveWatchWorkspaceState({
   const currentStep = timelineRun ? getCurrentStep(timelineRun) : null;
   const completedStep = timelineRun ? getCompletedStep(timelineRun) : null;
   const nextStep = timelineRun ? getNextStep(timelineRun) : null;
+  const searchNotice = resolveWatchSearchNotice({
+    notice,
+    selectedRun,
+    watchGameName,
+    watcher,
+    isResolvingRunName,
+    lookupDisabledReason,
+  });
+  const runNotice = searchNotice ? null : notice;
   const primaryAction = selectedRun && !isWatcherBusy ? resolveRunPrimaryAction(selectedRun) : null;
   const environmentLabel = selectedRun ? getEnvironmentLabel(selectedRun.environment) : null;
   const currentStepLabel = isPendingSelectedRun
     ? `Starting ${selectedRun?.name ?? "your run"}`
-    : currentStep
-      ? getSimpleStepTitle(currentStep)
+    : selectedRun
+      ? getRunCurrentStepLabel(timelineRun ?? selectedRun)
       : "Everything is ready";
   const detailMessage = selectedRun
     ? isPendingSelectedRun
       ? (watcher?.detail ?? FIRST_UPDATE_WAIT_MESSAGE)
-      : (acceptedRunMessage ?? watcher?.detail ?? notice ?? getRunDetailMessage(timelineRun ?? selectedRun))
+      : (acceptedRunMessage ?? watcher?.detail ?? runNotice ?? getRunDetailMessage(timelineRun ?? selectedRun))
     : WATCH_EMPTY_DESCRIPTION;
   const headline = selectedRun
     ? isPendingSelectedRun
@@ -319,14 +329,16 @@ function resolveWatchWorkspaceState({
         ? "Got it"
         : getRunHeadline(timelineRun ?? selectedRun)
     : (watcher?.title ?? WATCH_SEARCH_TITLE);
-  const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun, selectedRun?.status ?? null);
+  const liveStatusLabel = buildLiveStatusLabel(pollingState, isPendingSelectedRun, selectedRun);
   const launchPlaceholderName = activeRunName || watchGameName.trim() || "your run";
-  const visiblePrimaryAction = isAwaitingAcceptedUpdate ? null : primaryAction;
+  const visiblePrimaryAction = shouldShowPrimaryRunAction(selectedRun, primaryAction, isAwaitingAcceptedUpdate)
+    ? primaryAction
+    : null;
   const showsNudgeAction = shouldShowRotationNudgeAction(selectedRun, isAwaitingAcceptedUpdate);
   const showsStopAutoRetryAction = shouldShowStopAutoRetryAction(selectedRun, isAwaitingAcceptedUpdate);
   const showsManualRefresh =
     !isAwaitingAcceptedUpdate && pollingState.status !== "checking" && pollingState.status !== "live";
-  const secondaryNotice = notice && notice !== detailMessage && !watcher ? notice : null;
+  const secondaryNotice = runNotice && runNotice !== detailMessage && !watcher ? runNotice : null;
   const showsActionBar = Boolean(
     visiblePrimaryAction || showsManualRefresh || showsNudgeAction || showsStopAutoRetryAction,
   );
@@ -347,6 +359,7 @@ function resolveWatchWorkspaceState({
     detailMessage,
     headline,
     liveStatusLabel,
+    searchNotice,
     secondaryNotice,
     launchPlaceholderName,
     actionBarProps: showsActionBar
@@ -360,7 +373,6 @@ function resolveWatchWorkspaceState({
           primaryButtonClassName,
           secondaryButtonClassName,
           onContinue,
-          onRetry,
           onRefresh,
           onNudge,
           onStopAutoRetry,
@@ -1249,6 +1261,7 @@ const FactoryV2WatchSearchPanel = ({
   isPickerOpen,
   lookupDisabledReason,
   isResolvingRunName,
+  searchNotice,
   onSelectRun,
   onTogglePicker,
   onFocusInput,
@@ -1263,6 +1276,7 @@ const FactoryV2WatchSearchPanel = ({
   isPickerOpen: boolean;
   lookupDisabledReason: string | null;
   isResolvingRunName: boolean;
+  searchNotice: string | null;
   onSelectRun: (run: FactoryRun) => void;
   onTogglePicker: () => void;
   onFocusInput: () => void;
@@ -1345,10 +1359,17 @@ const FactoryV2WatchSearchPanel = ({
       </div>
       {lookupDisabledReason ? <p className="text-sm leading-6 text-black/50">{lookupDisabledReason}</p> : null}
       {isResolvingRunName ? <p className="text-sm leading-6 text-black/50">Looking for that run.</p> : null}
-      {!lookupDisabledReason && !isResolvingRunName ? (
+      {searchNotice ? <FactoryV2SearchNotice message={searchNotice} /> : null}
+      {!lookupDisabledReason && !isResolvingRunName && !searchNotice ? (
         <p className="text-sm leading-6 text-black/46">Press Enter to check its status.</p>
       ) : null}
     </div>
+  </div>
+);
+
+const FactoryV2SearchNotice = ({ message }: { message: string }) => (
+  <div className="rounded-[16px] border border-rose-300/50 bg-rose-50/80 px-3 py-2.5 text-sm leading-6 text-rose-700 shadow-[0_10px_24px_rgba(190,24,93,0.06)]">
+    {message}
   </div>
 );
 
@@ -1362,7 +1383,6 @@ const FactoryV2WatchActionBar = ({
   primaryButtonClassName,
   secondaryButtonClassName,
   onContinue,
-  onRetry,
   onRefresh,
   onNudge,
   onStopAutoRetry,
@@ -1374,14 +1394,13 @@ const FactoryV2WatchActionBar = ({
     {visiblePrimaryAction ? (
       <button
         type="button"
-        onClick={visiblePrimaryAction.kind === "retry" ? onRetry : onContinue}
+        onClick={onContinue}
         disabled={isWatcherBusy || isBlocked}
         className={cn(
           "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-          visiblePrimaryAction.kind === "retry" ? "bg-rose-600 text-white hover:bg-rose-700" : primaryButtonClassName,
+          primaryButtonClassName,
         )}
       >
-        {visiblePrimaryAction.kind === "retry" ? <RotateCcw className="h-4 w-4" /> : null}
         {visiblePrimaryAction.label}
       </button>
     ) : null}
@@ -1579,6 +1598,14 @@ function resolveCurrentStepStatusLabel(
 
   if (runStatus === "complete") {
     return "Ready";
+  }
+
+  if (runStatus === "running") {
+    return "In progress";
+  }
+
+  if (runStatus === "waiting") {
+    return "Getting ready";
   }
 
   return "Up next";
@@ -1788,7 +1815,6 @@ interface FactoryV2WatchActionBarProps {
   primaryButtonClassName: string;
   secondaryButtonClassName: string;
   onContinue: () => void;
-  onRetry: () => void;
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
@@ -1805,8 +1831,21 @@ function shouldShowStopAutoRetryAction(selectedRun: FactoryRun | null, isAwaitin
   );
 }
 
+function shouldShowPrimaryRunAction(
+  selectedRun: FactoryRun | null,
+  primaryAction: ReturnType<typeof resolveRunPrimaryAction>,
+  isAwaitingAcceptedUpdate: boolean,
+) {
+  return Boolean(selectedRun && primaryAction && !isAwaitingAcceptedUpdate && selectedRun.status !== "complete");
+}
+
 function shouldShowRotationNudgeAction(selectedRun: FactoryRun | null, isAwaitingAcceptedUpdate: boolean) {
-  return Boolean(selectedRun?.kind === "rotation" && !isAwaitingAcceptedUpdate && !isFactoryRunInProgress(selectedRun));
+  return Boolean(
+    selectedRun?.kind === "rotation" &&
+    selectedRun.status !== "complete" &&
+    !isAwaitingAcceptedUpdate &&
+    !isFactoryRunInProgress(selectedRun),
+  );
 }
 
 function isFactoryRunInProgress(selectedRun: FactoryRun | null) {
@@ -1832,28 +1871,78 @@ function resolveStepSummaryAction(
   };
 }
 
-function buildLiveStatusLabel(
-  pollingState: FactoryPollingState,
-  isPendingRun: boolean,
-  runStatus: FactoryRun["status"] | null,
-) {
-  if (pollingState.status === "paused") {
-    return pollingState.detail;
+function resolveScheduledMaintenanceLabel(run: FactoryRun | null) {
+  if (!run || run.status !== "attention") {
+    return null;
   }
 
+  if (run.autoRetry?.enabled && !run.autoRetry.cancelledAt && run.autoRetry.nextRetryAt) {
+    return "Waiting for retry";
+  }
+
+  if (run.kind === "rotation" && run.evaluation?.nextEvaluationAt) {
+    return "Waiting for evaluation";
+  }
+
+  return null;
+}
+
+function resolveWatchSearchNotice({
+  notice,
+  selectedRun,
+  watchGameName,
+  watcher,
+  isResolvingRunName,
+  lookupDisabledReason,
+}: {
+  notice: string | null;
+  selectedRun: FactoryRun | null;
+  watchGameName: string;
+  watcher: FactoryWatcherState | null;
+  isResolvingRunName: boolean;
+  lookupDisabledReason: string | null;
+}) {
+  if (!notice || watcher || isResolvingRunName || lookupDisabledReason) {
+    return null;
+  }
+
+  if (!selectedRun) {
+    return notice;
+  }
+
+  return doesWatchQueryTargetAnotherRun(watchGameName, selectedRun.name) ? notice : null;
+}
+
+function doesWatchQueryTargetAnotherRun(watchGameName: string, selectedRunName: string) {
+  const normalizedWatchGameName = watchGameName.trim().toLowerCase();
+  const normalizedSelectedRunName = selectedRunName.trim().toLowerCase();
+
+  return Boolean(normalizedWatchGameName) && normalizedWatchGameName !== normalizedSelectedRunName;
+}
+
+function buildLiveStatusLabel(pollingState: FactoryPollingState, isPendingRun: boolean, run: FactoryRun | null) {
   if (isPendingRun) {
     return "Getting ready";
+  }
+
+  if (run?.status === "complete") {
+    return "All set";
+  }
+
+  const scheduledMaintenanceLabel = resolveScheduledMaintenanceLabel(run);
+  if (scheduledMaintenanceLabel) {
+    return scheduledMaintenanceLabel;
+  }
+
+  if (pollingState.status === "paused") {
+    return pollingState.detail;
   }
 
   if (pollingState.status === "checking") {
     return AUTO_UPDATE_LABEL;
   }
 
-  if (runStatus === "complete") {
-    return "All set";
-  }
-
-  if (pollingState.lastCheckedAt) {
+  if (pollingState.lastCheckedAt && isFactoryRunInProgress(run)) {
     return AUTO_UPDATE_LABEL;
   }
 

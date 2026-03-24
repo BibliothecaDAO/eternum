@@ -28,6 +28,17 @@ export interface SlotIndexerActionResult {
   configPath?: string;
 }
 
+export interface DeleteSlotIndexerResult {
+  action: "deleted" | "already-missing";
+  liveState: IndexerLiveState;
+  previousTier?: IndexerTier;
+}
+
+export interface SlotToriiDeploymentInfo {
+  gameName: string;
+  serviceName: string;
+}
+
 export interface ResolvedIndexerArtifactState {
   indexerCreated: boolean;
   indexerTier?: IndexerTier;
@@ -118,6 +129,64 @@ function listOutputContainsToriiProject(output: string, projectName: string): bo
   }
 
   return false;
+}
+
+function parseSlotAccountDeploymentLine(line: string): SlotToriiDeploymentInfo | null {
+  const trimmedLine = line.trim();
+  const match = trimmedLine.match(/^Deployment:\s+([^/\s]+)\/([^/\s]+)\s*$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    gameName: match[1] || "",
+    serviceName: (match[2] || "").toLowerCase(),
+  };
+}
+
+export function listSlotToriiDeploymentNamesFromAccountInfo(output: string): string[] {
+  const orderedGameNames: string[] = [];
+  const seenGameNames = new Set<string>();
+
+  for (const rawLine of output.split(/\r?\n/)) {
+    const deployment = parseSlotAccountDeploymentLine(rawLine);
+    if (!deployment || deployment.serviceName !== "torii" || !deployment.gameName) {
+      continue;
+    }
+
+    if (seenGameNames.has(deployment.gameName)) {
+      continue;
+    }
+
+    seenGameNames.add(deployment.gameName);
+    orderedGameNames.push(deployment.gameName);
+  }
+
+  return orderedGameNames;
+}
+
+export function listSlotToriiDeploymentNames(
+  options: Pick<EnsureSlotIndexerOptions, "slotCommandRunner"> = {},
+): string[] {
+  const slotCommandRunner = options.slotCommandRunner || runSlotCommand;
+  const accountInfoResult = slotCommandRunner(["a", "info"]);
+
+  if ((accountInfoResult.status ?? 1) !== 0) {
+    throw new Error(buildSlotCommandFailureMessage("read Slot account deployments", accountInfoResult));
+  }
+
+  return listSlotToriiDeploymentNamesFromAccountInfo(accountInfoResult.stdout || "");
+}
+
+export function resolveSlotToriiLiveStates(
+  gameNames: string[],
+  options: Pick<EnsureSlotIndexerOptions, "onProgress" | "slotCommandRunner"> = {},
+) {
+  return gameNames.map((gameName) => ({
+    gameName,
+    liveState: resolveSlotToriiLiveState(gameName, options),
+  }));
 }
 
 export function resolveSlotToriiLiveState(
@@ -225,6 +294,18 @@ function requireExistingToriiState(
   const liveState = resolveSlotToriiLiveState(name, options);
   if (liveState.state !== "existing") {
     throw new Error(`Torii deployment "${name}" is not available after the Slot command completed`);
+  }
+
+  return liveState;
+}
+
+function requireMissingToriiState(
+  name: string,
+  options: Pick<EnsureSlotIndexerOptions, "onProgress" | "slotCommandRunner">,
+) {
+  const liveState = resolveSlotToriiLiveState(name, options);
+  if (liveState.state !== "missing") {
+    throw new Error(`Torii deployment "${name}" still exists after the Slot command completed`);
   }
 
   return liveState;
@@ -343,6 +424,40 @@ export function ensureSlotIndexerTier(
     action: "tier-updated",
     liveState,
     requestedTier: options.tier,
+    previousTier: currentState.currentTier,
+  };
+}
+
+export function deleteSlotIndexerDeployment(
+  options: {
+    name: string;
+  } & Pick<EnsureSlotIndexerOptions, "onProgress" | "slotCommandRunner">,
+): DeleteSlotIndexerResult {
+  const currentState = resolveSlotToriiLiveState(options.name, options);
+
+  if (currentState.state === "missing") {
+    return {
+      action: "already-missing",
+      liveState: currentState,
+      previousTier: currentState.currentTier,
+    };
+  }
+
+  if (currentState.state === "indeterminate") {
+    throw new Error(`Unable to verify the Torii deployment state for "${options.name}"`);
+  }
+
+  const slotCommandRunner = options.slotCommandRunner || runSlotCommand;
+  const deleteResult = slotCommandRunner(["d", "delete", options.name, "torii", "-f"]);
+
+  if ((deleteResult.status ?? 1) !== 0) {
+    throw new Error(buildSlotCommandFailureMessage(`delete Torii deployment "${options.name}"`, deleteResult));
+  }
+
+  const liveState = requireMissingToriiState(options.name, options);
+  return {
+    action: "deleted",
+    liveState,
     previousTier: currentState.currentTier,
   };
 }

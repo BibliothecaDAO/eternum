@@ -10,6 +10,7 @@ export type DeploymentGameType = "blitz" | "eternum";
 export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.blitz" | "mainnet.eternum";
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
+export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
 export type LaunchGameStepId =
   | "create-world"
   | "wait-for-factory-index"
@@ -136,6 +137,12 @@ export interface IndexerCreationResult {
   workflowRun?: IndexerWorkflowRun;
 }
 
+export interface LaunchGameResumeStepState {
+  id: LaunchGameStepId;
+  status: LaunchStepStatus;
+  latestEvent?: string;
+}
+
 export interface LaunchGameRequest {
   launchKind?: "game";
   environmentId: DeploymentEnvironmentId;
@@ -168,6 +175,7 @@ export interface LaunchGameRequest {
   dryRun?: boolean;
   workflowFile?: string;
   ref?: string;
+  resumeSteps?: LaunchGameResumeStepState[];
 }
 
 export interface LaunchGameStepRequest extends LaunchGameRequest {

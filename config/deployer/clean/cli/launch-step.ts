@@ -4,9 +4,13 @@ import { runLaunchStep } from "../launch/runner";
 import { runLaunchRotationStep } from "../launch/rotation-runner";
 import { runLaunchSeriesStep } from "../launch/series-runner";
 import { requireGitHubBranchStoreConfig, readGitHubBranchJsonFile } from "../run-store/github";
-import { resolveFactoryRotationRunRecordPath, resolveFactorySeriesRunRecordPath } from "../run-store/paths";
-import type { FactoryRotationRunRecord, FactorySeriesRunRecord } from "../run-store/types";
-import type { LaunchRotationRequest, LaunchSeriesRequest } from "../types";
+import {
+  resolveFactoryRotationRunRecordPath,
+  resolveFactoryRunRecordPath,
+  resolveFactorySeriesRunRecordPath,
+} from "../run-store/paths";
+import type { FactoryRotationRunRecord, FactoryRunRecord, FactorySeriesRunRecord } from "../run-store/types";
+import type { LaunchGameRequest, LaunchRotationRequest, LaunchSeriesRequest } from "../types";
 import {
   buildLaunchGameRequest,
   buildLaunchRotationRequest,
@@ -80,6 +84,23 @@ async function resolveSeriesResumeSummary(request: LaunchSeriesRequest) {
   return value?.summary;
 }
 
+async function resolveGameResumeSteps(request: LaunchGameRequest) {
+  const config = requireGitHubBranchStoreConfig();
+  const { value } = await readGitHubBranchJsonFile<FactoryRunRecord>(
+    config,
+    resolveFactoryRunRecordPath({
+      environmentId: request.environmentId,
+      gameName: request.gameName,
+    }),
+  );
+
+  return value?.steps.map((step) => ({
+    id: step.id,
+    status: step.status,
+    latestEvent: step.latestEvent,
+  }));
+}
+
 async function resolveRotationResumeSummary(request: LaunchRotationRequest) {
   const config = requireGitHubBranchStoreConfig();
   const { value } = await readGitHubBranchJsonFile<FactoryRotationRunRecord>(
@@ -122,9 +143,11 @@ async function main() {
     return;
   }
 
+  const request = buildLaunchGameRequest(args);
   const summary = await runLaunchStep({
-    ...buildLaunchGameRequest(args),
+    ...request,
     stepId: resolveLaunchGameStepId(args.step),
+    resumeSteps: request.resumeSteps || (await resolveGameResumeSteps(request)),
   });
   console.log(JSON.stringify(summary, null, 2));
 }
