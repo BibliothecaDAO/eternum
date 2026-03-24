@@ -1,11 +1,8 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
-import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
-import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
-import { sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 interface GuildMemberListProps {
   guildMembers: GuildMemberInfo[];
@@ -30,16 +27,14 @@ export const GuildMemberList = ({
   userIsGuildMaster,
   removeGuildMember,
 }: GuildMemberListProps) => {
-  const [activeSort, setActiveSort] = useState<SortInterface>({
-    sortKey: "number",
-    sort: "none",
-  });
+  const sortedGuildMembers = useMemo(() => {
+    return [...guildMembers].sort((a, b) => a.name.localeCompare(b.name));
+  }, [guildMembers]);
 
   return (
-    <div className="flex flex-col rounded-xl h-full">
-      {/* <GuildMemberListHeader activeSort={activeSort} setActiveSort={setActiveSort} /> */}
-      <div className=" overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-        {sortItems(guildMembers, activeSort, { sortKey: "name", sort: "asc" }).map((guildMember) => (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+        {sortedGuildMembers.map((guildMember) => (
           <GuildMemberRow
             key={guildMember.address}
             guildMember={guildMember}
@@ -49,44 +44,9 @@ export const GuildMemberList = ({
             removeGuildMember={removeGuildMember}
           />
         ))}
-        {!guildMembers.length && <p className="text-center italic text-gold/70 py-4">No Tribe Members</p>}
+        {!guildMembers.length && <p className="py-4 text-center italic text-gold/70">No Tribe Members</p>}
       </div>
     </div>
-  );
-};
-
-const GuildMemberListHeader = ({
-  activeSort,
-  setActiveSort,
-}: {
-  activeSort: SortInterface;
-  setActiveSort: (sort: SortInterface) => void;
-}) => {
-  const sortingParams = useMemo(() => {
-    return [{ label: "Name", sortKey: "name", className: "col-span-2 px-1" }];
-  }, []);
-
-  const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
-
-  return (
-    <SortPanel className="grid grid-cols-2">
-      {sortingParams.map(({ label, sortKey, className }) => (
-        <SortButton
-          key={sortKey}
-          label={label}
-          sortKey={sortKey}
-          activeSort={activeSort}
-          className={className + " " + textStyle}
-          classNameCaret="w-2"
-          onChange={(_sortKey, _sort) => {
-            setActiveSort({
-              sortKey: _sortKey,
-              sort: _sort,
-            });
-          }}
-        />
-      ))}
-    </SortPanel>
   );
 };
 
@@ -102,34 +62,35 @@ const GuildMemberRow = ({
   return (
     <div
       className={clsx(
-        "grid grid-cols-2 w-full py-1 px-2 cursor-pointer items-center hover:bg-gold/10 rounded transition-colors duration-200 mb-1",
-        {
-          "bg-blueish/20 hover:bg-blueish/30": guildMember.isUser,
-        },
+        "mb-1 flex w-full items-center justify-between rounded-lg border border-transparent bg-dark/40 px-3 py-2 transition-all duration-200",
+        guildMember.isUser && "border-gold/45 bg-gold/15",
+        !guildMember.isUser && "hover:border-gold/20 hover:bg-brown/40",
       )}
     >
-      <div
-        className="col-span-2 grid grid-cols-2 items-center"
+      <button
+        className="flex min-w-0 flex-1 items-center gap-2 text-left"
         onClick={() => {
           viewPlayerInfo(ContractAddress(guildMember.address));
         }}
       >
-        <p className="col-span-2 flex flex-row items-center truncate font-semibold text-gold/90 px-1">
-          {guildMember.isGuildMaster && <Crown className="w-6 fill-gold mr-2" />}
-          <span className="truncate">{guildMember.name}</span>
-        </p>
-      </div>
-
-      <div className="flex justify-center">
-        {kickButtonEnabled && (
-          <Trash
-            onClick={() => removeGuildMember(guildMember.address)}
-            className={clsx("w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all", {
-              "pointer-events-none": isLoading,
-            })}
-          />
+        {guildMember.isGuildMaster && <Crown className="h-4 w-4 shrink-0 fill-gold" />}
+        <span className="truncate text-sm font-semibold text-gold">{guildMember.name}</span>
+        {guildMember.isUser && (
+          <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
+            You
+          </span>
         )}
-      </div>
+      </button>
+
+      {kickButtonEnabled && (
+        <Trash
+          onClick={() => removeGuildMember(guildMember.address)}
+          className={clsx("h-5 w-5 fill-red/70 transition-all duration-200 hover:scale-110 hover:fill-red/90", {
+            "pointer-events-none opacity-50": isLoading,
+            "cursor-pointer": !isLoading,
+          })}
+        />
+      )}
     </div>
   );
 };

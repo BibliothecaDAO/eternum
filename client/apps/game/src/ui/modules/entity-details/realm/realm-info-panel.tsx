@@ -274,6 +274,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const shouldRenderVillageUi = isVillage;
   const isVillageMilitiaClaimed = Boolean(villageTroop?.claimed);
   const [isClaimingVillageMilitia, setIsClaimingVillageMilitia] = useState(false);
+  const [optimisticallyClaimedVillageIds, setOptimisticallyClaimedVillageIds] = useState<Set<number>>(() => new Set());
 
   const villageTimerSummary = useMemo(() => {
     if (!shouldRenderVillageUi || !structure || !currentBlockTimestamp) {
@@ -288,8 +289,17 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
 
   const isMilitiaClaimActionVisible = isVillage && isOwned;
   const isMilitiaClaimReady = (villageTimerSummary?.militiaUnlockRemainingSeconds ?? 1) <= 0;
-  const canClaimVillageMilitia = isMilitiaClaimActionVisible && isMilitiaClaimReady && !isVillageMilitiaClaimed;
-  const shouldRenderMilitiaClaimCard = isMilitiaClaimActionVisible;
+  const isVillageMilitiaOptimisticallyClaimed = useMemo(() => {
+    if (!structureEntityId) {
+      return false;
+    }
+
+    const villageId = Number(structureEntityId);
+    return Number.isFinite(villageId) && optimisticallyClaimedVillageIds.has(villageId);
+  }, [optimisticallyClaimedVillageIds, structureEntityId]);
+  const hasVillageMilitiaBeenClaimed = isVillageMilitiaClaimed || isVillageMilitiaOptimisticallyClaimed;
+  const canClaimVillageMilitia = isMilitiaClaimActionVisible && isMilitiaClaimReady && !hasVillageMilitiaBeenClaimed;
+  const shouldRenderMilitiaClaimCard = isMilitiaClaimActionVisible && !hasVillageMilitiaBeenClaimed;
 
   const handleClaimVillageMilitia = useCallback(async () => {
     if (!canClaimVillageMilitia || !structureEntityId) {
@@ -313,6 +323,14 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
         });
       }
 
+      const villageId = Number(structureEntityId);
+      if (Number.isFinite(villageId)) {
+        setOptimisticallyClaimedVillageIds((claimedVillageIds) => {
+          const nextClaimedVillageIds = new Set(claimedVillageIds);
+          nextClaimedVillageIds.add(villageId);
+          return nextClaimedVillageIds;
+        });
+      }
       toast.success("Village militia claimed.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to claim village militia.";
@@ -467,13 +485,11 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
               >
                 {isClaimingVillageMilitia
                   ? "Claiming Militia..."
-                  : isVillageMilitiaClaimed
-                    ? "Militia Claimed"
-                    : canClaimVillageMilitia
-                      ? "Claim Militia (Onchain)"
-                      : "Militia Locked"}
+                  : canClaimVillageMilitia
+                    ? "Claim Militia (Onchain)"
+                    : "Militia Locked"}
               </button>
-              {!isVillageMilitiaClaimed && !canClaimVillageMilitia && (
+              {!canClaimVillageMilitia && (
                 <p className="mt-1 text-[10px] text-gold/65">Militia claim unlocks after the timer reaches ready.</p>
               )}
             </div>

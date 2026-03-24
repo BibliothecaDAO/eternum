@@ -22,7 +22,6 @@ export const TickProgress = memo(() => {
   const setCycleTime = useUIStore((state) => state.setCycleTime);
   const { currentBlockTimestamp } = useBlockTimestamp();
   const mode = useGameModeConfig();
-
   const cycleTime = configManager.getTick(TickIds.Armies);
   const hasValidCycle = cycleTime > 0;
   const dayDuration = hasValidCycle ? cycleTime * PHASES.length : 1;
@@ -47,6 +46,14 @@ export const TickProgress = memo(() => {
     };
   }, [currentBlockTimestamp, cycleTime, dayDuration, hasValidCycle]);
 
+  const timeLeftInPhase = useMemo(() => {
+    if (!hasValidCycle) {
+      return 0;
+    }
+
+    return cycleTime - (currentBlockTimestamp % cycleTime);
+  }, [hasValidCycle, currentBlockTimestamp, cycleTime]);
+
   useEffect(() => {
     setCycleProgress(Math.min(Math.max(phaseData.dayProgress, 0), 100));
     setCycleTime(cycleTime);
@@ -69,12 +76,11 @@ export const TickProgress = memo(() => {
           A day in Realms is <span className="font-bold">{formatTime(dayDuration)}</span> ({PHASES.length} phases)
         </div>
         <div>
-          Time left in {phaseData.phaseName}:{" "}
-          <span className="font-bold">{formatTime(cycleTime - (currentBlockTimestamp % cycleTime))}</span>
+          Time left in {phaseData.phaseName}: <span className="font-bold">{formatTime(timeLeftInPhase)}</span>
         </div>
       </div>
     ),
-    [phaseData.phaseName, dayDuration, cycleTime, currentBlockTimestamp],
+    [phaseData.phaseName, dayDuration, timeLeftInPhase],
   );
 
   const handleMouseEnter = useCallback(() => {

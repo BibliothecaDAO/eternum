@@ -23,6 +23,14 @@ function createFixture() {
   return { manager, scene, directionalLight, hemisphereLight, ambientLight, fog };
 }
 
+function findMoonRimLight(scene: Scene, mainDirectionalLight: DirectionalLight): DirectionalLight | null {
+  return (
+    scene.children.find(
+      (child): child is DirectionalLight => child instanceof DirectionalLight && child !== mainDirectionalLight,
+    ) ?? null
+  );
+}
+
 describe("DayNightCycleManager", () => {
   it("updates lighting and sun target using cycle progress and camera target", () => {
     const fixture = createFixture();
@@ -35,6 +43,20 @@ describe("DayNightCycleManager", () => {
     expect(fixture.directionalLight.target.position.y).toBeCloseTo(2);
     expect(fixture.directionalLight.target.position.z).toBeCloseTo(35.2);
     expect((fixture.scene.background as Color).getHex()).not.toBe(0x111111);
+  });
+
+  it("enables a cool moon rim light at night while keeping it off during day", () => {
+    const fixture = createFixture();
+    const moonRimLight = findMoonRimLight(fixture.scene, fixture.directionalLight);
+
+    expect(moonRimLight).not.toBeNull();
+
+    fixture.manager.update(40);
+    expect(moonRimLight!.intensity).toBe(0);
+
+    fixture.manager.update(90, new Vector3(5, 1, 8));
+    expect(moonRimLight!.intensity).toBeGreaterThan(0);
+    expect(moonRimLight!.color.getHex()).not.toBe(0xffffff);
   });
 
   it("clamps cycle speed and maps time-of-day buckets", () => {
@@ -189,7 +211,8 @@ describe("DayNightCycleManager", () => {
 
   it("is idempotent on dispose", () => {
     const fixture = createFixture();
-    const restoreSpy = vi.spyOn(fixture.manager as any, "restoreOriginalLighting");
+    const managerWithRestore = fixture.manager as unknown as { restoreOriginalLighting: () => void };
+    const restoreSpy = vi.spyOn(managerWithRestore, "restoreOriginalLighting");
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     fixture.manager.dispose();
