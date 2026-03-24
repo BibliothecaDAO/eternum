@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23461067376-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-24T07:12:01.352Z",
+  "updatedAt": "2026-03-24T07:30:38.735Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -186,7 +186,7 @@
         "startTimeIso": "2026-03-23T07:20:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-franky-02: Torii deployment \"bltz-franky-02\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -369,10 +369,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T07:12:00.557Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T07:12:00.557Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-franky-02\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-03-24T07:30:37.260Z"
         },
         "durationSeconds": 3600
       },
@@ -382,7 +379,7 @@
         "startTimeIso": "2026-03-23T08:20:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-franky-03: Torii deployment \"bltz-franky-03\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -565,10 +562,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T07:12:00.716Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T07:12:00.716Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-franky-03\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-03-24T07:30:37.260Z"
         },
         "durationSeconds": 3600
       },
@@ -578,7 +572,7 @@
         "startTimeIso": "2026-03-23T09:20:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-franky-04: Torii deployment \"bltz-franky-04\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -760,10 +754,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T07:12:00.863Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T07:12:00.863Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-franky-04\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-03-24T07:30:37.260Z"
         },
         "durationSeconds": 5400
       },
@@ -773,7 +764,7 @@
         "startTimeIso": "2026-03-23T10:20:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-franky-05: Torii deployment \"bltz-franky-05\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -956,10 +947,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T07:12:01.022Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T07:12:01.022Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-franky-05\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-03-24T07:30:37.260Z"
         },
         "durationSeconds": 5400
       },
@@ -969,7 +957,7 @@
         "startTimeIso": "2026-03-23T11:20:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-franky-06: Torii deployment \"bltz-franky-06\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1152,10 +1140,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T07:12:01.185Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T07:12:01.185Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-franky-06\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-03-24T07:30:37.260Z"
         },
         "durationSeconds": 5400
       },
@@ -1165,7 +1150,7 @@
         "startTimeIso": "2026-03-23T12:20:00.000Z",
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-franky-07: Torii deployment \"bltz-franky-07\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1348,10 +1333,7 @@
             "conclusion": "success"
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-24T07:12:01.352Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-03-24T07:12:01.352Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-franky-07\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-03-24T07:30:37.260Z"
         },
         "durationSeconds": 5400
       }
