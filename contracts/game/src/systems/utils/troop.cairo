@@ -409,8 +409,11 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 
     fn exploration_reward_receiver(
-        ref world: WorldStorage, explorer: ExplorerTroops, explorer_reward_resource: u8,
+        ref world: WorldStorage, blitz_mode: bool, explorer: ExplorerTroops, explorer_reward_resource: u8,
     ) -> ID {
+        if !blitz_mode {
+            return explorer.explorer_id;
+        }
         if RelicResourceImpl::is_relic(explorer_reward_resource) {
             return explorer.explorer_id;
         }
