@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T03:42:16.542Z",
+  "updatedAt": "2026-03-24T03:52:16.648Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -358,13 +358,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-zestible-05/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:56:57.001Z"
+        "describedAt": "2026-03-24T03:52:16.647Z"
       },
-      "updatedAt": "2026-03-24T02:56:57.286Z"
+      "updatedAt": "2026-03-24T03:52:16.648Z"
     },
     "bltz-zestible-06": {
       "gameName": "bltz-zestible-06",
@@ -478,7 +478,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-02 not found"
       },
-      "updatedAt": "2026-03-24T03:32:05.485Z"
+      "updatedAt": "2026-03-24T03:52:16.648Z"
     },
     "bltz-franky-03": {
       "gameName": "bltz-franky-03",
@@ -487,7 +487,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-03 not found"
       },
-      "updatedAt": "2026-03-24T03:32:05.485Z"
+      "updatedAt": "2026-03-24T03:52:16.648Z"
     },
     "bltz-franky-04": {
       "gameName": "bltz-franky-04",
@@ -496,7 +496,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-04 not found"
       },
-      "updatedAt": "2026-03-24T03:32:05.485Z"
+      "updatedAt": "2026-03-24T03:52:16.648Z"
     },
     "bltz-franky-05": {
       "gameName": "bltz-franky-05",
@@ -505,7 +505,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-05 not found"
       },
-      "updatedAt": "2026-03-24T03:32:05.485Z"
+      "updatedAt": "2026-03-24T03:52:16.648Z"
     },
     "bltz-franky-06": {
       "gameName": "bltz-franky-06",
@@ -514,7 +514,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-06 not found"
       },
-      "updatedAt": "2026-03-24T03:32:05.485Z"
+      "updatedAt": "2026-03-24T03:52:16.648Z"
     },
     "bltz-franky-07": {
       "gameName": "bltz-franky-07",
@@ -523,7 +523,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-07 not found"
       },
-      "updatedAt": "2026-03-24T03:32:05.485Z"
+      "updatedAt": "2026-03-24T03:52:16.648Z"
     }
   }
 }
