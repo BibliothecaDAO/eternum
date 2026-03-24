@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-mango",
-  "status": "complete",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-mango/23475691470-1.json",
   "latestLaunchRequestId": "23475691470-1",
-  "currentStepId": null,
+  "currentStepId": "create-indexer",
   "createdAt": "2026-03-24T05:52:11.779Z",
-  "updatedAt": "2026-03-24T06:09:18.290Z",
+  "updatedAt": "2026-03-24T06:09:22.465Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,10 +81,10 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup succeeded",
-      "startedAt": "2026-03-24T06:08:04.644Z",
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-03-24T06:09:22.465Z",
       "finishedAt": "2026-03-24T06:08:22.488Z"
     }
   ],
@@ -106,5 +106,12 @@
     "indexerBranch": "main",
     "lastIndexerDescribeAt": "2026-03-24T06:08:21.041Z"
   },
-  "completedAt": "2026-03-24T06:09:18.290Z"
+  "activeLease": {
+    "launchRequestId": "23475691470-1",
+    "workflowRunId": 23475691470,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-03-24T06:09:22.465Z",
+    "expiresAt": "2026-03-24T06:54:22.465Z"
+  }
 }
