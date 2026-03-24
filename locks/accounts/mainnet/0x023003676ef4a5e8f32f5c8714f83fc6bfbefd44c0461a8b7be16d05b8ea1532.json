@@ -4,15 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-escapade",
-    "launchRequestId": "23494134522-1",
+    "gameName": "bltz-bakers",
+    "launchRequestId": "23495465469-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23494134522,
+    "workflowRunId": 23495465469,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "784c52ba-bfdf-4fff-97e4-ba8641058f6d"
+    "leaseId": "bac65914-8620-4b40-bf5b-6a53d91b5053"
   },
-  "acquiredAt": "2026-03-24T14:17:07.279Z",
-  "heartbeatAt": "2026-03-24T14:30:53.922Z",
-  "expiresAt": "2026-03-24T14:40:53.922Z"
+  "acquiredAt": "2026-03-24T14:44:59.021Z",
+  "heartbeatAt": "2026-03-24T14:44:59.021Z",
+  "expiresAt": "2026-03-24T14:54:59.021Z"
 }
