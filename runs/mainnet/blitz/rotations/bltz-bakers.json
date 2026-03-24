@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23495465469-1",
   "currentStepId": null,
   "createdAt": "2026-03-24T14:44:30.319Z",
-  "updatedAt": "2026-03-24T14:50:32.557Z",
+  "updatedAt": "2026-03-24T14:52:19.274Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -125,7 +125,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer tier updated basic -> legendary for bltz-bakers-01",
         "status": "succeeded",
         "configSteps": [
           {
@@ -295,11 +295,11 @@
           "worldConfigTxHash": "0xb5c81981055d63ab2f121f2a3910d11cd023ae32566585b2f820f3f4ff4f2a",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "legendary",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-bakers-01/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T14:49:39.956Z",
+          "lastIndexerDescribeAt": "2026-03-24T14:52:19.274Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -309,9 +309,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-03-24T14:50:30.252Z"
+          "paymasterSynced": true
         }
       },
       {
