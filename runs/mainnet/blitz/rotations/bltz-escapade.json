@@ -12,9 +12,9 @@
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23479959959-1.json",
   "latestLaunchRequestId": "23479959959-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-03-24T08:00:10.872Z",
-  "updatedAt": "2026-03-24T08:26:53.567Z",
+  "updatedAt": "2026-03-24T08:33:09.496Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-24T08:41:49.051Z",
-    "lastEvaluatedAt": "2026-03-24T08:26:49.051Z"
+    "nextEvaluationAt": "2026-03-24T08:48:09.496Z",
+    "lastEvaluatedAt": "2026-03-24T08:33:09.496Z"
   },
   "steps": [
     {
@@ -45,10 +45,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-24T08:26:53.567Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-03-24T08:26:53.567Z",
+      "finishedAt": "2026-03-24T08:33:09.496Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -111,9 +112,9 @@
         "startTime": 1774348200,
         "startTimeIso": "2026-03-24T10:30:00.000Z",
         "seriesGameNumber": 1,
-        "currentStepId": "create-worlds",
-        "latestEvent": "waitForTransaction timed-out with retries 200",
-        "status": "failed",
+        "currentStepId": null,
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -123,10 +124,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "failed",
-            "latestEvent": "waitForTransaction timed-out with retries 200",
-            "updatedAt": "2026-03-24T08:17:45.644Z",
-            "errorMessage": "waitForTransaction timed-out with retries 200"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-24T08:28:41.001Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -154,7 +154,11 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x04c1d3947f337e0068444c7002d4d9dd8ab979ccaec8032a68fb2dd54d06c0c2",
+          "createGameTxHash": "0x13d3e5edfacd8d20dc3de23908af2f5030714a83b9ae100b1b0427398d2dc90"
+        },
+        "durationSeconds": 7200
       },
       {
         "gameName": "bltz-escapade-02",
@@ -162,8 +166,8 @@
         "startTimeIso": "2026-03-24T15:30:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -173,8 +177,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-24T08:30:08.002Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -202,7 +207,11 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x05e2361400149244f5af7c517fccb2bb6fd937356908bea8e2dea3e74b8da55c",
+          "createGameTxHash": "0x223c419e72e11cb8426371885b91fb7bd1a127d6efd811819bfdb158bb28c55"
+        },
+        "durationSeconds": 7200
       },
       {
         "gameName": "bltz-escapade-03",
@@ -210,8 +219,8 @@
         "startTimeIso": "2026-03-24T20:30:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -221,8 +230,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-24T08:31:38.916Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -250,7 +260,11 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x003cb44cc2e160a6d434a393e5d0160b621190a15b9e7ce244fdc6ae14081a3d",
+          "createGameTxHash": "0x4f36ab26e4b044af7bb80b2e3ee0e991999dcb76dd7e4fa9448ab12167c9294"
+        },
+        "durationSeconds": 7200
       },
       {
         "gameName": "bltz-escapade-04",
@@ -258,8 +272,8 @@
         "startTimeIso": "2026-03-25T01:30:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -269,8 +283,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-24T08:33:05.190Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -298,7 +313,11 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x00971887f010a0673dfc37023477a5ab32df93676214d7249017e2c3daa8f52d",
+          "createGameTxHash": "0x4039be34040c86764e0cf3a6f2746d66a9713302823f56583c0762ab28fb426"
+        },
+        "durationSeconds": 7200
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-escapade.json",
@@ -308,13 +327,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-escapade.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T08:00:40.047Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23479959959-1",
-    "workflowRunId": 23479959959,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-24T08:26:53.567Z",
-    "expiresAt": "2026-03-24T09:11:53.567Z"
   }
 }
