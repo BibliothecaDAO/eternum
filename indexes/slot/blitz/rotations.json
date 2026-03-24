@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T01:56:46.070Z",
+  "updatedAt": "2026-03-24T01:56:47.659Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -66,7 +66,7 @@
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23461067376-1.json",
       "status": "complete",
-      "updatedAt": "2026-03-23T21:30:28.449Z",
+      "updatedAt": "2026-03-24T01:56:47.659Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -100,9 +100,8 @@
           "durationSeconds": 3600,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T21:05:58.308Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:56:46.980Z"
           }
         },
         {
@@ -111,9 +110,8 @@
           "durationSeconds": 3600,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T21:05:59.585Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:56:47.225Z"
           }
         },
         {
@@ -122,9 +120,8 @@
           "durationSeconds": 5400,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T21:00:56.144Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:56:47.305Z"
           }
         },
         {
@@ -133,9 +130,8 @@
           "durationSeconds": 5400,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T21:00:57.547Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:56:47.506Z"
           }
         },
         {
@@ -144,9 +140,8 @@
           "durationSeconds": 5400,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T21:00:58.746Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:56:47.583Z"
           }
         },
         {
@@ -155,9 +150,8 @@
           "durationSeconds": 5400,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-03-23T21:00:59.855Z"
+            "indexerTier": "pro",
+            "lastIndexerDescribeAt": "2026-03-24T01:56:47.659Z"
           }
         }
       ]
