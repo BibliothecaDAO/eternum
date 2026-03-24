@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23461067376-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T05:58:46.782Z",
-  "updatedAt": "2026-03-23T21:30:28.449Z",
+  "updatedAt": "2026-03-24T01:56:47.659Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -186,7 +186,7 @@
         "startTimeIso": "2026-03-23T07:20:00.000Z",
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Indexer tier already matched pro for bltz-franky-02",
         "status": "succeeded",
         "configSteps": [
           {
@@ -350,7 +350,7 @@
           "lootChestRoleTxHash": "0x6d1265817fba9626b39be8eb6c9412fdb67bd3c53dc83c40062f6a5364771b5",
           "indexerCreated": true,
           "indexerMode": "github-actions",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -369,8 +369,10 @@
             "status": "completed",
             "conclusion": "success"
           },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T21:05:58.308Z"
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-02/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-24T01:56:46.980Z"
         },
         "durationSeconds": 3600
       },
@@ -380,7 +382,7 @@
         "startTimeIso": "2026-03-23T08:20:00.000Z",
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Indexer tier already matched pro for bltz-franky-03",
         "status": "succeeded",
         "configSteps": [
           {
@@ -544,7 +546,7 @@
           "lootChestRoleTxHash": "0x259d4eda6c0578d090b3e5677b35430cecb4177f788455f8574289bc6c8b16b",
           "indexerCreated": true,
           "indexerMode": "github-actions",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -563,8 +565,10 @@
             "status": "completed",
             "conclusion": "success"
           },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T21:05:59.585Z"
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-03/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-24T01:56:47.225Z"
         },
         "durationSeconds": 3600
       },
@@ -574,7 +578,7 @@
         "startTimeIso": "2026-03-23T09:20:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Indexer tier already matched pro for bltz-franky-04",
         "status": "succeeded",
         "configSteps": [
           {
@@ -737,7 +741,7 @@
           "lootChestRoleTxHash": "0x4105ea1b6984ba6e59db6b47c87b5a94fdeb562981ff2e85dbb4a8ffdd3cd5b",
           "indexerCreated": true,
           "indexerMode": "github-actions",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -756,8 +760,10 @@
             "status": "completed",
             "conclusion": "success"
           },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T21:00:56.144Z"
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-04/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-24T01:56:47.305Z"
         },
         "durationSeconds": 5400
       },
@@ -767,7 +773,7 @@
         "startTimeIso": "2026-03-23T10:20:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Indexer tier already matched pro for bltz-franky-05",
         "status": "succeeded",
         "configSteps": [
           {
@@ -931,7 +937,7 @@
           "lootChestRoleTxHash": "0x3e918854f4e01cb33d9d9a44a27904b07bf1a8a3213da5f94b30c65050600dc",
           "indexerCreated": true,
           "indexerMode": "github-actions",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -950,8 +956,10 @@
             "status": "completed",
             "conclusion": "success"
           },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T21:00:57.547Z"
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-05/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-24T01:56:47.506Z"
         },
         "durationSeconds": 5400
       },
@@ -961,7 +969,7 @@
         "startTimeIso": "2026-03-23T11:20:00.000Z",
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Indexer tier already matched pro for bltz-franky-06",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1125,7 +1133,7 @@
           "lootChestRoleTxHash": "0x607d0b585f805ddd262aff6739bf93310a6117f62d0339d878b8329e28fc7f6",
           "indexerCreated": true,
           "indexerMode": "github-actions",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -1144,8 +1152,10 @@
             "status": "completed",
             "conclusion": "success"
           },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T21:00:58.746Z"
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-06/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-24T01:56:47.583Z"
         },
         "durationSeconds": 5400
       },
@@ -1155,7 +1165,7 @@
         "startTimeIso": "2026-03-23T12:20:00.000Z",
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Indexer tier already matched pro for bltz-franky-07",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1319,7 +1329,7 @@
           "lootChestRoleTxHash": "0x20ca6af052df5e024056276505d99e374e9b68796b4ba27f4fc38cd21273e16",
           "indexerCreated": true,
           "indexerMode": "github-actions",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -1338,8 +1348,10 @@
             "status": "completed",
             "conclusion": "success"
           },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-03-23T21:00:59.855Z"
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-franky-07/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-24T01:56:47.659Z"
         },
         "durationSeconds": 5400
       }
