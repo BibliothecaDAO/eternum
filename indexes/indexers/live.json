@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T01:58:33.807Z",
+  "updatedAt": "2026-03-24T02:01:56.944Z",
   "entries": {
     "bltz-blinkery-01": {
       "gameName": "bltz-blinkery-01",
@@ -153,6 +153,33 @@
         "describedAt": "2026-03-24T01:58:33.807Z"
       },
       "updatedAt": "2026-03-24T01:58:33.807Z"
+    },
+    "bltz-thrum-725-01": {
+      "gameName": "bltz-thrum-725-01",
+      "liveState": {
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-01 not found"
+      },
+      "updatedAt": "2026-03-24T02:01:56.944Z"
+    },
+    "bltz-thrum-725-02": {
+      "gameName": "bltz-thrum-725-02",
+      "liveState": {
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-02 not found"
+      },
+      "updatedAt": "2026-03-24T02:01:56.944Z"
+    },
+    "bltz-thrum-725-03": {
+      "gameName": "bltz-thrum-725-03",
+      "liveState": {
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-03 not found"
+      },
+      "updatedAt": "2026-03-24T02:01:56.944Z"
     }
   }
 }
