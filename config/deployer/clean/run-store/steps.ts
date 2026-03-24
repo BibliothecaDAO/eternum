@@ -1,4 +1,5 @@
-import type { LaunchGameStepId } from "../types";
+import { resolveSeriesLaunchStepTitle } from "../launch/series-plan";
+import type { LaunchGameStepId, LaunchRotationStepId, LaunchSeriesStepId } from "../types";
 
 export function resolveLaunchStepTitle(stepId: LaunchGameStepId): string {
   switch (stepId) {
@@ -19,4 +20,12 @@ export function resolveLaunchStepTitle(stepId: LaunchGameStepId): string {
     case "sync-paymaster":
       return "Setting up gas coverage";
   }
+}
+
+export function resolveSeriesStepTitle(stepId: LaunchSeriesStepId): string {
+  return resolveSeriesLaunchStepTitle(stepId);
+}
+
+export function resolveRotationStepTitle(stepId: LaunchRotationStepId): string {
+  return resolveSeriesLaunchStepTitle(stepId);
 }

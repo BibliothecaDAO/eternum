@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { FactoryWorkerRunRecord } from "../api/factory-worker";
+import type { FactoryWorkerGameRunRecord, FactoryWorkerSeriesRunRecord } from "../api/factory-worker";
 import { readFactoryPendingLaunches, writeFactoryPendingLaunches } from "../pending-launch-storage";
 import { useFactoryV2 } from "./use-factory-v2";
 
@@ -21,15 +21,27 @@ vi.mock("../api/factory-worker", () => {
   return {
     FactoryWorkerApiError: MockFactoryWorkerApiError,
     listFactoryRuns: vi.fn(),
-    readFactoryRun: vi.fn(),
     readFactoryRunIfPresent: vi.fn(),
+    readFactoryRunByNameIfPresent: vi.fn(),
+    readFactorySeriesRunIfPresent: vi.fn(),
     createFactoryRun: vi.fn(),
+    createFactorySeriesRun: vi.fn(),
     continueFactoryRun: vi.fn(),
+    continueFactorySeriesRun: vi.fn(),
     isFactoryWorkerEnvironmentSupported: vi.fn((environmentId: string) =>
       ["slot.eternum", "mainnet.eternum", "slot.blitz", "mainnet.blitz"].includes(environmentId),
     ),
   };
 });
+
+vi.mock("@/hooks/use-factory-series", () => ({
+  useFactorySeries: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    isFetching: false,
+    error: null,
+  })),
+}));
 
 vi.mock("../funny-names", () => ({
   buildFandomizedGameName: vi.fn((mode: string, sequenceNumber: number) => `${mode}-launch-${sequenceNumber}`),
@@ -53,9 +65,11 @@ vi.mock("./use-factory-v2-map-options", () => ({
 import {
   FactoryWorkerApiError,
   createFactoryRun,
+  createFactorySeriesRun,
   listFactoryRuns,
-  readFactoryRun,
+  readFactoryRunByNameIfPresent,
   readFactoryRunIfPresent,
+  readFactorySeriesRunIfPresent,
 } from "../api/factory-worker";
 
 const waitForAsyncWork = async () => {
@@ -78,7 +92,7 @@ function HookHarness() {
   );
 }
 
-const buildRunRecord = (overrides: Partial<FactoryWorkerRunRecord> = {}): FactoryWorkerRunRecord => ({
+const buildRunRecord = (overrides: Partial<FactoryWorkerGameRunRecord> = {}): FactoryWorkerGameRunRecord => ({
   version: 1,
   runId: "run-1",
   environment: "slot.eternum",
@@ -116,6 +130,74 @@ const buildRunRecord = (overrides: Partial<FactoryWorkerRunRecord> = {}): Factor
   ...overrides,
 });
 
+const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> = {}): FactoryWorkerSeriesRunRecord => ({
+  version: 1,
+  kind: "series",
+  runId: "series-run-1",
+  environment: "slot.blitz",
+  chain: "slot",
+  gameType: "blitz",
+  seriesName: "bltz-weekend-cup",
+  status: "running",
+  executionMode: "fast_trial",
+  requestedLaunchStep: "full",
+  inputPath: "/tmp/series-input.json",
+  latestLaunchRequestId: "series-launch-1",
+  currentStepId: "create-worlds",
+  createdAt: "2026-03-19T10:00:00.000Z",
+  updatedAt: "2026-03-19T10:01:00.000Z",
+  workflow: {
+    workflowName: "game-launch.yml",
+  },
+  autoRetry: {
+    enabled: true,
+    intervalMinutes: 15,
+  },
+  steps: [
+    {
+      id: "create-series",
+      title: "Create series",
+      status: "succeeded",
+      workflowStepName: "create-series",
+      latestEvent: "Series created.",
+    },
+    {
+      id: "create-worlds",
+      title: "Create worlds",
+      status: "running",
+      workflowStepName: "create-worlds",
+      latestEvent: "Creating worlds.",
+    },
+  ],
+  summary: {
+    environment: "slot.blitz",
+    chain: "slot",
+    gameType: "blitz",
+    seriesName: "bltz-weekend-cup",
+    rpcUrl: "http://localhost:5050",
+    factoryAddress: "0x123",
+    autoRetryEnabled: true,
+    autoRetryIntervalMinutes: 15,
+    dryRun: false,
+    configMode: "batched",
+    seriesCreated: true,
+    games: [
+      {
+        gameName: "bltz-weekend-cup-01",
+        startTime: 1773837600,
+        startTimeIso: "2026-03-18T10:00:00.000Z",
+        seriesGameNumber: 1,
+        currentStepId: "create-worlds",
+        latestEvent: "World created.",
+        status: "succeeded",
+        artifacts: {},
+      },
+    ],
+  },
+  artifacts: {},
+  ...overrides,
+});
+
 const getFactory = () => {
   if (!latestFactory) {
     throw new Error("Factory hook did not render.");
@@ -140,10 +222,12 @@ describe("useFactoryV2 pending launch cache", () => {
 
     vi.mocked(listFactoryRuns).mockResolvedValue([]);
     vi.mocked(readFactoryRunIfPresent).mockResolvedValue(null);
-    vi.mocked(readFactoryRun).mockImplementation(async (_environment, gameName) =>
-      buildRunRecord({ gameName, runId: `run:${gameName}` }),
+    vi.mocked(readFactoryRunByNameIfPresent).mockImplementation(async (_environment, runName) =>
+      buildRunRecord({ gameName: runName, runId: `run:${runName}` }),
     );
+    vi.mocked(readFactorySeriesRunIfPresent).mockResolvedValue(null);
     vi.mocked(createFactoryRun).mockResolvedValue(undefined);
+    vi.mocked(createFactorySeriesRun).mockResolvedValue(undefined);
   });
 
   afterEach(async () => {
@@ -179,14 +263,15 @@ describe("useFactoryV2 pending launch cache", () => {
       expect(readFactoryPendingLaunches()).toEqual([
         {
           environmentId: "slot.blitz",
-          gameName: "blitz-launch-1",
+          name: "blitz-launch-1",
           mode: "blitz",
+          kind: "game",
           createdAt: expect.any(String),
         },
       ]);
     });
 
-    expect(getFactory().selectedRun?.id).toBe("pending:slot.blitz:blitz-launch-1");
+    expect(getFactory().selectedRun?.id).toBe("pending:game:slot.blitz:blitz-launch-1");
     expect(getFactory().pendingRunName).toBe("blitz-launch-1");
   });
 
@@ -207,8 +292,9 @@ describe("useFactoryV2 pending launch cache", () => {
       expect(readFactoryPendingLaunches()).toEqual([
         {
           environmentId: "slot.blitz",
-          gameName: "blitz-launch-1",
+          name: "blitz-launch-1",
           mode: "blitz",
+          kind: "game",
           createdAt: expect.any(String),
         },
       ]);
@@ -227,7 +313,7 @@ describe("useFactoryV2 pending launch cache", () => {
     });
 
     await vi.waitFor(() => {
-      expect(getFactory().selectedRun?.id).toBe("pending:slot.blitz:blitz-launch-1");
+      expect(getFactory().selectedRun?.id).toBe("pending:game:slot.blitz:blitz-launch-1");
     });
 
     expect(getFactory().selectedMode).toBe("blitz");
@@ -252,15 +338,16 @@ describe("useFactoryV2 pending launch cache", () => {
       expect(readFactoryPendingLaunches()).toEqual([
         {
           environmentId: "slot.blitz",
-          gameName: "blitz-launch-1",
+          name: "blitz-launch-1",
           mode: "blitz",
+          kind: "game",
           createdAt: expect.any(String),
         },
       ]);
     });
 
     expect(getFactory().selectedMode).toBe("blitz");
-    expect(getFactory().modeRuns[0]?.id).toBe("pending:slot.blitz:blitz-launch-1");
+    expect(getFactory().modeRuns[0]?.id).toBe("pending:game:slot.blitz:blitz-launch-1");
     expect(getFactory().pendingRunName).toBe("blitz-launch-1");
     expect(getFactory().modeRuns[0]?.steps.map((step) => step.id)).toEqual([
       "launch-request",
@@ -276,8 +363,9 @@ describe("useFactoryV2 pending launch cache", () => {
     writeFactoryPendingLaunches([
       {
         environmentId: "slot.eternum",
-        gameName: "cached-launch",
+        name: "cached-launch",
         mode: "eternum",
+        kind: "game",
         createdAt: "2026-03-19T09:00:00.000Z",
       },
     ]);
@@ -288,12 +376,12 @@ describe("useFactoryV2 pending launch cache", () => {
     });
 
     await vi.waitFor(() => {
-      expect(getFactory().modeRuns[0]?.id).toBe("pending:slot.eternum:cached-launch");
+      expect(getFactory().modeRuns[0]?.id).toBe("pending:game:slot.eternum:cached-launch");
     });
 
     expect(getFactory().selectedMode).toBe("eternum");
     expect(getFactory().selectedEnvironmentId).toBe("slot.eternum");
-    expect(getFactory().selectedRun?.id).toBe("pending:slot.eternum:cached-launch");
+    expect(getFactory().selectedRun?.id).toBe("pending:game:slot.eternum:cached-launch");
     expect(getFactory().pendingRunName).toBe("cached-launch");
   });
 
@@ -301,8 +389,9 @@ describe("useFactoryV2 pending launch cache", () => {
     writeFactoryPendingLaunches([
       {
         environmentId: "mainnet.eternum",
-        gameName: "mainnet-launch",
+        name: "mainnet-launch",
         mode: "eternum",
+        kind: "game",
         createdAt: "2026-03-21T09:00:00.000Z",
       },
     ]);
@@ -313,7 +402,7 @@ describe("useFactoryV2 pending launch cache", () => {
     });
 
     await vi.waitFor(() => {
-      expect(getFactory().modeRuns[0]?.id).toBe("pending:mainnet.eternum:mainnet-launch");
+      expect(getFactory().modeRuns[0]?.id).toBe("pending:game:mainnet.eternum:mainnet-launch");
     });
 
     expect(getFactory().selectedEnvironmentId).toBe("mainnet.eternum");
@@ -341,13 +430,14 @@ describe("useFactoryV2 pending launch cache", () => {
     writeFactoryPendingLaunches([
       {
         environmentId: "slot.eternum",
-        gameName: "cached-launch",
+        name: "cached-launch",
         mode: "eternum",
+        kind: "game",
         createdAt: "2026-03-19T09:00:00.000Z",
       },
     ]);
     vi.mocked(listFactoryRuns).mockResolvedValue([realRun]);
-    vi.mocked(readFactoryRun).mockResolvedValue(realRun);
+    vi.mocked(readFactoryRunByNameIfPresent).mockResolvedValue(realRun);
 
     await act(async () => {
       root.render(<HookHarness />);
@@ -372,13 +462,14 @@ describe("useFactoryV2 pending launch cache", () => {
     writeFactoryPendingLaunches([
       {
         environmentId: "slot.eternum",
-        gameName: "cached-launch",
+        name: "cached-launch",
         mode: "eternum",
+        kind: "game",
         createdAt: "2026-03-19T09:00:00.000Z",
       },
     ]);
     vi.mocked(readFactoryRunIfPresent).mockResolvedValue(realRun);
-    vi.mocked(readFactoryRun).mockResolvedValue(realRun);
+    vi.mocked(readFactoryRunByNameIfPresent).mockResolvedValue(realRun);
 
     await act(async () => {
       root.render(<HookHarness />);
@@ -406,7 +497,7 @@ describe("useFactoryV2 pending launch cache", () => {
     });
 
     vi.mocked(readFactoryRunIfPresent).mockResolvedValueOnce(null).mockResolvedValueOnce(realRun);
-    vi.mocked(readFactoryRun).mockResolvedValue(realRun);
+    vi.mocked(readFactoryRunByNameIfPresent).mockResolvedValue(realRun);
     vi.mocked(createFactoryRun).mockRejectedValue(new FactoryWorkerApiError("Conflict", 409));
 
     await act(async () => {
@@ -422,7 +513,7 @@ describe("useFactoryV2 pending launch cache", () => {
     expect(readFactoryPendingLaunches()).toEqual([]);
     expect(getFactory().selectedRun?.id).toBe("run-conflict-1");
     expect(createFactoryRun).toHaveBeenCalledTimes(1);
-    expect(readFactoryRunIfPresent).toHaveBeenCalledTimes(2);
+    expect(readFactoryRunIfPresent).toHaveBeenCalledTimes(3);
   });
 
   it("clears the pending cache when launch fails before a run appears", async () => {
@@ -464,9 +555,45 @@ describe("useFactoryV2 pending launch cache", () => {
     });
 
     await vi.waitFor(() => {
-      expect(getFactory().modeRuns[0]?.id).toBe("pending:slot.blitz:blitz-launch-1");
+      expect(getFactory().modeRuns[0]?.id).toBe("pending:game:slot.blitz:blitz-launch-1");
     });
 
     expect(getFactory().pendingRunName).toBe("blitz-launch-1");
+  });
+
+  it("still dispatches a series launch when the series already has a parent run", async () => {
+    const existingSeriesRun = buildSeriesRunRecord();
+
+    vi.mocked(listFactoryRuns).mockResolvedValue([existingSeriesRun]);
+    vi.mocked(createFactorySeriesRun).mockImplementation(() => new Promise(() => {}));
+
+    await act(async () => {
+      root.render(<HookHarness />);
+      await waitForAsyncWork();
+    });
+
+    await act(async () => {
+      getFactory().selectLaunchKind("series");
+      getFactory().setDraftSeriesName("bltz-weekend-cup");
+      await waitForAsyncWork();
+    });
+
+    await act(async () => {
+      void getFactory().launchSelectedPreset();
+      await waitForAsyncWork();
+    });
+
+    await vi.waitFor(() => {
+      expect(createFactorySeriesRun).toHaveBeenCalledTimes(1);
+    });
+
+    expect(createFactorySeriesRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        environment: "slot.blitz",
+        seriesName: "bltz-weekend-cup",
+      }),
+    );
+    expect(getFactory().pendingRunName).toBe("bltz-weekend-cup");
+    expect(getFactory().selectedRun?.id).toBe("pending:series:slot.blitz:bltz-weekend-cup");
   });
 });

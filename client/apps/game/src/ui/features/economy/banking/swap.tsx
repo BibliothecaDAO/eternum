@@ -275,67 +275,64 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
   return (
     <div>
-      <div className="amm-swap-selector mx-auto  px-3 py-1">
-        <div className="relative my-2 space-y-1">
+      <div className="amm-swap-selector mx-auto max-w-lg">
+        <div className="flex flex-col gap-1 my-2">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
-          <div className="absolute left-1/2 top-[94px]">
-            <Button isLoading={false} disabled={false} onClick={onInvert} size="md" className="">
-              <Refresh
-                className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`}
-              ></Refresh>
+          <div className="flex justify-center -my-2 relative z-10">
+            <Button
+              isLoading={false}
+              disabled={false}
+              onClick={onInvert}
+              size="md"
+              className="rounded-full border border-gold/20 bg-brown/90 hover:bg-gold/10"
+            >
+              <Refresh className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`} />
             </Button>
           </div>
           {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
         </div>
         <div className="p-2 w-full mx-auto">
-          <div className="w-full flex flex-col justify-center ">
-            <table className="text-xs text-gold/60 mx-auto">
-              <tbody>
-                <tr className="text-gold">
-                  <td>Price</td>
-                  <td className="text-left px-8 flex gap-4">
-                    <>{`1 ${chosenResourceName} = ${formatNumber(marketManager.getMarketPrice(), 4)} LORDS`}</>
-                  </td>
-                </tr>
-                <>
-                  <tr>
-                    <td>Slippage</td>
-                    <td className="text-left text-danger px-8">
-                      -
-                      {formatNumber(
-                        marketManager.slippage(
-                          isBuyResource
-                            ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
-                            : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
-                          isBuyResource,
-                        ) || 0,
-                        4,
-                      )}{" "}
-                      %
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      Bank Owner Fees{" "}
-                      <span className="text-green">({configManager.getAdminBankOwnerFee() * 100}%)</span>
-                    </td>
-                    <td className="text-left text-danger px-8">
-                      {formatNumber(-ownerFee, 4)} {"Lords"}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      LP Fees <span className="text-green">({configManager.getAdminBankLpFee() * 100}%)</span>
-                    </td>
-                    <td className="text-left text-danger px-8">
-                      {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
-                    </td>
-                  </tr>
-                </>
-              </tbody>
-            </table>
+          <div className="space-y-2 text-xs">
+            {/* Price */}
+            <div className="flex justify-between items-center">
+              <span className="text-gold/60">Price</span>
+              <span className="text-gold">{`1 ${chosenResourceName} = ${formatNumber(marketManager.getMarketPrice(), 4)} LORDS`}</span>
+            </div>
+            {/* Slippage */}
+            <div className="flex justify-between items-center">
+              <span className="text-gold/60">Slippage</span>
+              <span className="text-red">
+                -
+                {formatNumber(
+                  marketManager.slippage(
+                    isBuyResource
+                      ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
+                      : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
+                    isBuyResource,
+                  ) || 0,
+                  4,
+                )}
+                %
+              </span>
+            </div>
+            {/* Bank Owner Fees */}
+            <div className="flex justify-between items-center">
+              <span className="text-gold/60">
+                Bank Owner Fee <span className="text-green">({configManager.getAdminBankOwnerFee() * 100}%)</span>
+              </span>
+              <span className="text-red">{formatNumber(-ownerFee, 4)} Lords</span>
+            </div>
+            {/* LP Fees */}
+            <div className="flex justify-between items-center">
+              <span className="text-gold/60">
+                LP Fee <span className="text-green">({configManager.getAdminBankLpFee() * 100}%)</span>
+              </span>
+              <span className="text-red">
+                {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
+              </span>
+            </div>
           </div>
-          <div className="w-full flex flex-col justify-center mt-4">
+          <div className="w-full flex flex-col justify-center mt-3 gap-2">
             <Button
               className="swap-button-selector text-brown"
               isLoading={false}
@@ -346,9 +343,9 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
               Swap {isBuyResource ? "Lords" : chosenResourceName} for {isBuyResource ? chosenResourceName : "Lords"}
             </Button>
             {!canSwap && (
-              <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
-                {!amountsBiggerThanZero && <div>Warning: Amount must be greater than zero</div>}
-                {!hasEnough && <div>Warning: Not enough resources for this swap</div>}
+              <div className="mt-2 p-2 rounded-lg bg-red/10 border border-red/20 text-center">
+                {!amountsBiggerThanZero && <div className="text-xs text-red/80">Enter an amount to swap</div>}
+                {!hasEnough && <div className="text-xs text-red">Insufficient balance</div>}
               </div>
             )}
           </div>

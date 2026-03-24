@@ -5,6 +5,7 @@ export const DEFAULT_VERSION = "180";
 export const DEFAULT_SLOT_MAX_ACTIONS = 300;
 export const DEFAULT_MAINNET_MAX_ACTIONS = 70;
 export const DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT = 3;
+export const DEFAULT_CREATE_GAME_RETRY_COUNT = 5;
 export const DEFAULT_CREATE_GAME_RETRY_DELAY_MS = 10_000;
 export const DEFAULT_GAME_LAUNCH_WORKFLOW_FILE = "game-launch.yml";
 export const DEFAULT_FACTORY_RUN_STORE_BRANCH = "factory-runs";
@@ -14,8 +15,11 @@ export const DEFAULT_FACTORY_INDEX_TIMEOUT_MS = 5 * 60 * 1000;
 export const DEFAULT_FACTORY_INDEX_POLL_MS = 5_000;
 export const DEFAULT_CARTRIDGE_API_BASE = "https://api.cartridge.gg";
 export const DEFAULT_TORII_WORKFLOW_FILE = "factory-torii-deployer.yml";
+export const DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE = "factory-indexer-maintenance.yml";
 export const DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS = 20 * 60 * 1000;
 export const DEFAULT_INDEXER_WORKFLOW_POLL_MS = 5_000;
+export const DEFAULT_TORII_VERSION = "v1.8.15";
+export const DEFAULT_TORII_SLOT_TEAM = "realms-eternum";
 export const DEFAULT_VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
 export const DEFAULT_MAINNET_FACTORY_ADDRESS = "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da";
 export const DEFAULT_SLOT_FACTORY_ADDRESS = "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb";
@@ -51,6 +55,7 @@ const SLOT_DEFAULTS = {
   createGame: {
     maxActions: DEFAULT_SLOT_MAX_ACTIONS,
     submissionCount: 1,
+    retryCount: DEFAULT_CREATE_GAME_RETRY_COUNT,
     retryDelayMs: 0,
   },
 };
@@ -61,6 +66,7 @@ const MAINNET_DEFAULTS = {
   createGame: {
     maxActions: DEFAULT_MAINNET_MAX_ACTIONS,
     submissionCount: DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT,
+    retryCount: DEFAULT_CREATE_GAME_RETRY_COUNT,
     retryDelayMs: DEFAULT_CREATE_GAME_RETRY_DELAY_MS,
   },
 };
