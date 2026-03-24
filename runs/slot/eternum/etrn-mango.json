@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-mango",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-mango/23475656887-1.json",
   "latestLaunchRequestId": "23475656887-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-24T05:52:11.779Z",
-  "updatedAt": "2026-03-24T06:08:04.644Z",
+  "updatedAt": "2026-03-24T06:08:22.488Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,11 +81,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Finishing setup succeeded",
       "startedAt": "2026-03-24T06:08:04.644Z",
-      "finishedAt": "2026-03-24T05:55:50.954Z"
+      "finishedAt": "2026-03-24T06:08:22.488Z"
     }
   ],
   "artifacts": {
@@ -98,14 +98,13 @@
     "worldConfigTxHash": "0x12888223178a6cf38edc0d56422e9f7c69eb65971c8bc7579d906d8ae520c98",
     "lootChestRoleTxHash": "0x147f11c3a266cc464b4ad9d42262da86691ca79fa0b0fb1a3812a3bf92d1b1a",
     "villagePassRoleTxHash": "0x66da2beaf1b48fda31691b02946723920c5683de311b5b2960950a7755b7aba",
-    "createBanksTxHash": "0x219fcc9a164a55d6e8c876bbb1035382dae69d92a88d1a3138f940cb692d1dc"
+    "createBanksTxHash": "0x219fcc9a164a55d6e8c876bbb1035382dae69d92a88d1a3138f940cb692d1dc",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/etrn-mango/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-03-24T06:08:21.041Z"
   },
-  "activeLease": {
-    "launchRequestId": "23475656887-1",
-    "workflowRunId": 23475656887,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-24T06:08:04.644Z",
-    "expiresAt": "2026-03-24T06:53:04.644Z"
-  }
+  "completedAt": "2026-03-24T06:08:22.488Z"
 }
