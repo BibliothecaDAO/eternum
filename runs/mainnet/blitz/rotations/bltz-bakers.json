@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23495465469-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T14:44:30.319Z",
-  "updatedAt": "2026-03-24T14:44:51.011Z",
+  "updatedAt": "2026-03-24T14:44:54.892Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -46,9 +46,10 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Creating games",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Creating games started",
+      "startedAt": "2026-03-24T14:44:54.892Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -212,5 +213,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-bakers.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T14:44:49.418Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23495465469-1",
+    "workflowRunId": 23495465469,
+    "workflowRunAttempt": 1,
+    "stepId": "create-worlds",
+    "acquiredAt": "2026-03-24T14:44:54.892Z",
+    "expiresAt": "2026-03-24T15:29:54.892Z"
   }
 }
