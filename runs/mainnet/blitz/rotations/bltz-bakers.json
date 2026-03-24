@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-bakers/23496582607-1.json",
   "latestLaunchRequestId": "23496582607-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "create-series",
   "createdAt": "2026-03-24T14:44:30.319Z",
-  "updatedAt": "2026-03-24T15:06:49.917Z",
+  "updatedAt": "2026-03-24T15:06:56.298Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -37,9 +37,10 @@
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games"
+      "latestEvent": "Creating series started",
+      "startedAt": "2026-03-24T15:06:56.298Z"
     },
     {
       "id": "create-worlds",
@@ -549,5 +550,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-bakers.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T14:44:49.418Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23496582607-1",
+    "workflowRunId": 23496582607,
+    "workflowRunAttempt": 1,
+    "stepId": "create-series",
+    "acquiredAt": "2026-03-24T15:06:56.298Z",
+    "expiresAt": "2026-03-24T15:51:56.298Z"
   }
 }
