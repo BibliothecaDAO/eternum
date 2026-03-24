@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "sg-65",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/sg-65/23478147463-1.json",
   "latestLaunchRequestId": "23478147463-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-24T07:33:01.010Z",
-  "updatedAt": "2026-03-24T07:35:27.282Z",
+  "updatedAt": "2026-03-24T07:35:43.128Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-24T07:35:27.282Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-24T07:35:27.282Z",
+      "finishedAt": "2026-03-24T07:35:43.128Z"
     }
   ],
   "artifacts": {
@@ -76,14 +77,13 @@
     "worldAddress": "0x065fc393c424dad63942eb96493c8e8e30f10baef9836f61be425d96b9b33782",
     "createGameTxHash": "0x6c1d22276566791149eda3eb365ff7f40aecfa9e735d4d06dc484e119fd929a",
     "configureTxHash": "0x5a30748805854d77bc7bc311aaa6af90f333c1014b44cd010b1203150856b31",
-    "lootChestRoleTxHash": "0x72a11aa5fb05f3b3cb6e368be316149109fb2a2ab2da3da632b47b3c4a0934c"
+    "lootChestRoleTxHash": "0x72a11aa5fb05f3b3cb6e368be316149109fb2a2ab2da3da632b47b3c4a0934c",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/sg-65/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-03-24T07:35:41.712Z"
   },
-  "activeLease": {
-    "launchRequestId": "23478147463-1",
-    "workflowRunId": 23478147463,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-24T07:35:27.282Z",
-    "expiresAt": "2026-03-24T08:20:27.282Z"
-  }
+  "completedAt": "2026-03-24T07:35:43.128Z"
 }
