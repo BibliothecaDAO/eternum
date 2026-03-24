@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T15:53:36.213Z",
+  "updatedAt": "2026-03-24T15:54:50.108Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -11,11 +11,10 @@
       "path": "runs/mainnet/blitz/rotations/bltz-warzone.json",
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23498367471-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T15:53:36.213Z",
+      "updatedAt": "2026-03-24T15:54:50.108Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-03-24T16:38:36.213Z",
-      "hasRunningStep": true,
+      "currentStepId": "sync-paymaster",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "sync-paymaster",
       "autoRetry": {
@@ -24,39 +23,59 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-24T16:08:27.824Z",
-        "lastEvaluatedAt": "2026-03-24T15:53:27.824Z"
+        "nextEvaluationAt": "2026-03-24T16:09:50.108Z",
+        "lastEvaluatedAt": "2026-03-24T15:54:50.108Z"
       },
       "games": [
         {
           "gameName": "bltz-warzone-01",
           "startTime": 1774375200,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-24T15:53:50.826Z"
+          }
         },
         {
           "gameName": "bltz-warzone-02",
           "startTime": 1774393200,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-24T15:54:06.969Z"
+          }
         },
         {
           "gameName": "bltz-warzone-03",
           "startTime": 1774411200,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-24T15:54:19.116Z"
+          }
         },
         {
           "gameName": "bltz-warzone-04",
           "startTime": 1774429200,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-24T15:54:31.260Z"
+          }
         },
         {
           "gameName": "bltz-warzone-05",
           "startTime": 1774447200,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-03-24T15:54:48.449Z"
+          }
         }
       ]
     }
