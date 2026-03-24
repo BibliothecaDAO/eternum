@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T14:52:22.435Z",
+  "updatedAt": "2026-03-24T15:02:26.748Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -416,13 +416,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "basic",
+        "currentTier": "legendary",
         "url": "https://api.cartridge.gg/x/bltz-escapade-02/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:58.642Z"
+        "describedAt": "2026-03-24T15:02:26.667Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:02:26.748Z"
     },
     "bltz-escapade-03": {
       "gameName": "bltz-escapade-03",
@@ -506,6 +506,15 @@
         "describedAt": "2026-03-24T14:52:22.435Z"
       },
       "updatedAt": "2026-03-24T14:52:22.435Z"
+    },
+    "bltz-riffer-02": {
+      "gameName": "bltz-riffer-02",
+      "liveState": {
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-riffer-02 not found"
+      },
+      "updatedAt": "2026-03-24T15:02:26.748Z"
     }
   }
 }
