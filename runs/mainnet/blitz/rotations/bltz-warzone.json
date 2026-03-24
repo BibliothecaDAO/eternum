@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23503383441-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-24T17:32:38.798Z",
+  "updatedAt": "2026-03-24T17:32:38.811Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -54,9 +54,10 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete"
+      "latestEvent": "Waiting for games started",
+      "startedAt": "2026-03-24T17:32:38.811Z"
     },
     {
       "id": "configure-worlds",
@@ -1103,8 +1104,8 @@
     "launchRequestId": "23503383441-1",
     "workflowRunId": 23503383441,
     "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-24T17:32:17.371Z",
-    "expiresAt": "2026-03-24T18:17:17.371Z"
+    "stepId": "wait-for-factory-indexes",
+    "acquiredAt": "2026-03-24T17:32:38.811Z",
+    "expiresAt": "2026-03-24T18:17:38.811Z"
   }
 }
