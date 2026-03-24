@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23469865609-1",
   "currentStepId": null,
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-24T02:42:03.009Z",
+  "updatedAt": "2026-03-24T03:20:38.595Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -665,7 +665,7 @@
         "startTimeIso": "2026-03-24T01:10:00.000Z",
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Finishing setup succeeded",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -725,7 +725,9 @@
             "worldAddress": "0x0730922442db427815293e4a7a55757509a7296d335ce1cc45b078c5e1252e65",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-24T03:20:35.407Z"
         },
         "durationSeconds": 5400
       },
