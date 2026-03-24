@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-mango/23475224236-1.json",
   "latestLaunchRequestId": "23475224236-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-03-24T05:52:11.779Z",
-  "updatedAt": "2026-03-24T05:53:48.304Z",
+  "updatedAt": "2026-03-24T05:54:09.041Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-03-24T05:53:48.304Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-03-24T05:53:48.304Z",
+      "finishedAt": "2026-03-24T05:54:09.041Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -84,14 +85,8 @@
     "summaryPath": ".context/game-launch/slot-eternum-etrn-mango.json",
     "durationSeconds": 0,
     "worldAddress": "0x059466b5d6939b132ab7fdd5a8518b8142e2d61b903e342b651517e8957d01cd",
-    "createGameTxHash": "0x64c055b85c060897b24d30a4cd8a83bc6835589aa8f5c076278944bde17c34b"
-  },
-  "activeLease": {
-    "launchRequestId": "23475224236-1",
-    "workflowRunId": 23475224236,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-03-24T05:53:48.304Z",
-    "expiresAt": "2026-03-24T06:38:48.304Z"
+    "createGameTxHash": "0x64c055b85c060897b24d30a4cd8a83bc6835589aa8f5c076278944bde17c34b",
+    "configureTxHash": "0x12888223178a6cf38edc0d56422e9f7c69eb65971c8bc7579d906d8ae520c98",
+    "worldConfigTxHash": "0x12888223178a6cf38edc0d56422e9f7c69eb65971c8bc7579d906d8ae520c98"
   }
 }
