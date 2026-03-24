@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T13:12:23.177Z",
+  "updatedAt": "2026-03-24T13:17:03.268Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -407,9 +407,9 @@
         "url": "https://api.cartridge.gg/x/bltz-escapade-01/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T13:12:23.177Z"
+        "describedAt": "2026-03-24T13:17:03.268Z"
       },
-      "updatedAt": "2026-03-24T13:12:23.177Z"
+      "updatedAt": "2026-03-24T13:17:03.268Z"
     },
     "bltz-escapade-02": {
       "gameName": "bltz-escapade-02",
