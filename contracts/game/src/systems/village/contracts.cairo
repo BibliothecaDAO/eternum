@@ -137,7 +137,6 @@ pub mod village_systems {
                 BuildingCategory::ResourceLabor,
                 BuildingImpl::center(),
             );
-            ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, village_id);
 
             AchievementTrait::progress(
                 world, caller.into(), Tasks::VILLAGE_SETTLEMENT, 1, starknet::get_block_timestamp(),

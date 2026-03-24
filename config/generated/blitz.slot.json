@@ -14117,7 +14117,7 @@
         },
         {
           "address": "0xcbabfd52bff2b3becd24d310a7af3ffaa2d70c7c332a7afc4d1058ffe86ba9",
-          "class_hash": "0x45a080c6e3c165f1119627dafc1c0358e277a7f4effdf0d686637c1e4e36555",
+          "class_hash": "0x35334792879805184643953eb08733d92fd37f4e782b6a6586b845f51889b0f",
           "init_calldata": [],
           "tag": "s1_eternum-village_systems",
           "selector": "0x7626c7e3f63dbae9658ee764d453a8dbdbc0df9797ba797fa6564759c444771",
