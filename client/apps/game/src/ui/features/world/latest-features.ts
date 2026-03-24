@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-24",
+    title: "Auto Name During Settlement",
+    description:
+      "Realm and village settlement now automatically include your player name setup in the same wallet transaction when your address has no in-game name yet, avoiding extra manual steps.",
+    type: "feature",
+  },
+  {
     date: "2026-03-23",
     title: "Removed Light Test Dropdown",
     description:
