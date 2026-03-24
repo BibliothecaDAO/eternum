@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T15:48:09.426Z",
+  "updatedAt": "2026-03-24T16:03:46.593Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -239,80 +239,56 @@
     "bltz-escapade-01": {
       "gameName": "bltz-escapade-01",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "pro",
-        "url": "https://api.cartridge.gg/x/bltz-escapade-01/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T15:48:09.206Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-escapade-01 not found"
       },
-      "updatedAt": "2026-03-24T15:48:09.426Z"
+      "updatedAt": "2026-03-24T16:03:46.593Z"
     },
     "bltz-escapade-02": {
       "gameName": "bltz-escapade-02",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "legendary",
-        "url": "https://api.cartridge.gg/x/bltz-escapade-02/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T15:48:09.245Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-escapade-02 not found"
       },
-      "updatedAt": "2026-03-24T15:48:09.426Z"
+      "updatedAt": "2026-03-24T16:03:46.593Z"
     },
     "bltz-escapade-03": {
       "gameName": "bltz-escapade-03",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "basic",
-        "url": "https://api.cartridge.gg/x/bltz-escapade-03/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T15:48:09.331Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-escapade-03 not found"
       },
-      "updatedAt": "2026-03-24T15:48:09.426Z"
+      "updatedAt": "2026-03-24T16:03:46.593Z"
     },
     "bltz-escapade-04": {
       "gameName": "bltz-escapade-04",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "basic",
-        "url": "https://api.cartridge.gg/x/bltz-escapade-04/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T15:48:09.373Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-escapade-04 not found"
       },
-      "updatedAt": "2026-03-24T15:48:09.426Z"
+      "updatedAt": "2026-03-24T16:03:46.593Z"
     },
     "bltz-bakers-01": {
       "gameName": "bltz-bakers-01",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "legendary",
-        "url": "https://api.cartridge.gg/x/bltz-bakers-01/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T15:48:09.399Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-bakers-01 not found"
       },
-      "updatedAt": "2026-03-24T15:48:09.426Z"
+      "updatedAt": "2026-03-24T16:03:46.593Z"
     },
     "bltz-bakers-02": {
       "gameName": "bltz-bakers-02",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "legendary",
-        "url": "https://api.cartridge.gg/x/bltz-bakers-02/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T15:48:09.426Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-bakers-02 not found"
       },
-      "updatedAt": "2026-03-24T15:48:09.426Z"
+      "updatedAt": "2026-03-24T16:03:46.593Z"
     }
   }
 }
