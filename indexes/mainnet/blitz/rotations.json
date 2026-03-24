@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T09:36:53.803Z",
+  "updatedAt": "2026-03-24T09:36:59.094Z",
   "entries": {
     "bltz-escapade": {
       "kind": "rotation",
@@ -11,11 +11,10 @@
       "path": "runs/mainnet/blitz/rotations/bltz-escapade.json",
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23482644001-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T09:36:53.803Z",
+      "updatedAt": "2026-03-24T09:36:59.094Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "create-series",
-      "activeLeaseExpiresAt": "2026-03-24T10:21:53.803Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -25,8 +24,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-24T09:51:49.160Z",
-        "lastEvaluatedAt": "2026-03-24T09:36:49.160Z"
+        "nextEvaluationAt": "2026-03-24T09:51:59.094Z",
+        "lastEvaluatedAt": "2026-03-24T09:36:59.094Z"
       },
       "games": [
         {
