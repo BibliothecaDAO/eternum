@@ -33,7 +33,7 @@ const MarketTradingHistoryContent = memo(() => {
       setTradeEvents(events);
       setIsLoading(false);
     });
-  }, [address]);
+  }, [address, playerStructures]);
 
   const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
 
@@ -90,7 +90,7 @@ const MarketTradingHistoryContent = memo(() => {
         </div>
       ) : (
         paginatedEvents.map((trade, index) => {
-          return <TradeHistoryEvent key={index} trade={trade} />;
+          return <TradeHistoryEvent key={`${trade.event.eventTime.getTime()}-${trade.event.takerAddress}-${index}`} trade={trade} />;
         })
       )}
 

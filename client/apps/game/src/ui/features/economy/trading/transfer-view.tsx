@@ -19,20 +19,24 @@ export const TransferView = () => {
     setup: { components },
   } = useDojo();
 
-  const [otherVillages, setOtherVillages] = useState<EntityIdFormat[]>([]);
-  const [otherRealms, setOtherRealms] = useState<EntityIdFormat[]>([]);
-  const [otherHyperstructures, setOtherHyperstructures] = useState<EntityIdFormat[]>([]);
-  const [otherFragmentMines, setOtherFragmentMines] = useState<EntityIdFormat[]>([]);
-  const [otherBanks, setOtherBanks] = useState<EntityIdFormat[]>([]);
+  const [otherStructures, setOtherStructures] = useState<{
+    villages: EntityIdFormat[];
+    realms: EntityIdFormat[];
+    hyperstructures: EntityIdFormat[];
+    fragmentMines: EntityIdFormat[];
+    banks: EntityIdFormat[];
+  }>({ villages: [], realms: [], hyperstructures: [], fragmentMines: [], banks: [] });
 
   useEffect(() => {
     const fetch = async () => {
-      const otherStructures = await sqlApi.fetchOtherStructures(account.address);
-      setOtherVillages(otherStructures.filter((a) => a.category === StructureType.Village));
-      setOtherRealms(otherStructures.filter((a) => a.category === StructureType.Realm));
-      setOtherHyperstructures(otherStructures.filter((a) => a.category === StructureType.Hyperstructure));
-      setOtherFragmentMines(otherStructures.filter((a) => a.category === StructureType.FragmentMine));
-      setOtherBanks(otherStructures.filter((a) => a.category === StructureType.Bank));
+      const result = await sqlApi.fetchOtherStructures(account.address);
+      setOtherStructures({
+        villages: result.filter((a) => a.category === StructureType.Village),
+        realms: result.filter((a) => a.category === StructureType.Realm),
+        hyperstructures: result.filter((a) => a.category === StructureType.Hyperstructure),
+        fragmentMines: result.filter((a) => a.category === StructureType.FragmentMine),
+        banks: result.filter((a) => a.category === StructureType.Bank),
+      });
     };
     fetch();
   }, [account.address]);
@@ -91,31 +95,31 @@ export const TransferView = () => {
         name: "Your Banks",
       },
       {
-        entities: otherRealms.filter((a) =>
+        entities: otherStructures.realms.filter((a) =>
           guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
         ),
         name: "Other Realms",
       },
       {
-        entities: otherVillages.filter((a) =>
+        entities: otherStructures.villages.filter((a) =>
           guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
         ),
         name: "Other Villages",
       },
       {
-        entities: otherHyperstructures.filter((a) =>
+        entities: otherStructures.hyperstructures.filter((a) =>
           guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
         ),
         name: "Other Hyperstructures",
       },
       {
-        entities: otherFragmentMines.filter((a) =>
+        entities: otherStructures.fragmentMines.filter((a) =>
           guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
         ),
         name: "Other Fragment Mines",
       },
       {
-        entities: otherBanks.filter((a) =>
+        entities: otherStructures.banks.filter((a) =>
           guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
         ),
         name: "Other Banks",
@@ -123,11 +127,7 @@ export const TransferView = () => {
     ],
     [
       playerStructures,
-      otherRealms,
-      otherVillages,
-      otherHyperstructures,
-      otherFragmentMines,
-      otherBanks,
+      otherStructures,
       guildOnly,
       playersInPlayersGuildAddress,
     ],

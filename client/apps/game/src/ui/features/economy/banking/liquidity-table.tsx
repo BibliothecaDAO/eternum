@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
+import TextInput from "@/ui/design-system/atoms/text-input";
 import { LiquidityResourceRow } from "@/ui/features/economy/banking";
 import { ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";
@@ -10,13 +11,11 @@ type LiquidityTableProps = {
 };
 
 export const LiquidityTableHeader = () => (
-  <div className="grid grid-cols-7 gap-4 px-2 h6">
-    <div className="uppercase">Pair</div>
-    <div className="uppercase">
-      <p>Price</p>
-    </div>
-    <div className="uppercase col-span-2">Total Liquidity</div>
-    <div className="uppercase col-span-2">My Liquidity</div>
+  <div className="grid grid-cols-7 gap-4 px-2 pb-2 mb-2 border-b border-gold/10">
+    <div className="text-[10px] uppercase text-gold/50 font-medium">Pair</div>
+    <div className="text-[10px] uppercase text-gold/50 font-medium">Price</div>
+    <div className="text-[10px] uppercase text-gold/50 font-medium col-span-2">Total Liquidity</div>
+    <div className="text-[10px] uppercase text-gold/50 font-medium col-span-2">My Liquidity</div>
   </div>
 );
 
@@ -40,13 +39,11 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
   const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 
   return (
-    <div className="amm-liquidity-selector p-4 h-full panel-wood overflow-x-auto relative">
-      <input
-        type="text"
+    <div className="amm-liquidity-selector h-full overflow-x-auto relative">
+      <TextInput
         placeholder="Search resources..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full p-2 mb-6 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded"
+        onChange={setSearchTerm}
+        className="w-full mb-4"
       />
       <LiquidityTableHeader />
       <div className="overflow-y-auto">

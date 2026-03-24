@@ -2,7 +2,6 @@ import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import TextInput from "@/ui/design-system/atoms/text-input";
-import { Headline } from "@/ui/design-system/molecules/headline";
 import { TravelInfo } from "@/ui/features/economy/resources";
 import { SelectEntityFromList, SelectResources } from "@/ui/features/economy/trading";
 import { ToggleComponent } from "@/ui/shared";
@@ -104,13 +103,17 @@ const SelectEntitiesStep = memo(
 
     return (
       <>
-        <div className="w-full flex flex-col justify-center items-center">
-          {formattedArrivalTime && <div className="">Estimated Arrival: {formattedArrivalTime}</div>}
-        </div>
+        {formattedArrivalTime && (
+          <div className="flex justify-center mb-3">
+            <div className="text-xs text-gold/60 px-3 py-1 rounded-full bg-gold/5 border border-gold/10">
+              Estimated Arrival: {formattedArrivalTime}
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-6 mt-3">
           {/* From column */}
-          <div className="justify-around">
-            <Headline>From</Headline>
+          <div className="rounded-lg border border-gold/10 p-3">
+            <div className="text-xs uppercase text-gold/50 font-medium mb-2">From</div>
             <TextInput placeholder="Search Structures..." onChange={setFromSearchTerm} className="my-2" />
             {entitiesListWithAccountNames
               .filter(({ name }) => name !== "Other Realms")
@@ -135,13 +138,11 @@ const SelectEntitiesStep = memo(
               })}
           </div>
           {/* To column */}
-          <div className="justify-around overflow-auto">
-            <Headline>To</Headline>
-            <div className="p-1">
-              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => filterBy(!filtered)}>
-                <Checkbox enabled={filtered} />
-                <div>Tribe Only</div>
-              </div>
+          <div className="rounded-lg border border-gold/10 p-3 overflow-auto">
+            <div className="text-xs uppercase text-gold/50 font-medium mb-2">To</div>
+            <div className="flex items-center gap-2 cursor-pointer mb-2 text-xs" onClick={() => filterBy(!filtered)}>
+              <Checkbox enabled={filtered} />
+              <span className="text-gold/70">Tribe Only</span>
             </div>
 
             <TextInput placeholder="Search entities..." onChange={setToSearchTerm} className="my-2" />
@@ -164,7 +165,7 @@ const SelectEntitiesStep = memo(
         </div>
         <div className="flex justify-center w-full">
           <Button
-            className="w-full mt-8"
+            className="w-full mt-4"
             disabled={!selectedEntityIdFrom || !selectedEntityIdTo}
             variant="primary"
             size="md"
@@ -270,18 +271,21 @@ export const TransferBetweenEntities = ({
   }, [entitiesList]);
 
   return (
-    <div className="transfer-selector p-2 h-full">
-      <Headline className="text-center capitalize my-5">{currentStep?.title}</Headline>
+    <div className="transfer-selector px-4 py-2 h-full overflow-y-auto">
+      <div className="text-center text-sm font-medium text-gold/70 uppercase tracking-wider my-4">
+        {currentStep?.title}
+      </div>
 
-      <div className="flex justify-center gap-4 mb-8 text-xl">
+      <div className="flex justify-center items-center gap-3 mb-4 text-sm">
         {selectedEntityIdFrom?.toString() && selectedEntityIdTo?.toString() && (
           <>
-            <div className="p-2 self-center">
-              Transfer From: <span className="font-bold">{selectedEntityIdFrom?.name}</span>{" "}
+            <div className="px-3 py-1.5 rounded-lg bg-green/10 border border-green/20 text-green">
+              <span className="text-gold/50">From:</span>{" "}
+              <span className="font-medium">{selectedEntityIdFrom?.name}</span>
             </div>
-            <ArrowRight className="self-center" />
-            <div className="p-2 self-center">
-              Transfer To: <span className="font-bold">{selectedEntityIdTo?.name}</span>
+            <ArrowRight className="w-4 h-4 text-gold/40" />
+            <div className="px-3 py-1.5 rounded-lg bg-blueish/10 border border-blueish/20 text-blueish">
+              <span className="text-gold/50">To:</span> <span className="font-medium">{selectedEntityIdTo?.name}</span>
             </div>
           </>
         )}
@@ -306,8 +310,8 @@ export const TransferBetweenEntities = ({
       )}
 
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <div className="grid grid-cols-2 gap-8 px-8 h-full">
-          <div className=" bg-gold/10  h-auto border border-gold/40">
+        <div className="grid grid-cols-2 gap-4 px-4 h-full">
+          <div className="bg-black/20 h-auto border border-gold/20 rounded-lg">
             <SelectResources
               selectedResourceIds={selectedResourceIds}
               setSelectedResourceIds={setSelectedResourceIds}
@@ -319,7 +323,7 @@ export const TransferBetweenEntities = ({
           </div>
 
           <div className=" ">
-            <div className="p-10 bg-gold/10  h-auto rounded-lg border border-gold/40">
+            <div className="p-6 bg-black/20 h-auto rounded-lg border border-gold/20">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
                   entityId={selectedEntityIdFrom?.entityId!}
@@ -363,9 +367,9 @@ export const TransferBetweenEntities = ({
 
 const FinalTransfer = memo(({ onNewTrade }: { onNewTrade: () => void }) => {
   return (
-    <div className=" justify-center items-center text-center">
-      <h4>Transfer successful!</h4>
-      <p>Check transfers in the right sidebar transfer menu.</p>
+    <div className="flex flex-col justify-center items-center text-center py-12">
+      <div className="text-lg text-green font-medium mb-2">Transfer successful!</div>
+      <div className="text-sm text-gold/60 mb-6">Check transfers in the right sidebar transfer menu.</div>
       <Button variant="primary" size="md" className="mt-4" onClick={onNewTrade}>
         New transfer
       </Button>
