@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "kind": "rotation",
+  "runId": "mainnet.blitz:rotation:bltz-bakers",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "rotationName": "bltz-bakers",
+  "seriesName": "bltz-bakers",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-bakers/23495465469-1.json",
+  "latestLaunchRequestId": "23495465469-1",
+  "currentStepId": "create-series",
+  "createdAt": "2026-03-24T14:44:30.319Z",
+  "updatedAt": "2026-03-24T14:44:30.319Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23495465469,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23495465469",
+    "ref": "codex/factory-v2-rotation-review",
+    "sha": "c62f2429a5f51504f8eb67e45d299f71fa22e891"
+  },
+  "autoRetry": {
+    "enabled": true,
+    "intervalMinutes": 15
+  },
+  "evaluation": {
+    "intervalMinutes": 15,
+    "nextEvaluationAt": "2026-03-24T14:59:30.319Z",
+    "lastEvaluatedAt": "2026-03-24T14:44:30.319Z"
+  },
+  "steps": [
+    {
+      "id": "create-series",
+      "title": "Creating series",
+      "status": "pending",
+      "workflowStepName": "Creating series",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-worlds",
+      "title": "Creating games",
+      "status": "pending",
+      "workflowStepName": "Creating games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-indexes",
+      "title": "Waiting for games",
+      "status": "pending",
+      "workflowStepName": "Waiting for games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-worlds",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-roles",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexers",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "sync-paymaster",
+      "title": "Setting up gas coverage",
+      "status": "pending",
+      "workflowStepName": "Setting up gas coverage",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "summary": {
+    "environment": "mainnet.blitz",
+    "chain": "mainnet",
+    "gameType": "blitz",
+    "rotationName": "bltz-bakers",
+    "seriesName": "bltz-bakers",
+    "firstGameStartTime": 1774364400,
+    "firstGameStartTimeIso": "2026-03-24T15:00:00.000Z",
+    "gameIntervalMinutes": 60,
+    "maxGames": 4,
+    "advanceWindowGames": 2,
+    "evaluationIntervalMinutes": 15,
+    "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+    "factoryAddress": "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
+    "autoRetryEnabled": true,
+    "autoRetryIntervalMinutes": 15,
+    "dryRun": false,
+    "configMode": "batched",
+    "seriesCreated": false,
+    "games": [
+      {
+        "gameName": "bltz-bakers-01",
+        "startTime": 1774364400,
+        "startTimeIso": "2026-03-24T15:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 1,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-bakers-02",
+        "startTime": 1774368000,
+        "startTimeIso": "2026-03-24T16:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 2,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      }
+    ],
+    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-bakers.json"
+  },
+  "artifacts": {
+    "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-bakers.json",
+    "seriesCreated": false
+  }
+}
