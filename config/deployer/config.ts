@@ -4,7 +4,6 @@ import {
   BRIDGE_FEE_DENOMINATOR,
   BuildingType,
   CapacityConfig,
-  HexGrid,
   MERCENARIES_NAME_FELT,
   RESOURCE_PRECISION,
   ResourcesIds,
@@ -51,6 +50,7 @@ import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliotheca
 import { byteArray, type Account } from "starknet";
 import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
+import { buildBankCoordsForMapCenterOffset, deriveMapCenterOffsetFromWorldConfigTx } from "./clean/eternum/banks";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 // Browser-compatible: Make fs optional for browser environments
@@ -109,6 +109,7 @@ export class GameConfigDeployer {
   public globalConfig: EternumConfig;
   public network: NetworkType;
   public skipSleeps: boolean = false;
+  public worldConfigTxHash?: string;
 
   constructor(config: EternumConfig, network: NetworkType) {
     this.globalConfig = config;
@@ -131,7 +132,7 @@ export class GameConfigDeployer {
 
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await setWorldConfig(config);
+    this.worldConfigTxHash = await setWorldConfig(config);
     await this.sleepNonLocal();
 
     await setGameModeConfig(config);
@@ -224,7 +225,7 @@ export class GameConfigDeployer {
 
   async setupBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await createBanks(config);
+    await createBanks(config, requireWorldConfigTxHash(this.worldConfigTxHash));
     await this.sleepNonLocal();
 
     // await mintResources(config);
@@ -363,7 +364,17 @@ export const setWorldConfig = async (config: Config) => {
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   `),
   );
+
+  return adminAddresstx.transaction_hash;
 };
+
+function requireWorldConfigTxHash(worldConfigTxHash: string | undefined): string {
+  if (worldConfigTxHash) {
+    return worldConfigTxHash;
+  }
+
+  throw new Error("Missing world config transaction hash. Run setWorldConfig before createBanks.");
+}
 
 export const SetResourceFactoryConfig = async (config: Config) => {
   console.log(
@@ -1970,28 +1981,20 @@ export const grantCollectibleEliteNftMinterRole = async (config: Config) => {
   console.log(chalk.green(`    ✔ Minter role granted for Elite NFT `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
 };
 
-export const createBanks = async (config: Config) => {
+export const createBanks = async (config: Config, worldConfigTxHash: string) => {
   console.log(
     chalk.cyan(`
   🏦 Bank Creation
   ═══════════════════════`),
   );
 
-  const banks = [];
-  const bank_coords = [];
-  // Find coordinates x steps from center in each direction
-  const stepsFromCenter = 15 * 21;
-  const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
-  for (const [_, coord] of Object.entries(distantCoordinates)) {
-    bank_coords.push({ alt: false, x: coord.x, y: coord.y });
-  }
-
-  for (let i = 0; i < config.config.banks.maxNumBanks; i++) {
-    banks.push({
-      name: `${config.config.banks.name} ${i + 1}`,
-      coord: bank_coords[i],
-    });
-  }
+  const mapCenterOffset = deriveMapCenterOffsetFromWorldConfigTx(worldConfigTxHash);
+  const banks = buildBankCoordsForMapCenterOffset(mapCenterOffset)
+    .slice(0, config.config.banks.maxNumBanks)
+    .map((coord, index) => ({
+      name: `${config.config.banks.name} ${index + 1}`,
+      coord,
+    }));
 
   const calldata = {
     signer: config.account,

@@ -21,6 +21,7 @@ pub mod village_systems {
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, Direction, NUM_DIRECTIONS};
     use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
+    use crate::models::resource::production::production::ProductionStrategyImpl;
     use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureVillageSlots, VillageTroop,

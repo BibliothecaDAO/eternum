@@ -4,6 +4,46 @@ import type { ConfigPatch } from "../common/merge-config";
 
 type ResourceInputsById = Record<number, ResourceCost[]>;
 
+const FOUNDATIONAL_RESOURCE_BUILDING_COMPLEX_COST: ResourceCost[] = [{ resource: ResourcesIds.Labor, amount: 30 }];
+
+const COMMON_MINE_BUILDING_COMPLEX_COST: ResourceCost[] = [
+  { resource: ResourcesIds.Labor, amount: 30 },
+  { resource: ResourcesIds.Wood, amount: 30 },
+];
+
+const UNCOMMON_RESOURCE_BUILDING_COMPLEX_COST: ResourceCost[] = [
+  { resource: ResourcesIds.Labor, amount: 120 },
+  { resource: ResourcesIds.Wood, amount: 120 },
+  { resource: ResourcesIds.Coal, amount: 60 },
+  { resource: ResourcesIds.Copper, amount: 30 },
+];
+
+const RARE_RESOURCE_BUILDING_COMPLEX_COST: ResourceCost[] = [
+  { resource: ResourcesIds.Labor, amount: 180 },
+  { resource: ResourcesIds.Wood, amount: 180 },
+  { resource: ResourcesIds.Coal, amount: 120 },
+  { resource: ResourcesIds.Copper, amount: 60 },
+];
+
+const UNIQUE_RESOURCE_BUILDING_COMPLEX_COST: ResourceCost[] = [
+  { resource: ResourcesIds.Labor, amount: 240 },
+  { resource: ResourcesIds.Wood, amount: 240 },
+  { resource: ResourcesIds.Coal, amount: 180 },
+  { resource: ResourcesIds.Copper, amount: 120 },
+];
+
+const FOUNDATIONAL_RESOURCE_BUILDING_SIMPLE_COST: ResourceCost[] = [{ resource: ResourcesIds.Labor, amount: 30 }];
+
+const COMMON_MINE_BUILDING_SIMPLE_COST: ResourceCost[] = [{ resource: ResourcesIds.Labor, amount: 90 }];
+
+const UNCOMMON_RESOURCE_BUILDING_SIMPLE_COST: ResourceCost[] = [{ resource: ResourcesIds.Labor, amount: 720 }];
+
+const RARE_RESOURCE_BUILDING_SIMPLE_COST: ResourceCost[] = [{ resource: ResourcesIds.Labor, amount: 1_200 }];
+
+const UNIQUE_RESOURCE_BUILDING_SIMPLE_COST: ResourceCost[] = [{ resource: ResourcesIds.Labor, amount: 1_800 }];
+
+const MYTHIC_RESOURCE_BUILDING_SIMPLE_COST: ResourceCost[] = [{ resource: ResourcesIds.Labor, amount: 2_400 }];
+
 const BUILDING_CAPACITY: Record<number, number> = {
   [BuildingType.None]: 0,
   [BuildingType.WorkersHut]: 6,
@@ -141,7 +181,7 @@ const COMPLEX_BUILDING_COSTS: ResourceInputsById = {
   [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 10 }], // Farm
   [BuildingType.ResourceFish]: [{ resource: ResourcesIds.Labor, amount: 10 }],
   [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Wood Mill
-  [BuildingType.ResourceStone]: [],
+  [BuildingType.ResourceStone]: FOUNDATIONAL_RESOURCE_BUILDING_COMPLEX_COST,
   [BuildingType.ResourceCoal]: [
     { resource: ResourcesIds.Labor, amount: 30 },
     { resource: ResourcesIds.Wood, amount: 30 },
@@ -151,36 +191,21 @@ const COMPLEX_BUILDING_COSTS: ResourceInputsById = {
     { resource: ResourcesIds.Wood, amount: 60 },
     { resource: ResourcesIds.Coal, amount: 30 },
   ], // Copper Smelter
-  [BuildingType.ResourceObsidian]: [],
-  [BuildingType.ResourceSilver]: [],
-  [BuildingType.ResourceIronwood]: [
-    { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 120 },
-    { resource: ResourcesIds.Coal, amount: 60 },
-    { resource: ResourcesIds.Copper, amount: 30 },
-  ], // Ironwood Mill
-  [BuildingType.ResourceColdIron]: [
-    { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 120 },
-    { resource: ResourcesIds.Coal, amount: 60 },
-    { resource: ResourcesIds.Copper, amount: 30 },
-  ], // Cold Iron Foundry
-  [BuildingType.ResourceGold]: [
-    { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 120 },
-    { resource: ResourcesIds.Coal, amount: 60 },
-    { resource: ResourcesIds.Copper, amount: 30 },
-  ], // Gold Mine
-  [BuildingType.ResourceHartwood]: [],
-  [BuildingType.ResourceDiamonds]: [],
-  [BuildingType.ResourceSapphire]: [],
-  [BuildingType.ResourceRuby]: [],
-  [BuildingType.ResourceDeepCrystal]: [],
-  [BuildingType.ResourceIgnium]: [],
-  [BuildingType.ResourceEtherealSilica]: [],
-  [BuildingType.ResourceTrueIce]: [],
-  [BuildingType.ResourceTwilightQuartz]: [],
-  [BuildingType.ResourceAlchemicalSilver]: [],
+  [BuildingType.ResourceObsidian]: COMMON_MINE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceSilver]: UNCOMMON_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceIronwood]: UNCOMMON_RESOURCE_BUILDING_COMPLEX_COST, // Ironwood Mill
+  [BuildingType.ResourceColdIron]: UNCOMMON_RESOURCE_BUILDING_COMPLEX_COST, // Cold Iron Foundry
+  [BuildingType.ResourceGold]: UNCOMMON_RESOURCE_BUILDING_COMPLEX_COST, // Gold Mine
+  [BuildingType.ResourceHartwood]: RARE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceDiamonds]: RARE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceSapphire]: RARE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceRuby]: RARE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceDeepCrystal]: UNIQUE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceIgnium]: UNIQUE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceEtherealSilica]: UNIQUE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceTrueIce]: UNIQUE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceTwilightQuartz]: UNIQUE_RESOURCE_BUILDING_COMPLEX_COST,
+  [BuildingType.ResourceAlchemicalSilver]: UNIQUE_RESOURCE_BUILDING_COMPLEX_COST,
   [BuildingType.ResourceAdamantine]: [
     { resource: ResourcesIds.Labor, amount: 240 },
     { resource: ResourcesIds.Wood, amount: 180 },
@@ -286,27 +311,27 @@ const SIMPLE_BUILDING_COSTS: ResourceInputsById = {
   [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 10 }], // Farm
   [BuildingType.ResourceFish]: [{ resource: ResourcesIds.Labor, amount: 10 }],
   [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Wood Mill
-  [BuildingType.ResourceStone]: [],
+  [BuildingType.ResourceStone]: FOUNDATIONAL_RESOURCE_BUILDING_SIMPLE_COST,
   [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Labor, amount: 90 }], // Coal Mine
   [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Labor, amount: 300 }], // Copper Smelter
-  [BuildingType.ResourceObsidian]: [],
-  [BuildingType.ResourceSilver]: [],
-  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Ironwood Mill
-  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Cold Iron Foundry
-  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Gold Mine
-  [BuildingType.ResourceHartwood]: [],
-  [BuildingType.ResourceDiamonds]: [],
-  [BuildingType.ResourceSapphire]: [],
-  [BuildingType.ResourceRuby]: [],
-  [BuildingType.ResourceDeepCrystal]: [],
-  [BuildingType.ResourceIgnium]: [],
-  [BuildingType.ResourceEtherealSilica]: [],
-  [BuildingType.ResourceTrueIce]: [],
-  [BuildingType.ResourceTwilightQuartz]: [],
-  [BuildingType.ResourceAlchemicalSilver]: [],
-  [BuildingType.ResourceAdamantine]: [],
-  [BuildingType.ResourceMithral]: [],
-  [BuildingType.ResourceDragonhide]: [],
+  [BuildingType.ResourceObsidian]: COMMON_MINE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceSilver]: UNCOMMON_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceIronwood]: UNCOMMON_RESOURCE_BUILDING_SIMPLE_COST, // Ironwood Mill
+  [BuildingType.ResourceColdIron]: UNCOMMON_RESOURCE_BUILDING_SIMPLE_COST, // Cold Iron Foundry
+  [BuildingType.ResourceGold]: UNCOMMON_RESOURCE_BUILDING_SIMPLE_COST, // Gold Mine
+  [BuildingType.ResourceHartwood]: RARE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceDiamonds]: RARE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceSapphire]: RARE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceRuby]: RARE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceDeepCrystal]: UNIQUE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceIgnium]: UNIQUE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceEtherealSilica]: UNIQUE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceTrueIce]: UNIQUE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceTwilightQuartz]: UNIQUE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceAlchemicalSilver]: UNIQUE_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceAdamantine]: MYTHIC_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceMithral]: MYTHIC_RESOURCE_BUILDING_SIMPLE_COST,
+  [BuildingType.ResourceDragonhide]: MYTHIC_RESOURCE_BUILDING_SIMPLE_COST,
   // T1 Military Buildings - only available in simple mode
   [BuildingType.ResourceKnightT1]: [{ resource: ResourcesIds.Labor, amount: 1200 }], // T1 Barracks
   [BuildingType.ResourceCrossbowmanT1]: [{ resource: ResourcesIds.Labor, amount: 1200 }], // T1 Archery Range

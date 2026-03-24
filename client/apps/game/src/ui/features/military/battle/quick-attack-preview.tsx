@@ -13,6 +13,7 @@ import {
   Biome,
   CombatSimulator,
   configManager,
+  DEFAULT_COORD_ALT,
   formatTime,
   getEntityIdFromKeys,
   getGuardsByStructure,
@@ -43,6 +44,7 @@ interface ActorSummary {
   type: ActorType;
   id: ID;
   hex: { x: number; y: number };
+  alt?: boolean;
 }
 
 interface QuickAttackPreviewProps {
@@ -110,7 +112,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     target: targetData,
     targetResources,
     isLoading,
-  } = useAttackTargetData(attacker.id, target.hex);
+  } = useAttackTargetData(attacker.id, target.hex, target.alt ?? DEFAULT_COORD_ALT);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
   const biome = useMemo(() => Biome.getBiome(target.hex.x, target.hex.y), [target.hex.x, target.hex.y]);

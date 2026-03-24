@@ -28,7 +28,7 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.accountAddress).toBeUndefined();
     expect(environment.privateKey).toBeUndefined();
     expect(environment.createGame).toEqual({
-      maxActions: 70,
+      maxActions: 50,
       submissionCount: 3,
       retryCount: 5,
       retryDelayMs: 10000,
