@@ -10,19 +10,19 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/bltz-riffer/23494164991-1.json",
-  "latestLaunchRequestId": "23494164991-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-riffer/23496579010-1.json",
+  "latestLaunchRequestId": "23496579010-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T14:17:28.787Z",
-  "updatedAt": "2026-03-24T15:05:32.425Z",
+  "updatedAt": "2026-03-24T15:06:48.624Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23494164991,
+    "workflowRunId": 23496579010,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23494164991",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23496579010",
     "ref": "codex/factory-v2-rotation-review",
-    "sha": "59b88d6f2d1358eebd86635a0dff973e30b4e23e"
+    "sha": "c62f2429a5f51504f8eb67e45d299f71fa22e891"
   },
   "autoRetry": {
     "enabled": true,
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 5,
-    "nextEvaluationAt": "2026-03-24T15:10:32.425Z",
-    "lastEvaluatedAt": "2026-03-24T15:05:32.425Z"
+    "nextEvaluationAt": "2026-03-24T15:11:48.624Z",
+    "lastEvaluatedAt": "2026-03-24T15:06:48.624Z"
   },
   "steps": [
     {
@@ -39,17 +39,14 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-03-24T14:17:35.295Z",
-      "finishedAt": "2026-03-24T14:17:52.906Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-24T14:17:56.930Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -216,6 +213,55 @@
           "lastIndexerTierDispatchFailedAt": "2026-03-24T15:02:24.960Z",
           "lastIndexerTierDispatchError": "Torii deployment \"bltz-riffer-02\" does not exist"
         }
+      },
+      {
+        "gameName": "bltz-riffer-03",
+        "startTime": 1774369800,
+        "startTimeIso": "2026-03-24T16:30:00.000Z",
+        "durationSeconds": 7200,
+        "seriesGameNumber": 3,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-riffer.json",
@@ -225,13 +271,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-riffer.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T14:17:51.317Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23494164991-1",
-    "workflowRunId": 23494164991,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-24T14:17:56.930Z",
-    "expiresAt": "2026-03-24T15:02:56.930Z"
   }
 }
