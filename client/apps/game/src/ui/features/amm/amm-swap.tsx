@@ -214,7 +214,9 @@ export const AmmSwap = () => {
   const activePoolForFees = route?.kind === "direct" ? route.pool : route?.outputPool;
   const payAmountBigint = payAmount > 0 ? parseTokenAmount(payAmount.toString()) : 0n;
   const insufficientBalance = payAmount > 0 && payAmountBigint > payTokenBalance;
-  const canSwap = Boolean(isConfigured && client && route && payAmount > 0 && receiveAmount > 0 && !insufficientBalance);
+  const canSwap = Boolean(
+    isConfigured && client && route && payAmount > 0 && receiveAmount > 0 && !insufficientBalance,
+  );
   const lpFeePercent = activePoolForFees
     ? (Number(activePoolForFees.feeNum) / Number(activePoolForFees.feeDenom)) * 100
     : 0;
@@ -223,7 +225,7 @@ export const AmmSwap = () => {
     : 0;
 
   if (!isConfigured || !client) {
-    return <div className="text-sm text-gold/40">AMM is not configured.</div>;
+    return <div className="text-sm text-gold/40">The Agora is not configured.</div>;
   }
 
   if (!activePool) {

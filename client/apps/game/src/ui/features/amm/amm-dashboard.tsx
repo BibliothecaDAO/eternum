@@ -124,7 +124,7 @@ const AmmSelectedPoolSummary = ({
   if (!isConfigured) {
     return (
       <div className="rounded-[28px] border border-gold/10 bg-black/25 p-4 text-sm text-gold/45 backdrop-blur-[10px]">
-        AMM runtime config is missing.
+        The Agora runtime config is missing.
       </div>
     );
   }
@@ -139,7 +139,7 @@ const AmmSelectedPoolSummary = ({
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-[11px] uppercase tracking-[0.18em] text-gold/45">Selected Pool</div>
-            <div className="mt-1 text-sm text-gold/65">Pick a pool to see the AMM overview.</div>
+            <div className="mt-1 text-sm text-gold/65">Pick a pool to see the Agora overview.</div>
           </div>
           <button
             className="rounded-2xl border border-gold/20 px-3 py-2 text-xs uppercase tracking-[0.14em] text-gold/70 hover:border-gold/30 hover:text-gold lg:hidden"
@@ -275,7 +275,7 @@ const AmmActionCard = ({
   return (
     <section className="rounded-[28px] border border-gold/10 bg-black/30 p-4 shadow-[0_22px_60px_-38px_rgba(0,0,0,0.98)] backdrop-blur-[12px]">
       <div className="mb-4">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-gold/40">AMM Actions</div>
+        <div className="text-[11px] uppercase tracking-[0.18em] text-gold/40">Agora Actions</div>
         <div className="mt-1 text-sm text-gold/65">
           {activeAsset ? `${activeAsset.displayName} / LORDS` : "Select a pool to begin"}
         </div>

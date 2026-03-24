@@ -60,7 +60,7 @@ export const AmmRemoveLiquidity = () => {
   const canRemove = Boolean(client && pool && lpAmount > 0 && burnResult !== null);
 
   if (!isConfigured || !client) {
-    return <div className="text-sm text-gold/40">AMM is not configured.</div>;
+    return <div className="text-sm text-gold/40">The Agora is not configured.</div>;
   }
 
   if (!pool) {

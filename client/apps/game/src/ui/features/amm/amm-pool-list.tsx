@@ -70,8 +70,8 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
   if (!isConfigured || !client) {
     return (
       <div className={cn("rounded-2xl border border-gold/10 bg-black/25 p-4 backdrop-blur-[8px]", className)}>
-        <div className="text-center text-sm text-gold/40">AMM is not configured</div>
-        <div className="mt-1 text-center text-xs text-gold/30">Set the public AMM env vars to load pools</div>
+        <div className="text-center text-sm text-gold/40">The Agora is not configured</div>
+        <div className="mt-1 text-center text-xs text-gold/30">Set the public Agora env vars to load pools</div>
       </div>
     );
   }
@@ -113,7 +113,7 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
       <div className={cn("rounded-2xl border border-gold/10 bg-black/25 p-4 backdrop-blur-[8px]", className)}>
         <div className="text-sm text-gold/45">No pools seeded yet</div>
         <div className="mt-1 text-xs text-gold/30">
-          The connected AMM indexer is up, but it is not serving any pool rows.
+          The connected Agora indexer is up, but it is not serving any pool rows.
         </div>
       </div>
     );

@@ -50,10 +50,10 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
   },
   {
     id: "amm",
-    label: "AMM",
+    label: "Agora",
     icon: ArrowLeftRight,
     basePath: "/amm",
-    subMenu: [{ id: "amm", label: "AMM", tab: null }],
+    subMenu: [{ id: "amm", label: "AGORA", tab: null }],
   },
   {
     id: "profile",

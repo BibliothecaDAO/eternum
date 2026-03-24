@@ -111,7 +111,7 @@ export const AmmAddLiquidity = () => {
   const canAdd = Boolean(client && pool && lordsAmount > 0 && tokenAmount > 0);
 
   if (!isConfigured || !client) {
-    return <div className="text-sm text-gold/40">AMM is not configured.</div>;
+    return <div className="text-sm text-gold/40">The Agora is not configured.</div>;
   }
 
   if (!pool) {

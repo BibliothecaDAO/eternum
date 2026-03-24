@@ -34,7 +34,7 @@ export const AmmTradeHistory = () => {
   });
 
   if (!isConfigured || !client) {
-    return <div className="p-4 text-center text-gold/40 text-sm">AMM is not configured</div>;
+    return <div className="p-4 text-center text-gold/40 text-sm">The Agora is not configured</div>;
   }
 
   if (isLoading) {
