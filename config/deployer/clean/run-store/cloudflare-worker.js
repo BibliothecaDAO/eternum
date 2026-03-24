@@ -23,6 +23,8 @@ const FACTORY_LIVE_INDEXER_SNAPSHOT_PATH = "indexes/indexers/live.json";
 const DEFAULT_INDEXER_LEGENDARY_LEAD_MS = 30 * 60_000;
 const DEFAULT_INDEXER_PRO_COOLDOWN_MS = 40 * 60_000;
 const DEFAULT_INDEXER_TIER_REQUEST_COOLDOWN_MS = 15 * 60_000;
+const DEFAULT_FACTORY_RECENT_RUN_LIST_LIMIT = 50;
+const MAX_FACTORY_RECENT_RUN_LIST_LIMIT = 100;
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 const FACTORY_ENVIRONMENTS = ["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"];
 const GAME_PRIZE_FUNDING_STEP_ID = "configure-world";
@@ -350,12 +352,9 @@ async function handleListFactoryRuns(request, url, env) {
   validateEnvironment(environment);
 
   const github = createGitHubClient(env);
-  const [gameRuns, seriesRuns, rotationRuns] = await Promise.all([
-    readFactoryRunsForEnvironment(github, environment, resolveRunStoreBranch(env)),
-    readFactorySeriesRunsForEnvironment(github, environment, resolveRunStoreBranch(env)),
-    readFactoryRotationRunsForEnvironment(github, environment, resolveRunStoreBranch(env)),
-  ]);
-  const runs = [...gameRuns, ...seriesRuns, ...rotationRuns];
+  const branch = resolveRunStoreBranch(env);
+  const limit = resolveFactoryRecentRunListLimit(url);
+  const runs = await readRecentFactoryRunsForEnvironment(github, environment, branch, limit);
   return buildJsonResponse(request, env, { runs: runs.map(enrichFactoryRunResponse) }, 200);
 }
 
@@ -2335,6 +2334,24 @@ async function readFactoryRotationRunsForEnvironment(github, environment, branch
   return readFactoryRunsFromDirectory(github, directoryPath, branch);
 }
 
+async function readRecentFactoryRunsForEnvironment(github, environment, branch, limit) {
+  const recentEntries = await readRecentFactoryRunEntriesForEnvironment(github, environment, branch, limit);
+  const runs = await Promise.all(recentEntries.map((entry) => readBranchJsonIfPresent(github, entry.path, branch)));
+  return runs.filter(Boolean).sort(compareFactoryRunsByRecency);
+}
+
+async function readRecentFactoryRunEntriesForEnvironment(github, environment, branch, limit) {
+  const [gameEntries, seriesEntries, rotationEntries] = await Promise.all([
+    readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch),
+    readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch),
+    readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch),
+  ]);
+
+  return [...gameEntries, ...seriesEntries, ...rotationEntries]
+    .sort(compareFactoryMaintenanceEntriesByRecency)
+    .slice(0, limit);
+}
+
 async function readFactoryRunsFromDirectory(github, directoryPath, branch) {
   const response = await github.fetch(
     `/repos/${github.repo}/contents/${directoryPath}?ref=${encodeURIComponent(branch)}`,
@@ -2557,6 +2574,10 @@ function readFactoryMaintenanceIndexEntries(index) {
   return Object.values(index?.entries || {});
 }
 
+function compareFactoryMaintenanceEntriesByRecency(left, right) {
+  return compareFactoryUpdatedAtValues(right.updatedAt, left.updatedAt);
+}
+
 async function readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch) {
   return readFactoryMaintenanceIndexEntries(
     await readFactoryMaintenanceIndexIfPresent(github, environment, "game", branch),
@@ -2600,6 +2621,35 @@ async function updateFactoryMaintenanceIndexForRunRecord(github, branch, run) {
     }),
     `factory-runs: update ${entry.kind} maintenance index for ${entry.environment}/${entryKey}`,
   );
+}
+
+function resolveFactoryRecentRunListLimit(url) {
+  const rawLimit = Number.parseInt(url.searchParams.get("limit") || "", 10);
+
+  if (!Number.isFinite(rawLimit) || rawLimit <= 0) {
+    return DEFAULT_FACTORY_RECENT_RUN_LIST_LIMIT;
+  }
+
+  return Math.min(rawLimit, MAX_FACTORY_RECENT_RUN_LIST_LIMIT);
+}
+
+function compareFactoryRunsByRecency(left, right) {
+  return compareFactoryUpdatedAtValues(right.updatedAt, left.updatedAt);
+}
+
+function compareFactoryUpdatedAtValues(leftUpdatedAt, rightUpdatedAt) {
+  const leftTimestamp = Date.parse(leftUpdatedAt || "");
+  const rightTimestamp = Date.parse(rightUpdatedAt || "");
+
+  if (Number.isFinite(leftTimestamp) && Number.isFinite(rightTimestamp) && leftTimestamp !== rightTimestamp) {
+    return leftTimestamp - rightTimestamp;
+  }
+
+  if (Number.isFinite(leftTimestamp) !== Number.isFinite(rightTimestamp)) {
+    return Number.isFinite(leftTimestamp) ? 1 : -1;
+  }
+
+  return String(leftUpdatedAt || "").localeCompare(String(rightUpdatedAt || ""));
 }
 
 async function dispatchGameLaunchWorkflow(github, request) {

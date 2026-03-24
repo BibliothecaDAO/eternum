@@ -612,6 +612,175 @@ describe("factory worker recovery signals", () => {
     });
   });
 
+  test("lists recent runs from maintenance indexes without scanning run directories", async () => {
+    const fetchCalls: Array<string> = [];
+
+    globalThis.fetch = async (url) => {
+      const requestUrl = String(url);
+      fetchCalls.push(requestUrl);
+
+      if (requestUrl.includes("/contents/indexes/slot/blitz/games.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "game",
+          updatedAt: offsetTimestamp(-5_000),
+          entries: {
+            "bltz-recent-02": {
+              kind: "game",
+              environment: "slot.blitz",
+              gameName: "bltz-recent-02",
+              path: "runs/slot/blitz/bltz-recent-02.json",
+              status: "running",
+              updatedAt: offsetTimestamp(-5_000),
+              currentStepId: "configure-world",
+              hasRunningStep: true,
+              artifacts: {},
+            },
+          },
+        });
+      }
+
+      if (requestUrl.includes("/contents/indexes/slot/blitz/series.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "series",
+          updatedAt: offsetTimestamp(-15_000),
+          entries: {
+            "bltz-weekend-cup": {
+              kind: "series",
+              environment: "slot.blitz",
+              seriesName: "bltz-weekend-cup",
+              path: "runs/slot/blitz/series/bltz-weekend-cup.json",
+              status: "attention",
+              updatedAt: offsetTimestamp(-15_000),
+              currentStepId: "create-worlds",
+              hasRunningStep: false,
+              autoRetry: { enabled: true, intervalMinutes: 15 },
+              games: [],
+            },
+          },
+        });
+      }
+
+      if (requestUrl.includes("/contents/indexes/slot/blitz/rotations.json")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (requestUrl.includes("/contents/runs/slot/blitz/bltz-recent-02.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          runId: "slot.blitz:bltz-recent-02",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          gameName: "bltz-recent-02",
+          status: "running",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/bltz-recent-02/23450000000-1.json",
+          latestLaunchRequestId: "23450000000-1",
+          currentStepId: "configure-world",
+          createdAt: offsetTimestamp(-45_000),
+          updatedAt: offsetTimestamp(-5_000),
+          workflow: { workflowName: "game-launch.yml", ref: "next" },
+          steps: [
+            {
+              id: "create-world",
+              title: "Creating world",
+              status: "succeeded",
+              workflowStepName: "Creating world",
+              latestEvent: "World created.",
+            },
+            {
+              id: "configure-world",
+              title: "Applying settings",
+              status: "running",
+              workflowStepName: "Applying settings",
+              latestEvent: "Applying settings.",
+            },
+          ],
+          artifacts: {},
+        });
+      }
+
+      if (requestUrl.includes("/contents/runs/slot/blitz/series/bltz-weekend-cup.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "series",
+          runId: "slot.blitz:bltz-weekend-cup",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          seriesName: "bltz-weekend-cup",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/series/bltz-weekend-cup/23440000000-1.json",
+          latestLaunchRequestId: "23440000000-1",
+          currentStepId: "create-worlds",
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-15_000),
+          workflow: { workflowName: "game-launch.yml", ref: "next" },
+          autoRetry: {
+            enabled: true,
+            intervalMinutes: 15,
+          },
+          steps: [
+            {
+              id: "create-series",
+              title: "Create series",
+              status: "succeeded",
+              workflowStepName: "Create series",
+              latestEvent: "Series created.",
+            },
+            {
+              id: "create-worlds",
+              title: "Create worlds",
+              status: "failed",
+              workflowStepName: "Create worlds",
+              latestEvent: "Create worlds failed.",
+            },
+          ],
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            seriesName: "bltz-weekend-cup",
+            rpcUrl: "http://localhost:5050",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [],
+          },
+          artifacts: {},
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${requestUrl}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs?environment=slot.blitz"),
+      buildWorkerEnv(),
+    );
+
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.runs.map((run: { runId: string }) => run.runId)).toEqual([
+      "slot.blitz:bltz-recent-02",
+      "slot.blitz:bltz-weekend-cup",
+    ]);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz?ref="))).toBe(false);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz/series?ref="))).toBe(false);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz/rotations?ref="))).toBe(false);
+  });
+
   test("rejects duplicate series game names before dispatching a workflow", async () => {
     globalThis.fetch = async () => {
       throw new Error("Series validation should fail before any GitHub calls");
