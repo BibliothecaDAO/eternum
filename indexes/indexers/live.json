@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T09:24:58.879Z",
+  "updatedAt": "2026-03-24T09:37:50.682Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -278,15 +278,11 @@
     "bltz-franky-01": {
       "gameName": "bltz-franky-01",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "pro",
-        "url": "https://api.cartridge.gg/x/bltz-franky-01/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.325Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-01 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:37:50.682Z"
     },
     "eternum-sandbox-3": {
       "gameName": "eternum-sandbox-3",
@@ -304,41 +300,29 @@
     "bltz-zestible-01": {
       "gameName": "bltz-zestible-01",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "pro",
-        "url": "https://api.cartridge.gg/x/bltz-zestible-01/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.492Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-01 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:37:50.682Z"
     },
     "bltz-zestible-02": {
       "gameName": "bltz-zestible-02",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "pro",
-        "url": "https://api.cartridge.gg/x/bltz-zestible-02/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.576Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-02 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:37:50.682Z"
     },
     "bltz-zestible-03": {
       "gameName": "bltz-zestible-03",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "pro",
-        "url": "https://api.cartridge.gg/x/bltz-zestible-03/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.661Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-03 not found"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T09:37:50.682Z"
     },
     "bltz-zestible-04": {
       "gameName": "bltz-zestible-04",
