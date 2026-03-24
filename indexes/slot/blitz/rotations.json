@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T00:24:04.374Z",
+  "updatedAt": "2026-03-24T00:24:15.607Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -214,11 +214,10 @@
       "path": "runs/slot/blitz/rotations/bltz-zestible.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23466816261-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T00:24:04.374Z",
+      "updatedAt": "2026-03-24T00:24:15.607Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": "grant-lootchest-roles",
-      "activeLeaseExpiresAt": "2026-03-24T01:09:04.374Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexers",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexers",
       "autoRetry": {
@@ -227,8 +226,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-24T00:38:56.237Z",
-        "lastEvaluatedAt": "2026-03-24T00:23:56.237Z"
+        "nextEvaluationAt": "2026-03-24T00:39:15.607Z",
+        "lastEvaluatedAt": "2026-03-24T00:24:15.607Z"
       },
       "games": [
         {
