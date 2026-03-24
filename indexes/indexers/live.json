@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T15:47:55.774Z",
+  "updatedAt": "2026-03-24T15:48:09.426Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -11,9 +11,9 @@
         "url": "https://api.cartridge.gg/x/eternum-game-mainnet-38-pro/torii",
         "version": "v1.5.7-preview.0",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:54.582Z"
+        "describedAt": "2026-03-24T15:48:07.904Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "eternum-resources-mainnet-5": {
       "gameName": "eternum-resources-mainnet-5",
@@ -24,9 +24,9 @@
         "url": "https://api.cartridge.gg/x/eternum-resources-mainnet-5/torii",
         "version": "v1.6.0-alpha.2",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:54.759Z"
+        "describedAt": "2026-03-24T15:48:08.039Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "eternum-marketplace-mainnet19": {
       "gameName": "eternum-marketplace-mainnet19",
@@ -37,9 +37,9 @@
         "url": "https://api.cartridge.gg/x/eternum-marketplace-mainnet19/torii",
         "version": "v1.8.5",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:54.913Z"
+        "describedAt": "2026-03-24T15:48:08.168Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "eternum-factory-slot-c": {
       "gameName": "eternum-factory-slot-c",
@@ -50,9 +50,9 @@
         "url": "https://api.cartridge.gg/x/eternum-factory-slot-c/torii",
         "version": "v1.7.0-alpha.5",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:54.993Z"
+        "describedAt": "2026-03-24T15:48:08.195Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "eternum-factory-mainnet": {
       "gameName": "eternum-factory-mainnet",
@@ -63,9 +63,9 @@
         "url": "https://api.cartridge.gg/x/eternum-factory-mainnet/torii",
         "version": "v1.7.0-alpha.5",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:55.073Z"
+        "describedAt": "2026-03-24T15:48:08.278Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "s0-game-8": {
       "gameName": "s0-game-8",
@@ -76,9 +76,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-8/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:55.228Z"
+        "describedAt": "2026-03-24T15:48:08.321Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "s0-game-9": {
       "gameName": "s0-game-9",
@@ -89,9 +89,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-9/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:55.312Z"
+        "describedAt": "2026-03-24T15:48:08.356Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "s0-game-10": {
       "gameName": "s0-game-10",
@@ -102,9 +102,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-10/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:55.489Z"
+        "describedAt": "2026-03-24T15:48:08.439Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "s0-game-11": {
       "gameName": "s0-game-11",
@@ -115,9 +115,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-11/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:55.569Z"
+        "describedAt": "2026-03-24T15:48:08.484Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "s0-game-12": {
       "gameName": "s0-game-12",
@@ -128,9 +128,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-12/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:55.760Z"
+        "describedAt": "2026-03-24T15:48:08.639Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "s0-game-6": {
       "gameName": "s0-game-6",
@@ -141,9 +141,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-6/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:55.944Z"
+        "describedAt": "2026-03-24T15:48:08.675Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "s0-game-5": {
       "gameName": "s0-game-5",
@@ -154,9 +154,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-5/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:56.027Z"
+        "describedAt": "2026-03-24T15:48:08.834Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "s0-game-7": {
       "gameName": "s0-game-7",
@@ -167,9 +167,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-7/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:56.269Z"
+        "describedAt": "2026-03-24T15:48:08.864Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "eternum-factory-slot-d": {
       "gameName": "eternum-factory-slot-d",
@@ -180,9 +180,9 @@
         "url": "https://api.cartridge.gg/x/eternum-factory-slot-d/torii",
         "version": "v1.8.2",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:56.490Z"
+        "describedAt": "2026-03-24T15:48:08.891Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "etrn-vigil-878": {
       "gameName": "etrn-vigil-878",
@@ -193,9 +193,9 @@
         "url": "https://api.cartridge.gg/x/etrn-vigil-878/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:56.567Z"
+        "describedAt": "2026-03-24T15:48:08.935Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "etrn-titan-60": {
       "gameName": "etrn-titan-60",
@@ -206,63 +206,9 @@
         "url": "https://api.cartridge.gg/x/etrn-titan-60/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:56.646Z"
+        "describedAt": "2026-03-24T15:48:08.979Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
-    },
-    "daily-ranked-apac-210326": {
-      "gameName": "daily-ranked-apac-210326",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-apac-210326 not found"
-      },
-      "updatedAt": "2026-03-24T09:51:50.768Z"
-    },
-    "daily-ranked-apac": {
-      "gameName": "daily-ranked-apac",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-apac not found"
-      },
-      "updatedAt": "2026-03-24T09:51:50.768Z"
-    },
-    "daily-unranked-2-210326": {
-      "gameName": "daily-unranked-2-210326",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-unranked-2-210326 not found"
-      },
-      "updatedAt": "2026-03-24T09:39:07.486Z"
-    },
-    "daily-ranked-eu-210326": {
-      "gameName": "daily-ranked-eu-210326",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-eu-210326 not found"
-      },
-      "updatedAt": "2026-03-24T09:39:07.486Z"
-    },
-    "noobs-only": {
-      "gameName": "noobs-only",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment noobs-only not found"
-      },
-      "updatedAt": "2026-03-24T09:51:50.768Z"
-    },
-    "bltz-franky-01": {
-      "gameName": "bltz-franky-01",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-01 not found"
-      },
-      "updatedAt": "2026-03-24T09:37:50.682Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "eternum-sandbox-3": {
       "gameName": "eternum-sandbox-3",
@@ -273,108 +219,9 @@
         "url": "https://api.cartridge.gg/x/eternum-sandbox-3/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:57.407Z"
+        "describedAt": "2026-03-24T15:48:09.127Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
-    },
-    "bltz-zestible-01": {
-      "gameName": "bltz-zestible-01",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-01 not found"
-      },
-      "updatedAt": "2026-03-24T09:37:50.682Z"
-    },
-    "bltz-zestible-02": {
-      "gameName": "bltz-zestible-02",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-02 not found"
-      },
-      "updatedAt": "2026-03-24T09:37:50.682Z"
-    },
-    "bltz-zestible-03": {
-      "gameName": "bltz-zestible-03",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-03 not found"
-      },
-      "updatedAt": "2026-03-24T09:37:50.682Z"
-    },
-    "bltz-zestible-04": {
-      "gameName": "bltz-zestible-04",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-04 not found"
-      },
-      "updatedAt": "2026-03-24T09:38:30.427Z"
-    },
-    "bltz-zestible-05": {
-      "gameName": "bltz-zestible-05",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-05 not found"
-      },
-      "updatedAt": "2026-03-24T09:38:30.427Z"
-    },
-    "bltz-zestible-06": {
-      "gameName": "bltz-zestible-06",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-06 not found"
-      },
-      "updatedAt": "2026-03-24T09:38:30.427Z"
-    },
-    "sg-63": {
-      "gameName": "sg-63",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment sg-63 not found"
-      },
-      "updatedAt": "2026-03-24T09:51:50.768Z"
-    },
-    "bltz-zestible-07": {
-      "gameName": "bltz-zestible-07",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-07 not found"
-      },
-      "updatedAt": "2026-03-24T09:38:30.427Z"
-    },
-    "bltz-zestible-08": {
-      "gameName": "bltz-zestible-08",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-zestible-08 not found"
-      },
-      "updatedAt": "2026-03-24T09:51:50.768Z"
-    },
-    "daily-ranked-us-240326": {
-      "gameName": "daily-ranked-us-240326",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-us-240326 not found"
-      },
-      "updatedAt": "2026-03-24T09:39:07.486Z"
-    },
-    "sg-64": {
-      "gameName": "sg-64",
-      "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment sg-64 not found"
-      },
-      "updatedAt": "2026-03-24T09:51:50.768Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
     "etrn-mango": {
       "gameName": "etrn-mango",
@@ -385,45 +232,87 @@
         "url": "https://api.cartridge.gg/x/etrn-mango/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T09:24:58.397Z"
+        "describedAt": "2026-03-24T15:48:09.169Z"
       },
-      "updatedAt": "2026-03-24T09:24:58.879Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
-    "sg-65": {
-      "gameName": "sg-65",
+    "bltz-escapade-01": {
+      "gameName": "bltz-escapade-01",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment sg-65 not found"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-escapade-01/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T15:48:09.206Z"
       },
-      "updatedAt": "2026-03-24T09:51:50.768Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
-    "daily-ranked-apac-24-03-26": {
-      "gameName": "daily-ranked-apac-24-03-26",
+    "bltz-escapade-02": {
+      "gameName": "bltz-escapade-02",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment daily-ranked-apac-24-03-26 not found"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-escapade-02/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T15:48:09.245Z"
       },
-      "updatedAt": "2026-03-24T09:39:07.486Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
-    "bltz-vibe-915": {
-      "gameName": "bltz-vibe-915",
+    "bltz-escapade-03": {
+      "gameName": "bltz-escapade-03",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-vibe-915 not found"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/bltz-escapade-03/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T15:48:09.331Z"
       },
-      "updatedAt": "2026-03-24T15:47:55.774Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     },
-    "bltz-riff-79": {
-      "gameName": "bltz-riff-79",
+    "bltz-escapade-04": {
+      "gameName": "bltz-escapade-04",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-riff-79 not found"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/bltz-escapade-04/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T15:48:09.373Z"
       },
-      "updatedAt": "2026-03-24T15:47:55.774Z"
+      "updatedAt": "2026-03-24T15:48:09.426Z"
+    },
+    "bltz-bakers-01": {
+      "gameName": "bltz-bakers-01",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-bakers-01/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T15:48:09.399Z"
+      },
+      "updatedAt": "2026-03-24T15:48:09.426Z"
+    },
+    "bltz-bakers-02": {
+      "gameName": "bltz-bakers-02",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-bakers-02/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T15:48:09.426Z"
+      },
+      "updatedAt": "2026-03-24T15:48:09.426Z"
     }
   }
 }
