@@ -17,8 +17,6 @@
  * its own origin's localStorage, not in the parent frame.
  */
 import { dojoConfig } from "../../../dojo-config";
-import { env } from "../../../env";
-import { areSameRpcUrlSets, resolveControllerNetworkConfig } from "./controller-chain-config";
 import { buildPolicies } from "./policies";
 
 /**
@@ -45,61 +43,6 @@ const hasPoliciesChanged = (): boolean => {
 
 export const isSessionPolicyRefreshInProgress = (): boolean => _isRefreshingPolicies;
 
-type ControllerLikeProvider = {
-  options?: {
-    policies?: unknown;
-    chains?: Array<{ rpcUrl?: string }>;
-    defaultChainId?: string;
-  };
-  account?: unknown;
-  iframes?: {
-    keychain?: {
-      container?: {
-        parentNode?: {
-          removeChild: (child: unknown) => void;
-        };
-      };
-    };
-  };
-  keychain?: unknown;
-  createKeychainIframe?: () => unknown;
-  waitForKeychain?: (args: { timeout: number }) => Promise<void>;
-  probe?: () => Promise<void>;
-};
-
-type ControllerNetworkRefreshPlan = {
-  shouldUpdateChainConfig: boolean;
-  nextDefaultChainId: string;
-  nextRpcUrls: string[];
-};
-
-const getProviderRpcUrls = (provider: ControllerLikeProvider): string[] => {
-  return (provider.options?.chains ?? [])
-    .map((chain) => chain.rpcUrl?.trim() ?? "")
-    .filter((value) => value.length > 0);
-};
-
-const resolveControllerNetworkRefreshPlan = (provider: ControllerLikeProvider): ControllerNetworkRefreshPlan => {
-  const networkConfig = resolveControllerNetworkConfig({
-    configuredChain: env.VITE_PUBLIC_CHAIN,
-    rpcUrl: dojoConfig.rpcUrl ?? env.VITE_PUBLIC_NODE_URL,
-    cartridgeApiBase: env.VITE_PUBLIC_CARTRIDGE_API_BASE,
-    existingRpcUrls: getProviderRpcUrls(provider),
-  });
-
-  const currentDefaultChainId = provider.options?.defaultChainId ?? "";
-  const currentRpcUrls = getProviderRpcUrls(provider);
-  const nextRpcUrls = networkConfig.supportedRpcUrls;
-  const nextDefaultChainId = networkConfig.resolvedChain.chainId;
-
-  return {
-    shouldUpdateChainConfig:
-      currentDefaultChainId !== nextDefaultChainId || !areSameRpcUrlSets(currentRpcUrls, nextRpcUrls),
-    nextDefaultChainId,
-    nextRpcUrls,
-  };
-};
-
 /**
  * Refresh the controller's session policies in-place and recreate the
  * keychain iframe. Call this after bootstrapGame() has patched dojoConfig.manifest.
@@ -111,29 +54,20 @@ export const refreshSessionPolicies = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   connector: any,
 ): Promise<boolean> => {
-  const provider = (connector.controller ?? connector) as ControllerLikeProvider;
+  if (!hasPoliciesChanged()) {
+    return false;
+  }
+
+  const newPolicies = buildPolicies(dojoConfig.manifest);
+  const provider = connector.controller ?? connector;
 
   // 1. Update policies in the controller's options
   if (!provider.options) {
     return false;
   }
-
-  const hasPolicyChanges = hasPoliciesChanged();
-  const networkRefreshPlan = resolveControllerNetworkRefreshPlan(provider);
-  if (!hasPolicyChanges && !networkRefreshPlan.shouldUpdateChainConfig) {
-    return false;
-  }
-
   _isRefreshingPolicies = true;
   try {
-    if (hasPolicyChanges) {
-      provider.options.policies = buildPolicies(dojoConfig.manifest);
-    }
-
-    if (networkRefreshPlan.shouldUpdateChainConfig) {
-      provider.options.chains = networkRefreshPlan.nextRpcUrls.map((rpcUrl) => ({ rpcUrl }));
-      provider.options.defaultChainId = networkRefreshPlan.nextDefaultChainId;
-    }
+    provider.options.policies = newPolicies;
 
     // Keep the account object stable while we rotate the keychain iframe.
     // This prevents transient "disconnect" state during bootstrap.
@@ -190,9 +124,7 @@ export const refreshSessionPolicies = async (
     }
 
     // 7. Update hash
-    if (hasPolicyChanges) {
-      _lastPolicyHash = hashPolicies(dojoConfig.manifest);
-    }
+    _lastPolicyHash = hashPolicies(dojoConfig.manifest);
 
     return true;
   } finally {

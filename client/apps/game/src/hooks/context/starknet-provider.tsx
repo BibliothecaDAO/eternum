@@ -1,4 +1,4 @@
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveWorld, normalizeRpcUrl } from "@/runtime/world";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
@@ -6,12 +6,11 @@ import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyag
 import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback, useEffect, useRef } from "react";
-import { shortString } from "starknet";
+import { constants, shortString } from "starknet";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { bootstrapGame } from "../../init/bootstrap";
 import { useAccountStore } from "../store/use-account-store";
-import { resolveControllerNetworkConfig } from "./controller-chain-config";
 import { useControllerAccount } from "./use-controller-account";
 
 const slot: string = env.VITE_PUBLIC_SLOT;
@@ -27,35 +26,80 @@ const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 // ==============================================
 
+const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
+
+const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
+
+const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
+const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
+
+// ==============================================
+
+type DerivedChain = {
+  kind: "slot" | "mainnet" | "sepolia";
+  chainId: string;
+};
+
+const deriveChainFromRpcUrl = (value: string): DerivedChain | null => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const path = url.pathname;
+    const lowerPath = path.toLowerCase();
+
+    if (lowerPath.includes("/starknet/mainnet")) {
+      return { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN };
+    }
+
+    if (lowerPath.includes("/starknet/sepolia")) {
+      return { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
+    }
+
+    const match = path.match(/\/x\/([^/]+)\/katana/i);
+    if (!match) return null;
+
+    const slug = match[1];
+    const label = `WP_${slug.replace(/-/g, "_").toUpperCase()}`;
+    if (label.length > 31) return null;
+
+    return { kind: "slot", chainId: shortString.encodeShortString(label) };
+  } catch {
+    return null;
+  }
+};
+
 const baseRpcUrl = isLocal ? KATANA_RPC_URL : dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL;
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-const controllerNetworkConfig = resolveControllerNetworkConfig({
-  configuredChain: env.VITE_PUBLIC_CHAIN,
-  rpcUrl: baseRpcUrl,
-  cartridgeApiBase,
-});
-const rpcUrl = controllerNetworkConfig.normalizedRpcUrl;
-const resolvedChainId = isLocal ? KATANA_CHAIN_ID : controllerNetworkConfig.resolvedChain.chainId;
-const resolvedChainKind = isLocal ? "slot" : controllerNetworkConfig.resolvedChain.kind;
-const controllerSupportedRpcUrls = isLocal ? [rpcUrl] : controllerNetworkConfig.supportedRpcUrls;
+const rpcUrl = normalizeRpcUrl(baseRpcUrl);
 
 console.log("baseRpcUrl", baseRpcUrl);
-console.log(
-  "[starknet-provider] resolved controller network config",
-  JSON.stringify(
-    {
-      resolvedChainId,
-      resolvedChainKind,
-      supportedRpcUrlCount: controllerSupportedRpcUrls.length,
-    },
-    null,
-    2,
+
+const derivedChain = isLocal ? null : deriveChainFromRpcUrl(rpcUrl);
+const fallbackChain: DerivedChain = isSlot
+  ? { kind: "slot", chainId: SLOT_CHAIN_ID }
+  : isSlottest
+    ? { kind: "slot", chainId: SLOT_CHAIN_ID_TEST }
+    : env.VITE_PUBLIC_CHAIN === "mainnet"
+      ? { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN }
+      : { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
+const resolvedChain = derivedChain ?? fallbackChain;
+const resolvedChainId = isLocal ? KATANA_CHAIN_ID : resolvedChain.chainId;
+const chain_id = resolvedChainId;
+const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
+const controllerSupportedRpcUrls = Array.from(
+  new Set(
+    [
+      rpcUrl,
+      `${cartridgeApiBase}/x/eternum-blitz-slot-4/katana/rpc/v0_9`,
+      `${cartridgeApiBase}/x/starknet/sepolia/rpc/v0_9`,
+      `${cartridgeApiBase}/x/starknet/mainnet/rpc/v0_9`,
+    ].map((value) => normalizeRpcUrl(value)),
   ),
 );
 
 const controller = new ControllerConnector({
   errorDisplayMode: "notification",
   propagateSessionErrors: true,
+  // chain_id,
   chains: controllerSupportedRpcUrls.map((chainRpcUrl) => ({
     rpcUrl: chainRpcUrl,
   })),
@@ -131,9 +175,9 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       chains={
         isLocal
           ? [katanaLocalChain]
-          : resolvedChainKind === "slot"
-            ? [getSlotChain(resolvedChainId)]
-            : resolvedChainKind === "mainnet"
+          : resolvedChain.kind === "slot"
+            ? [getSlotChain(resolvedChain.chainId)]
+            : resolvedChain.kind === "mainnet"
               ? [mainnet]
               : [sepolia]
       }

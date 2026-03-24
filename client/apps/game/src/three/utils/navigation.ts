@@ -10,8 +10,28 @@ import {
 import type { FastTravelHexCoords } from "../scenes/fast-travel-hydration";
 import type { FastTravelSpireMapping } from "../scenes/fast-travel-spire-mapping";
 import { SceneName } from "../types";
+import { resolveMapHexToggleCooldownDecision } from "./navigation-toggle-policy";
 
 const isFastTravelEnabled = (): boolean => getGameModeId() !== "blitz";
+const MAP_HEX_TOGGLE_COOLDOWN_MS = 400;
+let mapHexToggleCooldownUntilMs = 0;
+
+function isMapHexToggleCoolingDown(nowMs: number): boolean {
+  return resolveMapHexToggleCooldownDecision({
+    nowMs,
+    cooldownUntilMs: mapHexToggleCooldownUntilMs,
+    cooldownMs: MAP_HEX_TOGGLE_COOLDOWN_MS,
+  }).shouldBlockToggle;
+}
+
+function armMapHexToggleCooldown(nowMs: number): void {
+  const decision = resolveMapHexToggleCooldownDecision({
+    nowMs,
+    cooldownUntilMs: mapHexToggleCooldownUntilMs,
+    cooldownMs: MAP_HEX_TOGGLE_COOLDOWN_MS,
+  });
+  mapHexToggleCooldownUntilMs = decision.nextCooldownUntilMs;
+}
 
 function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName): string {
   const url = new Position({ x: col, y: row });
@@ -28,6 +48,11 @@ function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName)
 }
 
 function dispatchSceneNavigation(navigationUrl: string): void {
+  const currentLocation = `${window.location.pathname}${window.location.search}`;
+  if (currentLocation === navigationUrl) {
+    return;
+  }
+
   window.history.pushState({}, "", navigationUrl);
   window.dispatchEvent(new Event("urlChanged"));
 }
@@ -146,6 +171,11 @@ function navigateOutOfFastTravelSpire(
  * Changes /map?col=X&row=Y to /hex?col=X&row=Y and vice versa
  */
 export function toggleMapHexView() {
+  const nowMs = Date.now();
+  if (isMapHexToggleCoolingDown(nowMs)) {
+    return;
+  }
+
   const currentUrl = new URL(window.location.href);
   const currentPath = currentUrl.pathname;
 
@@ -171,12 +201,9 @@ export function toggleMapHexView() {
 
   // Construct new URL with same coordinates
   const newUrl = `${newPath}?col=${col}&row=${row}`;
+  armMapHexToggleCooldown(nowMs);
 
-  // Update browser URL
-  window.history.pushState({}, "", newUrl);
-
-  // Dispatch URL changed event to trigger scene updates
-  window.dispatchEvent(new Event("urlChanged"));
+  dispatchSceneNavigation(newUrl);
 
   console.log(`Toggled view from ${currentPath} to ${newPath}`);
 }
