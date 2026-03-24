@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-escapade",
   "seriesName": "bltz-escapade",
-  "status": "running",
+  "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23491573932-1.json",
   "latestLaunchRequestId": "23491573932-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T08:00:10.872Z",
-  "updatedAt": "2026-03-24T13:21:59.029Z",
+  "updatedAt": "2026-03-24T13:27:28.303Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 5,
+    "nextRetryAt": "2026-03-24T13:32:28.303Z",
     "lastRetryAt": "2026-03-24T13:20:32.626Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-24T13:36:54.265Z",
-    "lastEvaluatedAt": "2026-03-24T13:21:54.265Z"
+    "nextEvaluationAt": "2026-03-24T13:42:28.303Z",
+    "lastEvaluatedAt": "2026-03-24T13:27:28.303Z"
   },
   "steps": [
     {
@@ -45,10 +46,12 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-24T13:21:59.029Z"
+      "latestEvent": "Creating games failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-escapade-05\" on mainnet.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+70ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n\u001b[2m[+1.4s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m create_game attempt 1/15 submitted in 1.3s (0x40ae3f7a...35883b)\n\u001b[2m[+1.4s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for create_game attempt 1/15 confirmation (0x40ae3f7a...35883b)\n[2026-03-24T13:27:08.928Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T13:27:13.959Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T13:27:18.995Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T13:27:24.028Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n\u001b[2m[+5m 18s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 5m 17s: Transaction TTL, evicted from the mempool, try to increase the tip\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-03-24T13:21:59.029Z",
+      "finishedAt": "2026-03-24T13:27:28.303Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-escapade-05\" on mainnet.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+70ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n\u001b[2m[+1.4s]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m create_game attempt 1/15 submitted in 1.3s (0x40ae3f7a...35883b)\n\u001b[2m[+1.4s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for create_game attempt 1/15 confirmation (0x40ae3f7a...35883b)\n[2026-03-24T13:27:08.928Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T13:27:13.959Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T13:27:18.995Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n[2026-03-24T13:27:24.028Z] INFO: txLife: \n[\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\",\n  \"RECEIVED\"\n]\n\u001b[2m[+5m 18s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 5m 17s: Transaction TTL, evicted from the mempool, try to increase the tip\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -901,7 +904,7 @@
         "startTimeIso": "2026-03-25T06:30:00.000Z",
         "seriesGameNumber": 5,
         "currentStepId": "create-worlds",
-        "latestEvent": "waitForTransaction timed-out with retries 200",
+        "latestEvent": "Transaction TTL, evicted from the mempool, try to increase the tip",
         "status": "failed",
         "configSteps": [],
         "steps": [
@@ -913,9 +916,9 @@
           {
             "id": "create-worlds",
             "status": "failed",
-            "latestEvent": "waitForTransaction timed-out with retries 200",
-            "updatedAt": "2026-03-24T13:14:00.222Z",
-            "errorMessage": "waitForTransaction timed-out with retries 200"
+            "latestEvent": "Transaction TTL, evicted from the mempool, try to increase the tip",
+            "updatedAt": "2026-03-24T13:27:24.029Z",
+            "errorMessage": "Transaction TTL, evicted from the mempool, try to increase the tip"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -953,13 +956,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-escapade.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T08:00:40.047Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23491573932-1",
-    "workflowRunId": 23491573932,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-24T13:21:59.029Z",
-    "expiresAt": "2026-03-24T14:06:59.029Z"
   }
 }
