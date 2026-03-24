@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T02:49:45.840Z",
+  "updatedAt": "2026-03-24T02:49:51.798Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -11,9 +11,9 @@
         "url": "https://api.cartridge.gg/x/eternum-game-mainnet-38-pro/torii",
         "version": "v1.5.7-preview.0",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.153Z"
+        "describedAt": "2026-03-24T02:49:47.336Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "eternum-resources-mainnet-5": {
       "gameName": "eternum-resources-mainnet-5",
@@ -24,9 +24,9 @@
         "url": "https://api.cartridge.gg/x/eternum-resources-mainnet-5/torii",
         "version": "v1.6.0-alpha.2",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.315Z"
+        "describedAt": "2026-03-24T02:49:47.444Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "eternum-marketplace-mainnet19": {
       "gameName": "eternum-marketplace-mainnet19",
@@ -37,9 +37,9 @@
         "url": "https://api.cartridge.gg/x/eternum-marketplace-mainnet19/torii",
         "version": "v1.8.5",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.357Z"
+        "describedAt": "2026-03-24T02:49:47.587Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "eternum-factory-slot-c": {
       "gameName": "eternum-factory-slot-c",
@@ -50,9 +50,9 @@
         "url": "https://api.cartridge.gg/x/eternum-factory-slot-c/torii",
         "version": "v1.7.0-alpha.5",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.481Z"
+        "describedAt": "2026-03-24T02:49:47.750Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "eternum-factory-mainnet": {
       "gameName": "eternum-factory-mainnet",
@@ -63,9 +63,9 @@
         "url": "https://api.cartridge.gg/x/eternum-factory-mainnet/torii",
         "version": "v1.7.0-alpha.5",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.564Z"
+        "describedAt": "2026-03-24T02:49:47.854Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "s0-game-8": {
       "gameName": "s0-game-8",
@@ -76,9 +76,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-8/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.589Z"
+        "describedAt": "2026-03-24T02:49:47.963Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "s0-game-9": {
       "gameName": "s0-game-9",
@@ -89,9 +89,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-9/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.672Z"
+        "describedAt": "2026-03-24T02:49:48.194Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "s0-game-10": {
       "gameName": "s0-game-10",
@@ -102,9 +102,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-10/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.706Z"
+        "describedAt": "2026-03-24T02:49:48.299Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "s0-game-11": {
       "gameName": "s0-game-11",
@@ -115,9 +115,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-11/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.787Z"
+        "describedAt": "2026-03-24T02:49:48.427Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "s0-game-12": {
       "gameName": "s0-game-12",
@@ -128,9 +128,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-12/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:44.999Z"
+        "describedAt": "2026-03-24T02:49:48.619Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "s0-game-6": {
       "gameName": "s0-game-6",
@@ -141,9 +141,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-6/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.044Z"
+        "describedAt": "2026-03-24T02:49:48.859Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "s0-game-5": {
       "gameName": "s0-game-5",
@@ -154,9 +154,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-5/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.070Z"
+        "describedAt": "2026-03-24T02:49:48.966Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "s0-game-7": {
       "gameName": "s0-game-7",
@@ -167,9 +167,9 @@
         "url": "https://api.cartridge.gg/x/s0-game-7/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.110Z"
+        "describedAt": "2026-03-24T02:49:49.072Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "eternum-factory-slot-d": {
       "gameName": "eternum-factory-slot-d",
@@ -180,9 +180,9 @@
         "url": "https://api.cartridge.gg/x/eternum-factory-slot-d/torii",
         "version": "v1.8.2",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.157Z"
+        "describedAt": "2026-03-24T02:49:49.179Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "etrn-vigil-878": {
       "gameName": "etrn-vigil-878",
@@ -193,9 +193,9 @@
         "url": "https://api.cartridge.gg/x/etrn-vigil-878/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.195Z"
+        "describedAt": "2026-03-24T02:49:49.284Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "etrn-titan-60": {
       "gameName": "etrn-titan-60",
@@ -206,9 +206,9 @@
         "url": "https://api.cartridge.gg/x/etrn-titan-60/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.235Z"
+        "describedAt": "2026-03-24T02:49:49.604Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "daily-ranked-apac-210326": {
       "gameName": "daily-ranked-apac-210326",
@@ -219,9 +219,9 @@
         "url": "https://api.cartridge.gg/x/daily-ranked-apac-210326/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.274Z"
+        "describedAt": "2026-03-24T02:49:49.712Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "daily-ranked-apac": {
       "gameName": "daily-ranked-apac",
@@ -232,9 +232,9 @@
         "url": "https://api.cartridge.gg/x/daily-ranked-apac/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.300Z"
+        "describedAt": "2026-03-24T02:49:49.822Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "daily-unranked-2-210326": {
       "gameName": "daily-unranked-2-210326",
@@ -245,9 +245,9 @@
         "url": "https://api.cartridge.gg/x/daily-unranked-2-210326/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.328Z"
+        "describedAt": "2026-03-24T02:49:49.931Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "daily-ranked-eu-210326": {
       "gameName": "daily-ranked-eu-210326",
@@ -258,9 +258,9 @@
         "url": "https://api.cartridge.gg/x/daily-ranked-eu-210326/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.357Z"
+        "describedAt": "2026-03-24T02:49:50.039Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "noobs-only": {
       "gameName": "noobs-only",
@@ -271,9 +271,9 @@
         "url": "https://api.cartridge.gg/x/noobs-only/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.387Z"
+        "describedAt": "2026-03-24T02:49:50.154Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-franky-01": {
       "gameName": "bltz-franky-01",
@@ -284,9 +284,9 @@
         "url": "https://api.cartridge.gg/x/bltz-franky-01/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.415Z"
+        "describedAt": "2026-03-24T02:49:50.263Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "eternum-sandbox-3": {
       "gameName": "eternum-sandbox-3",
@@ -297,9 +297,9 @@
         "url": "https://api.cartridge.gg/x/eternum-sandbox-3/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.441Z"
+        "describedAt": "2026-03-24T02:49:50.502Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-zestible-01": {
       "gameName": "bltz-zestible-01",
@@ -310,9 +310,9 @@
         "url": "https://api.cartridge.gg/x/bltz-zestible-01/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.469Z"
+        "describedAt": "2026-03-24T02:49:50.643Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-zestible-02": {
       "gameName": "bltz-zestible-02",
@@ -323,9 +323,9 @@
         "url": "https://api.cartridge.gg/x/bltz-zestible-02/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.496Z"
+        "describedAt": "2026-03-24T02:49:50.752Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-zestible-03": {
       "gameName": "bltz-zestible-03",
@@ -336,9 +336,9 @@
         "url": "https://api.cartridge.gg/x/bltz-zestible-03/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.520Z"
+        "describedAt": "2026-03-24T02:49:50.862Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-zestible-04": {
       "gameName": "bltz-zestible-04",
@@ -349,9 +349,9 @@
         "url": "https://api.cartridge.gg/x/bltz-zestible-04/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.552Z"
+        "describedAt": "2026-03-24T02:49:50.970Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-zestible-05": {
       "gameName": "bltz-zestible-05",
@@ -362,9 +362,9 @@
         "url": "https://api.cartridge.gg/x/bltz-zestible-05/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.582Z"
+        "describedAt": "2026-03-24T02:49:51.193Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-zestible-06": {
       "gameName": "bltz-zestible-06",
@@ -375,9 +375,9 @@
         "url": "https://api.cartridge.gg/x/bltz-zestible-06/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.719Z"
+        "describedAt": "2026-03-24T02:49:51.333Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "sg-63": {
       "gameName": "sg-63",
@@ -388,9 +388,9 @@
         "url": "https://api.cartridge.gg/x/sg-63/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.746Z"
+        "describedAt": "2026-03-24T02:49:51.441Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-zestible-07": {
       "gameName": "bltz-zestible-07",
@@ -401,9 +401,9 @@
         "url": "https://api.cartridge.gg/x/bltz-zestible-07/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.785Z"
+        "describedAt": "2026-03-24T02:49:51.578Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "bltz-zestible-08": {
       "gameName": "bltz-zestible-08",
@@ -414,9 +414,9 @@
         "url": "https://api.cartridge.gg/x/bltz-zestible-08/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.812Z"
+        "describedAt": "2026-03-24T02:49:51.687Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     },
     "daily-ranked-us-240326": {
       "gameName": "daily-ranked-us-240326",
@@ -427,9 +427,9 @@
         "url": "https://api.cartridge.gg/x/daily-ranked-us-240326/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-24T02:49:45.840Z"
+        "describedAt": "2026-03-24T02:49:51.798Z"
       },
-      "updatedAt": "2026-03-24T02:49:45.840Z"
+      "updatedAt": "2026-03-24T02:49:51.798Z"
     }
   }
 }
