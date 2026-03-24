@@ -259,11 +259,11 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     ) as HTMLButtonElement | null;
     const walletCard = container.querySelector('[data-testid="factory-deployer-wallet-card"]') as HTMLDivElement | null;
 
+    expect(prizeFundingToggle).not.toBeNull();
+    expect(walletCard).not.toBeNull();
     expect(prizeFundingToggle?.textContent).toContain("Open prize funding");
     expect(walletCard?.textContent).toContain("Slot deployer wallet slot");
-    expect(
-      prizeFundingToggle?.compareDocumentPosition(walletCard as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(prizeFundingToggle!.compareDocumentPosition(walletCard!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("shows recent runs in the picker without auto-selecting one", async () => {

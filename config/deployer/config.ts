@@ -50,7 +50,7 @@ import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliotheca
 import { byteArray, type Account } from "starknet";
 import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
-import { buildBankCoordsForMapCenterOffset, deriveMapCenterOffsetFromWorldConfigTx } from "./clean/eternum";
+import { buildBankCoordsForMapCenterOffset, deriveMapCenterOffsetFromWorldConfigTx } from "./clean/eternum/banks";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 // Browser-compatible: Make fs optional for browser environments

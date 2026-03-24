@@ -826,11 +826,11 @@ const FactoryV2CurrentStepCard = ({
 };
 
 const FactoryV2AutoRetryCard = ({ run }: { run: FactoryRun }) => {
-  const { autoRetry } = run;
-
-  if (!shouldShowAutoRetryCard(run)) {
+  if (!shouldShowAutoRetryCard(run) || !run.autoRetry) {
     return null;
   }
+
+  const autoRetry = run.autoRetry;
 
   const statusLabel = autoRetry.cancelledAt
     ? "Auto-retry cancelled"
@@ -1953,7 +1953,7 @@ interface FactoryV2WatchActionBarProps {
   onRefresh: () => void;
   onNudge: () => void;
   onStopAutoRetry: () => void;
-  onDeleteRun?: () => void;
+  onDeleteRun: () => void;
 }
 
 function shouldShowStopAutoRetryAction(selectedRun: FactoryRun | null, isAwaitingAcceptedUpdate: boolean) {

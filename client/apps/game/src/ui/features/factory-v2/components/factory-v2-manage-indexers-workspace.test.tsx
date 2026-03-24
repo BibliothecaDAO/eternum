@@ -376,7 +376,7 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
   it("runs capability-specific actions only against the selected indexers that support them", async () => {
     const onCreateIndexers = vi.fn(async () => {});
     const onUpdateIndexerTier = vi.fn(async () => {});
-    const onDeleteIndexers = vi.fn(async () => {});
+    const onDeleteIndexers = vi.fn(async () => null);
 
     await act(async () => {
       root.render(
