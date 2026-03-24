@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-24",
+    title: "Calmer Run Details Cards",
+    description:
+      "Factory V2 now shows run details in a softer info card instead of a red warning box, so normal status notes no longer read like deployment failures while real error details still stand out.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
     title: "Correct Factory Bank Placement",
     description:
       "Manual factory bank creation now reads each world's indexed map center before placing banks, so Eternum worlds no longer spawn banks around the old fixed center.",

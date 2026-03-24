@@ -834,6 +834,7 @@ const FactoryV2MultiGameChildrenCard = ({
                     label="Error details"
                     message={errorMessage}
                     dataTestId={`factory-child-error-${child.gameName}`}
+                    tone="error"
                   />
                 ) : null}
               </div>
@@ -1592,6 +1593,7 @@ const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) =
               label="Error details"
               message={errorMessage}
               dataTestId={`factory-step-error-${step.id}`}
+              tone="error"
             />
           </div>
         ) : null}
@@ -1605,11 +1607,13 @@ const FactoryV2CopyableMessageBox = ({
   message,
   dataTestId,
   compact = false,
+  tone = "info",
 }: {
   label: string;
   message: string;
   dataTestId?: string;
   compact?: boolean;
+  tone?: "info" | "error";
 }) => {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
@@ -1645,14 +1649,16 @@ const FactoryV2CopyableMessageBox = ({
     <div
       data-testid={dataTestId}
       className={cn(
-        "overflow-hidden border border-rose-300/50 bg-rose-50/80 text-left shadow-[0_10px_24px_rgba(190,24,93,0.06)]",
+        "overflow-hidden text-left",
+        resolveCopyableMessageBoxClassName(tone),
         compact ? "space-y-1.5 rounded-[14px] px-2.5 py-2" : "space-y-2 rounded-[16px] px-3 py-2.5",
       )}
     >
       <div className="flex items-center justify-between gap-2">
         <div
           className={cn(
-            "font-semibold uppercase tracking-[0.18em] text-rose-700",
+            "font-semibold uppercase tracking-[0.18em]",
+            resolveCopyableMessageLabelClassName(tone),
             compact ? "text-[9px]" : "text-[10px]",
           )}
         >
@@ -1665,7 +1671,8 @@ const FactoryV2CopyableMessageBox = ({
             void copyMessage();
           }}
           className={cn(
-            "rounded-full border border-rose-200/80 bg-white/80 font-semibold uppercase tracking-[0.16em] text-rose-700 transition-colors hover:bg-white",
+            "rounded-full bg-white/80 font-semibold uppercase tracking-[0.16em] transition-colors hover:bg-white",
+            resolveCopyableMessageActionClassName(tone),
             compact ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]",
           )}
         >
@@ -1674,7 +1681,8 @@ const FactoryV2CopyableMessageBox = ({
       </div>
       <pre
         className={cn(
-          "overflow-auto whitespace-pre-wrap break-words rounded-[12px] border border-rose-200/80 bg-white/70 text-rose-950",
+          "overflow-auto whitespace-pre-wrap break-words rounded-[12px] bg-white/70",
+          resolveCopyableMessagePreClassName(tone),
           compact ? "max-h-24 px-2.5 py-2 text-[10px] leading-4" : "max-h-40 px-3 py-2 text-[11px] leading-5",
         )}
       >
@@ -1683,6 +1691,26 @@ const FactoryV2CopyableMessageBox = ({
     </div>
   );
 };
+
+function resolveCopyableMessageBoxClassName(tone: "info" | "error") {
+  if (tone === "error") {
+    return "border border-rose-300/50 bg-rose-50/80 shadow-[0_10px_24px_rgba(190,24,93,0.06)]";
+  }
+
+  return "border border-[#d6c3a0]/70 bg-[rgba(255,248,236,0.9)] shadow-[0_10px_24px_rgba(146,104,52,0.08)]";
+}
+
+function resolveCopyableMessageLabelClassName(tone: "info" | "error") {
+  return tone === "error" ? "text-rose-700" : "text-[#7e5a2b]";
+}
+
+function resolveCopyableMessageActionClassName(tone: "info" | "error") {
+  return tone === "error" ? "border border-rose-200/80 text-rose-700" : "border border-[#dcc7a2]/80 text-[#7e5a2b]";
+}
+
+function resolveCopyableMessagePreClassName(tone: "info" | "error") {
+  return tone === "error" ? "border border-rose-200/80 text-rose-950" : "border border-[#e2cfad]/80 text-[#4f3920]";
+}
 
 function resolveCopyableMessageActionLabel(copyState: "idle" | "copied" | "error") {
   switch (copyState) {
