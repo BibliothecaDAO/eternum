@@ -296,7 +296,7 @@ jobs:
             local network="${GAME_LAUNCH_ENVIRONMENT%%.*}"
 
             if [ "${network}" = "mainnet" ]; then
-              printf '50'
+              printf '70'
               return 0
             fi
 

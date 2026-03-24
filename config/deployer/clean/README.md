@@ -59,7 +59,7 @@ explicit CLI flags.
 The launcher also inherits the legacy factory v1 `create_game` defaults by chain:
 
 - `slot.*`: one `create_game` submission with `max_actions=300`
-- `mainnet.*`: three `create_game` submissions with `max_actions=50`, waiting ten seconds between submissions to avoid
+- `mainnet.*`: three `create_game` submissions with `max_actions=70`, waiting ten seconds between submissions to avoid
   nonce issues
 
 GitHub Actions credentials are selected through GitHub Environments:
