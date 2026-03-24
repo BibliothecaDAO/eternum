@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T06:52:04.023Z",
+  "updatedAt": "2026-03-24T07:02:03.237Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -447,7 +447,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-01 not found"
       },
-      "updatedAt": "2026-03-24T06:42:04.712Z"
+      "updatedAt": "2026-03-24T07:02:03.237Z"
     },
     "bltz-thrum-725-02": {
       "gameName": "bltz-thrum-725-02",
@@ -456,7 +456,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-02 not found"
       },
-      "updatedAt": "2026-03-24T06:42:04.712Z"
+      "updatedAt": "2026-03-24T07:02:03.237Z"
     },
     "bltz-thrum-725-03": {
       "gameName": "bltz-thrum-725-03",
@@ -465,7 +465,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-thrum-725-03 not found"
       },
-      "updatedAt": "2026-03-24T06:42:04.712Z"
+      "updatedAt": "2026-03-24T07:02:03.237Z"
     },
     "bltz-franky-02": {
       "gameName": "bltz-franky-02",
