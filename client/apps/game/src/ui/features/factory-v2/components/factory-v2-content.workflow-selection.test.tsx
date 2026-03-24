@@ -22,6 +22,8 @@ vi.mock("../mode-appearance", () => ({
     canvasClassName: "",
     backdropClassName: "",
     sectionDividerClassName: "",
+    quietSurfaceClassName: "",
+    secondaryButtonClassName: "",
   })),
 }));
 
@@ -42,6 +44,10 @@ vi.mock("./factory-v2-watch-workspace", () => ({
   FactoryV2WatchWorkspace: () => <div>Watch workspace</div>,
 }));
 
+vi.mock("./factory-v2-manage-indexers-workspace", () => ({
+  FactoryV2ManageIndexersWorkspace: () => <div>Manage workspace</div>,
+}));
+
 vi.mock("./factory-v2-developer-tools", () => ({
   FactoryV2DeveloperTools: () => <div>Developer tools</div>,
 }));
@@ -51,13 +57,14 @@ vi.mock("./factory-v2-workflow-switch", () => ({
     selectedView,
     onSelect,
   }: {
-    selectedView: "start" | "watch";
-    onSelect: (view: "start" | "watch") => void;
+    selectedView: "start" | "watch" | "manage";
+    onSelect: (view: "start" | "watch" | "manage") => void;
   }) => (
     <div>
       <div data-testid="selected-workflow">{selectedView}</div>
-      <button onClick={() => onSelect("start")}>Start a game</button>
-      <button onClick={() => onSelect("watch")}>Check a game</button>
+      <button onClick={() => onSelect("start")}>Create game</button>
+      <button onClick={() => onSelect("watch")}>Check game</button>
+      <button onClick={() => onSelect("manage")}>Manage indexers</button>
     </div>
   ),
 }));
@@ -95,6 +102,8 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   isWatcherBusy: false,
   isLoadingRuns: false,
   isResolvingRunName: false,
+  factoryAdminSecret: "",
+  hasSavedFactoryAdminSecret: false,
   notice: null,
   environmentUnavailableReason: null,
   moreOptions: {
@@ -110,6 +119,9 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   selectEnvironment: vi.fn(),
   selectPreset: vi.fn(),
   selectRun: vi.fn(),
+  setFactoryAdminSecret: vi.fn(),
+  saveFactoryAdminSecret: vi.fn(),
+  clearFactoryAdminSecret: vi.fn(),
   setDraftGameName: vi.fn(),
   setDraftStartAt: vi.fn(),
   setDraftDurationMinutes: vi.fn(),
@@ -118,9 +130,17 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   fandomizeGameName: vi.fn(),
   launchSelectedPreset: vi.fn(async () => true),
   continueSelectedRun: vi.fn(async () => true),
-  retrySelectedRun: vi.fn(async () => true),
   bringIndexerLiveForSelectedRun: vi.fn(async () => true),
+  bringIndexerLiveForSelectedRunChild: vi.fn(async () => true),
   refreshSelectedRun: vi.fn(async () => true),
+  fundSelectedRunPrize: vi.fn(async () => true),
+  liveIndexers: [],
+  liveIndexersUpdatedAt: null,
+  loadLiveIndexers: vi.fn(async () => {}),
+  refreshLiveIndexerSnapshot: vi.fn(async () => {}),
+  createIndexers: vi.fn(async () => {}),
+  updateIndexerTiers: vi.fn(async () => {}),
+  deleteIndexers: vi.fn(async () => {}),
   resolveRunByName: vi.fn(async () => false),
   ...overrides,
 });
@@ -157,6 +177,7 @@ describe("FactoryV2Content workflow selection", () => {
     });
 
     expect(container.textContent).toContain("Start workspace");
+    expect(container.textContent).toContain("Developer tools");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
 
     vi.mocked(useFactoryV2).mockReturnValue(
@@ -178,6 +199,7 @@ describe("FactoryV2Content workflow selection", () => {
     });
 
     expect(container.textContent).toContain("Start workspace");
+    expect(container.textContent).toContain("Developer tools");
     expect(container.textContent).not.toContain("Watch workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
   });
@@ -202,6 +224,7 @@ describe("FactoryV2Content workflow selection", () => {
 
     expect(container.textContent).toContain("Watch workspace");
     expect(container.textContent).not.toContain("Start workspace");
+    expect(container.textContent).not.toContain("Developer tools");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");
   });
 
@@ -237,6 +260,7 @@ describe("FactoryV2Content workflow selection", () => {
     });
 
     expect(container.textContent).toContain("Start workspace");
+    expect(container.textContent).toContain("Developer tools");
     expect(container.textContent).not.toContain("Watch workspace");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("start");
   });
@@ -261,6 +285,7 @@ describe("FactoryV2Content workflow selection", () => {
 
     expect(factory.launchSelectedPreset).toHaveBeenCalledTimes(1);
     expect(container.textContent).toContain("Watch workspace");
+    expect(container.textContent).not.toContain("Developer tools");
     expect(container.querySelector('[data-testid="selected-workflow"]')?.textContent).toBe("watch");
   });
 });

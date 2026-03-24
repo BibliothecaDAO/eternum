@@ -69,7 +69,10 @@ import {
   generateFactoryCalldata,
   type FactoryConfigCalldataParts,
 } from "../services/factory-config";
-import { createIndexer as createIndexerService } from "../services/factory-indexer";
+import {
+  createIndexer as createIndexerService,
+  updateIndexerTier as updateIndexerTierService,
+} from "../services/factory-indexer";
 import { buildWorldConfigForFactory } from "../services/world-config-builder";
 import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
 import {
@@ -338,6 +341,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [worldSeriesMetadata, setWorldSeriesMetadata] = useState<Record<string, WorldSeriesMetadata>>({});
   const [worldIndexerStatus, setWorldIndexerStatus] = useState<Record<string, boolean>>({});
   const [creatingIndexer, setCreatingIndexer] = useState<Record<string, boolean>>({});
+  const [updatingIndexerTier, setUpdatingIndexerTier] = useState<Record<string, string | null>>({});
   const [indexerActionErrors, setIndexerActionErrors] = useState<Record<string, string>>({});
   const [worldDeployedStatus, setWorldDeployedStatus] = useState<Record<string, boolean>>({});
   const [worldBankStatus, setWorldBankStatus] = useState<Record<string, boolean>>({});
@@ -748,6 +752,37 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         ...prev,
         [worldName]: error?.message ?? "Failed to create indexer.",
       }));
+    }
+  };
+
+  const handleUpdateIndexerTier = async (worldName: string, tier: "basic" | "pro" | "legendary" | "epic") => {
+    const adminSecret = window.prompt("Enter the factory admin secret to confirm this indexer tier update.");
+    if (!adminSecret?.trim()) {
+      return;
+    }
+
+    setIndexerActionErrors((prev) => ({ ...prev, [worldName]: "" }));
+    setUpdatingIndexerTier((prev) => ({ ...prev, [worldName]: tier }));
+
+    try {
+      await updateIndexerTierService({
+        environment: `${currentChain}.${activeGameMode}` as
+          | "slot.eternum"
+          | "mainnet.eternum"
+          | "slot.blitz"
+          | "mainnet.blitz",
+        gameName: worldName,
+        tier,
+        adminSecret: adminSecret.trim(),
+      });
+      setIndexerActionErrors((prev) => ({ ...prev, [worldName]: "" }));
+    } catch (error: any) {
+      setIndexerActionErrors((prev) => ({
+        ...prev,
+        [worldName]: error?.message ?? "Failed to update indexer tier.",
+      }));
+    } finally {
+      setUpdatingIndexerTier((prev) => ({ ...prev, [worldName]: null }));
     }
   };
 
@@ -1327,15 +1362,40 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                       <>
                                         {/* Indexer status/actions */}
                                         {worldIndexerStatus[name] ? (
-                                          <a
-                                            href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
-                                          >
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                            Indexer On
-                                          </a>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <a
+                                              href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
+                                            >
+                                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                              Indexer On
+                                            </a>
+                                            {(["basic", "pro", "legendary"] as const).map((tier) => {
+                                              const isUpdatingTier = updatingIndexerTier[name] === tier;
+
+                                              return (
+                                                <button
+                                                  key={`${name}-${tier}`}
+                                                  onClick={() => {
+                                                    void handleUpdateIndexerTier(name, tier);
+                                                  }}
+                                                  disabled={Boolean(updatingIndexerTier[name])}
+                                                  className="px-3 py-1 bg-black/40 hover:bg-gold/15 text-gold/80 text-xs font-semibold rounded-md border border-gold/20 hover:border-gold/40 transition-colors disabled:cursor-wait disabled:opacity-60"
+                                                >
+                                                  {isUpdatingTier ? (
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                                      {tier}
+                                                    </span>
+                                                  ) : (
+                                                    `Set ${tier}`
+                                                  )}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
                                         ) : creatingIndexer[name] ? (
                                           <span className="flex items-center gap-1.5 px-3 py-1 bg-black/40 text-gold/80 text-xs font-semibold rounded-md border border-gold/20 cursor-wait">
                                             <Loader2 className="w-3 h-3 animate-spin" />

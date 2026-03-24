@@ -39,7 +39,7 @@ export interface GrantVillagePassRoleSummary {
   outputPath: string;
 }
 
-interface VillagePassGrantTarget {
+export interface VillagePassRoleGrantTarget {
   network: string;
   worldAddress: string;
   patchedManifest: GameManifestLike;
@@ -84,7 +84,9 @@ function resolveVillagePassAddress(network: string): string {
   return villagePassAddress;
 }
 
-async function resolveVillagePassGrantTarget(request: GrantVillagePassRoleRequest): Promise<VillagePassGrantTarget> {
+export async function resolveVillagePassRoleGrantTarget(
+  request: GrantVillagePassRoleRequest,
+): Promise<VillagePassRoleGrantTarget> {
   const network = resolveEternumNetwork(request.chain);
   const cartridgeApiBase = request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE;
   const baseManifest = loadBaseGameManifest(network);
@@ -105,7 +107,7 @@ async function resolveVillagePassGrantTarget(request: GrantVillagePassRoleReques
   };
 }
 
-function buildVillagePassRoleCalls(target: VillagePassGrantTarget): GrantRoleCall[] {
+export function buildVillagePassRoleGrantCalls(target: VillagePassRoleGrantTarget): GrantRoleCall[] {
   return [
     buildGrantRoleCall(target.villagePassAddress, MINTER_ROLE, target.realmInternalSystemsAddress),
     buildGrantRoleCall(target.villagePassAddress, DISTRIBUTOR_ROLE, target.villageSystemsAddress),
@@ -144,7 +146,7 @@ function writeVillagePassRoleArtifacts(params: {
 
 function buildVillagePassRoleSummary(params: {
   request: GrantVillagePassRoleRequest;
-  target: VillagePassGrantTarget;
+  target: VillagePassRoleGrantTarget;
   rpcUrl: string;
   transactionHash?: string;
 }): Omit<GrantVillagePassRoleSummary, "outputPath"> {
@@ -165,10 +167,10 @@ function buildVillagePassRoleSummary(params: {
 export async function grantVillagePassRolesToWorldSystems(
   request: GrantVillagePassRoleRequest,
 ): Promise<GrantVillagePassRoleSummary> {
-  const target = await resolveVillagePassGrantTarget(request);
+  const target = await resolveVillagePassRoleGrantTarget(request);
   const roleGrant = await grantRoles({
     chain: target.network,
-    calls: buildVillagePassRoleCalls(target),
+    calls: buildVillagePassRoleGrantCalls(target),
     rpcUrl: request.rpcUrl,
     accountAddress: request.accountAddress,
     privateKey: request.privateKey,

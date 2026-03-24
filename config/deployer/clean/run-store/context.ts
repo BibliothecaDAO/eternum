@@ -1,6 +1,18 @@
 import { DEFAULT_GAME_LAUNCH_WORKFLOW_FILE } from "../constants";
-import { resolveFactoryLaunchInputPath } from "./paths";
-import type { FactoryRunRequestContext, FactoryRunStoreEventContext, FactoryRunWorkflowContext } from "./types";
+import {
+  resolveFactoryLaunchInputPath,
+  resolveFactoryRotationLaunchInputPath,
+  resolveFactorySeriesLaunchInputPath,
+} from "./paths";
+import type {
+  FactoryRotationRunRequestContext,
+  FactoryRotationRunStoreEventContext,
+  FactoryRunRequestContext,
+  FactoryRunStoreEventContext,
+  FactoryRunWorkflowContext,
+  FactorySeriesRunRequestContext,
+  FactorySeriesRunStoreEventContext,
+} from "./types";
 
 interface FactoryStoreEventMetadata {
   launchRequestId: string;
@@ -59,6 +71,32 @@ export function createFactoryRunStoreEventContext(request: FactoryRunRequestCont
     ...request,
     ...metadata,
     inputPath: resolveFactoryLaunchInputPath(request, metadata.launchRequestId),
+    executionMode: request.requestedLaunchStep === "full" ? "fast_trial" : "guided_recovery",
+  };
+}
+
+export function createFactorySeriesRunStoreEventContext(
+  request: FactorySeriesRunRequestContext,
+): FactorySeriesRunStoreEventContext {
+  const metadata = createFactoryStoreEventMetadata();
+
+  return {
+    ...request,
+    ...metadata,
+    inputPath: resolveFactorySeriesLaunchInputPath(request, metadata.launchRequestId),
+    executionMode: request.requestedLaunchStep === "full" ? "fast_trial" : "guided_recovery",
+  };
+}
+
+export function createFactoryRotationRunStoreEventContext(
+  request: FactoryRotationRunRequestContext,
+): FactoryRotationRunStoreEventContext {
+  const metadata = createFactoryStoreEventMetadata();
+
+  return {
+    ...request,
+    ...metadata,
+    inputPath: resolveFactoryRotationLaunchInputPath(request, metadata.launchRequestId),
     executionMode: request.requestedLaunchStep === "full" ? "fast_trial" : "guided_recovery",
   };
 }

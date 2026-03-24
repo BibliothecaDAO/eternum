@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   getRunDetailMessage,
   getRunProgressLabel,
+  getRunStatusHighlights,
   getSimpleStepTitle,
   getStepDetailMessage,
   resolveRunPrimaryAction,
@@ -13,6 +14,7 @@ function buildFactoryRun(overrides: Partial<FactoryRun> = {}): FactoryRun {
   return {
     id: "slot.blitz:bltz-test-1",
     syncKey: "slot.blitz:bltz-test-1|updated",
+    kind: "game",
     mode: "blitz",
     name: "bltz-test-1",
     environment: "slot.blitz",
@@ -46,20 +48,30 @@ function buildFactoryRun(overrides: Partial<FactoryRun> = {}): FactoryRun {
 }
 
 describe("factory run recovery actions", () => {
-  it("restarts the full launch when the first step fails", () => {
-    const run = buildFactoryRun();
+  it("continues from the first failed step when the first step fails", () => {
+    const run = buildFactoryRun({
+      recovery: {
+        state: "failed",
+        canContinue: true,
+        continueStepId: "create-world",
+      },
+    });
 
     expect(resolveRunPrimaryAction(run)).toEqual({
-      kind: "retry",
-      label: "Retry full launch",
-      launchScope: "full",
+      kind: "continue",
+      label: "Continue",
       stepId: "create-world",
     });
-    expect(getRunDetailMessage(run)).toBe("This launch stopped early, so it will need a full retry.");
+    expect(getRunDetailMessage(run)).toBe("This game stopped, but it can continue from the last unfinished step.");
   });
 
-  it("keeps later failures on step-by-step recovery", () => {
+  it("continues from the stored failed step for later setup failures", () => {
     const run = buildFactoryRun({
+      recovery: {
+        state: "failed",
+        canContinue: true,
+        continueStepId: "wait-for-factory-index",
+      },
       steps: [
         {
           id: "create-world",
@@ -83,12 +95,11 @@ describe("factory run recovery actions", () => {
     });
 
     expect(resolveRunPrimaryAction(run)).toEqual({
-      kind: "retry",
-      label: "Retry this step",
-      launchScope: "wait-for-factory-index",
+      kind: "continue",
+      label: "Continue",
       stepId: "wait-for-factory-index",
     });
-    expect(getRunDetailMessage(run)).toBe("This setup stalled on one step, so that step will need another try.");
+    expect(getRunDetailMessage(run)).toBe("This game stopped, but it can continue from the last unfinished step.");
   });
 
   it("does not show continue during a normal transition gap", () => {
@@ -157,7 +168,6 @@ describe("factory run recovery actions", () => {
     expect(resolveRunPrimaryAction(run)).toEqual({
       kind: "continue",
       label: "Continue",
-      launchScope: "wait-for-factory-index",
       stepId: "wait-for-factory-index",
     });
   });
@@ -186,9 +196,121 @@ describe("factory run recovery actions", () => {
       ],
     });
 
-    expect(getSimpleStepTitle(run.steps[0])).toBe("Finishing setup");
-    expect(getStepDetailMessage(run.steps[0])).toBe("We could not finish the last setup step.");
+    expect(getSimpleStepTitle(run.steps[0])).toBe("Deploying indexer");
+    expect(getStepDetailMessage(run.steps[0])).toBe("We could not deploy the indexer.");
     expect(getStepDetailMessage(run.steps[1])).toBe("We have not started applying this game’s settings yet.");
+  });
+
+  it("uses verification language for factory visibility steps", () => {
+    const run = buildFactoryRun({
+      steps: [
+        {
+          id: "wait-for-factory-indexes",
+          title: "Wait for factory indexes",
+          summary: "Waiting for games.",
+          workflowName: "wait-for-factory-indexes",
+          status: "running",
+          verification: "Waiting for games.",
+          latestEvent: "Waiting for games.",
+        },
+      ],
+    });
+
+    expect(getSimpleStepTitle(run.steps[0])).toBe("Checking deployed games");
+    expect(getStepDetailMessage(run.steps[0])).toBe("We’re confirming the deployed games are showing up in Factory.");
+  });
+
+  it("adds child status highlights to multi-game run descriptions", () => {
+    const run = buildFactoryRun({
+      kind: "rotation",
+      status: "running",
+      children: [
+        {
+          id: "child-1",
+          gameName: "bltz-franky-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-23T10:00:00Z",
+          status: "succeeded",
+          latestEvent: "Ready",
+          currentStepId: null,
+          steps: [],
+        },
+        {
+          id: "child-2",
+          gameName: "bltz-franky-02",
+          seriesGameNumber: 2,
+          startTimeIso: "2026-03-23T10:30:00Z",
+          status: "running",
+          latestEvent: "Configuring",
+          currentStepId: "configure-worlds",
+          steps: [],
+        },
+        {
+          id: "child-3",
+          gameName: "bltz-franky-03",
+          seriesGameNumber: 3,
+          startTimeIso: "2026-03-23T11:00:00Z",
+          status: "pending",
+          latestEvent: "Queued",
+          currentStepId: "create-worlds",
+          steps: [],
+        },
+        {
+          id: "child-4",
+          gameName: "bltz-franky-04",
+          seriesGameNumber: 4,
+          startTimeIso: "2026-03-23T11:30:00Z",
+          status: "failed",
+          latestEvent: "Failed",
+          currentStepId: "create-worlds",
+          steps: [],
+        },
+      ],
+      steps: [
+        {
+          id: "create-worlds",
+          title: "Create worlds",
+          summary: "Running.",
+          workflowName: "create-worlds",
+          status: "running",
+          verification: "Running.",
+          latestEvent: "Running.",
+        },
+      ],
+    });
+
+    expect(getRunStatusHighlights(run)).toEqual(["1 ready", "1 working", "1 pending", "1 failed"]);
+    expect(getRunDetailMessage(run)).toBe(
+      "1 ready, 1 working, 1 pending, 1 failed. We’re checking this rotation, filling any missing games, and finishing setup where needed.",
+    );
+  });
+
+  it("keeps grouped indexer continues on the grouped launch step", () => {
+    const run = buildFactoryRun({
+      kind: "rotation",
+      recovery: {
+        state: "failed",
+        canContinue: true,
+        continueStepId: "create-indexers",
+      },
+      steps: [
+        {
+          id: "create-indexers",
+          title: "Create indexers",
+          summary: "Grouped indexer setup failed.",
+          workflowName: "create-indexers",
+          status: "failed",
+          verification: "Grouped indexer setup failed.",
+          latestEvent: "Grouped indexer setup failed.",
+        },
+      ],
+    });
+
+    expect(resolveRunPrimaryAction(run)).toEqual({
+      kind: "continue",
+      label: "Continue",
+      stepId: "create-indexers",
+    });
   });
 
   it("counts the active setup step in progress labels", () => {
