@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-24T08:35:35.939Z",
+  "updatedAt": "2026-03-24T08:35:40.553Z",
   "entries": {
     "daily-ranked-APAC-24-03-26": {
       "kind": "game",
@@ -11,12 +11,13 @@
       "path": "runs/mainnet/blitz/daily-ranked-apac-24-03-26.json",
       "inputPath": "inputs/mainnet/blitz/daily-ranked-apac-24-03-26/23480285803-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T08:35:35.939Z",
+      "updatedAt": "2026-03-24T08:35:40.553Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-24T09:20:40.553Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "1774344600",
       "artifacts": {}
     }
