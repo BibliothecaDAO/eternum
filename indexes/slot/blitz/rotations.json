@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T02:21:49.329Z",
+  "updatedAt": "2026-03-24T02:27:13.350Z",
   "entries": {
     "bltz-thrum-725": {
       "kind": "rotation",
@@ -66,7 +66,7 @@
       "path": "runs/slot/blitz/rotations/bltz-franky.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-franky/23461067376-1.json",
       "status": "complete",
-      "updatedAt": "2026-03-24T01:56:47.659Z",
+      "updatedAt": "2026-03-24T02:27:13.350Z",
       "workflowRef": "codex/factory-v2-rotation-review",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -99,9 +99,7 @@
           "startTime": 1774250400,
           "durationSeconds": 3600,
           "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "pro",
-            "lastIndexerDescribeAt": "2026-03-24T01:56:46.980Z"
+            "indexerCreated": false
           }
         },
         {
@@ -109,9 +107,7 @@
           "startTime": 1774254000,
           "durationSeconds": 3600,
           "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "pro",
-            "lastIndexerDescribeAt": "2026-03-24T01:56:47.225Z"
+            "indexerCreated": false
           }
         },
         {
@@ -119,9 +115,7 @@
           "startTime": 1774257600,
           "durationSeconds": 5400,
           "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "pro",
-            "lastIndexerDescribeAt": "2026-03-24T01:56:47.305Z"
+            "indexerCreated": false
           }
         },
         {
@@ -129,9 +123,7 @@
           "startTime": 1774261200,
           "durationSeconds": 5400,
           "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "pro",
-            "lastIndexerDescribeAt": "2026-03-24T01:56:47.506Z"
+            "indexerCreated": false
           }
         },
         {
@@ -139,9 +131,7 @@
           "startTime": 1774264800,
           "durationSeconds": 5400,
           "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "pro",
-            "lastIndexerDescribeAt": "2026-03-24T01:56:47.583Z"
+            "indexerCreated": false
           }
         },
         {
@@ -149,9 +139,7 @@
           "startTime": 1774268400,
           "durationSeconds": 5400,
           "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "pro",
-            "lastIndexerDescribeAt": "2026-03-24T01:56:47.659Z"
+            "indexerCreated": false
           }
         }
       ]
