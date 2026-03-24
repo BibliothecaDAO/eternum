@@ -55,6 +55,7 @@ pub impl iGuardImpl of iGuardTrait {
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
         stamina_revert_initial_amount: bool,
+        max_army_size_check: bool,
     ) {
         let current_tick: u64 = tick.current();
         if troops.count.is_zero() {
@@ -98,12 +99,14 @@ pub impl iGuardImpl of iGuardTrait {
         troops.count += amount;
 
         // ensure structure troop count does not exceed max army size
-        let max_army_size: u128 = troop_limit_config.max_army_size(structure_base.level, troops.tier).into();
-        assert!(
-            troops.count <= max_army_size * RESOURCE_PRECISION,
-            "reached limit of structure guard troop count. max: {}",
-            max_army_size,
-        );
+        if max_army_size_check {
+            let max_army_size: u128 = troop_limit_config.max_army_size(structure_base.level, troops.tier).into();
+            assert!(
+                troops.count <= max_army_size * RESOURCE_PRECISION,
+                "reached limit of structure guard troop count. max: {}",
+                max_army_size,
+            );
+        }
 
         // update guard slot and structure
         guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
@@ -604,6 +607,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         tick,
                         troop_limit_config,
                         troop_stamina_config,
+                        false,
                         false,
                     );
                 },
