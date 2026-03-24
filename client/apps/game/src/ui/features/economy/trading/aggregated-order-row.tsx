@@ -34,9 +34,7 @@ export const AggregatedOrderRow = memo(({ level, isBid, resourceId }: Aggregated
         </div>
 
         {/* Price */}
-        <div className={`w-20 font-medium ${isBid ? "text-green" : "text-red"}`}>
-          {formatNumber(level.price, 4)}
-        </div>
+        <div className={`w-20 font-medium ${isBid ? "text-green" : "text-red"}`}>{formatNumber(level.price, 4)}</div>
 
         {/* Volume */}
         <div className="w-24 text-gold/80">

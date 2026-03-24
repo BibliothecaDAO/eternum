@@ -90,7 +90,12 @@ const MarketTradingHistoryContent = memo(() => {
         </div>
       ) : (
         paginatedEvents.map((trade, index) => {
-          return <TradeHistoryEvent key={`${trade.event.eventTime.getTime()}-${trade.event.takerAddress}-${index}`} trade={trade} />;
+          return (
+            <TradeHistoryEvent
+              key={`${trade.event.eventTime.getTime()}-${trade.event.takerAddress}-${index}`}
+              trade={trade}
+            />
+          );
         })
       )}
 

@@ -125,12 +125,7 @@ export const TransferView = () => {
         name: "Other Banks",
       },
     ],
-    [
-      playerStructures,
-      otherStructures,
-      guildOnly,
-      playersInPlayersGuildAddress,
-    ],
+    [playerStructures, otherStructures, guildOnly, playersInPlayersGuildAddress],
   );
 
   // Filter out categories with no entities

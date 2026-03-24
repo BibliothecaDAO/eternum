@@ -28,9 +28,7 @@ export const TradeSummaryBar = memo(({ bidOffers, askOffers, entityId }: TradeSu
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-gold/50">Lords Locked:</span>
-          <span className="font-medium text-gold">
-            {currencyFormat(divideByPrecision(totalLordsLocked), 0)}
-          </span>
+          <span className="font-medium text-gold">{currencyFormat(divideByPrecision(totalLordsLocked), 0)}</span>
           <ResourceIcon resource="Lords" size="xs" withTooltip={false} />
         </div>
       </div>

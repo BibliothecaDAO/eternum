@@ -20,7 +20,10 @@ export const SpreadIndicator = memo(({ bidPrice, askPrice }: SpreadIndicatorProp
 
   return (
     <div className="w-full h-1 bg-gold/10 rounded-full overflow-hidden" title={`Spread: ${spreadPercent.toFixed(1)}%`}>
-      <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${barWidth}%` }} />
+      <div
+        className={`h-full rounded-full transition-all duration-300 ${barColor}`}
+        style={{ width: `${barWidth}%` }}
+      />
     </div>
   );
 });

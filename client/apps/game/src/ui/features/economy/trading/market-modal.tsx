@@ -86,9 +86,7 @@ const MarketContent = () => {
   const structureResourceManager = useResourceManager(structureEntityId);
 
   const structureLordsBalance = useMemo(
-    () =>
-      structureResourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords)
-        .balance,
+    () => structureResourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords).balance,
     [structureResourceManager, currentDefaultTick],
   );
 
@@ -288,9 +286,9 @@ const MarketContent = () => {
             )}
           </Tabs.Panels>
         </Tabs>
-      <Suspense fallback={null}>
-        <TradeSummaryBar bidOffers={bidOffers} askOffers={askOffers} entityId={structureEntityId} />
-      </Suspense>
+        <Suspense fallback={null}>
+          <TradeSummaryBar bidOffers={bidOffers} askOffers={askOffers} entityId={structureEntityId} />
+        </Suspense>
       </div>
     </div>
   );

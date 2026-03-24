@@ -42,9 +42,7 @@ export const MarketResourceRow = memo(
           <div className="flex items-center gap-1.5 col-span-2 min-w-0">
             <ResourceIcon size="xs" resource={resource?.trait || ""} withTooltip={false} />
             <span className="truncate text-xs">{resource?.trait || ""}</span>
-            <span className={`text-[10px] ${balanceColor} shrink-0`}>
-              [{currencyFormat(balanceNum, 0)}]
-            </span>
+            <span className={`text-[10px] ${balanceColor} shrink-0`}>[{currencyFormat(balanceNum, 0)}]</span>
           </div>
           <div className="text-green text-xs text-center">{formatNumber(bidPrice, 4)}</div>
           <div className="text-red text-xs text-center">{formatNumber(askPrice, 4)}</div>

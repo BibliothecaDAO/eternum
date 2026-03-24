@@ -159,7 +159,9 @@ export const QuickSwapPopover = memo(({ entityId, resourceId, onClose }: QuickSw
         <NumberInput value={amount} onChange={(val) => setAmount(Number(val))} max={maxAmount} />
         <div className="flex justify-between mt-1 text-[10px] text-gold/40">
           <span>Bal: {currencyFormat(isBuying ? lordsBalanceDisplay : resourceBalanceDisplay, 0)}</span>
-          <span>@ {formatNumber(ammPrice, 4)} Lords/{resourceName}</span>
+          <span>
+            @ {formatNumber(ammPrice, 4)} Lords/{resourceName}
+          </span>
         </div>
       </div>
 
@@ -176,14 +178,7 @@ export const QuickSwapPopover = memo(({ entityId, resourceId, onClose }: QuickSw
       </div>
 
       {/* Swap button */}
-      <Button
-        variant="primary"
-        size="xs"
-        className="w-full"
-        disabled={!canSwap}
-        isLoading={isLoading}
-        onClick={onSwap}
-      >
+      <Button variant="primary" size="xs" className="w-full" disabled={!canSwap} isLoading={isLoading} onClick={onSwap}>
         {isBuying ? "Buy" : "Sell"} {resourceName}
       </Button>
     </div>

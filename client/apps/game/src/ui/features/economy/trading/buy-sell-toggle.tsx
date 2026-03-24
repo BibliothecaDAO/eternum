@@ -19,9 +19,7 @@ export const BuySellToggle = memo(() => {
       </button>
       <button
         className={`flex-1 py-2 px-6 text-sm font-medium transition-all duration-200 ${
-          tradeDirection === "sell"
-            ? "bg-red/20 text-red"
-            : "bg-transparent text-gold/50 hover:text-gold/70"
+          tradeDirection === "sell" ? "bg-red/20 text-red" : "bg-transparent text-gold/50 hover:text-gold/70"
         }`}
         onClick={() => setTradeDirection("sell")}
       >

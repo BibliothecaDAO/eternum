@@ -108,67 +108,66 @@ export const MarketOrderPanel = memo(
   },
 );
 
-const VirtualizedOrderList = memo(({
-  offers,
-  entityId,
-  isBuy,
-  updateBalance,
-  setUpdateBalance,
-}: {
-  offers: MarketInterface[];
-  entityId: ID;
-  isBuy: boolean;
-  updateBalance: boolean;
-  setUpdateBalance: (value: boolean) => void;
-}) => {
-  const parentRef = useRef<HTMLDivElement>(null);
+const VirtualizedOrderList = memo(
+  ({
+    offers,
+    entityId,
+    isBuy,
+    updateBalance,
+    setUpdateBalance,
+  }: {
+    offers: MarketInterface[];
+    entityId: ID;
+    isBuy: boolean;
+    updateBalance: boolean;
+    setUpdateBalance: (value: boolean) => void;
+  }) => {
+    const parentRef = useRef<HTMLDivElement>(null);
 
-  const virtualizer = useVirtualizer({
-    count: offers.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 52,
-    overscan: 5,
-  });
+    const virtualizer = useVirtualizer({
+      count: offers.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 52,
+      overscan: 5,
+    });
 
-  return (
-    <div
-      ref={parentRef}
-      className="flex-grow overflow-y-auto h-96 relative"
-    >
-      <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          width: "100%",
-          position: "relative",
-        }}
-      >
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const offer = offers[virtualRow.index];
-          return (
-            <div
-              key={offer.tradeId}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              <OrderRow
-                offer={offer}
-                entityId={entityId}
-                isBuy={isBuy}
-                updateBalance={updateBalance}
-                setUpdateBalance={setUpdateBalance}
-              />
-            </div>
-          );
-        })}
+    return (
+      <div ref={parentRef} className="flex-grow overflow-y-auto h-96 relative">
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: "100%",
+            position: "relative",
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const offer = offers[virtualRow.index];
+            return (
+              <div
+                key={offer.tradeId}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <OrderRow
+                  offer={offer}
+                  entityId={entityId}
+                  isBuy={isBuy}
+                  updateBalance={updateBalance}
+                  setUpdateBalance={setUpdateBalance}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
 VirtualizedOrderList.displayName = "VirtualizedOrderList";
 
@@ -209,7 +208,8 @@ const MarketOrders = memo(
             </div>
           </div>
           <div className="self-center">
-            {offers.length} {isBuy ? "bid" : "ask"}{offers.length === 0 && " (no orders)"}
+            {offers.length} {isBuy ? "bid" : "ask"}
+            {offers.length === 0 && " (no orders)"}
           </div>
         </div>
 
@@ -284,7 +284,10 @@ const OrderRow = memo(
 
     const resourceManager = useResourceManager(entityId);
 
-    const lordsBalance = useMemo(() => Number(resourceManager.balance(ResourcesIds.Lords)), [resourceManager, updateBalance]);
+    const lordsBalance = useMemo(
+      () => Number(resourceManager.balance(ResourcesIds.Lords)),
+      [resourceManager, updateBalance],
+    );
 
     const resourceBalance = useMemo(
       () => Number(resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId)),
@@ -457,82 +460,73 @@ const OrderRow = memo(
   },
 );
 
-const ConfirmOrderPopup = memo(({
-  isSelf,
-  isBuy,
-  onConfirm,
-  onCancel,
-  loading,
-  inputValue,
-  setInputValue,
-  maxInputValue,
-  getDisplayResource,
-  calculatedLords,
-  donkeysNeeded,
-  donkeyBalance,
-  isVillageAndMilitaryResource,
-}: {
-  isSelf: boolean;
-  isBuy: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  loading: boolean;
-  inputValue: number;
-  setInputValue: (value: number) => void;
-  maxInputValue: number;
-  getDisplayResource: number;
-  calculatedLords: number;
-  donkeysNeeded: number;
-  donkeyBalance: number;
-  isVillageAndMilitaryResource: boolean;
-}) => {
-  return (
-    <ConfirmationPopup
-      title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
-      onConfirm={onConfirm}
-      onCancel={onCancel}
-      isLoading={loading}
-      disabled={
-        isSelf
-          ? false
-          : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0 || isVillageAndMilitaryResource
-      }
-    >
-      {isSelf ? (
-        <div className="p-4 text-center">
-          <p>Are you sure you want to cancel this order?</p>
-        </div>
-      ) : (
-        <div className="p-4 text-center">
-          <div className="flex gap-3 mb-4">
-            <NumberInput
-              value={inputValue}
-              className="w-full"
-              onChange={setInputValue}
-              max={maxInputValue}
-            />
-            <Button
-              onClick={() => setInputValue(maxInputValue)}
-            >
-              Max
-            </Button>
+const ConfirmOrderPopup = memo(
+  ({
+    isSelf,
+    isBuy,
+    onConfirm,
+    onCancel,
+    loading,
+    inputValue,
+    setInputValue,
+    maxInputValue,
+    getDisplayResource,
+    calculatedLords,
+    donkeysNeeded,
+    donkeyBalance,
+    isVillageAndMilitaryResource,
+  }: {
+    isSelf: boolean;
+    isBuy: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+    loading: boolean;
+    inputValue: number;
+    setInputValue: (value: number) => void;
+    maxInputValue: number;
+    getDisplayResource: number;
+    calculatedLords: number;
+    donkeysNeeded: number;
+    donkeyBalance: number;
+    isVillageAndMilitaryResource: boolean;
+  }) => {
+    return (
+      <ConfirmationPopup
+        title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+        isLoading={loading}
+        disabled={
+          isSelf ? false : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0 || isVillageAndMilitaryResource
+        }
+      >
+        {isSelf ? (
+          <div className="p-4 text-center">
+            <p>Are you sure you want to cancel this order?</p>
           </div>
-          <p className="mb-2">
-            <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
-            <span className="">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
-            <span className="">{currencyFormat(calculatedLords, 2)}</span> Lords
-          </p>
-          <div className="flex justify-between mt-4">
-            <div>Donkeys Required</div>
-            <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
-              {donkeysNeeded} [{donkeyBalance}]
+        ) : (
+          <div className="p-4 text-center">
+            <div className="flex gap-3 mb-4">
+              <NumberInput value={inputValue} className="w-full" onChange={setInputValue} max={maxInputValue} />
+              <Button onClick={() => setInputValue(maxInputValue)}>Max</Button>
+            </div>
+            <p className="mb-2">
+              <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
+              <span className="">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
+              <span className="">{currencyFormat(calculatedLords, 2)}</span> Lords
+            </p>
+            <div className="flex justify-between mt-4">
+              <div>Donkeys Required</div>
+              <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
+                {donkeysNeeded} [{donkeyBalance}]
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </ConfirmationPopup>
-  );
-});
+        )}
+      </ConfirmationPopup>
+    );
+  },
+);
 
 const OrderCreation = memo(
   ({ entityId, resourceId, isBuy = false }: { entityId: ID; resourceId: ResourcesIds; isBuy?: boolean }) => {
@@ -711,7 +705,9 @@ const OrderCreation = memo(
     return (
       <div
         className={`flex justify-between p-4 text-xl flex-wrap mt-auto border-gold/10 panel-wood ${
-          isBuy ? "order-create-buy-selector border-l-2 border-l-red" : "order-create-sell-selector border-l-2 border-l-green"
+          isBuy
+            ? "order-create-buy-selector border-l-2 border-l-red"
+            : "order-create-sell-selector border-l-2 border-l-green"
         }`}
       >
         <div className="flex w-full gap-8">

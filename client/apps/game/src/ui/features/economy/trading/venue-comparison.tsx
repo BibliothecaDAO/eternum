@@ -40,9 +40,7 @@ const VenueCard = memo(
       <div
         onClick={onClick}
         className={`relative flex-1 p-3 rounded-lg cursor-pointer transition-all duration-200 border ${
-          isSelected
-            ? "border-gold/50 bg-gold/10"
-            : "border-gold/15 bg-black/20 hover:border-gold/30 hover:bg-gold/5"
+          isSelected ? "border-gold/50 bg-gold/10" : "border-gold/15 bg-black/20 hover:border-gold/30 hover:bg-gold/5"
         }`}
       >
         {isBest && <BestBadge />}
@@ -83,9 +81,7 @@ export const VenueComparison = memo(({ bestPriceResult, resourceId }: VenueCompa
         onClick={() => setSelectedVenue(selectedVenue === "orderbook" ? "best" : "orderbook")}
         resourceId={resourceId}
       >
-        {obPrice !== null && (
-          <span>{obAvailable > 0 ? `${formatNumber(obAvailable, 0)} available` : "No orders"}</span>
-        )}
+        {obPrice !== null && <span>{obAvailable > 0 ? `${formatNumber(obAvailable, 0)} available` : "No orders"}</span>}
       </VenueCard>
 
       <VenueCard
@@ -97,9 +93,7 @@ export const VenueComparison = memo(({ bestPriceResult, resourceId }: VenueCompa
         resourceId={resourceId}
       >
         {ammPrice !== null && ammSlippage > 0 && (
-          <span className={ammSlippage > 2 ? "text-red" : ""}>
-            Slippage: {formatNumber(ammSlippage, 2)}%
-          </span>
+          <span className={ammSlippage > 2 ? "text-red" : ""}>Slippage: {formatNumber(ammSlippage, 2)}%</span>
         )}
       </VenueCard>
     </div>

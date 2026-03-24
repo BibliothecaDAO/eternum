@@ -28,8 +28,7 @@ export const OrderBookDepth = memo(({ askOffers, bidOffers, resourceId, entityId
   );
 
   const totalOrders =
-    aggregatedAsks.reduce((s, l) => s + l.orderCount, 0) +
-    aggregatedBids.reduce((s, l) => s + l.orderCount, 0);
+    aggregatedAsks.reduce((s, l) => s + l.orderCount, 0) + aggregatedBids.reduce((s, l) => s + l.orderCount, 0);
 
   return (
     <div className="border border-gold/10 rounded-lg overflow-hidden">
@@ -60,12 +59,7 @@ export const OrderBookDepth = memo(({ askOffers, bidOffers, resourceId, entityId
           {aggregatedAsks.length > 0 ? (
             <div className="flex flex-col">
               {[...aggregatedAsks].reverse().map((level) => (
-                <AggregatedOrderRow
-                  key={`ask-${level.price}`}
-                  level={level}
-                  isBid={false}
-                  resourceId={resourceId}
-                />
+                <AggregatedOrderRow key={`ask-${level.price}`} level={level} isBid={false} resourceId={resourceId} />
               ))}
             </div>
           ) : (
@@ -83,12 +77,7 @@ export const OrderBookDepth = memo(({ askOffers, bidOffers, resourceId, entityId
           {aggregatedBids.length > 0 ? (
             <div className="flex flex-col">
               {aggregatedBids.map((level) => (
-                <AggregatedOrderRow
-                  key={`bid-${level.price}`}
-                  level={level}
-                  isBid={true}
-                  resourceId={resourceId}
-                />
+                <AggregatedOrderRow key={`bid-${level.price}`} level={level} isBid={true} resourceId={resourceId} />
               ))}
             </div>
           ) : (

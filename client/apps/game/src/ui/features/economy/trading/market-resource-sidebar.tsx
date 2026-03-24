@@ -95,7 +95,12 @@ export const MarketResourceSidebar = ({
   return (
     <div className="market-resource-bar-selector panel-wood-top">
       <div className="px-2 py-1.5">
-        <TextInput placeholder="Search resources..." onChange={(val) => setLocalSearch(val)} value={localSearch} className="w-full" />
+        <TextInput
+          placeholder="Search resources..."
+          onChange={(val) => setLocalSearch(val)}
+          value={localSearch}
+          className="w-full"
+        />
       </div>
       <div className="w-full mb-1 panel-wood-bottom">
         <div className="grid grid-cols-5 text-xs uppercase py-2 h6">

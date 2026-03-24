@@ -37,7 +37,9 @@ export const TransportCapacityBar = memo(({ entityId, resourceId }: TransportCap
       <ResourceIcon resource="Donkey" size="sm" withTooltip={false} />
       <div className="flex items-center gap-2 flex-1">
         <span className="text-gold/70">Transport:</span>
-        <span className={`font-medium ${donkeyBalance === 0 ? "text-gold/40" : isOverCapacity ? "text-red" : "text-green"}`}>
+        <span
+          className={`font-medium ${donkeyBalance === 0 ? "text-gold/40" : isOverCapacity ? "text-red" : "text-green"}`}
+        >
           {donkeyBalance === 0 ? "No donkeys" : `${currencyFormat(donkeyBalance, 0)} available`}
         </span>
         {projectedCost > 0 && (

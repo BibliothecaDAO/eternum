@@ -5,7 +5,12 @@ import { aggregateOrders } from "./use-aggregated-depth";
 import { filterPendingOrders } from "./use-pending-orders";
 import { MarketInterface } from "@bibliothecadao/types";
 
-const generateMockOffers = (count: number, resourceId: number, basePrice: number, isBid: boolean): MarketInterface[] => {
+const generateMockOffers = (
+  count: number,
+  resourceId: number,
+  basePrice: number,
+  isBid: boolean,
+): MarketInterface[] => {
   return Array.from({ length: count }, (_, i) => {
     const priceVariation = (Math.random() - 0.5) * basePrice * 0.4; // ±20% spread
     const price = basePrice + priceVariation;
@@ -26,9 +31,7 @@ const generateMockOffers = (count: number, resourceId: number, basePrice: number
       takerGets: isBid
         ? [{ resourceId: 253, amount: Math.floor(amount * price) }] // Lords
         : [{ resourceId, amount }],
-      makerGets: isBid
-        ? [{ resourceId, amount }]
-        : [{ resourceId: 253, amount: Math.floor(amount * price) }],
+      makerGets: isBid ? [{ resourceId, amount }] : [{ resourceId: 253, amount: Math.floor(amount * price) }],
       ratio: price,
       perLords: price,
     } as unknown as MarketInterface;

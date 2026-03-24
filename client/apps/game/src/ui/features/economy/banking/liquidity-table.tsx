@@ -40,11 +40,7 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
 
   return (
     <div className="amm-liquidity-selector h-full overflow-x-auto relative">
-      <TextInput
-        placeholder="Search resources..."
-        onChange={setSearchTerm}
-        className="w-full mb-4"
-      />
+      <TextInput placeholder="Search resources..." onChange={setSearchTerm} className="w-full mb-4" />
       <LiquidityTableHeader />
       <div className="overflow-y-auto">
         <div className="grid gap-2 relative">

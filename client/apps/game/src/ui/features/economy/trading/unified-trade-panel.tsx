@@ -131,21 +131,28 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
     if (tradeDirection === "buy" && totalLords > lordsBalance) return false;
     if (tradeDirection === "sell" && tradeAmount > resourceBalance) return false;
     return true;
-  }, [tradeAmount, effectivePrice, effectiveVenue, canTransport, tradeDirection, totalLords, lordsBalance, resourceBalance]);
+  }, [
+    tradeAmount,
+    effectivePrice,
+    effectiveVenue,
+    canTransport,
+    tradeDirection,
+    totalLords,
+    lordsBalance,
+    resourceBalance,
+  ]);
 
   // Find the best OB offer for execution
   const bestOBOffer = useMemo(() => {
     if (tradeDirection === "buy") {
       return (
-        askOffers
-          .filter((o) => o.takerGets[0]?.resourceId === resourceId)
-          .sort((a, b) => a.perLords - b.perLords)[0] || null
+        askOffers.filter((o) => o.takerGets[0]?.resourceId === resourceId).sort((a, b) => a.perLords - b.perLords)[0] ||
+        null
       );
     } else {
       return (
-        bidOffers
-          .filter((o) => o.makerGets[0]?.resourceId === resourceId)
-          .sort((a, b) => b.perLords - a.perLords)[0] || null
+        bidOffers.filter((o) => o.makerGets[0]?.resourceId === resourceId).sort((a, b) => b.perLords - a.perLords)[0] ||
+        null
       );
     }
   }, [tradeDirection, askOffers, bidOffers, resourceId]);
@@ -208,7 +215,12 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
             <div className="text-xs text-gold/50 uppercase mb-1">
               {tradeDirection === "buy" ? "Buy Amount" : "Sell Amount"}
             </div>
-            <NumberInput value={tradeAmount} onChange={(val) => setTradeAmount(Number(val))} max={maxAmount} className="w-full" />
+            <NumberInput
+              value={tradeAmount}
+              onChange={(val) => setTradeAmount(Number(val))}
+              max={maxAmount}
+              className="w-full"
+            />
           </div>
           <div className="flex items-center gap-1.5 pt-4">
             <ResourceIcon resource={resourceName} size="md" withTooltip={false} />
@@ -220,7 +232,11 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
             Balance: {currencyFormat(tradeDirection === "buy" ? lordsBalance : resourceBalance, 0)}{" "}
             {tradeDirection === "buy" ? "Lords" : resourceName}
           </div>
-          <DonkeyCostIndicator donkeysNeeded={donkeysNeeded} donkeyBalance={donkeyBalance} canTransport={canTransport} />
+          <DonkeyCostIndicator
+            donkeysNeeded={donkeysNeeded}
+            donkeyBalance={donkeyBalance}
+            canTransport={canTransport}
+          />
         </div>
       </div>
 
@@ -240,8 +256,16 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
       <VenueComparison bestPriceResult={bestPriceResult} resourceId={resourceId} />
 
       {/* Execute Button */}
-      <Button variant="primary" size="lg" className="w-full" disabled={!canExecute} isLoading={isLoading} onClick={() => setShowConfirmation(true)}>
-        {tradeDirection === "buy" ? "Buy" : "Sell"} {tradeAmount > 0 ? currencyFormat(tradeAmount, 0) : ""} {resourceName}
+      <Button
+        variant="primary"
+        size="lg"
+        className="w-full"
+        disabled={!canExecute}
+        isLoading={isLoading}
+        onClick={() => setShowConfirmation(true)}
+      >
+        {tradeDirection === "buy" ? "Buy" : "Sell"} {tradeAmount > 0 ? currencyFormat(tradeAmount, 0) : ""}{" "}
+        {resourceName}
         {totalLords > 0 ? ` for ~${currencyFormat(totalLords, 0)} Lords` : ""}
       </Button>
 
@@ -249,7 +273,10 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
       <OrderBookDepth askOffers={askOffers} bidOffers={bidOffers} resourceId={resourceId} entityId={entityId} />
 
       {/* Liquidity Pools toggle */}
-      <button onClick={() => setShowPools(!showPools)} className="text-xs text-gold/40 hover:text-gold/60 transition-colors text-left">
+      <button
+        onClick={() => setShowPools(!showPools)}
+        className="text-xs text-gold/40 hover:text-gold/60 transition-colors text-left"
+      >
         {showPools ? "Hide" : "Show"} Liquidity Pools
       </button>
       {showPools && (

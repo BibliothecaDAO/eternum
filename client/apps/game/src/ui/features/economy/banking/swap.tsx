@@ -279,10 +279,14 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
         <div className="flex flex-col gap-1 my-2">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
           <div className="flex justify-center -my-2 relative z-10">
-            <Button isLoading={false} disabled={false} onClick={onInvert} size="md" className="rounded-full border border-gold/20 bg-brown/90 hover:bg-gold/10">
-              <Refresh
-                className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`}
-              />
+            <Button
+              isLoading={false}
+              disabled={false}
+              onClick={onInvert}
+              size="md"
+              className="rounded-full border border-gold/20 bg-brown/90 hover:bg-gold/10"
+            >
+              <Refresh className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`} />
             </Button>
           </div>
           {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
@@ -298,7 +302,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
             <div className="flex justify-between items-center">
               <span className="text-gold/60">Slippage</span>
               <span className="text-red">
-                -{formatNumber(
+                -
+                {formatNumber(
                   marketManager.slippage(
                     isBuyResource
                       ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
@@ -306,7 +311,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
                     isBuyResource,
                   ) || 0,
                   4,
-                )}%
+                )}
+                %
               </span>
             </div>
             {/* Bank Owner Fees */}
@@ -321,7 +327,9 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
               <span className="text-gold/60">
                 LP Fee <span className="text-green">({configManager.getAdminBankLpFee() * 100}%)</span>
               </span>
-              <span className="text-red">{formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}</span>
+              <span className="text-red">
+                {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
+              </span>
             </div>
           </div>
           <div className="w-full flex flex-col justify-center mt-3 gap-2">
