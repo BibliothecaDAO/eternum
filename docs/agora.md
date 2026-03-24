@@ -1,6 +1,8 @@
 # The Agora -- Eternum AMM
 
-The Agora is Eternum's on-chain automated market maker for trading LORDS against game resources. Each tradable resource has a dedicated LORDS/Resource pool using the constant-product (x * y = k) formula. Token-to-token swaps that don't involve LORDS are routed through two pools automatically (Token A -> LORDS -> Token B).
+The Agora is Eternum's on-chain automated market maker for trading LORDS against game resources. Each tradable resource
+has a dedicated LORDS/Resource pool using the constant-product (x \* y = k) formula. Token-to-token swaps that don't
+involve LORDS are routed through two pools automatically (Token A -> LORDS -> Token B).
 
 ## Architecture Overview
 
@@ -39,12 +41,14 @@ Package: `eternum_amm` (Scarb 2.13.1, Cairo edition 2024_07).
 Dependencies include OpenZeppelin contracts for access control, token standards (ERC-20 LP tokens), and upgradeability.
 
 Source files:
+
 - `src/amm.cairo` -- Main AMM contract with pool management, swap, and liquidity entrypoints
 - `src/math.cairo` -- Constant-product math (mirrored in the SDK as `utils/math.ts`)
 - `src/lp_token.cairo` -- ERC-20 LP token contract deployed per pool
 - `src/tests/` -- snforge integration tests
 
 Key contract entrypoints (called by the SDK):
+
 - `swap_lords_for_token(token_address, lords_amount, min_token_out, deadline)`
 - `swap_token_for_lords(token_address, token_amount, min_lords_out, deadline)`
 - `swap_token_for_token(token_in, token_out, amount_in, min_amount_out, deadline)`
@@ -55,9 +59,11 @@ Key contract entrypoints (called by the SDK):
 
 ### 2. Indexer (`client/apps/amm-indexer/`)
 
-A Hono API server that indexes on-chain AMM events into PostgreSQL via Drizzle ORM. It serves pool state, swap history, liquidity events, OHLCV price candles, pool statistics, user positions, and swap quotes.
+A Hono API server that indexes on-chain AMM events into PostgreSQL via Drizzle ORM. It serves pool state, swap history,
+liquidity events, OHLCV price candles, pool statistics, user positions, and swap quotes.
 
 Database schema (Drizzle, in `src/schema.ts`):
+
 - `pools` -- Current pool state (reserves, LP supply, fee parameters)
 - `swaps` -- Every swap event with amounts, fees, pre/post prices
 - `liquidity_events` -- Every add/remove liquidity event
@@ -70,6 +76,7 @@ Database schema (Drizzle, in `src/schema.ts`):
 Package: `@bibliothecadao/amm-sdk` (published as ESM, built with tsup).
 
 The SDK provides:
+
 - `AmmClient` -- Top-level client composing API access, transaction builders, and quoting
 - `AmmApiClient` -- REST client for the indexer
 - `SwapTransactions` -- Builds Starknet `Call` objects for swaps
@@ -83,6 +90,7 @@ The SDK provides:
 ### 4. Game UI (`client/apps/game/src/ui/features/amm/`)
 
 A React dashboard embedded in the game client, composed of:
+
 - `amm-dashboard.tsx` -- Main layout with pool rail, summary, action tabs, and price chart
 - `amm-swap.tsx` -- Swap form with pay/receive inputs, route display, slippage control, and confirmation dialog
 - `amm-model.ts` -- Pure functions for route resolution, pool selection, and token option building
@@ -99,10 +107,13 @@ State management: `useAmmStore` (zustand) holds `selectedPool` and `slippageBps`
 
 ## Fee Structure
 
-Fees are configurable per pool via rational number pairs (numerator/denominator). The fee parameters are stored on-chain and in the indexer's `pools` table.
+Fees are configurable per pool via rational number pairs (numerator/denominator). The fee parameters are stored on-chain
+and in the indexer's `pools` table.
 
-- **LP Fee**: Deducted from the input amount before the swap calculation. Accrues to liquidity providers as increased reserves. Configured as `feeNum / feeDenom` (e.g., `1/100` = 1%).
-- **Protocol Fee**: Deducted from the gross output amount after the swap calculation. Directed to veLORDS holders via a configurable fee recipient. Configured as `protocolFeeNum / protocolFeeDenom` (e.g., `3/100` = 3%).
+- **LP Fee**: Deducted from the input amount before the swap calculation. Accrues to liquidity providers as increased
+  reserves. Configured as `feeNum / feeDenom` (e.g., `1/100` = 1%).
+- **Protocol Fee**: Deducted from the gross output amount after the swap calculation. Directed to veLORDS holders via a
+  configurable fee recipient. Configured as `protocolFeeNum / protocolFeeDenom` (e.g., `3/100` = 3%).
 - **Total effective fee**: Both fees apply sequentially, not additively.
 
 The SDK's `quoteSwap` method computes the net output after both fees are applied.
@@ -111,31 +122,40 @@ The SDK's `quoteSwap` method computes the net output after both fees are applied
 
 ### Pools
 
-Each pool is a LORDS/Resource pair. Pools are created by an admin via `create_pool` with specified fee parameters. Each pool deploys its own ERC-20 LP token contract. Pool state (reserves, LP supply) is stored on-chain and mirrored in the indexer.
+Each pool is a LORDS/Resource pair. Pools are created by an admin via `create_pool` with specified fee parameters. Each
+pool deploys its own ERC-20 LP token contract. Pool state (reserves, LP supply) is stored on-chain and mirrored in the
+indexer.
 
 ### Routing
 
 The SDK and UI support two swap route types (see `amm-model.ts`):
 
 - **Direct** (`kind: "direct"`): LORDS <-> Token. Uses a single pool.
-- **Routed** (`kind: "routed"`): Token A -> Token B. Routes through two pools via LORDS as intermediary (Token A -> LORDS in pool A, then LORDS -> Token B in pool B).
+- **Routed** (`kind: "routed"`): Token A -> Token B. Routes through two pools via LORDS as intermediary (Token A ->
+  LORDS in pool A, then LORDS -> Token B in pool B).
 
-Route resolution is handled by `resolveAmmSwapRoute()` which inspects whether either token is LORDS and finds matching pools.
+Route resolution is handled by `resolveAmmSwapRoute()` which inspects whether either token is LORDS and finds matching
+pools.
 
 ### Liquidity
 
-Liquidity providers deposit both LORDS and the paired token proportionally to the current pool ratio (enforced by `computeAddLiquidity`). In return they receive LP tokens representing their share. When removing liquidity, LP tokens are burned and both tokens are returned proportionally via `computeLpBurn`.
+Liquidity providers deposit both LORDS and the paired token proportionally to the current pool ratio (enforced by
+`computeAddLiquidity`). In return they receive LP tokens representing their share. When removing liquidity, LP tokens
+are burned and both tokens are returned proportionally via `computeLpBurn`.
 
-First depositor: LP minted = `lordsAmount - MINIMUM_LIQUIDITY` (1000 wei locked permanently).
-Subsequent deposits: LP minted = `(lordsAdded * totalLpSupply) / lordsReserve`.
+First depositor: LP minted = `lordsAmount - MINIMUM_LIQUIDITY` (1000 wei locked permanently). Subsequent deposits: LP
+minted = `(lordsAdded * totalLpSupply) / lordsReserve`.
 
 ### Slippage
 
-Configurable tolerance stored in zustand (`slippageBps`, default 50 = 0.5%). The UI offers preset buttons for 0.25%, 0.5%, 1.0%, and 2.0%. Slippage is applied via `computeMinimumReceived` to calculate the `minAmountOut` passed to the contract. The contract reverts if the actual output is below this minimum.
+Configurable tolerance stored in zustand (`slippageBps`, default 50 = 0.5%). The UI offers preset buttons for 0.25%,
+0.5%, 1.0%, and 2.0%. Slippage is applied via `computeMinimumReceived` to calculate the `minAmountOut` passed to the
+contract. The contract reverts if the actual output is below this minimum.
 
 ### Deadlines
 
-All swap and liquidity transactions include a deadline parameter (unix timestamp). Default is current time + 1200 seconds (20 minutes), configurable via the `deadline` prop on transaction builders.
+All swap and liquidity transactions include a deadline parameter (unix timestamp). Default is current time + 1200
+seconds (20 minutes), configurable via the `deadline` prop on transaction builders.
 
 ## Developing with the SDK
 
@@ -314,20 +334,21 @@ const call = client.admin.setPaused({ ammAddress: client.ammAddress, paused: tru
 
 ## Indexer API
 
-Base path: `/api/v1`. All responses use JSON with bigints serialized as strings. CORS is restricted to localhost origins.
+Base path: `/api/v1`. All responses use JSON with bigints serialized as strings. CORS is restricted to localhost
+origins.
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/pools` | List all pools. Returns `{ data: Pool[] }` |
-| `GET` | `/api/v1/pools/:tokenAddress` | Get a single pool by token address. Returns `{ data: Pool }` |
-| `GET` | `/api/v1/pools/:tokenAddress/swaps` | Paginated swap history for a pool. Query params: `limit`, `offset`. Returns `{ data: SwapEvent[], pagination }` |
-| `GET` | `/api/v1/pools/:tokenAddress/liquidity` | Paginated liquidity event history. Query params: `limit`, `offset`. Returns `{ data: LiquidityEvent[], pagination }` |
-| `GET` | `/api/v1/pools/:tokenAddress/candles` | OHLCV price candles. Query params: `interval` (default `1h`), `from`, `to`. Max 1000 rows. Returns `{ data: PriceCandle[] }` |
-| `GET` | `/api/v1/pools/:tokenAddress/stats` | Aggregate 24h stats (volume, fees, trades, TVL, APR). Returns `{ data: PoolStats }` |
-| `GET` | `/api/v1/users/:address/positions` | User's LP positions across all pools (computed from liquidity event history). Returns `{ data: UserPosition[] }` |
-| `GET` | `/api/v1/quote` | Server-side swap quote. Query params: `tokenIn`, `tokenOut`, `amountIn`. Returns `{ data: { amountIn, amountOut, protocolFee, priceImpact, route } }`. Note: token-to-token quotes are not yet supported server-side. |
+| Method | Path                                    | Description                                                                                                                                                                                                           |
+| ------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/v1/pools`                         | List all pools. Returns `{ data: Pool[] }`                                                                                                                                                                            |
+| `GET`  | `/api/v1/pools/:tokenAddress`           | Get a single pool by token address. Returns `{ data: Pool }`                                                                                                                                                          |
+| `GET`  | `/api/v1/pools/:tokenAddress/swaps`     | Paginated swap history for a pool. Query params: `limit`, `offset`. Returns `{ data: SwapEvent[], pagination }`                                                                                                       |
+| `GET`  | `/api/v1/pools/:tokenAddress/liquidity` | Paginated liquidity event history. Query params: `limit`, `offset`. Returns `{ data: LiquidityEvent[], pagination }`                                                                                                  |
+| `GET`  | `/api/v1/pools/:tokenAddress/candles`   | OHLCV price candles. Query params: `interval` (default `1h`), `from`, `to`. Max 1000 rows. Returns `{ data: PriceCandle[] }`                                                                                          |
+| `GET`  | `/api/v1/pools/:tokenAddress/stats`     | Aggregate 24h stats (volume, fees, trades, TVL, APR). Returns `{ data: PoolStats }`                                                                                                                                   |
+| `GET`  | `/api/v1/users/:address/positions`      | User's LP positions across all pools (computed from liquidity event history). Returns `{ data: UserPosition[] }`                                                                                                      |
+| `GET`  | `/api/v1/quote`                         | Server-side swap quote. Query params: `tokenIn`, `tokenOut`, `amountIn`. Returns `{ data: { amountIn, amountOut, protocolFee, priceImpact, route } }`. Note: token-to-token quotes are not yet supported server-side. |
 
 ### Pagination
 
@@ -348,44 +369,45 @@ Paginated endpoints accept `limit` (1-500, default 50) and `offset` (default 0).
 
 The game client reads AMM configuration from Vite env vars, with defaults pointing to the standalone AMM setup:
 
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `VITE_PUBLIC_AMM_ADDRESS` | AMM contract address on Starknet | `DEFAULT_STANDALONE_AMM_ADDRESS` from SDK |
-| `VITE_PUBLIC_AMM_LORDS_ADDRESS` | LORDS token contract address | `DEFAULT_STANDALONE_AMM_LORDS_ADDRESS` from SDK |
-| `VITE_PUBLIC_AMM_INDEXER_URL` | Base URL for the AMM indexer API | `http://127.0.0.1:3001` |
+| Variable                        | Purpose                          | Default                                         |
+| ------------------------------- | -------------------------------- | ----------------------------------------------- |
+| `VITE_PUBLIC_AMM_ADDRESS`       | AMM contract address on Starknet | `DEFAULT_STANDALONE_AMM_ADDRESS` from SDK       |
+| `VITE_PUBLIC_AMM_LORDS_ADDRESS` | LORDS token contract address     | `DEFAULT_STANDALONE_AMM_LORDS_ADDRESS` from SDK |
+| `VITE_PUBLIC_AMM_INDEXER_URL`   | Base URL for the AMM indexer API | `http://127.0.0.1:3001`                         |
 
-All three must be non-empty for the AMM UI to activate. The `useAmm` hook checks `isConfigured` and returns `null` for `client` if any are missing.
+All three must be non-empty for the AMM UI to activate. The `useAmm` hook checks `isConfigured` and returns `null` for
+`client` if any are missing.
 
 ## File Map
 
-| Path | Purpose |
-|------|---------|
-| `contracts/amm/src/amm.cairo` | Main AMM contract (pools, swaps, liquidity, admin) |
-| `contracts/amm/src/math.cairo` | On-chain constant-product math |
-| `contracts/amm/src/lp_token.cairo` | ERC-20 LP token contract |
-| `contracts/amm/src/tests/` | Cairo integration tests (snforge) |
-| `contracts/amm/Scarb.toml` | Cairo package config (eternum_amm v1.0.0) |
-| `client/apps/amm-indexer/api/app.ts` | Hono REST API definition (all endpoints) |
-| `client/apps/amm-indexer/src/schema.ts` | Drizzle ORM schema (pools, swaps, liquidity_events, price_candles, pool_snapshots, pool_fee_changes) |
-| `packages/amm-sdk/src/index.ts` | SDK entry point, `AmmClient` class, re-exports |
-| `packages/amm-sdk/src/api/client.ts` | `AmmApiClient` -- REST client for the indexer |
-| `packages/amm-sdk/src/transactions/swap.ts` | `SwapTransactions` -- builds Starknet swap Calls |
-| `packages/amm-sdk/src/transactions/liquidity.ts` | `LiquidityTransactions` -- builds Starknet liquidity Calls |
-| `packages/amm-sdk/src/transactions/admin.ts` | `AdminTransactions` -- builds Starknet admin Calls |
-| `packages/amm-sdk/src/utils/math.ts` | Constant-product math (TypeScript port of math.cairo) |
-| `packages/amm-sdk/src/utils/price.ts` | Price impact, minimum received, spot price helpers |
-| `packages/amm-sdk/src/utils/format.ts` | `formatTokenAmount`, `parseTokenAmount` |
-| `packages/amm-sdk/src/standalone.ts` | Standalone AMM defaults and resource name registry |
-| `packages/amm-sdk/src/constants.ts` | Network configs, `DEFAULT_SLIPPAGE_BPS` (50 = 0.5%), `DEFAULT_DEADLINE_OFFSET` (1200s) |
-| `packages/amm-sdk/src/types.ts` | TypeScript interfaces: `Pool`, `SwapEvent`, `LiquidityEvent`, `PriceCandle`, `PoolStats`, `SwapQuote`, `UserPosition`, `CandleInterval` |
-| `client/apps/game/src/hooks/use-amm.ts` | React hook: creates `AmmClient`, provides `executeSwap` |
-| `client/apps/game/src/hooks/store/use-amm-store.ts` | Zustand store: `selectedPool`, `slippageBps` |
-| `client/apps/game/src/ui/features/amm/amm-dashboard.tsx` | Main AMM dashboard layout |
-| `client/apps/game/src/ui/features/amm/amm-swap.tsx` | Swap form with routing, quotes, and confirmation |
-| `client/apps/game/src/ui/features/amm/amm-model.ts` | Pure logic: route resolution, pool selection, token options |
-| `client/apps/game/src/ui/features/amm/amm-add-liquidity.tsx` | Add liquidity form |
-| `client/apps/game/src/ui/features/amm/amm-remove-liquidity.tsx` | Remove liquidity form |
-| `client/apps/game/src/ui/features/amm/amm-pool-list.tsx` | Pool selector sidebar |
-| `client/apps/game/src/ui/features/amm/amm-price-chart.tsx` | OHLCV price chart |
-| `client/apps/game/src/ui/features/amm/amm-trade-history.tsx` | Recent swap history table |
-| `client/apps/game/env.ts` | Vite env schema (AMM vars at lines 68-79) |
+| Path                                                            | Purpose                                                                                                                                 |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `contracts/amm/src/amm.cairo`                                   | Main AMM contract (pools, swaps, liquidity, admin)                                                                                      |
+| `contracts/amm/src/math.cairo`                                  | On-chain constant-product math                                                                                                          |
+| `contracts/amm/src/lp_token.cairo`                              | ERC-20 LP token contract                                                                                                                |
+| `contracts/amm/src/tests/`                                      | Cairo integration tests (snforge)                                                                                                       |
+| `contracts/amm/Scarb.toml`                                      | Cairo package config (eternum_amm v1.0.0)                                                                                               |
+| `client/apps/amm-indexer/api/app.ts`                            | Hono REST API definition (all endpoints)                                                                                                |
+| `client/apps/amm-indexer/src/schema.ts`                         | Drizzle ORM schema (pools, swaps, liquidity_events, price_candles, pool_snapshots, pool_fee_changes)                                    |
+| `packages/amm-sdk/src/index.ts`                                 | SDK entry point, `AmmClient` class, re-exports                                                                                          |
+| `packages/amm-sdk/src/api/client.ts`                            | `AmmApiClient` -- REST client for the indexer                                                                                           |
+| `packages/amm-sdk/src/transactions/swap.ts`                     | `SwapTransactions` -- builds Starknet swap Calls                                                                                        |
+| `packages/amm-sdk/src/transactions/liquidity.ts`                | `LiquidityTransactions` -- builds Starknet liquidity Calls                                                                              |
+| `packages/amm-sdk/src/transactions/admin.ts`                    | `AdminTransactions` -- builds Starknet admin Calls                                                                                      |
+| `packages/amm-sdk/src/utils/math.ts`                            | Constant-product math (TypeScript port of math.cairo)                                                                                   |
+| `packages/amm-sdk/src/utils/price.ts`                           | Price impact, minimum received, spot price helpers                                                                                      |
+| `packages/amm-sdk/src/utils/format.ts`                          | `formatTokenAmount`, `parseTokenAmount`                                                                                                 |
+| `packages/amm-sdk/src/standalone.ts`                            | Standalone AMM defaults and resource name registry                                                                                      |
+| `packages/amm-sdk/src/constants.ts`                             | Network configs, `DEFAULT_SLIPPAGE_BPS` (50 = 0.5%), `DEFAULT_DEADLINE_OFFSET` (1200s)                                                  |
+| `packages/amm-sdk/src/types.ts`                                 | TypeScript interfaces: `Pool`, `SwapEvent`, `LiquidityEvent`, `PriceCandle`, `PoolStats`, `SwapQuote`, `UserPosition`, `CandleInterval` |
+| `client/apps/game/src/hooks/use-amm.ts`                         | React hook: creates `AmmClient`, provides `executeSwap`                                                                                 |
+| `client/apps/game/src/hooks/store/use-amm-store.ts`             | Zustand store: `selectedPool`, `slippageBps`                                                                                            |
+| `client/apps/game/src/ui/features/amm/amm-dashboard.tsx`        | Main AMM dashboard layout                                                                                                               |
+| `client/apps/game/src/ui/features/amm/amm-swap.tsx`             | Swap form with routing, quotes, and confirmation                                                                                        |
+| `client/apps/game/src/ui/features/amm/amm-model.ts`             | Pure logic: route resolution, pool selection, token options                                                                             |
+| `client/apps/game/src/ui/features/amm/amm-add-liquidity.tsx`    | Add liquidity form                                                                                                                      |
+| `client/apps/game/src/ui/features/amm/amm-remove-liquidity.tsx` | Remove liquidity form                                                                                                                   |
+| `client/apps/game/src/ui/features/amm/amm-pool-list.tsx`        | Pool selector sidebar                                                                                                                   |
+| `client/apps/game/src/ui/features/amm/amm-price-chart.tsx`      | OHLCV price chart                                                                                                                       |
+| `client/apps/game/src/ui/features/amm/amm-trade-history.tsx`    | Recent swap history table                                                                                                               |
+| `client/apps/game/env.ts`                                       | Vite env schema (AMM vars at lines 68-79)                                                                                               |
