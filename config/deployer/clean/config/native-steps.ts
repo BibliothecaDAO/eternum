@@ -7,7 +7,7 @@ import {
   scaleResourceOutputs,
 } from "@bibliothecadao/types";
 import { byteArray } from "starknet";
-import type { CleanConfigContext } from "../types";
+import type { CleanConfigContext, ConfigStepResult } from "../types";
 
 type NativeConfigProvider = Pick<
   EternumProvider,
@@ -49,7 +49,7 @@ type NativeConfigProvider = Pick<
 
 type NativeConfigContext = CleanConfigContext<NativeConfigProvider>;
 type NativeConfig = NativeConfigContext["config"];
-type NativeStep = (context: NativeConfigContext) => Promise<void>;
+type NativeStep = (context: NativeConfigContext) => Promise<void | ConfigStepResult>;
 type NativeSigner = Parameters<NativeConfigProvider["set_world_config"]>[0]["signer"];
 const BLITZ_REGISTRATION_WINDOW = Symbol("blitzRegistrationWindow");
 
@@ -109,6 +109,10 @@ function withSigner<Call extends object>(
     signer: account as unknown as NativeSigner,
     ...call,
   };
+}
+
+function resolveTransactionHash(receipt: unknown): string | undefined {
+  return (receipt as { transaction_hash?: string } | null)?.transaction_hash;
 }
 
 function getSetupAddresses(config: NativeConfig) {
@@ -208,12 +212,21 @@ export const setStartingResourcesConfig: NativeStep = async ({ account, provider
   );
 };
 
-export const setWorldAdminConfig: NativeStep = async ({ account, provider }) => {
-  await provider.set_world_config(
+export const setWorldAdminConfig: NativeStep = async ({ account, provider, artifacts }) => {
+  const receipt = await provider.set_world_config(
     withSigner(account, {
       admin_address: account.address,
     }),
   );
+  const transactionHash = resolveTransactionHash(receipt);
+
+  if (transactionHash && artifacts) {
+    artifacts.worldConfigTxHash = transactionHash;
+  }
+
+  return {
+    transactionHash,
+  };
 };
 
 export const setMercenariesNameConfig: NativeStep = async ({ account, provider }) => {

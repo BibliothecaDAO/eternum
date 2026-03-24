@@ -155,13 +155,11 @@ export class HexGrid {
     return Math.floor(distance * secPerKm);
   }
 
-  /**
-   * Finds coordinates that are exactly n steps away from the center in each direction
-   * @param steps - Number of steps from center
-   * @returns Map of directions to their coordinates
-   */
-  static findHexCoordsfromCenter(steps: number): Record<Direction, Coord> {
-    const center = new Coord(HexGrid.CENTER, HexGrid.CENTER);
+  static resolveMapCenterCoord(mapCenterOffset: number): Coord {
+    return new Coord(HexGrid.CENTER - mapCenterOffset, HexGrid.CENTER - mapCenterOffset);
+  }
+
+  static findHexCoordsFrom(center: Coord, steps: number): Record<Direction, Coord> {
     const result: Partial<Record<Direction, Coord>> = {};
 
     getAllHexDirections().forEach((direction) => {
@@ -169,6 +167,15 @@ export class HexGrid {
     });
 
     return result as Record<Direction, Coord>;
+  }
+
+  /**
+   * Finds coordinates that are exactly n steps away from the center in each direction
+   * @param steps - Number of steps from center
+   * @returns Map of directions to their coordinates
+   */
+  static findHexCoordsfromCenter(steps: number): Record<Direction, Coord> {
+    return HexGrid.findHexCoordsFrom(HexGrid.resolveMapCenterCoord(0), steps);
   }
 }
 

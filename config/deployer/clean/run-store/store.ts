@@ -306,6 +306,11 @@ function mergeLaunchArtifacts(
     indexerBranch: summary.indexerBranch || currentArtifacts.indexerBranch,
     lastIndexerDescribeAt: summary.lastIndexerDescribeAt || currentArtifacts.lastIndexerDescribeAt,
     indexerWorkflowRun: summary.indexerWorkflowRun || currentArtifacts.indexerWorkflowRun,
+    ...(summary.worldConfigTxHash || currentArtifacts.worldConfigTxHash
+      ? {
+          worldConfigTxHash: summary.worldConfigTxHash || currentArtifacts.worldConfigTxHash,
+        }
+      : {}),
   };
 }
 
