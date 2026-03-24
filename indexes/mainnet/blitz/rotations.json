@@ -2,21 +2,21 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-24T10:35:33.757Z",
+  "updatedAt": "2026-03-24T10:36:53.265Z",
   "entries": {
     "bltz-escapade": {
       "kind": "rotation",
       "environment": "mainnet.blitz",
       "rotationName": "bltz-escapade",
       "path": "runs/mainnet/blitz/rotations/bltz-escapade.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23484257275-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23485067505-1.json",
       "status": "running",
-      "updatedAt": "2026-03-24T10:35:33.757Z",
+      "updatedAt": "2026-03-24T10:36:53.265Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": null,
+      "currentStepId": "create-worlds",
       "hasRunningStep": false,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
+      "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 5,
@@ -24,8 +24,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-24T10:50:33.757Z",
-        "lastEvaluatedAt": "2026-03-24T10:35:33.757Z"
+        "nextEvaluationAt": "2026-03-24T10:51:53.265Z",
+        "lastEvaluatedAt": "2026-03-24T10:36:53.265Z"
       },
       "games": [
         {
@@ -67,6 +67,11 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-03-24T08:35:45.560Z"
           }
+        },
+        {
+          "gameName": "bltz-escapade-05",
+          "startTime": 1774420200,
+          "artifacts": {}
         }
       ]
     }
