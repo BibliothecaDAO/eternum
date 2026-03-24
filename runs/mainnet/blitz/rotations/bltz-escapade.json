@@ -1,0 +1,306 @@
+{
+  "version": 1,
+  "kind": "rotation",
+  "runId": "mainnet.blitz:rotation:bltz-escapade",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "rotationName": "bltz-escapade",
+  "seriesName": "bltz-escapade",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-escapade/23479022571-1.json",
+  "latestLaunchRequestId": "23479022571-1",
+  "currentStepId": "create-series",
+  "createdAt": "2026-03-24T08:00:10.872Z",
+  "updatedAt": "2026-03-24T08:00:10.872Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23479022571,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23479022571",
+    "ref": "codex/factory-v2-rotation-review",
+    "sha": "c2ad69824416a6effa1cdf73a779ac02e196b327"
+  },
+  "autoRetry": {
+    "enabled": true,
+    "intervalMinutes": 5
+  },
+  "evaluation": {
+    "intervalMinutes": 15,
+    "nextEvaluationAt": "2026-03-24T08:15:10.872Z",
+    "lastEvaluatedAt": "2026-03-24T08:00:10.872Z"
+  },
+  "steps": [
+    {
+      "id": "create-series",
+      "title": "Creating series",
+      "status": "pending",
+      "workflowStepName": "Creating series",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-worlds",
+      "title": "Creating games",
+      "status": "pending",
+      "workflowStepName": "Creating games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-indexes",
+      "title": "Waiting for games",
+      "status": "pending",
+      "workflowStepName": "Waiting for games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-worlds",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-roles",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexers",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "sync-paymaster",
+      "title": "Setting up gas coverage",
+      "status": "pending",
+      "workflowStepName": "Setting up gas coverage",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "summary": {
+    "environment": "mainnet.blitz",
+    "chain": "mainnet",
+    "gameType": "blitz",
+    "rotationName": "bltz-escapade",
+    "seriesName": "bltz-escapade",
+    "firstGameStartTime": 1774348200,
+    "firstGameStartTimeIso": "2026-03-24T10:30:00.000Z",
+    "gameIntervalMinutes": 300,
+    "maxGames": 50,
+    "advanceWindowGames": 4,
+    "evaluationIntervalMinutes": 15,
+    "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+    "factoryAddress": "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
+    "autoRetryEnabled": true,
+    "autoRetryIntervalMinutes": 5,
+    "dryRun": false,
+    "configMode": "batched",
+    "seriesCreated": false,
+    "games": [
+      {
+        "gameName": "bltz-escapade-01",
+        "startTime": 1774348200,
+        "startTimeIso": "2026-03-24T10:30:00.000Z",
+        "seriesGameNumber": 1,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-escapade-02",
+        "startTime": 1774366200,
+        "startTimeIso": "2026-03-24T15:30:00.000Z",
+        "seriesGameNumber": 2,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-escapade-03",
+        "startTime": 1774384200,
+        "startTimeIso": "2026-03-24T20:30:00.000Z",
+        "seriesGameNumber": 3,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-escapade-04",
+        "startTime": 1774402200,
+        "startTimeIso": "2026-03-25T01:30:00.000Z",
+        "seriesGameNumber": 4,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      }
+    ],
+    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-escapade.json"
+  },
+  "artifacts": {
+    "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-escapade.json",
+    "seriesCreated": false
+  }
+}
