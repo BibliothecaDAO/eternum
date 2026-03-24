@@ -14,7 +14,7 @@ import type { ToolContext } from "./context.js";
 import { toContractX, toContractY, toDisplayX, toDisplayY } from "./context.js";
 import { findPathNative, gridIndexFromSnapshot, type GridIndex, type PathResult } from "../../world/pathfinding_v2.js";
 import { getNeighborHexes, packTileSeed } from "@bibliothecadao/types";
-import { projectExplorerStamina } from "../../world/stamina.js";
+import { projectExplorerStamina, getMaxStamina, baseMaxFromConfig } from "../../world/stamina.js";
 import { addressesEqual, extractTxError } from "./tx-context.js";
 
 // ── Input / Result Types ─────────────────────────────────────────────
@@ -91,8 +91,10 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
   }
 
   const projectedStamina = projectExplorerStamina(explorer, ctx.gameConfig.stamina);
+  const baseMax = baseMaxFromConfig(explorer.troopType, ctx.gameConfig.stamina);
+  const maxStamina = getMaxStamina(explorer.troopType, explorer.troopTier, baseMax);
   if (projectedStamina <= 0) {
-    return fail(`No stamina (${projectedStamina}). Wait for regen.`, projectedStamina);
+    return fail(`No stamina (${projectedStamina}/${maxStamina}). Wait for regen.`, projectedStamina);
   }
 
   // ── 2. Build grid index + inject synthetic unexplored tiles via BFS ──
@@ -337,7 +339,7 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
     };
   }
 
-  let msg = `Moved ${stepsDetail} to (${endDisplayX},${endDisplayY}). Stamina: ${staminaRemaining}/${projectedStamina}`;
+  let msg = `Moved ${stepsDetail} to (${endDisplayX},${endDisplayY}). Stamina: ${staminaRemaining}/${maxStamina}`;
   if (stoppedEarly) {
     const remaining = pathResult.directions.length - lastReachedIdx;
     msg += ` — ran out, ${remaining} steps remaining to target.`;

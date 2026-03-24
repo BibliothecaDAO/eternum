@@ -86,7 +86,7 @@ export function projectStamina(args: ProjectStaminaArgs): number {
  * @param config - On-chain stamina config containing per-type max values.
  * @returns Base max stamina before tier bonus.
  */
-function baseMaxFromConfig(troopType: string, config: StaminaConfig): number {
+export function baseMaxFromConfig(troopType: string, config: StaminaConfig): number {
   switch (troopType) {
     case "Knight":
       return config.knightMaxStamina;
