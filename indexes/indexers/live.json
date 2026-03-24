@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T04:42:17.952Z",
+  "updatedAt": "2026-03-24T04:51:58.531Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -478,7 +478,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-02 not found"
       },
-      "updatedAt": "2026-03-24T04:32:00.041Z"
+      "updatedAt": "2026-03-24T04:51:58.531Z"
     },
     "bltz-franky-03": {
       "gameName": "bltz-franky-03",
@@ -487,7 +487,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-03 not found"
       },
-      "updatedAt": "2026-03-24T04:32:00.041Z"
+      "updatedAt": "2026-03-24T04:51:58.531Z"
     },
     "bltz-franky-04": {
       "gameName": "bltz-franky-04",
@@ -496,7 +496,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-04 not found"
       },
-      "updatedAt": "2026-03-24T04:32:00.041Z"
+      "updatedAt": "2026-03-24T04:51:58.531Z"
     },
     "bltz-franky-05": {
       "gameName": "bltz-franky-05",
@@ -505,7 +505,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-05 not found"
       },
-      "updatedAt": "2026-03-24T04:32:00.041Z"
+      "updatedAt": "2026-03-24T04:51:58.531Z"
     },
     "bltz-franky-06": {
       "gameName": "bltz-franky-06",
@@ -514,7 +514,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-06 not found"
       },
-      "updatedAt": "2026-03-24T04:32:00.041Z"
+      "updatedAt": "2026-03-24T04:51:58.531Z"
     },
     "bltz-franky-07": {
       "gameName": "bltz-franky-07",
@@ -523,7 +523,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-franky-07 not found"
       },
-      "updatedAt": "2026-03-24T04:32:00.041Z"
+      "updatedAt": "2026-03-24T04:51:58.531Z"
     }
   }
 }
