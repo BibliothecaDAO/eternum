@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-24T02:49:51.798Z",
+  "updatedAt": "2026-03-24T02:50:47.757Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -430,6 +430,19 @@
         "describedAt": "2026-03-24T02:49:51.798Z"
       },
       "updatedAt": "2026-03-24T02:49:51.798Z"
+    },
+    "eternum-sandbox-2": {
+      "gameName": "eternum-sandbox-2",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "basic",
+        "url": "https://api.cartridge.gg/x/eternum-sandbox-2/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-24T02:50:47.757Z"
+      },
+      "updatedAt": "2026-03-24T02:50:47.757Z"
     }
   }
 }
