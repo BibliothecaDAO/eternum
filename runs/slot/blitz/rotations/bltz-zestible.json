@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-zestible/23466816261-1.json",
   "latestLaunchRequestId": "23466816261-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-03-23T21:51:58.351Z",
-  "updatedAt": "2026-03-24T00:21:45.637Z",
+  "updatedAt": "2026-03-24T00:23:20.348Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-24T00:36:42.692Z",
-    "lastEvaluatedAt": "2026-03-24T00:21:42.692Z"
+    "nextEvaluationAt": "2026-03-24T00:38:20.348Z",
+    "lastEvaluatedAt": "2026-03-24T00:23:20.348Z"
   },
   "steps": [
     {
@@ -46,10 +46,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-24T00:21:45.637Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-03-24T00:21:45.637Z",
+      "finishedAt": "2026-03-24T00:23:20.348Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -1415,8 +1416,8 @@
         "startTimeIso": "2026-03-24T05:10:00.000Z",
         "seriesGameNumber": 8,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1426,8 +1427,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-24T00:23:16.732Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -1450,7 +1452,11 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x02d60ed03ff04f49d5654127180808d658560294294104afe1d1a84d8a7ebc66",
+          "createGameTxHash": "0x21111797d31932a82791479d1a5828bc040ed4eb3886f4ba442be48f163826d"
+        },
+        "durationSeconds": 5400
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
@@ -1460,13 +1466,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-zestible.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-23T21:52:20.018Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23466816261-1",
-    "workflowRunId": 23466816261,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-24T00:21:45.637Z",
-    "expiresAt": "2026-03-24T01:06:45.637Z"
   }
 }
