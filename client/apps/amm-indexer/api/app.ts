@@ -1,5 +1,6 @@
 import { getInputPrice } from "@bibliothecadao/amm-sdk";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { and, count, desc, eq, gte, lte, sql } from "drizzle-orm";
 import * as schema from "../src/schema";
 
@@ -11,6 +12,15 @@ interface PaginationParams {
 interface CreateAmmApiAppParams {
   db: any;
   lordsAddress: string;
+}
+
+function isAllowedBrowserOrigin(origin: string): boolean {
+  try {
+    const parsedOrigin = new URL(origin);
+    return ["localhost", "127.0.0.1"].includes(parsedOrigin.hostname);
+  } catch {
+    return false;
+  }
 }
 
 function toJsonSafe<T>(value: T): T {
@@ -45,6 +55,14 @@ function paginatedResponse<T>(data: T[], total: number, pagination: PaginationPa
 
 export function createAmmApiApp(params: CreateAmmApiAppParams) {
   const app = new Hono();
+  app.use(
+    "/api/*",
+    cors({
+      origin: (origin) => (origin && isAllowedBrowserOrigin(origin) ? origin : ""),
+      allowHeaders: ["Content-Type"],
+      allowMethods: ["GET", "OPTIONS"],
+    }),
+  );
 
   app.get("/api/v1/pools", async (c) => {
     const allPools = await params.db.select().from(schema.pools);

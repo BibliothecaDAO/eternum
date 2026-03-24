@@ -138,7 +138,9 @@ export class AmmApiClient {
 
   /** Get a user's LP positions across all pools. */
   async getUserPositions(userAddress: string): Promise<UserPosition[]> {
-    const response = await this.fetch<RawUserPosition[] | { data: RawUserPosition[] }>(`/users/${userAddress}/positions`);
+    const response = await this.fetch<RawUserPosition[] | { data: RawUserPosition[] }>(
+      `/users/${userAddress}/positions`,
+    );
     return unwrapApiData(response).map((position) => decodeUserPosition(position));
   }
 }

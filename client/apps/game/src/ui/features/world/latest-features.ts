@@ -9,6 +9,27 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-24",
+    title: "Dashboard AMM Refresh",
+    description:
+      "The AMM now lives inside the main dashboard shell with a denser pool rail, resource icons across the trading flow, and tighter stats cards so you can scan markets and act without the old standalone page clutter.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
+    title: "Standalone AMM Preview",
+    description:
+      "The AMM dashboard now boots with standalone defaults, resolves mainnet resource names for pooled assets, and can connect to a seeded local preview indexer without Blitz or Eternum-specific env setup.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
+    title: "AMM Sidebar Shortcut",
+    description:
+      "Added a dedicated AMM button to the main dashboard side menu so you can open the AMM dashboard directly from the landing UI.",
+    type: "feature",
+  },
+  {
     date: "2026-03-23",
     title: "Live AMM Dashboard",
     description:

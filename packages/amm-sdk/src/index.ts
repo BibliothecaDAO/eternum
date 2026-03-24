@@ -139,3 +139,11 @@ export {
   computeLpBurn,
 } from "./utils/math";
 export { computePriceImpact, computeMinimumReceived, computeSpotPrice } from "./utils/price";
+export {
+  DEFAULT_STANDALONE_AMM_ADDRESS,
+  DEFAULT_STANDALONE_AMM_INDEXER_URL,
+  DEFAULT_STANDALONE_AMM_LORDS_ADDRESS,
+  STANDALONE_AMM_RESOURCES,
+  resolveStandaloneAmmTokenName,
+} from "./standalone";
+export type { StandaloneAmmResource } from "./standalone";

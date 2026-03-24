@@ -16,6 +16,7 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
   "/": "01",
   "/profile": "05",
   "/markets": "04",
+  "/amm": "04",
   "/leaderboard": "07",
 };
 

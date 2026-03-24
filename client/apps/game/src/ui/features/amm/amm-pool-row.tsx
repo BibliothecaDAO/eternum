@@ -1,7 +1,10 @@
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { memo } from "react";
 
 interface AmmPoolRowProps {
-  tokenAddress: string;
+  iconResource: string | null;
+  pairLabel: string;
   tokenName: string;
   price: string;
   tvl: string;
@@ -9,24 +12,42 @@ interface AmmPoolRowProps {
   onClick: () => void;
 }
 
-export const AmmPoolRow = memo(({ tokenName, price, tvl, isSelected, onClick }: AmmPoolRowProps) => {
-  return (
-    <div
-      className={`flex items-center justify-between p-3 cursor-pointer transition-colors border-b border-gold/10 ${
-        isSelected ? "bg-gold/20" : "hover:bg-gold/10"
-      }`}
-      onClick={onClick}
-    >
-      <div>
-        <div className="text-sm font-medium text-gold">{tokenName}</div>
-        <div className="text-xs text-gold/60">{price} LORDS</div>
-      </div>
-      <div className="text-right">
-        <div className="text-xs text-gold/60">TVL</div>
-        <div className="text-sm text-gold">{tvl}</div>
-      </div>
-    </div>
-  );
-});
+export const AmmPoolRow = memo(
+  ({ iconResource, pairLabel, tokenName, price, tvl, isSelected, onClick }: AmmPoolRowProps) => {
+    return (
+      <button
+        type="button"
+        className={cn(
+          "group flex min-h-[60px] w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all duration-200",
+          isSelected
+            ? "border-gold/20 border-l-gold/60 border-l-2 bg-gold/12 shadow-[0_12px_30px_-24px_rgba(223,170,84,0.22)] backdrop-blur-[10px]"
+            : "border-gold/10 bg-black/25 hover:border-gold/20 hover:bg-gold/8 backdrop-blur-[10px]",
+        )}
+        onClick={onClick}
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/10 bg-black/40">
+          {iconResource ? (
+            <ResourceIcon resource={iconResource} size="sm" withTooltip={false} className="!h-6 !w-6" />
+          ) : (
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gold/70">
+              {tokenName.slice(0, 2)}
+            </span>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <span className="truncate text-sm font-semibold text-gold">{tokenName}</span>
+            <span className="text-xs font-medium uppercase tracking-[0.12em] text-gold/70">{tvl}</span>
+          </div>
+          <div className="mt-0.5 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.12em]">
+            <span className="truncate text-gold/40">{pairLabel}</span>
+            <span className="text-gold/60">{price} LORDS</span>
+          </div>
+        </div>
+      </button>
+    );
+  },
+);
 
 AmmPoolRow.displayName = "AmmPoolRow";

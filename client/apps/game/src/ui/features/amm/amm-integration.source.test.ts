@@ -8,6 +8,32 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("AMM feature wiring", () => {
+  it("nests the AMM route inside the landing dashboard instead of mounting a standalone shell", () => {
+    const appSource = readSource("src/app.tsx");
+    const landingSource = readSource("src/ui/features/landing/index.ts");
+    const layoutSource = readSource("src/ui/features/landing/landing-layout.tsx");
+
+    expect(appSource).toContain(
+      "import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView }",
+    );
+    expect(appSource).toContain('<Route path="amm" element={<AmmView />} />');
+    expect(appSource).not.toContain('const LazyAmmDashboard = lazy(() => import("./ui/features/amm/amm-dashboard"))');
+    expect(appSource).not.toContain('path="/amm"');
+    expect(landingSource).toContain('export { AmmView } from "./views/amm-view"');
+    expect(layoutSource).toContain('"/amm": "04"');
+  });
+
+  it("gives the standalone AMM route non-empty defaults in env.ts", () => {
+    const source = readSource("env.ts");
+
+    expect(source).toContain("DEFAULT_STANDALONE_AMM_ADDRESS");
+    expect(source).toContain("DEFAULT_STANDALONE_AMM_LORDS_ADDRESS");
+    expect(source).toContain("DEFAULT_STANDALONE_AMM_INDEXER_URL");
+    expect(source).toContain(".default(DEFAULT_STANDALONE_AMM_ADDRESS)");
+    expect(source).toContain(".default(DEFAULT_STANDALONE_AMM_LORDS_ADDRESS)");
+    expect(source).toContain(".default(DEFAULT_STANDALONE_AMM_INDEXER_URL)");
+  });
+
   it("resolves runtime config from env instead of placeholders", () => {
     const source = readSource("src/hooks/use-amm.ts");
 
@@ -30,6 +56,30 @@ describe("AMM feature wiring", () => {
     expect(swapSource).not.toContain("const MOCK_POOL");
     expect(addLiquiditySource).not.toContain("const MOCK_POOL");
     expect(removeLiquiditySource).not.toContain("const MOCK_POOL");
+  });
+
+  it("uses resolved standalone resource names and the configured LORDS address in AMM read views", () => {
+    const poolListSource = readSource("src/ui/features/amm/amm-pool-list.tsx");
+    const tradeHistorySource = readSource("src/ui/features/amm/amm-trade-history.tsx");
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(poolListSource).toContain("resolveAmmAssetPresentation");
+    expect(poolListSource).not.toContain("const POOL_NAMES");
+    expect(tradeHistorySource).toContain("config.lordsAddress");
+    expect(tradeHistorySource).toContain("resolveAmmAssetPresentation");
+    expect(tradeHistorySource).not.toContain('trade.tokenIn === "0x1"');
+    expect(dashboardSource).not.toContain("QueryClientProvider");
+    expect(dashboardSource).not.toContain("min-h-screen");
+    expect(dashboardSource).not.toContain("&larr; Back");
+  });
+
+  it("renders price over time with a trading chart library instead of the inline SVG fallback", () => {
+    const chartSource = readSource("src/ui/features/amm/amm-price-chart.tsx");
+
+    expect(chartSource).toContain("lightweight-charts");
+    expect(chartSource).toContain("createChart");
+    expect(chartSource).not.toContain("<svg");
+    expect(chartSource).not.toContain("<polyline");
   });
 
   it("documents the AMM dashboard in the latest features list", () => {

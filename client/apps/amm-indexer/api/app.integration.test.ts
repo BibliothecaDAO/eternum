@@ -141,4 +141,22 @@ describe("createAmmApiApp", () => {
       route: [TOKEN_A],
     });
   });
+
+  it("allows localhost browser origins to fetch the preview API", async () => {
+    const { db, close } = await createTestAmmDatabase();
+    cleanup.push(close);
+
+    const app = createAmmApiApp({
+      db,
+      lordsAddress: LORDS_ADDRESS,
+    });
+
+    const response = await app.request("http://amm.local/api/v1/pools", {
+      headers: {
+        Origin: "https://localhost:5176",
+      },
+    });
+
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://localhost:5176");
+  });
 });

@@ -1,14 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  numeric,
-  bigint,
-  timestamp,
-  integer,
-  uniqueIndex,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, numeric, bigint, timestamp, integer, uniqueIndex, index } from "drizzle-orm/pg-core";
 
 // ============ Pools — current pool state ============
 
@@ -18,15 +8,9 @@ export const pools = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     tokenAddress: text("token_address").notNull(),
     lpTokenAddress: text("lp_token_address").notNull(),
-    lordsReserve: numeric("lords_reserve", { precision: 78, scale: 0 })
-      .notNull()
-      .default("0"),
-    tokenReserve: numeric("token_reserve", { precision: 78, scale: 0 })
-      .notNull()
-      .default("0"),
-    totalLpSupply: numeric("total_lp_supply", { precision: 78, scale: 0 })
-      .notNull()
-      .default("0"),
+    lordsReserve: numeric("lords_reserve", { precision: 78, scale: 0 }).notNull().default("0"),
+    tokenReserve: numeric("token_reserve", { precision: 78, scale: 0 }).notNull().default("0"),
+    totalLpSupply: numeric("total_lp_supply", { precision: 78, scale: 0 }).notNull().default("0"),
     lpFeeNum: numeric("lp_fee_num", { precision: 78, scale: 0 }).notNull(),
     lpFeeDenom: numeric("lp_fee_denom", { precision: 78, scale: 0 }).notNull(),
     protocolFeeNum: numeric("protocol_fee_num", {
@@ -132,18 +116,10 @@ export const priceCandles = pgTable(
     high: numeric("high", { precision: 40, scale: 18 }).notNull(),
     low: numeric("low", { precision: 40, scale: 18 }).notNull(),
     close: numeric("close", { precision: 40, scale: 18 }).notNull(),
-    volume: numeric("volume", { precision: 78, scale: 0 })
-      .notNull()
-      .default("0"),
+    volume: numeric("volume", { precision: 78, scale: 0 }).notNull().default("0"),
     tradeCount: integer("trade_count").notNull().default(0),
   },
-  (table) => [
-    uniqueIndex("price_candles_unique_idx").on(
-      table.tokenAddress,
-      table.interval,
-      table.openTime,
-    ),
-  ],
+  (table) => [uniqueIndex("price_candles_unique_idx").on(table.tokenAddress, table.interval, table.openTime)],
 );
 
 // ============ Pool Snapshots — periodic snapshots ============
@@ -162,10 +138,5 @@ export const poolSnapshots = pgTable(
     blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
     blockTimestamp: timestamp("block_timestamp").notNull(),
   },
-  (table) => [
-    index("pool_snapshots_token_timestamp_idx").on(
-      table.tokenAddress,
-      table.blockTimestamp,
-    ),
-  ],
+  (table) => [index("pool_snapshots_token_timestamp_idx").on(table.tokenAddress, table.blockTimestamp)],
 );

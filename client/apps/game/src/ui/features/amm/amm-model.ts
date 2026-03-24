@@ -1,14 +1,7 @@
 import type { Pool } from "@bibliothecadao/amm-sdk";
 
+import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import type { TokenOption } from "./amm-token-input";
-
-const TOKEN_NAMES: Record<string, string> = {
-  "0x2": "Wood",
-  "0x3": "Stone",
-  "0x4": "Coal",
-  "0x5": "Copper",
-  "0x6": "Ironwood",
-};
 
 interface DirectAmmSwapRoute {
   isLordsInput: boolean;
@@ -26,20 +19,27 @@ type AmmSwapRoute = DirectAmmSwapRoute | RoutedAmmSwapRoute;
 
 export function buildAmmTokenOptions(pools: Pool[], lordsAddress: string): TokenOption[] {
   return [
-    { address: lordsAddress, name: "LORDS" },
+    {
+      address: lordsAddress,
+      name: "LORDS",
+      shortLabel: "LORDS",
+      iconResource: "Lords",
+    },
     ...pools.map((pool) => ({
       address: pool.tokenAddress,
       name: resolveAmmTokenName(pool.tokenAddress, lordsAddress),
+      shortLabel: resolveAmmAssetPresentation(pool.tokenAddress, lordsAddress).shortLabel,
+      iconResource: resolveAmmAssetPresentation(pool.tokenAddress, lordsAddress).iconResource,
     })),
   ];
 }
 
 export function resolveAmmPoolName(tokenAddress: string): string {
-  return TOKEN_NAMES[tokenAddress] ?? `${tokenAddress.slice(0, 8)}...`;
+  return resolveAmmAssetPresentation(tokenAddress, "").displayName;
 }
 
 export function resolveAmmTokenName(tokenAddress: string, lordsAddress: string): string {
-  return tokenAddress === lordsAddress ? "LORDS" : resolveAmmPoolName(tokenAddress);
+  return resolveAmmAssetPresentation(tokenAddress, lordsAddress).displayName;
 }
 
 export function resolveSelectedAmmPool(pools: Pool[], selectedPool: string | null): Pool | null {

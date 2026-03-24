@@ -1,6 +1,6 @@
-import { Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
 
-type SectionId = "home" | "leaderboard" | "markets" | "profile";
+type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile";
 
 interface SubMenuItem {
   id: string;
@@ -47,6 +47,13 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     icon: TrendingUp,
     basePath: "/markets",
     subMenu: [{ id: "markets", label: "MARKETS", tab: null }],
+  },
+  {
+    id: "amm",
+    label: "AMM",
+    icon: ArrowLeftRight,
+    basePath: "/amm",
+    subMenu: [{ id: "amm", label: "AMM", tab: null }],
   },
   {
     id: "profile",

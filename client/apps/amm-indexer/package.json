@@ -9,6 +9,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "api:dev": "tsx api/server.ts",
+    "api:preview": "tsx scripts/start-standalone-preview.ts",
     "test": "vitest run"
   },
   "dependencies": {

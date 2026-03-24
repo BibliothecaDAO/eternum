@@ -8,7 +8,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
-import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView } from "./ui/features/landing";
+import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView } from "./ui/features/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
@@ -20,8 +20,6 @@ const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({
 const FactoryV2Page = lazy(() =>
   import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
 );
-
-const LazyAmmDashboard = lazy(() => import("./ui/features/amm/amm-dashboard"));
 
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
@@ -60,6 +58,9 @@ function App() {
               {/* Markets */}
               <Route path="markets" element={<MarketsView />} />
 
+              {/* AMM */}
+              <Route path="amm" element={<AmmView />} />
+
               {/* Leaderboard */}
               <Route path="leaderboard" element={<LeaderboardView />} />
             </Route>
@@ -90,16 +91,6 @@ function App() {
               element={
                 <Suspense fallback={<LoadingScreen />}>
                   <FactoryV2Page />
-                </Suspense>
-              }
-            />
-
-            {/* Standalone AMM dashboard */}
-            <Route
-              path="/amm"
-              element={
-                <Suspense fallback={<LoadingScreen />}>
-                  <LazyAmmDashboard />
                 </Suspense>
               }
             />

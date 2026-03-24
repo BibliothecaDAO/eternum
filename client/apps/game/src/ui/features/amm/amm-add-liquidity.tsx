@@ -12,7 +12,9 @@ import {
   computeAddLiquidity,
   type Pool,
 } from "@bibliothecadao/amm-sdk";
-import { resolveAmmPoolName, resolveSelectedAmmPool } from "./amm-model";
+import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
+import { formatAmmPercent } from "./amm-format";
+import { resolveSelectedAmmPool } from "./amm-model";
 
 export const AmmAddLiquidity = () => {
   const { client, executeSwap, isConfigured } = useAmm();
@@ -116,33 +118,54 @@ export const AmmAddLiquidity = () => {
     return <div className="text-sm text-gold/40">Select a pool to add liquidity.</div>;
   }
 
+  const asset = resolveAmmAssetPresentation(pool.tokenAddress, client.lordsAddress);
+
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-bold text-gold">Add Liquidity</h3>
-      <div className="text-xs text-gold/60">Pool: {resolveAmmPoolName(pool.tokenAddress)}</div>
-
-      <div className="bg-gold/10 rounded-xl p-3">
-        <div className="text-xs text-gold/60 mb-1">LORDS</div>
-        <NumberInput value={lordsAmount} onChange={handleLordsChange} arrows={false} allowDecimals />
-      </div>
-
-      <div className="bg-gold/10 rounded-xl p-3">
-        <div className="text-xs text-gold/60 mb-1">Token</div>
-        <NumberInput value={tokenAmount} onChange={setTokenAmount} arrows={false} allowDecimals disabled />
-      </div>
-
-      <div className="bg-gold/10 rounded-xl p-3 space-y-2 text-xs">
-        <div className="flex justify-between">
-          <span className="text-gold/60">LP Tokens to Mint</span>
-          <span className="text-gold">{lpTokensToMint}</span>
+    <div className="space-y-4">
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-2xl border border-gold/10 bg-black/25 p-3">
+          <div className="mb-2 text-[11px] uppercase tracking-[0.18em] text-gold/45">Deposit LORDS</div>
+          <NumberInput
+            value={lordsAmount}
+            onChange={handleLordsChange}
+            arrows={false}
+            allowDecimals
+            className="h-12 rounded-2xl border border-gold/10 bg-gold/12"
+          />
         </div>
-        <div className="flex justify-between">
-          <span className="text-gold/60">Pool Share</span>
-          <span className="text-gold">{poolSharePercent}%</span>
+
+        <div className="rounded-2xl border border-gold/10 bg-black/25 p-3">
+          <div className="mb-2 text-[11px] uppercase tracking-[0.18em] text-gold/45">Deposit {asset.displayName}</div>
+          <NumberInput
+            value={tokenAmount}
+            onChange={setTokenAmount}
+            arrows={false}
+            allowDecimals
+            disabled
+            className="h-12 rounded-2xl border border-gold/10 bg-gold/12"
+          />
         </div>
       </div>
 
-      <Button variant="gold" className="w-full" disabled={!canAdd} onClick={handleAddLiquidity} isLoading={isLoading}>
+      <div className="grid gap-2 rounded-2xl border border-gold/10 bg-black/25 p-3 text-xs sm:grid-cols-2">
+        <div className="rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">LP to Mint</div>
+          <div className="mt-1 text-sm font-semibold text-gold">{lpTokensToMint}</div>
+        </div>
+        <div className="rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">New Pool Share</div>
+          <div className="mt-1 text-sm font-semibold text-gold">{formatAmmPercent(Number(poolSharePercent))}</div>
+        </div>
+      </div>
+
+      <Button
+        variant="gold"
+        className="w-full rounded-2xl"
+        forceUppercase={false}
+        disabled={!canAdd}
+        onClick={handleAddLiquidity}
+        isLoading={isLoading}
+      >
         {canAdd ? "Add Liquidity" : "Enter amounts"}
       </Button>
     </div>

@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  DEFAULT_STANDALONE_AMM_ADDRESS,
+  DEFAULT_STANDALONE_AMM_INDEXER_URL,
+  DEFAULT_STANDALONE_AMM_LORDS_ADDRESS,
+} from "@bibliothecadao/amm-sdk";
 import { getSelectedChain } from "./src/runtime/world/store";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
@@ -63,15 +68,15 @@ const envSchema = z.object({
   VITE_PUBLIC_AMM_ADDRESS: z
     .union([z.string().startsWith("0x"), z.literal("")])
     .optional()
-    .default(""),
+    .default(DEFAULT_STANDALONE_AMM_ADDRESS),
   VITE_PUBLIC_AMM_LORDS_ADDRESS: z
     .union([z.string().startsWith("0x"), z.literal("")])
     .optional()
-    .default(""),
+    .default(DEFAULT_STANDALONE_AMM_LORDS_ADDRESS),
   VITE_PUBLIC_AMM_INDEXER_URL: z
     .union([z.string().url(), z.literal("")])
     .optional()
-    .default(""),
+    .default(DEFAULT_STANDALONE_AMM_INDEXER_URL),
 
   // Action Dispatcher
   VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),

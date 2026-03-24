@@ -44,7 +44,7 @@ export const VARIANTS: any = {
   selection: {
     tab: {
       base: "flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-gold/30 bg-black/30 px-2 py-2 text-gold/60 transition duration-150 !outline-none",
-      active: "border-[#f4c24d] text-[#f4c24d] bg-black/55",
+      active: "border-gold/50 bg-gold/20 text-gold font-semibold shadow-[inset_0_1px_0_rgba(223,170,84,0.15)]",
       inactive: "hover:border-gold/50 hover:text-gold/90",
     },
     tabList: "flex w-full gap-2",
