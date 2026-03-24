@@ -59,141 +59,10 @@ on:
         description: "How often a rotation becomes due for evaluation"
         required: false
         type: string
-      dev_mode_on:
-        description: 'Optional override for dev mode ("true" or "false"). Leave blank to use the environment config.'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      single_realm_mode:
+      launch_options_json:
         description:
-          'Optional override for single realm mode ("true" or "false"). Leave blank to use the environment config.'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      two_player_mode:
-        description:
-          'Optional override for two player mode ("true" or "false"). Leave blank to use the environment config.'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      duration_seconds:
-        description:
-          "Optional override for duration in seconds. Leave blank to use the environment config. Used by blitz season
-          end_at."
-        required: false
-        type: string
-      rpc_url:
-        description: "Optional RPC URL override for this launch and later recovery."
-        required: false
-        type: string
-      factory_address:
-        description: "Optional factory address override for this launch and later recovery."
-        required: false
-        type: string
-      account_address:
-        description: "Optional account address override for this launch and later recovery."
-        required: false
-        type: string
-      execution_mode:
-        description: "Execution mode for config application."
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - batched
-          - sequential
-      cartridge_api_base:
-        description: "Optional Cartridge API base override."
-        required: false
-        type: string
-      torii_namespaces:
-        description: "Optional Torii namespaces override."
-        required: false
-        type: string
-      vrf_provider_address:
-        description: "Optional VRF provider override."
-        required: false
-        type: string
-      verbose_config_logs:
-        description: 'Optional override for verbose config logs ("true" or "false").'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      version:
-        description: "Optional version felt override."
-        required: false
-        type: string
-      max_actions:
-        description: "Optional max actions override."
-        required: false
-        type: string
-      wait_timeout_ms:
-        description: "Optional factory index wait timeout override in milliseconds."
-        required: false
-        type: string
-      wait_poll_ms:
-        description: "Optional factory index poll interval override in milliseconds."
-        required: false
-        type: string
-      skip_indexer:
-        description: 'Optional override for indexer creation ("true" or "false").'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      skip_lootchest_role_grant:
-        description: 'Optional override for loot chest role grant ("true" or "false").'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      skip_banks:
-        description: 'Optional override for bank creation ("true" or "false").'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      dry_run:
-        description: 'Optional override for dry run mode ("true" or "false").'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      map_config_overrides_json:
-        description: "Optional JSON object with raw map config overrides."
-        required: false
-        type: string
-      blitz_registration_overrides_json:
-        description: "Optional JSON object with raw Blitz registration overrides."
+          "Optional JSON object with replayable launch settings and overrides, including config flags, durations, and
+          advanced runtime options."
         required: false
         type: string
       auto_retry_enabled:
@@ -256,28 +125,7 @@ jobs:
       GAME_LAUNCH_MAX_GAMES: ${{ github.event.inputs.max_games }}
       GAME_LAUNCH_ADVANCE_WINDOW_GAMES: ${{ github.event.inputs.advance_window_games }}
       GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES: ${{ github.event.inputs.evaluation_interval_minutes }}
-      GAME_LAUNCH_DEV_MODE_ON: ${{ github.event.inputs.dev_mode_on }}
-      GAME_LAUNCH_SINGLE_REALM_MODE: ${{ github.event.inputs.single_realm_mode }}
-      GAME_LAUNCH_TWO_PLAYER_MODE: ${{ github.event.inputs.two_player_mode }}
-      GAME_LAUNCH_DURATION_SECONDS: ${{ github.event.inputs.duration_seconds }}
-      GAME_LAUNCH_RPC_URL: ${{ github.event.inputs.rpc_url }}
-      GAME_LAUNCH_FACTORY_ADDRESS: ${{ github.event.inputs.factory_address }}
-      GAME_LAUNCH_ACCOUNT_ADDRESS: ${{ github.event.inputs.account_address }}
-      GAME_LAUNCH_EXECUTION_MODE: ${{ github.event.inputs.execution_mode }}
-      GAME_LAUNCH_CARTRIDGE_API_BASE: ${{ github.event.inputs.cartridge_api_base }}
-      GAME_LAUNCH_TORII_NAMESPACES: ${{ github.event.inputs.torii_namespaces }}
-      GAME_LAUNCH_VRF_PROVIDER_ADDRESS: ${{ github.event.inputs.vrf_provider_address }}
-      GAME_LAUNCH_VERBOSE_CONFIG_LOGS: ${{ github.event.inputs.verbose_config_logs }}
-      GAME_LAUNCH_VERSION: ${{ github.event.inputs.version }}
-      GAME_LAUNCH_MAX_ACTIONS: ${{ github.event.inputs.max_actions }}
-      GAME_LAUNCH_WAIT_TIMEOUT_MS: ${{ github.event.inputs.wait_timeout_ms }}
-      GAME_LAUNCH_WAIT_POLL_MS: ${{ github.event.inputs.wait_poll_ms }}
-      GAME_LAUNCH_SKIP_INDEXER: ${{ github.event.inputs.skip_indexer }}
-      GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT: ${{ github.event.inputs.skip_lootchest_role_grant }}
-      GAME_LAUNCH_SKIP_BANKS: ${{ github.event.inputs.skip_banks }}
-      GAME_LAUNCH_DRY_RUN: ${{ github.event.inputs.dry_run }}
-      GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON: ${{ github.event.inputs.map_config_overrides_json }}
-      GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON: ${{ github.event.inputs.blitz_registration_overrides_json }}
+      GAME_LAUNCH_OPTIONS_JSON: ${{ github.event.inputs.launch_options_json }}
       GAME_LAUNCH_AUTO_RETRY_ENABLED: ${{ github.event.inputs.auto_retry_enabled }}
       GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES: ${{ github.event.inputs.auto_retry_interval_minutes }}
       GAME_LAUNCH_TARGET_GAME_NAMES_JSON: ${{ github.event.inputs.target_game_names_json }}
@@ -341,6 +189,78 @@ jobs:
             exit 1
           fi
 
+          write_launch_options_shell() {
+            local output_path=".context/game-launch/launch-options.sh"
+
+            if [ -z "${GAME_LAUNCH_OPTIONS_JSON}" ]; then
+              : > "${output_path}"
+              return 0
+            fi
+
+            GAME_LAUNCH_OPTIONS_JSON="${GAME_LAUNCH_OPTIONS_JSON}" node <<'NODE' > "${output_path}"
+          const raw = process.env.GAME_LAUNCH_OPTIONS_JSON || "";
+
+          let options;
+          try {
+            options = JSON.parse(raw);
+          } catch (error) {
+            console.error(`launch_options_json must be valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+            process.exit(1);
+          }
+
+          if (!options || typeof options !== "object" || Array.isArray(options)) {
+            console.error("launch_options_json must be a JSON object");
+            process.exit(1);
+          }
+
+          const mappings = {
+            rpcUrl: "GAME_LAUNCH_RPC_URL",
+            factoryAddress: "GAME_LAUNCH_FACTORY_ADDRESS",
+            accountAddress: "GAME_LAUNCH_ACCOUNT_ADDRESS",
+            devModeOn: "GAME_LAUNCH_DEV_MODE_ON",
+            singleRealmMode: "GAME_LAUNCH_SINGLE_REALM_MODE",
+            twoPlayerMode: "GAME_LAUNCH_TWO_PLAYER_MODE",
+            durationSeconds: "GAME_LAUNCH_DURATION_SECONDS",
+            mapConfigOverrides: "GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON",
+            blitzRegistrationOverrides: "GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON",
+            cartridgeApiBase: "GAME_LAUNCH_CARTRIDGE_API_BASE",
+            toriiNamespaces: "GAME_LAUNCH_TORII_NAMESPACES",
+            vrfProviderAddress: "GAME_LAUNCH_VRF_PROVIDER_ADDRESS",
+            executionMode: "GAME_LAUNCH_EXECUTION_MODE",
+            verboseConfigLogs: "GAME_LAUNCH_VERBOSE_CONFIG_LOGS",
+            version: "GAME_LAUNCH_VERSION",
+            maxActions: "GAME_LAUNCH_MAX_ACTIONS",
+            waitForFactoryIndexTimeoutMs: "GAME_LAUNCH_WAIT_TIMEOUT_MS",
+            waitForFactoryIndexPollMs: "GAME_LAUNCH_WAIT_POLL_MS",
+            skipIndexer: "GAME_LAUNCH_SKIP_INDEXER",
+            skipLootChestRoleGrant: "GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT",
+            skipBanks: "GAME_LAUNCH_SKIP_BANKS",
+            dryRun: "GAME_LAUNCH_DRY_RUN",
+          };
+
+          function shellQuote(value) {
+            return `'${String(value).replace(/'/g, `'\\''`)}'`;
+          }
+
+          for (const [key, envName] of Object.entries(mappings)) {
+            if (!(key in options) || options[key] === undefined || options[key] === null) {
+              continue;
+            }
+
+            const resolvedValue =
+              typeof options[key] === "object" ? JSON.stringify(options[key]) : String(options[key]);
+
+            process.stdout.write(`export ${envName}=${shellQuote(resolvedValue)}\n`);
+          }
+          NODE
+          }
+
+          mkdir -p .context/game-launch
+          write_launch_options_shell
+
+          # shellcheck disable=SC1091
+          source .context/game-launch/launch-options.sh
+
           RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS="${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
 
           if [ "${GAME_LAUNCH_STEP}" != "sync-paymaster" ] && { [ -z "${RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; }; then
@@ -348,9 +268,12 @@ jobs:
             exit 1
           fi
 
-          mkdir -p .context/game-launch
-
           cat > .context/game-launch/launch-env.sh <<'EOF'
+          if [ -f .context/game-launch/launch-options.sh ]; then
+            # shellcheck disable=SC1091
+            source .context/game-launch/launch-options.sh
+          fi
+
           append_optional_arg() {
             local -n target_args="$1"
             local flag="$2"

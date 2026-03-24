@@ -7,6 +7,11 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
+function parseLaunchOptionsInput(dispatchBody: { inputs?: Record<string, string> }) {
+  const rawValue = dispatchBody.inputs?.launch_options_json;
+  return rawValue ? JSON.parse(rawValue) : {};
+}
+
 describe("factory worker map config overrides", () => {
   test("forwards map config overrides when creating a run", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
@@ -43,14 +48,14 @@ describe("factory worker map config overrides", () => {
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.map_config_overrides_json).toBe(
-      JSON.stringify({
-        bitcoinMineWinProbability: 1638,
-        bitcoinMineFailProbability: 63897,
-      }),
-    );
+    expect(Object.keys(dispatchBody.inputs).length).toBeLessThanOrEqual(25);
+    expect(launchOptions.mapConfigOverrides).toEqual({
+      bitcoinMineWinProbability: 1638,
+      bitcoinMineFailProbability: 63897,
+    });
   });
 
   test("forwards blitz registration overrides when creating a run", async () => {
@@ -89,15 +94,15 @@ describe("factory worker map config overrides", () => {
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.blitz_registration_overrides_json).toBe(
-      JSON.stringify({
-        registration_count_max: 12,
-        fee_token: "0x1234",
-        fee_amount: "40000",
-      }),
-    );
+    expect(Object.keys(dispatchBody.inputs).length).toBeLessThanOrEqual(25);
+    expect(launchOptions.blitzRegistrationOverrides).toEqual({
+      registration_count_max: 12,
+      fee_token: "0x1234",
+      fee_amount: "40000",
+    });
   });
 
   test("accepts mainnet environments when creating a run", async () => {
@@ -237,14 +242,13 @@ describe("factory worker map config overrides", () => {
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.map_config_overrides_json).toBe(
-      JSON.stringify({
-        bitcoinMineWinProbability: 1638,
-        bitcoinMineFailProbability: 63897,
-      }),
-    );
+    expect(launchOptions.mapConfigOverrides).toEqual({
+      bitcoinMineWinProbability: 1638,
+      bitcoinMineFailProbability: 63897,
+    });
   });
 
   test("reuses stored blitz registration overrides during continue", async () => {
@@ -301,15 +305,14 @@ describe("factory worker map config overrides", () => {
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.blitz_registration_overrides_json).toBe(
-      JSON.stringify({
-        registration_count_max: 12,
-        fee_token: "0x1234",
-        fee_amount: "40000",
-      }),
-    );
+    expect(launchOptions.blitzRegistrationOverrides).toEqual({
+      registration_count_max: 12,
+      fee_token: "0x1234",
+      fee_amount: "40000",
+    });
   });
 
   test("allows sync-paymaster recovery for mainnet runs", async () => {
@@ -382,25 +385,27 @@ describe("factory worker map config overrides", () => {
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
     expect(dispatchBody.inputs.launch_step).toBe("sync-paymaster");
     expect(dispatchBody.inputs.environment).toBe("mainnet.eternum");
-    expect(dispatchBody.inputs.rpc_url).toBe("https://rpc.example");
-    expect(dispatchBody.inputs.factory_address).toBe("0x123");
-    expect(dispatchBody.inputs.execution_mode).toBe("sequential");
-    expect(dispatchBody.inputs.duration_seconds).toBe("3600");
-    expect(dispatchBody.inputs.cartridge_api_base).toBe("https://api.example");
-    expect(dispatchBody.inputs.torii_namespaces).toBe("s1_eternum,s2_eternum");
-    expect(dispatchBody.inputs.vrf_provider_address).toBe("0x456");
-    expect(dispatchBody.inputs.verbose_config_logs).toBe("true");
-    expect(dispatchBody.inputs.version).toBe("181");
-    expect(dispatchBody.inputs.max_actions).toBe("55");
-    expect(dispatchBody.inputs.wait_timeout_ms).toBe("123000");
-    expect(dispatchBody.inputs.wait_poll_ms).toBe("7000");
-    expect(dispatchBody.inputs.skip_indexer).toBe("true");
-    expect(dispatchBody.inputs.skip_lootchest_role_grant).toBe("true");
-    expect(dispatchBody.inputs.skip_banks).toBe("true");
+    expect(Object.keys(dispatchBody.inputs).length).toBeLessThanOrEqual(25);
+    expect(launchOptions.rpcUrl).toBe("https://rpc.example");
+    expect(launchOptions.factoryAddress).toBe("0x123");
+    expect(launchOptions.executionMode).toBe("sequential");
+    expect(launchOptions.durationSeconds).toBe(3600);
+    expect(launchOptions.cartridgeApiBase).toBe("https://api.example");
+    expect(launchOptions.toriiNamespaces).toBe("s1_eternum,s2_eternum");
+    expect(launchOptions.vrfProviderAddress).toBe("0x456");
+    expect(launchOptions.verboseConfigLogs).toBe(true);
+    expect(launchOptions.version).toBe("181");
+    expect(launchOptions.maxActions).toBe(55);
+    expect(launchOptions.waitForFactoryIndexTimeoutMs).toBe(123000);
+    expect(launchOptions.waitForFactoryIndexPollMs).toBe(7000);
+    expect(launchOptions.skipIndexer).toBe(true);
+    expect(launchOptions.skipLootChestRoleGrant).toBe(true);
+    expect(launchOptions.skipBanks).toBe(true);
   });
 
   test("rejects continue when a slot run has no recoverable resume step", async () => {

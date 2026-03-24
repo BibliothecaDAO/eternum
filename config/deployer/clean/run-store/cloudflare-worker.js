@@ -2740,109 +2740,135 @@ async function dispatchFactoryPrizeFundingWorkflow(github, request) {
   };
 }
 
-function buildReplayableWorkflowInputs(request) {
-  return {
-    rpc_url: request.rpcUrl || "",
-    factory_address: request.factoryAddress || "",
-    execution_mode: request.executionMode || "",
-    cartridge_api_base: request.cartridgeApiBase || "",
-    torii_namespaces: request.toriiNamespaces || "",
-    vrf_provider_address: request.vrfProviderAddress || "",
-    verbose_config_logs: toWorkflowBooleanInput(request.verboseConfigLogs),
-    version: request.version || "",
-    max_actions: request.maxActions !== undefined ? String(request.maxActions) : "",
-    wait_timeout_ms:
-      request.waitForFactoryIndexTimeoutMs !== undefined ? String(request.waitForFactoryIndexTimeoutMs) : "",
-    wait_poll_ms: request.waitForFactoryIndexPollMs !== undefined ? String(request.waitForFactoryIndexPollMs) : "",
-    skip_indexer: toWorkflowBooleanInput(request.skipIndexer),
-    skip_lootchest_role_grant: toWorkflowBooleanInput(request.skipLootChestRoleGrant),
-    skip_banks: toWorkflowBooleanInput(request.skipBanks),
-    dry_run: toWorkflowBooleanInput(request.dryRun),
+function assignOptionalWorkflowInput(inputs, key, value) {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  if (typeof value === "string") {
+    if (value.length === 0) {
+      return;
+    }
+
+    inputs[key] = value;
+    return;
+  }
+
+  inputs[key] = String(value);
+}
+
+function assignOptionalLaunchOption(launchOptions, key, value) {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  if (typeof value === "string" && value.length === 0) {
+    return;
+  }
+
+  launchOptions[key] = value;
+}
+
+function buildReplayableLaunchOptions(request) {
+  const launchOptions = {};
+
+  assignOptionalLaunchOption(launchOptions, "rpcUrl", request.rpcUrl);
+  assignOptionalLaunchOption(launchOptions, "factoryAddress", request.factoryAddress);
+  assignOptionalLaunchOption(launchOptions, "accountAddress", request.accountAddress);
+  assignOptionalLaunchOption(launchOptions, "devModeOn", request.devModeOn);
+  assignOptionalLaunchOption(launchOptions, "singleRealmMode", request.singleRealmMode);
+  assignOptionalLaunchOption(launchOptions, "twoPlayerMode", request.twoPlayerMode);
+  assignOptionalLaunchOption(launchOptions, "durationSeconds", request.durationSeconds);
+  assignOptionalLaunchOption(launchOptions, "mapConfigOverrides", request.mapConfigOverrides);
+  assignOptionalLaunchOption(launchOptions, "blitzRegistrationOverrides", request.blitzRegistrationOverrides);
+  assignOptionalLaunchOption(launchOptions, "cartridgeApiBase", request.cartridgeApiBase);
+  assignOptionalLaunchOption(launchOptions, "toriiNamespaces", request.toriiNamespaces);
+  assignOptionalLaunchOption(launchOptions, "vrfProviderAddress", request.vrfProviderAddress);
+  assignOptionalLaunchOption(launchOptions, "executionMode", request.executionMode);
+  assignOptionalLaunchOption(launchOptions, "verboseConfigLogs", request.verboseConfigLogs);
+  assignOptionalLaunchOption(launchOptions, "version", request.version);
+  assignOptionalLaunchOption(launchOptions, "maxActions", request.maxActions);
+  assignOptionalLaunchOption(launchOptions, "waitForFactoryIndexTimeoutMs", request.waitForFactoryIndexTimeoutMs);
+  assignOptionalLaunchOption(launchOptions, "waitForFactoryIndexPollMs", request.waitForFactoryIndexPollMs);
+  assignOptionalLaunchOption(launchOptions, "skipIndexer", request.skipIndexer);
+  assignOptionalLaunchOption(launchOptions, "skipLootChestRoleGrant", request.skipLootChestRoleGrant);
+  assignOptionalLaunchOption(launchOptions, "skipBanks", request.skipBanks);
+  assignOptionalLaunchOption(launchOptions, "dryRun", request.dryRun);
+
+  return launchOptions;
+}
+
+function buildBaseLaunchWorkflowInputs(request) {
+  const inputs = {
+    launch_kind: request.launchKind || "game",
+    environment: request.environment,
+    launch_step: request.launchStep,
   };
+
+  const launchOptions = buildReplayableLaunchOptions(request);
+  if (Object.keys(launchOptions).length > 0) {
+    inputs.launch_options_json = JSON.stringify(launchOptions);
+  }
+
+  return inputs;
+}
+
+function assignSeriesLaunchWorkflowInputs(inputs, request) {
+  assignOptionalWorkflowInput(inputs, "series_name", request.seriesName);
+  assignOptionalWorkflowInput(inputs, "series_games_json", JSON.stringify(request.games));
+  assignOptionalWorkflowInput(inputs, "auto_retry_enabled", request.autoRetryEnabled === false ? "false" : "true");
+  assignOptionalWorkflowInput(
+    inputs,
+    "auto_retry_interval_minutes",
+    request.autoRetryIntervalMinutes !== undefined ? String(request.autoRetryIntervalMinutes) : undefined,
+  );
+  assignOptionalWorkflowInput(
+    inputs,
+    "target_game_names_json",
+    request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : undefined,
+  );
+}
+
+function assignRotationLaunchWorkflowInputs(inputs, request) {
+  assignOptionalWorkflowInput(inputs, "rotation_name", request.rotationName);
+  assignOptionalWorkflowInput(inputs, "first_game_start_time", request.firstGameStartTime);
+  assignOptionalWorkflowInput(inputs, "game_interval_minutes", request.gameIntervalMinutes);
+  assignOptionalWorkflowInput(inputs, "max_games", request.maxGames);
+  assignOptionalWorkflowInput(inputs, "advance_window_games", request.advanceWindowGames);
+  assignOptionalWorkflowInput(inputs, "evaluation_interval_minutes", request.evaluationIntervalMinutes);
+  assignOptionalWorkflowInput(inputs, "auto_retry_enabled", request.autoRetryEnabled === false ? "false" : "true");
+  assignOptionalWorkflowInput(
+    inputs,
+    "auto_retry_interval_minutes",
+    request.autoRetryIntervalMinutes !== undefined ? String(request.autoRetryIntervalMinutes) : undefined,
+  );
+  assignOptionalWorkflowInput(
+    inputs,
+    "target_game_names_json",
+    request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : undefined,
+  );
+}
+
+function assignSingleGameWorkflowInputs(inputs, request) {
+  assignOptionalWorkflowInput(inputs, "game_name", request.gameName);
+  assignOptionalWorkflowInput(inputs, "game_start_time", request.gameStartTime);
 }
 
 function buildGameLaunchWorkflowInputs(request) {
+  const inputs = buildBaseLaunchWorkflowInputs(request);
+
   if (request.launchKind === "series") {
-    return {
-      launch_kind: "series",
-      environment: request.environment,
-      game_name: "",
-      game_start_time: "",
-      series_name: request.seriesName,
-      series_games_json: JSON.stringify(request.games),
-      dev_mode_on: toWorkflowBooleanInput(request.devModeOn),
-      single_realm_mode: toWorkflowBooleanInput(request.singleRealmMode),
-      two_player_mode: toWorkflowBooleanInput(request.twoPlayerMode),
-      duration_seconds: request.durationSeconds ? String(request.durationSeconds) : "",
-      map_config_overrides_json: request.mapConfigOverrides ? JSON.stringify(request.mapConfigOverrides) : "",
-      blitz_registration_overrides_json: request.blitzRegistrationOverrides
-        ? JSON.stringify(request.blitzRegistrationOverrides)
-        : "",
-      auto_retry_enabled: request.autoRetryEnabled === false ? "false" : "true",
-      auto_retry_interval_minutes: request.autoRetryIntervalMinutes ? String(request.autoRetryIntervalMinutes) : "",
-      target_game_names_json: request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : "",
-      launch_step: request.launchStep,
-      ...buildReplayableWorkflowInputs(request),
-    };
+    assignSeriesLaunchWorkflowInputs(inputs, request);
+    return inputs;
   }
 
   if (request.launchKind === "rotation") {
-    return {
-      launch_kind: "rotation",
-      environment: request.environment,
-      game_name: "",
-      game_start_time: "",
-      series_name: "",
-      series_games_json: "",
-      rotation_name: request.rotationName,
-      first_game_start_time: String(request.firstGameStartTime),
-      game_interval_minutes: String(request.gameIntervalMinutes),
-      max_games: String(request.maxGames),
-      advance_window_games: request.advanceWindowGames ? String(request.advanceWindowGames) : "",
-      evaluation_interval_minutes: String(request.evaluationIntervalMinutes),
-      dev_mode_on: toWorkflowBooleanInput(request.devModeOn),
-      single_realm_mode: toWorkflowBooleanInput(request.singleRealmMode),
-      two_player_mode: toWorkflowBooleanInput(request.twoPlayerMode),
-      duration_seconds: request.durationSeconds ? String(request.durationSeconds) : "",
-      map_config_overrides_json: request.mapConfigOverrides ? JSON.stringify(request.mapConfigOverrides) : "",
-      blitz_registration_overrides_json: request.blitzRegistrationOverrides
-        ? JSON.stringify(request.blitzRegistrationOverrides)
-        : "",
-      auto_retry_enabled: request.autoRetryEnabled === false ? "false" : "true",
-      auto_retry_interval_minutes: request.autoRetryIntervalMinutes ? String(request.autoRetryIntervalMinutes) : "",
-      target_game_names_json: request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : "",
-      launch_step: request.launchStep,
-      ...buildReplayableWorkflowInputs(request),
-    };
+    assignRotationLaunchWorkflowInputs(inputs, request);
+    return inputs;
   }
 
-  return {
-    launch_kind: "game",
-    environment: request.environment,
-    game_name: request.gameName,
-    game_start_time: request.gameStartTime,
-    series_name: "",
-    series_games_json: "",
-    target_game_names_json: "",
-    rotation_name: "",
-    first_game_start_time: "",
-    game_interval_minutes: "",
-    max_games: "",
-    advance_window_games: "",
-    evaluation_interval_minutes: "",
-    dev_mode_on: toWorkflowBooleanInput(request.devModeOn),
-    single_realm_mode: toWorkflowBooleanInput(request.singleRealmMode),
-    two_player_mode: toWorkflowBooleanInput(request.twoPlayerMode),
-    duration_seconds: request.durationSeconds ? String(request.durationSeconds) : "",
-    map_config_overrides_json: request.mapConfigOverrides ? JSON.stringify(request.mapConfigOverrides) : "",
-    blitz_registration_overrides_json: request.blitzRegistrationOverrides
-      ? JSON.stringify(request.blitzRegistrationOverrides)
-      : "",
-    auto_retry_enabled: "",
-    auto_retry_interval_minutes: "",
-    launch_step: request.launchStep,
-    ...buildReplayableWorkflowInputs(request),
-  };
+  assignSingleGameWorkflowInputs(inputs, request);
+  return inputs;
 }
 
 function validateMapConfigOverrides(value) {
