@@ -236,7 +236,7 @@ const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputsById = {
   [ResourcesIds.Research]: [
     { resource: ResourcesIds.Fish, amount: 15 },
     { resource: ResourcesIds.Lords, amount: 0.001 },
-    { resource: ResourcesIds.Essence, amount: 0.5 },
+    { resource: ResourcesIds.AncientFragment, amount: 0.5 },
   ],
 };
 
