@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "environment": "slot.eternum",
+  "kind": "game",
+  "updatedAt": "2026-03-25T12:12:21.384Z",
+  "entries": {
+    "etrn-banana": {
+      "kind": "game",
+      "environment": "slot.eternum",
+      "gameName": "etrn-banana",
+      "path": "runs/slot/eternum/etrn-banana.json",
+      "inputPath": "inputs/slot/eternum/etrn-banana/23540305841-1.json",
+      "status": "running",
+      "updatedAt": "2026-03-25T12:12:21.384Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-03-25T12:20:00.000Z",
+      "artifacts": {}
+    }
+  }
+}
