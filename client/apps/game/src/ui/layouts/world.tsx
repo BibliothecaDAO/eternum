@@ -12,6 +12,7 @@ import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
+import { AgentDockHost } from "../features/agents";
 import { ActionInfo } from "../features/world/components/actions/action-info";
 import { ActionInstructions } from "../features/world/components/actions/action-instructions";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
@@ -127,6 +128,8 @@ const HUD = () => (
     <div className="absolute w-screen top-10 flex pointer-events-none z-[100]">
       <ModalWindows />
     </div>
+
+    <AgentDockHost />
   </>
 );
 

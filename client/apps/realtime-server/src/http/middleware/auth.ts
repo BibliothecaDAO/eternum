@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from "hono";
+import { verifyRealtimeSessionToken } from "@bibliothecadao/types";
 
 export interface PlayerSession {
   playerId: string;
@@ -14,16 +15,47 @@ export type AppEnv = {
 };
 
 export const attachPlayerSession: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const playerId =
-    c.req.header("x-player-id") ??
-    c.req.query("playerId") ??
-    (() => {
-      try {
-        return c.req.param("playerId");
-      } catch {
-        return undefined;
-      }
-    })();
+  const authorization = c.req.header("authorization");
+  const bearerToken =
+    authorization && authorization.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : undefined;
+  const tokenSecret = process.env.REALTIME_SESSION_TOKEN_SECRET;
+
+  if (bearerToken && tokenSecret) {
+    try {
+      const payload = await verifyRealtimeSessionToken(bearerToken, tokenSecret);
+      c.set("playerSession", {
+        playerId: payload.playerId,
+        walletAddress: payload.walletAddress,
+        displayName: payload.displayName,
+        aliases: [payload.playerId, payload.walletAddress].filter((value): value is string => Boolean(value)),
+      });
+      await next();
+      return;
+    } catch (error) {
+      return c.json(
+        {
+          error: error instanceof Error ? error.message : "Invalid realtime session token.",
+        },
+        401,
+      );
+    }
+  }
+
+  const allowInsecureSession =
+    process.env.ALLOW_INSECURE_PLAYER_SESSION === "true" ||
+    (!process.env.REALTIME_SESSION_TOKEN_SECRET && process.env.NODE_ENV !== "production");
+
+  const playerId = allowInsecureSession
+    ? (c.req.header("x-player-id") ??
+      c.req.query("playerId") ??
+      (() => {
+        try {
+          return c.req.param("playerId");
+        } catch {
+          return undefined;
+        }
+      })())
+    : undefined;
 
   if (playerId) {
     const normalizedPlayerId = playerId.trim();

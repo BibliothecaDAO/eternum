@@ -1,0 +1,20 @@
+{
+  "name": "eternum-agent-world-ingest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/dev.ts",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@bibliothecadao/types": "workspace:*",
+    "hono": "^4.9.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.0"
+  }
+}

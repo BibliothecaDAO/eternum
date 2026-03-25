@@ -123,9 +123,7 @@ describe("calculateGuardStrength", () => {
   });
 
   it("shows negative modifier from dominant guard", () => {
-    const guards = [
-      { count: 1000, troopTier: "T2", troopType: "Crossbowman" },
-    ];
+    const guards = [{ count: 1000, troopTier: "T2", troopType: "Crossbowman" }];
     const s = calculateGuardStrength(guards, 11);
     expect(s.modifier).toBe(-30);
     expect(s.base).toBe(2500);

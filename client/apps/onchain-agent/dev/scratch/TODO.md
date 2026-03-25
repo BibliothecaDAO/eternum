@@ -2,7 +2,9 @@
 
 ## Tool Unification — DONE
 
-Core tool functions extracted to `src/tools/core/`. Both MCP server (`src/mcp/server.ts`) and PI agent (`src/tools/pi-tools.ts`) are thin wrappers over the same shared logic. CLI commands (`src/cli/commands/tools.ts`) also use the same core functions.
+Core tool functions extracted to `src/tools/core/`. Both MCP server (`src/mcp/server.ts`) and PI agent
+(`src/tools/pi-tools.ts`) are thin wrappers over the same shared logic. CLI commands (`src/cli/commands/tools.ts`) also
+use the same core functions.
 
 ## Memory + Evolution Redesign — DONE
 

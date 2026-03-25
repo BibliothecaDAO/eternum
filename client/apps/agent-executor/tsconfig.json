@@ -1,0 +1,20 @@
+{
+  "extends": "../../../packages/tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "noEmitOnError": true,
+    "baseUrl": ".",
+    "paths": {
+      "@bibliothecadao/types": ["../../../packages/types/src/index.ts"],
+      "@bibliothecadao/agent-runtime": ["../../../packages/agent-runtime/src/index.ts"],
+      "@bibliothecadao/onchain-agent/*": ["../onchain-agent/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules", "src/dev.ts"]
+}

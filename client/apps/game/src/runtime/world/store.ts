@@ -63,8 +63,12 @@ export const listWorldNames = (): string[] => {
   return Object.keys(profiles);
 };
 
-const getWorldProfiles = (): WorldProfilesMap => {
+export const getWorldProfiles = (): WorldProfilesMap => {
   return safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
+};
+
+export const listWorldProfiles = (): WorldProfile[] => {
+  return Object.values(getWorldProfiles());
 };
 
 const saveWorldProfiles = (profiles: WorldProfilesMap) => {

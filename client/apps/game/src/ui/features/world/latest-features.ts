@@ -9,6 +9,20 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-25",
+    title: "Richer Agent Live Status",
+    description:
+      "Improved the in-game agent dock with clearer heartbeat, session, latest-action, and recent-run details so you can tell what your world agent is doing without guessing from raw event names.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-25",
+    title: "Personal Agent Dashboard",
+    description:
+      "Added a new AGENTS home tab and a world-scoped in-game agent dock so you can launch your own world agent from the dashboard, then enable and steer its autonomy during a match.",
+    type: "feature",
+  },
+  {
     date: "2026-03-23",
     title: "Removed Light Test Dropdown",
     description:

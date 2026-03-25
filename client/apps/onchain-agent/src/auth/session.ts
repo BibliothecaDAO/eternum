@@ -31,32 +31,59 @@ interface SessionConfig {
   manifest?: any;
 }
 
-let provider: SessionProvider | null = null;
-
-/**
- * Return the SessionProvider singleton, creating it on first call.
- *
- * Builds policies from the Dojo manifest for the given chain, then creates and
- * caches the provider. Subsequent calls return the same instance.
- */
-function getProvider(config: SessionConfig): SessionProvider {
-  if (provider) return provider;
-
-  const policies = buildPolicies(config.chain, config.tokens, config.manifest);
-
-  // The WASM session account expects chainId as a felt, not a human-readable
-  // string like "SN_MAIN". Encode the short string to its felt hex representation.
-  const chainIdFelt = shortString.encodeShortString(config.chainId);
-
-  provider = new SessionProvider({
-    rpc: config.rpcUrl,
-    chainId: chainIdFelt,
-    policies,
+function buildProviderCacheKey(config: SessionConfig): string {
+  return JSON.stringify({
+    chain: config.chain,
+    rpcUrl: config.rpcUrl,
+    chainId: config.chainId,
     basePath: config.basePath ?? ".cartridge",
   });
-
-  return provider;
 }
+
+export class CartridgeSessionManager {
+  private readonly providers = new Map<string, SessionProvider>();
+
+  /**
+   * Return a cached SessionProvider for the given config.
+   *
+   * Providers are scoped by chain, RPC, chain ID, and base path so multiple
+   * agents can maintain isolated session state within the same process.
+   */
+  getProvider(config: SessionConfig): SessionProvider {
+    const cacheKey = buildProviderCacheKey(config);
+    const existingProvider = this.providers.get(cacheKey);
+    if (existingProvider) {
+      return existingProvider;
+    }
+
+    const policies = buildPolicies(config.chain, config.tokens, config.manifest);
+
+    // The WASM session account expects chainId as a felt, not a human-readable
+    // string like "SN_MAIN". Encode the short string to its felt hex representation.
+    const chainIdFelt = shortString.encodeShortString(config.chainId);
+
+    const provider = new SessionProvider({
+      rpc: config.rpcUrl,
+      chainId: chainIdFelt,
+      policies,
+      basePath: config.basePath ?? ".cartridge",
+    });
+
+    this.providers.set(cacheKey, provider);
+    return provider;
+  }
+
+  clear(config?: SessionConfig) {
+    if (!config) {
+      this.providers.clear();
+      return;
+    }
+
+    this.providers.delete(buildProviderCacheKey(config));
+  }
+}
+
+const defaultSessionManager = new CartridgeSessionManager();
 
 const POLL_INTERVAL_MS = 3_000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1_000; // 5 minutes
@@ -74,8 +101,11 @@ const POLL_TIMEOUT_MS = 5 * 60 * 1_000; // 5 minutes
  * @throws {Error} If the browser authorisation flow is not completed within 5 minutes.
  * @throws {Error} If `provider.connect()` rejects due to a network or SDK error.
  */
-export async function getAccount(config: SessionConfig): Promise<WalletAccount> {
-  const p = getProvider(config);
+export async function getAccount(
+  config: SessionConfig,
+  sessionManager: CartridgeSessionManager = defaultSessionManager,
+): Promise<WalletAccount> {
+  const p = sessionManager.getProvider(config);
 
   // First attempt — may return account immediately if session is valid
   const account = await p.connect();
@@ -98,4 +128,8 @@ export async function getAccount(config: SessionConfig): Promise<WalletAccount> 
   }
 
   throw new Error("Session authorization timed out after 5 minutes. Run the agent again to get a new auth URL.");
+}
+
+export function createCartridgeSessionManager(): CartridgeSessionManager {
+  return new CartridgeSessionManager();
 }

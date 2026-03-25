@@ -14,6 +14,7 @@
     "db:push": "drizzle-kit push --config drizzle.config.ts"
   },
   "dependencies": {
+    "@bibliothecadao/agent-runtime": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@fal-ai/client": "^1.8.3",
     "@fastify/redis": "^6.0.0",

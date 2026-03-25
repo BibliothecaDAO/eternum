@@ -469,7 +469,14 @@ export class MapProtocol {
     const tile = this.snapshot.gridIndex.get(`${rawX},${rawY}`);
 
     if (!tile) {
-      return { position: { x, y }, biome: "Unknown", biomeId: 0, explored: false, combat: { Knight: 0, Crossbowman: 0, Paladin: 0 }, entity: null };
+      return {
+        position: { x, y },
+        biome: "Unknown",
+        biomeId: 0,
+        explored: false,
+        combat: { Knight: 0, Crossbowman: 0, Paladin: 0 },
+        entity: null,
+      };
     }
 
     return {
@@ -983,7 +990,13 @@ export class MapProtocol {
     let armyCount = 0;
     let readyArmies = 0;
     let totalTroops = 0;
-    const structureSummaries: Array<{ entityId: number; name: string; level: number; armies: string; position: { x: number; y: number } }> = [];
+    const structureSummaries: Array<{
+      entityId: number;
+      name: string;
+      level: number;
+      armies: string;
+      position: { x: number; y: number };
+    }> = [];
 
     for (const tile of this.snapshot.tiles) {
       if (isExplorer(tile.occupierType) && this.ownedEntityIds.has(tile.occupierId)) {

@@ -215,7 +215,7 @@ const startCacheCleanup = () => {
   );
 };
 
-const stopCacheCleanup = () => {
+export const stopCacheCleanup = () => {
   if (cacheCleanupIntervalId) {
     clearInterval(cacheCleanupIntervalId);
     cacheCleanupIntervalId = null;
@@ -269,22 +269,26 @@ const appendVaryHeader = (c: Context, value: string) => {
 };
 
 const sendJsonBody = (c: Context, payload: CachedJsonPayload, status: number = 200) => {
-  c.header("Content-Type", JSON_CONTENT_TYPE);
-  appendVaryHeader(c, ACCEPT_ENCODING_HEADER);
+  const headers = new Headers(c.res.headers);
+  headers.set("Content-Type", JSON_CONTENT_TYPE);
 
   if (payload.size >= COMPRESSION_THRESHOLD_BYTES) {
     const acceptEncoding = c.req.header(ACCEPT_ENCODING_HEADER)?.toLowerCase() ?? "";
     if (acceptEncoding.includes("br")) {
-      c.header("Content-Encoding", "br");
-      return c.body(getCompressedPayload(payload, "br"), status);
+      headers.set(VARY_HEADER, ACCEPT_ENCODING_HEADER);
+      headers.set("Content-Encoding", "br");
+      return new Response(getCompressedPayload(payload, "br"), { status, headers });
     }
     if (acceptEncoding.includes("gzip")) {
-      c.header("Content-Encoding", "gzip");
-      return c.body(getCompressedPayload(payload, "gzip"), status);
+      headers.set(VARY_HEADER, ACCEPT_ENCODING_HEADER);
+      headers.set("Content-Encoding", "gzip");
+      return new Response(getCompressedPayload(payload, "gzip"), { status, headers });
     }
   }
 
-  return c.body(payload.json, status);
+  appendVaryHeader(c, ACCEPT_ENCODING_HEADER);
+  headers.set(VARY_HEADER, c.res.headers.get(VARY_HEADER) ?? ACCEPT_ENCODING_HEADER);
+  return new Response(payload.json, { status, headers });
 };
 
 const logCacheMetrics = ({

@@ -1,4 +1,7 @@
 import type {
+  AgentEvent,
+  AgentMessage,
+  AgentThread,
   DirectMessage,
   DirectMessageCreatePayload,
   DirectMessageReadReceipt,
@@ -36,7 +39,7 @@ export interface PendingMessage {
   errorMessage?: string;
 }
 
-export type ChatTabType = "world" | "zone" | "dm";
+export type ChatTabType = "world" | "zone" | "dm" | "agent";
 
 export interface ChatTab {
   id: string;
@@ -65,6 +68,21 @@ export interface DirectMessageThreadState {
   lastFetchedCursor?: string | null;
   isFetchingHistory: boolean;
   pendingMessages: PendingMessage[];
+}
+
+export interface AgentThreadState {
+  thread: AgentThread;
+  messages: AgentMessage[];
+  unreadCount: number;
+  lastEventSeq?: number;
+  pendingMessages: PendingMessage[];
+}
+
+export interface AgentEventStreamState {
+  agentId: string;
+  lastEventSeq?: number;
+  connectionStatus: "idle" | "connecting" | "connected" | "error";
+  recentEvents: AgentEvent[];
 }
 
 export interface RealtimeChatState {

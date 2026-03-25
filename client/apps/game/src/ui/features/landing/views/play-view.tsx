@@ -1,5 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { AgentsDashboard } from "@/ui/features/agents";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
@@ -36,7 +37,7 @@ interface PlayViewProps {
   className?: string;
 }
 
-type PlayTab = "play" | "learn" | "news" | "factory";
+type PlayTab = "play" | "learn" | "news" | "factory" | "agents";
 type LandingModeFilter = "blitz" | "season";
 const FACTORY_TAB_BLEED_CLASS_NAME = "-mx-6 lg:-mx-10";
 const FACTORY_TAB_HEADER_INSET_CLASS_NAME = "px-3 sm:px-4 lg:px-6";
@@ -949,6 +950,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
         return <NewsContent />;
       case "factory":
         return <FactoryTabContent />;
+      case "agents":
+        return <AgentsDashboard />;
       case "play":
       default:
         return (

@@ -5,16 +5,14 @@
  * Cartridge auth -> EternumClient/Provider -> game tools -> map loop ->
  * automation loop -> context pruning -> tick-driven agent loop.
  *
- * Uses pi-agent-core directly (no game-agent framework).
- *
  * @module
  */
 
-import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentMessage, AgentTool } from "@mariozechner/pi-agent-core";
 import type { Message, Model } from "@mariozechner/pi-ai";
 import { getModel, completeSimple } from "@mariozechner/pi-ai";
 import { createReadOnlyTools } from "@mariozechner/pi-coding-agent";
+import { createManagedAgentRuntime, disposeManagedAgentRuntime, runAgentTurn } from "@bibliothecadao/agent-runtime";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
@@ -196,22 +194,14 @@ function buildTickPrompt(mapCtx: MapContext, toolErrors: ToolError[], memory: st
   const briefing = mapCtx.protocol?.briefing();
   if (!briefing) return "Map not yet loaded. Wait for next tick.";
 
-  const parts = [
-    "## Tick",
-    "",
-    JSON.stringify(briefing, null, 2),
-  ];
+  const parts = ["## Tick", "", JSON.stringify(briefing, null, 2)];
 
   if (memory) {
     parts.push("", "## Memory", memory);
   }
 
   if (toolErrors.length > 0) {
-    parts.push(
-      "",
-      "## Recent Errors",
-      ...toolErrors.map((e) => `- ${e.tool}: ${e.error}`),
-    );
+    parts.push("", "## Recent Errors", ...toolErrors.map((e) => `- ${e.tool}: ${e.error}`));
   }
 
   parts.push(
@@ -266,28 +256,26 @@ export async function main() {
   const toolErrors: ToolError[] = [];
 
   // 4. Tools — core tools + read/grep/find/ls scoped to dataDir
-  const tools: AgentTool[] = [...createReadOnlyTools(config.dataDir), ...createCoreTools(toolCtx, mapCtx, config.dataDir)];
+  const tools: AgentTool[] = [
+    ...createReadOnlyTools(config.dataDir),
+    ...createCoreTools(toolCtx, mapCtx, config.dataDir),
+  ];
 
   // 5. System prompt
-  const systemPrompt = buildSystemPrompt(config.dataDir);
-
-  // 6. Agent — uses followUp with one-at-a-time mode so tick messages
-  //    queue safely without interrupting in-progress tool calls.
   const convertToLlm = (messages: AgentMessage[]): Message[] =>
     messages.filter((m): m is Message => m.role === "user" || m.role === "assistant" || m.role === "toolResult");
 
-  const agent = new Agent({
-    initialState: {
-      systemPrompt,
-      model,
-      thinkingLevel: model.reasoning ? "medium" : "off",
-      tools,
-      messages: [],
-    },
+  const runtime = createManagedAgentRuntime({
+    dataDir: config.dataDir,
+    model,
+    tools,
+    systemPromptBuilder: buildSystemPrompt,
     convertToLlm,
     followUpMode: "one-at-a-time",
     transformContext: async (messages) => {
-      if (mapCtx.snapshot) toolCtx.snapshot = mapCtx.snapshot;
+      if (mapCtx.snapshot) {
+        toolCtx.snapshot = mapCtx.snapshot;
+      }
       const maxChars = (model.contextWindow ?? 200_000) * 3;
       const pruneTarget = Math.floor(maxChars * 0.5);
       return pruneMessages(messages, model, maxChars, pruneTarget);
@@ -296,36 +284,40 @@ export async function main() {
 
   // 6a. Log agent events so we can see what the LLM is doing
   let tickCount = 0;
-  agent.subscribe((event) => {
+  runtime.onEvent((event) => {
     switch (event.type) {
       case "agent_start":
         console.log("[AGENT] thinking...");
         break;
       case "tool_execution_start":
-        console.log(`[AGENT] tool call: ${event.toolName}(${JSON.stringify(event.args).slice(0, 200)})`);
+        console.log(
+          `[AGENT] tool call: ${String(event.payload?.toolName)}(${JSON.stringify(event.payload?.args ?? {}).slice(0, 200)})`,
+        );
         break;
       case "tool_execution_end": {
         const resultText =
-          event.result?.content
+          (event.payload?.result as any)?.content
             ?.filter((b: any) => b.type === "text")
             ?.map((b: any) => b.text)
             ?.join("")
             ?.slice(0, 300) ?? "";
-        console.log(`[AGENT] tool result: ${event.toolName} ${event.isError ? "ERROR" : "ok"} — ${resultText}`);
-        if (event.isError) {
+        const toolName = String(event.payload?.toolName ?? "unknown");
+        const isError = Boolean(event.payload?.isError);
+        console.log(`[AGENT] tool result: ${toolName} ${isError ? "ERROR" : "ok"} — ${resultText}`);
+        if (isError) {
           const errorText =
-            event.result?.content
+            (event.payload?.result as any)?.content
               ?.filter((b: any) => b.type === "text")
               ?.map((b: any) => b.text)
               ?.join("")
               ?.slice(0, 100) ?? "unknown error";
-          toolErrors.push({ tool: event.toolName, error: errorText, tick: tickCount });
+          toolErrors.push({ tool: toolName, error: errorText, tick: tickCount });
           while (toolErrors.length > 20) toolErrors.shift();
         }
         break;
       }
       case "message_end": {
-        const msg = event.message as any;
+        const msg = event.payload?.message as any;
         if (msg.errorMessage) {
           console.error(`[AGENT] model error: ${msg.errorMessage}`);
         }
@@ -352,10 +344,9 @@ export async function main() {
   // 8. Tick loop — prompt() when idle, steer() when busy (matches game-agent pattern).
   const EVOLUTION_INTERVAL = 10; // evolve every N ticks
   let evolving = false;
-  let agentBusy = false;
 
   function runAgentTick() {
-    if (agentBusy) {
+    if (runtime.isBusy()) {
       // Let the agent finish its current turn — the next prompt() will
       // include fresh map data. Steering mid-turn just kills in-flight
       // tool calls ("Skipped due to queued user message") and wastes work.
@@ -363,22 +354,17 @@ export async function main() {
     }
 
     // Rebuild system prompt once per tick (picks up evolution/operator edits)
-    agent.setSystemPrompt(buildSystemPrompt(config.dataDir));
+    runtime.reloadPrompt();
 
     // Read memory for inclusion in tick prompt
     const memory = readMemory(config.dataDir);
     const prompt = buildTickPrompt(mapCtx, toolErrors, memory);
 
-    agentBusy = true;
-    agent.prompt(prompt).then(
-      () => {
-        agentBusy = false;
-      },
-      (err) => {
-        agentBusy = false;
-        console.error("Agent error:", err instanceof Error ? err.message : err);
-      },
-    );
+    runAgentTurn({ runtime, prompt }).then((result) => {
+      if (!result.success) {
+        console.error("Agent error:", result.errorMessage);
+      }
+    });
   }
 
   const tickTimer = setInterval(() => {
@@ -413,34 +399,28 @@ export async function main() {
       rl.prompt();
       return;
     }
-    if (agentBusy) {
-      console.log("[YOU → steering] (interrupting current turn)");
-      agent.steer({ role: "user" as const, content: text, timestamp: Date.now() } as AgentMessage);
+    if (runtime.isBusy()) {
+      console.log("[YOU → follow-up] (queued after current turn)");
+      runtime.followUp(text);
     } else {
       console.log("[YOU → prompt]");
-      agentBusy = true;
-      agent.prompt(text).then(
-        () => {
-          agentBusy = false;
-          rl.prompt();
-        },
-        (err) => {
-          agentBusy = false;
-          console.error("Agent error:", err instanceof Error ? err.message : err);
-          rl.prompt();
-        },
-      );
+      runAgentTurn({ runtime, prompt: text }).then((result) => {
+        if (!result.success) {
+          console.error("Agent error:", result.errorMessage);
+        }
+        rl.prompt();
+      });
     }
     rl.prompt();
   });
 
   // 10. Graceful shutdown
-  const shutdown = () => {
+  const shutdown = async () => {
     console.log("\nShutting down...");
     clearInterval(tickTimer);
     mapLoop.stop();
     automationLoop.stop();
-    agent.abort();
+    await disposeManagedAgentRuntime({ runtime });
     process.exit(0);
   };
   process.on("SIGINT", shutdown);

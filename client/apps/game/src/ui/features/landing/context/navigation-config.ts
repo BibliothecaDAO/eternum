@@ -29,6 +29,7 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
       { id: "learn", label: "LEARN", tab: "learn" },
       { id: "news", label: "NEWS", tab: "news" },
       { id: "factory", label: "FACTORY", tab: "factory" },
+      { id: "agents", label: "AGENTS", tab: "agents" },
     ],
   },
   {

@@ -154,10 +154,7 @@ export function registerMapCommands(program: Command) {
       const json = !!program.opts().json;
 
       if (action === "start" || action === "stop") {
-        output(
-          { success: false, message: `${action} only works in persistent mode (axis run).` },
-          json,
-        );
+        output({ success: false, message: `${action} only works in persistent mode (axis run).` }, json);
       }
 
       if (action !== "status") {

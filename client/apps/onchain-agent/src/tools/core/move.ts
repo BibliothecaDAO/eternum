@@ -285,7 +285,7 @@ export async function moveArmy(input: MoveArmyInput, ctx: ToolContext): Promise<
       }
     } catch (err: any) {
       stoppedEarly = true;
-      stopReason = extractTxError(err);
+      stopReason = await resolveMoveFailureReason(err, armyId, ctx);
       break;
     }
   }
@@ -343,4 +343,23 @@ function fail(message: string): MoveArmyResult {
     travelCount: 0,
     stoppedEarly: false,
   };
+}
+
+async function resolveMoveFailureReason(err: unknown, armyId: number, ctx: ToolContext): Promise<string> {
+  const txError = extractTxError(err);
+  if (!looksLikeOwnershipFailure(txError)) {
+    return txError;
+  }
+
+  const refreshedExplorer = await ctx.client.view.explorerInfo(armyId).catch(() => null);
+  if (!refreshedExplorer || !addressesEqual(refreshedExplorer.ownerAddress ?? "", ctx.playerAddress)) {
+    return `Army ${armyId} is not yours.`;
+  }
+
+  return txError;
+}
+
+function looksLikeOwnershipFailure(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return normalized.includes("not owner") || normalized.includes("caller is not the agent owner");
 }

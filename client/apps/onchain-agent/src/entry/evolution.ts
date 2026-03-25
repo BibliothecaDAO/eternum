@@ -186,11 +186,7 @@ function applyEvolution(suggestions: EvolutionSuggestion[], dataDir: string): st
  *   in the comparison; the previous call's snapshot is reused as "before").
  * @returns Parsed {@link EvolutionResult} with analysis and validated suggestions.
  */
-export async function evolve(
-  model: Model<any>,
-  dataDir: string,
-  briefing: object,
-): Promise<EvolutionResult> {
+export async function evolve(model: Model<any>, dataDir: string, briefing: object): Promise<EvolutionResult> {
   const prompt = buildEvolutionPrompt(dataDir, briefing);
 
   const response = await completeSimple(model, {

@@ -2,6 +2,7 @@
  * Eternum Game Client - Witcher-inspired Landing
  */
 import { MusicRouterProvider } from "@/audio";
+import { AgentAuthCallbackPage } from "@/ui/features/agents/ui/auth/agent-auth-callback-page";
 import { cleanupTracing } from "@/tracing/cleanup";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -61,6 +62,8 @@ function App() {
               {/* Leaderboard */}
               <Route path="leaderboard" element={<LeaderboardView />} />
             </Route>
+
+            <Route path="/agents/auth/callback" element={<AgentAuthCallbackPage />} />
 
             {/* Game route - triggered when entering a game */}
             <Route

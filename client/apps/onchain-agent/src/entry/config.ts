@@ -105,14 +105,16 @@ const DEFAULT_CHAIN_ID: Record<string, string> = {
  *   `toriiUrl` and `worldAddress` are empty strings until `discoverWorld()` resolves them.
  * @throws {Error} If neither `WORLD_NAME` nor the `TORII_URL`/`WORLD_ADDRESS` pair is set.
  */
-export function loadConfig(): AgentConfig {
+export function loadConfig(overrides: Partial<AgentConfig> = {}): AgentConfig {
   loadDotenv();
   const env = process.env;
   const tickMs = Number(env.TICK_INTERVAL_MS);
-  const chain = (env.CHAIN as Chain) ?? "mainnet";
+  const chain = overrides.chain ?? (env.CHAIN as Chain) ?? "mainnet";
 
-  const worldName = env.WORLD_NAME;
-  const hasExplicit = env.TORII_URL && env.WORLD_ADDRESS;
+  const worldName = overrides.worldName ?? env.WORLD_NAME;
+  const toriiUrl = overrides.toriiUrl ?? env.TORII_URL ?? "";
+  const worldAddress = normalizeHexAddress(overrides.worldAddress ?? env.WORLD_ADDRESS ?? "");
+  const hasExplicit = toriiUrl && worldAddress;
 
   if (!worldName && !hasExplicit) {
     throw new Error(
@@ -120,23 +122,21 @@ export function loadConfig(): AgentConfig {
     );
   }
 
-  // When using WORLD_NAME, these are placeholders — resolved in main() via discoverWorld()
-  const toriiUrl = env.TORII_URL ?? "";
-  const worldAddress = normalizeHexAddress(env.WORLD_ADDRESS ?? "");
-
   return {
     chain,
     worldName,
-    rpcUrl: env.RPC_URL || DEFAULT_RPC[chain] || DEFAULT_RPC.mainnet,
+    rpcUrl: overrides.rpcUrl ?? env.RPC_URL ?? DEFAULT_RPC[chain] ?? DEFAULT_RPC.mainnet,
     toriiUrl,
     worldAddress,
-    chainId: env.CHAIN_ID ?? DEFAULT_CHAIN_ID[chain] ?? "SN_MAIN",
-    modelProvider: env.MODEL_PROVIDER ?? "anthropic",
-    modelId: env.MODEL_ID ?? "claude-sonnet-4-20250514",
-    tickIntervalMs: Number.isFinite(tickMs) && tickMs > 0 ? Math.floor(tickMs) : 60_000,
-    dataDir: worldAddress
-      ? join(homedir(), ".axis", "worlds", worldAddress)
-      : join(homedir(), ".axis", "worlds", "_pending"),
-    vrfProviderAddress: env.VRF_PROVIDER_ADDRESS ?? DEFAULT_VRF_PROVIDER_ADDRESS,
+    chainId: overrides.chainId ?? env.CHAIN_ID ?? DEFAULT_CHAIN_ID[chain] ?? "SN_MAIN",
+    modelProvider: overrides.modelProvider ?? env.MODEL_PROVIDER ?? "anthropic",
+    modelId: overrides.modelId ?? env.MODEL_ID ?? "claude-sonnet-4-20250514",
+    tickIntervalMs: overrides.tickIntervalMs ?? (Number.isFinite(tickMs) && tickMs > 0 ? Math.floor(tickMs) : 60_000),
+    dataDir:
+      overrides.dataDir ??
+      (worldAddress
+        ? join(homedir(), ".axis", "worlds", worldAddress)
+        : join(homedir(), ".axis", "worlds", "_pending")),
+    vrfProviderAddress: overrides.vrfProviderAddress ?? env.VRF_PROVIDER_ADDRESS ?? DEFAULT_VRF_PROVIDER_ADDRESS,
   };
 }

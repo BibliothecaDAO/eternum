@@ -1,0 +1,36 @@
+{
+  "name": "@bibliothecadao/agent-runtime",
+  "version": "0.1.0",
+  "description": "Shared managed runtime and control-plane contracts for Eternum agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@bibliothecadao/torii": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
+    "@cartridge/controller": "^0.13.9",
+    "@cartridge/controller-wasm": "^0.9.6",
+    "@mariozechner/pi-agent-core": "^0.52.7",
+    "@mariozechner/pi-ai": "^0.52.7",
+    "drizzle-orm": "^0.44.6",
+    "eventemitter3": "^5.0.1",
+    "starknet": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}

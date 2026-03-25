@@ -16,10 +16,10 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { loadConfig, type AgentConfig } from "./config.js";
-import { getManifest } from "../auth/embedded-data.js";
-import { discoverWorld, patchManifest } from "../world/discovery.js";
+import { resolveBootstrapManifest } from "./bootstrap-manifest.js";
+import { discoverWorld } from "../world/discovery.js";
 import { bootstrapDataDir } from "./bootstrap.js";
-import { getAccount } from "../auth/session.js";
+import { getAccount, type CartridgeSessionManager } from "../auth/session.js";
 import { createMapLoop } from "../map/loop.js";
 import { createAutomationLoop } from "../automation/loop.js";
 import type { MapContext } from "../map/context.js";
@@ -36,6 +36,14 @@ export interface BootstrapOptions {
   startMapLoop?: boolean;
   /** Callback invoked when the auth flow prints a URL (e.g. Cartridge login link). */
   onAuthUrl?: (url: string) => void;
+  /** Override the default data directory for this bootstrap session. */
+  dataDirOverride?: string;
+  /** Override config values resolved from env before bootstrap continues. */
+  configOverride?: Partial<AgentConfig>;
+  /** Isolated session manager for multi-agent hosting. */
+  sessionManager?: CartridgeSessionManager;
+  /** Pre-resolved manifest override for world-scoped server runtimes. */
+  manifestOverride?: Record<string, unknown>;
 }
 
 /** Everything produced by {@link bootstrap}. */
@@ -76,10 +84,18 @@ const BASE_MAP_CENTER = 2147483646;
  * @returns Everything the caller needs to operate tools and drive the agent.
  */
 export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapResult> {
-  const { waitForMap = true, startMapLoop = true, onAuthUrl } = opts;
+  const {
+    waitForMap = true,
+    startMapLoop = true,
+    onAuthUrl,
+    dataDirOverride,
+    configOverride,
+    sessionManager,
+    manifestOverride,
+  } = opts;
 
   // 1. Config + world discovery
-  const config = loadConfig();
+  const config = loadConfig(configOverride);
 
   let contractsBySelector: Record<string, string> | undefined;
   if (config.worldName && (!config.toriiUrl || !config.worldAddress)) {
@@ -95,14 +111,20 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
     console.error(`  Resolved ${Object.keys(info.contractsBySelector).length} contract addresses from factory`);
   }
 
+  if (dataDirOverride) {
+    config.dataDir = dataDirOverride;
+  }
+
   // 2. Bootstrap data directory
   bootstrapDataDir(config.dataDir);
 
   // 3. Manifest
-  let manifest = getManifest(config.chain);
-  if (contractsBySelector) {
-    manifest = patchManifest(manifest, config.worldAddress, contractsBySelector);
-  }
+  const manifest = resolveBootstrapManifest({
+    chain: config.chain,
+    worldAddress: config.worldAddress,
+    contractsBySelector,
+    manifestOverride,
+  });
 
   // 4. Auth — intercept console.log to capture auth URLs
   let restoreConsoleLog: (() => void) | undefined;
@@ -121,16 +143,21 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
     };
   }
 
-  const account = await getAccount({
-    chain: config.chain,
-    rpcUrl: config.rpcUrl,
-    chainId: config.chainId,
-    basePath: join(config.dataDir, ".cartridge"),
-    manifest,
-  });
-
-  if (restoreConsoleLog) restoreConsoleLog();
-
+  let account;
+  try {
+    account = await getAccount(
+      {
+        chain: config.chain,
+        rpcUrl: config.rpcUrl,
+        chainId: config.chainId,
+        basePath: join(config.dataDir, ".cartridge"),
+        manifest,
+      },
+      sessionManager,
+    );
+  } finally {
+    if (restoreConsoleLog) restoreConsoleLog();
+  }
   console.error(`  Account: ${account.address}`);
 
   // 5. Clients

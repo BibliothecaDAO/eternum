@@ -22,6 +22,20 @@
       "when": 1768467535235,
       "tag": "0002_avatar_generation_images",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774393754726,
+      "tag": "0003_mushy_stingray",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774397735915,
+      "tag": "0004_fine_skaar",
+      "breakpoints": true
     }
   ]
 }

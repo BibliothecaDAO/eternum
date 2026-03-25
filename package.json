@@ -6,10 +6,11 @@
     "build": "pnpm --dir ./client/apps/game build",
     "build:docs": "cd client/apps/game-docs && pnpm build",
     "build:landing": "pnpm --dir ./client/apps/landing build",
-    "build:packages": "pnpm --dir ./packages/types build && pnpm --dir ./packages/torii build && pnpm --dir ./packages/provider build && pnpm --dir ./packages/dojo build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",
+    "build:packages": "pnpm --dir ./packages/types build && pnpm --dir ./packages/agent-runtime build && pnpm --dir ./packages/torii build && pnpm --dir ./packages/provider build && pnpm --dir ./packages/client build && pnpm --dir ./packages/dojo build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",
     "build:mobile": "pnpm --dir ./client/apps/eternum-mobile build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
-    "dev": "pnpm --dir ./client/apps/game dev",
+    "dev": "node ./scripts/dev-agents.mjs",
+    "dev:game": "pnpm --dir ./client/apps/game dev",
     "dev:webgpu": "pnpm --dir ./client/apps/game dev:webgpu",
     "dev:mainnet": "NODE_ENV=mainnet pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
@@ -198,7 +199,8 @@
     "manifest:copy-abis:slot": "node scripts/copy-abis.mjs slot",
     "manifest:copy-abis:slottest": "node scripts/copy-abis.mjs slottest",
     "manifest:copy-abis:sepolia": "node scripts/copy-abis.mjs sepolia",
-    "manifest:copy-abis:mainnet": "node scripts/copy-abis.mjs mainnet"
+    "manifest:copy-abis:mainnet": "node scripts/copy-abis.mjs mainnet",
+    "smoke:agent": "node scripts/run-agent-system-smoke.mjs"
   },
   "dependencies": {
     "@cartridge/connector": "catalog:",
@@ -243,6 +245,9 @@
       "client/apps/torii",
       "client/apps/heavy-load",
       "client/apps/eternum-mobile",
+      "client/apps/agent-gateway",
+      "client/apps/agent-executor",
+      "client/apps/agent-world-ingest",
       "client/apps/onchain-agent",
       "config",
       "packages/*",

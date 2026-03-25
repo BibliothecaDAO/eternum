@@ -87,11 +87,11 @@ export function fmtPos(rawX: number, rawY: number, mapCenter: number): string {
  */
 const DISPLAY_DIRECTION_NAMES: Record<number, string> = {
   0: "East",
-  1: "South East",  // raw NORTH_EAST → display South East (Y negated)
-  2: "South West",  // raw NORTH_WEST → display South West
+  1: "South East", // raw NORTH_EAST → display South East (Y negated)
+  2: "South West", // raw NORTH_WEST → display South West
   3: "West",
-  4: "North West",  // raw SOUTH_WEST → display North West
-  5: "North East",  // raw SOUTH_EAST → display North East
+  4: "North West", // raw SOUTH_WEST → display North West
+  5: "North East", // raw SOUTH_EAST → display North East
 };
 
 /**
