@@ -2,11 +2,12 @@
  * Score to Beat panel for the landing page.
  * Shows the combined best scores across multiple Blitz games.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import Download from "lucide-react/dist/esm/icons/download";
 
 import { useFactorySeriesIndex, type FactorySeriesIndex } from "@/hooks/use-factory-series-index";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
+import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { useWorldsAvailability } from "@/hooks/use-world-availability";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
@@ -180,6 +181,197 @@ const resolveSelectedGameNames = (
 const getSelectorCountLabel = (count: number, singular: string, plural: string): string =>
   `${count} ${count === 1 ? singular : plural}`;
 
+/* -------------------------------------------------------------------------- */
+/*  Sub-components                                                             */
+/* -------------------------------------------------------------------------- */
+
+/** Rank badge matching MMR leaderboard visual language */
+const RankBadge = ({ rank }: { rank: number }) => {
+  if (rank <= 3) {
+    const gradients: Record<number, string> = {
+      1: "from-yellow-400 via-amber-300 to-yellow-500",
+      2: "from-gray-300 via-slate-200 to-gray-400",
+      3: "from-amber-600 via-orange-400 to-amber-700",
+    };
+    return (
+      <span
+        className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${gradients[rank]} text-sm font-bold text-black shadow-[0_0_12px_rgba(255,215,0,0.4)]`}
+      >
+        {rank}
+      </span>
+    );
+  }
+
+  if (rank <= 10) {
+    return (
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gold/15 text-sm font-semibold text-gold shadow-[0_0_10px_rgba(255,215,0,0.15)]">
+        {rank}
+      </span>
+    );
+  }
+
+  return <span className="text-gold/50">#{rank}</span>;
+};
+
+/** Slim relative score bar */
+const ScoreBar = ({ score, maxScore }: { score: number; maxScore: number }) => {
+  const pct = maxScore > 0 ? Math.min(100, Math.round((score / maxScore) * 100)) : 0;
+  return (
+    <div className="h-1 w-full overflow-hidden rounded-full bg-gold/10">
+      <div
+        className="h-full rounded-full bg-gold/40 transition-all duration-500"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+};
+
+/** Podium card for top-3 players */
+const ScorePodiumCard = ({
+  rank,
+  displayName,
+  combinedPoints,
+  runsCount,
+  avatarUrl,
+}: {
+  rank: 1 | 2 | 3;
+  displayName: string;
+  combinedPoints: number;
+  runsCount: number;
+  avatarUrl: string;
+}) => {
+  const placeConfig = {
+    1: {
+      gradient: "from-yellow-400/20 via-amber-300/10 to-transparent",
+      label: "1st",
+      labelColor: "text-yellow-400",
+      order: "order-2",
+      scale: "scale-105",
+      scoreSize: "text-2xl",
+    },
+    2: {
+      gradient: "from-gray-300/15 via-slate-200/5 to-transparent",
+      label: "2nd",
+      labelColor: "text-gray-300",
+      order: "order-1",
+      scale: "",
+      scoreSize: "text-xl",
+    },
+    3: {
+      gradient: "from-amber-600/15 via-orange-400/5 to-transparent",
+      label: "3rd",
+      labelColor: "text-amber-600",
+      order: "order-3",
+      scale: "",
+      scoreSize: "text-xl",
+    },
+  };
+
+  const config = placeConfig[rank];
+
+  return (
+    <div
+      className={`flex flex-1 flex-col items-center gap-2 rounded-xl bg-gradient-to-b ${config.gradient} p-4 ${config.order} ${config.scale}`}
+    >
+      <span className={`text-xs font-bold ${config.labelColor}`}>{config.label}</span>
+      <img
+        src={avatarUrl}
+        alt={`${displayName} avatar`}
+        className={`${rank === 1 ? "h-16 w-16" : "h-12 w-12"} rounded-full border-2 border-gold/20 object-cover`}
+        loading="lazy"
+      />
+      <span className="mt-1 text-sm font-medium text-gold">{displayName}</span>
+      <span className={`font-bold text-gold ${config.scoreSize}`}>{formatPoints(combinedPoints)}</span>
+      <span className="text-[10px] text-gold/40">{runsCount} {runsCount === 1 ? "run" : "runs"}</span>
+    </div>
+  );
+};
+
+/** Expanded row detail panel (separate <tr>) */
+const ExpandedRowDetail = ({
+  entry,
+  colSpan,
+}: {
+  entry: { address: string; runs: Array<{ endpoint: string; points: number }>; allRuns: Array<{ endpoint: string; points: number }> };
+  colSpan: number;
+}) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(entry.address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  // Build per-game breakdown from allRuns
+  const gameBreakdown = useMemo(() => {
+    const byGame = new Map<string, number>();
+    entry.allRuns.forEach((run) => {
+      const name = describeEndpoint(run.endpoint);
+      if (name) byGame.set(name, run.points);
+    });
+    return Array.from(byGame.entries());
+  }, [entry.allRuns]);
+
+  // The best run endpoints for highlighting
+  const bestEndpoints = useMemo(
+    () => new Set(entry.runs.map((r) => describeEndpoint(r.endpoint))),
+    [entry.runs],
+  );
+
+  return (
+    <tr>
+      <td colSpan={colSpan} className="px-6 pb-4">
+        <div className="overflow-hidden transition-all duration-200">
+          <div className="space-y-3 rounded-lg bg-black/40 px-4 py-3 text-sm">
+            {/* Wallet address */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-gold/40">Wallet</span>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="w-fit font-mono text-xs text-gold/70 transition hover:text-gold"
+                title="Click to copy"
+              >
+                {copied ? "Copied!" : entry.address}
+              </button>
+            </div>
+
+            {/* Per-game breakdown */}
+            {gameBreakdown.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-gold/40">Per-game Scores</span>
+                <div className="flex flex-wrap gap-2">
+                  {gameBreakdown.map(([gameName, score]) => {
+                    const isBest = bestEndpoints.has(gameName);
+                    return (
+                      <span
+                        key={gameName}
+                        className={`rounded px-2 py-1 text-xs ${
+                          isBest
+                            ? "border border-gold/20 bg-gold/15 text-gold"
+                            : "bg-gold/5 text-gold/50"
+                        }`}
+                      >
+                        {gameName}: {formatPoints(score)}
+                        {isBest && <span className="ml-1 text-[10px] text-yellow-400">*</span>}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Main component                                                             */
+/* -------------------------------------------------------------------------- */
+
 export const ScoreToBeatPanel = () => {
   const [selectedChain, setSelectedChain] = useState<Chain>(() => loadStoredChain() ?? "mainnet");
   const [selectedGames, setSelectedGames] = useState<string[]>(() => {
@@ -191,7 +383,7 @@ export const ScoreToBeatPanel = () => {
   const [runsToAggregate, setRunsToAggregate] = useState<number>(
     () => loadStoredRunsToAggregate() ?? DEFAULT_RUNS_TO_AGGREGATE,
   );
-  const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(true);
+  const [isGameSelectorOpen, setIsGameSelectorOpen] = useState(false);
   const [selectorMode, setSelectorMode] = useState<SelectorMode>("games");
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
 
@@ -353,7 +545,6 @@ export const ScoreToBeatPanel = () => {
 
   const scoreToBeatRows = scoreToBeatEntries;
   const topScoreToBeat = scoreToBeatRows[0] ?? null;
-  const scoreToBeatRuns = topScoreToBeat?.runs ?? [];
   const topScoreToBeatLabel = topScoreToBeat
     ? (topScoreToBeat.displayName ?? displayAddress(topScoreToBeat.address))
     : null;
@@ -374,6 +565,52 @@ export const ScoreToBeatPanel = () => {
 
   const isSelectorLoading = isLoadingGames || isCheckingWorlds || isLoadingSeries;
   const selectorAvailabilityCount = selectorMode === "games" ? availableGameNames.length : availableSeries.length;
+
+  // Collapsed selector summary text
+  const collapsedSelectorSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedGames.length > 0) {
+      parts.push(getSelectorCountLabel(selectedGames.length, "game", "games"));
+    }
+    if (selectedSeries.length > 0) {
+      const seriesNames = selectedSeries.join(", ");
+      parts.push(seriesNames);
+    }
+    if (parts.length === 0) return "No selections";
+    return parts.join(" \u00B7 ");
+  }, [selectedGames, selectedSeries]);
+
+  // Avatar profiles for all entries
+  const entryAddresses = useMemo(() => scoreToBeatRows.map((e) => e.address), [scoreToBeatRows]);
+  const { data: avatarProfiles } = useAvatarProfiles(entryAddresses);
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (avatarProfiles ?? []).forEach((profile) => {
+      const normalizedAddr = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalizedAddr || !profile.avatarUrl) return;
+      map.set(normalizedAddr, profile.avatarUrl);
+    });
+    return map;
+  }, [avatarProfiles]);
+
+  const getEntryAvatar = useCallback(
+    (address: string): string => {
+      const normalizedAddr = normalizeAvatarAddress(address) ?? address;
+      return getAvatarUrl(normalizedAddr, avatarMap.get(normalizedAddr));
+    },
+    [avatarMap],
+  );
+
+  // Top score for relative bar calculations
+  const topScore = topScoreToBeat?.combinedPoints ?? 0;
+
+  // Podium entries (top 3) and remaining table entries (rank 4+)
+  const showPodium = scoreToBeatRows.length >= 3;
+  const podiumEntries = useMemo(() => (showPodium ? scoreToBeatRows.slice(0, 3) : []), [showPodium, scoreToBeatRows]);
+  const tableEntries = useMemo(
+    () => (showPodium ? scoreToBeatRows.slice(3) : scoreToBeatRows),
+    [showPodium, scoreToBeatRows],
+  );
 
   const handleDownloadData = () => {
     if (scoreToBeatRows.length === 0 || typeof window === "undefined") return;
@@ -430,20 +667,12 @@ export const ScoreToBeatPanel = () => {
     expandedAddress && scoreToBeatRows.some((entry) => entry.address === expandedAddress) ? expandedAddress : null;
 
   return (
-    <div className="h-[85vh] w-full space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
+    <div className="h-[92vh] w-full space-y-6 overflow-y-auto rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-gold">Score to Beat</h2>
-          {topScoreToBeat ? (
-            <>
-              <p className="mt-2 flex items-baseline gap-2 text-4xl font-bold text-gold">
-                {formatPoints(topScoreToBeat.combinedPoints)}
-                <span className="text-lg font-normal text-gold/60">pts</span>
-              </p>
-              <p className="mt-1 text-sm text-gold/60">{(topScoreToBeatLabel ?? "Unknown").trim()} leads the pack</p>
-            </>
-          ) : (
+          {!topScoreToBeat && (
             <p className="mt-2 text-sm text-gold/60">
               {runsToAggregate === 1
                 ? "Get the best single run to top the leaderboard."
@@ -465,6 +694,46 @@ export const ScoreToBeatPanel = () => {
           <RefreshButton onClick={refresh} isLoading={isLoading} disabled={isLoading} size="md" />
         </div>
       </div>
+
+      {/* Hero section for #1 player */}
+      {topScoreToBeat && (
+        <div className="rounded-xl border border-gold/20 bg-gradient-to-r from-yellow-400/10 via-gold/5 to-transparent p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <img
+                src={getEntryAvatar(topScoreToBeat.address)}
+                alt="Leader avatar"
+                className="h-14 w-14 rounded-full border-2 border-yellow-400/40 object-cover ring-2 ring-yellow-400/20"
+                loading="lazy"
+              />
+              <div>
+                <p className="text-lg font-semibold text-gold">
+                  {(topScoreToBeatLabel ?? "Unknown").trim()}
+                </p>
+                <p className="flex items-baseline gap-2 text-3xl font-bold text-gold">
+                  {formatPoints(topScoreToBeat.combinedPoints)}
+                  <span className="text-base font-normal text-gold/60">pts</span>
+                </p>
+              </div>
+            </div>
+            {/* Individual run cards inline */}
+            {topScoreToBeat.runs.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {topScoreToBeat.runs.map((run, index) => (
+                  <div
+                    key={`${run.endpoint}-${index}`}
+                    className="rounded-lg border border-gold/10 bg-black/30 px-3 py-2"
+                  >
+                    <p className="text-[10px] text-gold/50">Run #{index + 1}</p>
+                    <p className="text-sm font-semibold text-gold">{formatPoints(run.points)}</p>
+                    <p className="text-[10px] text-gold/40">{describeEndpoint(run.endpoint)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Selectors - inline */}
       <div className="flex flex-wrap items-center gap-6">
@@ -507,15 +776,18 @@ export const ScoreToBeatPanel = () => {
         </div>
       </div>
 
-      {/* Game Selector */}
+      {/* Game Selector - collapsed by default */}
       <div>
         <button
           type="button"
           onClick={() => setIsGameSelectorOpen((c) => !c)}
-          className="flex items-center gap-2 text-sm text-gold/70 hover:text-gold"
+          className="flex items-center gap-2 rounded-lg border border-gold/15 bg-gold/5 px-4 py-2.5 text-sm text-gold/80 transition hover:border-gold/30 hover:bg-gold/10 hover:text-gold"
         >
-          <span>{gameLabel}</span>
-          <span className="text-xs">({isGameSelectorOpen ? "hide" : "show"})</span>
+          <span className="text-xs">{isGameSelectorOpen ? "\u25BE" : "\u25B8"}</span>
+          <span className="font-medium">{gameLabel}</span>
+          {!isGameSelectorOpen && (
+            <span className="ml-1 text-xs text-gold/50">{collapsedSelectorSummary}</span>
+          )}
         </button>
 
         {isGameSelectorOpen && (
@@ -671,23 +943,33 @@ export const ScoreToBeatPanel = () => {
         )}
       </div>
 
-      {/* Top score runs */}
-      {scoreToBeatRuns.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {scoreToBeatRuns.map((run, index) => (
-            <div key={`${run.endpoint}-${index}`} className="rounded-xl border border-gold/10 bg-black/30 p-4">
-              <p className="text-xs text-gold/50">Run #{index + 1}</p>
-              <p className="mt-1 text-2xl font-semibold text-gold">{formatPoints(run.points)}</p>
-              <p className="text-xs text-gold/40">{describeEndpoint(run.endpoint)}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Leaderboard */}
       {scoreToBeatRows.length > 0 ? (
         <div className="flex-1 overflow-hidden rounded-xl border border-gold/10 bg-black/30">
-          <div className="max-h-[50vh] overflow-y-auto">
+          <div className="max-h-[70vh] overflow-y-auto">
+            {/* Podium for top 3 */}
+            {showPodium && podiumEntries.length >= 3 && (
+              <div className="border-b border-gold/10 bg-gradient-to-b from-gold/5 to-transparent px-6 py-6">
+                <div className="mx-auto flex max-w-lg items-end justify-center gap-3">
+                  {([2, 1, 3] as const).map((place) => {
+                    const entry = podiumEntries[place - 1];
+                    if (!entry) return null;
+                    return (
+                      <ScorePodiumCard
+                        key={entry.address}
+                        rank={place}
+                        displayName={entry.displayName ?? displayAddress(entry.address)}
+                        combinedPoints={entry.combinedPoints}
+                        runsCount={entry.runs.length}
+                        avatarUrl={getEntryAvatar(entry.address)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Table */}
             <table className="w-full">
               <thead className="sticky top-0 border-b border-gold/10 bg-black/80 backdrop-blur-sm">
                 <tr className="text-left text-sm text-gold/60">
@@ -697,40 +979,47 @@ export const ScoreToBeatPanel = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gold/5">
-                {scoreToBeatRows.map((entry, index) => {
-                  const rank = index + 1;
+                {tableEntries.map((entry, index) => {
+                  const rank = showPodium ? index + 4 : index + 1;
                   const isExpanded = activeExpandedAddress === entry.address;
 
                   return (
-                    <tr
-                      key={entry.address}
-                      onClick={() => setExpandedAddress(isExpanded ? null : entry.address)}
-                      className={`cursor-pointer transition-colors hover:bg-gold/5 ${isExpanded ? "bg-gold/5" : ""}`}
-                    >
-                      <td className="px-6 py-4 text-gold/50">#{rank}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-gold">
-                            {entry.displayName ?? displayAddress(entry.address)}
-                          </span>
-                          {entry.displayName && (
-                            <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
-                          )}
-                          {isExpanded && entry.runs.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {entry.runs.map((run, i) => (
-                                <span key={i} className="rounded bg-gold/10 px-2 py-1 text-xs text-gold/70">
-                                  {describeEndpoint(run.endpoint)}: {formatPoints(run.points)}
-                                </span>
-                              ))}
+                    <Fragment key={entry.address}>
+                      <tr
+                        onClick={() => setExpandedAddress(isExpanded ? null : entry.address)}
+                        className={`cursor-pointer transition-colors hover:bg-gold/5 ${isExpanded ? "bg-gold/[0.03]" : ""}`}
+                      >
+                        <td className="px-6 py-4">
+                          <RankBadge rank={rank} />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={getEntryAvatar(entry.address)}
+                              alt={`${entry.address} avatar`}
+                              className="h-8 w-8 shrink-0 rounded-full border border-gold/20 object-cover"
+                              loading="lazy"
+                            />
+                            <div className="flex flex-col gap-1">
+                            <span className="font-medium text-gold">
+                              {entry.displayName ?? displayAddress(entry.address)}
+                            </span>
+                            {entry.displayName && (
+                              <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
+                            )}
+                            {/* Relative score bar */}
+                            <ScoreBar score={entry.combinedPoints} maxScore={topScore} />
                             </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right text-lg font-semibold text-gold">
-                        {formatPoints(entry.combinedPoints)}
-                      </td>
-                    </tr>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right text-lg font-semibold text-gold">
+                          {formatPoints(entry.combinedPoints)}
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <ExpandedRowDetail entry={entry} colSpan={3} />
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>
