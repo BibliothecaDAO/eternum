@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-25T00:42:03.966Z",
+  "updatedAt": "2026-03-25T01:01:56.579Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -325,9 +325,9 @@
         "url": "https://api.cartridge.gg/x/bltz-warzone-02/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-03-25T00:42:03.966Z"
+        "describedAt": "2026-03-25T01:01:56.579Z"
       },
-      "updatedAt": "2026-03-25T00:42:03.966Z"
+      "updatedAt": "2026-03-25T01:01:56.579Z"
     }
   }
 }
