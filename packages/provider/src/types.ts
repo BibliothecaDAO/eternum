@@ -160,6 +160,7 @@ export enum TransactionType {
 
   // Chests & Relics
   OPEN_CHEST = "open_chest",
+  BURN_RESEARCH_FOR_RELIC = "burn_research_for_relic",
   APPLY_RELIC = "apply_relic",
 
   // VRF

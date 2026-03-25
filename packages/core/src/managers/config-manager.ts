@@ -1179,6 +1179,27 @@ export class ClientConfigManager {
     );
   }
 
+  getArtificerConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID])) as
+          | {
+              artificer_config?: {
+                research_cost_for_relic?: number | string | bigint;
+              };
+            }
+          | undefined;
+
+        return {
+          research_cost_for_relic: Number(worldConfig?.artificer_config?.research_cost_for_relic ?? 0),
+        };
+      },
+      {
+        research_cost_for_relic: 0,
+      },
+    );
+  }
+
   public getLaborConfig = (resourceId: number): LaborConfig | undefined => {
     const laborProducedPerResource =
       configManager.laborOutputPerResource[resourceId as keyof typeof configManager.laborOutputPerResource];

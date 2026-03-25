@@ -73,6 +73,7 @@ const buildDisplayItems = (
     "lords",
     "relics",
     "essence",
+    "research",
     "labor",
     "military",
     "transport",

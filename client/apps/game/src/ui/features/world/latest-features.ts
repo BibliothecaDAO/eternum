@@ -9,6 +9,27 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-25",
+    title: "Zero-Cost Relic Crafting",
+    description:
+      "Craft Relic now allows worlds with zero research craft cost to proceed normally, showing explicit zero-cost values instead of blocking with unavailable-config messaging.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-25",
+    title: "Live Relic Cost Config",
+    description:
+      "Craft Relic now reads research cost from live world artificer config instead of static network defaults, so misconfigured worlds clearly show crafting cost as unavailable rather than a misleading zero.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-25",
+    title: "Research Production Visibility Fix",
+    description:
+      "Research now stays visible in economy tables and structure balance strips, and correctly appears as active production in settlement/economy views with live projected balance updates; structure panels now also backfill missing research fields from SQL when Torii model payloads omit them.",
+    type: "fix",
+  },
+  {
     date: "2026-03-24",
     title: "Auto Name During Settlement",
     description:
@@ -16,7 +37,21 @@ export const latestFeatures: LatestFeature[] = [
     type: "feature",
   },
   {
-    date: "2026-03-23",
+    date: "2026-03-24",
+    title: "Relic Crafting UX Polish",
+    description:
+      "Craft Relic now shows a clearer requirement checklist, research progress, and stronger result feedback, with more visible forge actions in resource tables and chips.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Research Relic Crafting",
+    description:
+      "Realm and Village economy panels now support crafting relics directly from research with preflight checks, crafting feedback, and immediate relic inventory refresh.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
     title: "Spire Uses Layer Toggle Call",
     description:
       "Improved Spire traversal so the client uses the dedicated layer-toggle contract flow for cross-layer movement through adjacent Spires.",
