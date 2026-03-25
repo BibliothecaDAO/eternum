@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-25T13:52:19.561Z",
+  "updatedAt": "2026-03-25T14:12:25.030Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -295,7 +295,7 @@
         "stateSource": "describe-and-list-failed",
         "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-03-25T13:52:19.561Z"
+      "updatedAt": "2026-03-25T14:12:25.030Z"
     },
     "bltz-warzone-06": {
       "gameName": "bltz-warzone-06",
