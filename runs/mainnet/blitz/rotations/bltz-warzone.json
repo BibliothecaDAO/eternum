@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23558843811-1.json",
   "latestLaunchRequestId": "23558843811-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-25T19:05:02.737Z",
+  "updatedAt": "2026-03-25T19:05:21.416Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-25T19:19:54.164Z",
-    "lastEvaluatedAt": "2026-03-25T19:04:54.164Z"
+    "nextEvaluationAt": "2026-03-25T19:20:21.416Z",
+    "lastEvaluatedAt": "2026-03-25T19:05:21.416Z"
   },
   "steps": [
     {
@@ -83,10 +83,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-25T19:05:02.737Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-03-25T19:05:02.737Z",
+      "finishedAt": "2026-03-25T19:05:21.416Z"
     },
     {
       "id": "sync-paymaster",
@@ -1961,7 +1962,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 11,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2113,8 +2114,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-25T19:05:19.790Z"
           },
           {
             "id": "sync-paymaster",
@@ -2126,7 +2128,23 @@
           "worldAddress": "0x03ff1c0d4c048a82f365ae7a5bb5a66b4d81c1940a9fa72b3edc2f1416a1d592",
           "createGameTxHash": "0x5ea1b8732c32e4f27994c29bbaefdf85c2e1010bdf501abdc8df12d994b3c82",
           "configureTxHash": "0x33df83e11512877868b050b0044580efa226f8d6649375d743161dc75b15350",
-          "worldConfigTxHash": "0x33df83e11512877868b050b0044580efa226f8d6649375d743161dc75b15350"
+          "worldConfigTxHash": "0x33df83e11512877868b050b0044580efa226f8d6649375d743161dc75b15350",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-11/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-25T19:05:19.789Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-warzone-11",
+            "worldAddress": "0x03ff1c0d4c048a82f365ae7a5bb5a66b4d81c1940a9fa72b3edc2f1416a1d592",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       }
     ],
@@ -2137,13 +2155,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23558843811-1",
-    "workflowRunId": 23558843811,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-25T19:05:02.737Z",
-    "expiresAt": "2026-03-25T19:50:02.737Z"
   }
 }
