@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23558843811-1.json",
   "latestLaunchRequestId": "23558843811-1",
-  "currentStepId": "grant-lootchest-roles",
+  "currentStepId": "create-indexers",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-25T19:04:42.696Z",
+  "updatedAt": "2026-03-25T19:04:54.164Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-25T19:19:34.201Z",
-    "lastEvaluatedAt": "2026-03-25T19:04:34.201Z"
+    "nextEvaluationAt": "2026-03-25T19:19:54.164Z",
+    "lastEvaluatedAt": "2026-03-25T19:04:54.164Z"
   },
   "steps": [
     {
@@ -74,10 +74,11 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-03-25T19:04:42.696Z"
+      "latestEvent": "Setting up loot chests is complete",
+      "startedAt": "2026-03-25T19:04:42.696Z",
+      "finishedAt": "2026-03-25T19:04:54.164Z"
     },
     {
       "id": "create-indexers",
@@ -1959,7 +1960,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 11,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2105,8 +2106,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-03-25T19:04:49.891Z"
           },
           {
             "id": "create-indexers",
@@ -2134,13 +2136,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23558843811-1",
-    "workflowRunId": 23558843811,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-roles",
-    "acquiredAt": "2026-03-25T19:04:42.696Z",
-    "expiresAt": "2026-03-25T19:49:42.696Z"
   }
 }
