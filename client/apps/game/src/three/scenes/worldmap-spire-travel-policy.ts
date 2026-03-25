@@ -6,7 +6,7 @@ type EtherealTileReference = {
   occupier_is_structure: boolean;
 };
 
-export type SpireTraversalAction =
+type SpireTraversalAction =
   | {
       kind: "attack";
       targetArmyId: ID;
