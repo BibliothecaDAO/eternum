@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23543148195-1",
   "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-25T13:30:44.739Z",
+  "updatedAt": "2026-03-25T13:32:09.814Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -914,7 +914,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer maintenance failed for bltz-warzone-05: Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1082,13 +1082,8 @@
           "createGameTxHash": "0x2d2f49b52be955d43af8d47f0076c52da9994098acbdf4277808025e9b69ac6",
           "configureTxHash": "0x1fc0445999a30b984a8742830fe7fdca13451763640c4f5614312187e6796c0",
           "worldConfigTxHash": "0x1fc0445999a30b984a8742830fe7fdca13451763640c4f5614312187e6796c0",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
-          "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-05/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-24T15:54:48.449Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -1100,7 +1095,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-03-25T13:30:43.176Z"
+          "pendingIndexerTierRequestedAt": "2026-03-25T13:32:09.814Z",
+          "lastIndexerTierDispatchTarget": "legendary",
+          "lastIndexerTierDispatchFailedAt": "2026-03-25T13:32:09.814Z",
+          "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
       {
