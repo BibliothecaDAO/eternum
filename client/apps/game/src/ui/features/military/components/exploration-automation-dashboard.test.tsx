@@ -204,4 +204,32 @@ describe("ExplorationAutomationWindow", () => {
     expect(goToButton).not.toBeNull();
     expect(goToButton?.hasAttribute("disabled")).toBe(false);
   });
+
+  it("refreshes explorer positions immediately when entries change", async () => {
+    mocks.explorationStore.entries = {};
+
+    await act(async () => {
+      root.render(<ExplorationAutomationWindow />);
+      await waitForAsyncWork();
+    });
+
+    mocks.explorationStore.entries = {
+      "entry-2": buildEntry({ id: "entry-2", explorerId: "2" }),
+    };
+    mocks.dojo.components.ExplorerTroops.byEntity = {
+      "2": {
+        coord: { x: 56, y: 78 },
+      },
+    };
+
+    await act(async () => {
+      root.render(<ExplorationAutomationWindow />);
+      await waitForAsyncWork();
+    });
+
+    const goToButton = container.querySelector('button[title="Go to location"]');
+
+    expect(goToButton).not.toBeNull();
+    expect(goToButton?.hasAttribute("disabled")).toBe(false);
+  });
 });

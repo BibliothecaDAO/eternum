@@ -298,10 +298,12 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
     return { activeCount: active, pausedCount: list.length - active };
   }, [list]);
 
-  // Update positions periodically
   useEffect(() => {
     refreshExplorerPositions();
+  }, [list, refreshExplorerPositions]);
 
+  // Update positions periodically
+  useEffect(() => {
     const interval = setInterval(refreshExplorerPositions, 5000);
 
     return () => clearInterval(interval);
