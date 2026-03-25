@@ -1,0 +1,70 @@
+---
+layout: docs
+title: Axis Configuration
+showOutline: false
+---
+
+# Configuration
+
+Environment variables — set in `.env` or pass directly.
+
+```bash
+# Required
+CHAIN=slot                         # mainnet, sepolia, slot, slottest
+WORLD_NAME=<world-slug>            # auto-discovers Torii + world address
+ANTHROPIC_API_KEY=sk-ant-...       # only for axis run
+
+# Optional (defaults shown)
+MODEL_PROVIDER=anthropic
+MODEL_ID=claude-sonnet-4-20250514
+TICK_INTERVAL_MS=60000
+TORII_URL=                         # auto-discovered from WORLD_NAME
+WORLD_ADDRESS=                     # auto-discovered from WORLD_NAME
+RPC_URL=                           # per-chain default
+```
+
+:::details[x402 Provider — on-chain USDC permits instead of an API key]
+
+```bash
+MODEL_PROVIDER=x402
+
+# Required
+X402_PRIVATE_KEY=0x...
+
+# Optional (defaults shown)
+X402_ROUTER_URL=https://ai.xgate.run
+X402_MODEL_ID=kimi-k2.5
+X402_MODEL_NAME=Kimi K2.5
+X402_NETWORK=eip155:8453
+X402_PERMIT_CAP=10000000
+X402_PAYMENT_HEADER=PAYMENT-SIGNATURE
+```
+
+:::
+
+## Runtime Data
+
+`~/.axis/worlds/<worldAddress>/`:
+
+```bash
+├── soul.md              # personality (operator edits, never auto-modified)
+├── memory.md            # agent working memory (appended each tick)
+├── automation-status.txt # realm build/production status
+├── tasks/               # strategic lessons (evolution rewrites)
+│   ├── priorities.md
+│   ├── combat.md
+│   ├── economy.md
+│   ├── exploration.md
+│   └── reflection.md
+└── .cartridge/          # session persistence
+```
+
+## Memory Architecture
+
+| File         | Owner     | Purpose                             |
+| ------------ | --------- | ----------------------------------- |
+| `soul.md`    | Operator  | Personality — never auto-modified   |
+| `memory.md`  | Agent     | Working memory — appended each tick |
+| `tasks/*.md` | Evolution | Strategic lessons learned over time |
+
+The agent reads all three each tick. It writes to `memory.md` via the `update_memory` tool. Evolution reads `memory.md` and rewrites `tasks/` every 10 ticks.

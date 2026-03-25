@@ -1,80 +1,109 @@
 # Axis
 
-Autonomous AI agent that plays Eternum on StarkNet. Discovers active game worlds, authenticates via Cartridge
-Controller, and runs an LLM-driven tick loop that executes on-chain actions.
+Autonomous onchain agent for [Eternum | Blitz](https://blitz.realms.world/).
 
-## Install
+## Modes
 
-```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
-```
+| Command      | Description                                   |
+| ------------ | --------------------------------------------- |
+| `axis run`   | Autonomous agent loop (tick → act → repeat)   |
+| `axis mcp`   | MCP server for Claude Code                    |
+| `axis <cmd>` | One-shot tool commands (map queries, actions) |
 
-Pin a version with `VERSION=v0.1.0 bash`. See [INSTALL.md](INSTALL.md) for rollback/uninstall.
-
-## Quick Start (Interactive)
-
-```bash
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
-axis
-```
-
-Discovers worlds, opens browser for auth, starts the agent. Everything auto-initializes on first run.
-
-## Quick Start (Headless)
+## Quick Start
 
 ```bash
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
-axis auth my-world --method=password --username=me --password=secret
-axis run --headless --world=my-world
-```
+# From repo root
+pnpm i && pnpm build:packages && pnpm --dir packages/client build
 
-Password auth creates a Cartridge Controller session with paymaster support. Sessions last 7 days.
-
-## Fleet Setup
-
-```bash
-axis auth --all --method=password --username=me --password=secret --json > /tmp/auth.json
-for world in $(jq -r '.[].world' /tmp/auth.json); do
-  axis run --headless --world="$world" --api-port=$((3000+RANDOM%1000)) &
-done
-```
-
-## Build from Source
-
-```bash
-git clone https://github.com/bibliothecadao/eternum.git && cd eternum
-pnpm install
-pnpm --dir packages/types build
-pnpm --dir packages/torii build
-pnpm --dir packages/provider build
-pnpm --dir packages/client build
-pnpm --dir packages/game-agent build
+# Build the binary
 cd client/apps/onchain-agent
-cp .env.example .env
-pnpm dev
+bun run dev/scripts/build.ts
 ```
 
-Standalone binary (requires [Bun](https://bun.sh)):
+### Configure
+
+Create `.env` in the directory where you'll run axis (or pass env vars directly):
 
 ```bash
-cd client/apps/onchain-agent
-bun run build.ts --compile    # produces ./axis
+CHAIN=slot
+WORLD_NAME=<world-slug>
+ANTHROPIC_API_KEY=sk-ant-...   # only needed for axis run
 ```
 
-Always use `build.ts` -- direct `bun build` skips plugins that embed WASM and manifests.
-
-## Documentation
-
-Full docs at the [Axis docs site](https://eternum-docs.realms.world/development/axis/overview):
-
-- [CLI Reference](https://eternum-docs.realms.world/development/axis/cli-reference)
-- [Worlds and Auth](https://eternum-docs.realms.world/development/axis/worlds-and-auth)
-- [Headless and API](https://eternum-docs.realms.world/development/axis/headless-and-api)
-- [Configuration](https://eternum-docs.realms.world/development/axis/configuration-and-operations)
-
-## Testing
+### Run the agent
 
 ```bash
-pnpm --dir client/apps/onchain-agent test
-pnpm --dir client/apps/onchain-agent test:watch
+CHAIN=slot WORLD_NAME=myworld ./dist/axis run
 ```
+
+> if running from build output artifact location
+
+### Use as MCP server (Claude Code)
+
+```bash
+claude mcp add-json --scope user eternum \
+  '{"type":"stdio","command":"/path/to/axis","args":["mcp"],"env":{"CHAIN":"slot","WORLD_NAME":"myworld"}}'
+```
+
+### One-shot commands
+
+```bash
+axis status --json
+axis map briefing
+axis map find own_army
+axis create-army 169
+axis move-army 229 5 -3
+```
+
+Run `axis --help` for all commands.
+
+## Architecture
+
+```
+Agent Loop (tick → briefing → LLM → tool calls → repeat)
+    ├── Map Loop (10s) — tiles, threat detection, protocol queries
+    ├── Automation Loop (60s) — build, upgrade, produce, offload
+    └── Evolution (every 10 ticks) — rewrites strategy based on agent memory
+```
+
+The agent handles combat and exploration. Automation handles the economy. The map feeds both.
+
+## Memory Architecture
+
+Three layers of persistent state:
+
+| File         | Owner     | Purpose                             |
+| ------------ | --------- | ----------------------------------- |
+| `soul.md`    | Operator  | Personality — never auto-modified   |
+| `memory.md`  | Agent     | Working memory — appended each tick |
+| `tasks/*.md` | Evolution | Strategic lessons learned over time |
+
+The agent reads all three each tick. It writes to `memory.md` via the `update_memory` tool. Evolution rewrites `tasks/`
+every 10 ticks based on what the agent wrote in memory.
+
+## Data
+
+`~/.axis/worlds/<worldAddress>/`:
+
+```
+├── soul.md              — personality (operator edits)
+├── memory.md            — agent working memory
+├── automation-status.txt — realm build/production status
+├── tasks/
+│   ├── priorities.md
+│   ├── combat.md
+│   ├── economy.md
+│   ├── exploration.md
+│   └── reflection.md
+└── .cartridge/          — session persistence
+```
+
+## Configuration
+
+See [Configuration](dev/scratch/README-PART2.md) for all environment variables.
+
+## Links
+
+- [dev/scratch/README-PART2.md](dev/scratch/README-PART2.md) — Tools table, full env var reference
+- [dev/scratch/PROVIDER-METHODS.md](dev/scratch/PROVIDER-METHODS.md) — Provider method coverage

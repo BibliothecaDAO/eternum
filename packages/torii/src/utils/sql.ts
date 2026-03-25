@@ -47,7 +47,7 @@ export function buildApiUrl(baseUrl: string, query: string): string {
  * @throws Error if the request fails or response is not ok
  */
 export async function fetchWithErrorHandling<T>(url: string, errorMessage: string): Promise<T[]> {
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
 
   if (!response.ok) {
     throw new Error(`${errorMessage}: ${response.statusText}`);
@@ -73,7 +73,7 @@ export async function fetchWithErrorHandling<T>(url: string, errorMessage: strin
  * @throws Error if the request fails or response is not ok
  */
 export async function fetchJsonWithErrorHandling<T>(url: string, errorMessage: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
 
   if (!response.ok) {
     throw new Error(`${errorMessage}: ${response.statusText}`);

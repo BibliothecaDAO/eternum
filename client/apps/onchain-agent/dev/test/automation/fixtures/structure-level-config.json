@@ -1,0 +1,17 @@
+[
+  {
+    "level": 3,
+    "required_resource_count": 6,
+    "required_resources_id": 5
+  },
+  {
+    "level": 2,
+    "required_resource_count": 4,
+    "required_resources_id": 4
+  },
+  {
+    "level": 1,
+    "required_resource_count": 3,
+    "required_resources_id": 3
+  }
+]

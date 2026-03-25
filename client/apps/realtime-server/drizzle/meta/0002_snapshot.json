@@ -318,12 +318,8 @@
           "name": "direct_message_read_receipts_thread_id_direct_message_threads_id_fk",
           "tableFrom": "direct_message_read_receipts",
           "tableTo": "direct_message_threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -331,12 +327,8 @@
           "name": "direct_message_read_receipts_message_id_direct_messages_id_fk",
           "tableFrom": "direct_message_read_receipts",
           "tableTo": "direct_messages",
-          "columnsFrom": [
-            "message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["message_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -344,11 +336,7 @@
       "compositePrimaryKeys": {
         "direct_message_read_receipts_pk": {
           "name": "direct_message_read_receipts_pk",
-          "columns": [
-            "thread_id",
-            "message_id",
-            "reader_id"
-          ]
+          "columns": ["thread_id", "message_id", "reader_id"]
         }
       },
       "uniqueConstraints": {},
@@ -491,12 +479,8 @@
           "name": "direct_message_typing_states_thread_id_direct_message_threads_id_fk",
           "tableFrom": "direct_message_typing_states",
           "tableTo": "direct_message_threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -504,10 +488,7 @@
       "compositePrimaryKeys": {
         "direct_message_typing_states_pk": {
           "name": "direct_message_typing_states_pk",
-          "columns": [
-            "thread_id",
-            "player_id"
-          ]
+          "columns": ["thread_id", "player_id"]
         }
       },
       "uniqueConstraints": {},
@@ -612,12 +593,8 @@
           "name": "direct_messages_thread_id_direct_message_threads_id_fk",
           "tableFrom": "direct_messages",
           "tableTo": "direct_message_threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -848,10 +825,7 @@
     "public.note_visibility": {
       "name": "note_visibility",
       "schema": "public",
-      "values": [
-        "public",
-        "private"
-      ]
+      "values": ["public", "private"]
     }
   },
   "schemas": {},

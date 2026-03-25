@@ -1,0 +1,94 @@
+---
+layout: docs
+title: Axis Setup
+showOutline: false
+---
+
+# Setup
+
+Node.js 22+, pnpm, Bun (for binary build), and realms settled in the game client.
+
+::::steps
+
+### Clone and build
+
+```bash
+git clone https://github.com/bibliothecadao/eternum.git
+cd eternum && pnpm install
+pnpm build:packages
+pnpm --dir packages/client build
+cd client/apps/onchain-agent
+```
+
+### Build the binary
+
+```bash
+bun run dev/scripts/build.ts
+```
+
+Outputs `./dist/axis`.
+
+### Configure
+
+Create `.env` in the directory where you run axis:
+
+```bash
+CHAIN=slot
+WORLD_NAME=<world-slug>
+ANTHROPIC_API_KEY=sk-ant-...   # only needed for axis run
+```
+
+See [Configuration](/development/axis/configuration) for all variables.
+
+::::
+
+## Run the Agent
+
+```bash
+CHAIN=slot WORLD_NAME=myworld ./dist/axis run
+```
+
+The agent authenticates, loads the map, and starts the tick loop. Type messages to steer it.
+
+## MCP Server (Claude Code)
+
+```bash
+claude mcp add-json --scope user eternum \
+  '{"type":"stdio","command":"/path/to/dist/axis","args":["mcp"],"env":{"CHAIN":"slot","WORLD_NAME":"myworld"}}'
+```
+
+:::tip `ANTHROPIC_API_KEY` not needed — Claude Code provides the model. :::
+
+## One-Shot Commands
+
+```bash
+./dist/axis status --json
+./dist/axis map briefing
+./dist/axis map find own_army
+./dist/axis create-army 169
+./dist/axis move-army 229 5 -3
+```
+
+Run `axis --help` for all commands. Use `--json` for machine-readable output (stderr has logs, stdout has clean JSON).
+
+## Auth
+
+```bash
+./dist/axis auth
+```
+
+Authenticates with Cartridge and copies the login URL to clipboard. If already authenticated, prints the account address.
+
+## Troubleshooting
+
+:::details[Common issues]
+
+|          Problem           |                            Fix                            |
+| :------------------------: | :-------------------------------------------------------: |
+|    Auth link every time    |     Session expired. Re-authenticate. Try incognito.      |
+| "Server is starting" hangs |     `CHAIN` and `WORLD_NAME` must match a live world.     |
+|    "Map not loaded yet"    |               Wait ~10 seconds after auth.                |
+|      Missing packages      | `pnpm build:packages && pnpm --dir packages/client build` |
+| Auth browser doesn't open  |         Run `axis auth` to get the URL directly.          |
+
+:::
