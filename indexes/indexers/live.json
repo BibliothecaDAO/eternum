@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-25T10:42:15.843Z",
+  "updatedAt": "2026-03-25T12:22:31.114Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -339,6 +339,19 @@
         "describedAt": "2026-03-25T01:42:27.793Z"
       },
       "updatedAt": "2026-03-25T01:42:27.793Z"
+    },
+    "etrn-banana": {
+      "gameName": "etrn-banana",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/etrn-banana/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-25T12:22:31.113Z"
+      },
+      "updatedAt": "2026-03-25T12:22:31.114Z"
     }
   }
 }
