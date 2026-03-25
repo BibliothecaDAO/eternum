@@ -12,9 +12,9 @@
   "requestedLaunchStep": "create-indexers",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23546362173-1.json",
   "latestLaunchRequestId": "23546362173-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-25T14:32:04.922Z",
+  "updatedAt": "2026-03-25T14:32:23.603Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-25T14:46:59.767Z",
-    "lastEvaluatedAt": "2026-03-25T14:31:59.767Z"
+    "nextEvaluationAt": "2026-03-25T14:47:23.603Z",
+    "lastEvaluatedAt": "2026-03-25T14:32:23.603Z"
   },
   "steps": [
     {
@@ -73,10 +73,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-25T14:32:04.922Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-03-25T14:32:04.922Z",
+      "finishedAt": "2026-03-25T14:32:23.603Z"
     },
     {
       "id": "sync-paymaster",
@@ -1868,127 +1869,10 @@
         "startTimeIso": "2026-03-26T15:00:00.000Z",
         "durationSeconds": 3600,
         "seriesGameNumber": 10,
-        "currentStepId": "create-indexers",
-        "latestEvent": "Unable to verify whether Torii deployment \"bltz-warzone-10\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`",
-        "status": "failed",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "currentStepId": null,
+        "latestEvent": "Completed create-indexers",
+        "status": "succeeded",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -2021,10 +1905,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "failed",
-            "latestEvent": "Unable to verify whether Torii deployment \"bltz-warzone-10\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`",
-            "updatedAt": "2026-03-25T14:22:16.922Z",
-            "errorMessage": "Unable to verify whether Torii deployment \"bltz-warzone-10\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-03-25T14:32:22.098Z"
           },
           {
             "id": "sync-paymaster",
@@ -2036,7 +1919,23 @@
           "worldAddress": "0x0004b4fecfe29c061b0e3112481999b96efca9c84d5bc2885b749309ae665d20",
           "createGameTxHash": "0x7523127fa746105e9581b7df1221958142198c3a1a2ccacd80550e5272f93f8",
           "configureTxHash": "0x414f87a0e9b7bfbc53fceffaad170a84ec713c9280969ce38c96bee73c3b0ee",
-          "worldConfigTxHash": "0x414f87a0e9b7bfbc53fceffaad170a84ec713c9280969ce38c96bee73c3b0ee"
+          "worldConfigTxHash": "0x414f87a0e9b7bfbc53fceffaad170a84ec713c9280969ce38c96bee73c3b0ee",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-10/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-03-25T14:32:22.097Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-warzone-10",
+            "worldAddress": "0x0004b4fecfe29c061b0e3112481999b96efca9c84d5bc2885b749309ae665d20",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       }
     ],
@@ -2047,13 +1946,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23546362173-1",
-    "workflowRunId": 23546362173,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-25T14:32:04.922Z",
-    "expiresAt": "2026-03-25T15:17:04.922Z"
   }
 }
