@@ -1,8 +1,17 @@
-import { BiomeType, getNeighborHexes, type HexEntityInfo, type HexPosition, TroopType } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
+  type HexEntityInfo,
+  type HexPosition,
+  TileOccupier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArmyActionManager } from "./army-action-manager";
 import { configManager } from "./config-manager";
 import { StaminaManager } from "./stamina-manager";
+import { ActionPaths, ActionType } from "../utils/action-paths";
 
 vi.mock("@dojoengine/recs", () => ({
   getComponentValue: (component: unknown, entity: unknown) => {
@@ -14,7 +23,7 @@ vi.mock("@dojoengine/recs", () => ({
 }));
 
 vi.mock("@dojoengine/utils", () => ({
-  getEntityIdFromKeys: (keys: bigint[]) => keys[0].toString(),
+  getEntityIdFromKeys: (keys: bigint[]) => keys.map((key) => key.toString()).join(":"),
 }));
 
 const TEST_ENTITY_ID = 1;
@@ -35,7 +44,29 @@ function toNormalizedNeighborSet(feltOrigin: HexPosition): Set<string> {
   );
 }
 
-function createTestSetup() {
+function toTileEntityKey(alt: boolean, col: number, row: number): string {
+  return `${alt ? 1 : 0}:${col}:${row}`;
+}
+
+function buildTileOptData(input: {
+  col: number;
+  row: number;
+  biome: number;
+  occupierType: number;
+  occupierId: number;
+}): {
+  data: bigint;
+} {
+  const data =
+    (BigInt(input.occupierType) << 1n) |
+    (BigInt(input.occupierId) << 9n) |
+    (BigInt(input.biome) << 41n) |
+    (BigInt(input.row) << 49n) |
+    (BigInt(input.col) << 81n);
+  return { data };
+}
+
+function createTestSetup(systemCalls: Record<string, unknown> = {}) {
   const oldFeltStart = { col: TEST_FELT_CENTER, row: TEST_FELT_CENTER };
   const overrideFeltStart = { col: TEST_FELT_CENTER + 5, row: TEST_FELT_CENTER + 3 };
   const exploredHexes = new Map<number, Map<number, BiomeType>>();
@@ -63,13 +94,15 @@ function createTestSetup() {
         },
       ],
     ]),
+    TileOpt: new Map(),
   } as any;
 
-  const manager = new ArmyActionManager(components, {} as any, TEST_ENTITY_ID as any);
+  const manager = new ArmyActionManager(components, systemCalls as any, TEST_ENTITY_ID as any);
   vi.spyOn(manager, "getFood").mockReturnValue({ wheat: 999, fish: 999 });
 
   return {
     manager,
+    components,
     oldFeltStart,
     overrideFeltStart,
     exploredHexes,
@@ -140,5 +173,73 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     );
 
     expect(highlightedHexes).toEqual(toNormalizedNeighborSet(oldFeltStart));
+  });
+
+  it("marks adjacent world spires as spire travel actions", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    const spireHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    components.TileOpt.set(
+      toTileEntityKey(false, spireHex.col, spireHex.row),
+      buildTileOptData({
+        col: spireHex.col,
+        row: spireHex.row,
+        biome: 1,
+        occupierType: TileOccupier.Spire,
+        occupierId: 999,
+      }),
+    );
+
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
+
+    const spireActionPath = actionPaths.get(ActionPaths.posKey(spireHex));
+    expect(spireActionPath).toBeDefined();
+    expect(ActionPaths.getActionType(spireActionPath ?? [])).toBe(ActionType.SpireTravel);
+  });
+});
+
+describe("ArmyActionManager.moveArmy spire traversal", () => {
+  it("calls toggle_alternate for spire travel action paths", async () => {
+    const systemCalls = {
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      explorer_explore: vi.fn().mockResolvedValue({}),
+    };
+    const { manager, oldFeltStart } = createTestSetup(systemCalls);
+    const spireHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    const spireDirection = getDirectionBetweenAdjacentHexes(oldFeltStart, spireHex);
+
+    expect(spireDirection).toBeDefined();
+
+    const actionPath = [
+      {
+        hex: { col: oldFeltStart.col, row: oldFeltStart.row },
+        actionType: ActionType.Move,
+      },
+      {
+        hex: { col: spireHex.col, row: spireHex.row },
+        actionType: ActionType.SpireTravel,
+      },
+    ];
+
+    const signer = { address: "0x123" } as any;
+
+    await manager.moveArmy(signer, actionPath as any, true, 0);
+
+    expect(systemCalls.toggle_alternate).toHaveBeenCalledWith({
+      signer,
+      explorer_id: TEST_ENTITY_ID,
+      spire_direction: spireDirection,
+    });
+    expect(systemCalls.explorer_travel).not.toHaveBeenCalled();
+    expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
   });
 });
