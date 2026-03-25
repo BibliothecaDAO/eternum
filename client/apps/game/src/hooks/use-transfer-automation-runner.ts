@@ -72,6 +72,11 @@ export const useTransferAutomationRunner = () => {
   const timeoutIdRef = useRef<number | null>(null);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
+  const activeEntriesRef = useRef(activeEntries);
+
+  useEffect(() => {
+    activeEntriesRef.current = activeEntries;
+  }, [activeEntries]);
 
   const stopTransferAutomation = useCallback(() => {
     if (timeoutIdRef.current !== null) {
@@ -147,7 +152,9 @@ export const useTransferAutomationRunner = () => {
         return;
       }
       const nowMs = currentBlockTimestamp * 1000;
-      const due = activeEntries.filter((e) => typeof e.nextRunAt === "number" && (e.nextRunAt as number) <= nowMs);
+      const due = activeEntriesRef.current.filter(
+        (e) => typeof e.nextRunAt === "number" && (e.nextRunAt as number) <= nowMs,
+      );
       if (!due.length) {
         scheduleNextCheck();
         return;
@@ -259,22 +266,14 @@ export const useTransferAutomationRunner = () => {
         scheduleNextCheck();
       }
     };
-    scheduleNextCheck();
+  }, [components, account, isSeasonOver, scheduleNext, stopTransferAutomation, update, systemCalls, scheduleNextCheck]);
 
+  useEffect(() => {
+    scheduleNextCheck();
     return () => {
       if (timeoutIdRef.current !== null) {
         window.clearTimeout(timeoutIdRef.current);
       }
     };
-  }, [
-    activeEntries,
-    components,
-    account,
-    isSeasonOver,
-    scheduleNext,
-    stopTransferAutomation,
-    update,
-    systemCalls,
-    scheduleNextCheck,
-  ]);
+  }, [scheduleNextCheck]);
 };

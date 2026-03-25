@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-26",
+    title: "Instant Explorer Map Pins",
+    description:
+      "Auto-Explore now enables the explorer location shortcut as soon as a new automation entry appears, instead of waiting for the next position refresh cycle.",
+    type: "fix",
+  },
+  {
     date: "2026-03-25",
     title: "Zero-Cost Relic Crafting",
     description:

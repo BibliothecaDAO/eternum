@@ -161,7 +161,7 @@ export const useFactoryV2 = () => {
   );
   const [selectedPresetId, setSelectedPresetId] = useState(initialPresetId);
   const [runsByEnvironment, setRunsByEnvironment] = useState<Record<string, FactoryRun[]>>({});
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(initialSelection.selectedRunId);
   const [draftGameName, setDraftGameName] = useState(initialSuggestedGameName);
   const [draftSeriesName, setDraftSeriesName] = useState(initialSuggestedSeriesName);
   const [draftRotationName, setDraftRotationName] = useState(initialSuggestedRotationName);
@@ -385,6 +385,12 @@ export const useFactoryV2 = () => {
     }
 
     if (modeRuns.some((run) => run.id === selectedRunId)) {
+      return;
+    }
+
+    const matchingRun = resolveMatchingModeRunForPendingSelection(modeRuns, selectedRunId);
+    if (matchingRun) {
+      setSelectedRunId(matchingRun.id);
       return;
     }
 
@@ -2046,11 +2052,7 @@ export const useFactoryV2 = () => {
     updatePendingLaunches((currentPendingLaunches) =>
       currentPendingLaunches.filter(
         (pendingLaunch) =>
-          pendingLaunch.environmentId !== environmentId ||
-          !runs.some(
-            (run) =>
-              normalizePendingLaunchKey(environmentId, run.kind, run.name) === buildPendingLaunchKey(pendingLaunch),
-          ),
+          pendingLaunch.environmentId !== environmentId || !resolveMatchingRealRunForPendingLaunch(runs, pendingLaunch),
       ),
     );
   }
@@ -2074,6 +2076,7 @@ interface InitialFactorySelection {
   mode: FactoryGameMode;
   environmentId: string;
   launchKind: FactoryLaunchTargetKind | null;
+  selectedRunId: string | null;
   pendingLaunches: FactoryPendingLaunch[];
 }
 
@@ -2096,6 +2099,9 @@ function resolveInitialFactorySelection(): InitialFactorySelection {
     mode,
     environmentId: latestPendingLaunch?.environmentId ?? getDefaultEnvironmentIdForMode(mode),
     launchKind: latestPendingLaunch?.kind ?? null,
+    selectedRunId: latestPendingLaunch
+      ? buildPendingRunId(latestPendingLaunch.environmentId, latestPendingLaunch.kind, latestPendingLaunch.name)
+      : null,
     pendingLaunches,
   };
 }
@@ -2395,8 +2401,55 @@ function buildPendingLaunchKey(pendingLaunch: FactoryPendingLaunch) {
   return normalizePendingLaunchKey(pendingLaunch.environmentId, pendingLaunch.kind, pendingLaunch.name);
 }
 
+function resolveMatchingRealRunForPendingLaunch(runs: FactoryRun[], pendingLaunch: FactoryPendingLaunch) {
+  return runs.find(
+    (run) => normalizePendingLaunchKey(run.environment, run.kind, run.name) === buildPendingLaunchKey(pendingLaunch),
+  );
+}
+
+function resolveMatchingModeRunForPendingSelection(runs: FactoryRun[], selectedRunId: string) {
+  const pendingSelection = parsePendingRunId(selectedRunId);
+
+  if (!pendingSelection) {
+    return null;
+  }
+
+  return (
+    runs.find(
+      (run) =>
+        normalizePendingLaunchKey(run.environment, run.kind, run.name) ===
+        normalizePendingLaunchKey(pendingSelection.environmentId, pendingSelection.kind, pendingSelection.name),
+    ) ?? null
+  );
+}
+
 function normalizePendingLaunchKey(environmentId: string, kind: FactoryLaunchTargetKind, name: string) {
-  return `${kind}:${environmentId}:${name.trim().toLowerCase()}`;
+  return `${kind}:${environmentId}:${(name ?? "").trim().toLowerCase()}`;
+}
+
+function parsePendingRunId(selectedRunId: string) {
+  if (!selectedRunId.startsWith("pending:")) {
+    return null;
+  }
+
+  const [, rawKind, environmentId, ...nameParts] = selectedRunId.split(":");
+  if (
+    (rawKind !== "game" && rawKind !== "series" && rawKind !== "rotation") ||
+    !environmentId ||
+    nameParts.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    kind: rawKind,
+    environmentId,
+    name: nameParts.join(":"),
+  } satisfies {
+    kind: FactoryLaunchTargetKind;
+    environmentId: string;
+    name: string;
+  };
 }
 
 function arePendingLaunchesEqual(left: FactoryPendingLaunch[], right: FactoryPendingLaunch[]) {
@@ -2420,7 +2473,7 @@ function resolveMatchingRunByName(runs: FactoryRun[], requestedName: string, kin
     return null;
   }
 
-  return runs.find((run) => (!kind || run.kind === kind) && run.name.trim().toLowerCase() === normalizedName) ?? null;
+  return runs.find((run) => (!kind || run.kind === kind) && run.name?.trim().toLowerCase() === normalizedName) ?? null;
 }
 
 function resolveMatchingOwnedSeries<
