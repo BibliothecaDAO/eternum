@@ -2,24 +2,34 @@
  * Global MMR leaderboard for the landing page.
  * Uses MMRUpdated raw events from the global Torii SQL endpoint.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAccount } from "@starknet-react/core";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { hash } from "starknet";
 
 import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
-import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
-import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
+import {
+  getMMRTier,
+  getMMRTierFromRaw,
+  getNextTier,
+  getTierProgress,
+  MMR_TOKEN_DECIMALS,
+  toMmrIntegerFromRaw,
+} from "@/ui/utils/mmr-tiers";
+import type { MMRTier } from "@/ui/utils/mmr-tiers";
 import type { Chain } from "@contracts";
 
 const SEARCH_DEBOUNCE_MS = 250;
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 50;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
 const EVENT_KEY0_EXPR = "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x')";
 const EVENT_PLAYER_EXPR =
   "lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1))";
 const EVENT_CONTRACT_EXPR =
   "lower(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1, instr(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1), ':') - 1))";
+
+const SHIMMER_DELTA_THRESHOLD = 100;
 
 type SortBy = "rank" | "timestamp" | "delta";
 
@@ -61,6 +71,10 @@ interface LeaderboardState {
   totalRows: number;
   lastSyncAt: number | null;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Utility helpers                                                            */
+/* -------------------------------------------------------------------------- */
 
 const parseMaybeHexToBigInt = (value: unknown): bigint | null => {
   if (value == null) return null;
@@ -124,6 +138,18 @@ const formatEventTimestamp = (seconds: number | null): string => {
   const date = new Date(seconds * 1000);
   if (Number.isNaN(date.getTime())) return "Unknown";
   return date.toLocaleString();
+};
+
+const formatRelativeTime = (seconds: number | null): string => {
+  if (seconds == null) return "Unknown";
+  const now = Math.floor(Date.now() / 1000);
+  const diff = now - seconds;
+  if (diff < 0) return "Just now";
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  return formatEventTimestamp(seconds);
 };
 
 const getGlobalToriiBaseUrl = (chain: Chain): string => {
@@ -284,6 +310,22 @@ ORDER BY executed_at DESC, id DESC;
 `;
 };
 
+/** Query the rank of a specific player address (rank sort only) */
+const buildPlayerRankQuery = (chain: Chain, playerAddress: string): string => {
+  return `
+${buildCommonEventsCte(chain, "")}
+, ranked AS (
+  SELECT
+    player_address,
+    ROW_NUMBER() OVER (ORDER BY new_mmr_high DESC, new_mmr_low DESC, event_timestamp DESC, id DESC) AS mmr_rank
+  FROM parsed_latest
+)
+SELECT mmr_rank FROM ranked
+WHERE lower(player_address) LIKE '%${playerAddress.replace(/^0x0*/, "").toLowerCase()}%'
+LIMIT 1;
+`;
+};
+
 const fetchSqlRows = async (toriiBaseUrl: string, query: string): Promise<GlobalMMRRow[]> => {
   const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
@@ -333,7 +375,284 @@ const compareBigIntDescending = (left: bigint, right: bigint): number => {
   return left > right ? -1 : 1;
 };
 
+const shortAddr = (address: string): string => {
+  if (address.length <= 10) return address;
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+/** Fetch controller usernames from the Torii SQL controllers table */
+const fetchControllerUsernames = async (toriiBaseUrl: string, addresses: string[]): Promise<Map<string, string>> => {
+  const map = new Map<string, string>();
+  if (!toriiBaseUrl || addresses.length === 0) return map;
+
+  try {
+    const query = `SELECT address, username FROM controllers`;
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    if (!response.ok) return map;
+
+    const rows = (await response.json()) as Array<{ address?: string; username?: string }>;
+    if (!Array.isArray(rows)) return map;
+
+    for (const row of rows) {
+      if (!row.address || !row.username) continue;
+      const normalized = normalizeAddress(row.address);
+      if (normalized) {
+        map.set(normalized, row.username);
+      }
+    }
+  } catch {
+    // Silently fail — names are non-critical
+  }
+
+  return map;
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Tier color helpers (bg variants for progress bars, badges, etc.)           */
+/* -------------------------------------------------------------------------- */
+
+/** Maps tier text-* color class to a bg-compatible color string for inline styles */
+const TIER_BG_COLORS: Record<string, string> = {
+  "text-relic2": "rgba(192, 132, 245, 0.7)",
+  "text-light-red": "rgba(239, 88, 88, 0.7)",
+  "text-blueish": "rgba(107, 127, 215, 0.7)",
+  "text-brilliance": "rgba(125, 255, 186, 0.7)",
+  "text-gold": "rgba(223, 170, 84, 0.7)",
+  "text-light-pink": "rgba(202, 177, 166, 0.7)",
+  "text-orange": "rgba(251, 146, 60, 0.7)",
+  "text-gray-gold": "rgba(119, 103, 86, 0.7)",
+};
+
+const getTierBgColor = (tier: MMRTier): string => TIER_BG_COLORS[tier.color] ?? "rgba(223, 170, 84, 0.5)";
+
+/* -------------------------------------------------------------------------- */
+/*  Sub-components                                                             */
+/* -------------------------------------------------------------------------- */
+
+/** Rank badge with special styling for top-10 */
+const RankBadge = ({ rank, tier }: { rank: number; tier: MMRTier }) => {
+  if (rank <= 3) {
+    const gradients: Record<number, string> = {
+      1: "from-yellow-400 via-amber-300 to-yellow-500",
+      2: "from-gray-300 via-slate-200 to-gray-400",
+      3: "from-amber-600 via-orange-400 to-amber-700",
+    };
+    return (
+      <span
+        className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${gradients[rank]} text-sm font-bold text-black shadow-[0_0_12px_rgba(255,215,0,0.4)]`}
+      >
+        {rank}
+      </span>
+    );
+  }
+
+  if (rank <= 10) {
+    return (
+      <span
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gold/15 text-sm font-semibold text-gold"
+        style={{ boxShadow: `0 0 10px ${getTierBgColor(tier)}` }}
+      >
+        {rank}
+      </span>
+    );
+  }
+
+  return <span className="text-gold/50">#{rank}</span>;
+};
+
+/** Animated delta chip */
+const DeltaChip = ({ delta }: { delta: bigint }) => {
+  const isPositive = delta >= 0n;
+  const absDelta = delta >= 0n ? delta : -delta;
+  const deltaInteger = Number(absDelta / MMR_TOKEN_DECIMALS);
+  const isLarge = deltaInteger >= SHIMMER_DELTA_THRESHOLD;
+
+  const bgClass = isPositive ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300";
+  const glowClass = isPositive ? "animate-row-glow-up" : "animate-row-glow-down";
+  const shimmerClass = isLarge ? "animate-shimmer" : "";
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-medium ${bgClass} ${glowClass} ${shimmerClass}`}
+    >
+      <span className="text-xs">{isPositive ? "\u25B2" : "\u25BC"}</span>
+      {formatDelta(delta)}
+    </span>
+  );
+};
+
+/** Slim tier progress bar */
+const TierProgressBar = ({ mmrRaw }: { mmrRaw: bigint }) => {
+  const mmrInteger = toMmrIntegerFromRaw(mmrRaw);
+  const currentTier = getMMRTier(mmrInteger);
+  const progress = getTierProgress(mmrInteger, currentTier);
+  const nextTier = getNextTier(currentTier);
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${Math.round(progress * 100)}%`,
+            backgroundColor: getTierBgColor(currentTier),
+          }}
+        />
+      </div>
+      {nextTier ? (
+        <span className="text-[10px] text-gold/40">{nextTier.name}</span>
+      ) : (
+        <span className="text-[10px] text-relic2/60">Max</span>
+      )}
+    </div>
+  );
+};
+
+/** Podium card for top-3 */
+const PodiumCard = ({
+  entry,
+  place,
+  avatarUrl,
+  tier,
+  isCurrentUser,
+  displayName,
+}: {
+  entry: GlobalMMREntry;
+  place: 1 | 2 | 3;
+  avatarUrl: string;
+  tier: MMRTier;
+  isCurrentUser: boolean;
+  displayName: string;
+}) => {
+  const placeConfig = {
+    1: {
+      size: "h-20 w-20",
+      ring: "ring-2 ring-yellow-400/60",
+      gradient: "from-yellow-400/20 via-amber-300/10 to-transparent",
+      label: "1st",
+      labelColor: "text-yellow-400",
+      order: "order-2",
+      scale: "scale-105",
+    },
+    2: {
+      size: "h-16 w-16",
+      ring: "ring-2 ring-gray-300/40",
+      gradient: "from-gray-300/15 via-slate-200/5 to-transparent",
+      label: "2nd",
+      labelColor: "text-gray-300",
+      order: "order-1",
+      scale: "",
+    },
+    3: {
+      size: "h-16 w-16",
+      ring: "ring-2 ring-amber-600/40",
+      gradient: "from-amber-600/15 via-orange-400/5 to-transparent",
+      label: "3rd",
+      labelColor: "text-amber-600",
+      order: "order-3",
+      scale: "",
+    },
+  };
+
+  const config = placeConfig[place];
+
+  return (
+    <div
+      className={`flex flex-1 flex-col items-center gap-2 rounded-xl bg-gradient-to-b ${config.gradient} p-4 ${config.order} ${config.scale} ${isCurrentUser ? "ring-1 ring-gold/40" : ""}`}
+    >
+      <span className={`text-xs font-bold ${config.labelColor}`}>{config.label}</span>
+      <img
+        src={avatarUrl}
+        alt={`${entry.address} avatar`}
+        className={`${config.size} rounded-full border-2 border-gold/20 object-cover ${config.ring}`}
+        loading="lazy"
+      />
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm font-medium text-gold">{displayName}</span>
+        {isCurrentUser && <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold">You</span>}
+      </div>
+      <MMRTierBadge tier={tier} size="md" />
+      <span className="text-lg font-bold text-gold">{formatMMR(entry.newMmr)}</span>
+      <DeltaChip delta={entry.delta} />
+    </div>
+  );
+};
+
+/** Expanded row detail panel */
+const ExpandedRowDetail = ({ entry }: { entry: GlobalMMREntry }) => {
+  const [copied, setCopied] = useState(false);
+  const mmrInteger = toMmrIntegerFromRaw(entry.newMmr);
+  const currentTier = getMMRTier(mmrInteger);
+  const progress = getTierProgress(mmrInteger, currentTier);
+  const nextTier = getNextTier(currentTier);
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(entry.address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <tr>
+      <td colSpan={7} className="px-6 pb-4">
+        <div className="overflow-hidden transition-all duration-200">
+          <div className="flex flex-wrap gap-6 rounded-lg bg-black/40 px-4 py-3 text-sm">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-gold/40">Wallet</span>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="font-mono text-xs text-gold/70 transition hover:text-gold"
+                title="Click to copy"
+              >
+                {copied ? "Copied!" : entry.address}
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-gold/40">Tier Progress</span>
+              <span className="text-xs text-gold/70">
+                {nextTier
+                  ? `${currentTier.name} \u2192 ${nextTier.name}: ${Math.round(progress * 100)}% (MMR ${mmrInteger} / ${nextTier.minMMR} needed)`
+                  : `${currentTier.name} (Max Tier)`}
+              </span>
+              <div className="mt-1 h-2 w-40 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.round(progress * 100)}%`,
+                    backgroundColor: getTierBgColor(currentTier),
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-gold/40">MMR Change</span>
+              <span className="text-xs text-gold/70">
+                {formatMMR(entry.oldMmr)} → {formatMMR(entry.newMmr)} ({formatDelta(entry.delta)})
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-gold/40">Last Update</span>
+              <span className="text-xs text-gold/70">{formatRelativeTime(entry.updatedAtSeconds)}</span>
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Main leaderboard component                                                 */
+/* -------------------------------------------------------------------------- */
+
 export const MMRLeaderboard = () => {
+  const { address: connectedAddress } = useAccount();
+
   const [state, setState] = useState<LeaderboardState>({
     entries: [],
     isLoading: false,
@@ -347,6 +666,18 @@ export const MMRLeaderboard = () => {
     lastSyncAt: null,
   });
 
+  const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
+  const [usernameMap, setUsernameMap] = useState<Map<string, string>>(new Map());
+  const [findMeLoading, setFindMeLoading] = useState(false);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const currentUserRowRef = useRef<HTMLTableRowElement>(null);
+  const pendingScrollToUser = useRef(false);
+
+  const currentUserAddress = useMemo(() => {
+    if (!connectedAddress) return null;
+    return normalizeAddress(connectedAddress);
+  }, [connectedAddress]);
+
   const totalPages = useMemo(() => {
     if (state.totalRows <= 0) return 1;
     return Math.max(1, Math.ceil(state.totalRows / PAGE_SIZE));
@@ -357,12 +688,100 @@ export const MMRLeaderboard = () => {
   const avatarMap = useMemo(() => {
     const map = new Map<string, string>();
     (avatarProfiles ?? []).forEach((profile) => {
-      const normalizedAddress = normalizeAvatarAddress(profile.playerAddress);
-      if (!normalizedAddress || !profile.avatarUrl) return;
-      map.set(normalizedAddress, profile.avatarUrl);
+      const normalizedAddr = normalizeAvatarAddress(profile.playerAddress);
+      if (!normalizedAddr || !profile.avatarUrl) return;
+      map.set(normalizedAddr, profile.avatarUrl);
     });
     return map;
   }, [avatarProfiles]);
+
+  // Fetch controller usernames for current entries
+  useEffect(() => {
+    const toriiBaseUrl = getGlobalToriiBaseUrl(state.selectedChain);
+    if (!toriiBaseUrl || state.entries.length === 0) return;
+
+    const addresses = state.entries.map((e) => e.address);
+    void fetchControllerUsernames(toriiBaseUrl, addresses).then(setUsernameMap);
+  }, [state.entries, state.selectedChain]);
+
+  // Whether to show the podium: only on page 1 with rank sort and no search
+  const showPodium = state.sortBy === "rank" && state.page === 1 && !state.searchTerm;
+
+  // Top 3 entries for podium, and remaining entries for the table
+  const podiumEntries = useMemo(() => {
+    if (!showPodium) return [];
+    return state.entries.filter((e) => e.rank >= 1 && e.rank <= 3);
+  }, [showPodium, state.entries]);
+
+  const tableEntries = useMemo(() => {
+    if (!showPodium) return state.entries;
+    return state.entries.filter((e) => e.rank > 3);
+  }, [showPodium, state.entries]);
+
+  const isCurrentUserAddress = useCallback(
+    (address: string): boolean => {
+      if (!currentUserAddress) return false;
+      return normalizeAddress(address) === currentUserAddress;
+    },
+    [currentUserAddress],
+  );
+
+  const scrollToCurrentUser = useCallback(() => {
+    if (currentUserRowRef.current) {
+      currentUserRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
+  // After entries load, check if we have a pending scroll
+  useEffect(() => {
+    if (pendingScrollToUser.current && !state.isLoading && state.entries.length > 0) {
+      pendingScrollToUser.current = false;
+      setFindMeLoading(false);
+      // Small delay to let the DOM render the rows
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToCurrentUser();
+        });
+      });
+    }
+  }, [state.isLoading, state.entries, scrollToCurrentUser]);
+
+  const handleFindMe = useCallback(async () => {
+    if (!currentUserAddress) return;
+
+    // If user is already visible on this page, just scroll
+    const isOnCurrentPage = state.entries.some((e) => isCurrentUserAddress(e.address));
+    if (isOnCurrentPage) {
+      scrollToCurrentUser();
+      return;
+    }
+
+    // Switch to rank sort so the rank-based page calculation works
+    const toriiBaseUrl = getGlobalToriiBaseUrl(state.selectedChain);
+    if (!toriiBaseUrl) return;
+
+    setFindMeLoading(true);
+
+    try {
+      const query = buildPlayerRankQuery(state.selectedChain, currentUserAddress);
+      const rows = await fetchSqlRows(toriiBaseUrl, query);
+      const rankValue = rows[0]?.mmr_rank;
+      const rank = parseMaybeHexToNumber(rankValue);
+
+      if (rank == null || rank <= 0) {
+        setFindMeLoading(false);
+        return;
+      }
+
+      const targetPage = Math.ceil(rank / PAGE_SIZE);
+
+      // Set pending scroll so we scroll after data loads
+      pendingScrollToUser.current = true;
+      setState((prev) => ({ ...prev, sortBy: "rank", searchInput: "", searchTerm: "", page: targetPage }));
+    } catch {
+      setFindMeLoading(false);
+    }
+  }, [currentUserAddress, state.entries, state.selectedChain, isCurrentUserAddress, scrollToCurrentUser]);
 
   const refreshLeaderboard = useCallback(async () => {
     const toriiBaseUrl = getGlobalToriiBaseUrl(state.selectedChain);
@@ -473,26 +892,45 @@ export const MMRLeaderboard = () => {
     void refreshLeaderboard();
   };
 
+  const handleRowClick = (address: string) => {
+    setExpandedAddress((prev) => (prev === address ? null : address));
+  };
+
   const isEmpty = !state.isLoading && !state.error && state.entries.length === 0;
 
   return (
-    <div className="relative h-[85vh] w-full overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
-      <div className="flex h-full min-w-0 flex-col space-y-6 overflow-y-auto p-8">
+    <div className="relative h-[92vh] w-full overflow-hidden rounded-3xl border border-gold/20 bg-gradient-to-br from-gold/5 via-black/40 to-black/90 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
+      <div className="flex h-full min-w-0 flex-col space-y-6 overflow-y-auto p-8" ref={tableContainerRef}>
+        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gold">Global MMR Leaderboard</h2>
             <p className="mt-1 text-sm text-gold/60">Derived from MMRUpdated events across the selected chain.</p>
           </div>
-          <button
-            type="button"
-            onClick={handleManualRefresh}
-            disabled={state.isLoading}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {state.isLoading ? "Loading..." : "Refresh"}
-          </button>
+          <div className="flex items-center gap-2">
+            {currentUserAddress && (
+              <button
+                type="button"
+                onClick={() => void handleFindMe()}
+                disabled={findMeLoading}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gold/20 bg-gold/5 px-3 py-2 text-sm font-medium text-gold/70 transition hover:border-gold/40 hover:bg-gold/15 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span className="text-xs">&#9673;</span>
+                {findMeLoading ? "Finding..." : "Find Me"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={state.isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-medium text-gold transition hover:border-gold/50 hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {state.isLoading ? "Loading..." : "Refresh"}
+            </button>
+          </div>
         </div>
 
+        {/* Toolbar: Chain, Sort, Search */}
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gold/60">Chain:</span>
@@ -552,25 +990,56 @@ export const MMRLeaderboard = () => {
           </div>
         </div>
 
+        {/* Error */}
         {state.error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             {state.error}
           </div>
         )}
 
+        {/* Loading */}
         {state.isLoading && (
           <div className="flex flex-1 items-center justify-center py-16">
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold border-t-transparent" />
           </div>
         )}
 
+        {/* Empty */}
         {isEmpty && (
           <div className="py-16 text-center text-gold/50">No MMR updates found on {state.selectedChain}.</div>
         )}
 
+        {/* Content */}
         {!state.isLoading && state.entries.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-gold/10 bg-black/30">
-            <div className="max-h-[58vh] overflow-y-auto">
+            <div className="max-h-[70vh] overflow-y-auto">
+              {/* Podium for top 3 */}
+              {showPodium && podiumEntries.length >= 3 && (
+                <div className="border-b border-gold/10 bg-gradient-to-b from-gold/5 to-transparent px-6 py-6">
+                  <div className="mx-auto flex max-w-lg items-end justify-center gap-3">
+                    {[2, 1, 3].map((place) => {
+                      const entry = podiumEntries.find((e) => e.rank === place);
+                      if (!entry) return null;
+                      const tier = getMMRTierFromRaw(entry.newMmr);
+                      const normalizedAddr = normalizeAvatarAddress(entry.address) ?? entry.address;
+                      const avatarUrl = getAvatarUrl(normalizedAddr, avatarMap.get(normalizedAddr));
+                      return (
+                        <PodiumCard
+                          key={entry.address}
+                          entry={entry}
+                          place={place as 1 | 2 | 3}
+                          avatarUrl={avatarUrl}
+                          tier={tier}
+                          isCurrentUser={isCurrentUserAddress(entry.address)}
+                          displayName={usernameMap.get(entry.address) ?? shortAddr(entry.address)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Table */}
               <table className="w-full">
                 <thead className="sticky top-0 border-b border-gold/10 bg-black/80 backdrop-blur-sm">
                   <tr className="text-left text-sm text-gold/60">
@@ -578,53 +1047,78 @@ export const MMRLeaderboard = () => {
                     <th className="px-6 py-4 font-medium">Player</th>
                     <th className="px-6 py-4 text-right font-medium">MMR</th>
                     <th className="px-6 py-4 text-right font-medium">Tier</th>
+                    <th className="px-6 py-4 text-right font-medium">Progress</th>
                     <th className="px-6 py-4 text-right font-medium">Delta</th>
                     <th className="px-6 py-4 text-right font-medium">Last Update</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gold/5">
-                  {state.entries.map((entry) => {
+                  {tableEntries.map((entry) => {
                     const tier = getMMRTierFromRaw(entry.newMmr);
-                    const normalizedAddress = normalizeAvatarAddress(entry.address) ?? entry.address;
-                    const avatarUrl = getAvatarUrl(normalizedAddress, avatarMap.get(normalizedAddress));
+                    const normalizedAddr = normalizeAvatarAddress(entry.address) ?? entry.address;
+                    const avatarUrl = getAvatarUrl(normalizedAddr, avatarMap.get(normalizedAddr));
+                    const isUser = isCurrentUserAddress(entry.address);
+                    const isExpanded = expandedAddress === entry.address;
 
                     return (
-                      <tr key={`${entry.address}-${entry.eventId}`} className="transition-colors hover:bg-gold/5">
-                        <td className="px-6 py-4 text-gold/50">#{entry.rank}</td>
-                        <td className="px-6 py-4 font-medium text-gold">
-                          <div className="flex items-center gap-3 rounded-md px-1 py-0.5">
-                            <img
-                              src={avatarUrl}
-                              alt={`${entry.address} avatar`}
-                              className="h-8 w-8 rounded-full border border-gold/20 object-cover"
-                              loading="lazy"
-                            />
-                            <MaybeController address={entry.address} className="font-medium text-gold" />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right text-gold">{formatMMR(entry.newMmr)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end">
-                            <MMRTierBadge tier={tier} />
-                          </div>
-                        </td>
-                        <td
-                          className={`px-6 py-4 text-right font-medium ${
-                            entry.delta >= 0n ? "text-emerald-300" : "text-red-300"
-                          }`}
+                      <Fragment key={`${entry.address}-${entry.eventId}`}>
+                        <tr
+                          ref={isUser ? currentUserRowRef : undefined}
+                          onClick={() => handleRowClick(entry.address)}
+                          className={`cursor-pointer transition-colors hover:bg-gold/5 ${
+                            isUser ? "bg-gold/10 border-l-2 border-gold" : ""
+                          } ${isExpanded ? "bg-gold/[0.03]" : ""}`}
                         >
-                          {formatDelta(entry.delta)}
-                        </td>
-                        <td className="px-6 py-4 text-right text-sm text-gold/70">
-                          {formatEventTimestamp(entry.updatedAtSeconds)}
-                        </td>
-                      </tr>
+                          <td className="px-6 py-4">
+                            <RankBadge rank={entry.rank} tier={tier} />
+                          </td>
+                          <td className="px-6 py-4 font-medium text-gold">
+                            <div className="flex items-center gap-3 rounded-md px-1 py-0.5">
+                              <img
+                                src={avatarUrl}
+                                alt={`${entry.address} avatar`}
+                                className="h-8 w-8 rounded-full border border-gold/20 object-cover"
+                                loading="lazy"
+                              />
+                              <span className="font-medium text-gold">
+                                {usernameMap.get(entry.address) ?? shortAddr(entry.address)}
+                              </span>
+                              {isUser && (
+                                <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right text-gold">{formatMMR(entry.newMmr)}</td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end">
+                              <MMRTierBadge tier={tier} />
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end">
+                              <TierProgressBar mmrRaw={entry.newMmr} />
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end">
+                              <DeltaChip delta={entry.delta} />
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right text-sm text-gold/70">
+                            {formatEventTimestamp(entry.updatedAtSeconds)}
+                          </td>
+                        </tr>
+                        {isExpanded && <ExpandedRowDetail entry={entry} />}
+                      </Fragment>
                     );
                   })}
                 </tbody>
               </table>
             </div>
 
+            {/* Pagination */}
             <div className="flex flex-col gap-3 border-t border-gold/10 bg-black/40 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-gold/50">
                 Showing {(state.page - 1) * PAGE_SIZE + 1}-{Math.min(state.page * PAGE_SIZE, state.totalRows)} of{" "}
