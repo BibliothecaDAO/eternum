@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-25T14:12:25.030Z",
+  "updatedAt": "2026-03-25T14:32:41.700Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -291,11 +291,15 @@
     "bltz-warzone-05": {
       "gameName": "bltz-warzone-05",
       "liveState": {
-        "state": "indeterminate",
-        "stateSource": "describe-and-list-failed",
-        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-warzone-05/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-25T14:32:41.699Z"
       },
-      "updatedAt": "2026-03-25T14:12:25.030Z"
+      "updatedAt": "2026-03-25T14:32:41.700Z"
     },
     "bltz-warzone-06": {
       "gameName": "bltz-warzone-06",
