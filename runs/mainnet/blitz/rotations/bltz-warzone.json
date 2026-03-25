@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23546362173-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-25T14:32:39.541Z",
+  "updatedAt": "2026-03-25T14:54:58.211Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -320,7 +320,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Indexer tier already matched pro for bltz-warzone-02",
+        "latestEvent": "Queued indexer tier update to basic",
         "status": "succeeded",
         "configSteps": [
           {
@@ -504,7 +504,9 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true
+          "paymasterSynced": true,
+          "pendingIndexerTierTarget": "basic",
+          "pendingIndexerTierRequestedAt": "2026-03-25T14:54:56.469Z"
         }
       },
       {
