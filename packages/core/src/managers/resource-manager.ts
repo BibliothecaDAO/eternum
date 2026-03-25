@@ -31,6 +31,12 @@ export class ResourceManager {
     return getComponentValue(this.components.Resource, getEntityIdFromKeys([BigInt(this.entityId)]));
   }
 
+  private static isContinuousProductionResource(resourceId: ResourcesIds): boolean {
+    return (
+      resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish || resourceId === ResourcesIds.Research
+    );
+  }
+
   public isFood(resourceId: ResourcesIds): boolean {
     return resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
   }
@@ -49,8 +55,11 @@ export class ResourceManager {
     const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production) return false;
 
-    const isFood = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
-    if (isFood) {
+    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
+    if (isContinuousProductionResource) {
+      if (resourceId === ResourcesIds.Research) {
+        return production.building_count > 0 && production.production_rate !== 0n;
+      }
       return production.production_rate !== 0n;
     }
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
@@ -556,9 +565,11 @@ export class ResourceManager {
     const lastUpdatedTick = production.last_updated_at;
     const productionRate = production.production_rate;
     const outputAmountLeft = production.output_amount_left;
+    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
 
-    // If no production rate or no output left, return 0
-    if (productionRate === 0n || outputAmountLeft === 0n) return 0;
+    if (productionRate === 0n) return 0;
+    if (isContinuousProductionResource) return Number.MAX_SAFE_INTEGER;
+    if (outputAmountLeft === 0n) return 0;
 
     // Calculate ticks since last update
     const ticksSinceLastUpdate = currentTick - lastUpdatedTick;
@@ -576,13 +587,12 @@ export class ResourceManager {
     const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production || production.building_count === 0) return 0;
 
-    // If no production rate or no output left, return current tick
-    if (production.production_rate === 0n || production.output_amount_left === 0n) return production.last_updated_at;
-
-    // For food resources, production never ends
-    if (this.isFood(resourceId)) {
+    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
+    if (production.production_rate === 0n) return production.last_updated_at;
+    if (isContinuousProductionResource) {
       return Number.MAX_SAFE_INTEGER;
     }
+    if (production.output_amount_left === 0n) return production.last_updated_at;
 
     // Calculate when production will end based on remaining output and rate
     const remainingTicks = Number(production.output_amount_left) / Number(production.production_rate);
@@ -643,7 +653,10 @@ export class ResourceManager {
     const ticksSinceLastUpdate = currentTick - production.last_updated_at;
     let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
 
-    if (!this.isFood(resourceId) && totalAmountProduced > production.output_amount_left) {
+    if (
+      !ResourceManager.isContinuousProductionResource(resourceId) &&
+      totalAmountProduced > production.output_amount_left
+    ) {
       totalAmountProduced = production.output_amount_left;
     }
 
@@ -750,6 +763,19 @@ export class ResourceManager {
         return { balance: resource.LORDS_BALANCE, production: resource.LORDS_PRODUCTION };
       case ResourcesIds.Essence:
         return { balance: resource.ESSENCE_BALANCE, production: resource.ESSENCE_PRODUCTION };
+      case ResourcesIds.Research:
+        return {
+          balance: ((resource as Record<string, unknown>).RESEARCH_BALANCE as bigint | undefined) ?? 0n,
+          production:
+            ((resource as Record<string, unknown>).RESEARCH_PRODUCTION as
+              | {
+                  building_count: number;
+                  production_rate: bigint;
+                  output_amount_left: bigint;
+                  last_updated_at: number;
+                }
+              | undefined) ?? noProduction,
+        };
       case ResourcesIds.StaminaRelic1:
         return {
           balance: resource.RELIC_E1_BALANCE,
@@ -895,6 +921,7 @@ export class ResourceManager {
       ["FISH_BALANCE", ResourcesIds.Fish],
       ["LORDS_BALANCE", ResourcesIds.Lords],
       ["ESSENCE_BALANCE", ResourcesIds.Essence],
+      ["RESEARCH_BALANCE" as keyof typeof resource, ResourcesIds.Research],
       ["RELIC_E1_BALANCE", ResourcesIds.StaminaRelic1],
       ["RELIC_E2_BALANCE", ResourcesIds.StaminaRelic2],
       ["RELIC_E3_BALANCE", ResourcesIds.DamageRelic1],
@@ -979,8 +1006,8 @@ export class ResourceManager {
     const ticksSinceLastUpdate = currentTick - production.last_updated_at;
     let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
 
-    const isFood = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
-    if (!isFood && totalAmountProduced > production.output_amount_left) {
+    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
+    if (!isContinuousProductionResource && totalAmountProduced > production.output_amount_left) {
       totalAmountProduced = production.output_amount_left;
     }
 
@@ -1075,6 +1102,7 @@ export class ResourceManager {
       ["FISH_PRODUCTION", ResourcesIds.Fish],
       ["LORDS_PRODUCTION", ResourcesIds.Lords],
       ["ESSENCE_PRODUCTION", ResourcesIds.Essence],
+      ["RESEARCH_PRODUCTION" as keyof typeof resource, ResourcesIds.Research],
     ];
 
     // Check each production field directly
@@ -1110,15 +1138,15 @@ export class ResourceManager {
 
     const ticksSinceLastUpdate = currentTick - productionInfo.production.last_updated_at;
     const totalAmountProduced = BigInt(ticksSinceLastUpdate) * productionInfo.production.production_rate;
-    const isFoodResource = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
-    const remainingOutput = isFoodResource
+    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
+    const remainingOutput = isContinuousProductionResource
       ? productionInfo.production.output_amount_left
       : productionInfo.production.output_amount_left - totalAmountProduced;
 
     const isProducing =
       productionInfo.production.building_count > 0 &&
       productionInfo.production.production_rate !== 0n &&
-      (isFoodResource || remainingOutput > 0n);
+      (isContinuousProductionResource || remainingOutput > 0n);
 
     const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;
     const timeRemainingSeconds = productionPerSecond > 0 ? outputRemainingNumber / productionPerSecond : 0;

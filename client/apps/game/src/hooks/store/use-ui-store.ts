@@ -125,8 +125,6 @@ interface UIStore {
   setMusicLevel: (level: number) => void;
   effectsLevel: number;
   setEffectsLevel: (level: number) => void;
-  compassDirection: number;
-  setCompassDirection: (direction: number) => void;
   tooltip: TooltipType;
   setTooltip: (tooltip: TooltipType) => void;
   contextMenu: ContextMenuState | null;
@@ -189,6 +187,18 @@ interface UIStore {
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
 
+const readLocalBool = (key: string, fallback: boolean): boolean => {
+  if (typeof window === "undefined") return fallback;
+  const v = localStorage.getItem(key);
+  return v === null ? fallback : v === "true";
+};
+
+const readLocalInt = (key: string, fallback: number): number => {
+  if (typeof window === "undefined") return fallback;
+  const v = localStorage.getItem(key);
+  return v === null ? fallback : parseInt(v, 10);
+};
+
 export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     disableButtons: false,
@@ -210,7 +220,7 @@ export const useUIStore = create(
     },
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
-    isSoundOn: localStorage.getItem("soundEnabled") ? localStorage.getItem("soundEnabled") === "true" : true,
+    isSoundOn: readLocalBool("soundEnabled", true),
     toggleSound: () =>
       set((state) => {
         localStorage.setItem("soundEnabled", String(!state.isSoundOn));
@@ -218,18 +228,16 @@ export const useUIStore = create(
       }),
     isPlaying: false,
     setIsPlaying: (playing) => set({ isPlaying: playing }),
-    musicLevel: localStorage.getItem("musicLevel") ? parseInt(localStorage.getItem("musicLevel") as string) : 50,
+    musicLevel: readLocalInt("musicLevel", 50),
     setMusicLevel: (level) => {
       set({ musicLevel: level });
       localStorage.setItem("musicLevel", level.toString());
     },
-    effectsLevel: localStorage.getItem("effectsLevel") ? parseInt(localStorage.getItem("effectsLevel") as string) : 50,
+    effectsLevel: readLocalInt("effectsLevel", 50),
     setEffectsLevel: (level) => {
       set({ effectsLevel: level });
       localStorage.setItem("effectsLevel", level.toString());
     },
-    compassDirection: 0,
-    setCompassDirection: (direction) => set({ compassDirection: direction }),
     tooltip: null,
     setTooltip: (tooltip) =>
       set({
@@ -277,7 +285,7 @@ export const useUIStore = create(
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
-    hasAcceptedTS: localStorage.getItem("hasAcceptedTS") ? localStorage.getItem("hasAcceptedTS") === "true" : false,
+    hasAcceptedTS: readLocalBool("hasAcceptedTS", false),
     setHasAcceptedToS: (accepted: boolean) => {
       set({ hasAcceptedTS: accepted });
       localStorage.setItem("hasAcceptedTS", String(accepted));
@@ -303,7 +311,7 @@ export const useUIStore = create(
     ...createRealmStoreSlice(set),
     ...createWorldStoreSlice(set),
     // labor
-    useSimpleCost: localStorage.getItem("useSimpleCost") ? localStorage.getItem("useSimpleCost") === "true" : true,
+    useSimpleCost: readLocalBool("useSimpleCost", true),
     setUseSimpleCost: (useSimpleCost: boolean) => {
       set({ useSimpleCost });
       localStorage.setItem("useSimpleCost", String(useSimpleCost));
@@ -330,7 +338,7 @@ export const useUIStore = create(
     cycleTime: 0,
     setCycleTime: (time: number) => set({ cycleTime: time }),
     // map zoom controls - disabled by default for better UX
-    enableMapZoom: localStorage.getItem("enableMapZoom") ? localStorage.getItem("enableMapZoom") === "true" : false,
+    enableMapZoom: readLocalBool("enableMapZoom", false),
     setEnableMapZoom: (enable: boolean) => {
       set({ enableMapZoom: enable });
       localStorage.setItem("enableMapZoom", String(enable));

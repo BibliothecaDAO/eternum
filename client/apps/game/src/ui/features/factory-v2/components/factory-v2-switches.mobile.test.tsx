@@ -101,7 +101,10 @@ describe("Factory V2 mobile switches", () => {
     const rootGroup = container.querySelector("section > div");
 
     expect(workflowSwitch?.className).toContain("w-full");
-    expect(workflowSwitch?.className).toContain("md:max-w-[20rem]");
+    expect(workflowSwitch?.className).toContain("md:max-w-[30rem]");
+    expect(workflowSwitch?.textContent).toContain("Create game");
+    expect(workflowSwitch?.textContent).toContain("Check game");
+    expect(workflowSwitch?.textContent).toContain("Manage indexers");
     expect(rootGroup?.className).toContain("text-center");
   });
 });

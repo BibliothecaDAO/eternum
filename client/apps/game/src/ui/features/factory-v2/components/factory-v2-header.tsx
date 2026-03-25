@@ -11,7 +11,7 @@ export const FactoryV2Header = ({ onBack, onOpenLegacy }: { onBack: () => void; 
             Cleaner launch controls
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-[15px] leading-6 text-[#fbf4ea]/62 md:mt-3 md:text-sm">
-            This version is built around two simple jobs: start a game, or check a game.
+            This version keeps starting games, checking runs, and indexer upkeep in one calmer flow.
           </p>
         </div>
 

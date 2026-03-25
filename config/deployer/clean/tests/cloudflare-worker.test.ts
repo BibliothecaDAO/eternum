@@ -7,6 +7,11 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
+function parseLaunchOptionsInput(dispatchBody: { inputs?: Record<string, string> }) {
+  const rawValue = dispatchBody.inputs?.launch_options_json;
+  return rawValue ? JSON.parse(rawValue) : {};
+}
+
 describe("factory worker map config overrides", () => {
   test("forwards map config overrides when creating a run", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
@@ -43,14 +48,14 @@ describe("factory worker map config overrides", () => {
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.map_config_overrides_json).toBe(
-      JSON.stringify({
-        bitcoinMineWinProbability: 1638,
-        bitcoinMineFailProbability: 63897,
-      }),
-    );
+    expect(Object.keys(dispatchBody.inputs).length).toBeLessThanOrEqual(25);
+    expect(launchOptions.mapConfigOverrides).toEqual({
+      bitcoinMineWinProbability: 1638,
+      bitcoinMineFailProbability: 63897,
+    });
   });
 
   test("forwards blitz registration overrides when creating a run", async () => {
@@ -89,15 +94,15 @@ describe("factory worker map config overrides", () => {
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.blitz_registration_overrides_json).toBe(
-      JSON.stringify({
-        registration_count_max: 12,
-        fee_token: "0x1234",
-        fee_amount: "40000",
-      }),
-    );
+    expect(Object.keys(dispatchBody.inputs).length).toBeLessThanOrEqual(25);
+    expect(launchOptions.blitzRegistrationOverrides).toEqual({
+      registration_count_max: 12,
+      fee_token: "0x1234",
+      fee_amount: "40000",
+    });
   });
 
   test("accepts mainnet environments when creating a run", async () => {
@@ -134,6 +139,54 @@ describe("factory worker map config overrides", () => {
 
     expect(response.status).toBe(202);
     expect(dispatchBody.inputs.environment).toBe("mainnet.blitz");
+  });
+
+  test("dispatches rotation launches with rotation-specific inputs", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-ladder-loop.json")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (String(url).includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          rotationName: "bltz-ladder-loop",
+          firstGameStartTime: "2026-03-18T10:00:00Z",
+          gameIntervalMinutes: 60,
+          maxGames: 12,
+          advanceWindowGames: 5,
+          evaluationIntervalMinutes: 30,
+          autoRetryIntervalMinutes: 15,
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.launch_kind).toBe("rotation");
+    expect(dispatchBody.inputs.rotation_name).toBe("bltz-ladder-loop");
+    expect(dispatchBody.inputs.first_game_start_time).toBe("2026-03-18T10:00:00Z");
+    expect(dispatchBody.inputs.game_interval_minutes).toBe("60");
+    expect(dispatchBody.inputs.max_games).toBe("12");
+    expect(dispatchBody.inputs.advance_window_games).toBe("5");
+    expect(dispatchBody.inputs.evaluation_interval_minutes).toBe("30");
+    expect(dispatchBody.inputs.auto_retry_interval_minutes).toBe("15");
   });
 
   test("reuses stored map config overrides during continue", async () => {
@@ -182,21 +235,20 @@ describe("factory worker map config overrides", () => {
       new Request("https://worker.example/api/factory/runs/slot.eternum/etrn-test-9/actions/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ launchStep: "configure-world" }),
+        body: JSON.stringify({}),
       }),
       buildWorkerEnv(),
     );
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.map_config_overrides_json).toBe(
-      JSON.stringify({
-        bitcoinMineWinProbability: 1638,
-        bitcoinMineFailProbability: 63897,
-      }),
-    );
+    expect(launchOptions.mapConfigOverrides).toEqual({
+      bitcoinMineWinProbability: 1638,
+      bitcoinMineFailProbability: 63897,
+    });
   });
 
   test("reuses stored blitz registration overrides during continue", async () => {
@@ -246,22 +298,21 @@ describe("factory worker map config overrides", () => {
       new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-9/actions/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ launchStep: "configure-world" }),
+        body: JSON.stringify({}),
       }),
       buildWorkerEnv(),
     );
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.blitz_registration_overrides_json).toBe(
-      JSON.stringify({
-        registration_count_max: 12,
-        fee_token: "0x1234",
-        fee_amount: "40000",
-      }),
-    );
+    expect(launchOptions.blitzRegistrationOverrides).toEqual({
+      registration_count_max: 12,
+      fee_token: "0x1234",
+      fee_amount: "40000",
+    });
   });
 
   test("allows sync-paymaster recovery for mainnet runs", async () => {
@@ -296,6 +347,22 @@ describe("factory worker map config overrides", () => {
             environmentId: "mainnet.eternum",
             gameName: "etrn-test-10",
             startTime: "2026-03-18T10:00:00Z",
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            executionMode: "sequential",
+            durationSeconds: 3600,
+            cartridgeApiBase: "https://api.example",
+            toriiNamespaces: "s1_eternum,s2_eternum",
+            vrfProviderAddress: "0x456",
+            verboseConfigLogs: true,
+            version: "181",
+            maxActions: 55,
+            waitForFactoryIndexTimeoutMs: 123000,
+            waitForFactoryIndexPollMs: 7000,
+            skipIndexer: true,
+            skipLootChestRoleGrant: true,
+            skipBanks: true,
+            dryRun: false,
           },
         });
       }
@@ -311,20 +378,37 @@ describe("factory worker map config overrides", () => {
       new Request("https://worker.example/api/factory/runs/mainnet.eternum/etrn-test-10/actions/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ launchStep: "sync-paymaster" }),
+        body: JSON.stringify({}),
       }),
       buildWorkerEnv(),
     );
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
     expect(dispatchBody.inputs.launch_step).toBe("sync-paymaster");
     expect(dispatchBody.inputs.environment).toBe("mainnet.eternum");
+    expect(Object.keys(dispatchBody.inputs).length).toBeLessThanOrEqual(25);
+    expect(launchOptions.rpcUrl).toBe("https://rpc.example");
+    expect(launchOptions.factoryAddress).toBe("0x123");
+    expect(launchOptions.executionMode).toBe("sequential");
+    expect(launchOptions.durationSeconds).toBe(3600);
+    expect(launchOptions.cartridgeApiBase).toBe("https://api.example");
+    expect(launchOptions.toriiNamespaces).toBe("s1_eternum,s2_eternum");
+    expect(launchOptions.vrfProviderAddress).toBe("0x456");
+    expect(launchOptions.verboseConfigLogs).toBe(true);
+    expect(launchOptions.version).toBe("181");
+    expect(launchOptions.maxActions).toBe(55);
+    expect(launchOptions.waitForFactoryIndexTimeoutMs).toBe(123000);
+    expect(launchOptions.waitForFactoryIndexPollMs).toBe(7000);
+    expect(launchOptions.skipIndexer).toBe(true);
+    expect(launchOptions.skipLootChestRoleGrant).toBe(true);
+    expect(launchOptions.skipBanks).toBe(true);
   });
 
-  test("rejects sync-paymaster recovery for slot runs", async () => {
+  test("rejects continue when a slot run has no recoverable resume step", async () => {
     globalThis.fetch = async (url) => {
       if (String(url).includes("/contents/runs/slot/blitz/bltz-test-10.json")) {
         return buildGitHubContentsResponse({
@@ -361,16 +445,16 @@ describe("factory worker map config overrides", () => {
       new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-10/actions/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ launchStep: "sync-paymaster" }),
+        body: JSON.stringify({}),
       }),
       buildWorkerEnv(),
     );
 
     const body = await response.json();
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(409);
     expect(body).toEqual({
-      error: 'Launch step "sync-paymaster" is only supported for mainnet environments',
+      error: "This run cannot continue right now",
     });
   });
 });
@@ -442,6 +526,7 @@ describe("factory worker recovery signals", () => {
           updatedAt: offsetTimestamp(-30_000),
           workflow: {
             workflowName: "game-launch.yml",
+            ref: "codex/factory-v2-rotation-review",
           },
           steps: [
             {
@@ -496,9 +581,2193 @@ describe("factory worker recovery signals", () => {
       continueStepId: "configure-world",
     });
   });
+
+  test("marks failed game runs as continue-able when a resume step exists", async () => {
+    globalThis.fetch = async (url) => {
+      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-13.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          runId: "slot.blitz:bltz-test-13",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          gameName: "bltz-test-13",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/bltz-test-13/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "configure-world",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+            ref: "codex/factory-v2-rotation-review",
+          },
+          steps: [
+            {
+              id: "create-world",
+              title: "Creating world",
+              status: "succeeded",
+              workflowStepName: "Creating world",
+              latestEvent: "Creating world succeeded",
+            },
+            {
+              id: "wait-for-factory-index",
+              title: "Waiting for game",
+              status: "succeeded",
+              workflowStepName: "Waiting for game",
+              latestEvent: "Waiting for game succeeded",
+            },
+            {
+              id: "configure-world",
+              title: "Applying settings",
+              status: "failed",
+              workflowStepName: "Applying settings",
+              latestEvent: "Applying settings failed",
+            },
+          ],
+          artifacts: {},
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-13"),
+      buildWorkerEnv(),
+    );
+
+    const run = await response.json();
+
+    expect(run.recovery).toEqual({
+      state: "failed",
+      canContinue: true,
+      continueStepId: "configure-world",
+    });
+  });
+
+  test("lists recent runs from maintenance indexes without scanning run directories", async () => {
+    const fetchCalls: Array<string> = [];
+
+    globalThis.fetch = async (url) => {
+      const requestUrl = String(url);
+      fetchCalls.push(requestUrl);
+
+      if (requestUrl.includes("/contents/indexes/slot/blitz/games.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "game",
+          updatedAt: offsetTimestamp(-5_000),
+          entries: {
+            "bltz-recent-02": {
+              kind: "game",
+              environment: "slot.blitz",
+              gameName: "bltz-recent-02",
+              path: "runs/slot/blitz/bltz-recent-02.json",
+              status: "running",
+              updatedAt: offsetTimestamp(-5_000),
+              currentStepId: "configure-world",
+              hasRunningStep: true,
+              artifacts: {},
+            },
+          },
+        });
+      }
+
+      if (requestUrl.includes("/contents/indexes/slot/blitz/series.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "series",
+          updatedAt: offsetTimestamp(-15_000),
+          entries: {
+            "bltz-weekend-cup": {
+              kind: "series",
+              environment: "slot.blitz",
+              seriesName: "bltz-weekend-cup",
+              path: "runs/slot/blitz/series/bltz-weekend-cup.json",
+              status: "attention",
+              updatedAt: offsetTimestamp(-15_000),
+              currentStepId: "create-worlds",
+              hasRunningStep: false,
+              autoRetry: { enabled: true, intervalMinutes: 15 },
+              games: [],
+            },
+          },
+        });
+      }
+
+      if (requestUrl.includes("/contents/indexes/slot/blitz/rotations.json")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (requestUrl.includes("/contents/runs/slot/blitz/bltz-recent-02.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          runId: "slot.blitz:bltz-recent-02",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          gameName: "bltz-recent-02",
+          status: "running",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/bltz-recent-02/23450000000-1.json",
+          latestLaunchRequestId: "23450000000-1",
+          currentStepId: "configure-world",
+          createdAt: offsetTimestamp(-45_000),
+          updatedAt: offsetTimestamp(-5_000),
+          workflow: { workflowName: "game-launch.yml", ref: "next" },
+          steps: [
+            {
+              id: "create-world",
+              title: "Creating world",
+              status: "succeeded",
+              workflowStepName: "Creating world",
+              latestEvent: "World created.",
+            },
+            {
+              id: "configure-world",
+              title: "Applying settings",
+              status: "running",
+              workflowStepName: "Applying settings",
+              latestEvent: "Applying settings.",
+            },
+          ],
+          artifacts: {},
+        });
+      }
+
+      if (requestUrl.includes("/contents/runs/slot/blitz/series/bltz-weekend-cup.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "series",
+          runId: "slot.blitz:bltz-weekend-cup",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          seriesName: "bltz-weekend-cup",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/series/bltz-weekend-cup/23440000000-1.json",
+          latestLaunchRequestId: "23440000000-1",
+          currentStepId: "create-worlds",
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-15_000),
+          workflow: { workflowName: "game-launch.yml", ref: "next" },
+          autoRetry: {
+            enabled: true,
+            intervalMinutes: 15,
+          },
+          steps: [
+            {
+              id: "create-series",
+              title: "Create series",
+              status: "succeeded",
+              workflowStepName: "Create series",
+              latestEvent: "Series created.",
+            },
+            {
+              id: "create-worlds",
+              title: "Create worlds",
+              status: "failed",
+              workflowStepName: "Create worlds",
+              latestEvent: "Create worlds failed.",
+            },
+          ],
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            seriesName: "bltz-weekend-cup",
+            rpcUrl: "http://localhost:5050",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [],
+          },
+          artifacts: {},
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${requestUrl}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs?environment=slot.blitz"),
+      buildWorkerEnv(),
+    );
+
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.runs.map((run: { runId: string }) => run.runId)).toEqual([
+      "slot.blitz:bltz-recent-02",
+      "slot.blitz:bltz-weekend-cup",
+    ]);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz?ref="))).toBe(false);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz/series?ref="))).toBe(false);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz/rotations?ref="))).toBe(false);
+  });
+
+  test("rejects duplicate series game names before dispatching a workflow", async () => {
+    globalThis.fetch = async () => {
+      throw new Error("Series validation should fail before any GitHub calls");
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/series-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          seriesName: "bltz-weekend-cup",
+          games: [
+            { gameName: "bltz-weekend-cup-01", startTime: "2026-03-18T10:00:00Z", seriesGameNumber: 1 },
+            { gameName: "bltz-weekend-cup-01", startTime: "2026-03-18T11:00:00Z", seriesGameNumber: 2 },
+          ],
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Series game "bltz-weekend-cup-01" was requested more than once',
+    });
+  });
+
+  test("dispatches targeted rotation indexer recovery for selected child games", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-knicker.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.blitz:rotation:bltz-knicker",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          rotationName: "bltz-knicker",
+          seriesName: "bltz-knicker",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "create-indexers",
+          inputPath: "inputs/slot/blitz/rotations/bltz-knicker/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-indexers",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [
+            {
+              id: "create-series",
+              title: "Create series",
+              status: "succeeded",
+              workflowStepName: "Create series",
+              latestEvent: "Create series succeeded",
+            },
+            {
+              id: "create-indexers",
+              title: "Create indexers",
+              status: "failed",
+              workflowStepName: "Create indexers",
+              latestEvent: "Create indexers failed",
+            },
+          ],
+          autoRetry: { enabled: true, intervalMinutes: 15 },
+          evaluation: { intervalMinutes: 15, nextEvaluationAt: offsetTimestamp(15 * 60_000) },
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            rotationName: "bltz-knicker",
+            seriesName: "bltz-knicker",
+            firstGameStartTime: 1774195200,
+            firstGameStartTimeIso: "2026-03-22T16:00:00.000Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 15,
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [{ gameName: "bltz-knicker-01" }, { gameName: "bltz-knicker-02" }, { gameName: "bltz-knicker-03" }],
+          },
+          artifacts: {
+            summaryPath: ".context/game-launch/rotation-slot-blitz-bltz-knicker.json",
+            seriesCreated: true,
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/inputs/slot/blitz/rotations/bltz-knicker/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.blitz",
+          rotationName: "bltz-knicker",
+          request: {
+            environmentId: "slot.blitz",
+            rotationName: "bltz-knicker",
+            firstGameStartTime: "2026-03-22T16:00:00Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 15,
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs/slot.blitz/bltz-knicker/actions/continue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          launchStep: "create-indexers",
+          gameNames: ["bltz-knicker-03"],
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.launch_step).toBe("create-indexers");
+    expect(dispatchBody.inputs.target_game_names_json).toBe(JSON.stringify(["bltz-knicker-03"]));
+  });
+
+  test("requires the admin secret for manual indexer tier updates", async () => {
+    let didCallGitHub = false;
+    globalThis.fetch = async () => {
+      didCallGitHub = true;
+      throw new Error("Unauthorized requests should not reach GitHub");
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/tier", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameName: "bltz-test-13",
+          tier: "legendary",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(didCallGitHub).toBe(false);
+  });
+
+  test("reads the stored live indexer snapshot for requested games", async () => {
+    globalThis.fetch = async (url) => {
+      if (String(url).includes("/contents/indexes/indexers/live.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          updatedAt: "2026-03-24T10:00:00.000Z",
+          entries: {
+            "bltz-franky-01": {
+              gameName: "bltz-franky-01",
+              updatedAt: "2026-03-24T10:00:00.000Z",
+              liveState: {
+                state: "existing",
+                stateSource: "describe",
+                currentTier: "pro",
+              },
+            },
+            "bltz-franky-02": {
+              gameName: "bltz-franky-02",
+              updatedAt: "2026-03-24T10:00:00.000Z",
+              liveState: {
+                state: "existing",
+                stateSource: "describe",
+                currentTier: "legendary",
+              },
+            },
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/live", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          gameNames: ["bltz-franky-02"],
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      updatedAt: "2026-03-24T10:00:00.000Z",
+      entries: [
+        {
+          gameName: "bltz-franky-02",
+          updatedAt: "2026-03-24T10:00:00.000Z",
+          liveState: {
+            state: "existing",
+            stateSource: "describe",
+            currentTier: "legendary",
+          },
+        },
+      ],
+    });
+  });
+
+  test("dispatches live Slot inspection for listed games", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/live/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameNames: ["bltz-franky-01", "bltz-franky-02"],
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.environment).toBe("slot.blitz");
+    expect(dispatchBody.inputs.operation_count).toBe("2");
+    expect(JSON.parse(dispatchBody.inputs.operations_json)).toEqual([
+      {
+        action: "inspect",
+        environmentId: "slot.blitz",
+        gameName: "bltz-franky-01",
+      },
+      {
+        action: "inspect",
+        environmentId: "slot.blitz",
+        gameName: "bltz-franky-02",
+      },
+    ]);
+  });
+
+  test("dispatches create indexers for listed games", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameNames: ["bltz-franky-01", "bltz-franky-02"],
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(JSON.parse(dispatchBody.inputs.operations_json)).toEqual([
+      {
+        action: "create",
+        environmentId: "slot.blitz",
+        gameName: "bltz-franky-01",
+      },
+      {
+        action: "create",
+        environmentId: "slot.blitz",
+        gameName: "bltz-franky-02",
+      },
+    ]);
+  });
+
+  test("cancels auto retry for a rotation run when the admin secret is provided", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.blitz:rotation:bltz-rotationx",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          rotationName: "bltz-rotationx",
+          seriesName: "bltz-rotationx",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/rotations/bltz-rotationx/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-worlds",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          autoRetry: {
+            enabled: true,
+            intervalMinutes: 15,
+            nextRetryAt: offsetTimestamp(15 * 60_000),
+          },
+          evaluation: {
+            intervalMinutes: 15,
+            nextEvaluationAt: offsetTimestamp(15 * 60_000),
+          },
+          steps: [],
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            rotationName: "bltz-rotationx",
+            seriesName: "bltz-rotationx",
+            firstGameStartTime: 1774195200,
+            firstGameStartTimeIso: "2026-03-22T16:00:00.000Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 15,
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [],
+          },
+          artifacts: {
+            summaryPath: ".context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
+            seriesCreated: true,
+          },
+        });
+      }
+
+      if (
+        String(url).includes("/contents/indexes/slot/blitz/rotations.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (String(url).includes("/contents/indexes/slot/blitz/rotations.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request(
+        "https://worker.example/api/factory/rotation-runs/slot.blitz/bltz-rotationx/actions/cancel-auto-retry",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-factory-admin-secret": "factory-secret",
+          },
+          body: JSON.stringify({
+            cancelReason: "operator stopped the loop",
+          }),
+        },
+      ),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const updateCall = fetchCalls.find(
+      (call) =>
+        call.url.includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") && call.init?.method === "PUT",
+    );
+    const updateBody = JSON.parse(String(updateCall?.init?.body));
+    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+
+    expect(response.status).toBe(200);
+    expect(nextRunRecord.autoRetry.enabled).toBe(false);
+    expect(nextRunRecord.autoRetry.nextRetryAt).toBeUndefined();
+    expect(nextRunRecord.autoRetry.cancelledAt).toEqual(expect.any(String));
+    expect(nextRunRecord.autoRetry.cancelReason).toBe("operator stopped the loop");
+  });
+
+  test("records pending indexer tier updates without overwriting the current tier", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && (!init?.method || init.method === "GET")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "game",
+          updatedAt: offsetTimestamp(-30_000),
+          entries: {
+            "bltz-test-14": {
+              kind: "game",
+              environment: "slot.blitz",
+              gameName: "bltz-test-14",
+              path: "runs/slot/blitz/bltz-test-14.json",
+              inputPath: "inputs/slot/blitz/bltz-test-14/101-1.json",
+              status: "complete",
+              updatedAt: offsetTimestamp(-30_000),
+              workflowRef: "codex/factory-v2-rotation-review",
+              currentStepId: null,
+              hasRunningStep: false,
+              recoverableFailedStepId: null,
+              recoverablePendingStepId: null,
+              startTime: offsetTimestamp(-60_000),
+              durationSeconds: 3600,
+              artifacts: {
+                indexerCreated: true,
+                indexerTier: "basic",
+              },
+            },
+          },
+        });
+      }
+
+      if (
+        String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "game",
+          runId: "slot.blitz:bltz-test-14",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          gameName: "bltz-test-14",
+          status: "complete",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/bltz-test-14/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [],
+          artifacts: {
+            indexerCreated: true,
+            indexerTier: "basic",
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/tier", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameName: "bltz-test-14",
+          tier: "legendary",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const updateCall = fetchCalls.find(
+      (call) => call.url.includes("/contents/runs/slot/blitz/bltz-test-14.json") && call.init?.method === "PUT",
+    );
+    const updateBody = JSON.parse(String(updateCall?.init?.body));
+    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const operations = JSON.parse(String(dispatchBody.inputs.operations_json));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.ref).toBe("codex/factory-v2-rotation-review");
+    expect(dispatchBody.inputs.operation_count).toBe("1");
+    expect(operations).toEqual([
+      {
+        action: "set-tier",
+        kind: "game",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/bltz-test-14.json",
+        runName: "bltz-test-14",
+        gameName: "bltz-test-14",
+        tier: "legendary",
+      },
+    ]);
+    expect(nextRunRecord.artifacts.indexerTier).toBe("basic");
+    expect(nextRunRecord.artifacts.pendingIndexerTierTarget).toBe("legendary");
+    expect(nextRunRecord.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
+  });
+
+  test("scheduled tier reconciliation batches operations per workflow ref and records batch failures once", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const startedAt = new Date(Date.now() - 60_000).toISOString();
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/indexes/slot/blitz/series.json?ref=factory-runs")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "series",
+          updatedAt: startedAt,
+          entries: {
+            "bltz-knicker": {
+              kind: "series",
+              environment: "slot.blitz",
+              seriesName: "bltz-knicker",
+              path: "runs/slot/blitz/series/bltz-knicker.json",
+              inputPath: "inputs/slot/blitz/series/bltz-knicker/101-1.json",
+              status: "running",
+              updatedAt: startedAt,
+              workflowRef: "codex/factory-v2-rotation-review",
+              currentStepId: null,
+              hasRunningStep: false,
+              recoverableFailedStepId: null,
+              recoverablePendingStepId: null,
+              autoRetry: {
+                enabled: true,
+                intervalMinutes: 15,
+              },
+              games: [
+                {
+                  gameName: "bltz-knicker-01",
+                  startTime: startedAt,
+                  durationSeconds: 3600,
+                  artifacts: {
+                    indexerCreated: true,
+                    indexerTier: "basic",
+                  },
+                },
+                {
+                  gameName: "bltz-knicker-02",
+                  startTime: startedAt,
+                  durationSeconds: 3600,
+                  artifacts: {
+                    indexerCreated: true,
+                    indexerTier: "basic",
+                  },
+                },
+              ],
+            },
+          },
+        });
+      }
+
+      if (value.includes("/contents/indexes/") && value.includes("?ref=factory-runs")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (
+        value.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "series",
+          runId: "slot.blitz:series:bltz-knicker",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          seriesName: "bltz-knicker",
+          status: "running",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/series/bltz-knicker/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+            ref: "codex/factory-v2-rotation-review",
+          },
+          steps: [],
+          summary: {
+            games: [
+              {
+                gameName: "bltz-knicker-01",
+                startTime: startedAt,
+                durationSeconds: 3600,
+                artifacts: {
+                  indexerCreated: true,
+                  indexerTier: "basic",
+                },
+              },
+              {
+                gameName: "bltz-knicker-02",
+                startTime: startedAt,
+                durationSeconds: 3600,
+                artifacts: {
+                  indexerCreated: true,
+                  indexerTier: "basic",
+                },
+              },
+            ],
+          },
+        });
+      }
+
+      if (value.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(JSON.stringify({ message: "dispatch exploded" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (value.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (value.includes("/contents/indexes/slot/blitz/series.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const scheduledTasks: Promise<unknown>[] = [];
+    await worker.scheduled({}, buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next" }), {
+      waitUntil(promise: Promise<unknown>) {
+        scheduledTasks.push(promise);
+      },
+    });
+    await Promise.all(scheduledTasks);
+
+    const dispatchCalls = fetchCalls.filter((call) =>
+      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
+    );
+    const updateCall = fetchCalls.find(
+      (call) => call.url.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && call.init?.method === "PUT",
+    );
+    const updateBody = JSON.parse(String(updateCall?.init?.body));
+    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+    const firstGame = nextRunRecord.summary.games.find(
+      (game: { gameName: string }) => game.gameName === "bltz-knicker-01",
+    );
+    const secondGame = nextRunRecord.summary.games.find(
+      (game: { gameName: string }) => game.gameName === "bltz-knicker-02",
+    );
+    const firstDispatchBody = JSON.parse(String(dispatchCalls[0]?.init?.body));
+    const operations = JSON.parse(String(firstDispatchBody.inputs.operations_json));
+
+    expect(dispatchCalls).toHaveLength(1);
+    expect(firstDispatchBody.ref).toBe("codex/factory-v2-rotation-review");
+    expect(firstDispatchBody.inputs.operation_count).toBe("2");
+    expect(operations).toEqual([
+      {
+        action: "set-tier",
+        kind: "series",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/series/bltz-knicker.json",
+        runName: "bltz-knicker",
+        gameName: "bltz-knicker-01",
+        tier: "legendary",
+      },
+      {
+        action: "set-tier",
+        kind: "series",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/series/bltz-knicker.json",
+        runName: "bltz-knicker",
+        gameName: "bltz-knicker-02",
+        tier: "legendary",
+      },
+    ]);
+    expect(fetchCalls.some((call) => call.url.includes("/contents/runs/slot/blitz/series?ref=factory-runs"))).toBe(
+      false,
+    );
+    expect(firstGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
+    expect(firstGame.artifacts.lastIndexerTierDispatchFailedAt).toEqual(expect.any(String));
+    expect(firstGame.artifacts.lastIndexerTierDispatchError).toContain(
+      "Failed to dispatch factory-indexer-maintenance workflow",
+    );
+    expect(firstGame.artifacts.pendingIndexerTierTarget).toBe("legendary");
+    expect(firstGame.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
+    expect(secondGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
+    expect(secondGame.artifacts.lastIndexerTierDispatchFailedAt).toEqual(expect.any(String));
+    expect(secondGame.artifacts.lastIndexerTierDispatchError).toContain(
+      "Failed to dispatch factory-indexer-maintenance workflow",
+    );
+    expect(secondGame.artifacts.pendingIndexerTierTarget).toBe("legendary");
+    expect(secondGame.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
+  });
+
+  test("scheduled tier reconciliation skips series runs after auto-retry is cancelled", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const startedAt = new Date(Date.now() - 60_000).toISOString();
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/indexes/slot/blitz/series.json?ref=factory-runs")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "series",
+          updatedAt: startedAt,
+          entries: {
+            "bltz-paused": {
+              kind: "series",
+              environment: "slot.blitz",
+              seriesName: "bltz-paused",
+              path: "runs/slot/blitz/series/bltz-paused.json",
+              inputPath: "inputs/slot/blitz/series/bltz-paused/101-1.json",
+              status: "attention",
+              updatedAt: startedAt,
+              workflowRef: "codex/factory-v2-rotation-review",
+              currentStepId: null,
+              hasRunningStep: false,
+              recoverableFailedStepId: null,
+              recoverablePendingStepId: null,
+              autoRetry: {
+                enabled: false,
+                intervalMinutes: 15,
+                cancelledAt: startedAt,
+              },
+              games: [
+                {
+                  gameName: "bltz-paused-01",
+                  startTime: startedAt,
+                  durationSeconds: 3600,
+                  artifacts: {
+                    indexerCreated: true,
+                    indexerTier: "basic",
+                  },
+                },
+              ],
+            },
+          },
+        });
+      }
+
+      if (value.includes("/contents/indexes/") && value.includes("?ref=factory-runs")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const scheduledTasks: Promise<unknown>[] = [];
+    await worker.scheduled({}, buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next" }), {
+      waitUntil(promise: Promise<unknown>) {
+        scheduledTasks.push(promise);
+      },
+    });
+    await Promise.all(scheduledTasks);
+
+    expect(
+      fetchCalls.some((call) => call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")),
+    ).toBe(false);
+    expect(fetchCalls.some((call) => call.url.includes("/contents/runs/slot/blitz/series/bltz-paused.json"))).toBe(
+      false,
+    );
+  });
+
+  test("dispatches delete-indexer maintenance for the requested run games", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/runs/slot/blitz/rotations/bltz-franky.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.blitz:rotation:bltz-franky",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          rotationName: "bltz-franky",
+          seriesName: "bltz-franky",
+          status: "complete",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/rotations/bltz-franky/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+            ref: "codex/factory-v2-rotation-review",
+          },
+          steps: [],
+          summary: {
+            games: [{ gameName: "bltz-franky-01" }, { gameName: "bltz-franky-02" }],
+          },
+        });
+      }
+
+      if (value.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          runKind: "rotation",
+          runName: "bltz-franky",
+          gameNames: ["bltz-franky-01", "bltz-franky-02"],
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const operations = JSON.parse(String(dispatchBody.inputs.operations_json));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.ref).toBe("codex/factory-v2-rotation-review");
+    expect(operations).toEqual([
+      {
+        action: "delete",
+        kind: "rotation",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/rotations/bltz-franky.json",
+        runName: "bltz-franky",
+        gameName: "bltz-franky-01",
+      },
+      {
+        action: "delete",
+        kind: "rotation",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/rotations/bltz-franky.json",
+        runName: "bltz-franky",
+        gameName: "bltz-franky-02",
+      },
+    ]);
+  });
+
+  test("rejects delete-indexer requests for games outside the selected run", async () => {
+    let didDispatchWorkflow = false;
+
+    globalThis.fetch = async (url) => {
+      const value = String(url);
+
+      if (value.includes("/contents/runs/slot/blitz/series/bltz-franky.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "series",
+          runId: "slot.blitz:series:bltz-franky",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          seriesName: "bltz-franky",
+          status: "complete",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/series/bltz-franky/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+            ref: "codex/factory-v2-rotation-review",
+          },
+          steps: [],
+          summary: {
+            games: [{ gameName: "bltz-franky-01" }],
+          },
+        });
+      }
+
+      if (value.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        didDispatchWorkflow = true;
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          runKind: "series",
+          runName: "bltz-franky",
+          gameNames: ["bltz-franky-02"],
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const payload = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.error).toContain('does not belong to series "bltz-franky"');
+    expect(didDispatchWorkflow).toBe(false);
+  });
+
+  test("deletes a game run and removes its stored scheduler artifacts", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/runs/slot/blitz/bltz-scrubbed-01.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          runId: "slot.blitz:bltz-scrubbed-01",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          gameName: "bltz-scrubbed-01",
+          status: "attention",
+          executionMode: "guided_recovery",
+          inputPath: "inputs/slot/blitz/bltz-scrubbed-01/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: { workflowName: "game-launch.yml", ref: "codex/factory-v2-rotation-review" },
+          steps: [],
+          artifacts: {},
+        });
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/bltz-scrubbed-01?ref=factory-runs")) {
+        return buildGitHubDirectoryResponse([
+          { type: "file", path: "inputs/slot/blitz/bltz-scrubbed-01/101-1.json", sha: "sha-101-1" },
+          { type: "file", path: "inputs/slot/blitz/bltz-scrubbed-01/101-2.json", sha: "sha-101-2" },
+        ]);
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/bltz-scrubbed-01/101-1.json")) {
+        return buildGitHubContentsResponse({ request: { gameName: "bltz-scrubbed-01" } });
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/bltz-scrubbed-01/101-2.json")) {
+        return buildGitHubContentsResponse({ request: { gameName: "bltz-scrubbed-01" } });
+      }
+
+      if (value.includes("/contents/indexes/slot/blitz/games.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "game",
+          updatedAt: offsetTimestamp(-5_000),
+          entries: {
+            "bltz-scrubbed-01": {
+              kind: "game",
+              environment: "slot.blitz",
+              gameName: "bltz-scrubbed-01",
+            },
+          },
+        });
+      }
+
+      if (value.includes("/contents/indexes/indexers/live.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          updatedAt: offsetTimestamp(-5_000),
+          entries: {
+            "bltz-scrubbed-01": {
+              gameName: "bltz-scrubbed-01",
+              updatedAt: offsetTimestamp(-5_000),
+              liveState: { state: "existing", stateSource: "describe", currentTier: "basic" },
+            },
+            "bltz-keep-01": {
+              gameName: "bltz-keep-01",
+              updatedAt: offsetTimestamp(-5_000),
+              liveState: { state: "existing", stateSource: "describe", currentTier: "basic" },
+            },
+          },
+        });
+      }
+
+      if (init?.method === "DELETE" && value.includes("/contents/")) {
+        return new Response(JSON.stringify({ content: {} }), { status: 200 });
+      }
+
+      if (init?.method === "PUT" && value.includes("/contents/indexes/")) {
+        return new Response(JSON.stringify({ content: {} }), { status: 200 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-scrubbed-01/actions/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({}),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const gamesIndexUpdate = fetchCalls.find(
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/slot/blitz/games.json"),
+    );
+    const liveSnapshotUpdate = fetchCalls.find(
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/indexers/live.json"),
+    );
+    const deletedPaths = fetchCalls.filter((call) => call.init?.method === "DELETE").map((call) => call.url);
+    const gamesIndexContent = Buffer.from(JSON.parse(String(gamesIndexUpdate?.init?.body)).content, "base64").toString(
+      "utf8",
+    );
+    const liveSnapshotContent = Buffer.from(
+      JSON.parse(String(liveSnapshotUpdate?.init?.body)).content,
+      "base64",
+    ).toString("utf8");
+
+    expect(response.status).toBe(200);
+    expect(deletedPaths.some((path) => path.includes("/contents/runs/slot/blitz/bltz-scrubbed-01.json"))).toBe(true);
+    expect(deletedPaths.filter((path) => path.includes("/contents/inputs/slot/blitz/bltz-scrubbed-01/")).length).toBe(
+      2,
+    );
+    expect(gamesIndexContent).not.toContain("bltz-scrubbed-01");
+    expect(liveSnapshotContent).not.toContain("bltz-scrubbed-01");
+    expect(liveSnapshotContent).toContain("bltz-keep-01");
+  });
+
+  test("deletes a series run and removes all associated input and snapshot entries", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/runs/slot/blitz/series/bltz-scrubbed-series.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "series",
+          runId: "slot.blitz:series:bltz-scrubbed-series",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          seriesName: "bltz-scrubbed-series",
+          status: "attention",
+          executionMode: "guided_recovery",
+          inputPath: "inputs/slot/blitz/series/bltz-scrubbed-series/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: { workflowName: "game-launch.yml", ref: "codex/factory-v2-rotation-review" },
+          steps: [],
+          summary: {
+            games: [{ gameName: "bltz-scrubbed-series-01" }, { gameName: "bltz-scrubbed-series-02" }],
+          },
+          artifacts: {},
+        });
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/series/bltz-scrubbed-series?ref=factory-runs")) {
+        return buildGitHubDirectoryResponse([
+          { type: "file", path: "inputs/slot/blitz/series/bltz-scrubbed-series/101-1.json", sha: "sha-201-1" },
+          { type: "file", path: "inputs/slot/blitz/series/bltz-scrubbed-series/102-1.json", sha: "sha-202-1" },
+        ]);
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/series/bltz-scrubbed-series/101-1.json")) {
+        return buildGitHubContentsResponse({ request: { seriesName: "bltz-scrubbed-series" } });
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/series/bltz-scrubbed-series/102-1.json")) {
+        return buildGitHubContentsResponse({ request: { seriesName: "bltz-scrubbed-series" } });
+      }
+
+      if (value.includes("/contents/indexes/slot/blitz/series.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "series",
+          updatedAt: offsetTimestamp(-5_000),
+          entries: {
+            "bltz-scrubbed-series": {
+              kind: "series",
+              environment: "slot.blitz",
+              seriesName: "bltz-scrubbed-series",
+            },
+          },
+        });
+      }
+
+      if (value.includes("/contents/indexes/indexers/live.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          updatedAt: offsetTimestamp(-5_000),
+          entries: {
+            "bltz-scrubbed-series-01": {
+              gameName: "bltz-scrubbed-series-01",
+              updatedAt: offsetTimestamp(-5_000),
+              liveState: { state: "existing", stateSource: "describe", currentTier: "basic" },
+            },
+            "bltz-scrubbed-series-02": {
+              gameName: "bltz-scrubbed-series-02",
+              updatedAt: offsetTimestamp(-5_000),
+              liveState: { state: "existing", stateSource: "describe", currentTier: "basic" },
+            },
+            "bltz-keep-02": {
+              gameName: "bltz-keep-02",
+              updatedAt: offsetTimestamp(-5_000),
+              liveState: { state: "existing", stateSource: "describe", currentTier: "basic" },
+            },
+          },
+        });
+      }
+
+      if (init?.method === "DELETE" && value.includes("/contents/")) {
+        return new Response(JSON.stringify({ content: {} }), { status: 200 });
+      }
+
+      if (init?.method === "PUT" && value.includes("/contents/indexes/")) {
+        return new Response(JSON.stringify({ content: {} }), { status: 200 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/series-runs/slot.blitz/bltz-scrubbed-series/actions/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({}),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const seriesIndexUpdate = fetchCalls.find(
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/slot/blitz/series.json"),
+    );
+    const liveSnapshotUpdate = fetchCalls.find(
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/indexers/live.json"),
+    );
+    const seriesIndexContent = Buffer.from(
+      JSON.parse(String(seriesIndexUpdate?.init?.body)).content,
+      "base64",
+    ).toString("utf8");
+    const liveSnapshotContent = Buffer.from(
+      JSON.parse(String(liveSnapshotUpdate?.init?.body)).content,
+      "base64",
+    ).toString("utf8");
+
+    expect(response.status).toBe(200);
+    expect(
+      fetchCalls.some(
+        (call) =>
+          call.init?.method === "DELETE" &&
+          call.url.includes("/contents/runs/slot/blitz/series/bltz-scrubbed-series.json"),
+      ),
+    ).toBe(true);
+    expect(seriesIndexContent).not.toContain("bltz-scrubbed-series");
+    expect(liveSnapshotContent).not.toContain("bltz-scrubbed-series-01");
+    expect(liveSnapshotContent).not.toContain("bltz-scrubbed-series-02");
+    expect(liveSnapshotContent).toContain("bltz-keep-02");
+  });
+
+  test("deletes a rotation run and removes all associated input and snapshot entries", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/runs/slot/blitz/rotations/bltz-scrubbed-rotation.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.blitz:rotation:bltz-scrubbed-rotation",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          rotationName: "bltz-scrubbed-rotation",
+          seriesName: "bltz-scrubbed-rotation",
+          status: "attention",
+          executionMode: "guided_recovery",
+          inputPath: "inputs/slot/blitz/rotations/bltz-scrubbed-rotation/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: { workflowName: "game-launch.yml", ref: "codex/factory-v2-rotation-review" },
+          steps: [],
+          evaluation: { intervalMinutes: 15 },
+          summary: {
+            games: [{ gameName: "bltz-scrubbed-rotation-01" }, { gameName: "bltz-scrubbed-rotation-02" }],
+          },
+          artifacts: {},
+        });
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/rotations/bltz-scrubbed-rotation?ref=factory-runs")) {
+        return buildGitHubDirectoryResponse([
+          { type: "file", path: "inputs/slot/blitz/rotations/bltz-scrubbed-rotation/101-1.json", sha: "sha-301-1" },
+          { type: "file", path: "inputs/slot/blitz/rotations/bltz-scrubbed-rotation/102-1.json", sha: "sha-302-1" },
+        ]);
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/rotations/bltz-scrubbed-rotation/101-1.json")) {
+        return buildGitHubContentsResponse({ request: { rotationName: "bltz-scrubbed-rotation" } });
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/rotations/bltz-scrubbed-rotation/102-1.json")) {
+        return buildGitHubContentsResponse({ request: { rotationName: "bltz-scrubbed-rotation" } });
+      }
+
+      if (value.includes("/contents/indexes/slot/blitz/rotations.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "rotation",
+          updatedAt: offsetTimestamp(-5_000),
+          entries: {
+            "bltz-scrubbed-rotation": {
+              kind: "rotation",
+              environment: "slot.blitz",
+              rotationName: "bltz-scrubbed-rotation",
+            },
+          },
+        });
+      }
+
+      if (value.includes("/contents/indexes/indexers/live.json")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          updatedAt: offsetTimestamp(-5_000),
+          entries: {
+            "bltz-scrubbed-rotation-01": {
+              gameName: "bltz-scrubbed-rotation-01",
+              updatedAt: offsetTimestamp(-5_000),
+              liveState: { state: "existing", stateSource: "describe", currentTier: "basic" },
+            },
+            "bltz-scrubbed-rotation-02": {
+              gameName: "bltz-scrubbed-rotation-02",
+              updatedAt: offsetTimestamp(-5_000),
+              liveState: { state: "existing", stateSource: "describe", currentTier: "basic" },
+            },
+            "bltz-keep-03": {
+              gameName: "bltz-keep-03",
+              updatedAt: offsetTimestamp(-5_000),
+              liveState: { state: "existing", stateSource: "describe", currentTier: "basic" },
+            },
+          },
+        });
+      }
+
+      if (init?.method === "DELETE" && value.includes("/contents/")) {
+        return new Response(JSON.stringify({ content: {} }), { status: 200 });
+      }
+
+      if (init?.method === "PUT" && value.includes("/contents/indexes/")) {
+        return new Response(JSON.stringify({ content: {} }), { status: 200 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs/slot.blitz/bltz-scrubbed-rotation/actions/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({}),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const rotationIndexUpdate = fetchCalls.find(
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/slot/blitz/rotations.json"),
+    );
+    const liveSnapshotUpdate = fetchCalls.find(
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/indexers/live.json"),
+    );
+    const rotationIndexContent = Buffer.from(
+      JSON.parse(String(rotationIndexUpdate?.init?.body)).content,
+      "base64",
+    ).toString("utf8");
+    const liveSnapshotContent = Buffer.from(
+      JSON.parse(String(liveSnapshotUpdate?.init?.body)).content,
+      "base64",
+    ).toString("utf8");
+
+    expect(response.status).toBe(200);
+    expect(
+      fetchCalls.some(
+        (call) =>
+          call.init?.method === "DELETE" &&
+          call.url.includes("/contents/runs/slot/blitz/rotations/bltz-scrubbed-rotation.json"),
+      ),
+    ).toBe(true);
+    expect(rotationIndexContent).not.toContain("bltz-scrubbed-rotation");
+    expect(liveSnapshotContent).not.toContain("bltz-scrubbed-rotation-01");
+    expect(liveSnapshotContent).not.toContain("bltz-scrubbed-rotation-02");
+    expect(liveSnapshotContent).toContain("bltz-keep-03");
+  });
 });
 
-function buildWorkerEnv() {
+describe("factory worker prize funding", () => {
+  test("requires the admin secret for prize funding routes", async () => {
+    let didCallGitHub = false;
+    globalThis.fetch = async () => {
+      didCallGitHub = true;
+      throw new Error("Unauthorized requests should not reach GitHub");
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-prize-run/actions/fund-prize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(didCallGitHub).toBe(false);
+  });
+
+  test("dispatches series prize funding with only ready unfunded games by default", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/blitz/series/bltz-weekend-cup.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "series",
+          runId: "slot.blitz:series:bltz-weekend-cup",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          seriesName: "bltz-weekend-cup",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/series/bltz-weekend-cup/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-indexers",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          autoRetry: {
+            enabled: true,
+            intervalMinutes: 15,
+          },
+          steps: [],
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            seriesName: "bltz-weekend-cup",
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [
+              {
+                gameName: "bltz-weekend-cup-01",
+                startTime: 1774195200,
+                startTimeIso: "2026-03-22T16:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 1,
+                currentStepId: null,
+                latestEvent: "Ready",
+                status: "succeeded",
+                steps: [{ id: "configure-worlds", status: "succeeded", latestEvent: "Configured" }],
+                artifacts: {
+                  worldAddress: "0x111",
+                },
+              },
+              {
+                gameName: "bltz-weekend-cup-02",
+                startTime: 1774198800,
+                startTimeIso: "2026-03-22T17:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 2,
+                currentStepId: null,
+                latestEvent: "Ready",
+                status: "succeeded",
+                steps: [{ id: "configure-worlds", status: "succeeded", latestEvent: "Configured" }],
+                artifacts: {
+                  worldAddress: "0x222",
+                  prizeFunding: {
+                    transfers: [
+                      {
+                        id: "0xabc",
+                        tokenAddress: "0x123",
+                        amountRaw: "100",
+                        amountDisplay: "1",
+                        decimals: 18,
+                        transactionHash: "0xabc",
+                        fundedAt: "2026-03-18T11:00:00.000Z",
+                      },
+                    ],
+                  },
+                },
+              },
+              {
+                gameName: "bltz-weekend-cup-03",
+                startTime: 1774202400,
+                startTimeIso: "2026-03-22T18:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 3,
+                currentStepId: "configure-worlds",
+                latestEvent: "Configuring",
+                status: "running",
+                steps: [{ id: "configure-worlds", status: "running", latestEvent: "Configuring" }],
+                artifacts: {
+                  worldAddress: "0x333",
+                },
+              },
+            ],
+          },
+          artifacts: {
+            summaryPath: ".context/game-launch/series-slot-blitz-bltz-weekend-cup.json",
+            seriesCreated: true,
+            seriesCreatedAt: "2026-03-18T10:00:00.000Z",
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/inputs/slot/blitz/series/bltz-weekend-cup/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.blitz",
+          seriesName: "bltz-weekend-cup",
+          request: {
+            environmentId: "slot.blitz",
+            seriesName: "bltz-weekend-cup",
+            games: [
+              { gameName: "bltz-weekend-cup-01", startTime: "2026-03-22T16:00:00.000Z" },
+              { gameName: "bltz-weekend-cup-02", startTime: "2026-03-22T17:00:00.000Z" },
+              { gameName: "bltz-weekend-cup-03", startTime: "2026-03-22T18:00:00.000Z" },
+            ],
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/series-runs/slot.blitz/bltz-weekend-cup/actions/fund-prize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-prize-funding.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.run_kind).toBe("series");
+    expect(dispatchBody.inputs.run_name).toBe("bltz-weekend-cup");
+    expect(dispatchBody.inputs.prize_amount).toBe("250");
+    expect(dispatchBody.inputs.selected_games_json).toBe(JSON.stringify(["bltz-weekend-cup-01"]));
+  });
+
+  test("dispatches game prize funding for an incomplete eternum run once world configuration succeeds", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/eternum/etrn-prize-run.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "game",
+          runId: "slot.eternum:etrn-prize-run",
+          environment: "slot.eternum",
+          chain: "slot",
+          gameType: "eternum",
+          gameName: "etrn-prize-run",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/eternum/etrn-prize-run/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-indexer",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [
+            {
+              id: "create-world",
+              title: "Create world",
+              status: "succeeded",
+              workflowStepName: "Create world",
+              latestEvent: "Created",
+            },
+            {
+              id: "configure-world",
+              title: "Configure world",
+              status: "succeeded",
+              workflowStepName: "Configure world",
+              latestEvent: "Configured",
+            },
+            {
+              id: "create-indexer",
+              title: "Create indexer",
+              status: "failed",
+              workflowStepName: "Create indexer",
+              latestEvent: "Indexer failed",
+            },
+          ],
+          artifacts: {
+            worldAddress: "0x111",
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/inputs/slot/eternum/etrn-prize-run/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.eternum",
+          gameName: "etrn-prize-run",
+          request: {
+            environmentId: "slot.eternum",
+            gameName: "etrn-prize-run",
+            startTime: "2026-03-22T16:00:00.000Z",
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.eternum/etrn-prize-run/actions/fund-prize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-prize-funding.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.environment).toBe("slot.eternum");
+    expect(dispatchBody.inputs.run_kind).toBe("game");
+    expect(dispatchBody.inputs.run_name).toBe("etrn-prize-run");
+    expect(dispatchBody.inputs.selected_games_json).toBe("");
+  });
+
+  test("rejects game prize funding until world configuration succeeds", async () => {
+    let didDispatchFundingWorkflow = false;
+    globalThis.fetch = async (url, init) => {
+      if (
+        String(url).includes("/contents/runs/slot/eternum/etrn-prize-pending.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "game",
+          runId: "slot.eternum:etrn-prize-pending",
+          environment: "slot.eternum",
+          chain: "slot",
+          gameType: "eternum",
+          gameName: "etrn-prize-pending",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/eternum/etrn-prize-pending/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "configure-world",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          steps: [
+            {
+              id: "create-world",
+              title: "Create world",
+              status: "succeeded",
+              workflowStepName: "Create world",
+              latestEvent: "Created",
+            },
+            {
+              id: "configure-world",
+              title: "Configure world",
+              status: "running",
+              workflowStepName: "Configure world",
+              latestEvent: "Configuring",
+            },
+          ],
+          artifacts: {
+            worldAddress: "0x111",
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
+        didDispatchFundingWorkflow = true;
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs/slot.eternum/etrn-prize-pending/actions/fund-prize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Game "etrn-prize-pending" must finish world configuration before prize funding',
+    });
+    expect(didDispatchFundingWorkflow).toBe(false);
+  });
+
+  test("dispatches rotation prize funding with only ready unfunded games by default", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (
+        String(url).includes("/contents/runs/slot/eternum/rotations/etrn-season-loop.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.eternum:rotation:etrn-season-loop",
+          environment: "slot.eternum",
+          chain: "slot",
+          gameType: "eternum",
+          rotationName: "etrn-season-loop",
+          seriesName: "etrn-season-loop",
+          status: "attention",
+          executionMode: "guided_recovery",
+          requestedLaunchStep: "create-indexers",
+          inputPath: "inputs/slot/eternum/rotations/etrn-season-loop/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: "create-indexers",
+          createdAt: offsetTimestamp(-60_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+          },
+          autoRetry: {
+            enabled: true,
+            intervalMinutes: 15,
+          },
+          evaluation: {
+            intervalMinutes: 30,
+            nextEvaluationAt: offsetTimestamp(15 * 60_000),
+          },
+          steps: [],
+          summary: {
+            environment: "slot.eternum",
+            chain: "slot",
+            gameType: "eternum",
+            rotationName: "etrn-season-loop",
+            seriesName: "etrn-season-loop",
+            firstGameStartTime: 1774195200,
+            firstGameStartTimeIso: "2026-03-22T16:00:00.000Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 30,
+            rpcUrl: "https://rpc.example",
+            factoryAddress: "0x123",
+            autoRetryEnabled: true,
+            autoRetryIntervalMinutes: 15,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [
+              {
+                gameName: "etrn-season-loop-01",
+                startTime: 1774195200,
+                startTimeIso: "2026-03-22T16:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 1,
+                currentStepId: null,
+                latestEvent: "Ready",
+                status: "succeeded",
+                steps: [{ id: "configure-worlds", status: "succeeded", latestEvent: "Configured" }],
+                artifacts: {
+                  worldAddress: "0x111",
+                },
+              },
+              {
+                gameName: "etrn-season-loop-02",
+                startTime: 1774198800,
+                startTimeIso: "2026-03-22T17:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 2,
+                currentStepId: "create-indexers",
+                latestEvent: "Indexer failed",
+                status: "failed",
+                steps: [{ id: "configure-worlds", status: "succeeded", latestEvent: "Configured" }],
+                artifacts: {
+                  worldAddress: "0x222",
+                  prizeFunding: {
+                    transfers: [
+                      {
+                        id: "0xpaid",
+                        tokenAddress: "0x123",
+                        amountRaw: "100",
+                        amountDisplay: "1",
+                        decimals: 18,
+                        transactionHash: "0xpaid",
+                        fundedAt: "2026-03-18T11:00:00.000Z",
+                      },
+                    ],
+                  },
+                },
+              },
+              {
+                gameName: "etrn-season-loop-03",
+                startTime: 1774202400,
+                startTimeIso: "2026-03-22T18:00:00.000Z",
+                durationSeconds: 3600,
+                seriesGameNumber: 3,
+                currentStepId: "configure-worlds",
+                latestEvent: "Configuring",
+                status: "running",
+                steps: [{ id: "configure-worlds", status: "running", latestEvent: "Configuring" }],
+                artifacts: {
+                  worldAddress: "0x333",
+                },
+              },
+            ],
+          },
+          artifacts: {
+            summaryPath: ".context/game-launch/rotation-slot-eternum-etrn-season-loop.json",
+            seriesCreated: true,
+          },
+        });
+      }
+
+      if (String(url).includes("/contents/inputs/slot/eternum/rotations/etrn-season-loop/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.eternum",
+          rotationName: "etrn-season-loop",
+          request: {
+            environmentId: "slot.eternum",
+            rotationName: "etrn-season-loop",
+            firstGameStartTime: "2026-03-22T16:00:00.000Z",
+            gameIntervalMinutes: 60,
+            maxGames: 12,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 30,
+          },
+        });
+      }
+
+      if (String(url).includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs/slot.eternum/etrn-season-loop/actions/fund-prize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({
+          amount: "250",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-prize-funding.yml/dispatches"),
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.environment).toBe("slot.eternum");
+    expect(dispatchBody.inputs.run_kind).toBe("rotation");
+    expect(dispatchBody.inputs.run_name).toBe("etrn-season-loop");
+    expect(dispatchBody.inputs.selected_games_json).toBe(JSON.stringify(["etrn-season-loop-01"]));
+  });
+});
+
+function buildWorkerEnv(overrides: Record<string, string> = {}) {
   return {
     GITHUB_TOKEN: "test-token",
     GITHUB_REPOSITORY: "bibliotheca/eternum",
@@ -506,17 +2775,26 @@ function buildWorkerEnv() {
     GITHUB_WORKFLOW_FILE: "game-launch.yml",
     GITHUB_WORKFLOW_REF: "next",
     FACTORY_RUN_STORE_BRANCH: "factory-runs",
+    ...overrides,
   };
 }
 
 function buildGitHubContentsResponse(value: unknown) {
   return new Response(
     JSON.stringify({
+      sha: "test-sha",
       encoding: "base64",
       content: Buffer.from(JSON.stringify(value)).toString("base64"),
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
+}
+
+function buildGitHubDirectoryResponse(entries: unknown[]) {
+  return new Response(JSON.stringify(entries), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 function offsetTimestamp(offsetMs: number) {

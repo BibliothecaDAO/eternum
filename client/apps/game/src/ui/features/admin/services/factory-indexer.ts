@@ -1,6 +1,11 @@
 import { CARTRIDGE_API_BASE, TORII_CREATOR_URL } from "../constants";
 import { getFactorySqlBaseUrl } from "../constants";
 import { resolveWorldAddressFromFactory } from "@/runtime/world/factory-resolver";
+import {
+  updateFactoryIndexerTier as updateFactoryIndexerTierViaWorker,
+  type FactoryWorkerEnvironmentId,
+  type FactoryWorkerIndexerTier,
+} from "@/ui/features/factory-v2/api/factory-worker";
 import type { Chain } from "@contracts";
 
 interface ToriiConfigPayload {
@@ -41,6 +46,20 @@ export const createIndexer = async (payload: ToriiConfigPayload): Promise<void> 
   if (!res.ok) {
     throw new Error(`Failed to create indexer: ${res.status} ${res.statusText}`);
   }
+};
+
+export const updateIndexerTier = async ({
+  environment,
+  gameName,
+  tier,
+  adminSecret,
+}: {
+  environment: FactoryWorkerEnvironmentId;
+  gameName: string;
+  tier: FactoryWorkerIndexerTier;
+  adminSecret: string;
+}): Promise<void> => {
+  await updateFactoryIndexerTierViaWorker({ environment, gameName, tier, adminSecret });
 };
 
 export const getWorldDeployedAddress = async (chain: Chain, worldName: string): Promise<string | null> => {

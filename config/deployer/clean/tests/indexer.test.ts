@@ -244,4 +244,98 @@ describe("createIndexer", () => {
       "Tracking factory-torii-deployer.yml run #17: https://github.example/bibliotheca/eternum/actions/runs/99",
     );
   });
+
+  test("retries transient workflow dispatch failures before giving up", async () => {
+    clearGitHubEnv();
+    process.env.GITHUB_ACTIONS = "true";
+    process.env.GITHUB_TOKEN = "test-token";
+    process.env.GITHUB_REPOSITORY = "bibliotheca/eternum";
+    process.env.GITHUB_API_URL = "https://api.github.example";
+    process.env.GITHUB_REF_NAME = "credence0x/clean-ci-game-launch";
+
+    const progressMessages: string[] = [];
+    let dispatchAttempts = 0;
+    let dispatchId = "";
+
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url = String(input);
+
+      if (url.endsWith("/dispatches")) {
+        dispatchAttempts += 1;
+        const body = JSON.parse(String(init?.body || "{}")) as {
+          inputs: Record<string, string>;
+        };
+        dispatchId = body.inputs.launch_request_id;
+
+        if (dispatchAttempts === 1) {
+          return new Response(JSON.stringify({ message: "Failed to run workflow dispatch" }), {
+            status: 500,
+            statusText: "Internal Server Error",
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(null, { status: 204 });
+      }
+
+      if (url.includes("/actions/workflows/factory-torii-deployer.yml/runs?")) {
+        if (dispatchAttempts < 2) {
+          return Response.json({ workflow_runs: [] });
+        }
+
+        return Response.json({
+          workflow_runs: [
+            {
+              id: 101,
+              run_number: 19,
+              html_url: "https://github.example/bibliotheca/eternum/actions/runs/101",
+              status: "queued",
+              conclusion: null,
+              event: "workflow_dispatch",
+              head_branch: "credence0x/clean-ci-game-launch",
+              head_sha: "",
+              created_at: new Date().toISOString(),
+              display_title: `Factory Torii Deployer / slot / bltz-fire-gate-42 / ${dispatchId}`,
+            },
+          ],
+        });
+      }
+
+      if (url.endsWith("/actions/runs/101")) {
+        return Response.json({
+          id: 101,
+          run_number: 19,
+          html_url: "https://github.example/bibliotheca/eternum/actions/runs/101",
+          status: "completed",
+          conclusion: "success",
+          event: "workflow_dispatch",
+          head_branch: "credence0x/clean-ci-game-launch",
+          head_sha: "",
+          created_at: new Date().toISOString(),
+          display_title: `Factory Torii Deployer / slot / bltz-fire-gate-42 / ${dispatchId}`,
+        });
+      }
+
+      throw new Error(`Unexpected fetch request: ${url}`);
+    };
+
+    const result = await createIndexer(
+      {
+        env: "slot",
+        rpcUrl: "https://rpc.example",
+        namespaces: "s1_eternum",
+        worldName: "bltz-fire-gate-42",
+        worldAddress: "0x123",
+      },
+      {
+        fetchImpl,
+        sleep: async () => {},
+        onProgress: (message) => progressMessages.push(message),
+      },
+    );
+
+    expect(result.mode).toBe("github-actions");
+    expect(dispatchAttempts).toBe(2);
+    expect(progressMessages.some((message) => message.includes("Retrying in"))).toBe(true);
+  });
 });

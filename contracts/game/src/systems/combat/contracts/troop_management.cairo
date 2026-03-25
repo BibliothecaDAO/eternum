@@ -147,6 +147,7 @@ pub mod troop_management_systems {
                 troop_limit_config,
                 troop_stamina_config,
                 true,
+                true,
             );
 
             StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
@@ -746,6 +747,7 @@ pub mod troop_management_systems {
                 troop_limit_config,
                 troop_stamina_config,
                 false,
+                true,
             );
             StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
             StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);

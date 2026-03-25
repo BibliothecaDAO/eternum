@@ -41,6 +41,7 @@ interface UseAttackTargetResult {
 export const useAttackTargetData = (
   attackerEntityId: ID,
   targetHex: { x: number; y: number },
+  targetAlt: boolean = DEFAULT_COORD_ALT,
 ): UseAttackTargetResult => {
   const {
     network: { toriiClient },
@@ -51,8 +52,8 @@ export const useAttackTargetData = (
   } = useDojo();
 
   const targetTile = useMemo(
-    () => getTileAt(components, DEFAULT_COORD_ALT, targetHex.x, targetHex.y),
-    [components, targetHex.x, targetHex.y],
+    () => getTileAt(components, targetAlt, targetHex.x, targetHex.y),
+    [components, targetAlt, targetHex.x, targetHex.y],
   );
 
   const [target, setTarget] = useState<AttackTarget | null>(null);

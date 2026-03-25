@@ -8,7 +8,9 @@ import {
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
+import { recordFactoryRunMaintenanceIndex } from "./maintenance-index";
 import { resolveFactoryRunId, resolveFactoryRunRecordPath } from "./paths";
+import { buildPersistedGameLaunchRequest } from "./persisted-launch-request";
 import { resolveLaunchStepTitle } from "./steps";
 import type {
   FactoryLaunchInputRecord,
@@ -109,6 +111,7 @@ function buildLaunchInputRecord(context: FactoryRunStoreEventContext): FactoryLa
 
   return {
     version: 1,
+    kind: "game",
     runId: resolveFactoryRunId(context),
     launchRequestId: context.launchRequestId,
     environment: context.environmentId,
@@ -119,7 +122,7 @@ function buildLaunchInputRecord(context: FactoryRunStoreEventContext): FactoryLa
     requestedLaunchStep: context.requestedLaunchStep,
     createdAt: context.timestamp,
     workflow: context.workflow,
-    request: context.request,
+    request: buildPersistedGameLaunchRequest(context.request),
   };
 }
 
@@ -128,6 +131,7 @@ function createFactoryRunRecord(context: FactoryRunStoreEventContext): FactoryRu
 
   return {
     version: 1,
+    kind: "game",
     runId: resolveFactoryRunId(context),
     environment: context.environmentId,
     chain: environment.chain,
@@ -144,7 +148,10 @@ function createFactoryRunRecord(context: FactoryRunStoreEventContext): FactoryRu
     workflow: context.workflow,
     activeLease: undefined,
     steps: buildFactoryRunSteps(environment),
-    artifacts: {},
+    artifacts: {
+      scheduledStartTime: context.request.startTime,
+      durationSeconds: context.request.durationSeconds,
+    },
   };
 }
 
@@ -284,6 +291,8 @@ function mergeLaunchArtifacts(
   return {
     ...currentArtifacts,
     summaryPath,
+    scheduledStartTime: summary.startTime ?? currentArtifacts.scheduledStartTime,
+    durationSeconds: summary.durationSeconds ?? currentArtifacts.durationSeconds,
     worldAddress: summary.worldAddress || currentArtifacts.worldAddress,
     createGameTxHash: summary.createGameTxHash || currentArtifacts.createGameTxHash,
     configureTxHash: summary.configureTxHash || currentArtifacts.configureTxHash,
@@ -292,7 +301,17 @@ function mergeLaunchArtifacts(
     createBanksTxHash: summary.createBanksTxHash || currentArtifacts.createBanksTxHash,
     paymasterSynced: summary.paymasterSynced ?? currentArtifacts.paymasterSynced,
     indexerCreated: summary.indexerCreated || currentArtifacts.indexerCreated,
+    indexerTier: summary.indexerTier || currentArtifacts.indexerTier,
+    indexerUrl: summary.indexerUrl || currentArtifacts.indexerUrl,
+    indexerVersion: summary.indexerVersion || currentArtifacts.indexerVersion,
+    indexerBranch: summary.indexerBranch || currentArtifacts.indexerBranch,
+    lastIndexerDescribeAt: summary.lastIndexerDescribeAt || currentArtifacts.lastIndexerDescribeAt,
     indexerWorkflowRun: summary.indexerWorkflowRun || currentArtifacts.indexerWorkflowRun,
+    ...(summary.worldConfigTxHash || currentArtifacts.worldConfigTxHash
+      ? {
+          worldConfigTxHash: summary.worldConfigTxHash || currentArtifacts.worldConfigTxHash,
+        }
+      : {}),
   };
 }
 
@@ -354,13 +373,15 @@ async function updateRunRecord(
 ): Promise<FactoryRunRecord> {
   const config = requireGitHubBranchStoreConfig(options);
   const runRecordPath = resolveFactoryRunRecordPath(context);
-
-  return updateGitHubBranchJsonFile<FactoryRunRecord>(
+  const nextRun = await updateGitHubBranchJsonFile<FactoryRunRecord>(
     config,
     runRecordPath,
     (current) => updateRecord(current || createFactoryRunRecord(context)),
     buildCommitMessage(action, context),
   );
+
+  await recordFactoryRunMaintenanceIndex(config, nextRun);
+  return nextRun;
 }
 
 export async function recordFactoryLaunchStarted(

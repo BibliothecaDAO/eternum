@@ -9,6 +9,174 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-26",
+    title: "Instant Explorer Map Pins",
+    description:
+      "Auto-Explore now enables the explorer location shortcut as soon as a new automation entry appears, instead of waiting for the next position refresh cycle.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-25",
+    title: "Zero-Cost Relic Crafting",
+    description:
+      "Craft Relic now allows worlds with zero research craft cost to proceed normally, showing explicit zero-cost values instead of blocking with unavailable-config messaging.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-25",
+    title: "Live Relic Cost Config",
+    description:
+      "Craft Relic now reads research cost from live world artificer config instead of static network defaults, so misconfigured worlds clearly show crafting cost as unavailable rather than a misleading zero.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-25",
+    title: "Research Production Visibility Fix",
+    description:
+      "Research now stays visible in economy tables and structure balance strips, and correctly appears as active production in settlement/economy views with live projected balance updates; structure panels now also backfill missing research fields from SQL when Torii model payloads omit them.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-24",
+    title: "Auto Name During Settlement",
+    description:
+      "Realm and village settlement now automatically include your player name setup in the same wallet transaction when your address has no in-game name yet, avoiding extra manual steps.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
+    title: "Relic Crafting UX Polish",
+    description:
+      "Craft Relic now shows a clearer requirement checklist, research progress, and stronger result feedback, with more visible forge actions in resource tables and chips.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Research Relic Crafting",
+    description:
+      "Realm and Village economy panels now support crafting relics directly from research with preflight checks, crafting feedback, and immediate relic inventory refresh.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
+    title: "Spire Uses Layer Toggle Call",
+    description:
+      "Improved Spire traversal so the client uses the dedicated layer-toggle contract flow for cross-layer movement through adjacent Spires.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Spire Travel Keeps Map Layer",
+    description:
+      "Fixed Spire travel so moving to the other layer no longer forces the worldmap view to switch layers, keeping your current tactical map context on screen.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Army Spire Traversal Action",
+    description:
+      "Armies adjacent to a Spire now get a dedicated Spire action highlight; selecting it opens combat preview if an ethereal defender is present, or a direct travel window into the Ethereal Layer.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-23",
+    title: "Removed Light Test Dropdown",
+    description:
+      "Removed the temporary top-header light override selector so world lighting follows the live cycle only, keeping gameplay UI focused and less cluttered.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Clearer Dusk vs Evening",
+    description:
+      "Dusk now stays warmer while Late Evening shifts cooler with stronger moon-rim separation, making both phases easier to tell apart without sacrificing map readability.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Moon Rim Night Separation",
+    description:
+      "Night lighting now adds a cool moon rim directional pass so units and structures separate better from the terrain without flattening daytime lighting.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Cooler Night Color Grade",
+    description:
+      "Night and late-evening lighting now shift to cooler blue tones with lower saturation instead of relying on darkness alone, making time-of-day changes clearer without hurting visibility.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Late Evening Override",
+    description:
+      "Moved the Late Evening light-test point closer to dusk so this phase remains readable while still feeling distinct from daylight.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Night Visibility Floor",
+    description:
+      "Adjusted deep-night and evening lighting baselines to preserve day-phase contrast while keeping late-cycle gameplay readable instead of dropping into near-black visibility.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Late Evening Test",
+    description:
+      "Adjusted the Late Evening light-test preset to sit closer to dusk so evening validation is easier without dropping into near-night darkness.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Brighter Edge Phase Lighting",
+    description:
+      "Adjusted Early Hours and Late Evening light-test presets so those two phase overrides stay brighter and easier to inspect while validating world readability.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Light Phase Test Selector",
+    description:
+      "Added a top-header light phase selector so you can force Early Hours, Dawn, Morning, Afternoon, Dusk, or Late Evening lighting while validating world visibility and atmosphere.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-23",
+    title: "Village Militia Claim Hides",
+    description:
+      "Fixed village timers so once militia is claimed, the claim action disappears instead of staying available for another click.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-23",
+    title: "Tribe Controls Spacing Polish",
+    description:
+      "Refined Tribe action controls with cleaner button/icon spacing and sizing, including a clearer create-tribe form flow and tighter Members/Invites action alignment in the detail panel.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Tribe Leaderboard Visual Sync",
+    description:
+      "Tribe rankings and tribe detail panels now share the same modern leaderboard styling language as Players, including refreshed row cards, cleaner headers, and a more consistent member/invite detail layout.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Devotion Split Card Refresh",
+    description:
+      "Faith Devotion tiles now show a dedicated devoted-wonder chip, You vs Owner FP/sec cards, and a visual split bar with direct Change Devotion and View Wonder actions.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Faith Tile Mobile Readability",
+    description:
+      "Wonder faith details on compact structure tiles now prioritize Total FP on its own row and use denser stat labels, so key values like Followers stay legible on smaller screens.",
+    type: "fix",
+  },
+  {
     date: "2026-03-23",
     title: "Stable First Map Camera",
     description:

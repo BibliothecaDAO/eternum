@@ -24,13 +24,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@cartridge/connector": "catalog:",
-    "@cartridge/controller": "catalog:",
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
+    "@cartridge/connector": "catalog:",
+    "@cartridge/controller": "catalog:",
     "@dojoengine/core": "catalog:",
     "@dojoengine/predeployed-connector": "catalog:",
     "@dojoengine/sdk": "catalog:",
@@ -51,6 +51,7 @@
     "@starknet-react/chains": "catalog:",
     "@starknet-react/core": "catalog:",
     "@tanstack/react-query": "^5.76.0",
+    "@tanstack/react-virtual": "^3.13.23",
     "@vercel/analytics": "^1.2.2",
     "bignumber.js": "catalog:",
     "buffer": "^6.0.3",

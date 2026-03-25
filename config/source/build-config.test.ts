@@ -1,4 +1,4 @@
-import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, getBuildingFromResource, ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, test } from "bun:test";
 import { buildConfig } from "./build-config";
 
@@ -16,13 +16,38 @@ function findRecipeAmount(
   return resources.find((resource) => resource.resource === resourceId)?.amount;
 }
 
+const REALM_RESOURCE_IDS_WITH_ERECTION_COSTS: ResourcesIds[] = [
+  ResourcesIds.Stone,
+  ResourcesIds.Coal,
+  ResourcesIds.Wood,
+  ResourcesIds.Copper,
+  ResourcesIds.Ironwood,
+  ResourcesIds.Obsidian,
+  ResourcesIds.Gold,
+  ResourcesIds.Silver,
+  ResourcesIds.Mithral,
+  ResourcesIds.AlchemicalSilver,
+  ResourcesIds.ColdIron,
+  ResourcesIds.DeepCrystal,
+  ResourcesIds.Ruby,
+  ResourcesIds.Diamonds,
+  ResourcesIds.Hartwood,
+  ResourcesIds.Ignium,
+  ResourcesIds.TwilightQuartz,
+  ResourcesIds.TrueIce,
+  ResourcesIds.Adamantine,
+  ResourcesIds.Sapphire,
+  ResourcesIds.EtherealSilica,
+  ResourcesIds.Dragonhide,
+];
+
 describe("buildConfig", () => {
   test("resolves the expected chain overlays for Blitz and Eternum", async () => {
     const slotBlitz = await buildConfig({ chain: "slot", gameType: "blitz" });
     const slotEternum = await buildConfig({ chain: "slot", gameType: "eternum" });
     const localBlitz = await buildConfig({ chain: "local", gameType: "blitz" });
 
-    expect(slotBlitz.setup.chain).toBe("slot");
+    expect(slotBlitz.setup?.chain).toBe("slot");
     expect(slotBlitz.battle.regularImmunityTicks).toBe(0);
     expect(slotBlitz.season.durationSeconds).toBe(5_400);
     expect(slotBlitz.blitz.mode.on).toBe(true);
@@ -44,6 +69,19 @@ describe("buildConfig", () => {
     expect(
       findRecipeAmount(slotEternum.resources.productionByComplexRecipe[ResourcesIds.Wood], ResourcesIds.Fish),
     ).toBe(1);
+    for (const resourceId of REALM_RESOURCE_IDS_WITH_ERECTION_COSTS) {
+      const buildingType = getBuildingFromResource(resourceId);
+
+      expect(buildingType).toBeDefined();
+      expect(slotEternum.buildings.complexBuildingCosts[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(0);
+      expect(slotEternum.buildings.simpleBuildingCost[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(0);
+    }
+    expect(slotEternum.buildings.complexBuildingCosts[BuildingType.ResourceSilver]).toEqual(
+      slotEternum.buildings.complexBuildingCosts[BuildingType.ResourceGold],
+    );
+    expect(slotEternum.buildings.simpleBuildingCost[BuildingType.ResourceSilver]).toEqual(
+      slotEternum.buildings.simpleBuildingCost[BuildingType.ResourceGold],
+    );
     expect(slotEternum.troop.stamina.staminaExploreWheatCost).toBe(0.03);
     expect(slotEternum.troop.stamina.staminaExploreFishCost).toBe(0.03);
     expect(slotEternum.hyperstructures.hyperstructureConstructionCost.length).toBeGreaterThan(0);

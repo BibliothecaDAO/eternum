@@ -901,6 +901,16 @@ export interface ExplorerTravelProps extends SystemSigner {
 }
 
 /**
+ * Properties for toggling explorer layer through a spire
+ */
+export interface ToggleAlternateProps extends SystemSigner {
+  /** ID of the explorer to move */
+  explorer_id: number;
+  /** Direction from explorer to adjacent spire */
+  spire_direction: number;
+}
+
+/**
  * Properties for exploring with an explorer (includes VRF and reward extraction)
  */
 export interface ExplorerExploreProps extends SystemSigner {
@@ -1205,6 +1215,10 @@ export interface OpenChestProps extends SystemSigner {
     x: BigNumberish;
     y: BigNumberish;
   };
+}
+
+export interface BurnResearchForRelicProps extends SystemSigner {
+  structure_id: BigNumberish;
 }
 
 export interface ApplyRelicProps extends SystemSigner {

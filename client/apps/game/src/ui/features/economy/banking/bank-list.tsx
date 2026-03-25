@@ -14,19 +14,19 @@ export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps
   const tabs = useMemo(
     () => [
       {
-        key: "all",
+        key: "swap",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Swap</div>
+            <div className="text-sm font-medium">Swap</div>
           </div>
         ),
         component: <ResourceSwap entityId={structureEntityId} listResourceId={selectedResource} />,
       },
       {
-        key: "all",
+        key: "pools",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Pools</div>
+            <div className="text-sm font-medium">Pools</div>
           </div>
         ),
         component: (
@@ -36,20 +36,12 @@ export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps
         ),
       },
     ],
-    [structureEntityId],
+    [structureEntityId, selectedResource],
   );
 
-  const liquidityTable = useMemo(() => {
-    return (
-      <div className="mt-4 text-xs">
-        <LiquidityTable entity_id={structureEntityId} />
-      </div>
-    );
-  }, [structureEntityId]);
-
   return (
-    <div className="amm-selector m-4">
-      <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
+    <div className="amm-selector p-4 flex flex-col h-full">
+      <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-auto">
         <Tabs.List>
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
@@ -63,7 +55,9 @@ export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps
           ))}
         </Tabs.Panels>
       </Tabs>
-      {liquidityTable}
+      <div className="border-t border-gold/10 pt-4 mt-4 text-xs flex-1 overflow-y-auto">
+        <LiquidityTable entity_id={structureEntityId} />
+      </div>
     </div>
   );
 };

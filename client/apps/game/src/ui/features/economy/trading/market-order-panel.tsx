@@ -16,7 +16,8 @@ import {
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const ONE_MONTH = 2628000;
 
@@ -107,6 +108,69 @@ export const MarketOrderPanel = memo(
   },
 );
 
+const VirtualizedOrderList = memo(
+  ({
+    offers,
+    entityId,
+    isBuy,
+    updateBalance,
+    setUpdateBalance,
+  }: {
+    offers: MarketInterface[];
+    entityId: ID;
+    isBuy: boolean;
+    updateBalance: boolean;
+    setUpdateBalance: (value: boolean) => void;
+  }) => {
+    const parentRef = useRef<HTMLDivElement>(null);
+
+    const virtualizer = useVirtualizer({
+      count: offers.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 52,
+      overscan: 5,
+    });
+
+    return (
+      <div ref={parentRef} className="flex-grow overflow-y-auto h-96 relative">
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: "100%",
+            position: "relative",
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const offer = offers[virtualRow.index];
+            return (
+              <div
+                key={offer.tradeId}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <OrderRow
+                  offer={offer}
+                  entityId={entityId}
+                  isBuy={isBuy}
+                  updateBalance={updateBalance}
+                  setUpdateBalance={setUpdateBalance}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  },
+);
+
+VirtualizedOrderList.displayName = "VirtualizedOrderList";
+
 const MarketOrders = memo(
   ({
     resourceId,
@@ -145,6 +209,7 @@ const MarketOrders = memo(
           </div>
           <div className="self-center">
             {offers.length} {isBuy ? "bid" : "ask"}
+            {offers.length === 0 && " (no orders)"}
           </div>
         </div>
 
@@ -155,18 +220,20 @@ const MarketOrders = memo(
         >
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
-          <div className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative `}>
-            {offers.map((offer, index) => (
-              <OrderRow
-                key={offer.tradeId}
-                offer={offer}
-                entityId={entityId}
-                isBuy={isBuy}
-                updateBalance={updateBalance}
-                setUpdateBalance={setUpdateBalance}
-              />
-            ))}
-          </div>
+          {offers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-96 text-gold/30">
+              <div className="text-sm mb-1">No {isBuy ? "buy" : "sell"} orders</div>
+              <div className="text-xs">Create one below</div>
+            </div>
+          ) : (
+            <VirtualizedOrderList
+              offers={offers}
+              entityId={entityId}
+              isBuy={isBuy}
+              updateBalance={updateBalance}
+              setUpdateBalance={setUpdateBalance}
+            />
+          )}
         </div>
 
         <OrderCreation resourceId={resourceId} entityId={entityId} isBuy={isBuy} />
@@ -217,11 +284,14 @@ const OrderRow = memo(
 
     const resourceManager = useResourceManager(entityId);
 
-    const lordsBalance = useMemo(() => Number(resourceManager.balance(ResourcesIds.Lords)), [entityId, updateBalance]);
+    const lordsBalance = useMemo(
+      () => Number(resourceManager.balance(ResourcesIds.Lords)),
+      [resourceManager, updateBalance],
+    );
 
     const resourceBalance = useMemo(
       () => Number(resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId)),
-      [entityId, updateBalance],
+      [resourceManager, currentDefaultTick, offer.makerGets[0].resourceId, updateBalance],
     );
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
@@ -230,23 +300,23 @@ const OrderRow = memo(
 
     const isSelf = useMemo(() => {
       return entityId === offer.makerId;
-    }, [entityId, offer.makerId, offer.tradeId]);
+    }, [entityId, offer.makerId]);
 
     const getsDisplay = useMemo(() => {
       return isBuy ? currencyFormat(offer.makerGets[0].amount, 3) : currencyFormat(offer.takerGets[0].amount, 3);
-    }, [entityId, offer.makerId, offer.tradeId]);
+    }, [isBuy, offer.makerGets[0].amount, offer.takerGets[0].amount]);
 
     const getsDisplayNumber = useMemo(() => {
       return isBuy ? offer.makerGets[0].amount : offer.takerGets[0].amount;
-    }, [entityId, offer.makerId, offer.tradeId]);
+    }, [isBuy, offer.makerGets[0].amount, offer.takerGets[0].amount]);
 
     const getDisplayResource = useMemo(() => {
       return isBuy ? offer.makerGets[0].resourceId : offer.takerGets[0].resourceId;
-    }, [entityId, offer.makerId, offer.tradeId]);
+    }, [isBuy, offer.makerGets[0].resourceId, offer.takerGets[0].resourceId]);
 
     const getTotalLords = useMemo(() => {
       return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
-    }, [entityId, offer.makerId, offer.tradeId, offer]);
+    }, [isBuy, offer.takerGets[0].amount, offer.makerGets[0].amount]);
 
     const resourceBalanceRatio = useMemo(
       () => (resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1),
@@ -332,83 +402,10 @@ const OrderRow = memo(
       }
     };
 
-    const renderConfirmationPopup = useCallback(() => {
-      const isVillageAndMilitaryResource =
-        getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-          StructureType.Village &&
-        (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId));
-
-      return (
-        <ConfirmationPopup
-          title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
-          onConfirm={isSelf ? onCancel : onAccept}
-          onCancel={() => setConfirmOrderModal(false)}
-          isLoading={loading}
-          disabled={
-            isSelf
-              ? false
-              : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0 || isVillageAndMilitaryResource
-          }
-        >
-          {isSelf ? (
-            <div className="p-4 text-center">
-              <p>Are you sure you want to cancel this order?</p>
-            </div>
-          ) : (
-            <div className="p-4 text-center">
-              <div className="flex gap-3 mb-4">
-                <NumberInput
-                  value={inputValue}
-                  className="w-full"
-                  onChange={setInputValue}
-                  max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
-                />
-                <Button
-                  onClick={() =>
-                    setInputValue(
-                      divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
-                    )
-                  }
-                >
-                  Max
-                </Button>
-              </div>
-              <p className="mb-2">
-                <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
-                <span className="">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
-                <span className="">{currencyFormat(calculatedLords, 2)}</span> Lords
-              </p>
-              <div className="flex justify-between mt-4">
-                <div>Donkeys Required</div>
-                <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
-                  {donkeysNeeded} [{donkeyBalance}]
-                </div>
-              </div>
-            </div>
-          )}
-        </ConfirmationPopup>
-      );
-    }, [
-      isSelf,
-      isBuy,
-      donkeysNeeded,
-      donkeyBalance,
-      loading,
-      inputValue,
-      getsDisplayNumber,
-      resourceBalanceRatio,
-      lordsBalanceRatio,
-      getDisplayResource,
-      calculatedLords,
-      calculatedResourceAmount,
-      onCancel,
-      onAccept,
-    ]);
-
     return (
       <div
         key={offer.tradeId}
-        className={`flex flex-col p-1 px-2 hover:bg-white/15 duration-150 border-gold/10 border relative rounded text-sm ${
+        className={`group flex flex-col py-1.5 px-2 hover:bg-white/15 duration-150 border-b border-gold/5 relative rounded text-sm ${
           isSelf ? "bg-blueish/10" : "bg-white/10"
         }`}
       >
@@ -433,12 +430,100 @@ const OrderRow = memo(
               </Button>
             )}
           </div>
-          <div className="col-span-4 text-xxs text-gold/50 uppercase">
+          <div className="col-span-4 text-xxs text-gold/50 uppercase opacity-0 group-hover:opacity-100 transition-opacity">
             expire: {new Date(offer.expiresAt * 1000).toLocaleString()}
           </div>
         </div>
-        {confirmOrderModal && renderConfirmationPopup()}
+        {confirmOrderModal && (
+          <ConfirmOrderPopup
+            isSelf={isSelf}
+            isBuy={isBuy}
+            onConfirm={isSelf ? onCancel : onAccept}
+            onCancel={() => setConfirmOrderModal(false)}
+            loading={loading}
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            maxInputValue={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
+            getDisplayResource={getDisplayResource}
+            calculatedLords={calculatedLords}
+            donkeysNeeded={donkeysNeeded}
+            donkeyBalance={donkeyBalance}
+            isVillageAndMilitaryResource={
+              getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+                StructureType.Village &&
+              (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
+            }
+          />
+        )}
       </div>
+    );
+  },
+);
+
+const ConfirmOrderPopup = memo(
+  ({
+    isSelf,
+    isBuy,
+    onConfirm,
+    onCancel,
+    loading,
+    inputValue,
+    setInputValue,
+    maxInputValue,
+    getDisplayResource,
+    calculatedLords,
+    donkeysNeeded,
+    donkeyBalance,
+    isVillageAndMilitaryResource,
+  }: {
+    isSelf: boolean;
+    isBuy: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+    loading: boolean;
+    inputValue: number;
+    setInputValue: (value: number) => void;
+    maxInputValue: number;
+    getDisplayResource: number;
+    calculatedLords: number;
+    donkeysNeeded: number;
+    donkeyBalance: number;
+    isVillageAndMilitaryResource: boolean;
+  }) => {
+    return (
+      <ConfirmationPopup
+        title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+        isLoading={loading}
+        disabled={
+          isSelf ? false : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0 || isVillageAndMilitaryResource
+        }
+      >
+        {isSelf ? (
+          <div className="p-4 text-center">
+            <p>Are you sure you want to cancel this order?</p>
+          </div>
+        ) : (
+          <div className="p-4 text-center">
+            <div className="flex gap-3 mb-4">
+              <NumberInput value={inputValue} className="w-full" onChange={setInputValue} max={maxInputValue} />
+              <Button onClick={() => setInputValue(maxInputValue)}>Max</Button>
+            </div>
+            <p className="mb-2">
+              <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
+              <span className="">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
+              <span className="">{currencyFormat(calculatedLords, 2)}</span> Lords
+            </p>
+            <div className="flex justify-between mt-4">
+              <div>Donkeys Required</div>
+              <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
+                {donkeysNeeded} [{donkeyBalance}]
+              </div>
+            </div>
+          </div>
+        )}
+      </ConfirmationPopup>
     );
   },
 );
@@ -619,13 +704,15 @@ const OrderCreation = memo(
 
     return (
       <div
-        className={`flex justify-between p-4 text-xl flex-wrap mt-auto  border-gold/10 panel-wood  ${
-          isBuy ? "order-create-buy-selector" : "order-create-sell-selector"
+        className={`flex justify-between p-4 text-xl flex-wrap mt-auto border-gold/10 panel-wood ${
+          isBuy
+            ? "order-create-buy-selector border-l-2 border-l-red"
+            : "order-create-sell-selector border-l-2 border-l-green"
         }`}
       >
         <div className="flex w-full gap-8">
           <div className="w-1/3 gap-1 flex flex-col">
-            <div className="uppercase text-sm flex gap-2 ">
+            <div className="text-xs uppercase text-gold/50 flex gap-2">
               <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
               {isBuy ? "Buy" : "Sell"}
             </div>
@@ -644,7 +731,7 @@ const OrderCreation = memo(
           </div>
           <div className="flex flex-col w-1/3 justify-center text-center  self-center">
             <div className="">
-              <div className="uppercase text-sm flex gap-2">
+              <div className="text-xs uppercase text-gold/50 flex gap-2">
                 <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
                 per /{" "}
                 <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />
@@ -663,7 +750,7 @@ const OrderCreation = memo(
             </div>
           </div>
           <div className="w-1/3 gap-1 flex flex-col">
-            <div className="uppercase text-sm flex gap-2 ">
+            <div className="text-xs uppercase text-gold/50 flex gap-2">
               <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> {isBuy ? "Cost" : "Gain"}
             </div>
             <NumberInput
@@ -680,7 +767,7 @@ const OrderCreation = memo(
             </div>
           </div>
         </div>
-        <div className="mt-8 ml-auto text-right w-auto  text-lg">
+        <div className="mt-4 ml-auto text-right w-auto text-sm">
           <div>
             <div className="donkeys-used-selector flex justify-between gap-8">
               <h6>Donkeys Used</h6>
@@ -708,7 +795,7 @@ const OrderCreation = memo(
             size="md"
             variant="primary"
           >
-            Create {isBuy ? "Buy " : "Sell "} Order of {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
+            {isBuy ? "Buy" : "Sell"} {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
           </Button>
         </div>
         {showConfirmation && renderConfirmationPopupCreateOrder()}
