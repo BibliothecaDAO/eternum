@@ -16,7 +16,7 @@
     "workflowRunId": 23498367471,
     "workflowRunAttempt": 1,
     "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23498367471",
-    "ref": "codex/factory-v2-rotation-review",
+    "ref": "next",
     "sha": "0cc7eec494fe9ee13a36f633e4b91ef3d7783cc8"
   },
   "request": {

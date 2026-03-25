@@ -12,7 +12,7 @@
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23546362173-1.json",
       "status": "running",
       "updatedAt": "2026-03-25T14:32:39.541Z",
-      "workflowRef": "codex/factory-v2-rotation-review",
+      "workflowRef": "next",
       "currentStepId": "create-indexers",
       "activeLeaseExpiresAt": "2026-03-25T15:17:04.922Z",
       "hasRunningStep": true,
