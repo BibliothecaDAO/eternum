@@ -1,6 +1,6 @@
 import { RealmLevels, ResourcesIds } from "@bibliothecadao/types";
-import type { ConfigPatch } from "../common/merge-config";
 import { type EnvironmentContext, resolveConfiguredAddress } from "../common/environment";
+import type { ConfigPatch } from "../common/merge-config";
 import { mergeConfigPatches } from "../common/merge-config";
 import type { Chain } from "../common/types";
 
@@ -191,7 +191,7 @@ function resolveMainnetBlitzRegistrationConfig(context: EnvironmentContext): Con
     blitz: {
       registration: {
         registration_delay_seconds: 1,
-        fee_amount: 250n * 10n ** 18n,
+        fee_amount: 100n * 10n ** 18n,
         fee_token: resolveConfiguredAddress(context.addresses.lords),
       },
     },

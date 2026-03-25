@@ -36,6 +36,7 @@ import type { ToriiStreamManager as ToriiStreamManagerType } from "@/dojo/torii-
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
+import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -47,6 +48,7 @@ import {
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
+  getTileAt,
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
@@ -212,6 +214,7 @@ import {
 } from "../perf/worldmap-render-diagnostics";
 import { recordRendererColorUploadBytes, recordRendererMatrixUploadBytes } from "../perf/renderer-gpu-telemetry";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
+import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
 import { buildVisibleTerrainMembership, type VisibleTerrainInstanceRef } from "./worldmap-visible-terrain-membership";
 import { resolveVisibleTerrainReconcileMode } from "./worldmap-visible-terrain-reconcile-policy";
 import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
@@ -1830,7 +1833,7 @@ export default class WorldmapScene extends WarpTravel {
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
-        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack];
+        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.SpireTravel];
         const isArmySelection = this.armiesPositions.has(selectedEntityId);
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
           if (this.armyManager && !this.armyManager.isArmySelectable(selectedEntityId)) {
@@ -1844,6 +1847,8 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmyMovement(account, actionPath, selectedEntityId);
         } else if (actionType === ActionType.Attack) {
           this.onArmyAttack(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.SpireTravel) {
+          this.onArmySpireTravel(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
@@ -1856,8 +1861,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
-    // can only move on explored hexes
-    const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
+    const actionType = ActionPaths.getActionType(actionPath);
+    const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
       // AudioManager handles muted state internally - no need to check isSoundOn
@@ -1872,12 +1877,12 @@ export default class WorldmapScene extends WarpTravel {
 
       // Play effect based on action type: compass for exploring, travel for moving
       const key = `${targetHex.col},${targetHex.row}`;
-      const effectType = isExplored ? "travel" : "compass";
-      const effectLabel = isExplored ? "Traveling" : "Exploring";
+      const effectType = isTravelAction ? "travel" : "compass";
+      const effectLabel = isTravelAction ? "Traveling" : "Exploring";
       let cleanup = () => {};
       const shouldPlayMovementFx = shouldPlayArmyMovementFx({
         capabilities: snapshotRendererFxCapabilities(),
-        movementType: isExplored ? "travel" : "explore",
+        movementType: isTravelAction ? "travel" : "explore",
       });
 
       if (shouldPlayMovementFx) {
@@ -1958,7 +1963,7 @@ export default class WorldmapScene extends WarpTravel {
       this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
 
       armyActionManager
-        .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
+        .moveArmy(account!, actionPath, isTravelAction, getBlockTimestamp().currentArmiesTick)
         .then(() => {
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
@@ -1995,6 +2000,48 @@ export default class WorldmapScene extends WarpTravel {
     };
 
     this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+  }
+
+  private onArmySpireTravel(actionPath: ActionPath[], selectedEntityId: ID) {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const selectedHex = selectedPath[0];
+    const targetHex = selectedPath[selectedPath.length - 1];
+    if (!selectedHex || !targetHex) {
+      return;
+    }
+
+    const selected = this.getHexagonEntity(selectedHex);
+    const etherealTile = getTileAt(this.dojo.components, true, targetHex.col, targetHex.row);
+    const traversalAction = resolveSpireTraversalAction({
+      targetHex,
+      etherealTile,
+    });
+
+    if (traversalAction.kind === "attack") {
+      const attackerSummary = {
+        type: selected.army ? ActorType.Explorer : ActorType.Structure,
+        id: selectedEntityId,
+        hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+      };
+      const targetSummary = {
+        type: ActorType.Explorer,
+        id: traversalAction.targetArmyId,
+        hex: new Position({ x: traversalAction.targetHex.col, y: traversalAction.targetHex.row }).getContract(),
+        alt: true,
+      };
+
+      this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+      return;
+    }
+
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      return;
+    }
+
+    this.state.toggleModal(
+      <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />,
+    );
   }
 
   private onArmyCreate(actionPath: ActionPath[], selectedEntityId: ID) {

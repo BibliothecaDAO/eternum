@@ -38,7 +38,7 @@ Optional env or flags:
 - `TWO_PLAYER_MODE=true|false` or `--two-player-mode true|false`
 - `DURATION_SECONDS=<integer>` or `--duration-seconds <integer>`
 - `--mode batched|sequential`
-- `--max-actions <integer>` to override the environment default (`slot`: `300`, `mainnet`: `70`)
+- `--max-actions <integer>` to override the environment default (`slot`: `300`, `mainnet`: `50`)
 - `--skip-indexer`
 - `--skip-lootchest-role-grant`
 - `--skip-banks`
@@ -59,7 +59,7 @@ explicit CLI flags.
 The launcher also inherits the legacy factory v1 `create_game` defaults by chain:
 
 - `slot.*`: one `create_game` submission with `max_actions=300`
-- `mainnet.*`: three `create_game` submissions with `max_actions=70`, waiting ten seconds between submissions to avoid
+- `mainnet.*`: three `create_game` submissions with `max_actions=50`, waiting ten seconds between submissions to avoid
   nonce issues
 
 GitHub Actions credentials are selected through GitHub Environments:

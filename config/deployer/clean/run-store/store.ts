@@ -10,6 +10,7 @@ import {
 } from "./github";
 import { recordFactoryRunMaintenanceIndex } from "./maintenance-index";
 import { resolveFactoryRunId, resolveFactoryRunRecordPath } from "./paths";
+import { buildPersistedGameLaunchRequest } from "./persisted-launch-request";
 import { resolveLaunchStepTitle } from "./steps";
 import type {
   FactoryLaunchInputRecord,
@@ -121,7 +122,7 @@ function buildLaunchInputRecord(context: FactoryRunStoreEventContext): FactoryLa
     requestedLaunchStep: context.requestedLaunchStep,
     createdAt: context.timestamp,
     workflow: context.workflow,
-    request: context.request,
+    request: buildPersistedGameLaunchRequest(context.request),
   };
 }
 
@@ -306,6 +307,11 @@ function mergeLaunchArtifacts(
     indexerBranch: summary.indexerBranch || currentArtifacts.indexerBranch,
     lastIndexerDescribeAt: summary.lastIndexerDescribeAt || currentArtifacts.lastIndexerDescribeAt,
     indexerWorkflowRun: summary.indexerWorkflowRun || currentArtifacts.indexerWorkflowRun,
+    ...(summary.worldConfigTxHash || currentArtifacts.worldConfigTxHash
+      ? {
+          worldConfigTxHash: summary.worldConfigTxHash || currentArtifacts.worldConfigTxHash,
+        }
+      : {}),
   };
 }
 

@@ -1,4 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import Copy from "lucide-react/dist/esm/icons/copy";
 
 import { resolveFactoryDeveloperContractSuggestionLabel } from "../developer/contract-targets";
 import { useFactoryV2DeveloperLookup } from "../hooks/use-factory-v2-developer-lookup";
@@ -216,8 +217,23 @@ export const FactoryV2DeveloperContractLookup = ({
               </div>
               <div>
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/38">World address</dt>
-                <dd className="mt-1 break-all font-medium text-black/72">
-                  {developerLookup.lookupResult.worldAddress}
+                <dd className="mt-1 flex items-start gap-2 break-all font-medium text-black/72">
+                  <span className="min-w-0 flex-1">{developerLookup.lookupResult.worldAddress}</span>
+                  <button
+                    type="button"
+                    data-testid="factory-developer-copy-world-address"
+                    aria-label={resolveWorldAddressCopyLabel(developerLookup.worldAddressCopyStatus)}
+                    title={resolveWorldAddressCopyLabel(developerLookup.worldAddressCopyStatus)}
+                    onClick={() => {
+                      void developerLookup.copyWorldAddress();
+                    }}
+                    className={cn(
+                      "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors",
+                      appearance.secondaryButtonClassName,
+                    )}
+                  >
+                    <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
                 </dd>
               </div>
             </dl>
@@ -227,3 +243,14 @@ export const FactoryV2DeveloperContractLookup = ({
     </div>
   );
 };
+
+function resolveWorldAddressCopyLabel(copyStatus: "idle" | "copied" | "error") {
+  switch (copyStatus) {
+    case "copied":
+      return "World address copied";
+    case "error":
+      return "Copy world address failed";
+    default:
+      return "Copy world address";
+  }
+}

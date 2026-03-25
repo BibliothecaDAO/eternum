@@ -705,6 +705,22 @@ export const buildPolicies = (manifest: any) =>
           },
         ],
       },
+      [getContractByName(dojoConfig.manifest, "s1_eternum", "alt_movement_systems").address]: {
+        methods: [
+          {
+            name: "toggle_alternate",
+            entrypoint: "toggle_alternate",
+          },
+          {
+            name: "dojo_name",
+            entrypoint: "dojo_name",
+          },
+          {
+            name: "world_dispatcher",
+            entrypoint: "world_dispatcher",
+          },
+        ],
+      },
       [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_movement_systems").address]: {
         methods: [
           {

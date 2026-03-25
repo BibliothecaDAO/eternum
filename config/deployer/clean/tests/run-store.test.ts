@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   acquireFactoryAccountLease,
   heartbeatFactoryAccountLease,
+  removeFactoryMaintenanceIndexEntry,
   recordFactoryLaunchStarted,
   recordFactoryRotationLaunchStarted,
   recordFactoryRotationLaunchStepSucceeded,
@@ -13,8 +14,9 @@ import {
   recordFactoryLaunchStepSucceeded,
   releaseFactoryAccountLeaseRecord,
 } from "../run-store";
+import { requireGitHubBranchStoreConfig } from "../run-store/github";
 import { resolveRepoPath } from "../shared/repo";
-import type { LaunchGameSummary, LaunchRotationSummary } from "../types";
+import type { LaunchGameSummary, LaunchRotationSummary, LaunchSeriesSummary } from "../types";
 
 const ENV_KEYS = [
   "GITHUB_ACTIONS",
@@ -38,6 +40,7 @@ const originalFetch = globalThis.fetch;
 const summaryPaths = [
   resolveSummaryPath("slot.blitz", "bltz-flux-730"),
   resolveSummaryPath("mainnet.blitz", "bltz-mainnet-730"),
+  resolveSeriesSummaryPath("slot.blitz", "bltz-series-duration"),
   resolveRotationSummaryPath("slot.blitz", "bltz-rotationx"),
   resolveRotationSummaryPath("slot.blitz", "bltz-recovery-case"),
 ];
@@ -89,6 +92,8 @@ describe("factory run store", () => {
         environmentId: "slot.blitz",
         gameName: "bltz-flux-730",
         startTime: "2026-03-18T10:00:00Z",
+        accountAddress: "0xabc123",
+        privateKey: "0xsecret",
       },
     });
 
@@ -97,6 +102,8 @@ describe("factory run store", () => {
     const maintenanceIndex = branchStore.readJson("indexes/slot/blitz/games.json");
 
     expect(inputRecord.launchRequestId).toBe("101-1");
+    expect(inputRecord.request.accountAddress).toBeUndefined();
+    expect(inputRecord.request.privateKey).toBeUndefined();
     expect(runRecord.status).toBe("running");
     expect(runRecord.currentStepId).toBe("create-world");
     expect(runRecord.executionMode).toBe("fast_trial");
@@ -140,6 +147,48 @@ describe("factory run store", () => {
       "create-indexer",
       "sync-paymaster",
     ]);
+  });
+
+  test("removes a stale rotation maintenance index entry", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    branchStore.writeJson("indexes/slot/blitz/rotations.json", {
+      version: 1,
+      environment: "slot.blitz",
+      kind: "rotation",
+      updatedAt: "2026-03-24T00:00:00.000Z",
+      entries: {
+        "bltz-blinkery": {
+          kind: "rotation",
+          environment: "slot.blitz",
+          rotationName: "bltz-blinkery",
+          path: "runs/slot/blitz/rotations/bltz-blinkery.json",
+          inputPath: "inputs/slot/blitz/rotations/bltz-blinkery/23423814592-1.json",
+          status: "attention",
+          updatedAt: "2026-03-24T00:00:00.000Z",
+          workflowRef: "codex/factory-v2-rotation-review",
+          currentStepId: "create-worlds",
+          hasRunningStep: false,
+          recoverableFailedStepId: "create-worlds",
+          recoverablePendingStepId: "wait-for-factory-indexes",
+          autoRetry: { enabled: true, intervalMinutes: 15 },
+          evaluation: { intervalMinutes: 5 },
+          games: [],
+        },
+      },
+    });
+
+    await removeFactoryMaintenanceIndexEntry(
+      requireGitHubBranchStoreConfig(),
+      "slot.blitz",
+      "rotation",
+      "bltz-blinkery",
+    );
+
+    const maintenanceIndex = branchStore.readJson("indexes/slot/blitz/rotations.json");
+
+    expect(maintenanceIndex.entries["bltz-blinkery"]).toBeUndefined();
   });
 
   test("keeps eternum launch steps and adds paymaster for mainnet eternum", async () => {
@@ -414,6 +463,8 @@ describe("factory run store", () => {
         maxGames: 12,
         advanceWindowGames: 5,
         evaluationIntervalMinutes: 15,
+        accountAddress: "0xabc123",
+        privateKey: "0xsecret",
       },
     });
 
@@ -421,6 +472,8 @@ describe("factory run store", () => {
     const runRecord = branchStore.readJson("runs/slot/blitz/rotations/bltz-rotationx.json");
 
     expect(inputRecord.request.resumeSummary).toBeUndefined();
+    expect(inputRecord.request.accountAddress).toBeUndefined();
+    expect(inputRecord.request.privateKey).toBeUndefined();
     expect(runRecord.summary.seriesCreated).toBe(true);
     expect(runRecord.summary.games.map((game: { gameName: string }) => game.gameName)).toEqual(
       existingSummary.games.map((game) => game.gameName),
@@ -431,6 +484,61 @@ describe("factory run store", () => {
     expect(runRecord.summary.games.map((game: { startTimeIso: string }) => game.startTimeIso)).toEqual(
       existingSummary.games.map((game) => game.startTimeIso),
     );
+    expect(inputRecord.request.durationSeconds).toBe(3600);
+  });
+
+  test("persists the current series duration when a resumed request omits it", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    writeSeriesSummaryFile({
+      environment: "slot.blitz",
+      chain: "slot",
+      gameType: "blitz",
+      seriesName: "bltz-series-duration",
+      rpcUrl: "https://rpc.example",
+      factoryAddress: "0x123",
+      autoRetryEnabled: true,
+      autoRetryIntervalMinutes: 15,
+      dryRun: false,
+      configMode: "batched",
+      seriesCreated: true,
+      games: [
+        {
+          gameName: "bltz-series-duration-01",
+          startTime: 4_070_908_800,
+          startTimeIso: "2099-01-01T00:00:00.000Z",
+          durationSeconds: 3600,
+          seriesGameNumber: 1,
+          currentStepId: null,
+          latestEvent: "Waiting to run",
+          status: "pending",
+          configSteps: [],
+          steps: [],
+          artifacts: {},
+        },
+      ],
+      outputPath: ".context/game-launch/series-slot-blitz-bltz-series-duration.json",
+    });
+
+    await recordFactorySeriesLaunchStarted({
+      environmentId: "slot.blitz",
+      seriesName: "bltz-series-duration",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "slot.blitz",
+        seriesName: "bltz-series-duration",
+        games: [{ gameName: "bltz-series-duration-01", startTime: "2099-01-01T00:00:00Z" }],
+        accountAddress: "0xabc123",
+        privateKey: "0xsecret",
+      },
+    });
+
+    const inputRecord = branchStore.readJson("inputs/slot/blitz/series/bltz-series-duration/101-1.json");
+
+    expect(inputRecord.request.durationSeconds).toBe(3600);
+    expect(inputRecord.request.accountAddress).toBeUndefined();
+    expect(inputRecord.request.privateKey).toBeUndefined();
   });
 
   test("returns grouped rotation indexers to pending after the selected child recovers", async () => {
@@ -1005,6 +1113,14 @@ function writeLaunchSummaryFile(summary: LaunchGameSummary): void {
   fs.writeFileSync(resolveSummaryPath(summary.environment, summary.gameName), `${JSON.stringify(summary, null, 2)}\n`);
 }
 
+function writeSeriesSummaryFile(summary: LaunchSeriesSummary): void {
+  fs.mkdirSync(resolveRepoPath(".context/game-launch"), { recursive: true });
+  fs.writeFileSync(
+    resolveSeriesSummaryPath(summary.environment, summary.seriesName),
+    `${JSON.stringify(summary, null, 2)}\n`,
+  );
+}
+
 function writeRotationSummaryFile(summary: LaunchRotationSummary): void {
   fs.mkdirSync(resolveRepoPath(".context/game-launch"), { recursive: true });
   fs.writeFileSync(
@@ -1016,6 +1132,12 @@ function writeRotationSummaryFile(summary: LaunchRotationSummary): void {
 function resolveSummaryPath(environmentId: string, gameName: string): string {
   return resolveRepoPath(
     `.context/game-launch/${environmentId.replace(".", "-")}-${gameName.replace(/[^a-zA-Z0-9-_]/g, "-")}.json`,
+  );
+}
+
+function resolveSeriesSummaryPath(environmentId: string, seriesName: string): string {
+  return resolveRepoPath(
+    `.context/game-launch/series-${environmentId.replace(".", "-")}-${seriesName.replace(/[^a-zA-Z0-9-_]/g, "-")}.json`,
   );
 }
 
@@ -1035,11 +1157,12 @@ function buildRotationTestRunStep(id: string, status: string) {
   };
 }
 
-function buildRotationTestGame(gameName: string, seriesGameNumber: number, startTime: number) {
+function buildRotationTestGame(gameName: string, seriesGameNumber: number, startTime: number, durationSeconds = 3600) {
   return {
     gameName,
     startTime,
     startTimeIso: new Date(startTime * 1000).toISOString(),
+    durationSeconds,
     seriesGameNumber,
     currentStepId: null,
     latestEvent: "Waiting to run",
