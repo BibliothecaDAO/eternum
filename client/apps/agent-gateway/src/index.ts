@@ -496,6 +496,51 @@ app.post("/my/agents/:agentId/messages", async (c) => {
     agentId: detail.id,
     message,
   });
+
+  // Forward message to coordinator so the agent can see it
+  const stub = getCoordinatorStub(c.env, detail.id);
+  await stub.fetch("https://agent.internal/messages", {
+    method: "POST",
+    body: JSON.stringify(message),
+    headers: { "content-type": "application/json" },
+  });
+
+  // Create a wake event for the player message
+  const wakeEvent: AgentEvent = {
+    id: crypto.randomUUID(),
+    agentId: detail.id,
+    seq: 0,
+    type: "user_prompt",
+    payload: { messageId: message.id },
+    createdAt: new Date().toISOString(),
+  };
+
+  await stub.fetch("https://agent.internal/events", {
+    method: "POST",
+    body: JSON.stringify(wakeEvent),
+    headers: { "content-type": "application/json" },
+  });
+
+  // Wake the agent and enqueue a run
+  const leaseId = crypto.randomUUID();
+  await stub.fetch("https://agent.internal/wake", {
+    method: "POST",
+    body: JSON.stringify({ reason: "user_prompt", leaseId }),
+    headers: { "content-type": "application/json" },
+  });
+
+  if (c.env.AGENT_RUN_QUEUE) {
+    await c.env.AGENT_RUN_QUEUE.send({
+      jobId: crypto.randomUUID(),
+      agentId: detail.id,
+      wakeReason: "user_prompt",
+      coalescedEventIds: [wakeEvent.id],
+      leaseId,
+      priority: 0,
+      requestedAt: new Date().toISOString(),
+    });
+  }
+
   return c.json(savedMessage, 201);
 });
 
