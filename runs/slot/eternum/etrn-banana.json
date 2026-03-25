@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-banana",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-banana/23540305841-1.json",
   "latestLaunchRequestId": "23540305841-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-03-25T12:12:21.384Z",
-  "updatedAt": "2026-03-25T12:15:42.777Z",
+  "updatedAt": "2026-03-25T12:16:03.808Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,10 +81,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-25T12:15:42.777Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-03-25T12:15:42.777Z",
+      "finishedAt": "2026-03-25T12:16:03.808Z"
     }
   ],
   "artifacts": {
@@ -97,14 +98,13 @@
     "worldConfigTxHash": "0x241bd9c98f913c388cf18a799dedb8937ca33c3195876ab21700371ea56daad",
     "lootChestRoleTxHash": "0x1752cbe929c077cb520c370431d6c83947c3bfd876673e4c47ea6da1d88fcda",
     "villagePassRoleTxHash": "0x36d3f8c6ab055ce138395fe9f6c71fe834f788e14e68663413caf236e73dddb",
-    "createBanksTxHash": "0x29c6b9835c9a9a5c5b26af7549622d86314c773ae613424da2600bd09d65e3f"
+    "createBanksTxHash": "0x29c6b9835c9a9a5c5b26af7549622d86314c773ae613424da2600bd09d65e3f",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/etrn-banana/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-03-25T12:16:02.193Z"
   },
-  "activeLease": {
-    "launchRequestId": "23540305841-1",
-    "workflowRunId": 23540305841,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-03-25T12:15:42.777Z",
-    "expiresAt": "2026-03-25T13:00:42.777Z"
-  }
+  "completedAt": "2026-03-25T12:16:03.808Z"
 }
