@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-25T14:32:34.641Z",
+  "updatedAt": "2026-03-25T14:32:39.541Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -11,12 +11,13 @@
       "path": "runs/mainnet/blitz/rotations/bltz-warzone.json",
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23546362173-1.json",
       "status": "running",
-      "updatedAt": "2026-03-25T14:32:34.641Z",
+      "updatedAt": "2026-03-25T14:32:39.541Z",
       "workflowRef": "codex/factory-v2-rotation-review",
-      "currentStepId": null,
-      "hasRunningStep": false,
+      "currentStepId": "create-indexers",
+      "activeLeaseExpiresAt": "2026-03-25T15:17:04.922Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
+      "recoverablePendingStepId": "sync-paymaster",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 5,
@@ -24,8 +25,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-25T14:47:34.641Z",
-        "lastEvaluatedAt": "2026-03-25T14:32:34.641Z"
+        "nextEvaluationAt": "2026-03-25T14:46:59.767Z",
+        "lastEvaluatedAt": "2026-03-25T14:31:59.767Z"
       },
       "games": [
         {
@@ -73,9 +74,9 @@
           "startTime": 1774447200,
           "durationSeconds": 3600,
           "artifacts": {
-            "indexerCreated": false,
-            "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-03-25T14:30:53.704Z"
+            "indexerCreated": true,
+            "indexerTier": "legendary",
+            "lastIndexerDescribeAt": "2026-03-25T14:32:39.540Z"
           }
         },
         {
@@ -122,11 +123,7 @@
           "gameName": "bltz-warzone-10",
           "startTime": 1774537200,
           "durationSeconds": 3600,
-          "artifacts": {
-            "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-03-25T14:32:22.097Z"
-          }
+          "artifacts": {}
         }
       ]
     }
