@@ -418,6 +418,15 @@ export const resources: Array<Resources> = [
     img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/262.png?raw=true",
     ticker: "$ESSENCE",
   },
+  {
+    trait: "Research",
+    value: 57,
+    colour: "#8b5cf6",
+    id: ResourcesIds.Research,
+    description: "Research powers relic crafting in Artificer systems.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/57.png?raw=true",
+    ticker: "$RCH",
+  },
 
   // Relics - Army Enhancement Items
   {
@@ -618,6 +627,7 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Lords]: 1,
   [ResourcesIds.Wheat]: 1,
   [ResourcesIds.Fish]: 1,
+  [ResourcesIds.Research]: 1,
 };
 
 export enum ResourceTier {
@@ -716,6 +726,7 @@ export const ETERNUM_RESOURCE_TIERS = {
     ResourcesIds.TroopProductionRelic2,
   ],
   essence: [ResourcesIds.Essence],
+  research: [ResourcesIds.Research],
   labor: [ResourcesIds.Labor],
   military: [
     ResourcesIds.Knight,

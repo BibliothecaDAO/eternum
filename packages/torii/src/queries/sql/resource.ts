@@ -38,6 +38,7 @@ export const RESOURCE_BALANCE_COLUMNS: ReadonlyArray<{
   { column: "FISH_BALANCE", resourceId: ResourcesIds.Fish, name: "Fish" },
   { column: "LORDS_BALANCE", resourceId: ResourcesIds.Lords, name: "Lords" },
   { column: "ESSENCE_BALANCE", resourceId: ResourcesIds.Essence, name: "Essence" },
+  { column: "RESEARCH_BALANCE", resourceId: ResourcesIds.Research, name: "Research" },
 ];
 
 /**
@@ -82,7 +83,7 @@ const PRODUCTION_FULL_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => {
 export const RESOURCE_QUERIES = {
   /**
    * Fetch resource balances for a set of entity IDs.
-   * Selects only *_BALANCE columns (29 cols) instead of the full Resource table (218 cols).
+   * Selects only *_BALANCE columns (30 cols) instead of the full Resource table (218 cols).
    */
   RESOURCE_BALANCES: `
     SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}

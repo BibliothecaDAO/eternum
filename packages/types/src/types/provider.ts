@@ -1207,6 +1207,10 @@ export interface OpenChestProps extends SystemSigner {
   };
 }
 
+export interface BurnResearchForRelicProps extends SystemSigner {
+  structure_id: BigNumberish;
+}
+
 export interface ApplyRelicProps extends SystemSigner {
   entity_id: BigNumberish;
   relic_resource_id: BigNumberish;

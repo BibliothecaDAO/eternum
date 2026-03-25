@@ -35,6 +35,7 @@ import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import ArrowUp from "lucide-react/dist/esm/icons/arrow-up";
 import Factory from "lucide-react/dist/esm/icons/factory";
+import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
 import ShoppingCart from "lucide-react/dist/esm/icons/shopping-cart";
 import Target from "lucide-react/dist/esm/icons/target";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
@@ -201,6 +202,24 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const structureIdSet = useMemo(() => new Set(structureColumns.map((column) => column.entityId)), [structureColumns]);
 
+  const relicCraftableStructureIds = useMemo(() => {
+    const craftableStructureIds = new Set<number>();
+
+    structureColumns.forEach((structureColumn) => {
+      const structure = getComponentValue(
+        components.Structure,
+        getEntityIdFromKeys([BigInt(structureColumn.entityId)]),
+      );
+      const structureCategory = Number(structure?.base?.category ?? structure?.category ?? 0);
+
+      if (structureCategory === StructureType.Realm || structureCategory === StructureType.Village) {
+        craftableStructureIds.add(structureColumn.entityId);
+      }
+    });
+
+    return craftableStructureIds;
+  }, [components.Structure, structureColumns]);
+
   const resourceEntities = useEntityQuery([Has(components.Resource)]);
 
   const resourcesByStructure = useMemo(() => {
@@ -314,6 +333,15 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       toggleModal(<ProductionModal preSelectedResource={resourceId} />);
     },
     [setStructureEntityId, toggleModal],
+  );
+
+  const handleOpenCraftRelic = useCallback(
+    (structureId: number) => {
+      import("../craft-relic-popup").then(({ CraftRelicPopup }) => {
+        toggleModal(<CraftRelicPopup structureId={structureId} onClose={() => toggleModal(null)} />);
+      });
+    },
+    [toggleModal],
   );
 
   const handleOpenTransfer = useCallback(
@@ -875,6 +903,10 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                               const hasProductionBuilding = Boolean(
                                 actualBuildingCount > 0 && mode.resources.canManageResource(resourceId),
                               );
+                              const canCraftRelic =
+                                resourceId === ResourcesIds.Research &&
+                                Number(cell?.amount ?? 0) > 0 &&
+                                relicCraftableStructureIds.has(structure.entityId);
 
                               return (
                                 <td
@@ -902,6 +934,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                       isSelectedStructure={isSelectedStructure}
                                       hasProductionBuilding={hasProductionBuilding}
                                       onManageProduction={() => handleManageProduction(structure.entityId, resourceId)}
+                                      canCraftRelic={canCraftRelic}
+                                      onCraftRelic={() => handleOpenCraftRelic(structure.entityId)}
                                       onOpenTransfer={() => handleOpenTransfer(resourceId)}
                                       onDragStart={handleDragStart}
                                       onDragEnd={handleDragEnd}
@@ -986,6 +1020,8 @@ interface TransferCellProps {
   hasProductionBuilding: boolean;
   onManageProduction: () => void;
   onOpenTransfer: () => void;
+  canCraftRelic: boolean;
+  onCraftRelic: () => void;
   onDragStart: (structureId: number, resourceId: ResourcesIds, amount: number) => void;
   onDragEnd: () => void;
   onDoubleClick: (structureId: number, resourceId: ResourcesIds) => void;
@@ -1008,6 +1044,8 @@ const TransferCell = React.memo((props: TransferCellProps) => {
     isSelectedStructure,
     hasProductionBuilding,
     onManageProduction,
+    canCraftRelic,
+    onCraftRelic,
     onOpenTransfer,
     onDragStart,
     onDragEnd,
@@ -1079,6 +1117,11 @@ const TransferCell = React.memo((props: TransferCellProps) => {
         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
           <div className="flex items-center gap-1 flex-wrap">
             <span className="text-[11px] font-medium text-gold/90">{formatResourceAmount(cell.amount)}</span>
+            {canCraftRelic && (
+              <span className="rounded border border-relic/40 bg-relic/15 px-1 py-0 text-[9px] uppercase tracking-[0.08em] text-relic2">
+                Forge
+              </span>
+            )}
             {(pendingOutgoing.length > 0 || pendingIncoming.length > 0) && (
               <div className="flex items-center gap-0.5">
                 {pendingOutgoing.length > 0 && (
@@ -1121,6 +1164,20 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 title="Manage production"
               >
                 <Factory className="h-2.5 w-2.5" />
+              </button>
+            )}
+            {canCraftRelic && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCraftRelic();
+                }}
+                className="rounded border border-relic/35 bg-relic/15 p-0.5 text-relic2 transition hover:bg-relic/25"
+                title="Craft relic from research"
+                aria-label="Craft relic from research"
+              >
+                <FlaskConical className="h-2.5 w-2.5" />
               </button>
             )}
             {isSelectedStructure && (

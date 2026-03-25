@@ -712,6 +712,7 @@ export function defineContractComponents(world: World) {
           FISH_BALANCE: RecsType.BigInt,
           LORDS_BALANCE: RecsType.BigInt,
           ESSENCE_BALANCE: RecsType.BigInt,
+          RESEARCH_BALANCE: RecsType.BigInt,
           RELIC_E1_BALANCE: RecsType.BigInt,
           RELIC_E2_BALANCE: RecsType.BigInt,
           RELIC_E3_BALANCE: RecsType.BigInt,
@@ -962,6 +963,12 @@ export function defineContractComponents(world: World) {
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
+          RESEARCH_PRODUCTION: {
+            building_count: RecsType.Number,
+            production_rate: RecsType.BigInt,
+            output_amount_left: RecsType.BigInt,
+            last_updated_at: RecsType.Number,
+          },
         },
         {
           metadata: {
@@ -969,10 +976,10 @@ export function defineContractComponents(world: World) {
             name: "Resource",
             types: [
               "u32", // entity_id
-              ...Array(56).fill("u128"), // balances
+              ...Array(57).fill("u128"), // balances
               "u128",
               "u128", // weight
-              ...Array(38).fill(["u32", "u128", "u128", "u32"]).flat(), // productions
+              ...Array(39).fill(["u32", "u128", "u128", "u32"]).flat(), // productions
             ],
             customTypes: ["Weight", "Production"],
           },

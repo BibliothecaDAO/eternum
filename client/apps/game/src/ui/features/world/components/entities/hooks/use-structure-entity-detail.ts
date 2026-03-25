@@ -15,8 +15,16 @@ import {
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
+import { getStructureFromToriiClient, type ResourceBalanceRow } from "@bibliothecadao/torii";
+import {
+  type ClientComponents,
+  ContractAddress,
+  ID,
+  BANDITS_NAME,
+  RelicEffectWithEndTick,
+  StructureType,
+} from "@bibliothecadao/types";
+import { type ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
@@ -28,6 +36,97 @@ interface AlignmentBadge {
   label: string;
   className: string;
 }
+
+type ResourceComponent = ComponentValue<ClientComponents["Resource"]["schema"]>;
+
+const ZERO_RESEARCH_PRODUCTION = {
+  building_count: 0,
+  production_rate: 0n,
+  output_amount_left: 0n,
+  last_updated_at: 0,
+};
+
+const parseSqlBigInt = (value: unknown): bigint => {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? BigInt(Math.trunc(value)) : 0n;
+  if (typeof value === "string" && value.length > 0) {
+    try {
+      return BigInt(value);
+    } catch {
+      return 0n;
+    }
+  }
+  return 0n;
+};
+
+const parseSqlNumber = (value: unknown): number => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "string" && value.length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
+
+const isRealmOrVillage = (category: number | undefined): boolean =>
+  category !== undefined && [StructureType.Realm, StructureType.Village].includes(Number(category) as StructureType);
+
+const shouldHydrateResearchFromSql = (resources: ResourceComponent, category: number | undefined): boolean => {
+  if (!isRealmOrVillage(category)) return false;
+
+  const researchBalance = resources.RESEARCH_BALANCE ?? 0n;
+  const researchProduction = resources.RESEARCH_PRODUCTION ?? ZERO_RESEARCH_PRODUCTION;
+
+  return (
+    researchBalance === 0n &&
+    researchProduction.building_count === 0 &&
+    researchProduction.production_rate === 0n &&
+    researchProduction.output_amount_left === 0n
+  );
+};
+
+const mergeResearchFromSqlRow = (resources: ResourceComponent, row: ResourceBalanceRow): ResourceComponent => {
+  const researchBalance = parseSqlBigInt(row.RESEARCH_BALANCE);
+  const researchProduction = {
+    building_count: parseSqlNumber(row["RESEARCH_PRODUCTION.building_count"]),
+    production_rate: parseSqlBigInt(row["RESEARCH_PRODUCTION.production_rate"]),
+    output_amount_left: parseSqlBigInt(row["RESEARCH_PRODUCTION.output_amount_left"]),
+    last_updated_at: parseSqlNumber(row["RESEARCH_PRODUCTION.last_updated_at"]),
+  };
+
+  const hasResearchData =
+    researchBalance > 0n ||
+    researchProduction.building_count > 0 ||
+    researchProduction.production_rate > 0n ||
+    researchProduction.output_amount_left > 0n;
+
+  if (!hasResearchData) return resources;
+
+  return {
+    ...resources,
+    RESEARCH_BALANCE: researchBalance,
+    RESEARCH_PRODUCTION: researchProduction,
+  };
+};
+
+const hydrateResearchFromSqlIfMissing = async (
+  structureEntityId: ID,
+  category: number | undefined,
+  resources: ResourceComponent,
+): Promise<ResourceComponent> => {
+  if (!shouldHydrateResearchFromSql(resources, category)) return resources;
+
+  try {
+    const sqlRows = await sqlApi.fetchResourceBalancesWithProduction([Number(structureEntityId)]);
+    const sqlRow = sqlRows[0];
+    if (!sqlRow) return resources;
+    return mergeResearchFromSqlRow(resources, sqlRow);
+  } catch (error) {
+    console.warn("Failed to hydrate research balance from SQL fallback", { structureEntityId, error });
+    return resources;
+  }
+};
 
 export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEntityDetailOptions) => {
   const {
@@ -80,6 +179,11 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
           relicEffects,
         };
 
+      const hydratedResources =
+        resources && structure.entity_id !== undefined
+          ? await hydrateResearchFromSqlIfMissing(structure.entity_id, structure.base?.category, resources)
+          : resources;
+
       const isMine = structure.owner === userAddress;
       const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
       const guards = getGuardsByStructure(structure);
@@ -94,7 +198,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
       return {
         structure,
-        resources,
+        resources: hydratedResources,
         playerGuild: guild,
         guards,
         isAlly,

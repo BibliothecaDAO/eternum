@@ -4575,6 +4575,20 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue({ signer, calls: calls, transactionType: TransactionType.OPEN_CHEST });
   }
 
+  public async burn_research_for_relic(props: SystemProps.BurnResearchForRelicProps) {
+    const { signer, structure_id } = props;
+    return await this.executeAndCheckTransaction(
+      signer,
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-artificer_systems`),
+        entrypoint: "burn_research_for_relic",
+        calldata: [structure_id],
+      },
+      undefined,
+      { transactionType: TransactionType.BURN_RESEARCH_FOR_RELIC },
+    );
+  }
+
   public async apply_relic(props: SystemProps.ApplyRelicProps) {
     const { signer, entity_id, relic_resource_id, recipient_type } = props;
     return await this.executeAndCheckTransaction(signer, {
