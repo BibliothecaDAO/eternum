@@ -31,6 +31,7 @@ describe("agent executor job orchestration", () => {
           prompt: runtimePrompt,
           followUp: () => {},
           reloadPrompt: () => {},
+          emit: () => {},
           onEvent: () => () => {},
           dispose: runtimeDispose,
         }),

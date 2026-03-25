@@ -17,7 +17,13 @@ import {
   useSetMyAgentSteeringMutation,
 } from "../../hooks/use-my-agents";
 import { useAgentsUiStore } from "../../model/use-agents-ui-store";
-import { describeRunSummary, formatTimestamp, humanizeExecutionState } from "./agent-dock-utils";
+import {
+  describeLatestAction,
+  describeRunSummary,
+  formatTimestamp,
+  humanizeExecutionState,
+  isHeartbeatStalled,
+} from "./agent-dock-utils";
 import { ActivityTab, ChatTab, DetailsTab, SteeringTab } from "./tabs";
 
 export const AgentDockHost = () => {
@@ -79,6 +85,13 @@ export const AgentDockHost = () => {
   const recentHistory = historyData?.history ?? [];
   const latestRunSummary = detail?.latestRun ? describeRunSummary(detail.latestRun) : "No run recorded yet";
   const statusTone = detail?.lastErrorMessage ? "text-red-300" : "text-gold/80";
+  const heartbeatStalled = detail
+    ? isHeartbeatStalled({
+        autonomyEnabled: detail.autonomy.enabled,
+        executionState: detail.executionState,
+        nextWakeAt: detail.nextWakeAt,
+      })
+    : false;
 
   const isReady = agent && detail?.setup.status === "ready";
 
@@ -117,6 +130,15 @@ export const AgentDockHost = () => {
                       ? "Waiting for the next server heartbeat."
                       : "Heartbeat is paused until autonomy is enabled."}
                 </div>
+                {detail ? (
+                  <div className="mt-3 rounded-2xl border border-gold/10 bg-black/30 px-3 py-3 text-xs text-gold/65">
+                    <div className="text-[11px] uppercase tracking-[0.16em] text-gold/40">Latest Action</div>
+                    <div className="mt-1 text-sm text-gold/80">{describeLatestAction(detail.latestAction)}</div>
+                    {detail.latestAction?.txHash ? (
+                      <div className="mt-1">Tx {detail.latestAction.txHash.slice(0, 12)}...</div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -127,6 +149,12 @@ export const AgentDockHost = () => {
               </button>
             </div>
           </div>
+
+          {heartbeatStalled ? (
+            <div className="border-b border-amber-300/20 bg-amber-200/10 px-5 py-3 text-xs text-amber-100">
+              Stalled heartbeat: the executor is overdue to wake this agent again.
+            </div>
+          ) : null}
 
           <div className="flex border-b border-gold/10 px-2 py-2">
             {(
@@ -190,9 +218,7 @@ export const AgentDockHost = () => {
                     steeringJobType: selectedSteering,
                   })
                 }
-                onDisableAutonomy={() =>
-                  void disableAutonomyMutation.mutateAsync({ worldId })
-                }
+                onDisableAutonomy={() => void disableAutonomyMutation.mutateAsync({ worldId })}
                 onApplySteering={() =>
                   void steeringMutation.mutateAsync({
                     worldId,

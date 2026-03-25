@@ -20,6 +20,7 @@ This page is a **map of the documentation inside this repository**.
 ### Repo docs (this folder)
 
 - Architecture
+  - Agent runtime setup: [`docs/architecture/agent-runtime-setup.md`](./architecture/agent-runtime-setup.md)
   - Runtime world profiles: [`docs/architecture/runtime-world-profiles.md`](./architecture/runtime-world-profiles.md)
   - Torii selective subscriptions:
     [`docs/architecture/torii-selective-subscriptions.md`](./architecture/torii-selective-subscriptions.md)

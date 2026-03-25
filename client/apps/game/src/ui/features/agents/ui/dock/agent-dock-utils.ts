@@ -1,4 +1,10 @@
-import type { AgentEvent, AgentHistoryEntry, AgentRunSummary, SteeringJobType } from "@bibliothecadao/types";
+import type {
+  AgentEvent,
+  AgentHistoryEntry,
+  AgentLatestAction,
+  AgentRunSummary,
+  SteeringJobType,
+} from "@bibliothecadao/types";
 
 export const STEERING_OPTIONS: Array<{ id: SteeringJobType; label: string; summary: string }> = [
   { id: "scout", label: "Scout", summary: "Bias toward exploration and reconnaissance." },
@@ -24,14 +30,22 @@ export function describeEvent(
       return "Autonomy disabled. The next heartbeat will be skipped.";
     case "agent.steering_changed":
       return `Steering changed to ${String(event.payload?.steeringJobType ?? "updated")}.`;
+    case "agent.tool_started":
+      return `Started ${String(event.payload?.toolName ?? "a tool")} in the runtime.`;
+    case "agent.tool_finished":
+      return event.payload?.isError
+        ? `${String(event.payload?.toolName ?? "Tool")} finished with an error.`
+        : `${String(event.payload?.toolName ?? "Tool")} finished cleanly.`;
     case "agent.action_submitted":
-      return `Submitted ${String(event.payload?.toolName ?? "an action")} to the runtime.`;
+      return `Submitted ${String(event.payload?.entrypoint ?? event.payload?.toolName ?? "an action")} onchain.`;
     case "agent.action_confirmed":
       return event.payload?.isError
-        ? `${String(event.payload?.toolName ?? "Action")} failed.`
-        : `${String(event.payload?.toolName ?? "Action")} completed successfully.`;
+        ? `${String(event.payload?.entrypoint ?? event.payload?.toolName ?? "Action")} reverted.`
+        : `${String(event.payload?.entrypoint ?? event.payload?.toolName ?? "Action")} confirmed.`;
     case "agent.error":
       return String(event.payload?.errorMessage ?? event.payload?.summary ?? "An agent error occurred.");
+    case "agent.run_recovered":
+      return String(event.payload?.summary ?? "Recovered a stale heartbeat run.");
     case "agent.thought":
       return String(event.payload?.summary ?? "The agent completed another planning step.");
     case "agent.status_changed":
@@ -58,12 +72,19 @@ export function describeEventDetail(
     return typeof event.payload?.summary === "string" ? event.payload.summary : null;
   }
 
-  if (event.type === "agent.action_confirmed" && event.payload?.isError) {
-    return "Check the status tab for the latest runtime error.";
+  if (event.type === "agent.action_confirmed" || event.type === "agent.action_submitted") {
+    const txHash = typeof event.payload?.txHash === "string" ? truncateAddress(event.payload.txHash, 8) : null;
+    const contractAddress =
+      typeof event.payload?.contractAddress === "string" ? truncateAddress(event.payload.contractAddress, 8) : null;
+    const calldataSummary = typeof event.payload?.calldataSummary === "string" ? event.payload.calldataSummary : null;
+    const parts = [contractAddress, txHash, calldataSummary].filter(Boolean);
+    return parts.length > 0 ? parts.join(" · ") : null;
   }
 
-  if (event.type === "agent.action_submitted") {
-    return "Waiting for the world subscription and runtime confirmation to catch up.";
+  if (event.type === "agent.action_confirmed" && event.payload?.isError) {
+    return typeof event.payload?.errorMessage === "string"
+      ? event.payload.errorMessage
+      : "Check the status tab for the latest runtime error.";
   }
 
   if (event.type === "agent.status_changed") {
@@ -86,6 +107,20 @@ export function describeRunSummary(run: AgentRunSummary) {
   return `${outcome}. ${run.toolCalls} tool calls, ${run.mutatingActions} mutating actions.`;
 }
 
+export function describeLatestAction(action?: AgentLatestAction) {
+  if (!action) {
+    return "No onchain action recorded yet";
+  }
+
+  const parts = [
+    action.toolName ?? "Latest action",
+    action.entrypoint,
+    action.errorMessage ?? action.receiptStatus ?? action.contractAddress ?? action.status,
+  ].filter(Boolean);
+
+  return parts.join(" · ");
+}
+
 export function formatEventLabel(value?: string) {
   return (value ?? "event")
     .replace("agent.", "")
@@ -96,6 +131,24 @@ export function formatEventLabel(value?: string) {
 
 export function humanizeExecutionState(value?: string) {
   return formatEventLabel(value ?? "waiting_auth");
+}
+
+export function isHeartbeatStalled(input: {
+  autonomyEnabled: boolean;
+  executionState?: string;
+  nextWakeAt?: string | Date;
+}): boolean {
+  if (!input.autonomyEnabled || !input.nextWakeAt) {
+    return false;
+  }
+
+  if (!["idle", "queued", "running"].includes(input.executionState ?? "")) {
+    return false;
+  }
+
+  const nextWakeAt =
+    input.nextWakeAt instanceof Date ? input.nextWakeAt.getTime() : Date.parse(String(input.nextWakeAt));
+  return Number.isFinite(nextWakeAt) && nextWakeAt < Date.now();
 }
 
 export function formatTimestamp(value: string | Date, includeDate: boolean = false) {

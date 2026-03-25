@@ -32,6 +32,7 @@ import type {
   SetPlayerAgentSteeringInput,
   UpdatePlayerAgentInput,
 } from "./types";
+import { buildAgentExecutionSummary, buildLatestActionFromEvents } from "./agent-execution-summary";
 
 export class PostgresPlayerAgentRepository implements PlayerAgentRepository {
   constructor(private readonly db: any) {}
@@ -511,8 +512,11 @@ export class PostgresPlayerAgentRepository implements PlayerAgentRepository {
         .from(agentEvents)
         .where(eq(agentEvents.agentId, row.id))
         .orderBy(desc(agentEvents.seq))
-        .limit(10),
+        .limit(20),
     ]);
+    const recentEvents = eventRows.map(mapEventRow);
+    const latestRun = latestRunRow ? mapRunRow(latestRunRow) : undefined;
+    const latestAction = buildLatestActionFromEvents(recentEvents);
 
     return {
       id: row.id,
@@ -533,14 +537,19 @@ export class PostgresPlayerAgentRepository implements PlayerAgentRepository {
       lastRunFinishedAt: row.lastRunFinishedAt?.toISOString(),
       lastErrorCode: row.lastErrorCode ?? undefined,
       lastErrorMessage: row.lastErrorMessage ?? undefined,
-      latestRun: latestRunRow ? mapRunRow(latestRunRow) : undefined,
+      latestRun,
+      latestAction,
+      executionSummary: buildAgentExecutionSummary({
+        latestAction,
+        latestRun,
+      }),
       session: sessionRow ? mapSessionRow(sessionRow) : undefined,
       activeSession: sessionRow ? mapSessionDetailRow(sessionRow) : undefined,
       setup: buildSetupState(row, sessionRow ?? undefined),
       autonomy: buildAutonomyState(row),
       activeSteeringJob: buildSteeringState(row),
-      history: latestRunRow ? [mapRunRow(latestRunRow)] : [],
-      recentEvents: eventRows.map(mapEventRow),
+      history: latestRun ? [latestRun] : [],
+      recentEvents,
     };
   }
 

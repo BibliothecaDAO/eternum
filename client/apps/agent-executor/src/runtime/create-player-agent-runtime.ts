@@ -13,6 +13,7 @@ import { bootstrap } from "@bibliothecadao/onchain-agent/entry/bootstrap-runtime
 import { createCoreTools } from "@bibliothecadao/onchain-agent/tools/pi-tools";
 import { buildSystemPrompt } from "@bibliothecadao/onchain-agent/entry/soul";
 import { createX402Model } from "@bibliothecadao/onchain-agent/providers/x402/index";
+import { attachRuntimeTransactionObserver } from "./runtime-transaction-events";
 
 type ToolError = {
   tool: string;
@@ -40,7 +41,7 @@ export async function createPlayerAgentRuntime(input: {
     material: input.session.material as StoredCartridgeSessionMaterial,
   });
 
-  const { config, mapCtx, mapLoop, automationLoop, toolCtx } = await bootstrap({
+  const { config, mapCtx, mapLoop, automationLoop, provider, toolCtx } = await bootstrap({
     dataDirOverride: input.dataDir,
     configOverride: {
       chain: input.session.worldAuth.chain,
@@ -104,6 +105,11 @@ export async function createPlayerAgentRuntime(input: {
     }
   });
 
+  const detachTransactionObserver = attachRuntimeTransactionObserver({
+    provider,
+    runtime,
+  });
+
   return {
     runtime,
     buildHeartbeatPrompt() {
@@ -114,6 +120,7 @@ export async function createPlayerAgentRuntime(input: {
       );
     },
     async dispose() {
+      detachTransactionObserver();
       mapLoop.stop();
       automationLoop.stop();
       await disposeManagedAgentRuntime({ runtime });

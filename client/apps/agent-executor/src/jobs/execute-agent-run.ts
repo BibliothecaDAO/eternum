@@ -5,6 +5,7 @@ import { createPlayerAgentRuntime } from "../runtime/create-player-agent-runtime
 import type { CartridgeStoredResolvedSession } from "../sessions/cartridge-stored-session-resolver";
 import { ExecutorRunStore } from "../persistence/executor-run-store";
 import type { AgentRunJob } from "@bibliothecadao/types";
+import { mapRuntimeEventToAgentEvent } from "./runtime-agent-event-mapper";
 
 export async function executeAgentRun(input: {
   job: AgentRunJob;
@@ -13,6 +14,7 @@ export async function executeAgentRun(input: {
   modelProvider: string;
   modelId: string;
   tickIntervalMs?: number;
+  turnTimeoutMs?: number;
 }) {
   const runtimeFactory = await createPlayerAgentRuntime({
     agentId: input.job.agentId,
@@ -25,7 +27,7 @@ export async function executeAgentRun(input: {
 
   const events: AgentEvent[] = [];
   const unsubscribe = runtimeFactory.runtime.onEvent((event) => {
-    events.push(mapRuntimeEvent(input.job.agentId, event.type, event.payload ?? {}));
+    events.push(mapRuntimeEventToAgentEvent(input.job.agentId, event));
   });
 
   try {
@@ -33,6 +35,7 @@ export async function executeAgentRun(input: {
       runtime: runtimeFactory.runtime,
       prompt: runtimeFactory.buildHeartbeatPrompt(),
       wakeReason: input.job.wakeReason,
+      timeoutMs: input.turnTimeoutMs,
     });
 
     const nextWakeAt = result.success && input.tickIntervalMs ? new Date(Date.now() + input.tickIntervalMs) : undefined;
@@ -49,52 +52,4 @@ export async function executeAgentRun(input: {
     unsubscribe();
     await runtimeFactory.dispose();
   }
-}
-
-function mapRuntimeEvent(agentId: string, type: string, payload: Record<string, unknown>): AgentEvent {
-  if (type === "tool_execution_start") {
-    return buildEvent(agentId, "agent.action_submitted", {
-      toolName: payload.toolName,
-    });
-  }
-
-  if (type === "tool_execution_end") {
-    return buildEvent(agentId, "agent.action_confirmed", {
-      toolName: payload.toolName,
-      isError: payload.isError,
-    });
-  }
-
-  if (type === "message_end") {
-    const message = payload.message as any;
-    const summary =
-      typeof message?.content === "string"
-        ? message.content
-        : Array.isArray(message?.content)
-          ? message.content
-              .filter((block: any) => block.type === "text")
-              .map((block: any) => block.text)
-              .join("")
-          : undefined;
-
-    return buildEvent(agentId, message?.errorMessage ? "agent.error" : "agent.thought", {
-      summary,
-      errorMessage: message?.errorMessage,
-    });
-  }
-
-  return buildEvent(agentId, "agent.status_changed", {
-    runtimeEventType: type,
-  });
-}
-
-function buildEvent(agentId: string, type: string, payload: Record<string, unknown>): AgentEvent {
-  return {
-    id: crypto.randomUUID(),
-    agentId,
-    seq: 0,
-    type,
-    payload,
-    createdAt: new Date().toISOString(),
-  };
 }

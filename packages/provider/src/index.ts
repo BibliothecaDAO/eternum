@@ -23,6 +23,7 @@ import {
   UniversalDetails,
 } from "starknet";
 import { PromiseQueue, QueueableTransaction } from "./promise-queue";
+import { summarizeTransactionCalls } from "./transaction-event-summaries";
 import { ExecutionOptions } from "./transaction-executor";
 import { withRetry } from "./retry";
 import type { RetryConfig } from "./retry";
@@ -38,6 +39,7 @@ export {
 } from "./batch-config";
 export type { BatchDelayConfig } from "./batch-config";
 export { PromiseQueue, QueueableTransaction } from "./promise-queue";
+export { summarizeTransactionCalls, type TransactionCallSummary } from "./transaction-event-summaries";
 export { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
 export { withRetry, isRetryableError, calculateBackoffDelay, DEFAULT_RETRY_CONFIG } from "./retry";
 export type { RetryConfig } from "./retry";
@@ -811,6 +813,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const transactionMeta = {
       type: txType,
+      actionSummaries: summarizeTransactionCalls(sanitizedTransactionDetails),
       ...(isMultipleTransactions && { transactionCount: sanitizedTransactionDetails.length }),
       ...(batchDetails && batchDetails.length > 0 && { batchDetails }),
     };

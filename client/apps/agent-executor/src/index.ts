@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 
-import { agentRunJobSchema, type AgentRunJob } from "@bibliothecadao/types";
+import { agentRunJobSchema } from "@bibliothecadao/types";
 import { getExecutorDb } from "./persistence/executor-db";
 import { createExecutorArtifactStore } from "./artifacts/postgres-or-r2-artifact-store";
 import { ExecutorRunStore } from "./persistence/executor-run-store";
 import { CartridgeStoredSessionResolver } from "./sessions/cartridge-stored-session-resolver";
 import { executeAgentRun } from "./jobs/execute-agent-run";
+import { processAgentRunJob } from "./jobs/process-agent-run-job";
 
 const app = new Hono();
 const db = getExecutorDb(process.env.DATABASE_URL ?? "");
@@ -20,7 +21,15 @@ app.get("/health", (c) => c.json({ ok: true }));
 
 app.post("/jobs/agent-run", async (c) => {
   const job = agentRunJobSchema.parse(await c.req.json());
-  const result = await processAgentRunJob(job);
+  const claimed = await runStore.claimImmediateJob(job);
+  const result = claimed
+    ? await processAgentRunJob({
+        job,
+        store: runStore,
+        sessionResolver,
+        executeAgentRun,
+      })
+    : { status: "busy", success: false, finishedAt: new Date().toISOString() };
 
   return c.json({
     accepted: true,
@@ -32,12 +41,17 @@ app.post("/jobs/agent-run", async (c) => {
 });
 
 app.post("/jobs/agent-heartbeat", async (c) => {
-  const dueJobs = await runStore.listDueAgentJobs(new Date());
+  const dueJobs = await runStore.claimDueAgentJobs(new Date());
   const results = [];
   for (const job of dueJobs) {
     results.push({
       agentId: job.agentId,
-      ...(await processAgentRunJob(job)),
+      ...(await processAgentRunJob({
+        job,
+        store: runStore,
+        sessionResolver,
+        executeAgentRun,
+      })),
     });
   }
 
@@ -57,55 +71,3 @@ if (process.env.AGENT_EXECUTOR_ENABLE_HEARTBEAT !== "false") {
 }
 
 export default app;
-
-async function processAgentRunJob(job: AgentRunJob) {
-  const executionConfig = await runStore.loadAgentExecutionConfig(job.agentId);
-  if (!executionConfig) {
-    return { status: "missing_agent", success: false, finishedAt: new Date().toISOString() };
-  }
-
-  await runStore.markQueued(job);
-  const session = await sessionResolver.load({ agentId: job.agentId });
-  if (session.status === "expired") {
-    await runStore.markSessionExpired(job.agentId, "Session expired. Reauthorize this world agent.");
-    return { status: "expired", success: false, finishedAt: new Date().toISOString() };
-  }
-  if (session.status === "invalidated") {
-    await runStore.markSessionInvalidated(job.agentId, "World permissions changed. Reauthorize this world agent.");
-    return { status: "invalidated", success: false, finishedAt: new Date().toISOString() };
-  }
-  if (session.status !== "ready") {
-    return { status: session.status, success: false, finishedAt: new Date().toISOString() };
-  }
-
-  await runStore.markRunning(job);
-
-  try {
-    const result = await executeAgentRun({
-      job,
-      store: runStore,
-      session,
-      modelProvider: executionConfig.modelProvider,
-      modelId: executionConfig.modelId,
-      tickIntervalMs: executionConfig.tickIntervalMs,
-    });
-
-    return {
-      status: result.success ? "completed" : "failed",
-      success: result.success,
-      finishedAt: result.finishedAt,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    await runStore.persistRunFailure({
-      job,
-      errorMessage,
-    });
-    return {
-      status: "failed",
-      success: false,
-      finishedAt: new Date().toISOString(),
-      errorMessage,
-    };
-  }
-}

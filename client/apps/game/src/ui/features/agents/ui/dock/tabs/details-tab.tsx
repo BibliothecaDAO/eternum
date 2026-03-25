@@ -1,30 +1,31 @@
 import type { MyAgentDetail } from "@bibliothecadao/types";
 
 import {
+  describeLatestAction,
   describeRunSummary,
   formatTimestamp,
   humanizeConfigKey,
   humanizeExecutionState,
+  isHeartbeatStalled,
   truncateAddress,
 } from "../agent-dock-utils";
 
 export const DetailsTab = ({ detail }: { detail: MyAgentDetail }) => {
-  const runtimeEntries = Object.entries(detail.runtimeConfig ?? {}).filter(
-    ([, v]) => v !== undefined && v !== null,
-  );
+  const runtimeEntries = Object.entries(detail.runtimeConfig ?? {}).filter(([, v]) => v !== undefined && v !== null);
+  const heartbeatStalled = isHeartbeatStalled({
+    autonomyEnabled: detail.autonomy.enabled,
+    executionState: detail.executionState,
+    nextWakeAt: detail.nextWakeAt,
+  });
 
   return (
     <div className="space-y-3 text-sm text-gold/80">
       <div className="rounded-2xl border border-gold/10 bg-black/35 p-4">
         <div className="text-xs uppercase tracking-[0.16em] text-gold/50">Session & Setup</div>
         <div className="mt-2">{detail.setup.status}</div>
-        <div className="mt-2 text-xs text-gold/60">
-          Session: {detail.activeSession?.status ?? "No active session"}
-        </div>
+        <div className="mt-2 text-xs text-gold/60">Session: {detail.activeSession?.status ?? "No active session"}</div>
         {detail.activeSession?.cartridgeUsername ? (
-          <div className="mt-1 text-xs text-gold/60">
-            Cartridge: {detail.activeSession.cartridgeUsername}
-          </div>
+          <div className="mt-1 text-xs text-gold/60">Cartridge: {detail.activeSession.cartridgeUsername}</div>
         ) : null}
         {detail.activeSession?.sessionAccountAddress ? (
           <div className="mt-1 text-xs text-gold/60">
@@ -40,9 +41,7 @@ export const DetailsTab = ({ detail }: { detail: MyAgentDetail }) => {
           <div className="mt-2 text-xs text-red-300">{detail.setup.errorMessage}</div>
         ) : null}
         {detail.activeSession?.invalidationReason ? (
-          <div className="mt-1 text-xs text-red-300">
-            Invalidation: {detail.activeSession.invalidationReason}
-          </div>
+          <div className="mt-1 text-xs text-red-300">Invalidation: {detail.activeSession.invalidationReason}</div>
         ) : null}
       </div>
 
@@ -50,9 +49,10 @@ export const DetailsTab = ({ detail }: { detail: MyAgentDetail }) => {
         <div className="text-xs uppercase tracking-[0.16em] text-gold/50">Execution</div>
         <div className="mt-2">{humanizeExecutionState(detail.executionState)}</div>
         {detail.nextWakeAt ? (
-          <div className="mt-1 text-xs text-gold/60">
-            Next heartbeat {formatTimestamp(detail.nextWakeAt, true)}
-          </div>
+          <div className="mt-1 text-xs text-gold/60">Next heartbeat {formatTimestamp(detail.nextWakeAt, true)}</div>
+        ) : null}
+        {heartbeatStalled ? (
+          <div className="mt-2 text-xs text-amber-200">Heartbeat is overdue and may need recovery.</div>
         ) : null}
         {detail.lastRunFinishedAt ? (
           <div className="mt-1 text-xs text-gold/60">
@@ -62,8 +62,20 @@ export const DetailsTab = ({ detail }: { detail: MyAgentDetail }) => {
         {detail.latestRun ? (
           <div className="mt-1 text-xs text-gold/60">{describeRunSummary(detail.latestRun)}</div>
         ) : null}
-        {detail.lastErrorMessage ? (
-          <div className="mt-2 text-xs text-red-300">{detail.lastErrorMessage}</div>
+        {detail.lastErrorMessage ? <div className="mt-2 text-xs text-red-300">{detail.lastErrorMessage}</div> : null}
+      </div>
+
+      <div className="rounded-2xl border border-gold/10 bg-black/35 p-4">
+        <div className="text-xs uppercase tracking-[0.16em] text-gold/50">Latest Onchain Action</div>
+        <div className="mt-2">{describeLatestAction(detail.latestAction)}</div>
+        {detail.latestAction?.txHash ? (
+          <div className="mt-1 text-xs text-gold/60">Tx {truncateAddress(detail.latestAction.txHash, 8)}</div>
+        ) : null}
+        {detail.latestAction?.calldataSummary ? (
+          <div className="mt-1 text-xs text-gold/60">{detail.latestAction.calldataSummary}</div>
+        ) : null}
+        {detail.latestAction?.errorMessage ? (
+          <div className="mt-2 text-xs text-red-300">{detail.latestAction.errorMessage}</div>
         ) : null}
       </div>
 

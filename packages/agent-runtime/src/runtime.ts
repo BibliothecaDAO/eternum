@@ -49,6 +49,9 @@ export function createManagedAgentRuntime(input: ManagedAgentRuntimeInput): Mana
     isBusy() {
       return busy;
     },
+    emit(event) {
+      events.emit("event", event);
+    },
     async prompt(prompt: string) {
       busy = true;
       events.emit("event", {
@@ -115,7 +118,11 @@ export async function runAgentTurn(input: RunAgentTurnInput): Promise<AgentTurnR
       };
     }
 
-    await input.runtime.prompt(effectivePrompt);
+    await runRuntimePrompt({
+      runtime: input.runtime,
+      prompt: effectivePrompt,
+      timeoutMs: input.timeoutMs,
+    });
 
     return {
       startedAt,
@@ -135,6 +142,34 @@ export async function runAgentTurn(input: RunAgentTurnInput): Promise<AgentTurnR
     };
   } finally {
     unsubscribe();
+  }
+}
+
+async function runRuntimePrompt(input: {
+  runtime: ManagedAgentRuntime;
+  prompt: string;
+  timeoutMs?: number;
+}): Promise<void> {
+  if (!input.timeoutMs || input.timeoutMs <= 0) {
+    await input.runtime.prompt(input.prompt);
+    return;
+  }
+
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    await Promise.race([
+      input.runtime.prompt(input.prompt),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`Turn timed out after ${input.timeoutMs}ms.`));
+        }, input.timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 

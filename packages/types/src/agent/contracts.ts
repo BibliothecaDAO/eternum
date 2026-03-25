@@ -85,12 +85,52 @@ export const steeringJobStateSchema = z.object({
 
 export const agentRuntimeConfigSchema = z.object({
   tickIntervalMs: z.number().int().positive().optional(),
+  turnTimeoutMs: z.number().int().positive().optional(),
   maxToolCalls: z.number().int().positive().optional(),
   maxMutatingActionGroups: z.number().int().positive().optional(),
   maxPublicMessagesPerWindow: z.number().int().positive().optional(),
   publicMessageWindowSeconds: z.number().int().positive().optional(),
   promptOnlyMode: z.boolean().optional(),
   metadata: metadataSchema.optional(),
+});
+
+export const agentLatestActionStatusSchema = z.enum(["submitted", "confirmed", "failed"]);
+
+export const agentLatestActionSchema = z.object({
+  toolName: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  contractAddress: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  entrypoint: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  calldataSummary: z.string().max(MESSAGE_MAX_LENGTH).optional(),
+  txHash: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  receiptStatus: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  status: agentLatestActionStatusSchema,
+  errorMessage: z.string().max(MESSAGE_MAX_LENGTH).optional(),
+  createdAt: timestampSchema,
+});
+
+export const agentExecutionSummarySchema = z.object({
+  lastRunStatus: agentRunStatusSchema.optional(),
+  lastWakeReason: agentWakeReasonSchema.optional(),
+  lastRunStartedAt: timestampSchema.optional(),
+  lastRunFinishedAt: timestampSchema.optional(),
+  lastErrorMessage: z.string().max(MESSAGE_MAX_LENGTH).optional(),
+  latestActionStatus: agentLatestActionStatusSchema.optional(),
+  latestActionAt: timestampSchema.optional(),
+});
+
+export const agentActionSubmittedEventPayloadSchema = z.object({
+  toolName: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  runtimeToolCallId: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  contractAddress: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  entrypoint: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  calldataSummary: z.string().max(MESSAGE_MAX_LENGTH).optional(),
+  txHash: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+  receiptStatus: z.string().min(1).max(ENTITY_ID_MAX_LENGTH).optional(),
+});
+
+export const agentActionConfirmedEventPayloadSchema = agentActionSubmittedEventPayloadSchema.extend({
+  isError: z.boolean(),
+  errorMessage: z.string().max(MESSAGE_MAX_LENGTH).optional(),
 });
 
 export const agentWorldSubscriptionSchema = z.object({
@@ -157,6 +197,8 @@ export const agentDetailSchema = agentSummarySchema.extend({
   subscriptions: z.array(agentWorldSubscriptionSchema).default([]),
   session: agentSessionSummarySchema.optional(),
   latestRun: agentRunSummarySchema.optional(),
+  latestAction: agentLatestActionSchema.optional(),
+  executionSummary: agentExecutionSummarySchema.optional(),
 });
 
 export const myAgentSummarySchema = agentSummarySchema.extend({
@@ -408,6 +450,8 @@ export type AgentSummary = z.infer<typeof agentSummarySchema>;
 export type AgentDetail = z.infer<typeof agentDetailSchema>;
 export type AgentSetupState = z.infer<typeof agentSetupStateSchema>;
 export type AgentAutonomyState = z.infer<typeof agentAutonomyStateSchema>;
+export type AgentLatestAction = z.infer<typeof agentLatestActionSchema>;
+export type AgentExecutionSummary = z.infer<typeof agentExecutionSummarySchema>;
 export type SteeringJobType = z.infer<typeof steeringJobTypeSchema>;
 export type SteeringJobStatus = z.infer<typeof steeringJobStatusSchema>;
 export type SteeringJobConfig = z.infer<typeof steeringJobConfigSchema>;
@@ -416,6 +460,8 @@ export type AgentHistoryEntryKind = z.infer<typeof agentHistoryEntryKindSchema>;
 export type MyAgentSummary = z.infer<typeof myAgentSummarySchema>;
 export type MyAgentDetail = z.infer<typeof myAgentDetailSchema>;
 export type AgentEvent = z.infer<typeof agentEventSchema>;
+export type AgentActionSubmittedEventPayload = z.infer<typeof agentActionSubmittedEventPayloadSchema>;
+export type AgentActionConfirmedEventPayload = z.infer<typeof agentActionConfirmedEventPayloadSchema>;
 export type AgentSetupChangedEventPayload = z.infer<typeof agentSetupChangedEventPayloadSchema>;
 export type AgentAutonomyChangedEventPayload = z.infer<typeof agentAutonomyChangedEventPayloadSchema>;
 export type AgentSteeringChangedEventPayload = z.infer<typeof agentSteeringChangedEventPayloadSchema>;

@@ -146,6 +146,7 @@ export interface RunAgentTurnInput {
   prompt: string;
   wakeReason?: AgentWakeReason;
   steeringOverlay?: SteeringOverlay | null;
+  timeoutMs?: number;
 }
 
 export interface AgentTurnResult {
@@ -195,6 +196,7 @@ export interface ManagedAgentRuntime {
   prompt(prompt: string): Promise<void>;
   followUp(prompt: string): void;
   reloadPrompt(): void;
+  emit(event: ManagedAgentRuntimeEvent): void;
   onEvent(listener: (event: ManagedAgentRuntimeEvent) => void): () => void;
   dispose(): Promise<void>;
 }

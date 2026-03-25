@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-25",
+    title: "Agent Heartbeat Recovery",
+    description:
+      "Added clearer heartbeat recovery and latest onchain action status in the agent dashboard and dock, so stalled executor runs and reverted moves are visible without reading raw logs.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-25",
     title: "Richer Agent Live Status",
     description:
       "Improved the in-game agent dock with clearer heartbeat, session, latest-action, and recent-run details so you can tell what your world agent is doing without guessing from raw event names.",
