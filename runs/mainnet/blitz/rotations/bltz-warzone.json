@@ -8,32 +8,32 @@
   "rotationName": "bltz-warzone",
   "seriesName": "bltz-warzone",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23544970373-1.json",
-  "latestLaunchRequestId": "23544970373-1",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "create-indexers",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23545429704-1.json",
+  "latestLaunchRequestId": "23545429704-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-25T14:10:55.091Z",
+  "updatedAt": "2026-03-25T14:12:04.109Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23544970373,
+    "workflowRunId": 23545429704,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23544970373",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23545429704",
     "ref": "codex/factory-v2-rotation-review",
     "sha": "4382b053dfbf9eb8afa19361000b7456f5c8e934"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 5,
-    "nextRetryAt": "2026-03-25T14:15:44.056Z",
+    "nextRetryAt": "2026-03-25T14:17:04.109Z",
     "lastRetryAt": "2026-03-25T14:10:44.056Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-25T14:20:14.620Z",
-    "lastEvaluatedAt": "2026-03-25T14:05:14.620Z"
+    "nextEvaluationAt": "2026-03-25T14:27:04.109Z",
+    "lastEvaluatedAt": "2026-03-25T14:12:04.109Z"
   },
   "steps": [
     {
@@ -41,55 +41,42 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-03-25T14:02:09.727Z",
-      "finishedAt": "2026-03-25T14:02:15.324Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-03-25T14:02:19.104Z",
-      "finishedAt": "2026-03-25T14:04:05.742Z"
+      "latestEvent": "Creating games is complete"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-03-25T14:04:09.743Z",
-      "finishedAt": "2026-03-25T14:04:15.699Z"
+      "latestEvent": "Waiting for games is complete"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
       "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-03-25T14:04:19.764Z",
-      "finishedAt": "2026-03-25T14:04:38.886Z"
+      "latestEvent": "Applying settings is complete"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-03-25T14:04:47.783Z",
-      "finishedAt": "2026-03-25T14:04:59.450Z"
+      "latestEvent": "Setting up loot chests is complete"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-warzone-10\" on mainnet.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+22ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-warzone-10\"\n\u001b[2m[+166ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-warzone-10\" in 144ms (0x0004b4fe...665d20)\n\u001b[2m[+176ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x0004b4fe...665d20\n\u001b[2m[+698ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 522ms: Unable to verify whether Torii deployment \"bltz-warzone-10\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-03-25T14:05:08.225Z",
-      "finishedAt": "2026-03-25T14:05:14.620Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-warzone-10\" on mainnet.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+22ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-warzone-10\"\n\u001b[2m[+166ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-warzone-10\" in 144ms (0x0004b4fe...665d20)\n\u001b[2m[+176ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x0004b4fe...665d20\n\u001b[2m[+698ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 522ms: Unable to verify whether Torii deployment \"bltz-warzone-10\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Finishing setup needs attention"
     },
     {
       "id": "sync-paymaster",
