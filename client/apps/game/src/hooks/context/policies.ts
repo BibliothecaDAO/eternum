@@ -557,6 +557,22 @@ export const buildPolicies = (manifest: any) =>
           },
         ],
       },
+      [getContractByName(dojoConfig.manifest, "s1_eternum", "artificer_systems").address]: {
+        methods: [
+          {
+            name: "burn_research_for_relic",
+            entrypoint: "burn_research_for_relic",
+          },
+          {
+            name: "dojo_name",
+            entrypoint: "dojo_name",
+          },
+          {
+            name: "world_dispatcher",
+            entrypoint: "world_dispatcher",
+          },
+        ],
+      },
       [getContractByName(dojoConfig.manifest, "s1_eternum", "season_systems").address]: {
         methods: [
           {
@@ -694,6 +710,22 @@ export const buildPolicies = (manifest: any) =>
           {
             name: "guard_explorer_swap",
             entrypoint: "guard_explorer_swap",
+          },
+          {
+            name: "dojo_name",
+            entrypoint: "dojo_name",
+          },
+          {
+            name: "world_dispatcher",
+            entrypoint: "world_dispatcher",
+          },
+        ],
+      },
+      [getContractByName(dojoConfig.manifest, "s1_eternum", "alt_movement_systems").address]: {
+        methods: [
+          {
+            name: "toggle_alternate",
+            entrypoint: "toggle_alternate",
           },
           {
             name: "dojo_name",

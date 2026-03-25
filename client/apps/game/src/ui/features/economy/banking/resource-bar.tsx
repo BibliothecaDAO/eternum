@@ -96,10 +96,10 @@ export const ResourceBar = memo(
     };
 
     return (
-      <div className="resource-bar-selector w-full bg-gold/10 rounded-xl p-3 flex justify-between h-28 flex-wrap">
+      <div className="resource-bar-selector w-full bg-black/30 border border-gold/15 rounded-xl p-3 flex justify-between h-28 flex-wrap">
         <div className="self-center">
           <NumberInput
-            className="text-2xl border-transparent"
+            className="text-xl"
             value={amount}
             onChange={handleAmountChange}
             max={max}
@@ -110,7 +110,7 @@ export const ResourceBar = memo(
           />
 
           {!disableInput && (
-            <div className="flex text-xs mt-1 items-center justify-center">
+            <div className="flex text-xs mt-1.5 items-center text-gold/50">
               <MaxButton
                 max={finalResourceBalance}
                 onChange={(value) => handleAmountChange(parseFloat(value))}
@@ -137,7 +137,7 @@ export const ResourceBar = memo(
             setSearchInput("");
           }}
         >
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[130px]">
             <SelectValue placeholder={HintSection.Resources} />
           </SelectTrigger>
           <SelectContent>

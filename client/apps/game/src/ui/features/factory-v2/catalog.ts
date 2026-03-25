@@ -57,31 +57,6 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     },
   },
   {
-    id: "eternum-sandbox-world",
-    mode: "eternum",
-    name: "Live world",
-    description: "Use this when the real world is ready to go live.",
-    defaults: {
-      startRule: "next_hour",
-      devMode: false,
-      twoPlayerMode: false,
-      singleRealmMode: false,
-    },
-  },
-  {
-    id: "blitz-sandbox",
-    mode: "blitz",
-    name: "Sandbox",
-    description: "A long test game with dev mode on.",
-    defaults: {
-      startRule: "next_hour",
-      durationMinutes: 5 * MINUTES_PER_DAY,
-      devMode: true,
-      twoPlayerMode: false,
-      singleRealmMode: false,
-    },
-  },
-  {
     id: "blitz-open",
     mode: "blitz",
     name: "Regular Normal (1h:30m)",
@@ -117,6 +92,19 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       durationMinutes: 90,
       devMode: false,
       twoPlayerMode: true,
+      singleRealmMode: false,
+    },
+  },
+  {
+    id: "blitz-sandbox",
+    mode: "blitz",
+    name: "Sandbox",
+    description: "A long test game with dev mode on.",
+    defaults: {
+      startRule: "next_hour",
+      durationMinutes: 5 * MINUTES_PER_DAY,
+      devMode: true,
+      twoPlayerMode: false,
       singleRealmMode: false,
     },
   },
@@ -165,6 +153,10 @@ export const getFactoryEnvironmentOptions = (mode: FactoryGameMode): FactoryEnvi
 
 export const getDefaultEnvironmentIdForMode = (mode: FactoryGameMode) =>
   getFactoryEnvironmentOptions(mode)[0]?.id ?? "";
+
+export const resolveFactoryEnvironmentIdForModeAndChain = (mode: FactoryGameMode, chain: FactoryLaunchChain) =>
+  getFactoryEnvironmentOptions(mode).find((environment) => environment.chain === chain)?.id ??
+  getDefaultEnvironmentIdForMode(mode);
 
 export const getFactoryLaunchPresetsForMode = (mode: FactoryGameMode) =>
   factoryLaunchPresets.filter((preset) => preset.mode === mode);

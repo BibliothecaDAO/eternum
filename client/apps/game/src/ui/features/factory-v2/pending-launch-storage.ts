@@ -1,11 +1,12 @@
-import type { FactoryGameMode } from "./types";
+import type { FactoryGameMode, FactoryRunKind } from "./types";
 
 const FACTORY_PENDING_LAUNCHES_STORAGE_KEY = "factory-v2-pending-launches";
 
 export interface FactoryPendingLaunch {
   environmentId: string;
-  gameName: string;
+  name: string;
   mode: FactoryGameMode;
+  kind: FactoryRunKind;
   createdAt: string;
 }
 
@@ -29,7 +30,7 @@ export function readFactoryPendingLaunches(): FactoryPendingLaunch[] {
       return [];
     }
 
-    return parsedValue.filter(isFactoryPendingLaunch).sort(comparePendingLaunchesByRecency);
+    return parsedValue.filter(isFactoryPendingLaunch).map(normalizePendingLaunch).sort(comparePendingLaunchesByRecency);
   } catch {
     return [];
   }
@@ -71,17 +72,32 @@ function isFactoryPendingLaunch(value: unknown): value is FactoryPendingLaunch {
     return false;
   }
 
-  const pendingLaunch = value as Partial<FactoryPendingLaunch>;
+  const pendingLaunch = value as Partial<FactoryPendingLaunch> & { gameName?: string };
+  const normalizedName = pendingLaunch.name ?? pendingLaunch.gameName;
 
   return (
     typeof pendingLaunch.environmentId === "string" &&
     pendingLaunch.environmentId.length > 0 &&
-    typeof pendingLaunch.gameName === "string" &&
-    pendingLaunch.gameName.length > 0 &&
+    typeof normalizedName === "string" &&
+    normalizedName.length > 0 &&
     (pendingLaunch.mode === "eternum" || pendingLaunch.mode === "blitz") &&
+    (pendingLaunch.kind === "game" ||
+      pendingLaunch.kind === "series" ||
+      pendingLaunch.kind === "rotation" ||
+      pendingLaunch.kind === undefined) &&
     typeof pendingLaunch.createdAt === "string" &&
     pendingLaunch.createdAt.length > 0
   );
+}
+
+function normalizePendingLaunch(pendingLaunch: Partial<FactoryPendingLaunch> & { gameName?: string }) {
+  return {
+    environmentId: pendingLaunch.environmentId ?? "",
+    name: pendingLaunch.name ?? pendingLaunch.gameName ?? "",
+    mode: pendingLaunch.mode ?? "blitz",
+    kind: pendingLaunch.kind ?? "game",
+    createdAt: pendingLaunch.createdAt ?? "",
+  } satisfies FactoryPendingLaunch;
 }
 
 function comparePendingLaunchesByRecency(left: FactoryPendingLaunch, right: FactoryPendingLaunch) {

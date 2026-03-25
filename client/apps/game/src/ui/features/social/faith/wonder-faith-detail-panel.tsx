@@ -85,9 +85,15 @@ export const WonderFaithDetailPanel = ({
 
   if (compact) {
     return (
-      <div className={cn("grid grid-cols-3 gap-2 text-xs", className)}>
-        <StatCard label="Total FP" value={formatBigInt(wonderDetail.totalFaithPoints)} mono compact />
-        <StatCard label="FP/sec" value={formatInt(wonderDetail.totalFaithPointsPerSec)} mono compact />
+      <div className={cn("grid grid-cols-2 gap-2 text-xs", className)}>
+        <StatCard
+          label="Total FP"
+          value={formatBigInt(wonderDetail.totalFaithPoints)}
+          mono
+          compact
+          className="col-span-2"
+        />
+        <StatCard label="FP/s" value={formatInt(wonderDetail.totalFaithPointsPerSec)} mono compact />
         <StatCard label="Followers" value={formatInt(wonderDetail.followerCount)} mono compact />
       </div>
     );
@@ -176,15 +182,33 @@ const StatCard = ({
   value,
   mono = false,
   compact = false,
+  className,
 }: {
   label: string;
   value: string;
   mono?: boolean;
   compact?: boolean;
+  className?: string;
 }) => (
-  <div className={cn("rounded-md border border-gold/20 bg-black/25", compact ? "p-1.5" : "p-2")}>
-    <div className="text-xxs uppercase tracking-[0.22em] text-gold/60">{label}</div>
-    <div className={cn("mt-1 font-semibold text-gold", compact ? "text-xs" : "text-sm", mono && "font-mono")}>
+  <div
+    className={cn("min-w-0 rounded-md border border-gold/20 bg-black/25", compact ? "px-1 py-1.5" : "p-2", className)}
+  >
+    <div
+      className={cn(
+        compact
+          ? "text-[10px] font-medium leading-tight tracking-[0.02em] text-gold/70"
+          : "text-xxs uppercase tracking-[0.22em] text-gold/60",
+      )}
+    >
+      {label}
+    </div>
+    <div
+      className={cn(
+        "mt-1 font-semibold text-gold",
+        compact ? "text-sm leading-tight" : "text-sm",
+        mono && "font-mono tabular-nums",
+      )}
+    >
       {value}
     </div>
   </div>

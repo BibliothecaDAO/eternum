@@ -13,13 +13,13 @@ pub trait IBlitzRealmSystems<T> {
 
 #[dojo::contract]
 pub mod blitz_realm_systems {
-    use core::num::traits::{Bounded, Zero};
+    use core::num::traits::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
+    use crate::constants::{DEFAULT_NS, blitz_produceable_resources};
     use crate::models::config::{
         BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzHypersSettlementConfig,
         BlitzHypersSettlementConfigImpl, BlitzPlayerRegisterList, BlitzRealmPlayerRegister, BlitzRealmPositionRegister,
@@ -33,10 +33,7 @@ pub mod blitz_realm_systems {
     use crate::models::position::{Coord, CoordImpl};
     use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use crate::models::resource::production::building::BuildingImpl;
-    use crate::models::resource::production::production::{Production, ProductionImpl};
-    use crate::models::resource::resource::{
-        ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-    };
+    use crate::models::resource::production::production::ProductionStrategyImpl;
     use crate::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStats, StructureOwnerStoreImpl,
         StructureReservation,
@@ -446,24 +443,7 @@ pub mod blitz_realm_systems {
                 let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
                     .create_internal(caller, realm_id, resources.clone(), 0, 1, coord, false);
 
-                // set infinite labor production
-                let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
-                let mut structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
-                let mut structure_labor_resource = SingleResourceStoreImpl::retrieve(
-                    ref world,
-                    structure_id,
-                    ResourceTypes::LABOR,
-                    ref structure_weight,
-                    labor_resource_weight_grams,
-                    true,
-                );
-                let mut structure_labor_production: Production = structure_labor_resource.production;
-                structure_labor_production.increase_output_amout_left(Bounded::MAX);
-                structure_labor_resource.production = structure_labor_production;
-                structure_labor_resource.store(ref world);
-
-                // update structure weight
-                structure_weight.store(ref world, structure_id);
+                ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, structure_id);
 
                 // emit realm settle event
                 let now = starknet::get_block_timestamp();

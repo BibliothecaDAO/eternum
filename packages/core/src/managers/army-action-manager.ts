@@ -10,13 +10,14 @@ import {
   type ID,
   packTileSeed,
   ResourcesIds,
+  TileOccupier,
   type SystemCalls,
   type TroopType,
 } from "@bibliothecadao/types";
 import { type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { Account, AccountInterface } from "starknet";
-import { divideByPrecision, FELT_CENTER } from "..";
+import { divideByPrecision, FELT_CENTER, getTileAt } from "..";
 import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
@@ -136,6 +137,11 @@ export class ArmyActionManager {
     };
   }
 
+  private isWorldSpireHex(position: HexPosition): boolean {
+    const tile = getTileAt(this.components, false, position.col, position.row);
+    return tile?.occupier_type === TileOccupier.Spire;
+  }
+
   public findActionPaths(
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
@@ -166,6 +172,7 @@ export class ArmyActionManager {
     // Process initial neighbors instead of start position
     const neighbors = getNeighborHexes(startPos.col, startPos.row);
     for (const { col, row } of neighbors) {
+      const isSpire = this.isWorldSpireHex({ col, row });
       const isExplored = exploredHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const isArmyMine =
@@ -186,7 +193,9 @@ export class ArmyActionManager {
       let actionType;
       let staminaCost = 0;
 
-      if (isMine) {
+      if (isSpire) {
+        actionType = ActionType.SpireTravel;
+      } else if (isMine) {
         actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;
@@ -239,11 +248,12 @@ export class ArmyActionManager {
         const hasStructure =
           structureHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
         const hasChest = chestHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
+        const hasSpire = this.isWorldSpireHex(current);
 
         actionPaths.set(currentKey, path);
 
         // cannot go through these hexes so need to stop here
-        if (!isExplored || hasArmy || hasStructure || hasChest) continue;
+        if (!isExplored || hasArmy || hasStructure || hasChest || hasSpire) continue;
 
         const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
@@ -257,6 +267,9 @@ export class ArmyActionManager {
           const hasStructure = structureHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
           const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
           const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
+          const hasSpire = this.isWorldSpireHex({ col, row });
+
+          if (hasSpire) continue;
 
           if (!isExplored || hasArmy || hasStructure || hasChest) continue;
 
@@ -347,12 +360,38 @@ export class ArmyActionManager {
     }
   };
 
+  private readonly _travelThroughSpire = async (
+    signer: Account | AccountInterface,
+    path: ActionPath[],
+    currentArmiesTick: number,
+  ) => {
+    const direction = this._findDirection(path.map((p) => p.hex));
+    if (direction === undefined || direction === null) {
+      return Promise.reject(new Error("Invalid spire direction"));
+    }
+
+    try {
+      return await this.systemCalls.toggle_alternate({
+        signer,
+        explorer_id: this.entityId,
+        spire_direction: direction,
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  };
+
   public moveArmy = (
     signer: Account | AccountInterface,
     path: ActionPath[],
     isExplored: boolean,
     currentArmiesTick: number,
   ) => {
+    const actionType = ActionPaths.getActionType(path);
+    if (actionType === ActionType.SpireTravel) {
+      return this._travelThroughSpire(signer, path, currentArmiesTick);
+    }
+
     if (!isExplored) {
       return this._exploreHex(signer, path, currentArmiesTick);
     } else {

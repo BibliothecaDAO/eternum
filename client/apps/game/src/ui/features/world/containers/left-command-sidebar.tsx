@@ -645,6 +645,7 @@ const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.construction, // Buildings
   MenuEnum.military, // Army
   MenuEnum.resourceArrivals, // Donkey arrivals
+  MenuEnum.trade, // Trade
   MenuEnum.transfer, // Transfers
   MenuEnum.bridge, // Bridge
   MenuEnum.chat, // Chat

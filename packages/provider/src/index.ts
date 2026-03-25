@@ -2766,6 +2766,29 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Toggle explorer to the alternate layer through an adjacent spire
+   *
+   * @param props - Properties for toggling explorer layer
+   * @param props.explorer_id - ID of the explorer to move
+   * @param props.spire_direction - Direction from explorer to adjacent spire
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async toggle_alternate(props: SystemProps.ToggleAlternateProps) {
+    const { explorer_id, spire_direction, signer } = props;
+
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-alt_movement_systems`),
+        entrypoint: "toggle_alternate",
+        calldata: [explorer_id, spire_direction],
+      },
+      transactionType: TransactionType.TRAVEL_HEX,
+    });
+  }
+
+  /**
    * Move an explorer without exploring (can be batched with other transactions)
    *
    * @param props - Properties for traveling an explorer
@@ -4573,6 +4596,20 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [explorer_id, coordAlt, chest_coord.x, chest_coord.y],
     });
     return await this.promiseQueue.enqueue({ signer, calls: calls, transactionType: TransactionType.OPEN_CHEST });
+  }
+
+  public async burn_research_for_relic(props: SystemProps.BurnResearchForRelicProps) {
+    const { signer, structure_id } = props;
+    return await this.executeAndCheckTransaction(
+      signer,
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-artificer_systems`),
+        entrypoint: "burn_research_for_relic",
+        calldata: [structure_id],
+      },
+      undefined,
+      { transactionType: TransactionType.BURN_RESEARCH_FOR_RELIC },
+    );
   }
 
   public async apply_relic(props: SystemProps.ApplyRelicProps) {

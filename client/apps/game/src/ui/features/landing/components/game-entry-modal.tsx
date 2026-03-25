@@ -31,6 +31,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/use-season-pass-inventory";
+import { useUsername } from "@/hooks/use-username";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import type { SetupResult } from "@/init/bootstrap";
@@ -47,9 +48,10 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
+import { getContractByName } from "@dojoengine/core";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
-import { Account, CallData, RpcProvider, uint256 } from "starknet";
+import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
 import {
   buildSettlementExecutionPlan,
   deriveSettlementStatus,
@@ -61,6 +63,7 @@ const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
 const REALM_SYSTEMS_SELECTOR = "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2";
 const SPIRE_SYSTEMS_SELECTOR = "0x3c0936482acd769add8a662a6f1390e50b010607b2995892c17212e37c6afb3";
+const ETERNUM_NAMESPACE = "s1_eternum";
 const SETTLEMENT_PROGRESS_POLL_MS = 1000;
 const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
 const CONTRACT_MAP_CENTER = 2147483646;
@@ -157,6 +160,24 @@ const DIRECTION_SLOT_KEY_TO_ENUM: Record<string, Direction> = {
 };
 
 const normalizeDirectionSlotKey = (value: string): string => value.replace(/[\s_-]/g, "").toLowerCase();
+
+const hasNonZeroNumericValue = (value: string | null | undefined): boolean => {
+  if (!value) return false;
+  try {
+    return BigInt(value) !== 0n;
+  } catch {
+    return false;
+  }
+};
+
+const hasAddressNameValue = (value: unknown): boolean => {
+  if (value == null) return false;
+  try {
+    return BigInt(value as string | number | bigint) !== 0n;
+  } catch {
+    return true;
+  }
+};
 
 const parseDirectionSlotValue = (value: unknown): Direction | null => {
   if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 5) {
@@ -340,6 +361,14 @@ const mapSeasonSettleError = (error: unknown): string => {
     return "Spire creation failed. Retry once and verify this world exposes the spire system.";
   }
 
+  if (message.includes("unable to resolve player name")) {
+    return "Still loading your player name. Retry settlement in a moment.";
+  }
+
+  if (message.includes("name_systems contract not found")) {
+    return "Name system contract not found for this world.";
+  }
+
   if (message.includes("unauthorized caller")) {
     return "Season Pass approval missing. Retry to approve and settle in one transaction.";
   }
@@ -389,6 +418,18 @@ const mapSeasonSettleError = (error: unknown): string => {
 const mapVillageSettleError = (error: unknown): string => {
   const raw = error instanceof Error ? error.message : String(error ?? "");
   const message = raw.toLowerCase();
+
+  if (message.includes("unable to resolve player name")) {
+    return "Still loading your player name. Retry settlement in a moment.";
+  }
+
+  if (message.includes("name_systems contract not found")) {
+    return "Name system contract not found for this world.";
+  }
+
+  if (message.includes("village_systems contract not found")) {
+    return "Village system contract not found for this world.";
+  }
 
   if (message.includes("connected entity is not a realm")) {
     return "Choose one of your settled realms.";
@@ -2294,6 +2335,7 @@ export const GameEntryModal = ({
   const queryClient = useQueryClient();
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
+  const { usernameFelt } = useUsername();
   const playerFeltAddress = useMemo(() => {
     if (!account?.address) return null;
     try {
@@ -2984,6 +3026,115 @@ export const GameEntryModal = ({
       throw new Error(`Unable to confirm ${label}: no transaction wait method available`);
     },
     [setupResult, account],
+  );
+
+  const resolveWorldSystemAddress = useCallback(
+    (systemName: string): string => {
+      if (!setupResult) {
+        throw new Error("Game setup is still loading.");
+      }
+
+      const providerWithManifest = setupResult.network.provider as unknown as { manifest?: unknown };
+      if (!providerWithManifest.manifest) {
+        throw new Error("World manifest unavailable.");
+      }
+
+      const contract = getContractByName(providerWithManifest.manifest as any, ETERNUM_NAMESPACE, systemName);
+      const contractAddress =
+        typeof contract === "string"
+          ? contract
+          : contract && typeof contract === "object" && "address" in contract
+            ? (contract as { address?: string }).address
+            : null;
+
+      if (!contractAddress) {
+        throw new Error(`${systemName} contract not found for selected world`);
+      }
+
+      return contractAddress;
+    },
+    [setupResult],
+  );
+
+  const resolveOptionalPlayerNameForSettlement = useCallback(async (): Promise<string | null> => {
+    if (!setupResult || !account?.address) return null;
+
+    const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
+    const { getComponentValue } = await import("@dojoengine/recs");
+
+    const playerEntityId = getEntityIdFromKeys([BigInt(account.address)]);
+    const addressName = getComponentValue(setupResult.components.AddressName, playerEntityId) as {
+      name?: unknown;
+    } | null;
+
+    if (hasAddressNameValue(addressName?.name)) {
+      return null;
+    }
+
+    if (!usernameFelt) {
+      throw new Error("Unable to resolve player name for settlement.");
+    }
+
+    return usernameFelt;
+  }, [setupResult, account?.address, usernameFelt]);
+
+  const buildSetAddressNameCall = useCallback(
+    (playerName: string): Call => ({
+      contractAddress: resolveWorldSystemAddress("name_systems"),
+      entrypoint: "set_address_name",
+      calldata: CallData.compile([playerName]),
+    }),
+    [resolveWorldSystemAddress],
+  );
+
+  const buildVillageSettlementCalls = useCallback(
+    ({
+      signerAddress,
+      villagePassTokenId,
+      connectedRealmEntityId,
+      direction,
+      villagePassAddress,
+      optionalPlayerName,
+    }: {
+      signerAddress: string;
+      villagePassTokenId: bigint;
+      connectedRealmEntityId: number;
+      direction: Direction;
+      villagePassAddress: string;
+      optionalPlayerName: string | null;
+    }): Call[] => {
+      const villageSystemsAddress = resolveWorldSystemAddress("village_systems");
+      const calls: Call[] = [];
+
+      if (optionalPlayerName) {
+        calls.push(buildSetAddressNameCall(optionalPlayerName));
+      }
+
+      calls.push({
+        contractAddress: villagePassAddress,
+        entrypoint: "set_approval_for_all",
+        calldata: CallData.compile([villageSystemsAddress, true]),
+      });
+
+      const providerWithVrf = setupResult?.network.provider as unknown as { VRF_PROVIDER_ADDRESS?: string } | null;
+      const vrfProviderAddress = providerWithVrf?.VRF_PROVIDER_ADDRESS;
+      if (hasNonZeroNumericValue(vrfProviderAddress)) {
+        calls.push({
+          contractAddress: vrfProviderAddress as string,
+          entrypoint: "request_random",
+          calldata: CallData.compile([villageSystemsAddress, 0, signerAddress]),
+        });
+      }
+
+      calls.push({
+        contractAddress: villageSystemsAddress,
+        entrypoint: "create",
+        calldata: CallData.compile([villagePassTokenId, connectedRealmEntityId, direction]),
+      });
+
+      return calls;
+    },
+    [buildSetAddressNameCall, resolveWorldSystemAddress, setupResult?.network.provider],
   );
 
   const waitForVillageResourceReveal = useCallback(
@@ -3679,7 +3830,12 @@ export const GameEntryModal = ({
       const frontend = account.address;
 
       const seasonPassTokenId = uint256.bnToUint256(realmIdBigInt);
-      const executeResult = await signer.execute([
+      const optionalPlayerName = await resolveOptionalPlayerNameForSettlement();
+      const settlementCalls: Call[] = [];
+      if (optionalPlayerName) {
+        settlementCalls.push(buildSetAddressNameCall(optionalPlayerName));
+      }
+      settlementCalls.push(
         {
           contractAddress: seasonPassAddress,
           entrypoint: "approve",
@@ -3697,8 +3853,15 @@ export const GameEntryModal = ({
             seasonPlacement.point,
           ]),
         },
-      ]);
-      await waitForSubmittedTransaction(executeResult, "approve season pass + season realm create");
+      );
+
+      const executeResult = await signer.execute(settlementCalls);
+      await waitForSubmittedTransaction(
+        executeResult,
+        optionalPlayerName
+          ? "set address name + approve season pass + season realm create"
+          : "approve season pass + season realm create",
+      );
 
       setSeasonSettlementError(null);
       void refetchSeasonPassInventory();
@@ -3731,6 +3894,8 @@ export const GameEntryModal = ({
     seasonPlacement.layer,
     seasonPlacement.point,
     waitForSubmittedTransaction,
+    resolveOptionalPlayerNameForSettlement,
+    buildSetAddressNameCall,
     refetchSeasonPassInventory,
     refetchDistributorVillagePassInventory,
     refetchOwnedStructures,
@@ -3775,18 +3940,24 @@ export const GameEntryModal = ({
     setVillageSettlementError(null);
 
     try {
-      const { systemCalls } = setupResult;
+      const signer = account as unknown as Account;
       const existingVillageIds = new Set(ownedVillageIdSet);
-
-      const executeResult = await systemCalls.create_village({
-        signer: account,
-        village_pass_token_id: selectedVillagePassTokenId,
-        connected_realm: selectedVillageRealmEntityId,
+      const optionalPlayerName = await resolveOptionalPlayerNameForSettlement();
+      const villageSettlementCalls = buildVillageSettlementCalls({
+        signerAddress: account.address,
+        villagePassTokenId: selectedVillagePassTokenId,
+        connectedRealmEntityId: selectedVillageRealmEntityId,
         direction: selectedVillageDirection,
-        village_pass_address: villagePassAddress,
+        villagePassAddress,
+        optionalPlayerName,
       });
 
-      await waitForSubmittedTransaction(executeResult, "village_systems.create");
+      const executeResult = await signer.execute(villageSettlementCalls);
+
+      await waitForSubmittedTransaction(
+        executeResult,
+        optionalPlayerName ? "set address name + village_systems.create" : "village_systems.create",
+      );
 
       const revealResult = await waitForVillageResourceReveal({
         ownerAddress: account.address,
@@ -3816,6 +3987,8 @@ export const GameEntryModal = ({
     selectedVillageDirection,
     selectedVillageAvailableDirections,
     ownedVillageIdSet,
+    resolveOptionalPlayerNameForSettlement,
+    buildVillageSettlementCalls,
     waitForSubmittedTransaction,
     waitForVillageResourceReveal,
     refetchVillagePassInventory,

@@ -27,21 +27,22 @@ export const CreateGuildButton = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row w-full items-center gap-4">
+    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
       <TextInput
         placeholder="Tribe Name . . ."
         onChange={setGuildName}
         maxLength={MAX_NAME_LENGTH}
-        className="w-full"
+        className="w-full button-wood"
       />
-      <div className="flex items-center gap-2 mt-2 sm:mt-0">
-        <div
-          className="flex items-center justify-center p-2 rounded-md border border-gold/30 hover:bg-gold/10 transition-colors cursor-pointer"
+      <div className="flex items-center gap-2 sm:shrink-0">
+        <button
+          type="button"
+          className="grid h-9 w-9 place-items-center rounded-md border border-gold/30 bg-black/20 transition-colors hover:bg-gold/10"
           onClick={() => setIsPublic(!isPublic)}
         >
           {isPublic ? (
             <LockOpen
-              className="fill-gold w-5 h-5"
+              className="h-4 w-4 fill-gold"
               onMouseEnter={() => {
                 setTooltip({
                   position: "bottom",
@@ -54,7 +55,7 @@ export const CreateGuildButton = ({
             />
           ) : (
             <LockClosed
-              className="fill-gold/60 w-5 h-5"
+              className="h-4 w-4 fill-gold/60"
               onMouseEnter={() => {
                 setTooltip({
                   position: "bottom",
@@ -66,9 +67,9 @@ export const CreateGuildButton = ({
               }}
             />
           )}
-        </div>
+        </button>
 
-        <Button variant="primary" onClick={handleSubmit} disabled={!guildName} className="min-w-24">
+        <Button variant="primary" onClick={handleSubmit} disabled={!guildName} className="min-w-[120px]">
           Confirm
         </Button>
       </div>

@@ -42,6 +42,7 @@ export const getResourcesFromToriiEntity = (entity: any): ComponentValue<ClientC
     FISH_BALANCE: BigInt(entity.FISH_BALANCE.value),
     LORDS_BALANCE: BigInt(entity.LORDS_BALANCE.value),
     ESSENCE_BALANCE: BigInt(entity.ESSENCE_BALANCE.value),
+    RESEARCH_BALANCE: BigInt(entity.RESEARCH_BALANCE?.value ?? 0),
     RELIC_E1_BALANCE: BigInt(entity.RELIC_E1_BALANCE.value),
     RELIC_E2_BALANCE: BigInt(entity.RELIC_E2_BALANCE.value),
     RELIC_E3_BALANCE: BigInt(entity.RELIC_E3_BALANCE.value),
@@ -292,5 +293,11 @@ export const getResourcesFromToriiEntity = (entity: any): ComponentValue<ClientC
       output_amount_left: BigInt(entity.ESSENCE_PRODUCTION.value.output_amount_left.value),
       last_updated_at: entity.ESSENCE_PRODUCTION.value.last_updated_at.value,
     },
-  };
+    RESEARCH_PRODUCTION: {
+      building_count: entity.RESEARCH_PRODUCTION?.value?.building_count?.value ?? 0,
+      production_rate: BigInt(entity.RESEARCH_PRODUCTION?.value?.production_rate?.value ?? 0),
+      output_amount_left: BigInt(entity.RESEARCH_PRODUCTION?.value?.output_amount_left?.value ?? 0),
+      last_updated_at: entity.RESEARCH_PRODUCTION?.value?.last_updated_at?.value ?? 0,
+    },
+  } as ComponentValue<ClientComponents["Resource"]["schema"]>;
 };
