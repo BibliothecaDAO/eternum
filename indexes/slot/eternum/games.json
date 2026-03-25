@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-03-25T12:16:03.808Z",
+  "updatedAt": "2026-03-25T12:20:46.964Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -11,7 +11,7 @@
       "path": "runs/slot/eternum/etrn-banana.json",
       "inputPath": "inputs/slot/eternum/etrn-banana/23540305841-1.json",
       "status": "complete",
-      "updatedAt": "2026-03-25T12:16:03.808Z",
+      "updatedAt": "2026-03-25T12:20:46.964Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -22,7 +22,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "basic",
-        "lastIndexerDescribeAt": "2026-03-25T12:16:02.193Z"
+        "lastIndexerDescribeAt": "2026-03-25T12:16:02.193Z",
+        "pendingIndexerTierTarget": "legendary",
+        "pendingIndexerTierRequestedAt": "2026-03-25T12:20:45.814Z"
       }
     }
   }
