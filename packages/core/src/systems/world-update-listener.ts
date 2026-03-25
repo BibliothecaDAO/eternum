@@ -244,6 +244,7 @@ export class WorldUpdateListener {
                   return {
                     entityId: removedEntityId,
                     hexCoords: { col: coordsSource.col, row: coordsSource.row },
+                    alt: coordsSource.alt ?? false,
                     troopType: previousExplorer.troopType as TroopType,
                     troopTier: previousExplorer.troopTier as TroopTier,
                     isDaydreamsAgent: previousExplorer.isDaydreamsAgent,
@@ -302,6 +303,7 @@ export class WorldUpdateListener {
                 return {
                   entityId: rawOccupierId,
                   hexCoords: { col: currentState.col, row: currentState.row },
+                  alt: currentState.alt ?? false,
                   // need to set it to 0n if no owner address because else it won't be registered on the worldmap
                   ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
                   ownerName: enhancedData?.owner.ownerName || "",
@@ -362,6 +364,7 @@ export class WorldUpdateListener {
                 },
                 ownerStructureId: normalizedOwnerStructureId,
                 hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
+                alt: currentState.coord.alt ?? false,
                 ownerAddress: owner?.address || 0n,
                 ownerName: owner?.ownerName || "",
                 battleCooldownEnd: currentState.troops.battle_cooldown_end,

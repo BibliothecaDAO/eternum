@@ -17,6 +17,7 @@ import { Position } from "./position";
 export type ExplorerTroopsTileSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
+  alt: boolean;
   troopType: TroopType;
   troopTier: TroopTier;
   isDaydreamsAgent: boolean;
@@ -54,6 +55,7 @@ export type ExplorerTroopsTileSystemUpdate = {
 export type ExplorerTroopsSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
+  alt: boolean;
   troopCount: number;
   onChainStamina: {
     amount: bigint;
