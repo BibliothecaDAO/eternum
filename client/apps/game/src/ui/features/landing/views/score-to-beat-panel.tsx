@@ -218,10 +218,7 @@ const ScoreBar = ({ score, maxScore }: { score: number; maxScore: number }) => {
   const pct = maxScore > 0 ? Math.min(100, Math.round((score / maxScore) * 100)) : 0;
   return (
     <div className="h-1 w-full overflow-hidden rounded-full bg-gold/10">
-      <div
-        className="h-full rounded-full bg-gold/40 transition-all duration-500"
-        style={{ width: `${pct}%` }}
-      />
+      <div className="h-full rounded-full bg-gold/40 transition-all duration-500" style={{ width: `${pct}%` }} />
     </div>
   );
 };
@@ -282,7 +279,9 @@ const ScorePodiumCard = ({
       />
       <span className="mt-1 text-sm font-medium text-gold">{displayName}</span>
       <span className={`font-bold text-gold ${config.scoreSize}`}>{formatPoints(combinedPoints)}</span>
-      <span className="text-[10px] text-gold/40">{runsCount} {runsCount === 1 ? "run" : "runs"}</span>
+      <span className="text-[10px] text-gold/40">
+        {runsCount} {runsCount === 1 ? "run" : "runs"}
+      </span>
     </div>
   );
 };
@@ -292,7 +291,11 @@ const ExpandedRowDetail = ({
   entry,
   colSpan,
 }: {
-  entry: { address: string; runs: Array<{ endpoint: string; points: number }>; allRuns: Array<{ endpoint: string; points: number }> };
+  entry: {
+    address: string;
+    runs: Array<{ endpoint: string; points: number }>;
+    allRuns: Array<{ endpoint: string; points: number }>;
+  };
   colSpan: number;
 }) => {
   const [copied, setCopied] = useState(false);
@@ -314,10 +317,7 @@ const ExpandedRowDetail = ({
   }, [entry.allRuns]);
 
   // The best run endpoints for highlighting
-  const bestEndpoints = useMemo(
-    () => new Set(entry.runs.map((r) => describeEndpoint(r.endpoint))),
-    [entry.runs],
-  );
+  const bestEndpoints = useMemo(() => new Set(entry.runs.map((r) => describeEndpoint(r.endpoint))), [entry.runs]);
 
   return (
     <tr>
@@ -348,9 +348,7 @@ const ExpandedRowDetail = ({
                       <span
                         key={gameName}
                         className={`rounded px-2 py-1 text-xs ${
-                          isBest
-                            ? "border border-gold/20 bg-gold/15 text-gold"
-                            : "bg-gold/5 text-gold/50"
+                          isBest ? "border border-gold/20 bg-gold/15 text-gold" : "bg-gold/5 text-gold/50"
                         }`}
                       >
                         {gameName}: {formatPoints(score)}
@@ -707,9 +705,7 @@ export const ScoreToBeatPanel = () => {
                 loading="lazy"
               />
               <div>
-                <p className="text-lg font-semibold text-gold">
-                  {(topScoreToBeatLabel ?? "Unknown").trim()}
-                </p>
+                <p className="text-lg font-semibold text-gold">{(topScoreToBeatLabel ?? "Unknown").trim()}</p>
                 <p className="flex items-baseline gap-2 text-3xl font-bold text-gold">
                   {formatPoints(topScoreToBeat.combinedPoints)}
                   <span className="text-base font-normal text-gold/60">pts</span>
@@ -785,9 +781,7 @@ export const ScoreToBeatPanel = () => {
         >
           <span className="text-xs">{isGameSelectorOpen ? "\u25BE" : "\u25B8"}</span>
           <span className="font-medium">{gameLabel}</span>
-          {!isGameSelectorOpen && (
-            <span className="ml-1 text-xs text-gold/50">{collapsedSelectorSummary}</span>
-          )}
+          {!isGameSelectorOpen && <span className="ml-1 text-xs text-gold/50">{collapsedSelectorSummary}</span>}
         </button>
 
         {isGameSelectorOpen && (
@@ -1001,14 +995,14 @@ export const ScoreToBeatPanel = () => {
                               loading="lazy"
                             />
                             <div className="flex flex-col gap-1">
-                            <span className="font-medium text-gold">
-                              {entry.displayName ?? displayAddress(entry.address)}
-                            </span>
-                            {entry.displayName && (
-                              <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
-                            )}
-                            {/* Relative score bar */}
-                            <ScoreBar score={entry.combinedPoints} maxScore={topScore} />
+                              <span className="font-medium text-gold">
+                                {entry.displayName ?? displayAddress(entry.address)}
+                              </span>
+                              {entry.displayName && (
+                                <span className="text-xs text-gold/40">{displayAddress(entry.address)}</span>
+                              )}
+                              {/* Relative score bar */}
+                              <ScoreBar score={entry.combinedPoints} maxScore={topScore} />
                             </div>
                           </div>
                         </td>
@@ -1016,9 +1010,7 @@ export const ScoreToBeatPanel = () => {
                           {formatPoints(entry.combinedPoints)}
                         </td>
                       </tr>
-                      {isExpanded && (
-                        <ExpandedRowDetail entry={entry} colSpan={3} />
-                      )}
+                      {isExpanded && <ExpandedRowDetail entry={entry} colSpan={3} />}
                     </Fragment>
                   );
                 })}

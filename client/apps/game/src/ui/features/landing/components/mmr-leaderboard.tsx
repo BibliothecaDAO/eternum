@@ -381,10 +381,7 @@ const shortAddr = (address: string): string => {
 };
 
 /** Fetch controller usernames from the Torii SQL controllers table */
-const fetchControllerUsernames = async (
-  toriiBaseUrl: string,
-  addresses: string[],
-): Promise<Map<string, string>> => {
+const fetchControllerUsernames = async (toriiBaseUrl: string, addresses: string[]): Promise<Map<string, string>> => {
   const map = new Map<string, string>();
   if (!toriiBaseUrl || addresses.length === 0) return map;
 
@@ -573,9 +570,7 @@ const PodiumCard = ({
       />
       <div className="flex items-center gap-1.5">
         <span className="text-sm font-medium text-gold">{displayName}</span>
-        {isCurrentUser && (
-          <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold">You</span>
-        )}
+        {isCurrentUser && <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold">You</span>}
       </div>
       <MMRTierBadge tier={tier} size="md" />
       <span className="text-lg font-bold text-gold">{formatMMR(entry.newMmr)}</span>
@@ -1085,7 +1080,9 @@ export const MMRLeaderboard = () => {
                                 className="h-8 w-8 rounded-full border border-gold/20 object-cover"
                                 loading="lazy"
                               />
-                              <span className="font-medium text-gold">{usernameMap.get(entry.address) ?? shortAddr(entry.address)}</span>
+                              <span className="font-medium text-gold">
+                                {usernameMap.get(entry.address) ?? shortAddr(entry.address)}
+                              </span>
                               {isUser && (
                                 <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold">
                                   You
@@ -1113,9 +1110,7 @@ export const MMRLeaderboard = () => {
                             {formatEventTimestamp(entry.updatedAtSeconds)}
                           </td>
                         </tr>
-                        {isExpanded && (
-                          <ExpandedRowDetail entry={entry} />
-                        )}
+                        {isExpanded && <ExpandedRowDetail entry={entry} />}
                       </Fragment>
                     );
                   })}
