@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23543148195-1.json",
   "latestLaunchRequestId": "23543148195-1",
-  "currentStepId": "create-series",
+  "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-25T13:22:00.184Z",
+  "updatedAt": "2026-03-25T13:22:06.055Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,17 +30,18 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-25T13:36:55.058Z",
-    "lastEvaluatedAt": "2026-03-25T13:21:55.058Z"
+    "nextEvaluationAt": "2026-03-25T13:37:06.055Z",
+    "lastEvaluatedAt": "2026-03-25T13:22:06.055Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series started",
-      "startedAt": "2026-03-25T13:22:00.184Z"
+      "latestEvent": "Series is ready to accept rotation games",
+      "startedAt": "2026-03-25T13:22:00.184Z",
+      "finishedAt": "2026-03-25T13:22:06.055Z"
     },
     {
       "id": "create-worlds",
@@ -1872,13 +1873,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23543148195-1",
-    "workflowRunId": 23543148195,
-    "workflowRunAttempt": 1,
-    "stepId": "create-series",
-    "acquiredAt": "2026-03-25T13:22:00.184Z",
-    "expiresAt": "2026-03-25T14:07:00.184Z"
   }
 }
