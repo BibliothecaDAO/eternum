@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23545891450-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-25T14:30:44.339Z",
+  "updatedAt": "2026-03-25T14:30:55.676Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -905,7 +905,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-warzone-05: Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1086,10 +1086,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-03-25T14:12:22.346Z",
-          "lastIndexerTierDispatchTarget": "legendary",
-          "lastIndexerTierDispatchFailedAt": "2026-03-25T14:12:22.346Z",
-          "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
+          "pendingIndexerTierRequestedAt": "2026-03-25T14:30:53.704Z"
         }
       },
       {
