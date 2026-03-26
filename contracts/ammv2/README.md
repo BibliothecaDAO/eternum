@@ -10,7 +10,9 @@ Main contracts:
 
 ## Deviation From Uniswap v2
 
-The main intentional economic deviation is in [pair.cairo](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/components/pair.cairo), inside protocol fee minting.
+The main intentional economic deviation is in
+[pair.cairo](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/components/pair.cairo),
+inside protocol fee minting.
 
 Classic Uniswap v2:
 
@@ -32,10 +34,11 @@ Why:
 - then this protocol share targets roughly `0.5%` to protocol
 - while roughly `1.0%` remains with LPs
 
-So the deviation is not “take a second protocol skim during swaps.”
-It is “when protocol LP minting happens later, mint a larger share than Uniswap v2 would.”
+So the deviation is not “take a second protocol skim during swaps.” It is “when protocol LP minting happens later, mint
+a larger share than Uniswap v2 would.”
 
-“Fee growth” here means growth in `sqrt(reserve0 * reserve1)` between `k_last` snapshots, which is the same style of proxy Uniswap v2 uses.
+“Fee growth” here means growth in `sqrt(reserve0 * reserve1)` between `k_last` snapshots, which is the same style of
+proxy Uniswap v2 uses.
 
 ## How To Retune Fees Later
 
@@ -57,7 +60,9 @@ Examples:
 
 ### 2. Protocol share of fee growth
 
-This is controlled in [pair.cairo](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/components/pair.cairo) by the coefficient in:
+This is controlled in
+[pair.cairo](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/components/pair.cairo)
+by the coefficient in:
 
 - `root_k * N + root_k_last`
 
@@ -90,10 +95,13 @@ Examples:
   - set `fee_amount = 990`
   - use `N = 5`
 
-This remains an approximation because protocol capture is realized later through LP minting, not as an immediate per-swap token transfer.
+This remains an approximation because protocol capture is realized later through LP minting, not as an immediate
+per-swap token transfer.
 
 ## Deployment Notes
 
-The deployment scripts live under [scripts](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/scripts).
+The deployment scripts live under
+[scripts](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/scripts).
 
-When the deployment config says `setFeeAmountNumeratorAssumeDivIs1000`, it is setting the total trader-visible swap fee numerator over `1000`.
+When the deployment config says `setFeeAmountNumeratorAssumeDivIs1000`, it is setting the total trader-visible swap fee
+numerator over `1000`.
