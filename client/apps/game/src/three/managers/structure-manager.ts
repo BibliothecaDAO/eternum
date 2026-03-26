@@ -7,7 +7,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import { StructureTileSystemUpdate } from "@bibliothecadao/eternum";
+import type { StructureTileUpsertUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -764,7 +764,7 @@ export class StructureManager {
     return gltfs.map((gltf) => new InstancedModel(gltf, INITIAL_STRUCTURE_CAPACITY, false, cosmeticId));
   }
 
-  async onUpdate(update: StructureTileSystemUpdate) {
+  async onUpdate(update: StructureTileUpsertUpdate) {
     // console.log("[UPDATE STRUCTURE SYSTEM ON UPDATE]", update);
     const { entityId: rawEntityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
     const entityId = normalizeEntityId(rawEntityId);
@@ -1016,6 +1016,62 @@ export class StructureManager {
 
     if (visibleUpdateMode === "rebuild" || shouldRebuildVisibleStructuresForStructureUpdate(visibleUpdateInput)) {
       this.updateVisibleStructures();
+    }
+  }
+
+  public removeStructure(entityId: ID, previousHexCoords?: { col: number; row: number }): void {
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return;
+    }
+
+    const removedStructure = this.structures.removeStructure(normalizedEntityId);
+    const resolvedHexCoords = removedStructure?.hexCoords ?? previousHexCoords;
+
+    if (resolvedHexCoords) {
+      const columnRows = this.structureHexCoords.get(resolvedHexCoords.col);
+      if (columnRows) {
+        columnRows.delete(resolvedHexCoords.row);
+        if (columnRows.size === 0) {
+          this.structureHexCoords.delete(resolvedHexCoords.col);
+        }
+      }
+
+      const spatialKey = this.getSpatialKey(resolvedHexCoords.col, resolvedHexCoords.row);
+      const spatialBucket = this.chunkToStructures.get(spatialKey);
+      if (spatialBucket) {
+        spatialBucket.delete(normalizedEntityId);
+        if (spatialBucket.size === 0) {
+          this.chunkToStructures.delete(spatialKey);
+        }
+      }
+    }
+
+    this.removeEntityIdLabel(normalizedEntityId);
+
+    if (this.pointsRenderers) {
+      if (removedStructure) {
+        this.getRendererForStructure(removedStructure)?.removePoint(normalizedEntityId);
+      } else {
+        Object.values(this.pointsRenderers).forEach((renderer) => renderer.removePoint(normalizedEntityId));
+      }
+    }
+
+    this.attachmentManager.removeAttachments(normalizedEntityId);
+    this.activeStructureAttachmentEntities.delete(normalizedEntityId);
+    this.structureAttachmentSignatures.delete(normalizedEntityId);
+    this.structuresWithActiveBattleTimer.delete(normalizedEntityId);
+    this.previousVisibleIds.delete(normalizedEntityId);
+    this.wonderEntityIdMaps.forEach((mappedEntityId, instanceId) => {
+      if (mappedEntityId === normalizedEntityId) {
+        this.wonderEntityIdMaps.delete(instanceId);
+      }
+    });
+
+    this.frustumVisibilityDirty = true;
+
+    if (resolvedHexCoords && this.isInCurrentChunk(resolvedHexCoords)) {
+      void this.updateVisibleStructures();
     }
   }
 

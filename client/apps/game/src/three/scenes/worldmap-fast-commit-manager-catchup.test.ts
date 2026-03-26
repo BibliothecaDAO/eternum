@@ -13,7 +13,7 @@ describe("worldmap fast commit manager catch-up wiring", () => {
     const finalizeSource = readSceneSource("./warp-travel-chunk-switch-commit.ts");
 
     expect(finalizeSource).toMatch(/scheduleManagerCatchUp\(/);
-    expect(finalizeSource).not.toMatch(/await input\.updateManagersForChunk\(/);
+    expect(finalizeSource).toMatch(/await input\.commitVisibleStructures\(/);
   });
 
   it("defers same-chunk refresh manager catch-up after terrain commit", () => {
@@ -21,5 +21,6 @@ describe("worldmap fast commit manager catch-up wiring", () => {
 
     expect(worldmapSource).toMatch(/deferManagerCatchUpForChunk\(/);
     expect(worldmapSource).toMatch(/WORLDMAP_STREAMING_ROLLOUT\.stagedPathEnabled/);
+    expect(worldmapSource).toMatch(/await this\.commitVisibleStructuresForChunk\(/);
   });
 });

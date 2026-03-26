@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-26",
+    title: "Stable Edge Building Rendering",
+    description:
+      "Buildings at chunk boundaries now switch cleanly with the terrain refresh flow, preventing ghosted structures from lingering at the edge of the visible world.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Instant Explorer Map Pins",
     description:
       "Auto-Explore now enables the explorer location shortcut as soon as a new automation entry appears, instead of waiting for the next position refresh cycle.",

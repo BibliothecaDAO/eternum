@@ -51,6 +51,8 @@ import {
   getTileAt,
   SelectableArmy,
   StructureActionManager,
+  type StructureTileRemovedUpdate,
+  type StructureTileUpsertUpdate,
   TileSystemUpdate,
 } from "@bibliothecadao/eternum";
 import {
@@ -1039,51 +1041,12 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
         this.incrementToriiBoundsCounter("structureTiles");
-        const positions = this.updateStructureHexes(value);
-
-        const optimisticStructure = this.structureManager.structures.removeStructure(
-          Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-        );
-        if (optimisticStructure) {
-          this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
-          this.structureManager.structureHexCoords
-            .get(optimisticStructure.hexCoords.col)
-            ?.delete(optimisticStructure.hexCoords.row);
-          this.structureManager.updateChunk(this.currentChunk);
+        if (value.kind === "removed") {
+          this.handleRemovedStructureTileUpdate(value);
+          return;
         }
 
-        await this.trackStructureHydrationUpdate(value, this.structureManager.onUpdate(value));
-
-        const newCount = this.structureManager.getTotalStructures();
-        const countChanged = this.totalStructures !== newCount;
-
-        // Debug: Track structure count changes
-        if (import.meta.env.DEV && countChanged) {
-          console.log(
-            `[Structure.onTileUpdate] Count changed: ${this.totalStructures} -> ${newCount}, entityId: ${value.entityId}`,
-          );
-        }
-
-        const structureTileActions = resolveStructureTileUpdateActions({
-          hasPositions: Boolean(positions),
-          countChanged,
-        });
-
-        if (structureTileActions.shouldScheduleTileRefresh && positions) {
-          this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
-        }
-
-        if (structureTileActions.shouldUpdateTotalStructures) {
-          this.totalStructures = newCount;
-        }
-
-        if (structureTileActions.shouldClearCache) {
-          this.clearCache();
-        }
-
-        if (structureTileActions.shouldRefreshVisibleChunks) {
-          this.requestChunkRefresh(true, "structure_count_change");
-        }
+        await this.handleUpsertStructureTileUpdate(value);
       }),
     );
 
@@ -2813,7 +2776,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private clearSceneChunkBounds(): void {
-    this.applySceneChunkBounds(undefined);
+    this.applyTerrainChunkBounds(undefined);
+    this.stageStructureChunkBounds(undefined);
   }
 
   private forceVisibilityManagerUpdate(): void {
@@ -3345,6 +3309,75 @@ export default class WorldmapScene extends WarpTravel {
     gameWorkerManager.updateStructureHex(newPos.col, newPos.row, structureInfo);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
     return { oldPos, newPos };
+  }
+
+  private handleRemovedStructureTileUpdate(value: StructureTileRemovedUpdate): void {
+    const normalizedPreviousHex = new Position({
+      x: value.previousHexCoords.col,
+      y: value.previousHexCoords.row,
+    }).getNormalized();
+    const previousHex = {
+      col: normalizedPreviousHex.x,
+      row: normalizedPreviousHex.y,
+    };
+
+    this.structuresPositions.delete(value.entityId);
+    this.structureHexes.get(previousHex.col)?.delete(previousHex.row);
+    if (this.structureHexes.get(previousHex.col)?.size === 0) {
+      this.structureHexes.delete(previousHex.col);
+    }
+    gameWorkerManager.updateStructureHex(previousHex.col, previousHex.row, null);
+    this.invalidateAllChunkCachesContainingHex(previousHex.col, previousHex.row);
+    this.structureManager.removeStructure(value.entityId, previousHex);
+    this.removeEntityFromTracking(value.entityId);
+    this.totalStructures = this.structureManager.getTotalStructures();
+    this.scheduleTileRefreshIfAffectsCurrentRenderBounds(previousHex, null);
+    incrementWorldmapRenderCounter("removedStructureUpdates");
+  }
+
+  private async handleUpsertStructureTileUpdate(value: StructureTileUpsertUpdate): Promise<void> {
+    const positions = this.updateStructureHexes(value);
+
+    const optimisticStructure = this.structureManager.structures.getStructureByEntityId(
+      Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
+    );
+    if (optimisticStructure) {
+      this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
+      this.structureManager.removeStructure(Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID), optimisticStructure.hexCoords);
+      this.structureManager.updateChunk(this.currentChunk);
+    }
+
+    await this.trackStructureHydrationUpdate(value, this.structureManager.onUpdate(value));
+
+    const newCount = this.structureManager.getTotalStructures();
+    const countChanged = this.totalStructures !== newCount;
+
+    if (import.meta.env.DEV && countChanged) {
+      console.log(
+        `[Structure.onTileUpdate] Count changed: ${this.totalStructures} -> ${newCount}, entityId: ${value.entityId}`,
+      );
+    }
+
+    const structureTileActions = resolveStructureTileUpdateActions({
+      hasPositions: Boolean(positions),
+      countChanged,
+    });
+
+    if (structureTileActions.shouldScheduleTileRefresh && positions) {
+      this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
+    }
+
+    if (structureTileActions.shouldUpdateTotalStructures) {
+      this.totalStructures = newCount;
+    }
+
+    if (structureTileActions.shouldClearCache) {
+      this.clearCache();
+    }
+
+    if (structureTileActions.shouldRefreshVisibleChunks) {
+      this.requestChunkRefresh(true, "structure_count_change");
+    }
   }
 
   // update chest hexes on the map
@@ -3926,10 +3959,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const uploadWork = classifyWorldmapUploadWork({
-      matrixInstanceCount:
-        this.armyManager.getVisibleCount() +
-        this.structureManager.getVisibleCount() +
-        this.chestManager.getVisibleCount(),
+      matrixInstanceCount: this.armyManager.getVisibleCount() + this.chestManager.getVisibleCount(),
       colorInstanceCount: 0,
       isCachedReplay: false,
       stage: "visible_commit",
@@ -5629,19 +5659,51 @@ export default class WorldmapScene extends WarpTravel {
     return { box, sphere };
   }
 
-  private applySceneChunkBounds(bounds: { box: Box3; sphere: Sphere } | undefined): void {
+  private stageStructureChunkBounds(bounds: { box: Box3; sphere: Sphere } | undefined): void {
+    this.structureManager.setChunkBounds(bounds);
+  }
+
+  private applyTerrainChunkBounds(bounds: { box: Box3; sphere: Sphere } | undefined): void {
     this.currentChunkBounds = bounds;
     this.biomeModels.forEach((biome) => biome.setWorldBounds(bounds));
-    this.structureManager.setChunkBounds(bounds);
   }
 
   private updateCurrentChunkBounds(startRow: number, startCol: number) {
     const bounds = this.computeChunkBounds(startRow, startCol);
-    this.applySceneChunkBounds(bounds);
+    this.applyTerrainChunkBounds(bounds);
 
     // Register chunk bounds with centralized visibility manager
     const chunkKey = `${startRow},${startCol}`;
     this.visibilityManager?.registerChunk(chunkKey, bounds);
+  }
+
+  private resolveChunkBoundsForChunkKey(chunkKey: string): { box: Box3; sphere: Sphere } | undefined {
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
+      return undefined;
+    }
+
+    return this.computeChunkBounds(startRow, startCol);
+  }
+
+  private async commitVisibleStructuresForChunk(
+    chunkKey: string,
+    bounds?: { box: Box3; sphere: Sphere },
+    options?: { force?: boolean; transitionToken?: number },
+  ): Promise<void> {
+    const resolvedBounds = bounds ?? this.resolveChunkBoundsForChunkKey(chunkKey);
+    this.stageStructureChunkBounds(resolvedBounds);
+
+    const startedAt = performance.now();
+    try {
+      await this.structureManager.updateChunk(chunkKey, options);
+      incrementWorldmapRenderCounter("structureVisibleCommits");
+    } catch (error) {
+      incrementWorldmapRenderCounter("structureSyncCommitFallbacks");
+      throw error;
+    } finally {
+      recordWorldmapRenderDuration("structureCommitMs", performance.now() - startedAt);
+    }
   }
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
@@ -6111,7 +6173,7 @@ export default class WorldmapScene extends WarpTravel {
         computeChunkBounds: (targetStartRow, targetStartCol) => this.computeChunkBounds(targetStartRow, targetStartCol),
         registerChunk: (targetChunkKey, bounds) => this.visibilityManager?.registerChunk(targetChunkKey, bounds),
         combineChunkBounds: (previousBounds, nextBounds) => this.combineChunkBounds(previousBounds, nextBounds),
-        applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
+        applySceneChunkBounds: (bounds) => this.applyTerrainChunkBounds(bounds),
       });
 
       // Load surrounding pinned chunks for better UX.
@@ -6234,6 +6296,12 @@ export default class WorldmapScene extends WarpTravel {
         forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
         updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
           this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
+        commitVisibleStructures: (targetChunkKey, bounds, managerOptions) =>
+          this.commitVisibleStructuresForChunk(
+            targetChunkKey,
+            bounds as { box: Box3; sphere: Sphere } | undefined,
+            managerOptions,
+          ),
         scheduleManagerCatchUp: (targetChunkKey, managerOptions) => {
           if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
             this.deferManagerCatchUpForChunk(targetChunkKey, managerOptions);
@@ -6371,6 +6439,7 @@ export default class WorldmapScene extends WarpTravel {
 
       if (commitDecision.shouldCommit && preparedTerrain) {
         const terrainCommitStartedAt = performance.now();
+        await this.commitVisibleStructuresForChunk(chunkKey, undefined, { force: true, transitionToken });
         this.applyPreparedTerrainChunk(preparedTerrain);
         this.updateCurrentChunkBounds(startRow, startCol);
         const commitCompletedAt = performance.now();
@@ -6436,11 +6505,6 @@ export default class WorldmapScene extends WarpTravel {
           {
             label: "army",
             updateChunk: (targetChunkKey, targetOptions) => this.armyManager.updateChunk(targetChunkKey, targetOptions),
-          },
-          {
-            label: "structure",
-            updateChunk: (targetChunkKey, targetOptions) =>
-              this.structureManager.updateChunk(targetChunkKey, targetOptions),
           },
           {
             label: "chest",

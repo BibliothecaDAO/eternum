@@ -6,6 +6,7 @@ export type WorldmapRenderDurationMetric =
   | "updateManagersForChunk"
   | "executeRenderForChunk"
   | "performVisibleStructuresUpdate"
+  | "structureCommitMs"
   | "terrainPreparedMs"
   | "chunkTerrainReadyMs"
   | "chunkTerrainCommitMs"
@@ -32,6 +33,8 @@ export type WorldmapRenderCounter =
   | "zoomTransitionsCompleted"
   | "zoomTransitionsCancelled"
   | "terrainVisibleCommits"
+  | "structureVisibleCommits"
+  | "removedStructureUpdates"
   | "duplicateTileAuthoritativeUpdates"
   | "terrainVisibleOverlapRepairCount"
   | "terrainVisibleReplaceCount"
@@ -41,7 +44,8 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
   | "postCommitManagerCatchUpImmediate"
-  | "postCommitManagerCatchUpDeferred";
+  | "postCommitManagerCatchUpDeferred"
+  | "structureSyncCommitFallbacks";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -97,6 +101,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     updateManagersForChunk: createDurationStats(),
     executeRenderForChunk: createDurationStats(),
     performVisibleStructuresUpdate: createDurationStats(),
+    structureCommitMs: createDurationStats(),
     terrainPreparedMs: createDurationStats(),
     chunkTerrainReadyMs: createDurationStats(),
     chunkTerrainCommitMs: createDurationStats(),
@@ -129,6 +134,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     zoomTransitionsCompleted: 0,
     zoomTransitionsCancelled: 0,
     terrainVisibleCommits: 0,
+    structureVisibleCommits: 0,
+    removedStructureUpdates: 0,
     duplicateTileAuthoritativeUpdates: 0,
     terrainVisibleOverlapRepairCount: 0,
     terrainVisibleReplaceCount: 0,
@@ -139,6 +146,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmMisses: 0,
     postCommitManagerCatchUpImmediate: 0,
     postCommitManagerCatchUpDeferred: 0,
+    structureSyncCommitFallbacks: 0,
   },
   forceRefreshReasons: {
     default: 0,

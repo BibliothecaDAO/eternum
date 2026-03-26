@@ -415,11 +415,39 @@ export class WorldUpdateListener {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, _prevStateOpt] = update.value;
               const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
+              const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
 
               const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
+              const previousStructureInfo = _prevState && getStructureInfoFromTileOccupier(_prevState?.occupier_type);
 
-              if (!structureInfo) return;
+              if (!structureInfo) {
+                if (!previousStructureInfo || !_prevState) {
+                  return;
+                }
+
+                try {
+                  const structureComponent = getComponentValue(
+                    this.setup.components.Structure,
+                    getEntityIdFromKeys([BigInt(_prevState.occupier_id)]),
+                  );
+
+                  if (structureComponent) {
+                    return;
+                  }
+                } catch (_error) {
+                  // Treat lookup failures as absent structure state so the removal can converge.
+                }
+
+                return {
+                  kind: "removed" as const,
+                  entityId: _prevState.occupier_id,
+                  previousHexCoords: {
+                    col: _prevState.col,
+                    row: _prevState.row,
+                  },
+                  structureType: previousStructureInfo.type,
+                };
+              }
 
               const hyperstructure = getComponentValue(
                 this.setup.components.Hyperstructure,
@@ -504,6 +532,7 @@ export class WorldUpdateListener {
                   : undefined;
 
                 return {
+                  kind: "upsert" as const,
                   entityId: rawOccupierId,
                   structureName,
                   hexCoords: {

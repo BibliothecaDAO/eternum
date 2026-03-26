@@ -65,7 +65,8 @@ export type ExplorerTroopsSystemUpdate = {
   battleCooldownEnd: number;
 };
 
-export type StructureTileSystemUpdate = {
+export type StructureTileUpsertUpdate = {
+  kind: "upsert";
   entityId: ID;
   structureName: string;
   hexCoords: HexPosition;
@@ -93,6 +94,15 @@ export type StructureTileSystemUpdate = {
     latestDefenderCoordY: number | null;
   };
 };
+
+export type StructureTileRemovedUpdate = {
+  kind: "removed";
+  entityId: ID;
+  previousHexCoords: HexPosition;
+  structureType: StructureType;
+};
+
+export type StructureTileSystemUpdate = StructureTileUpsertUpdate | StructureTileRemovedUpdate;
 
 export type StructureSystemUpdate = {
   entityId: ID;

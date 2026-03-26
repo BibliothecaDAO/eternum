@@ -38,6 +38,7 @@ vi.mock("@/three/utils/utils", () => ({
 
 vi.mock("@/ui/config", () => ({
   FELT_CENTER: () => 0,
+  IS_FLAT_MODE: false,
 }));
 
 vi.mock("@bibliothecadao/types", () => {
@@ -57,6 +58,20 @@ vi.mock("@bibliothecadao/types", () => {
       has: () => true,
     },
   );
+});
+
+vi.mock("@bibliothecadao/eternum", () => {
+  const enumProxy = new Proxy(
+    {},
+    {
+      get: (_, key) => key,
+    },
+  );
+
+  return new Proxy({ StructureProgress: enumProxy } as Record<string, unknown>, {
+    get: (target, prop) => (prop in target ? target[prop as string] : enumProxy),
+    has: () => true,
+  });
 });
 
 vi.mock("@dojoengine/recs", () => ({
@@ -84,8 +99,11 @@ vi.mock("../cosmetics", () => ({
     hydrateFromBlitzComponent: vi.fn(),
   },
   resolveStructureCosmetic: vi.fn(() => ({
-    cosmeticId: "default",
-    registryEntry: undefined,
+    skin: {
+      cosmeticId: "default",
+      assetPaths: [],
+      isFallback: true,
+    },
     attachments: [],
   })),
   resolveStructureMountTransforms: vi.fn(() => []),
@@ -120,6 +138,11 @@ vi.mock("../utils/labels/label-pool", () => ({
 
 vi.mock("./fx-manager", () => ({
   FXManager: class MockFXManager {},
+}));
+
+vi.mock("@/three/perf/worldmap-render-diagnostics", () => ({
+  recordWorldmapRenderDuration: vi.fn(),
+  setWorldmapRenderGauge: vi.fn(),
 }));
 
 vi.mock("./manager-update-convergence", () => ({
@@ -303,6 +326,46 @@ function createOnUpdateSubject() {
   return { subject, structuresById };
 }
 
+function createRemoveStructureSubject() {
+  const subject = Object.create(StructureManager.prototype) as any;
+  const removePoint = vi.fn();
+  const removeEntityIdLabel = vi.fn();
+  const removeAttachments = vi.fn();
+  const removedStructure = {
+    entityId: 7,
+    hexCoords: { col: 10, row: 15 },
+    structureType: "Village",
+    isMine: false,
+    isAlly: false,
+  };
+
+  subject.structures = {
+    removeStructure: vi.fn(() => removedStructure),
+  };
+  subject.structureHexCoords = new Map([[10, new Set([15])]]);
+  subject.chunkToStructures = new Map([["0,0", new Set([7])]]);
+  subject.chunkStride = 24;
+  subject.removeEntityIdLabel = removeEntityIdLabel;
+  subject.attachmentManager = { removeAttachments };
+  subject.activeStructureAttachmentEntities = new Set([7]);
+  subject.structureAttachmentSignatures = new Map([[7, "sig"]]);
+  subject.structuresWithActiveBattleTimer = new Set([7]);
+  subject.wonderEntityIdMaps = new Map([[0, 7]]);
+  subject.previousVisibleIds = new Set([7]);
+  subject.pointsRenderers = { any: { removePoint } };
+  subject.getRendererForStructure = vi.fn(() => ({ removePoint }));
+  subject.isInCurrentChunk = vi.fn(() => true);
+  subject.updateVisibleStructures = vi.fn();
+  subject.frustumVisibilityDirty = false;
+
+  return {
+    subject,
+    removeAttachments,
+    removeEntityIdLabel,
+    removePoint,
+  };
+}
+
 const BASE_STRUCTURE_UPDATE = {
   entityId: 7,
   structureName: "Camp",
@@ -319,6 +382,22 @@ const BASE_STRUCTURE_UPDATE = {
 };
 
 describe("StructureManager destroy lifecycle", () => {
+  it("removes stale structure state and refreshes visible presentation when a visible structure is deleted", () => {
+    const fixture = createRemoveStructureSubject();
+
+    fixture.subject.removeStructure(7, { col: 10, row: 15 });
+
+    expect(fixture.subject.structures.removeStructure).toHaveBeenCalledWith(7);
+    expect(fixture.subject.structureHexCoords.has(10)).toBe(false);
+    expect(fixture.subject.chunkToStructures.has("0,0")).toBe(false);
+    expect(fixture.removeEntityIdLabel).toHaveBeenCalledWith(7);
+    expect(fixture.removeAttachments).toHaveBeenCalledWith(7);
+    expect(fixture.removePoint).toHaveBeenCalledWith(7);
+    expect(fixture.subject.structuresWithActiveBattleTimer.has(7)).toBe(false);
+    expect(fixture.subject.previousVisibleIds.has(7)).toBe(false);
+    expect(fixture.subject.updateVisibleStructures).toHaveBeenCalledTimes(1);
+  });
+
   it("runs a single visible-structure rebuild during chunk switches", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
 

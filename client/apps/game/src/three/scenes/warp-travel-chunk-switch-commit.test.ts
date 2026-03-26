@@ -19,6 +19,10 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       [string, { force: boolean; transitionToken: number }],
       void
     >();
+    const commitVisibleStructures = createControlledAsyncCall<
+      [string, { box: unknown; sphere: unknown } | undefined, { force: boolean; transitionToken: number }],
+      void
+    >();
     const applyPreparedTerrain = vi.fn();
     const updatePinnedChunks = vi.fn();
     const unregisterChunk = vi.fn();
@@ -49,7 +53,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds,
       forceVisibilityUpdate,
       updateCurrentChunkBounds,
-
+      commitVisibleStructures: commitVisibleStructures.fn,
       scheduleManagerCatchUp: scheduleManagerCatchUp.fn,
       unregisterPreviousChunkOnNextFrame,
     });
@@ -65,6 +69,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     });
     expect(applyPreparedTerrain).not.toHaveBeenCalled();
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
+    expect(commitVisibleStructures.calls).toEqual([]);
     expect(scheduleManagerCatchUp.calls).toEqual([]);
     expect(clearSceneChunkBounds).not.toHaveBeenCalled();
   });
@@ -72,6 +77,10 @@ describe("finalizeWarpTravelChunkSwitch", () => {
   it("drops stale prepared chunks without committing manager updates", async () => {
     const scheduleManagerCatchUp = createControlledAsyncCall<
       [string, { force: boolean; transitionToken: number }],
+      void
+    >();
+    const commitVisibleStructures = createControlledAsyncCall<
+      [string, { box: unknown; sphere: unknown } | undefined, { force: boolean; transitionToken: number }],
       void
     >();
     const applyPreparedTerrain = vi.fn();
@@ -99,7 +108,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds: vi.fn(),
       forceVisibilityUpdate: vi.fn(),
       updateCurrentChunkBounds: vi.fn(),
-
+      commitVisibleStructures: commitVisibleStructures.fn,
       scheduleManagerCatchUp: scheduleManagerCatchUp.fn,
       unregisterPreviousChunkOnNextFrame: vi.fn(),
     });
@@ -109,11 +118,16 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     });
     expect(applyPreparedTerrain).not.toHaveBeenCalled();
     expect(unregisterChunk).toHaveBeenCalledWith("24,24");
+    expect(commitVisibleStructures.calls).toEqual([]);
     expect(scheduleManagerCatchUp.calls).toEqual([]);
   });
 
-  it("commits prepared terrain before deferred manager catch-up completes", async () => {
+  it("commits visible structures before terrain and deferred manager catch-up completes", async () => {
     const managerCatchUp = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
+    const commitVisibleStructures = createControlledAsyncCall<
+      [string, { box: unknown; sphere: unknown } | undefined, { force: boolean; transitionToken: number }],
+      void
+    >();
     const phaseOrder: string[] = [];
     const applyPreparedTerrain = vi.fn(() => {
       phaseOrder.push("terrain");
@@ -156,19 +170,34 @@ describe("finalizeWarpTravelChunkSwitch", () => {
         phaseOrder.push(`bounds:${startRow},${startCol}`);
         updateCurrentChunkBounds(startRow, startCol);
       }),
+      commitVisibleStructures: vi.fn(
+        async (
+          ...args: [string, { box: unknown; sphere: unknown } | undefined, { force: boolean; transitionToken: number }]
+        ) => {
+          phaseOrder.push("structures");
+          return commitVisibleStructures.fn(...args);
+        },
+      ),
       scheduleManagerCatchUp,
       unregisterPreviousChunkOnNextFrame,
     });
 
+    expect(commitVisibleStructures.calls).toEqual([["24,24", undefined, { force: true, transitionToken: 17 }]]);
+    expect(applyPreparedTerrain).not.toHaveBeenCalled();
+    commitVisibleStructures.resolveNext();
+    await resultPromise;
     expect(updateCurrentChunkBounds).toHaveBeenCalledWith(24, 24);
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
     expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", { force: true, transitionToken: 17 });
     expect(managerCatchUp.calls).toEqual([["24,24", { force: true, transitionToken: 17 }]]);
-    expect(phaseOrder).toEqual(["authority", "terrain", "bounds:24,24", "visibility", "manager-scheduled"]);
-    await expect(resultPromise).resolves.toEqual({
-      status: "committed",
-    });
-
+    expect(phaseOrder).toEqual([
+      "authority",
+      "structures",
+      "terrain",
+      "bounds:24,24",
+      "visibility",
+      "manager-scheduled",
+    ]);
     managerCatchUp.resolveNext();
     await Promise.resolve();
     expect(unregisterPreviousChunkOnNextFrame).toHaveBeenCalledWith("0,0");
@@ -178,6 +207,9 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     let currentChunk = "0,0";
     const setCurrentChunk = vi.fn((chunkKey: string) => {
       currentChunk = chunkKey;
+    });
+    const commitVisibleStructures = vi.fn(async (chunkKey: string) => {
+      expect(currentChunk).toBe(chunkKey);
     });
     const scheduleManagerCatchUp = vi.fn(async (chunkKey: string) => {
       expect(currentChunk).toBe(chunkKey);
@@ -205,11 +237,15 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds: vi.fn(),
       forceVisibilityUpdate: vi.fn(),
       updateCurrentChunkBounds: vi.fn(),
-
+      commitVisibleStructures,
       scheduleManagerCatchUp,
       unregisterPreviousChunkOnNextFrame: vi.fn(),
     });
 
+    expect(commitVisibleStructures).toHaveBeenCalledWith("24,24", undefined, {
+      force: false,
+      transitionToken: 19,
+    });
     expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", {
       force: false,
       transitionToken: 19,

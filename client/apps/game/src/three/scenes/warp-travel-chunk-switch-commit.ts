@@ -27,6 +27,11 @@ interface FinalizeWarpTravelChunkSwitchInput {
   clearSceneChunkBounds: () => void;
   forceVisibilityUpdate: () => void;
   updateCurrentChunkBounds: (startRow: number, startCol: number) => void;
+  commitVisibleStructures: (
+    chunkKey: string,
+    bounds: { box: unknown; sphere: unknown } | undefined,
+    options: { force: boolean; transitionToken: number },
+  ) => Promise<void>;
   scheduleManagerCatchUp: (chunkKey: string, options: { force: boolean; transitionToken: number }) => void;
   unregisterPreviousChunkOnNextFrame: (chunkKey: string) => void;
 }
@@ -79,6 +84,10 @@ export async function finalizeWarpTravelChunkSwitch(
   }
 
   input.setCurrentChunk(input.targetChunk);
+  await input.commitVisibleStructures(input.targetChunk, undefined, {
+    force: input.force,
+    transitionToken: input.transitionToken,
+  });
   if (input.preparedTerrain !== null && input.preparedTerrain !== undefined) {
     input.applyPreparedTerrain(input.preparedTerrain);
   }

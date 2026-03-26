@@ -15,6 +15,17 @@ function extractRefreshCurrentChunkMethod(source: string): string {
 }
 
 describe("worldmap refresh bounds ordering", () => {
+  it("commits visible structures before prepared terrain commit in refreshCurrentChunk", () => {
+    const methodSource = extractRefreshCurrentChunkMethod(readWorldmapSource());
+
+    const structureCommitIndex = methodSource.indexOf("await this.commitVisibleStructuresForChunk(");
+    const applyPreparedTerrainIndex = methodSource.indexOf("this.applyPreparedTerrainChunk(preparedTerrain);");
+
+    expect(structureCommitIndex).toBeGreaterThanOrEqual(0);
+    expect(applyPreparedTerrainIndex).toBeGreaterThanOrEqual(0);
+    expect(structureCommitIndex).toBeLessThan(applyPreparedTerrainIndex);
+  });
+
   it("updates current chunk bounds only after prepared terrain commit in refreshCurrentChunk", () => {
     const methodSource = extractRefreshCurrentChunkMethod(readWorldmapSource());
 
@@ -34,7 +45,7 @@ describe("worldmap refresh bounds ordering", () => {
     const methodSource = extractRefreshCurrentChunkMethod(readWorldmapSource());
 
     expect(methodSource).toMatch(
-      /if \(commitDecision\.shouldCommit && preparedTerrain\) \{[\s\S]*?this\.applyPreparedTerrainChunk\(preparedTerrain\);[\s\S]*?this\.updateCurrentChunkBounds\(startRow, startCol\);/s,
+      /if \(commitDecision\.shouldCommit && preparedTerrain\) \{[\s\S]*?await this\.commitVisibleStructuresForChunk\([\s\S]*?this\.applyPreparedTerrainChunk\(preparedTerrain\);[\s\S]*?this\.updateCurrentChunkBounds\(startRow, startCol\);/s,
     );
   });
 });

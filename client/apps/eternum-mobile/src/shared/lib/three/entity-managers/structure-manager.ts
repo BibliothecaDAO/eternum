@@ -1,4 +1,10 @@
-import { ActionPaths, Position, StructureActionManager, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
+import {
+  ActionPaths,
+  Position,
+  StructureActionManager,
+  StructureTileSystemUpdate,
+  StructureTileUpsertUpdate,
+} from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -350,12 +356,30 @@ export class StructureManager extends EntityManager<StructureObject> {
 
   // Structure-specific methods moved from HexagonMap
   public handleSystemUpdate(update: StructureTileSystemUpdate): void {
+    if (update.kind === "removed") {
+      const normalizedPreviousHex = new Position({
+        x: update.previousHexCoords.col,
+        y: update.previousHexCoords.row,
+      }).getNormalized();
+      this.structureHexes.get(normalizedPreviousHex.x)?.delete(normalizedPreviousHex.y);
+      if (this.structureHexes.get(normalizedPreviousHex.x)?.size === 0) {
+        this.structureHexes.delete(normalizedPreviousHex.x);
+      }
+      this.removeObject(update.entityId);
+
+      if (this.biomeRefreshCallback) {
+        this.biomeRefreshCallback();
+      }
+      return;
+    }
+
+    const upsert: StructureTileUpsertUpdate = update;
     const {
       hexCoords: { col, row },
       owner: { address },
       entityId,
       structureType,
-    } = update;
+    } = upsert;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
@@ -371,15 +395,15 @@ export class StructureManager extends EntityManager<StructureObject> {
       owner: address || 0n,
       type: "structure",
       structureType: structureType.toString(),
-      ownerName: update.owner.ownerName,
-      guildName: update.owner.guildName,
-      guardArmies: update.guardArmies,
-      activeProductions: update.activeProductions,
-      hyperstructureRealmCount: update.hyperstructureRealmCount,
-      stage: update.stage,
-      initialized: update.initialized,
-      level: update.level,
-      hasWonder: update.hasWonder,
+      ownerName: upsert.owner.ownerName,
+      guildName: upsert.owner.guildName,
+      guardArmies: upsert.guardArmies,
+      activeProductions: upsert.activeProductions,
+      hyperstructureRealmCount: upsert.hyperstructureRealmCount,
+      stage: upsert.stage,
+      initialized: upsert.initialized,
+      level: upsert.level,
+      hasWonder: upsert.hasWonder,
     };
     this.updateObject(structure);
 
