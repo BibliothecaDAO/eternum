@@ -20,11 +20,15 @@ interface RealmUpgradeStoreState {
   getUpgrade: (structureEntityId: number | null | undefined) => RealmUpgradeAction | null;
 }
 
+const isRealmUpgradeKey = (structureEntityId: number | null | undefined): structureEntityId is number => {
+  return typeof structureEntityId === "number" && Number.isFinite(structureEntityId);
+};
+
 const resolveRealmUpgrade = (
   upgradesByRealm: Record<number, RealmUpgradeAction | undefined>,
   structureEntityId: number | null | undefined,
 ) => {
-  if (!Number.isFinite(structureEntityId)) {
+  if (!isRealmUpgradeKey(structureEntityId)) {
     return null;
   }
 

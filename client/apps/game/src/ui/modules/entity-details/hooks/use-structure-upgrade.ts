@@ -24,6 +24,7 @@ const REALM_UPGRADE_SYNC_POLL_INTERVAL_MS = 1_000;
 
 type LiveRealmInfo = NonNullable<ReturnType<typeof getRealmInfo>>;
 type RealmUpgradeSyncTarget = Parameters<typeof getStructuresDataFromTorii>[2][number];
+type RealmUpgradeToriiComponents = Parameters<typeof getStructuresDataFromTorii>[1];
 type RealmUpgradeWaitProvider = { waitForTransactionWithCheck?: (txHash: string) => Promise<unknown> };
 type RealmUpgradeWaitAccount = { waitForTransaction?: (txHash: string) => Promise<unknown> };
 
@@ -71,6 +72,14 @@ const buildRealmUpgradeSyncTarget = (structureInfo: LiveRealmInfo): RealmUpgrade
     row: structureInfo.position.y,
   },
 });
+
+const resolveRealmUpgradeToriiComponents = (contractComponents: unknown): RealmUpgradeToriiComponents | null => {
+  if (!contractComponents) {
+    return null;
+  }
+
+  return contractComponents as unknown as RealmUpgradeToriiComponents;
+};
 
 const hasRealmReachedExpectedLevel = ({
   realmEntity,
@@ -275,8 +284,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     }
 
     const syncTarget = buildRealmUpgradeSyncTarget(structureInfo);
-    const toriiComponents =
-      (network.contractComponents as Parameters<typeof getStructuresDataFromTorii>[1] | undefined) ?? null;
+    const toriiComponents = resolveRealmUpgradeToriiComponents(network.contractComponents);
 
     startUpgrade(structureInfo.entityId, nextLevel);
 
