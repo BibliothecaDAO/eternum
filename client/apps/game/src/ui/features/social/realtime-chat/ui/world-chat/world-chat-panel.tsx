@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
+import { Position } from "@bibliothecadao/eternum";
+import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import {
   useRealtimeChatActions,
   useRealtimeChatSelector,
@@ -8,6 +10,7 @@ import {
   useWorldChatControls,
 } from "../../hooks/use-realtime-chat";
 import type { WorldChatMessage } from "../../model/types";
+import { computeDateSeparators, computeGroupFlags } from "../../model/message-grouping";
 import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
 import { normalizeAvatarUsername, useAvatarProfilesByUsernames } from "@/hooks/use-player-avatar";
@@ -65,11 +68,17 @@ const processMessage = (message: string): MessagePart[] => {
 };
 
 // Coordinate navigation button component
-const CoordinateNavButton = ({ coordinates }: { coordinates: { x: number; y: number } }) => {
+const CoordinateNavButton = ({
+  coordinates,
+  onNavigate,
+}: {
+  coordinates: { x: number; y: number };
+  onNavigate?: (coordinates: { x: number; y: number }) => void;
+}) => {
   return (
     <button
       className="inline-flex items-center gap-1 px-1.5 py-0.5 text-gold hover:text-gold/50 transition-colors duration-200 rounded bg-gold/15 hover:bg-gold/25"
-      onClick={() => console.log("Navigate to:", coordinates)}
+      onClick={() => onNavigate?.(coordinates)}
     >
       <span className="text-xs">{`${coordinates.x}, ${coordinates.y}`}</span>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
@@ -127,6 +136,14 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
+
+  const navigateToMapView = useNavigateToMapView();
+  const handleNavigateToCoordinates = useCallback(
+    (coordinates: { x: number; y: number }) => {
+      navigateToMapView(new Position({ x: coordinates.x, y: coordinates.y }));
+    },
+    [navigateToMapView],
+  );
 
   const handleUserClick = (userId: string) => {
     const threadId = actions.openDirectThread(userId);
@@ -236,6 +253,9 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     return () => observer.disconnect();
   }, [zone?.hasMoreHistory, zone?.isFetchingHistory, zone?.lastFetchedCursor, loadHistory]);
 
+  const groupFlags = useMemo(() => computeGroupFlags(messages), [messages]);
+  const dateSeparators = useMemo(() => computeDateSeparators(messages), [messages]);
+
   const displayLabel = useMemo(() => {
     if (zoneLabel) return zoneLabel;
     if (resolvedZoneId) return `Zone ${resolvedZoneId}`;
@@ -259,38 +279,70 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               )}
 
               <ul className="flex flex-col gap-0.5">
-                {messages.map((message) => {
+                {messages.map((message, index) => {
                   const senderName = formatSenderName(message);
                   const messageParts = processMessage(message.content);
                   const normalized = normalizeAvatarUsername(message.sender.displayName ?? message.sender.playerId);
                   const avatarUrl = message.sender.avatarUrl ?? (normalized ? avatarMap.get(normalized) : undefined);
+                  const showHeader = groupFlags[index];
                   return (
-                    <li key={message.id} className="text-[13px] leading-tight text-white/90">
-                      <div className="flex items-start gap-2">
-                        <UserAvatar name={senderName} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>{" "}
-                          <span
-                            onClick={() => handleUserClick(message.sender.playerId)}
-                            className="text-gold/90 hover:text-gold transition-colors cursor-pointer"
-                            title={`Click to send DM to ${senderName}`}
-                          >
-                            &lt;{senderName}&gt;
-                          </span>{" "}
-                          <span className="break-words">
-                            {messageParts.map((part, i) => (
-                              <span key={i}>
-                                {part.type === "text" ? (
-                                  <>{part.content}</>
-                                ) : (
-                                  <CoordinateNavButton coordinates={part.content as { x: number; y: number }} />
-                                )}
+                    <Fragment key={message.id}>
+                      {dateSeparators.has(index) && (
+                        <li key={`sep-${index}`} className="flex items-center gap-2 py-2 px-4">
+                          <div className="flex-1 border-t border-gold/20" />
+                          <span className="text-xs text-gold/40">{dateSeparators.get(index)}</span>
+                          <div className="flex-1 border-t border-gold/20" />
+                        </li>
+                      )}
+                      <li className="text-[13px] leading-tight text-white/90">
+                        {showHeader ? (
+                          <div className="flex items-start gap-2">
+                            <UserAvatar name={senderName} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
+                            <div>
+                              <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>{" "}
+                              <span
+                                onClick={() => handleUserClick(message.sender.playerId)}
+                                className="text-gold/90 hover:text-gold transition-colors cursor-pointer"
+                                title={`Click to send DM to ${senderName}`}
+                              >
+                                &lt;{senderName}&gt;
+                              </span>{" "}
+                              <span className="break-words">
+                                {messageParts.map((part, i) => (
+                                  <span key={i}>
+                                    {part.type === "text" ? (
+                                      <>{part.content}</>
+                                    ) : (
+                                      <CoordinateNavButton
+                                        coordinates={part.content as { x: number; y: number }}
+                                        onNavigate={handleNavigateToCoordinates}
+                                      />
+                                    )}
+                                  </span>
+                                ))}
                               </span>
-                            ))}
-                          </span>
-                        </div>
-                      </div>
-                    </li>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pl-8">
+                            <span className="break-words">
+                              {messageParts.map((part, i) => (
+                                <span key={i}>
+                                  {part.type === "text" ? (
+                                    <>{part.content}</>
+                                  ) : (
+                                    <CoordinateNavButton
+                                      coordinates={part.content as { x: number; y: number }}
+                                      onNavigate={handleNavigateToCoordinates}
+                                    />
+                                  )}
+                                </span>
+                              ))}
+                            </span>
+                          </div>
+                        )}
+                      </li>
+                    </Fragment>
                   );
                 })}
                 {messages.length === 0 && !zone.isFetchingHistory && (
