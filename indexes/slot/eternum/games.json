@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-03-26T20:26:48.982Z",
+  "updatedAt": "2026-03-26T20:26:57.857Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -32,12 +32,13 @@
       "path": "runs/slot/eternum/mygame.json",
       "inputPath": "inputs/slot/eternum/mygame/23616270104-1.json",
       "status": "running",
-      "updatedAt": "2026-03-26T20:26:48.982Z",
+      "updatedAt": "2026-03-26T20:26:57.857Z",
       "workflowRef": "next",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-26T21:11:57.857Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": "configure-world",
       "startTime": 1774555200,
       "durationSeconds": 0,
       "artifacts": {}
