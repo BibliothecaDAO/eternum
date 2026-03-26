@@ -244,7 +244,7 @@ const LeftPanelHeader = memo(
         {
           key: "villages",
           label: mode.labels.villages,
-          categories: [StructureType.Village],
+          categories: [StructureType.Village, StructureType.Camp],
           icon: VILLAGE_ICON_BY_KEY[mode.ui.villageIconKey],
         },
         {
