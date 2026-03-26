@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-crisp-881/23622685483-1.json",
   "latestLaunchRequestId": "23622685483-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-03-26T23:15:30.387Z",
-  "updatedAt": "2026-03-26T23:16:54.206Z",
+  "updatedAt": "2026-03-26T23:17:16.730Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-03-26T23:16:54.206Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-03-26T23:16:54.206Z",
+      "finishedAt": "2026-03-26T23:17:16.730Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,14 +71,8 @@
     "durationSeconds": 3600,
     "summaryPath": ".context/game-launch/slot-blitz-bltz-crisp-881.json",
     "worldAddress": "0x051466f89576b4380be62f037a0def9d72bf005eec88503dc53a3768367d7c1f",
-    "createGameTxHash": "0x4f7cf89963e71d564fe9893b224713b484be48fcd0ba268b3ae8377db0c5b60"
-  },
-  "activeLease": {
-    "launchRequestId": "23622685483-1",
-    "workflowRunId": 23622685483,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-03-26T23:16:54.206Z",
-    "expiresAt": "2026-03-27T00:01:54.206Z"
+    "createGameTxHash": "0x4f7cf89963e71d564fe9893b224713b484be48fcd0ba268b3ae8377db0c5b60",
+    "configureTxHash": "0x538c3b1f3c080b9059df26e4f13aa5cb6ac6736d462ca8b3c1ca4c8d14954b1",
+    "worldConfigTxHash": "0x538c3b1f3c080b9059df26e4f13aa5cb6ac6736d462ca8b3c1ca4c8d14954b1"
   }
 }
