@@ -1,6 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
@@ -38,9 +39,13 @@ const RealmVillageDetails = () => {
     return structure?.structure.base.category === StructureType.Realm;
   }, [structure]);
 
-  const isVillage = useMemo(() => {
-    return structure?.structure.base.category === StructureType.Village;
+  const isVillageLike = useMemo(() => {
+    return isVillageLikeStructureCategory(structure?.structure.base.category);
   }, [structure]);
+
+  const structureName = useMemo(() => {
+    return structure ? mode.structure.getName(structure.structure).name : "Structure";
+  }, [mode, structure]);
 
   const address = useMemo(() => {
     return toHexString(structure?.owner || 0n);
@@ -72,13 +77,13 @@ const RealmVillageDetails = () => {
             onMouseLeave={() => setTooltip(null)}
             className="h6 text-lg text-green bg-green/10 px-4 py-1.5 rounded-lg animate-pulse"
           >
-            Realm is Immune for: {formatTime(timer)}
+            {structureName} is Immune for: {formatTime(timer)}
           </div>
         )}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div>
-              <h3 className="text-2xl font-bold">{mode.structure.getName(structure.structure).name}</h3>
+              <h3 className="text-2xl font-bold">{structureName}</h3>
             </div>
             <HintModalButton section={HintSection.Realm} />
           </div>
@@ -93,7 +98,7 @@ const RealmVillageDetails = () => {
           </div>
         </div>
 
-        {(isRealm || isVillage) && <Castle />}
+        {(isRealm || isVillageLike) && <Castle />}
       </div>
     )
   );

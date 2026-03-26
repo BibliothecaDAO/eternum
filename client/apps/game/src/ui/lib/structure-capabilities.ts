@@ -1,3 +1,4 @@
+import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import type { GameModeId } from "@/config/game-modes";
 import { ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -42,7 +43,6 @@ const POPULATION_STRUCTURE_CATEGORIES = new Set<StructureType>([
   StructureType.Village,
   StructureType.Camp,
 ]);
-const VILLAGE_LIKE_CATEGORIES = new Set<StructureType>([StructureType.Village, StructureType.Camp]);
 
 const normalizeEntityId = (value: ID | bigint | number | null | undefined): number | null => {
   if (typeof value === "number") {
@@ -70,7 +70,7 @@ const normalizeSlotCount = (value: SlotValue): number => {
 
 const getStructureCategory = (structure: StructureCapabilityTarget): StructureType | null => {
   const category = structure?.base?.category ?? structure?.category;
-  return category === undefined || category === null ? null : (Number(category) as StructureType);
+  return normalizeStructureCategory(category);
 };
 
 const getStructureEntityId = (structure: StructureCapabilityTarget): number | null =>
@@ -112,12 +112,10 @@ export const resolveStructureUiCapabilities = (structure: StructureCapabilityTar
     canOpenProduction: category !== null && CONSTRUCTION_STRUCTURE_CATEGORIES.has(category),
     canOpenTransferInventory: isInventoryStructureCategory(category),
     hasPopulationDetails: category !== null && POPULATION_STRUCTURE_CATEGORIES.has(category),
-    isVillageLike: category !== null && VILLAGE_LIKE_CATEGORIES.has(category),
+    isVillageLike: isVillageLikeStructureCategory(category),
   };
 };
-
-export const isVillageLikeStructureCategory = (category: StructureType | null | undefined) =>
-  category !== null && category !== undefined && VILLAGE_LIKE_CATEGORIES.has(category);
+export { isVillageLikeStructureCategory };
 
 export const canTransferMilitaryInventoryFromStructure = (modeId: GameModeId, structure: StructureCapabilityTarget) => {
   const capabilities = resolveStructureUiCapabilities(structure);

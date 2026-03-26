@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-26",
+    title: "Camp Structure View",
+    description:
+      "Blitz camps now render their dedicated camp model and consistent camp labels in the structure view instead of falling back to castle-only visuals.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Blitz Camp Actions",
     description:
       "Blitz camps now expose their full contract-backed structure actions in the client, including construction access, field army creation, guard deployment, and troop transfers between owned structures.",
