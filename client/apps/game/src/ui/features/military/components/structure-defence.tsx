@@ -29,7 +29,7 @@ interface CooldownTimerProps {
   time: number; // seconds
 }
 
-export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
+const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(time);
 
   useEffect(() => {

@@ -277,12 +277,13 @@ const GameCard = ({
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
   const isEternumMode = game.config?.mode === "eternum";
-  const isBlitzMode = game.config?.mode !== "eternum";
+  const isBlitzMode = game.config?.mode === "blitz";
+  const isUnknownMode = game.config?.mode === "unknown" || !game.config?.mode;
   const hasSettledEternumRealm = isEternumMode && game.config?.hasPlayerSettledRealm === true;
   const devModeOn = game.config?.devModeOn ?? false;
   const canPlayBlitz = isBlitzMode && isOngoing && game.isRegistered;
   const canOpenEternumEntry = isEternumMode && !isEnded;
-  const canPlay = canPlayBlitz || canOpenEternumEntry;
+  const canPlay = !isUnknownMode && (canPlayBlitz || canOpenEternumEntry);
   const canPlayEternumDirect = canOpenEternumEntry && hasSettledEternumRealm;
   const showEternumSettleShortcut = canOpenEternumEntry && hasSettledEternumRealm;
   const eternumPrimaryActionLabel = canPlayEternumDirect ? "Play" : "Settle";
@@ -293,7 +294,7 @@ const GameCard = ({
   // Forge hyperstructures button shown during registration period
   const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
   // Show forge button when we have config (even if 0 left, show disabled)
-  const showForgeButton = game.config?.numHyperstructuresLeft !== null && playerAddress;
+  const showForgeButton = isBlitzMode && game.config?.numHyperstructuresLeft !== null && playerAddress;
   const lordsFeeAmount = game.config?.feeAmount ?? 0n;
   const hasLordsFee = lordsFeeAmount > 0n;
   const winnerJackpotAmount = game.config?.winnerJackpotAmount ?? 0n;
@@ -441,7 +442,11 @@ const GameCard = ({
   const settledVillagesCount = game.config?.settledVillagesCount ?? 0;
   const eternumPlayersLabel = `${settledPlayersCount} settled players`;
   const eternumSettlementLabel = `${settledRealmsCount} realms · ${settledVillagesCount} villages`;
-  const playersLabel = isEternumMode ? eternumPlayersLabel : registrationLabel;
+  const playersLabel = isUnknownMode
+    ? "Detecting game mode..."
+    : isEternumMode
+      ? eternumPlayersLabel
+      : registrationLabel;
 
   return (
     <div
@@ -625,6 +630,10 @@ const GameCard = ({
               <Play className="w-3 h-3" />
               {canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
             </button>
+          ) : isUnknownMode ? (
+            <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
+              Detecting mode...
+            </div>
           ) : isBlitzMode && game.isRegistered === null && playerAddress ? (
             // Loading state while checking registration status
             <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
