@@ -13,7 +13,7 @@ import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 
 export const PROCESS_INTERVAL_MS = 60 * 1000;
 
-export interface RealmResourceSnapshotEntry {
+interface RealmResourceSnapshotEntry {
   resourceId: ResourcesIds;
   balanceHuman: number;
   hasActiveProduction: boolean;

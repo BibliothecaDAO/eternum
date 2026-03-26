@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import {
   fetchFaithLeaderboard,
   fetchFaithfulStructureStatus,
@@ -104,6 +105,8 @@ export const FaithDevotionActionPanel = ({
   className,
 }: FaithDevotionActionPanelProps) => {
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const resolvedWorldMode = useResolvedWorldGameMode();
+  const isEternumMode = resolvedWorldMode === "eternum";
   const { structure, isMine, isLoadingStructure, structureName } = useStructureEntityDetail({ structureEntityId });
 
   const structureCategory = structure?.base?.category;
@@ -183,6 +186,10 @@ export const FaithDevotionActionPanel = ({
       />,
     );
   }, [currentWonderId, currentWonderLabel, toggleModal]);
+
+  if (!isEternumMode) {
+    return null;
+  }
 
   if (isLoadingStructure) {
     return (

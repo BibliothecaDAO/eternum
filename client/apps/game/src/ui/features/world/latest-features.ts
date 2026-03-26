@@ -17,6 +17,13 @@ export const latestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-03-26",
+    title: "Mode-Isolated Game UI",
+    description:
+      "Blitz and Eternum interfaces now stay isolated by world mode: Faith-only panels are hidden in Blitz, Blitz Prize/MMR tabs are hidden in Eternum, and unknown-mode game cards stay in a neutral detecting state until mode resolves.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Unified Hex Biome Lighting",
     description:
       "Biome tiles now use a consistent surface style instead of mixing random lit and unlit variants, making the world map easier to read at a glance.",
