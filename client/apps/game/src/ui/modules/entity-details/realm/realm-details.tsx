@@ -15,11 +15,10 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import Button from "@/ui/design-system/atoms/button";
-import { ProductionModal } from "@/ui/features/settlement";
 import CrownIcon from "lucide-react/dist/esm/icons/crown";
 
 const RealmVillageDetails = () => {
@@ -102,7 +101,6 @@ const RealmVillageDetails = () => {
 export const RealmUpgradeCompact = () => {
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const [isUpgrading, setIsUpgrading] = useState(false);
 
   const structure = useMemo(
     () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
@@ -145,16 +143,12 @@ export const RealmUpgradeCompact = () => {
   const { nextLevel, missingRequirements, requirements, canUpgrade, handleUpgrade, nextLevelName, isOwner } =
     upgradeInfo;
 
-  const onUpgrade = async () => {
-    if (!canUpgrade || isUpgrading || !isOwner) return;
-    setIsUpgrading(true);
-    try {
-      await handleUpgrade();
-    } catch (error) {
+  const onUpgrade = () => {
+    if (!canUpgrade || upgradeInfo.isUpgradeLocked || !isOwner) return;
+
+    void handleUpgrade().catch((error) => {
       console.error("Failed to upgrade realm", error);
-    } finally {
-      setIsUpgrading(false);
-    }
+    });
   };
 
   const missingLabel =
@@ -169,6 +163,8 @@ export const RealmUpgradeCompact = () => {
 
   const resolvedNextLevel = nextLevel != null ? RealmLevels[nextLevel as RealmLevels] : null;
   const upgradeTargetLabel = nextLevelName ?? resolvedNextLevel ?? "Next level";
+  const upgradeButtonLabel =
+    upgradeInfo.upgradeActionState === "syncTimeout" ? "Waiting for sync" : canUpgrade ? "Upgrade" : "Need resources";
 
   return (
     <div className="space-y-2">
@@ -218,11 +214,11 @@ export const RealmUpgradeCompact = () => {
             variant={canUpgrade ? "gold" : "outline"}
             size="md"
             className="w-full"
-            disabled={!canUpgrade || isUpgrading}
-            isLoading={isUpgrading}
+            disabled={!canUpgrade || upgradeInfo.isUpgradeLocked}
+            isLoading={upgradeInfo.isUpgradeLoading}
             onClick={onUpgrade}
           >
-            {canUpgrade ? "Upgrade" : "Need resources"}
+            {upgradeButtonLabel}
           </Button>
         )}
       </div>

@@ -17,6 +17,13 @@ export const latestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-03-26",
+    title: "Realm Upgrade Sync Lock",
+    description:
+      "Realm upgrade buttons now stay pending until the transaction fails or the synced realm level catches up, avoiding duplicate upgrade clicks while backend data is still refreshing.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Mode-Isolated Game UI",
     description:
       "Blitz and Eternum interfaces now stay isolated by world mode: Faith-only panels are hidden in Blitz, Blitz Prize/MMR tabs are hidden in Eternum, and unknown-mode game cards stay in a neutral detecting state until mode resolves.",
