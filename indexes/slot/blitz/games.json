@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-26T23:16:50.484Z",
+  "updatedAt": "2026-03-26T23:16:54.206Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -74,12 +74,13 @@
       "path": "runs/slot/blitz/bltz-crisp-881.json",
       "inputPath": "inputs/slot/blitz/bltz-crisp-881/23622685483-1.json",
       "status": "running",
-      "updatedAt": "2026-03-26T23:16:50.484Z",
+      "updatedAt": "2026-03-26T23:16:54.206Z",
       "workflowRef": "next",
       "currentStepId": "configure-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-27T00:01:54.206Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "configure-world",
+      "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1774567500,
       "durationSeconds": 3600,
       "artifacts": {}
