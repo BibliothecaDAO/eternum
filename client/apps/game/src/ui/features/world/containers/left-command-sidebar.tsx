@@ -659,7 +659,6 @@ type StructureLevelUpButtonProps = {
 };
 
 const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevelUpButtonProps) => {
-  const [isUpgrading, setIsUpgrading] = useState(false);
   const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -672,7 +671,7 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
   const isAtMaxLevel = upgradeInfo.isMaxLevel || currentLevel >= maxLevel;
   const meetsRequirements = (upgradeInfo.missingRequirements?.length ?? 0) === 0;
   const canUpgrade = upgradeInfo.isOwner && !isAtMaxLevel && meetsRequirements;
-  const isDisabled = !canUpgrade || isUpgrading || isAtMaxLevel;
+  const isDisabled = !canUpgrade || upgradeInfo.isUpgradeLocked || isAtMaxLevel;
   const shouldGlow = canUpgrade && !isDisabled;
   const nextLevel = upgradeInfo.nextLevel ?? 0;
 
@@ -745,18 +744,13 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
     return <ChevronUp className="h-3.5 w-3.5" />;
   };
 
-  const handleUpgrade = async (event: MouseEvent<HTMLButtonElement>) => {
+  const handleUpgrade = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (isDisabled) return;
 
-    setIsUpgrading(true);
-    try {
-      await upgradeInfo.handleUpgrade();
-    } catch (error) {
+    void upgradeInfo.handleUpgrade().catch((error) => {
       console.error("Failed to upgrade structure", error);
-    } finally {
-      setIsUpgrading(false);
-    }
+    });
   };
 
   return (
@@ -773,7 +767,7 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
         )}
         aria-label="Level up realm"
       >
-        {isUpgrading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
+        {upgradeInfo.isUpgradeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
       </button>
       <button
         type="button"
