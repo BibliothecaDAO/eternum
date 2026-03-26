@@ -23,7 +23,7 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { useSendTransaction } from "@starknet-react/core";
 import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
-import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
+
 import Info from "lucide-react/dist/esm/icons/info";
 import Star from "lucide-react/dist/esm/icons/star";
 import X from "lucide-react/dist/esm/icons/x";
@@ -132,84 +132,97 @@ const EfficiencyInfo = ({
     window.open("https://docs.eternum.realms.world/mechanics/resources/bridging", "_blank");
   };
 
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <div className="mt-1 p-2 border  rounded-lg bg-gray-800/40 text-xs">
-      {/* Header with info icon and title */}
-      <div className="flex items-center justify-between mb-2">
+    <div className="rounded-lg border border-gold/25 bg-dark-brown/70 px-3 py-2 text-xs">
+      {/* Collapsible header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center justify-between w-full"
+      >
         <div className="flex items-center gap-1.5">
-          <Info className="h-3 w-3 text-blue-400" />
-          <h6 className="font-medium text-blue-400">Efficiency Rates</h6>
+          <Info className="h-3 w-3 text-gold/60" />
+          <span className="font-semibold uppercase tracking-[0.2em] text-gold/80 text-xxs">Efficiency Rates</span>
         </div>
-        <div className="flex items-center gap-1 bg-blue-900/30 px-1.5 py-0.5 rounded-sm">
-          <span className="text-[10px] text-blue-300">{hyperstructuresCompleted} Hyperstructures</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gold/50">{hyperstructuresCompleted} Hyperstructures</span>
+          <span className="text-gold/50 text-[10px]">{isExpanded ? "▲" : "▼"}</span>
         </div>
+      </button>
+
+      {/* Summary line (always visible) */}
+      <div className="mt-1.5 flex items-center justify-between text-[10px]">
+        <span className="text-gold/60">Per 100 resources →</span>
+        <span className="font-medium text-gold">{calculateActualAmount(100)} received</span>
       </div>
 
-      {/* Hyperstructure explanation */}
-      <div className="text-[10px]  mb-2 flex items-center justify-between">
-        <span>More hyperstructures = higher bridge efficiency</span>
-        <button
-          onClick={handleMoreInfoClick}
-          className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-0.5"
-        >
-          <span className="text-[9px]">More Info</span>
-          <Info className="h-2.5 w-2.5" />
-        </button>
-      </div>
-
-      {/* Efficiency rates table */}
-      <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2">
-        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
-          <span className="text-[10px]">Resource Loss:</span>
-          <span className="font-medium text-[10px] text-red-400">-{100 - currentEfficiency.resourceEfficiency}%</span>
-        </div>
-        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
-          <span className="text-[10px]">Troop Loss:</span>
-          <span className="font-medium text-[10px] text-red-400">-{100 - currentEfficiency.troopEfficiency}%</span>
-        </div>
-      </div>
-
-      {/* Fees section */}
-      <div className="flex flex-col gap-1 mb-2">
-        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
-          <span className="text-[10px]">Platform Fees:</span>
-          <span className="font-medium text-[10px] text-red-400">-{PLATFORM_FEE_PERCENTAGE}%</span>
-        </div>
-        {isVillage && (
-          <div className="flex items-center justify-between /30 px-2 py-1 rounded">
-            <span className="text-[10px]">Parent Realm Tax:</span>
-            <span className="font-medium text-[10px] text-red-400">-{VILLAGE_PARENT_FEE_PERCENTAGE}%</span>
+      {/* Expandable details */}
+      {isExpanded && (
+        <div className="mt-2 pt-2 border-t border-gold/15 flex flex-col gap-1.5">
+          {/* Rates */}
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-dark-brown/50">
+              <span className="text-[10px] text-gold/60">Resource Loss:</span>
+              <span className="font-medium text-[10px] text-danger">-{100 - currentEfficiency.resourceEfficiency}%</span>
+            </div>
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-dark-brown/50">
+              <span className="text-[10px] text-gold/60">Troop Loss:</span>
+              <span className="font-medium text-[10px] text-danger">-{100 - currentEfficiency.troopEfficiency}%</span>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Final calculations */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between bg-green-900/20 border border-green-900/40 px-2 py-1 rounded">
-          <span className="text-[10px]">100 resources →</span>
-          <span className="font-medium text-[10px] text-green-400">{calculateActualAmount(100)} remaining</span>
-        </div>
-        <div className="flex items-center justify-between bg-green-900/20 border border-green-900/40 px-2 py-1 rounded">
-          <span className="text-[10px]">100 troops →</span>
-          <span className="font-medium text-[10px] text-green-400">{calculateTroopsAmount(100)} remaining</span>
-        </div>
-        <div className="flex items-center justify-between bg-yellow-900/20 border border-yellow-900/40 px-2 py-1 rounded">
-          <span className="text-[10px]">100 $LORDS →</span>
-          <span className="font-medium text-[10px] text-yellow-400">{calculateLordsAmount(100)} remaining</span>
-        </div>
-      </div>
+          {/* Fees */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-dark-brown/50">
+              <span className="text-[10px] text-gold/60">Platform Fees:</span>
+              <span className="font-medium text-[10px] text-danger">-{PLATFORM_FEE_PERCENTAGE}%</span>
+            </div>
+            {isVillage && (
+              <div className="flex items-center justify-between px-2 py-1 rounded bg-dark-brown/50">
+                <span className="text-[10px] text-gold/60">Parent Realm Tax:</span>
+                <span className="font-medium text-[10px] text-danger">-{VILLAGE_PARENT_FEE_PERCENTAGE}%</span>
+              </div>
+            )}
+          </div>
 
-      {/* Lords exemption note */}
-      <div className="mt-1 text-[9px] text-yellow-400/80 flex items-center gap-1">
-        <span>*</span>
-        <span>$LORDS are exempt from efficiency losses, only plateform and parent realm fees apply</span>
-      </div>
+          {/* Calculations */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between border border-gold/15 px-2 py-1 rounded">
+              <span className="text-[10px] text-gold/60">100 resources →</span>
+              <span className="font-medium text-[10px] text-green">{calculateActualAmount(100)} remaining</span>
+            </div>
+            <div className="flex items-center justify-between border border-gold/15 px-2 py-1 rounded">
+              <span className="text-[10px] text-gold/60">100 troops →</span>
+              <span className="font-medium text-[10px] text-green">{calculateTroopsAmount(100)} remaining</span>
+            </div>
+            <div className="flex items-center justify-between border border-gold/15 px-2 py-1 rounded">
+              <span className="text-[10px] text-gold/60">100 $LORDS →</span>
+              <span className="font-medium text-[10px] text-gold">{calculateLordsAmount(100)} remaining</span>
+            </div>
+          </div>
 
-      {/* Next tier information if available */}
-      {nextTier && (
-        <div className="mt-2 pt-1 border-t  text-[10px] text-amber-400 flex items-center justify-center">
-          Next tier: {nextTier.hyperstructures} hyperstructures completed (-
-          {100 - nextTier.resourceEfficiency}% resource loss, -{100 - nextTier.troopEfficiency}% troop loss)
+          {/* Lords note */}
+          <div className="text-[9px] text-gold/50 flex items-center gap-1">
+            <span>*</span>
+            <span>$LORDS are exempt from efficiency losses, only platform and parent realm fees apply</span>
+          </div>
+
+          {/* Next tier */}
+          {nextTier && (
+            <div className="pt-1 border-t border-gold/15 text-[10px] text-gold/60 text-center">
+              Next tier: {nextTier.hyperstructures} hyperstructures (-{100 - nextTier.resourceEfficiency}% resource loss, -{100 - nextTier.troopEfficiency}% troop loss)
+            </div>
+          )}
+
+          {/* More info link */}
+          <button
+            onClick={handleMoreInfoClick}
+            className="text-gold/50 hover:text-gold/70 text-[9px] flex items-center gap-0.5 self-end"
+          >
+            <span>More Info</span>
+            <Info className="h-2.5 w-2.5" />
+          </button>
         </div>
       )}
     </div>
@@ -512,21 +525,11 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
   return (
     <div
-      className={cn(
-        "p-4 rounded-lg shadow-lg flex flex-col gap-4 w-full max-w-md mx-auto transition-all duration-300 border-t-4",
-        bridgeDirection === "in"
-          ? "bg-gradient-to-b from-sky-900/30 to-gray-900/10 border-sky-500"
-          : "bg-gradient-to-b from-amber-900/30 to-gray-900/10 border-amber-500",
-      )}
+      className="p-4 rounded-lg shadow-md flex flex-col gap-4 w-full max-w-md mx-auto border border-gold/25 bg-dark-brown/70"
     >
       {/* Header: Title, Description, and Toggle Button */}
       <div className="flex flex-col items-center text-center gap-2 mb-2">
-        <h2
-          className={cn(
-            "text-xl font-bold transition-colors duration-300",
-            bridgeDirection === "in" ? "text-sky-300" : "text-amber-300",
-          )}
-        >
+        <h2 className="text-xl font-bold text-gold">
           {bridgeTitle}
         </h2>
         <p className="text-sm  max-w-xs">
@@ -549,19 +552,26 @@ export const Bridge = ({ structures }: BridgeProps) => {
             </>
           )}
         </p>
-        <Button
-          onClick={toggleBridgeDirection}
-          variant="outline"
-          className={cn(
-            "h-9 flex items-center gap-1 mt-2 border text-xs px-3 transition-all duration-300",
-            bridgeDirection === "in"
-              ? "border-amber-600 bg-amber-900/30 text-amber-300 hover:bg-amber-800/40 hover:border-amber-500"
-              : "border-sky-600 bg-sky-900/30 text-sky-300 hover:bg-sky-800/40 hover:border-sky-500",
-          )}
-        >
-          <ArrowLeftRight className="h-4 w-4 mr-1" />
-          <span>{bridgeDirection === "in" ? "WITHDRAW INSTEAD" : "DEPOSIT INSTEAD"}</span>
-        </Button>
+        <div className="flex rounded-md border border-gold/30 overflow-hidden mt-2">
+          <button
+            onClick={() => { if (bridgeDirection !== "in") toggleBridgeDirection(); }}
+            className={cn(
+              "px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
+              bridgeDirection === "in" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold/70"
+            )}
+          >
+            Bridge In
+          </button>
+          <button
+            onClick={() => { if (bridgeDirection !== "out") toggleBridgeDirection(); }}
+            className={cn(
+              "px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
+              bridgeDirection === "out" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold/70"
+            )}
+          >
+            Bridge Out
+          </button>
+        </div>
       </div>
 
       {/* Always show Efficiency Info */}
@@ -575,24 +585,21 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
       {/* Structure Selection */}
       <div>
-        <h3 className="text-sm font-medium mb-2">{structureSelectLabel}</h3>
+        <h3 className="font-semibold uppercase tracking-[0.2em] text-gold/80 text-xs mb-2">{structureSelectLabel}</h3>
         <Select
           value={selectedStructureId?.toString() ?? ""}
           onValueChange={(value) => setSelectedStructureId(value ? ID(value) : null)}
         >
           <SelectTrigger
             id="structure-select"
-            className={cn(
-              "w-full panel-wood transition-colors duration-300",
-              bridgeDirection === "in" ? "focus:ring-sky-500/50" : "focus:ring-amber-500/50",
-            )}
+            className="w-full border border-gold/30 bg-dark-brown/50"
           >
             <SelectValue placeholder="Select Structure..." />
           </SelectTrigger>
-          <SelectContent className=" border-gray-600 panel-wood bg-dark-wood">
+          <SelectContent className="border border-gold/30 bg-dark-brown">
             {structuresWithFavorites.map((structure) =>
               structure.entityId ? (
-                <div key={structure.entityId} className="flex flex-row items-center pr-2 hover:bg-gray-600">
+                <div key={structure.entityId} className="flex flex-row items-center pr-2 hover:bg-gold/10">
                   <button
                     className="p-2 text-yellow-400 hover:text-yellow-300 flex-shrink-0"
                     type="button"
@@ -616,7 +623,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
       {/* Resources */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <h3 className="text-sm font-medium">Resources</h3>
+          <h3 className="font-semibold uppercase tracking-[0.2em] text-gold/80 text-xs">Resources</h3>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -635,7 +642,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
               : "";
 
             return (
-              <div key={resource.key} className="border  rounded-lg p-3 relative">
+              <div key={resource.key} className="border border-gold/20 rounded-lg p-3 relative bg-dark-brown/50">
                 {/* Resource header with balance badge */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -662,7 +669,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
                                 // Smaller size for header placement
                                 className={cn(
                                   "h-6 px-2 text-xs border transition-colors duration-300 flex-shrink-0",
-                                  "border-sky-600 bg-sky-900/30 text-sky-300 hover:bg-sky-800/40 hover:border-sky-500",
+                                  "border-gold/30 bg-gold/10 text-gold hover:bg-gold/20",
                                 )}
                               >
                                 {isMintPending ? "..." : "Mint"}
@@ -696,10 +703,10 @@ export const Bridge = ({ structures }: BridgeProps) => {
                     value={resource.resourceId?.toString() ?? ""}
                     onValueChange={(value) => handleResourceChange(resource.key, value)}
                   >
-                    <SelectTrigger className="w-full panel-wood">
+                    <SelectTrigger className="w-full border border-gold/30 bg-dark-brown/50">
                       <SelectValue placeholder="Select Resource..." />
                     </SelectTrigger>
-                    <SelectContent className="panel-wood bg-dark-wood">
+                    <SelectContent className="border border-gold/30 bg-dark-brown">
                       {bridgeableResources.map((br) => (
                         <SelectItem key={br.id} value={br.id.toString()}>
                           <div className="flex items-center gap-2">
@@ -749,7 +756,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
       <div className="flex flex-col items-center justify-center text-xs  mt-6">
         {selectedStructureId && bridgeDirection === "in" && (
           <>
-            <ArrowDown className={cn("h-5 w-5 mb-1 transition-colors duration-300", "text-sky-500")} />
+            <ArrowDown className="h-5 w-5 mb-1 text-gold/60" />
             <span>
               Bridging to:{" "}
               {structuresWithFavorites.find((s) => s.entityId === selectedStructureId)?.name ||
@@ -759,7 +766,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
         )}
         {account?.address && bridgeDirection === "out" && (
           <>
-            <ArrowDown className={cn("h-5 w-5 mb-1 transition-colors duration-300", "text-amber-500")} />
+            <ArrowDown className="h-5 w-5 mb-1 text-gold/60" />
             <div className="flex items-center gap-1">
               <span>
                 Bridging to: <Controller className="h-4 w-4 inline-block mx-1" />
@@ -774,13 +781,8 @@ export const Bridge = ({ structures }: BridgeProps) => {
       <Button
         onClick={handleBridge}
         disabled={isBridgeButtonDisabled}
-        className={cn(
-          "w-full transition-all duration-300 border",
-          bridgeDirection === "in"
-            ? "border-sky-600 bg-sky-900/30 text-sky-300 hover:bg-sky-800/40 hover:border-sky-500"
-            : "border-amber-600 bg-amber-900/30 text-amber-300 hover:bg-amber-800/40 hover:border-amber-500",
-        )}
-        variant={"outline"}
+        variant="primary"
+        className="w-full"
         isLoading={isBridgePending}
       >
         {isBridgePending ? pendingButtonText : bridgeButtonText}
@@ -788,7 +790,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
       {/* Error Messages */}
       {(bridgeError || mintError) && (
-        <div className="mt-2 p-2 bg-red-900/30 border border-red-700 rounded-lg">
+        <div className="mt-2 p-2 bg-dark-brown/50 border border-danger/30 rounded-lg">
           {bridgeError && <p className="text-red-400 text-sm">Bridge Error: {bridgeError.message}</p>}
           {mintError && <p className="text-red-400 text-sm">Mint Error: {mintError.message}</p>}
         </div>
