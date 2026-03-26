@@ -100,7 +100,10 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   const shouldPulse =
     isProducing && effectiveRemaining !== null && effectiveRemaining <= PRODUCTION_PULSE_THRESHOLD_SECONDS;
 
-  const [r, g, b] = useMemo(() => (isProducing ? getResourceColor(resourceLabel) : IDLE_COLOR), [isProducing, resourceLabel]);
+  const [r, g, b] = useMemo(
+    () => (isProducing ? getResourceColor(resourceLabel) : IDLE_COLOR),
+    [isProducing, resourceLabel],
+  );
 
   const preset =
     size === "md"
