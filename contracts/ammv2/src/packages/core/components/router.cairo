@@ -1,10 +1,9 @@
 #[starknet::component]
 pub mod RouterComponent {
-    use ammv2::packages::core::interfaces::erc20::{IERC20MinimalDispatcher, IERC20MinimalDispatcherTrait};
     use ammv2::packages::core::interfaces::factory::{IRealmsSwapFactoryDispatcher, IRealmsSwapFactoryDispatcherTrait};
     use ammv2::packages::core::interfaces::pair::{IRealmsSwapPairDispatcher, IRealmsSwapPairDispatcherTrait};
     use ammv2::packages::core::interfaces::router::IRealmsSwapRouter;
-    use ammv2::packages::core::utils::math;
+    use ammv2::packages::core::utils::{erc20, math};
     use core::num::traits::Zero;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
@@ -80,8 +79,8 @@ pub mod RouterComponent {
 
             let pair = pair_for(self.factory.read(), token_a, token_b);
             let sender = get_caller_address();
-            IERC20MinimalDispatcher { contract_address: token_a }.transferFrom(sender, pair, amount_a);
-            IERC20MinimalDispatcher { contract_address: token_b }.transferFrom(sender, pair, amount_b);
+            erc20::transfer_from_compatible(token_a, sender, pair, amount_a);
+            erc20::transfer_from_compatible(token_b, sender, pair, amount_b);
             let liquidity = IRealmsSwapPairDispatcher { contract_address: pair }.mint(to);
 
             (amount_a, amount_b, liquidity)
@@ -101,7 +100,7 @@ pub mod RouterComponent {
 
             let pair = pair_for(self.factory.read(), token_a, token_b);
             let sender = get_caller_address();
-            IERC20MinimalDispatcher { contract_address: pair }.transferFrom(sender, pair, liquidity);
+            erc20::transfer_from_compatible(pair, sender, pair, liquidity);
 
             let (amount0, amount1) = IRealmsSwapPairDispatcher { contract_address: pair }.burn(to);
             let (token0, _) = math::sort_tokens(token_a, token_b);
@@ -134,7 +133,7 @@ pub mod RouterComponent {
 
             let pair = pair_for(self.factory.read(), *path.at(0), *path.at(1));
             let sender = get_caller_address();
-            IERC20MinimalDispatcher { contract_address: *path.at(0) }.transferFrom(sender, pair, *amounts.at(0));
+            erc20::transfer_from_compatible(*path.at(0), sender, pair, *amounts.at(0));
             swap_path(self.factory.read(), @amounts, path, to);
 
             amounts
@@ -157,7 +156,7 @@ pub mod RouterComponent {
 
             let pair = pair_for(self.factory.read(), *path.at(0), *path.at(1));
             let sender = get_caller_address();
-            IERC20MinimalDispatcher { contract_address: *path.at(0) }.transferFrom(sender, pair, *amounts.at(0));
+            erc20::transfer_from_compatible(*path.at(0), sender, pair, *amounts.at(0));
             swap_path(self.factory.read(), @amounts, path, to);
 
             amounts

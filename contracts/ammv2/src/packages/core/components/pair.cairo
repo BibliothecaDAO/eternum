@@ -1,10 +1,9 @@
 #[starknet::component]
 pub mod PairComponent {
     use ammv2::packages::core::interfaces::callee::{IRealmsSwapCalleeDispatcher, IRealmsSwapCalleeDispatcherTrait};
-    use ammv2::packages::core::interfaces::erc20::{IERC20MinimalDispatcher, IERC20MinimalDispatcherTrait};
     use ammv2::packages::core::interfaces::factory::{IRealmsSwapFactoryDispatcher, IRealmsSwapFactoryDispatcherTrait};
     use ammv2::packages::core::interfaces::pair::IRealmsSwapPair;
-    use ammv2::packages::core::utils::math;
+    use ammv2::packages::core::utils::{erc20, math};
     use core::num::traits::Zero;
     use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
     use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent::InternalImpl as ReentrancyGuardInternalImpl;
@@ -168,8 +167,8 @@ pub mod PairComponent {
             assert!(amount0 > 0 && amount1 > 0, "RealmsSwap::Pair::burn::insufficient liquidity burned");
 
             burn_lp(ref self, get_contract_address(), liquidity);
-            IERC20MinimalDispatcher { contract_address: self.token0.read() }.transfer(to, amount0);
-            IERC20MinimalDispatcher { contract_address: self.token1.read() }.transfer(to, amount1);
+            erc20::transfer(self.token0.read(), to, amount0);
+            erc20::transfer(self.token1.read(), to, amount1);
 
             let (final_balance0, final_balance1) = current_balances(@self);
             update_reserves(ref self, final_balance0, final_balance1, reserve0, reserve1);
@@ -205,10 +204,10 @@ pub mod PairComponent {
             assert!(to != token0 && to != token1, "RealmsSwap::Pair::swap::invalid to");
 
             if amount0_out > 0 {
-                IERC20MinimalDispatcher { contract_address: token0 }.transfer(to, amount0_out);
+                erc20::transfer(token0, to, amount0_out);
             }
             if amount1_out > 0 {
-                IERC20MinimalDispatcher { contract_address: token1 }.transfer(to, amount1_out);
+                erc20::transfer(token1, to, amount1_out);
             }
 
             if data.len() > 0 {
@@ -252,8 +251,8 @@ pub mod PairComponent {
             let amount1 = balance1 - reserve1;
             assert!(amount0 > 0 && amount1 > 0, "RealmsSwap::Pair::skim::insufficient surplus");
 
-            IERC20MinimalDispatcher { contract_address: self.token0.read() }.transfer(to, amount0);
-            IERC20MinimalDispatcher { contract_address: self.token1.read() }.transfer(to, amount1);
+            erc20::transfer(self.token0.read(), to, amount0);
+            erc20::transfer(self.token1.read(), to, amount1);
 
             reentrancy_guard.end();
         }
@@ -300,8 +299,8 @@ pub mod PairComponent {
         self: @ComponentState<TContractState>,
     ) -> (u256, u256) {
         let self_address = get_contract_address();
-        let balance0 = IERC20MinimalDispatcher { contract_address: self.token0.read() }.balanceOf(self_address);
-        let balance1 = IERC20MinimalDispatcher { contract_address: self.token1.read() }.balanceOf(self_address);
+        let balance0 = erc20::balance_of_compatible(self.token0.read(), self_address);
+        let balance1 = erc20::balance_of_compatible(self.token1.read(), self_address);
         (balance0, balance1)
     }
 
