@@ -1,7 +1,7 @@
-import { brotliCompressSync, gzipSync } from "zlib";
 import { Hono, type Context } from "hono";
 
 import type { AppEnv } from "../middleware/auth";
+import { createCachedJsonResponse, createJsonPayload, type CachedJsonPayload } from "./cache-response";
 import {
   ALL_TILES_QUERY,
   buildLeaderboardQuery,
@@ -14,15 +14,6 @@ import {
 } from "../../services/torii-queries";
 
 type CacheStatus = "hit" | "stale" | "miss";
-
-type SerializedJson = string;
-
-type CachedJsonPayload = {
-  json: SerializedJson;
-  size: number;
-  br?: Uint8Array;
-  gzip?: Uint8Array;
-};
 
 type CacheEntry<T> = {
   value: T;
@@ -215,76 +206,17 @@ const startCacheCleanup = () => {
   );
 };
 
-const stopCacheCleanup = () => {
-  if (cacheCleanupIntervalId) {
-    clearInterval(cacheCleanupIntervalId);
-    cacheCleanupIntervalId = null;
-  }
-};
-
 if (cacheEnabled) {
   startCacheCleanup();
 }
 
-const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
-const COMPRESSION_THRESHOLD_BYTES = 1024;
-const VARY_HEADER = "Vary";
-const ACCEPT_ENCODING_HEADER = "Accept-Encoding";
-
-const createJsonPayload = (value: unknown): CachedJsonPayload => {
-  const json = JSON.stringify(value);
-  return { json, size: Buffer.byteLength(json) };
-};
-
-const getCompressedPayload = (payload: CachedJsonPayload, encoding: "br" | "gzip"): Uint8Array => {
-  if (encoding === "br") {
-    if (!payload.br) {
-      payload.br = brotliCompressSync(payload.json);
-    }
-    return payload.br;
-  }
-
-  if (!payload.gzip) {
-    payload.gzip = gzipSync(payload.json);
-  }
-  return payload.gzip;
-};
-
-const appendVaryHeader = (c: Context, value: string) => {
-  const existing = c.res.headers.get(VARY_HEADER);
-  if (!existing) {
-    c.header(VARY_HEADER, value);
-    return;
-  }
-
-  const existingValues = existing
-    .split(",")
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean);
-  if (existingValues.includes(value.toLowerCase())) {
-    return;
-  }
-
-  c.header(VARY_HEADER, `${existing}, ${value}`);
-};
-
 const sendJsonBody = (c: Context, payload: CachedJsonPayload, status: number = 200) => {
-  c.header("Content-Type", JSON_CONTENT_TYPE);
-  appendVaryHeader(c, ACCEPT_ENCODING_HEADER);
-
-  if (payload.size >= COMPRESSION_THRESHOLD_BYTES) {
-    const acceptEncoding = c.req.header(ACCEPT_ENCODING_HEADER)?.toLowerCase() ?? "";
-    if (acceptEncoding.includes("br")) {
-      c.header("Content-Encoding", "br");
-      return c.body(getCompressedPayload(payload, "br"), status);
-    }
-    if (acceptEncoding.includes("gzip")) {
-      c.header("Content-Encoding", "gzip");
-      return c.body(getCompressedPayload(payload, "gzip"), status);
-    }
-  }
-
-  return c.body(payload.json, status);
+  return createCachedJsonResponse({
+    payload,
+    status,
+    acceptEncoding: c.req.header("Accept-Encoding"),
+    headers: c.res.headers,
+  });
 };
 
 const logCacheMetrics = ({
