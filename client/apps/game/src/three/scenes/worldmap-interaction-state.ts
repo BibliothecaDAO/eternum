@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-export type WorldmapEntityActions = ReturnType<typeof useUIStore.getState>["entityActions"];
+type WorldmapEntityActions = ReturnType<typeof useUIStore.getState>["entityActions"];
 
 export function getLiveWorldmapEntityActions(): WorldmapEntityActions {
   return useUIStore.getState().entityActions;
