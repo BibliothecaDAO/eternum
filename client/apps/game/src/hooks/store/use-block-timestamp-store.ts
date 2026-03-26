@@ -1,7 +1,6 @@
 import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { create } from "zustand";
-import { useChainTimeStore } from "./use-chain-time-store";
 
 interface BlockTimestampState {
   currentBlockTimestamp: number;
@@ -32,36 +31,3 @@ export const useBlockTimestampStore = create<BlockTimestampState>((set) => ({
   ...computeTimestampState(),
   tick: () => set(computeTimestampState()),
 }));
-
-const syncBlockTimestampState = () => {
-  useBlockTimestampStore.setState((state) => ({
-    ...state,
-    ...computeTimestampState(),
-  }));
-};
-
-const BLOCK_TIMESTAMP_CHAIN_SYNC_KEY = "__eternumBlockTimestampChainSync";
-
-type BlockTimestampSyncTarget = typeof globalThis & {
-  [BLOCK_TIMESTAMP_CHAIN_SYNC_KEY]?: (() => void) | true;
-};
-
-const ensureBlockTimestampChainSync = () => {
-  const target = globalThis as BlockTimestampSyncTarget;
-
-  if (target[BLOCK_TIMESTAMP_CHAIN_SYNC_KEY]) {
-    return;
-  }
-
-  target[BLOCK_TIMESTAMP_CHAIN_SYNC_KEY] = useChainTimeStore.subscribe((state, previousState) => {
-    if (state.nowMs === previousState.nowMs) {
-      return;
-    }
-
-    syncBlockTimestampState();
-  });
-
-  syncBlockTimestampState();
-};
-
-ensureBlockTimestampChainSync();
