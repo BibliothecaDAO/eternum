@@ -137,10 +137,7 @@ const EfficiencyInfo = ({
   return (
     <div className="rounded-lg border border-gold/25 bg-dark-brown/70 px-3 py-2 text-xs">
       {/* Collapsible header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full"
-      >
+      <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center justify-between w-full">
         <div className="flex items-center gap-1.5">
           <Info className="h-3 w-3 text-gold/60" />
           <span className="font-semibold uppercase tracking-[0.2em] text-gold/80 text-xxs">Efficiency Rates</span>
@@ -164,7 +161,9 @@ const EfficiencyInfo = ({
           <div className="grid grid-cols-2 gap-x-2 gap-y-1">
             <div className="flex items-center justify-between px-2 py-1 rounded bg-dark-brown/50">
               <span className="text-[10px] text-gold/60">Resource Loss:</span>
-              <span className="font-medium text-[10px] text-danger">-{100 - currentEfficiency.resourceEfficiency}%</span>
+              <span className="font-medium text-[10px] text-danger">
+                -{100 - currentEfficiency.resourceEfficiency}%
+              </span>
             </div>
             <div className="flex items-center justify-between px-2 py-1 rounded bg-dark-brown/50">
               <span className="text-[10px] text-gold/60">Troop Loss:</span>
@@ -211,7 +210,8 @@ const EfficiencyInfo = ({
           {/* Next tier */}
           {nextTier && (
             <div className="pt-1 border-t border-gold/15 text-[10px] text-gold/60 text-center">
-              Next tier: {nextTier.hyperstructures} hyperstructures (-{100 - nextTier.resourceEfficiency}% resource loss, -{100 - nextTier.troopEfficiency}% troop loss)
+              Next tier: {nextTier.hyperstructures} hyperstructures (-{100 - nextTier.resourceEfficiency}% resource
+              loss, -{100 - nextTier.troopEfficiency}% troop loss)
             </div>
           )}
 
@@ -524,14 +524,10 @@ export const Bridge = ({ structures }: BridgeProps) => {
   const pendingButtonText = bridgeDirection === "in" ? "Bridging In..." : "Bridging Out...";
 
   return (
-    <div
-      className="p-4 rounded-lg shadow-md flex flex-col gap-4 w-full max-w-md mx-auto border border-gold/25 bg-dark-brown/70"
-    >
+    <div className="p-4 rounded-lg shadow-md flex flex-col gap-4 w-full max-w-md mx-auto border border-gold/25 bg-dark-brown/70">
       {/* Header: Title, Description, and Toggle Button */}
       <div className="flex flex-col items-center text-center gap-2 mb-2">
-        <h2 className="text-xl font-bold text-gold">
-          {bridgeTitle}
-        </h2>
+        <h2 className="text-xl font-bold text-gold">{bridgeTitle}</h2>
         <p className="text-sm  max-w-xs">
           {bridgeDirection === "in" ? (
             <>
@@ -554,19 +550,23 @@ export const Bridge = ({ structures }: BridgeProps) => {
         </p>
         <div className="flex rounded-md border border-gold/30 overflow-hidden mt-2">
           <button
-            onClick={() => { if (bridgeDirection !== "in") toggleBridgeDirection(); }}
+            onClick={() => {
+              if (bridgeDirection !== "in") toggleBridgeDirection();
+            }}
             className={cn(
               "px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
-              bridgeDirection === "in" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold/70"
+              bridgeDirection === "in" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold/70",
             )}
           >
             Bridge In
           </button>
           <button
-            onClick={() => { if (bridgeDirection !== "out") toggleBridgeDirection(); }}
+            onClick={() => {
+              if (bridgeDirection !== "out") toggleBridgeDirection();
+            }}
             className={cn(
               "px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
-              bridgeDirection === "out" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold/70"
+              bridgeDirection === "out" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold/70",
             )}
           >
             Bridge Out
@@ -590,10 +590,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
           value={selectedStructureId?.toString() ?? ""}
           onValueChange={(value) => setSelectedStructureId(value ? ID(value) : null)}
         >
-          <SelectTrigger
-            id="structure-select"
-            className="w-full border border-gold/30 bg-dark-brown/50"
-          >
+          <SelectTrigger id="structure-select" className="w-full border border-gold/30 bg-dark-brown/50">
             <SelectValue placeholder="Select Structure..." />
           </SelectTrigger>
           <SelectContent className="border border-gold/30 bg-dark-brown">
