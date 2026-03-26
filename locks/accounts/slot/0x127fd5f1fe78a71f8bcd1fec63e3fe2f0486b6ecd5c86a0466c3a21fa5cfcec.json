@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.eternum",
-    "gameName": "etrn-banana",
-    "launchRequestId": "23540305841-1",
+    "gameName": "mygame",
+    "launchRequestId": "23616270104-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23540305841,
+    "workflowRunId": 23616270104,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "75fa839e-c193-4d9a-a568-e2ada678c948"
+    "stepId": "create-world",
+    "leaseId": "eebf9dbe-d2ed-461c-81bc-c1ef6b108d19"
   },
-  "acquiredAt": "2026-03-25T12:15:16.207Z",
-  "heartbeatAt": "2026-03-25T12:15:31.099Z",
-  "expiresAt": "2026-03-25T12:15:31.099Z",
-  "releasedAt": "2026-03-25T12:15:31.099Z"
+  "acquiredAt": "2026-03-26T20:25:57.007Z",
+  "heartbeatAt": "2026-03-26T20:25:57.007Z",
+  "expiresAt": "2026-03-26T20:35:57.007Z"
 }
