@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "start": "pnpm run start:amm-indexerv2",
+    "start:amm-indexerv2": "pnpm --dir ./client/apps/amm-indexerv2 start",
     "build": "pnpm --dir ./client/apps/game build",
     "build:docs": "cd client/apps/game-docs && pnpm build",
     "build:landing": "pnpm --dir ./client/apps/landing build",
