@@ -32,7 +32,7 @@ import { divideByPrecision, getIsBlitz, getStructureTypeName, tileOptToTile, unp
 import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
 import { getStructureName } from "../utils/entities";
 import { getBlockTimestamp } from "../utils/timestamp";
-import { DataEnhancer } from "./data-enhancer";
+import { type EnhancedArmyData, DataEnhancer } from "./data-enhancer";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
@@ -145,6 +145,66 @@ export class WorldUpdateListener {
       troopGuards.charlie?.battle_cooldown_end ?? 0,
       troopGuards.delta?.battle_cooldown_end ?? 0,
     );
+  }
+
+  private buildLiveArmyState(
+    occupierId: ID,
+    currentArmiesTick: number,
+  ):
+    | {
+        troopCount: number;
+        currentStamina: number;
+        onChainStamina: { amount: bigint; updatedTick: number };
+        ownerStructureId: ID | null;
+      }
+    | undefined {
+    const explorerTroops = getComponentValue(
+      this.setup.components.ExplorerTroops,
+      getEntityIdFromKeys([BigInt(occupierId)]),
+    );
+
+    if (!explorerTroops?.troops) {
+      return undefined;
+    }
+
+    const ownerStructureId = explorerTroops.owner && explorerTroops.owner !== 0 ? explorerTroops.owner : null;
+    const onChainStamina = {
+      amount: BigInt(explorerTroops.troops.stamina.amount),
+      updatedTick: Number(explorerTroops.troops.stamina.updated_tick),
+    };
+
+    return {
+      troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
+      currentStamina: Number(StaminaManager.getStamina(explorerTroops.troops, currentArmiesTick).amount),
+      onChainStamina,
+      ownerStructureId,
+    };
+  }
+
+  private resolveArmyTileState(params: {
+    liveArmyState?:
+      | {
+          troopCount: number;
+          currentStamina: number;
+          onChainStamina: { amount: bigint; updatedTick: number };
+          ownerStructureId: ID | null;
+        }
+      | undefined;
+    enhancedData: EnhancedArmyData;
+  }): {
+    troopCount: number;
+    currentStamina: number;
+    onChainStamina?: { amount: bigint; updatedTick: number };
+    ownerStructureId: ID | null;
+  } {
+    const { liveArmyState, enhancedData } = params;
+
+    return {
+      troopCount: liveArmyState?.troopCount ?? enhancedData.troopCount,
+      currentStamina: liveArmyState?.currentStamina ?? enhancedData.currentStamina,
+      onChainStamina: liveArmyState?.onChainStamina ?? enhancedData.onChainStamina,
+      ownerStructureId: liveArmyState?.ownerStructureId ?? enhancedData.ownerStructureId ?? null,
+    };
   }
 
   private setupSystem<T>(
@@ -274,28 +334,19 @@ export class WorldUpdateListener {
 
               // Use sequential update processing to prevent race conditions
               const result = await this.processSequentialUpdate(rawOccupierId, async () => {
-                // Try to get the structure owner ID from ExplorerTroops component
-                let structureOwnerId: ID | undefined;
-                try {
-                  const explorerTroops = getComponentValue(
-                    this.setup.components.ExplorerTroops,
-                    getEntityIdFromKeys([BigInt(rawOccupierId)]),
-                  );
-                  structureOwnerId = explorerTroops?.owner;
-                } catch (error) {
-                  console.warn(`[DEBUG] Could not get structure owner for army ${rawOccupierId}:`, error);
-                }
-
-                const normalizedStructureOwnerId =
-                  structureOwnerId && structureOwnerId !== 0 ? structureOwnerId : undefined;
+                const liveArmyState = this.buildLiveArmyState(rawOccupierId, currentArmiesTick);
 
                 // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceArmyData(
                   rawOccupierId,
                   explorer,
                   currentArmiesTick,
-                  normalizedStructureOwnerId,
+                  liveArmyState?.ownerStructureId ?? undefined,
                 );
+                const resolvedArmyState = this.resolveArmyTileState({
+                  liveArmyState,
+                  enhancedData,
+                });
 
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
@@ -309,11 +360,10 @@ export class WorldUpdateListener {
                   troopType: explorer.troopType as TroopType,
                   troopTier: explorer.troopTier as TroopTier,
                   isDaydreamsAgent: explorer.isDaydreamsAgent,
-                  ownerStructureId: normalizedStructureOwnerId ?? enhancedData.ownerStructureId ?? null,
-                  // Enhanced data from DataEnhancer
-                  troopCount: enhancedData.troopCount,
-                  currentStamina: enhancedData.currentStamina,
-                  onChainStamina: enhancedData.onChainStamina,
+                  ownerStructureId: resolvedArmyState.ownerStructureId,
+                  troopCount: resolvedArmyState.troopCount,
+                  currentStamina: resolvedArmyState.currentStamina,
+                  onChainStamina: resolvedArmyState.onChainStamina,
                   battleData: enhancedData.battleData,
                   maxStamina,
                 };
