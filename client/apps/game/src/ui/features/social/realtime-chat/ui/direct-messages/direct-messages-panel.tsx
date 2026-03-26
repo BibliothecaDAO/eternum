@@ -223,7 +223,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   const isOwn = selfAliases.includes(message.senderId);
                   const displayLabel = isOwn
                     ? "You"
-                    : onlinePlayers[message.senderId]?.displayName ?? truncateIdentifier(message.senderId);
+                    : (onlinePlayers[message.senderId]?.displayName ?? truncateIdentifier(message.senderId));
                   const normalized = normalizeAvatarUsername(message.senderId);
                   const avatarUrl =
                     isOwn && identity?.avatarUrl
@@ -244,7 +244,12 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                       <li className="text-[13px] leading-tight text-white/90">
                         {showHeader ? (
                           <div className="flex items-start gap-2">
-                            <UserAvatar name={displayLabel} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
+                            <UserAvatar
+                              name={displayLabel}
+                              avatarUrl={avatarUrl}
+                              size="sm"
+                              className="mt-0.5 shrink-0"
+                            />
                             <div>
                               <span className="text-white/20">[{toDisplayTime(message)}]</span>{" "}
                               <span className="text-gold/90">&lt;{displayLabel}&gt;</span>{" "}
