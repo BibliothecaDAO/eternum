@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-26",
+    title: "Live Army Stamina Recharge",
+    description:
+      "Army stamina bars now keep recharging from the live chain clock while you watch, instead of waiting for a later UI refresh or interaction to catch up.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Instant Explorer Map Pins",
     description:
       "Auto-Explore now enables the explorer location shortcut as soon as a new automation entry appears, instead of waiting for the next position refresh cycle.",
