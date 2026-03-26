@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-26",
+    title: "Agora Fee Split Labels",
+    description:
+      "The Agora now shows LP fees and protocol fees as separate values in the pool and swap panels, so the displayed fee split matches the live RealmsSwap economics instead of treating the full trade fee as LP revenue.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Stabilized Hex Right-Clicks",
     description:
       "Worldmap actions now keep responding on highlighted hexes after fast local-to-world transitions and after entering a different game, without needing a full page refresh.",
@@ -73,6 +80,27 @@ export const latestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-03-24",
+    title: "Dashboard Agora Refresh",
+    description:
+      "The Agora now lives inside the main dashboard shell with a denser pool rail, resource icons across the trading flow, and tighter stats cards so you can scan markets and act without the old standalone page clutter.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
+    title: "Standalone Agora Preview",
+    description:
+      "The Agora dashboard now boots with standalone defaults, resolves mainnet resource names for pooled assets, and can connect to a seeded local preview indexer without Blitz or Eternum-specific env setup.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
+    title: "Agora Sidebar Shortcut",
+    description:
+      "Added a dedicated Agora button to the main dashboard side menu so you can open the Agora dashboard directly from the landing UI.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
     title: "Auto Name During Settlement",
     description:
       "Realm and village settlement now automatically include your player name setup in the same wallet transaction when your address has no in-game name yet, avoiding extra manual steps.",
@@ -98,6 +126,13 @@ export const latestFeatures: LatestFeature[] = [
     description:
       "Improved Spire traversal so the client uses the dedicated layer-toggle contract flow for cross-layer movement through adjacent Spires.",
     type: "improvement",
+  },
+  {
+    date: "2026-03-23",
+    title: "Live Agora Dashboard",
+    description:
+      "The new Agora dashboard now loads real pools, charts, and trade history from the configured indexer and sends swap and liquidity transactions against the live Agora contracts instead of preview scaffolding.",
+    type: "feature",
   },
   {
     date: "2026-03-23",

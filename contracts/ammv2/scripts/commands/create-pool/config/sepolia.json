@@ -1,0 +1,218 @@
+{
+  "signer": {
+    "accountAddress": "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
+  },
+  "factoryAddress": "",
+  "pools": {
+    "stone": {
+      "resourceId": 1,
+      "resourceKey": "STONE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x27dbfe27fc79ed10bc7e8c0889dd01d2b5e9d1c4e471a32d447b156f0a6fea1"
+    },
+    "coal": {
+      "resourceId": 2,
+      "resourceKey": "COAL",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x68540b2989cb86c9f73f2615c41a53818598a4ee29731403dad2fcd3974e005"
+    },
+    "wood": {
+      "resourceId": 3,
+      "resourceKey": "WOOD",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x4a4c05882e134e9887d242559a0dad369bd66cf6d0dca1e281aa5e1f2237da7"
+    },
+    "copper": {
+      "resourceId": 4,
+      "resourceKey": "COPPER",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x7145a651518ba8d3fba6fd32f26ffc7fed82c4adc132e2fdb870eedf3bb7388"
+    },
+    "ironwood": {
+      "resourceId": 5,
+      "resourceKey": "IRONWOOD",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x135fcb4f92d3de5db0e3066423b4cf0ba8ca34d0396b16bbfb900c6f44f4aa1"
+    },
+    "obsidian": {
+      "resourceId": 6,
+      "resourceKey": "OBSIDIAN",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0xe859b7b07540f28180e82db0719504d20fc8992dfe60018376f4c2e2bf23e"
+    },
+    "gold": {
+      "resourceId": 7,
+      "resourceKey": "GOLD",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x200f431ab1de40a831c8f34f49f5639784f209516dfac2de194a313752f0577"
+    },
+    "silver": {
+      "resourceId": 8,
+      "resourceKey": "SILVER",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x6ffefcf8fd3be79579527ff98a383fce055433bd5c3bf0c58b90b492720e9a2"
+    },
+    "mithral": {
+      "resourceId": 9,
+      "resourceKey": "MITHRAL",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x30128c654d9e45e7f0778fd8db8901a9f0730e0f1c801443d3a5dd9dd3d1fe"
+    },
+    "alchemical-silver": {
+      "resourceId": 10,
+      "resourceKey": "ALCHEMICALSILVER",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x5da7db4f14c4383b4ff8fe987373b30f354c2691f1f7981520fef901744803"
+    },
+    "cold-iron": {
+      "resourceId": 11,
+      "resourceKey": "COLDIRON",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x6d230da2e30fec6316d00d667af5e5e1f57e75fe88a648e77fd726867a3ba4e"
+    },
+    "deep-crystal": {
+      "resourceId": 12,
+      "resourceKey": "DEEPCRYSTAL",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x3f8036b429ca0e87ad49b753e842f9a6d5cd9b4d9ae2bcac39f31fd09442142"
+    },
+    "ruby": {
+      "resourceId": 13,
+      "resourceKey": "RUBY",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x1f9134e263e2eeaea0d3ec61463f7cfab93f801357ebc22cf549471e006cad4"
+    },
+    "diamonds": {
+      "resourceId": 14,
+      "resourceKey": "DIAMONDS",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x3c30c6fac6d13c81df192e96e0106f3d96bb6124b1633de16a8e9f1d3007b04"
+    },
+    "hartwood": {
+      "resourceId": 15,
+      "resourceKey": "HARTWOOD",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x6871164e7c3c0388b433c4327804f8c0f49a89e550ee7cb05c365a8ead425b8"
+    },
+    "ignium": {
+      "resourceId": 16,
+      "resourceKey": "IGNIUM",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x5dded871841041de02f49959847e28b697b5c8a7694b76bf536794f4c579096"
+    },
+    "twilight-quartz": {
+      "resourceId": 17,
+      "resourceKey": "TWILIGHTQUARTZ",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x1b2b5e5ce9e683febd51eac131d19f41d05febdd1ef965df3ec29bcd7b06af4"
+    },
+    "true-ice": {
+      "resourceId": 18,
+      "resourceKey": "TRUEICE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x451392b77ee0f2acd1fdd6e9e9b3fda683c2b98e25dcae9d83cb4db4590dc11"
+    },
+    "adamantine": {
+      "resourceId": 19,
+      "resourceKey": "ADAMANTINE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x66b3ee1b6654250c92c21c1778be501b4916e3565cdf5f0fcd447a23f4a3e53"
+    },
+    "sapphire": {
+      "resourceId": 20,
+      "resourceKey": "SAPPHIRE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x2da88199cc10602127f0da07bd7efd9be07cd5227afe73cc193e78db5848635"
+    },
+    "ethereal-silica": {
+      "resourceId": 21,
+      "resourceKey": "ETHEREALSILICA",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x46493bae2179fed9cdfb0164d5de0420c2a71a763c0acc21888daa8f0fc4894"
+    },
+    "dragonhide": {
+      "resourceId": 22,
+      "resourceKey": "DRAGONHIDE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x6828ed3e046a2915f3c933e6cef06a01aa01d1c12dcbdb71b2c21924d6332d3"
+    },
+    "ancient-fragment": {
+      "resourceId": 24,
+      "resourceKey": "ANCIENTFRAGMENT",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x12ae4d3be23585efc6ed8bff7db6113c85e5bc1bffe85bc07a0156a27e6f473"
+    },
+    "donkey": {
+      "resourceId": 25,
+      "resourceKey": "DONKEY",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x71751ee8b7e4a6bc93aa47fe6b993549142f316c85dd522fd2300c9b958aa23"
+    },
+    "knight": {
+      "resourceId": 26,
+      "resourceKey": "KNIGHT",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x96e1f074f7eb66076ee2d4daa26974d8d4e9fcbe667eafa0b74a393852750f"
+    },
+    "knight-ii": {
+      "resourceId": 27,
+      "resourceKey": "KNIGHT2",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x437422f8b15719c0141568220801c0bc6b68115feb5ecd559f8ca329d9c2380"
+    },
+    "knight-iii": {
+      "resourceId": 28,
+      "resourceKey": "KNIGHT3",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0xaef5d836a0d0b63b0ac2e6c422594834d66604c76cb82136f4de2132badd7f"
+    },
+    "crossbowman": {
+      "resourceId": 29,
+      "resourceKey": "CROSSBOWMAN",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x1b79851c36e6246dc4a8a8ecbc23c5cac899d3c1ef95edea8b9f4344ace4fec"
+    },
+    "crossbowman-ii": {
+      "resourceId": 30,
+      "resourceKey": "CROSSBOWMAN2",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x27661f2a7a9733f710c920d926ab9770e7674e7ed5eaf772c9efefb9bcdcd1d"
+    },
+    "crossbowman-iii": {
+      "resourceId": 31,
+      "resourceKey": "CROSSBOWMAN3",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0xd55e3884e04c68c5423a1088b926034f2c105a5570590526a4a4eaba6ea6aa"
+    },
+    "paladin": {
+      "resourceId": 32,
+      "resourceKey": "PALADIN",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x3f3a408dab52b6ec375c3a63eedcdb5b8ac7b693515a541992feee49bc1516"
+    },
+    "paladin-ii": {
+      "resourceId": 33,
+      "resourceKey": "PALADIN2",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x110831540430a5cca6a4907832161bb4b932a2ca4393fa2cbba66e82c6c77b2"
+    },
+    "paladin-iii": {
+      "resourceId": 34,
+      "resourceKey": "PALADIN3",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x66f0e6a75c52f6aa4bcf3fc1a05867fc86a2f270487ae6549b6f3c926700ff2"
+    },
+    "wheat": {
+      "resourceId": 35,
+      "resourceKey": "WHEAT",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x1baba18714aba42870dc249e53a5f707157142928c7d249e02be62f942aa2"
+    },
+    "fish": {
+      "resourceId": 36,
+      "resourceKey": "FISH",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x4fe5ab57b2f85dae411e63523102701912cbb95c63935d80f7e1eb188624077"
+    }
+  }
+}

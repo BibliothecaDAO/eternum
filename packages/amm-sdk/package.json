@@ -1,0 +1,28 @@
+{
+  "name": "@bibliothecadao/amm-sdk",
+  "version": "1.0.0",
+  "description": "SDK for interacting with the Eternum AMM contract on Starknet",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "starknet": "catalog:"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.4",
+    "vitest": "^3.0.0"
+  }
+}

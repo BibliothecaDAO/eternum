@@ -1,0 +1,4 @@
+.apibara/
+.env
+.env.local
+.env.*.local
