@@ -25,7 +25,8 @@ export const TransferView = () => {
     hyperstructures: EntityIdFormat[];
     fragmentMines: EntityIdFormat[];
     banks: EntityIdFormat[];
-  }>({ villages: [], realms: [], hyperstructures: [], fragmentMines: [], banks: [] });
+    camps: EntityIdFormat[];
+  }>({ villages: [], realms: [], hyperstructures: [], fragmentMines: [], banks: [], camps: [] });
 
   useEffect(() => {
     const fetch = async () => {
@@ -36,6 +37,7 @@ export const TransferView = () => {
         hyperstructures: result.filter((a) => a.category === StructureType.Hyperstructure),
         fragmentMines: result.filter((a) => a.category === StructureType.FragmentMine),
         banks: result.filter((a) => a.category === StructureType.Bank),
+        camps: result.filter((a) => a.category === StructureType.Camp),
       });
     };
     fetch();
@@ -95,6 +97,12 @@ export const TransferView = () => {
         name: "Your Banks",
       },
       {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Camp)
+          .map(mapToEntityIdFormat),
+        name: "Your Camps",
+      },
+      {
         entities: otherStructures.realms.filter((a) =>
           guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
         ),
@@ -123,6 +131,12 @@ export const TransferView = () => {
           guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
         ),
         name: "Other Banks",
+      },
+      {
+        entities: otherStructures.camps.filter((a) =>
+          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+        ),
+        name: "Other Camps",
       },
     ],
     [playerStructures, otherStructures, guildOnly, playersInPlayersGuildAddress],
