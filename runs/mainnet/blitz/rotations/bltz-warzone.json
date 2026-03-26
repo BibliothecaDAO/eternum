@@ -10,19 +10,19 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23613579417-1.json",
-  "latestLaunchRequestId": "23613579417-1",
-  "currentStepId": "create-series",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23615704386-1.json",
+  "latestLaunchRequestId": "23615704386-1",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-26T20:10:35.934Z",
+  "updatedAt": "2026-03-26T20:11:57.618Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23613579417,
+    "workflowRunId": 23615704386,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23613579417",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23615704386",
     "ref": "next",
-    "sha": "7253e5b0bc03e3d9013628f46181e27e7d67614e"
+    "sha": "bae6910889068582f7d85f413f86a16c01cfe7f4"
   },
   "autoRetry": {
     "enabled": true,
@@ -31,59 +31,58 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-26T20:25:35.934Z",
-    "lastEvaluatedAt": "2026-03-26T20:10:35.934Z"
+    "nextEvaluationAt": "2026-03-26T20:26:57.618Z",
+    "lastEvaluatedAt": "2026-03-26T20:11:57.618Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series started",
-      "startedAt": "2026-03-26T19:21:54.030Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage is complete"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -2913,6 +2912,55 @@
           },
           "paymasterSynced": true
         }
+      },
+      {
+        "gameName": "bltz-warzone-16",
+        "startTime": 1774645200,
+        "startTimeIso": "2026-03-27T21:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 16,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
@@ -2922,13 +2970,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23613579417-1",
-    "workflowRunId": 23613579417,
-    "workflowRunAttempt": 1,
-    "stepId": "create-series",
-    "acquiredAt": "2026-03-26T19:21:54.030Z",
-    "expiresAt": "2026-03-26T20:06:54.030Z"
   }
 }
