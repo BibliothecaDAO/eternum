@@ -1,4 +1,5 @@
 import { getGameModeConfig } from "@/config/game-modes";
+import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
@@ -115,7 +116,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
     // Select appropriate icon
     let iconPath = structureIcons.STRUCTURES[data.structureType];
-    if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
+    if (data.structureType === StructureType.Realm || isVillageLikeStructureCategory(data.structureType)) {
       iconPath = data.isMine
         ? structureIcons.MY_STRUCTURES[data.structureType]
         : structureIcons.STRUCTURES[data.structureType];
@@ -297,7 +298,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     const structureIcon = element.querySelector('[data-component="structure-icon"]') as HTMLImageElement;
     if (structureIcon) {
       let iconPath = structureIcons.STRUCTURES[data.structureType];
-      if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
+      if (data.structureType === StructureType.Realm || isVillageLikeStructureCategory(data.structureType)) {
         iconPath = data.isMine
           ? structureIcons.MY_STRUCTURES[data.structureType]
           : structureIcons.STRUCTURES[data.structureType];

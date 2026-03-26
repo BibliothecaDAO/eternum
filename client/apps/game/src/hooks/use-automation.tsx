@@ -7,6 +7,7 @@ import {
   type RealmProductionPlan,
   type RealmResourceSnapshot,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import {
   useAutomationStore,
   DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
@@ -18,12 +19,13 @@ import {
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { getBlockTimestamp, getConservativeBlockTimestamp, configManager } from "@bibliothecadao/eternum";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Account as StarknetAccount } from "starknet";
+import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -100,8 +102,7 @@ export const useAutomation = () => {
   const processingRef = useRef(false);
   const processRealmsRef = useRef<() => Promise<boolean>>(async () => false);
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
-  const playerRealms = usePlayerOwnedRealmsInfo();
-  const playerVillages = usePlayerOwnedVillagesInfo();
+  const playerStructures = useOwnedProductionStructureInfos();
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const mode = useGameModeConfig();
   const realmResourcesSignatureRef = useRef<string>("");
@@ -157,7 +158,7 @@ export const useAutomation = () => {
       syncedRealmIdsRef.current.clear();
       return;
     }
-    const managedStructures = [...playerRealms, ...playerVillages];
+    const managedStructures = playerStructures;
     const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
 
     if (managedStructures.length === 0) {
@@ -165,7 +166,7 @@ export const useAutomation = () => {
     }
 
     managedStructures.forEach((structure) => {
-      const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
+      const entityType = isVillageLikeStructureCategory(structure.structure?.category) ? "village" : "realm";
       const name = mode.structure.getName(structure.structure).name;
       const realmId = String(structure.entityId);
       syncedRealmIdsRef.current.add(realmId);
@@ -186,7 +187,7 @@ export const useAutomation = () => {
         removeRealm(realmId);
       }
     });
-  }, [hydrated, playerRealms, playerVillages, removeRealm, upsertRealm, mode]);
+  }, [hydrated, playerStructures, removeRealm, upsertRealm, mode]);
 
   const processRealms = useCallback(async (): Promise<boolean> => {
     if (processingRef.current) return false;

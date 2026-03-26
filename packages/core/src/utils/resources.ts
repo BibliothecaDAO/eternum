@@ -15,6 +15,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ResourceManager } from "../managers";
 import { unpackValue } from "./packed-data";
+import { getIsBlitz } from "./utils";
 
 // used for entities that don't have any production
 export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
@@ -170,6 +171,10 @@ export const canTransferMilitaryResources = (fromEntityId: ID, toEntityId: ID, c
   const fromStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(fromEntityId)]));
 
   const toStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(toEntityId)]));
+
+  if (getIsBlitz()) {
+    return Boolean(fromStructure && toStructure && fromStructure.owner === toStructure.owner);
+  }
 
   // If from structure is a village, can only transfer to its connected realm
   if (fromStructure?.category === StructureType.Village) {

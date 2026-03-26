@@ -125,7 +125,8 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | RealmLevelNames
   | HyperstructureTypesNames
   | typeof WONDER_REALM
-  | StructureType.Village;
+  | StructureType.Village
+  | StructureType.Camp;
 
 export const buildingModelPaths = (isBlitz: boolean) => {
   return {
@@ -169,6 +170,7 @@ export const buildingModelPaths = (isBlitz: boolean) => {
       [StructureType.Village]: isBlitz
         ? BUILDINGS_MODELS_PATH + BuildingFilenames.Camp
         : BUILDINGS_MODELS_PATH + BuildingFilenames.Village,
+      [StructureType.Camp]: BUILDINGS_MODELS_PATH + BuildingFilenames.Camp,
     },
     [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
       [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,

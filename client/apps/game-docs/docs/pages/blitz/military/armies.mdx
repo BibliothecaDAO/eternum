@@ -309,10 +309,13 @@ then right-clicking the target hex.
 
 ## World Structure Deployment
 
-World Structures (Camps, Essence Rifts, and Hyperstructures) can only have guard armies deployed to them—field armies
-cannot be created from these structures.
+World Structures follow their structure-specific army slot limits:
 
-- **Camps & Essence Rifts**: Use Settlement-level deployment caps and army slots (1 guard slot)
-- **Hyperstructures**: Use Empire-level deployment caps and army slots (4 guard slots)
+- **Camps**: Use Settlement-level deployment caps, can create **1 field army**, and can maintain **1 guard slot**
+- **Essence Rifts**: Use Settlement-level deployment caps and can maintain **1 guard slot**
+- **Hyperstructures**: Use Empire-level deployment caps and can maintain **4 guard slots**
+
+Essence Rifts and Hyperstructures are defensive-only structures for armies. Camps are the only discoverable world
+structure that can create field armies.
 
 <BlitzWorldStructureDefenseSlotsTable />
