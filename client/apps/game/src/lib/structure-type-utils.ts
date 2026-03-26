@@ -1,6 +1,6 @@
 import { StructureType } from "@bibliothecadao/types";
 
-export type StructureCategoryLike = StructureType | number | bigint | null | undefined;
+type StructureCategoryLike = StructureType | number | bigint | null | undefined;
 
 const VILLAGE_LIKE_STRUCTURE_CATEGORIES = new Set<StructureType>([StructureType.Village, StructureType.Camp]);
 

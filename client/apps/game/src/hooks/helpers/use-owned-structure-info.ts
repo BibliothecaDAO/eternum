@@ -13,7 +13,7 @@ const buildOwnedStructureInfos = (
     .map((structure) => getRealmInfo(getEntityIdFromKeys([BigInt(structure.entityId)]), components))
     .filter((structureInfo): structureInfo is RealmInfo => Boolean(structureInfo));
 
-export const useOwnedStructureInfos = () => {
+const useOwnedStructureInfos = () => {
   const {
     setup: { components },
   } = useDojo();
