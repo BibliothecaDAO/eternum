@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toast } from "sonner";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 import { RealtimeClient } from "@bibliothecadao/types";
@@ -529,7 +530,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.sender.playerId);
       const shouldIncrement = !isOwnMessage && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
 
-      if (!isOwnMessage && replacementIndex === -1) {
+      if (shouldIncrement) {
         AudioManager.getInstance().play("ui.msg_receive");
       }
 
@@ -561,8 +562,13 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const shouldIncrement = !isOwnMessage && (!isShellOpen || !isActiveThread);
       const unreadCount = shouldIncrement ? threadState.unreadCount + 1 : threadState.unreadCount;
 
-      if (!isOwnMessage) {
+      if (shouldIncrement) {
         AudioManager.getInstance().play("ui.msg_receive");
+        const { onlinePlayers } = get();
+        const senderName = onlinePlayers[normalizedMessage.senderId]?.displayName
+          ?? normalizedMessage.senderId.slice(0, 8);
+        const preview = normalizedMessage.content.slice(0, 60);
+        toast(`${senderName}: ${preview}`);
       }
 
       const updatedAt =

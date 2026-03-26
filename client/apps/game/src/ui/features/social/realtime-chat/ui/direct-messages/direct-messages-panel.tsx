@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef } from "react";
 
 import {
   useDirectMessageControls,
@@ -7,6 +7,7 @@ import {
   useRealtimeTypingIndicators,
 } from "../../hooks/use-realtime-chat";
 import type { DirectMessage } from "../../model/types";
+import { computeDateSeparators, computeGroupFlags } from "../../model/message-grouping";
 import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
 import { normalizeAvatarUsername, useAvatarProfilesByUsernames } from "@/hooks/use-player-avatar";
@@ -157,6 +158,10 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     return map;
   }, [avatarProfiles]);
 
+  const dmMessages = thread?.messages ?? [];
+  const groupFlags = useMemo(() => computeGroupFlags(dmMessages), [dmMessages]);
+  const dateSeparators = useMemo(() => computeDateSeparators(dmMessages), [dmMessages]);
+
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -214,9 +219,11 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
               )}
 
               <ul className="flex flex-col gap-0.5">
-                {thread.messages.map((message) => {
+                {thread.messages.map((message, index) => {
                   const isOwn = selfAliases.includes(message.senderId);
-                  const displayLabel = isOwn ? "You" : truncateIdentifier(message.senderId);
+                  const displayLabel = isOwn
+                    ? "You"
+                    : onlinePlayers[message.senderId]?.displayName ?? truncateIdentifier(message.senderId);
                   const normalized = normalizeAvatarUsername(message.senderId);
                   const avatarUrl =
                     isOwn && identity?.avatarUrl
@@ -224,17 +231,33 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                       : normalized
                         ? avatarMap.get(normalized)
                         : undefined;
+                  const showHeader = groupFlags[index];
                   return (
-                    <li key={message.id} className="text-[13px] leading-tight text-white/90">
-                      <div className="flex items-start gap-2">
-                        <UserAvatar name={displayLabel} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
-                        <div>
-                          <span className="text-white/20">[{toDisplayTime(message)}]</span>{" "}
-                          <span className="text-gold/90">&lt;{displayLabel}&gt;</span>{" "}
-                          <span className="break-words">{message.content}</span>
-                        </div>
-                      </div>
-                    </li>
+                    <Fragment key={message.id}>
+                      {dateSeparators.has(index) && (
+                        <li key={`sep-${index}`} className="flex items-center gap-2 py-2 px-4">
+                          <div className="flex-1 border-t border-gold/20" />
+                          <span className="text-xs text-gold/40">{dateSeparators.get(index)}</span>
+                          <div className="flex-1 border-t border-gold/20" />
+                        </li>
+                      )}
+                      <li className="text-[13px] leading-tight text-white/90">
+                        {showHeader ? (
+                          <div className="flex items-start gap-2">
+                            <UserAvatar name={displayLabel} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
+                            <div>
+                              <span className="text-white/20">[{toDisplayTime(message)}]</span>{" "}
+                              <span className="text-gold/90">&lt;{displayLabel}&gt;</span>{" "}
+                              <span className="break-words">{message.content}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pl-8">
+                            <span className="break-words">{message.content}</span>
+                          </div>
+                        )}
+                      </li>
+                    </Fragment>
                   );
                 })}
                 {thread.messages.length === 0 && (
@@ -242,6 +265,12 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                 )}
               </ul>
             </div>
+            {typing.length > 0 && (
+              <div className="px-4 py-1 text-xs text-gold/50 italic">
+                {typing.length === 1 ? "Someone is" : `${typing.length} people are`} typing
+                <span className="animate-pulse">...</span>
+              </div>
+            )}
           </div>
         )}
       </div>
