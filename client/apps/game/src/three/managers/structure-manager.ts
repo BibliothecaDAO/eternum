@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
+import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -1708,7 +1709,7 @@ export class StructureManager {
 
     const { structureType, isMine, isAlly } = structure;
 
-    if (structureType === StructureType.Village) {
+    if (isVillageLikeStructureCategory(structureType)) {
       return isMine
         ? this.pointsRenderers.myVillage
         : isAlly

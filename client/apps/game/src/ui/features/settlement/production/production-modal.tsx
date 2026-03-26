@@ -1,10 +1,11 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
 import { Position } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -101,16 +102,14 @@ const ProductionContainer = ({
 };
 
 export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?: ResourcesIds }) => {
-  const playerRealms = usePlayerOwnedRealmsInfo();
-  const playerVillages = usePlayerOwnedVillagesInfo();
+  const playerStructures = useOwnedProductionStructureInfos();
   const mode = useGameModeConfig();
 
   const managedStructures = useMemo(() => {
-    const combined = [...playerRealms, ...playerVillages].toSorted((a, b) =>
+    return playerStructures.toSorted((a, b) =>
       mode.structure.getName(a.structure).name.localeCompare(mode.structure.getName(b.structure).name),
     );
-    return combined;
-  }, [mode, playerRealms, playerVillages]);
+  }, [mode, playerStructures]);
 
   return (
     <ModalContainer size="full">

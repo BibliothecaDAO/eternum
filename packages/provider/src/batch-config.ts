@@ -54,6 +54,7 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // VRF operations
   [TransactionType.REQUEST_RANDOM]: TransactionCostCategory.HIGH,
   [TransactionType.OPEN_CHEST]: TransactionCostCategory.HIGH,
+  [TransactionType.BURN_RESEARCH_FOR_RELIC]: TransactionCostCategory.HIGH,
   [TransactionType.APPLY_RELIC]: TransactionCostCategory.HIGH,
 
   // Complex operations

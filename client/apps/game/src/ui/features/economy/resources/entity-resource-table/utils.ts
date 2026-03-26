@@ -7,6 +7,7 @@ export const TIER_DISPLAY_NAMES: Record<string, string> = {
   lords: "Lords & Fragments",
   relics: "Relics",
   essence: "Essence",
+  research: "Research",
   labor: "Labor",
   military: "Military",
   transport: "Transport",
@@ -21,6 +22,7 @@ export const TIER_DISPLAY_NAMES: Record<string, string> = {
 
 export const ALWAYS_SHOW_RESOURCES = [
   ResourcesIds.Lords,
+  ResourcesIds.Research,
   ResourcesIds.Labor,
   ResourcesIds.Essence,
   ResourcesIds.Donkey,

@@ -7,22 +7,25 @@ import {
   type RealmProductionPlan,
   type RealmResourceSnapshot,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import {
   useAutomationStore,
   DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
   DONKEY_DEFAULT_RESOURCE_PERCENT,
   type ResourceAutomationPercentages,
   type RealmAutomationExecutionSummary,
+  type RealmAutomationConfig,
 } from "./store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { getBlockTimestamp, getConservativeBlockTimestamp, configManager } from "@bibliothecadao/eternum";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Account as StarknetAccount } from "starknet";
+import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -87,7 +90,6 @@ export const useAutomation = () => {
     account: { account: starknetSignerAccount },
   } = useDojo();
 
-  const realms = useAutomationStore((state) => state.realms);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
   const recordStatus = useAutomationStore((state) => state.recordStatus);
@@ -100,8 +102,7 @@ export const useAutomation = () => {
   const processingRef = useRef(false);
   const processRealmsRef = useRef<() => Promise<boolean>>(async () => false);
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
-  const playerRealms = usePlayerOwnedRealmsInfo();
-  const playerVillages = usePlayerOwnedVillagesInfo();
+  const playerStructures = useOwnedProductionStructureInfos();
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const mode = useGameModeConfig();
   const realmResourcesSignatureRef = useRef<string>("");
@@ -157,7 +158,7 @@ export const useAutomation = () => {
       syncedRealmIdsRef.current.clear();
       return;
     }
-    const managedStructures = [...playerRealms, ...playerVillages];
+    const managedStructures = playerStructures;
     const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
 
     if (managedStructures.length === 0) {
@@ -165,7 +166,7 @@ export const useAutomation = () => {
     }
 
     managedStructures.forEach((structure) => {
-      const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
+      const entityType = isVillageLikeStructureCategory(structure.structure?.category) ? "village" : "realm";
       const name = mode.structure.getName(structure.structure).name;
       const realmId = String(structure.entityId);
       syncedRealmIdsRef.current.add(realmId);
@@ -186,7 +187,7 @@ export const useAutomation = () => {
         removeRealm(realmId);
       }
     });
-  }, [hydrated, playerRealms, playerVillages, removeRealm, upsertRealm, mode]);
+  }, [hydrated, playerStructures, removeRealm, upsertRealm, mode]);
 
   const processRealms = useCallback(async (): Promise<boolean> => {
     if (processingRef.current) return false;
@@ -206,7 +207,7 @@ export const useAutomation = () => {
       return false;
     }
 
-    const realmList = Object.values(realms).filter(
+    const realmList = Object.values(useAutomationStore.getState().realms).filter(
       (realm) => realm.entityType === "realm" || realm.entityType === "village",
     );
     if (realmList.length === 0) {
@@ -466,7 +467,6 @@ export const useAutomation = () => {
     return anyExecuted;
   }, [
     components,
-    realms,
     execute_realm_production_plan,
     recordExecution,
     recordStatus,
@@ -536,36 +536,39 @@ export const useAutomation = () => {
   }, [setNextRunTimestamp]);
 
   useEffect(() => {
-    if (isGameOver()) {
-      stopAutomation();
-      return;
-    }
+    const computeSignature = (realms: Record<string, RealmAutomationConfig>) =>
+      Object.entries(realms)
+        .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
+        .map(([realmId, realm]) => {
+          const customKeys = Object.keys(realm.customPercentages ?? {})
+            .toSorted()
+            .join(",");
+          const presetId = realm.presetId ?? "smart";
+          return `${realmId}:${presetId}:${customKeys}`;
+        })
+        .toSorted()
+        .join("|");
 
-    const signature = Object.entries(realms)
-      .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
-      .map(([realmId, realm]) => {
-        const customKeys = Object.keys(realm.customPercentages ?? {})
-          .toSorted()
-          .join(",");
-        const presetId = realm.presetId ?? "smart";
-        return `${realmId}:${presetId}:${customKeys}`;
-      })
-      .toSorted()
-      .join("|");
+    const unsub = useAutomationStore.subscribe((state, prevState) => {
+      if (state.realms === prevState.realms) return;
+      if (isGameOver()) return;
 
-    if (signature !== realmResourcesSignatureRef.current) {
-      realmResourcesSignatureRef.current = signature;
-      const currentBlockMs = getBlockTimestamp().currentBlockTimestamp * 1000;
-      if (currentBlockMs >= automationEnabledAtRef.current) {
-        lastRunBlockTimestampRef.current = currentBlockMs;
-        automationEnabledAtRef.current = currentBlockMs + PROCESS_INTERVAL_MS;
-        nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
-        setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
-        void processRealmsRef.current();
+      const newSignature = computeSignature(state.realms);
+      if (newSignature !== realmResourcesSignatureRef.current) {
+        realmResourcesSignatureRef.current = newSignature;
+        const currentBlockMs = getBlockTimestamp().currentBlockTimestamp * 1000;
+        if (currentBlockMs >= automationEnabledAtRef.current) {
+          lastRunBlockTimestampRef.current = currentBlockMs;
+          automationEnabledAtRef.current = currentBlockMs + PROCESS_INTERVAL_MS;
+          nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
+          setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+          void processRealmsRef.current();
+        }
+        scheduleNextCheckRef.current?.();
       }
-      scheduleNextCheckRef.current?.();
-    }
-  }, [realms, isGameOver, stopAutomation]);
+    });
+    return unsub;
+  }, [isGameOver]);
 
   useEffect(() => {
     if (isGameOver()) {

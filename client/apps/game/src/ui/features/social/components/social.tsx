@@ -1,4 +1,4 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -61,6 +61,10 @@ export const Social = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
   const mode = useGameModeConfig();
+  const resolvedWorldMode = useResolvedWorldGameMode();
+  const isBlitzMode = resolvedWorldMode === "blitz";
+  const isEternumMode = resolvedWorldMode === "eternum";
+  const showGuildsTab = isEternumMode && mode.ui.showGuildsTab;
 
   const players = usePlayers();
 
@@ -200,7 +204,7 @@ export const Social = () => {
       },
     ];
 
-    if (mode.ui.showGuildsTab) {
+    if (showGuildsTab) {
       baseTabs.push({
         key: "Tribes",
         label: (
@@ -218,7 +222,7 @@ export const Social = () => {
       });
     }
 
-    if (mode.id === "eternum") {
+    if (isEternumMode) {
       baseTabs.push({
         key: "Faith",
         label: (
@@ -232,18 +236,20 @@ export const Social = () => {
       });
     }
 
-    baseTabs.push({
-      key: "Blitz Prize",
-      label: (
-        <div className="flex items-center gap-2">
-          <span>Blitz Prize</span>
-        </div>
-      ),
-      component: <PrizePanel />,
-      expandedContent: null,
-    });
+    if (isBlitzMode) {
+      baseTabs.push({
+        key: "Blitz Prize",
+        label: (
+          <div className="flex items-center gap-2">
+            <span>Blitz Prize</span>
+          </div>
+        ),
+        component: <PrizePanel />,
+        expandedContent: null,
+      });
+    }
 
-    if (mmrEnabled) {
+    if (isBlitzMode && mmrEnabled) {
       baseTabs.push({
         key: "Blitz MMR",
         label: (
@@ -281,7 +287,18 @@ export const Social = () => {
     }
 
     return baseTabs;
-  }, [mode, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded, mmrEnabled]);
+  }, [
+    showGuildsTab,
+    isEternumMode,
+    isBlitzMode,
+    selectedGuild,
+    selectedPlayer,
+    playerInfo,
+    viewPlayerInfo,
+    viewGuildMembers,
+    setIsExpanded,
+    mmrEnabled,
+  ]);
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
@@ -301,7 +318,7 @@ export const Social = () => {
       onClick={() => togglePopup(leaderboard)}
       show={isOpen}
       title={leaderboard}
-      hintSection={mode.ui.showGuildsTab ? HintSection.Tribes : HintSection.Points}
+      hintSection={showGuildsTab ? HintSection.Tribes : HintSection.Points}
       childrenExpanded={tabs[activeTabIndex]?.expandedContent ?? null}
       isExpanded={isExpanded}
     >

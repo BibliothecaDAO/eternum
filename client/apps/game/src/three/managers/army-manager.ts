@@ -56,6 +56,7 @@ import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
+import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
@@ -348,8 +349,12 @@ export class ArmyManager {
   private scheduleTickCheck() {
     this.tickCheckTimeout = setTimeout(() => {
       const { currentArmiesTick } = getBlockTimestamp();
-      if (currentArmiesTick > this.lastKnownArmiesTick) {
-        this.lastKnownArmiesTick = currentArmiesTick;
+      const tickRefresh = resolveArmyStaminaTickRefresh({
+        currentTick: currentArmiesTick,
+        previousTick: this.lastKnownArmiesTick,
+      });
+      if (tickRefresh.shouldRecompute) {
+        this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
         this.recomputeStaminaForAllArmies();
       }
       // Update battle timers every second

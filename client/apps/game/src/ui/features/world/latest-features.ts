@@ -16,6 +16,69 @@ export const latestFeatures: LatestFeature[] = [
     type: "fix",
   },
   {
+    date: "2026-03-26",
+    title: "Stabilized Hex Right-Clicks",
+    description:
+      "Worldmap actions now keep responding on highlighted hexes after fast local-to-world transitions and after entering a different game, without needing a full page refresh.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
+    title: "Realm Upgrade Sync Lock",
+    description:
+      "Realm upgrade buttons now stay pending until the transaction fails or the synced realm level catches up, avoiding duplicate upgrade clicks while backend data is still refreshing.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
+    title: "Mode-Isolated Game UI",
+    description:
+      "Blitz and Eternum interfaces now stay isolated by world mode: Faith-only panels are hidden in Blitz, Blitz Prize/MMR tabs are hidden in Eternum, and unknown-mode game cards stay in a neutral detecting state until mode resolves.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
+    title: "Unified Hex Biome Lighting",
+    description:
+      "Biome tiles now use a consistent surface style instead of mixing random lit and unlit variants, making the world map easier to read at a glance.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
+    title: "Passive Army Stamina Refresh",
+    description:
+      "Army stamina shown above units now keeps updating after chain-time corrections instead of waiting for another army action to refresh the display.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
+    title: "Instant Explorer Map Pins",
+    description:
+      "Auto-Explore now enables the explorer location shortcut as soon as a new automation entry appears, instead of waiting for the next position refresh cycle.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-25",
+    title: "Zero-Cost Relic Crafting",
+    description:
+      "Craft Relic now allows worlds with zero research craft cost to proceed normally, showing explicit zero-cost values instead of blocking with unavailable-config messaging.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-25",
+    title: "Live Relic Cost Config",
+    description:
+      "Craft Relic now reads research cost from live world artificer config instead of static network defaults, so misconfigured worlds clearly show crafting cost as unavailable rather than a misleading zero.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-25",
+    title: "Research Production Visibility Fix",
+    description:
+      "Research now stays visible in economy tables and structure balance strips, and correctly appears as active production in settlement/economy views with live projected balance updates; structure panels now also backfill missing research fields from SQL when Torii model payloads omit them.",
+    type: "fix",
+  },
+  {
     date: "2026-03-24",
     title: "Dashboard Agora Refresh",
     description:
@@ -44,18 +107,32 @@ export const latestFeatures: LatestFeature[] = [
     type: "feature",
   },
   {
+    date: "2026-03-24",
+    title: "Relic Crafting UX Polish",
+    description:
+      "Craft Relic now shows a clearer requirement checklist, research progress, and stronger result feedback, with more visible forge actions in resource tables and chips.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-24",
+    title: "Research Relic Crafting",
+    description:
+      "Realm and Village economy panels now support crafting relics directly from research with preflight checks, crafting feedback, and immediate relic inventory refresh.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-24",
+    title: "Spire Uses Layer Toggle Call",
+    description:
+      "Improved Spire traversal so the client uses the dedicated layer-toggle contract flow for cross-layer movement through adjacent Spires.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-23",
     title: "Live Agora Dashboard",
     description:
       "The new Agora dashboard now loads real pools, charts, and trade history from the configured indexer and sends swap and liquidity transactions against the live Agora contracts instead of preview scaffolding.",
     type: "feature",
-  },
-  {
-    date: "2026-03-23",
-    title: "Spire Uses Layer Toggle Call",
-    description:
-      "Improved Spire traversal so the client uses the dedicated layer-toggle contract flow for cross-layer movement through adjacent Spires.",
-    type: "improvement",
   },
   {
     date: "2026-03-23",

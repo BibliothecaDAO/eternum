@@ -1,6 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -783,6 +784,7 @@ export default class HexceptionScene extends HexagonScene {
         case StructureType.Hyperstructure:
           return "Hyperstructure";
         case StructureType.Village:
+        case StructureType.Camp:
           return this.mode.labels.village;
         default:
           return "Castle";
@@ -953,11 +955,11 @@ export default class HexceptionScene extends HexagonScene {
             buildingGroup = BUILDINGS_GROUPS.REALMS;
           }
 
-          if (mainStructureType === StructureType.Village) {
-            // Only apply Village model to the central building (castle position)
+          if (isVillageLikeStructureCategory(mainStructureType)) {
+            // Village-like structures use their dedicated center model instead of realm castle stages.
             if (building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1]) {
               buildingGroup = BUILDINGS_GROUPS.VILLAGE;
-              buildingType = StructureType.Village;
+              buildingType = mainStructureType as StructureType.Village | StructureType.Camp;
             }
           }
 

@@ -6,6 +6,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { canTransferMilitaryInventoryBetweenStructures } from "@/ui/lib/structure-capabilities";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
   calculateDistance,
@@ -16,14 +17,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import {
-  findResourceById,
-  ID,
-  PlayerStructure,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { findResourceById, ID, PlayerStructure, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import Flame from "lucide-react/dist/esm/icons/flame";
@@ -73,27 +67,19 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       name: mode.structure.getName(structure.structure).name,
     }));
 
-    // TRANSFER RULES:
-    // 1. Realms can transfer ALL materials (including troops) to other Realms
-    // 2. Other structures (Camp/Village, Essence Rift/FragmentMine, Hyperstructure)
-    //    can transfer all materials EXCEPT troops
-
     if (isMilitaryResource(resource)) {
-      // Military resources (troops) can ONLY be transferred between Realms
-
-      if (selectedStructure?.category === StructureType.Realm) {
-        // Source is a Realm: only show other Realms as valid destinations
-        return playerStructuresWithName.filter((structure) => structure.category === StructureType.Realm);
-      } else {
-        // Source is NOT a Realm (Camp, Essence Rift, Hyperstructure, etc.)
-        // These structures cannot transfer troops at all
-        return [];
-      }
+      return playerStructuresWithName.filter((structure) =>
+        canTransferMilitaryInventoryBetweenStructures({
+          modeId: mode.id,
+          source: selectedStructure,
+          destination: structure.structure,
+        }),
+      );
     }
 
     // Non-military resources can be transferred between ALL structures
     return playerStructuresWithName;
-  }, [mode.structure, playerStructures, resource, selectedStructure]);
+  }, [mode.id, mode.structure, playerStructures, resource, selectedStructure]);
 
   const structureDistances = useMemo(() => {
     const distances: Record<number, number> = {};
@@ -195,10 +181,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     resource,
   ]);
   const noValidMilitaryDestinations =
-    isMilitaryResource(resource) &&
-    selectedStructure &&
-    selectedStructure.category !== StructureType.Realm &&
-    playerStructuresFiltered.length === 0;
+    isMilitaryResource(resource) && selectedStructure && playerStructuresFiltered.length === 0;
   const hasQueue = calls.length > 0;
 
   useEffect(() => {
@@ -358,11 +341,19 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
             <div className="space-y-2 text-xs text-gold/80">
               <div className="flex items-start gap-2">
                 <span className="text-green">✓</span>
-                <span>Realm → Realm transfers allowed</span>
+                <span>
+                  {mode.id === "blitz"
+                    ? "Owned structure → owned structure troop transfers allowed"
+                    : "Realm → Realm transfers allowed"}
+                </span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-red">✗</span>
-                <span>Camps, Essence Rifts, and Hyperstructures cannot transfer troops</span>
+                <span>
+                  {mode.id === "blitz"
+                    ? "Direct structure → army troop transfers are not available in Blitz"
+                    : "Camps, Essence Rifts, and Hyperstructures cannot transfer troops"}
+                </span>
               </div>
             </div>
           </InfoPanel>
@@ -414,8 +405,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 <div className="py-8 text-center text-sm text-gold/60">
                   <div className="mb-2 text-lg">No valid destinations</div>
                   <p>
-                    {mode.structure.getName(selectedStructure).name} cannot transfer troops. Only Realms can transfer
-                    military units.
+                    {mode.structure.getName(selectedStructure).name} cannot transfer troops to the currently available
+                    destinations.
                   </p>
                 </div>
               ) : structuresForTransfer.length === 0 ? (

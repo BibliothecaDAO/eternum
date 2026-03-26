@@ -7,7 +7,6 @@ import {
   ensureSlotIndexerDeployment,
   ensureSlotIndexerTier,
   listSlotToriiDeploymentNames,
-  resolveIndexerArtifactState,
   resolveSlotToriiLiveStates,
   resolveSlotToriiLiveState,
 } from "../indexing/slot-torii";
@@ -26,18 +25,17 @@ import {
   recordFactoryRunMaintenanceIndex,
   recordFactorySeriesMaintenanceIndex,
 } from "../run-store/maintenance-index";
-import type {
-  FactoryRotationRunRecord,
-  FactoryRunArtifacts,
-  FactoryRunRecord,
-  FactorySeriesRunRecord,
-} from "../run-store/types";
-import type {
-  DeploymentEnvironmentId,
-  IndexerTier,
-  SeriesLaunchGameArtifacts,
-  SeriesLaunchGameSummary,
-} from "../types";
+import {
+  applyIndexerMaintenanceRunUpdates,
+  type DeleteFailureIndexerMaintenanceRunUpdate,
+  type DeleteSuccessIndexerMaintenanceRunUpdate,
+  type IndexerMaintenanceRunUpdate,
+  type RefreshIndexerMaintenanceRunUpdate,
+  type TierFailureIndexerMaintenanceRunUpdate,
+  type TierSuccessIndexerMaintenanceRunUpdate,
+} from "../run-store/indexer-maintenance-updates";
+import type { FactoryRotationRunRecord, FactoryRunRecord, FactorySeriesRunRecord } from "../run-store/types";
+import type { DeploymentEnvironmentId, IndexerTier } from "../types";
 import { parseArgs } from "./args";
 
 type IndexerMaintenanceRunKind = "game" | "series" | "rotation";
@@ -195,75 +193,6 @@ function groupOperationsByRecordPath(operations: IndexerMaintenanceOperation[]) 
   return groups;
 }
 
-function buildTierSuccessArtifacts(
-  currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  tier: IndexerTier,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
-): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
-  return {
-    ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState, { fallbackTier: tier }),
-    pendingIndexerTierTarget: undefined,
-    pendingIndexerTierRequestedAt: undefined,
-    lastIndexerTierDispatchTarget: undefined,
-    lastIndexerTierDispatchFailedAt: undefined,
-    lastIndexerTierDispatchError: undefined,
-  };
-}
-
-function buildDeleteSuccessArtifacts(
-  currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
-): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
-  return {
-    ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState),
-    indexerCreated: false,
-    indexerTier: undefined,
-    indexerUrl: undefined,
-    indexerVersion: undefined,
-    indexerBranch: undefined,
-    pendingIndexerTierTarget: undefined,
-    pendingIndexerTierRequestedAt: undefined,
-    lastIndexerTierDispatchTarget: undefined,
-    lastIndexerTierDispatchFailedAt: undefined,
-    lastIndexerTierDispatchError: undefined,
-  };
-}
-
-function buildTierFailureArtifacts(
-  currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  tier: IndexerTier,
-  failedAt: string,
-  errorMessage: string,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
-): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
-  return {
-    ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState),
-    pendingIndexerTierTarget: tier,
-    pendingIndexerTierRequestedAt: failedAt,
-    lastIndexerTierDispatchTarget: tier,
-    lastIndexerTierDispatchFailedAt: failedAt,
-    lastIndexerTierDispatchError: errorMessage,
-  };
-}
-
-function buildDeleteFailureArtifacts(
-  currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
-): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
-  return {
-    ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState),
-    pendingIndexerTierTarget: undefined,
-    pendingIndexerTierRequestedAt: undefined,
-    lastIndexerTierDispatchTarget: undefined,
-    lastIndexerTierDispatchFailedAt: undefined,
-    lastIndexerTierDispatchError: undefined,
-  };
-}
-
 function buildAlreadyMatchedMessage(gameName: string, tier: IndexerTier) {
   return `Indexer tier already matched ${tier} for ${gameName}`;
 }
@@ -318,137 +247,89 @@ function buildFailureMessage(operation: IndexerMaintenanceOperation, errorMessag
   return `Indexer maintenance failed for ${operation.gameName}: ${errorMessage}`;
 }
 
-function updateSeriesLikeGame(
-  games: SeriesLaunchGameSummary[],
+function buildRefreshRunUpdate(
   operation: IndexerMaintenanceOperation,
-  updateGame: (game: SeriesLaunchGameSummary) => SeriesLaunchGameSummary,
-) {
-  let didUpdate = false;
-  const nextGames = games.map((game) => {
-    if (game.gameName !== operation.gameName) {
-      return game;
-    }
-
-    didUpdate = true;
-    return updateGame(game);
-  });
-
-  if (!didUpdate) {
-    throw new Error(`Could not find ${operation.gameName} in ${operation.recordPath}`);
-  }
-
-  return nextGames;
-}
-
-function buildRefreshedArtifacts(
-  currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
+  message: string,
   liveState: ReturnType<typeof resolveSlotToriiLiveState>,
-) {
+): RefreshIndexerMaintenanceRunUpdate {
   return {
-    ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState),
-    pendingIndexerTierTarget: liveState.state === "existing" ? undefined : currentArtifacts.pendingIndexerTierTarget,
-    pendingIndexerTierRequestedAt:
-      liveState.state === "existing" ? undefined : currentArtifacts.pendingIndexerTierRequestedAt,
-    lastIndexerTierDispatchTarget:
-      liveState.state === "existing" ? undefined : currentArtifacts.lastIndexerTierDispatchTarget,
-    lastIndexerTierDispatchFailedAt:
-      liveState.state === "existing" ? undefined : currentArtifacts.lastIndexerTierDispatchFailedAt,
-    lastIndexerTierDispatchError:
-      liveState.state === "existing" ? undefined : currentArtifacts.lastIndexerTierDispatchError,
+    kind: "refresh",
+    target: resolveRunUpdateTarget(operation),
+    message,
+    updatedAt: new Date().toISOString(),
+    liveState,
   };
 }
 
-function updateRunRecordForSuccess(
-  run: IndexerMaintenanceRunRecord,
+function buildTierSuccessRunUpdate(
   operation: IndexerMaintenanceOperation,
   message: string,
-  nextArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-) {
-  if (!run) {
-    return null;
-  }
-
-  switch (run.kind) {
-    case "game":
-      return {
-        ...run,
-        updatedAt: new Date().toISOString(),
-        artifacts: nextArtifacts as FactoryRunArtifacts,
-      } satisfies FactoryRunRecord;
-    case "series":
-      return {
-        ...run,
-        updatedAt: new Date().toISOString(),
-        summary: {
-          ...run.summary,
-          games: updateSeriesLikeGame(run.summary.games, operation, (game) => ({
-            ...game,
-            latestEvent: message,
-            artifacts: nextArtifacts as SeriesLaunchGameArtifacts,
-          })),
-        },
-      } satisfies FactorySeriesRunRecord;
-    case "rotation":
-      return {
-        ...run,
-        updatedAt: new Date().toISOString(),
-        summary: {
-          ...run.summary,
-          games: updateSeriesLikeGame(run.summary.games, operation, (game) => ({
-            ...game,
-            latestEvent: message,
-            artifacts: nextArtifacts as SeriesLaunchGameArtifacts,
-          })),
-        },
-      } satisfies FactoryRotationRunRecord;
-  }
+  tier: IndexerTier,
+  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+): TierSuccessIndexerMaintenanceRunUpdate {
+  return {
+    kind: "tier-success",
+    target: resolveRunUpdateTarget(operation),
+    message,
+    updatedAt: new Date().toISOString(),
+    tier,
+    liveState,
+  };
 }
 
-function updateRunRecordForFailure(
-  run: IndexerMaintenanceRunRecord,
+function buildTierFailureRunUpdate(
   operation: IndexerMaintenanceOperation,
   message: string,
-  nextArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-) {
-  if (!run) {
-    return null;
-  }
+  tier: IndexerTier,
+  failedAt: string,
+  errorMessage: string,
+  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+): TierFailureIndexerMaintenanceRunUpdate {
+  return {
+    kind: "tier-failure",
+    target: resolveRunUpdateTarget(operation),
+    message,
+    updatedAt: failedAt,
+    tier,
+    failedAt,
+    errorMessage,
+    liveState,
+  };
+}
 
-  switch (run.kind) {
-    case "game":
-      return {
-        ...run,
-        updatedAt: new Date().toISOString(),
-        artifacts: nextArtifacts as FactoryRunArtifacts,
-      } satisfies FactoryRunRecord;
-    case "series":
-      return {
-        ...run,
-        updatedAt: new Date().toISOString(),
-        summary: {
-          ...run.summary,
-          games: updateSeriesLikeGame(run.summary.games, operation, (game) => ({
-            ...game,
-            latestEvent: message,
-            artifacts: nextArtifacts as SeriesLaunchGameArtifacts,
-          })),
-        },
-      } satisfies FactorySeriesRunRecord;
-    case "rotation":
-      return {
-        ...run,
-        updatedAt: new Date().toISOString(),
-        summary: {
-          ...run.summary,
-          games: updateSeriesLikeGame(run.summary.games, operation, (game) => ({
-            ...game,
-            latestEvent: message,
-            artifacts: nextArtifacts as SeriesLaunchGameArtifacts,
-          })),
-        },
-      } satisfies FactoryRotationRunRecord;
-  }
+function buildDeleteSuccessRunUpdate(
+  operation: IndexerMaintenanceOperation,
+  message: string,
+  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+): DeleteSuccessIndexerMaintenanceRunUpdate {
+  return {
+    kind: "delete-success",
+    target: resolveRunUpdateTarget(operation),
+    message,
+    updatedAt: new Date().toISOString(),
+    liveState,
+  };
+}
+
+function buildDeleteFailureRunUpdate(
+  operation: IndexerMaintenanceOperation,
+  message: string,
+  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+): DeleteFailureIndexerMaintenanceRunUpdate {
+  return {
+    kind: "delete-failure",
+    target: resolveRunUpdateTarget(operation),
+    message,
+    updatedAt: new Date().toISOString(),
+    liveState,
+  };
+}
+
+function resolveRunUpdateTarget(operation: IndexerMaintenanceOperation) {
+  return {
+    gameName: operation.gameName,
+    recordPath: operation.recordPath,
+  };
 }
 
 function resolveTierForOperation(operation: IndexerMaintenanceOperation): IndexerTier {
@@ -457,25 +338,6 @@ function resolveTierForOperation(operation: IndexerMaintenanceOperation): Indexe
   }
 
   return operation.tier;
-}
-
-function resolveCurrentArtifacts(run: IndexerMaintenanceRunRecord, operation: IndexerMaintenanceOperation) {
-  if (!run) {
-    return {};
-  }
-
-  switch (run.kind) {
-    case "game":
-      return run.artifacts;
-    case "series":
-    case "rotation": {
-      const matchingGame = run.summary.games.find((game) => game.gameName === operation.gameName);
-      if (!matchingGame) {
-        throw new Error(`Could not find ${operation.gameName} in ${operation.recordPath}`);
-      }
-      return matchingGame.artifacts;
-    }
-  }
 }
 
 function buildRunStoreCommitMessage(operation: IndexerMaintenanceOperation) {
@@ -564,39 +426,30 @@ async function recordUpdatedMaintenanceIndex(
   }
 }
 
-async function applyOperationToRun(
-  run: IndexerMaintenanceRunRecord,
-  operation: IndexerMaintenanceOperation,
-): Promise<{
-  run: IndexerMaintenanceRunRecord;
+async function runIndexerMaintenanceOperation(operation: IndexerMaintenanceOperation): Promise<{
+  update?: IndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
   if (operation.action === "inspect-account") {
-    return applyInspectAccountOperation(run, operation);
+    return runInspectAccountOperation(operation);
   }
 
   if (operation.action === "inspect") {
-    return applyInspectOperationToRun(run, operation);
+    return runInspectOperation(operation);
   }
 
   if (operation.action === "create") {
-    return applyCreateOperationToRun(run, operation);
+    return runCreateOperation(operation);
   }
 
-  return operation.action === "delete"
-    ? applyDeleteOperationToRun(run, operation)
-    : applyTierOperationToRun(run, operation);
+  return operation.action === "delete" ? runDeleteOperation(operation) : runTierOperation(operation);
 }
 
-async function applyInspectAccountOperation(
-  run: IndexerMaintenanceRunRecord,
-  operation: IndexerMaintenanceOperation,
-): Promise<{
-  run: IndexerMaintenanceRunRecord;
+async function runInspectAccountOperation(operation: IndexerMaintenanceOperation): Promise<{
+  update?: IndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
   return {
-    run,
     result: {
       operation,
       outcome: "inspected",
@@ -605,11 +458,8 @@ async function applyInspectAccountOperation(
   };
 }
 
-async function applyInspectOperationToRun(
-  run: IndexerMaintenanceRunRecord,
-  operation: IndexerMaintenanceOperation,
-): Promise<{
-  run: IndexerMaintenanceRunRecord;
+async function runInspectOperation(operation: IndexerMaintenanceOperation): Promise<{
+  update: RefreshIndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
   const gameName = operation.gameName!;
@@ -617,10 +467,9 @@ async function applyInspectOperationToRun(
     onProgress: (message) => console.error(message),
   });
   const message = buildIndexerInspectedMessage(gameName, liveState);
-  const nextArtifacts = buildRefreshedArtifacts(resolveCurrentArtifacts(run, operation), liveState);
 
   return {
-    run: updateRunRecordForSuccess(run, operation, message, nextArtifacts),
+    update: buildRefreshRunUpdate(operation, message, liveState),
     result: {
       operation,
       outcome: "inspected",
@@ -630,11 +479,8 @@ async function applyInspectOperationToRun(
   };
 }
 
-async function applyCreateOperationToRun(
-  run: IndexerMaintenanceRunRecord,
-  operation: IndexerMaintenanceOperation,
-): Promise<{
-  run: IndexerMaintenanceRunRecord;
+async function runCreateOperation(operation: IndexerMaintenanceOperation): Promise<{
+  update: RefreshIndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
   const gameName = operation.gameName!;
@@ -653,10 +499,9 @@ async function applyCreateOperationToRun(
       createdIndexer.action === "already-live"
         ? buildIndexerAlreadyLiveMessage(gameName)
         : buildIndexerCreatedMessage(gameName);
-    const nextArtifacts = buildRefreshedArtifacts(resolveCurrentArtifacts(run, operation), createdIndexer.liveState);
 
     return {
-      run: updateRunRecordForSuccess(run, operation, message, nextArtifacts),
+      update: buildRefreshRunUpdate(operation, message, createdIndexer.liveState),
       result: {
         operation,
         outcome: createdIndexer.action === "already-live" ? "already-live" : "created",
@@ -671,10 +516,9 @@ async function applyCreateOperationToRun(
     });
     const errorMessage = error instanceof Error ? error.message : String(error);
     const message = buildFailureMessage(operation, errorMessage);
-    const nextArtifacts = buildRefreshedArtifacts(resolveCurrentArtifacts(run, operation), liveState);
 
     return {
-      run: updateRunRecordForFailure(run, operation, message, nextArtifacts),
+      update: buildRefreshRunUpdate(operation, message, liveState),
       result: {
         operation,
         outcome: "failed",
@@ -685,11 +529,8 @@ async function applyCreateOperationToRun(
   }
 }
 
-async function applyTierOperationToRun(
-  run: IndexerMaintenanceRunRecord,
-  operation: IndexerMaintenanceOperation,
-): Promise<{
-  run: IndexerMaintenanceRunRecord;
+async function runTierOperation(operation: IndexerMaintenanceOperation): Promise<{
+  update: TierSuccessIndexerMaintenanceRunUpdate | TierFailureIndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
   const tier = resolveTierForOperation(operation);
@@ -704,16 +545,9 @@ async function applyTierOperationToRun(
         ? `Torii deployment "${operation.gameName}" does not exist`
         : liveState.describeError || `Unable to verify the Torii deployment state for "${operation.gameName}"`;
     const message = buildFailureMessage(operation, errorMessage);
-    const nextArtifacts = buildTierFailureArtifacts(
-      resolveCurrentArtifacts(run, operation),
-      tier,
-      failedAt,
-      errorMessage,
-      liveState,
-    );
 
     return {
-      run: updateRunRecordForFailure(run, operation, message, nextArtifacts),
+      update: buildTierFailureRunUpdate(operation, message, tier, failedAt, errorMessage, liveState),
       result: {
         operation,
         outcome: "failed",
@@ -724,9 +558,8 @@ async function applyTierOperationToRun(
 
   if (liveState.currentTier === tier) {
     const message = buildAlreadyMatchedMessage(operation.gameName, tier);
-    const nextArtifacts = buildTierSuccessArtifacts(resolveCurrentArtifacts(run, operation), tier, liveState);
     return {
-      run: updateRunRecordForSuccess(run, operation, message, nextArtifacts),
+      update: buildTierSuccessRunUpdate(operation, message, tier, liveState),
       result: {
         operation,
         outcome: "tier-already-matched",
@@ -742,14 +575,9 @@ async function applyTierOperationToRun(
     onProgress: (message) => console.error(message),
   });
   const message = buildTierUpdatedMessage(operation.gameName, updatedIndexer.previousTier, tier);
-  const nextArtifacts = buildTierSuccessArtifacts(
-    resolveCurrentArtifacts(run, operation),
-    tier,
-    updatedIndexer.liveState,
-  );
 
   return {
-    run: updateRunRecordForSuccess(run, operation, message, nextArtifacts),
+    update: buildTierSuccessRunUpdate(operation, message, tier, updatedIndexer.liveState),
     result: {
       operation,
       outcome: "tier-updated",
@@ -760,14 +588,10 @@ async function applyTierOperationToRun(
   };
 }
 
-async function applyDeleteOperationToRun(
-  run: IndexerMaintenanceRunRecord,
-  operation: IndexerMaintenanceOperation,
-): Promise<{
-  run: IndexerMaintenanceRunRecord;
+async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promise<{
+  update: DeleteSuccessIndexerMaintenanceRunUpdate | DeleteFailureIndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
-  const currentArtifacts = resolveCurrentArtifacts(run, operation);
   const currentState = resolveSlotToriiLiveState(operation.gameName, {
     onProgress: (message) => console.error(message),
   });
@@ -776,10 +600,9 @@ async function applyDeleteOperationToRun(
     const errorMessage =
       currentState.describeError || `Unable to verify the Torii deployment state for "${operation.gameName}"`;
     const message = buildFailureMessage(operation, errorMessage);
-    const nextArtifacts = buildDeleteFailureArtifacts(currentArtifacts, currentState);
 
     return {
-      run: updateRunRecordForFailure(run, operation, message, nextArtifacts),
+      update: buildDeleteFailureRunUpdate(operation, message, currentState),
       result: {
         operation,
         outcome: "failed",
@@ -796,10 +619,9 @@ async function applyDeleteOperationToRun(
 
     if (deleteResult.action === "already-missing") {
       const message = buildIndexerAlreadyMissingMessage(operation.gameName);
-      const nextArtifacts = buildDeleteSuccessArtifacts(currentArtifacts, deleteResult.liveState);
 
       return {
-        run: updateRunRecordForSuccess(run, operation, message, nextArtifacts),
+        update: buildDeleteSuccessRunUpdate(operation, message, deleteResult.liveState),
         result: {
           operation,
           outcome: "already-missing",
@@ -810,10 +632,9 @@ async function applyDeleteOperationToRun(
     }
 
     const message = buildIndexerDeletedMessage(operation.gameName);
-    const nextArtifacts = buildDeleteSuccessArtifacts(currentArtifacts, deleteResult.liveState);
 
     return {
-      run: updateRunRecordForSuccess(run, operation, message, nextArtifacts),
+      update: buildDeleteSuccessRunUpdate(operation, message, deleteResult.liveState),
       result: {
         operation,
         outcome: "deleted",
@@ -827,10 +648,9 @@ async function applyDeleteOperationToRun(
     });
     const errorMessage = error instanceof Error ? error.message : String(error);
     const message = buildFailureMessage(operation, errorMessage);
-    const nextArtifacts = buildDeleteFailureArtifacts(currentArtifacts, failedState);
 
     return {
-      run: updateRunRecordForFailure(run, operation, message, nextArtifacts),
+      update: buildDeleteFailureRunUpdate(operation, message, failedState),
       result: {
         operation,
         outcome: "failed",
@@ -854,26 +674,57 @@ async function processOperationGroup(
     return removeStaleRunMaintenanceIndexEntry(config, operations);
   }
 
-  let nextRun: IndexerMaintenanceRunRecord = currentRun;
   const results: IndexerMaintenanceResult[] = [];
+  const updates: IndexerMaintenanceRunUpdate[] = [];
 
   for (const operation of operations) {
-    const applied = await applyOperationToRun(nextRun, operation);
-    nextRun = applied.run;
+    const applied = await runIndexerMaintenanceOperation(operation);
+    if (applied.update) {
+      updates.push(applied.update);
+    }
     results.push(applied.result);
   }
 
-  if (recordPath && nextRun) {
-    await updateGitHubBranchJsonFile<Exclude<IndexerMaintenanceRunRecord, null>>(
+  if (recordPath && currentRun) {
+    const nextRun = await updateGitHubBranchJsonFile<Exclude<IndexerMaintenanceRunRecord, null>>(
       config,
       recordPath,
-      () => nextRun as Exclude<IndexerMaintenanceRunRecord, null>,
+      (latestRun) => {
+        if (!latestRun) {
+          throw new Error(`Could not find run record at ${recordPath}`);
+        }
+
+        return applyIndexerMaintenanceRunUpdates(latestRun, updates) as Exclude<IndexerMaintenanceRunRecord, null>;
+      },
       buildRunStoreCommitMessage(operations[operations.length - 1]!),
     );
+
     await recordUpdatedMaintenanceIndex(config, nextRun);
   }
 
   return results;
+}
+
+export async function runIndexerMaintenance(args: IndexerMaintenanceCliArgs) {
+  const config = requireGitHubBranchStoreConfig();
+  const groupedOperations = groupOperationsByRecordPath(args.operations);
+  const results: IndexerMaintenanceResult[] = [];
+
+  for (const [groupKey, operations] of groupedOperations.entries()) {
+    const operationResults = await processOperationGroup(config, groupKey, operations);
+    results.push(...operationResults);
+  }
+
+  await updateLiveIndexerSnapshots(config, args.operations);
+  writeWorkflowSummary(results);
+}
+
+async function main() {
+  await runIndexerMaintenance(resolveCliArgs());
+}
+
+if (import.meta.main) {
+  await main();
 }
 
 function resolveSummaryTargetName(result: IndexerMaintenanceResult) {
@@ -952,20 +803,3 @@ async function updateLiveIndexerSnapshots(
     `factory-runs: refresh live indexer states for ${gameNames.join(", ")}`,
   );
 }
-
-async function main() {
-  const args = resolveCliArgs();
-  const config = requireGitHubBranchStoreConfig();
-  const groupedOperations = groupOperationsByRecordPath(args.operations);
-  const results: IndexerMaintenanceResult[] = [];
-
-  for (const [groupKey, operations] of groupedOperations.entries()) {
-    const operationResults = await processOperationGroup(config, groupKey, operations);
-    results.push(...operationResults);
-  }
-
-  await updateLiveIndexerSnapshots(config, args.operations);
-  writeWorkflowSummary(results);
-}
-
-await main();

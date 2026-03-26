@@ -11,7 +11,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
@@ -70,6 +70,8 @@ const StructureBannerEntityDetailContent = memo(
       isLoadingStructure,
     } = useStructureEntityDetail({ structureEntityId });
     const mode = useGameModeConfig();
+    const resolvedWorldMode = useResolvedWorldGameMode();
+    const isEternumMode = resolvedWorldMode === "eternum";
     const { currentBlockTimestamp } = useBlockTimestamp();
     const openPopup = useUIStore((state) => state.openPopup);
     const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
@@ -139,6 +141,7 @@ const StructureBannerEntityDetailContent = memo(
     const showBalanceInline = isFragmentMine || isCamp;
     const showProductionTab = structureCategory !== StructureType.Hyperstructure && !isFragmentMine;
     const showFaithTab =
+      isEternumMode &&
       rawCategory !== undefined &&
       [StructureType.Realm, StructureType.Village].includes(Number(rawCategory) as StructureType);
     const canOpenTransferPopup =

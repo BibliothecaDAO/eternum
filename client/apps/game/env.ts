@@ -100,6 +100,7 @@ const envSchema = z.object({
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]).optional().default("local"), // Add other chains as needed
   VITE_PUBLIC_GAME_TYPE: z.enum(["blitz", "eternum"]).optional().default("blitz"),
+  // Deprecated for runtime mode selection. Kept for deploy tooling defaults.
   VITE_PUBLIC_FORCE_GAME_MODE_ID: z.enum(["eternum", "blitz"]).optional(),
   VITE_PUBLIC_FACTORY_DEPLOY_REPEATS: z.string().optional(),
 

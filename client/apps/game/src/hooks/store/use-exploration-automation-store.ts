@@ -174,6 +174,8 @@ export const useExplorationAutomationStore = create<ExplorationAutomationState>(
         }),
       pruneForGame: (gameId) =>
         set((state) => {
+          const hasStale = Object.values(state.entries).some((entry) => entry.gameId !== gameId);
+          if (!hasStale) return state;
           const entries = Object.fromEntries(
             Object.entries(state.entries).filter(([, entry]) => entry.gameId === gameId),
           );

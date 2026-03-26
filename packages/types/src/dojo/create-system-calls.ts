@@ -522,6 +522,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.open_chest(props);
   };
 
+  const burn_research_for_relic = async (
+    props: SystemProps.BurnResearchForRelicProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.burn_research_for_relic(props);
+  };
+
   const apply_relic = async (props: SystemProps.ApplyRelicProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.apply_relic(props);
   };
@@ -642,6 +648,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     structure_burn: withAuth(structure_burn),
     troop_burn: withAuth(troop_burn),
     open_chest: withAuth(open_chest),
+    burn_research_for_relic: withAuth(burn_research_for_relic),
     apply_relic: withAuth(apply_relic),
   };
 
