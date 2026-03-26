@@ -3,7 +3,11 @@
 import { loadNetworkEnvironment } from "../../../../scripts-runtime/js/environment.js";
 import { printRuntimeBanner } from "../../../../scripts-runtime/js/output.js";
 import { executeContractCalls } from "../../../../scripts-runtime/js/starknet.js";
-import { resolveAmmv2DeploymentNetworkName, resolveAmmv2PackageRoot } from "../../support/command.js";
+import {
+  confirmMainnetActionIfNeeded,
+  resolveAmmv2DeploymentNetworkName,
+  resolveAmmv2PackageRoot,
+} from "../../support/command.js";
 import {
   buildCreatePoolCalls,
   ensureRequiredInputFile,
@@ -31,6 +35,12 @@ const packageRoot = resolveAmmv2PackageRoot(import.meta.url);
 const networkName = resolveAmmv2DeploymentNetworkName(process.argv);
 const createPoolInput = resolveCreatePoolCommandInput(process.argv.slice(3));
 const context = resolveCreatePoolContext(packageRoot, networkName);
+
+await confirmMainnetActionIfNeeded({
+  actionName: "create-pool",
+  args: process.argv,
+  networkName,
+});
 
 ensureRequiredInputFile(context.envFilePath, "network env file");
 ensureRequiredInputFile(context.configFilePath, "create-pool config");

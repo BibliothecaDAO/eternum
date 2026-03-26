@@ -30,10 +30,10 @@
               }
             },
             {
-              "setFeeAmountNumeratorAssumeDivIs1000": "997"
+              "setFeeAmountNumeratorAssumeDivIs1000": "985"
             },
             {
-              "setFeeTo": "0x0"
+              "setFeeTo": "0x07fd490b3bA298E4b94e3c32df832823b102E39cE98cD41076a70b2F82D9326e"
             },
             {
               "setPairDefaultAdmin": "0x06292EeFbFf50689b0e4D007e6AD17AbeE996e08E66E62762F0c4Bc170738402"

@@ -4,7 +4,8 @@ import { readJsonFileIfExists, writeJsonFile } from "../../../../scripts-runtime
 import { printRuntimeStep, printRuntimeValue } from "../../../../scripts-runtime/js/output.js";
 import { getProvider } from "../../../../scripts-runtime/js/starknet.js";
 import { readNamedArgumentValue } from "../../support/command.js";
-import { ensureRequiredInputFile } from "../../support/files.js";
+
+export { ensureRequiredInputFile } from "../../support/files.js";
 
 function resolvePositionalCreatePoolSelectors(args) {
   return args.filter((arg, index) => {
