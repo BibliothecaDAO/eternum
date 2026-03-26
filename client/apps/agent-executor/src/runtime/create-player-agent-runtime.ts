@@ -14,11 +14,10 @@ import { createCoreTools } from "@bibliothecadao/onchain-agent/tools/pi-tools";
 import { buildSystemPrompt } from "@bibliothecadao/onchain-agent/entry/soul";
 import { createX402Model } from "@bibliothecadao/onchain-agent/providers/x402/index";
 import { attachRuntimeTransactionObserver } from "./runtime-transaction-events";
-
-type ToolError = {
-  tool: string;
-  error: string;
-};
+import { buildTickPrompt } from "./tick-prompt";
+import type { ToolError } from "./tick-prompt";
+import { fetchRecentWorldChat } from "./fetch-world-chat";
+import type { WorldChatEntry } from "./fetch-world-chat";
 
 export async function createPlayerAgentRuntime(input: {
   agentId: string;
@@ -29,7 +28,7 @@ export async function createPlayerAgentRuntime(input: {
   tickIntervalMs?: number;
 }): Promise<{
   runtime: ManagedAgentRuntime;
-  buildHeartbeatPrompt(): string;
+  buildHeartbeatPrompt(): Promise<string>;
   dispose(): Promise<void>;
 }> {
   if (!input.session.worldAuth || !input.session.material) {
@@ -52,11 +51,16 @@ export async function createPlayerAgentRuntime(input: {
       modelProvider: input.modelProvider,
       modelId: input.modelId,
       tickIntervalMs: input.tickIntervalMs,
+      realtimeServerUrl: process.env.REALTIME_SERVER_URL ?? "https://eternum-production.up.railway.app",
     },
     manifestOverride: input.session.worldAuth.manifest,
     startMapLoop: true,
     waitForMap: true,
   });
+
+  // Wire agent identity into tool context for chat operations
+  toolCtx.agentId = input.agentId;
+  toolCtx.agentKind = "player";
 
   const model =
     config.modelProvider === "x402"
@@ -112,11 +116,32 @@ export async function createPlayerAgentRuntime(input: {
 
   return {
     runtime,
-    buildHeartbeatPrompt() {
+    async buildHeartbeatPrompt() {
+      let chatMessages: WorldChatEntry[] | undefined;
+      const realtimeUrl = process.env.REALTIME_SERVER_URL;
+      if (realtimeUrl) {
+        const [worldChat, agentChat] = await Promise.all([
+          fetchRecentWorldChat({
+            realtimeServerUrl: realtimeUrl,
+            zoneId: "global",
+            agentId: input.agentId,
+            limit: 10,
+          }),
+          fetchRecentWorldChat({
+            realtimeServerUrl: realtimeUrl,
+            zoneId: "agents:global",
+            agentId: input.agentId,
+            limit: 5,
+          }),
+        ]);
+        chatMessages = [...worldChat, ...agentChat];
+      }
+
       return buildTickPrompt(
         (mapCtx.protocol?.briefing() as Record<string, unknown> | null | undefined) ?? null,
         toolErrors,
         readMemory(config.dataDir),
+        chatMessages,
       );
     },
     async dispose() {
@@ -246,30 +271,4 @@ function splitMessages(messages: AgentMessage[], target: number): { dropped: Age
     dropped: messages.slice(0, cutIndex),
     kept: messages.slice(cutIndex),
   };
-}
-
-function buildTickPrompt(briefing: Record<string, unknown> | null, toolErrors: ToolError[], memory: string): string {
-  if (!briefing) {
-    return "Map not yet loaded. Wait for next tick.";
-  }
-
-  const parts = ["## Tick", "", JSON.stringify(briefing, null, 2)];
-  if (memory) {
-    parts.push("", "## Memory", memory);
-  }
-  if (toolErrors.length > 0) {
-    parts.push("", "## Recent Errors", ...toolErrors.map((error) => `- ${error.tool}: ${error.error}`));
-  }
-  parts.push(
-    "",
-    "## Constraints",
-    "- Stamina regenerates over time (20/tick). Travel costs vary by biome.",
-    "- Attacking with low stamina deals no damage.",
-    "- Many actions require adjacency.",
-    "- Move adjacent before combat, raids, transfers, or chest interaction.",
-    "- Simulate before committing when combat is uncertain.",
-    "",
-    "Act on threats first, then opportunities. If there is a beneficial legal move available now, take it.",
-  );
-  return parts.join("\n");
 }

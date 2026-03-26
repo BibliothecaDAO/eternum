@@ -320,6 +320,17 @@ const handleWorldPublish = async (
     };
 
     broadcastToZone(zoneId, broadcastPayload, ws);
+
+    // Wake agents mentioned in the message
+    if (process.env.AGENT_GATEWAY_URL) {
+      const { extractAgentMentions, wakeAgentOnMention } = await import("./ws/mention-detector");
+      const mentions = extractAgentMentions(payload.content);
+      for (const agentId of mentions) {
+        wakeAgentOnMention(agentId, created, zoneId).catch((err: unknown) =>
+          console.error(`Failed to wake agent ${agentId} on mention:`, err),
+        );
+      }
+    }
   } catch (error) {
     console.error("Failed to persist world chat message", error);
     sendError(ws, "world_publish_failed", "Unable to publish message right now.");

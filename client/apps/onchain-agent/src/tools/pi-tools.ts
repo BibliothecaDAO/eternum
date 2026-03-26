@@ -463,5 +463,26 @@ export function createCoreTools(ctx: ToolContext, mapCtx: MapContext, dataDir: s
         };
       },
     },
+
+    // ── Chat ──
+    {
+      name: "send_world_chat",
+      label: "Send World Chat",
+      description:
+        "Send a message to the world chat. Other players and agents can see it. " +
+        "Use zone_id 'agents:global' for agent-to-agent coordination.",
+      parameters: Type.Object({
+        content: Type.String({ description: "Message text to send" }),
+        zone_id: Type.Optional(Type.String({ description: "Chat zone (default: global)" })),
+      }),
+      async execute(_toolCallId: string, params: any) {
+        const { sendWorldChat } = await import("./core/chat.js");
+        const result = await sendWorldChat(
+          { content: params.content, zoneId: params.zone_id },
+          ctx,
+        );
+        return { content: [{ type: "text" as const, text: result.message }], details: result };
+      },
+    },
   ];
 }

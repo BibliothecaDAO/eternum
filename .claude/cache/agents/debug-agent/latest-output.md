@@ -1,254 +1,157 @@
-# Debug Report: Chain Time Desync -- Client Clock Drifts Ahead of Chain
-
-Generated: 2026-03-22
+# Debug Report: Chat Not Reaching Agent + Stamina Error on Wrong Entity
+Generated: 2026-03-25
 
 ## Symptom
-
-The client clock drifts ahead of the chain's block timestamp, causing resource balance inflation. Players see more
-resources than the chain actually recognizes, leading to transaction failures when they try to spend those phantom
-resources.
+1. Messages sent from the game UI Chat tab do not reach the agent or produce responses.
+2. Agent gets "insufficient stamina, you need: 30, and have: 10" but the user's unit has more stamina. User re-authed for a second game (etrn-mango) and suspects session key conflict from two games.
 
 ## Investigation Steps
 
-1. Read `use-chain-time-store.ts` -- the core clock interpolation store
-2. Read `chain-time-poller.tsx` -- the RPC polling component
-3. Read `timestamp.ts` -- the tick computation utilities
-4. Read `use-block-timestamp-store.ts` and `block-timestamp-poller.tsx` -- the derived tick store
-5. Read `resource-manager.ts` -- how ticks drive balance projection
-6. Read `config-manager.ts` -- what the Default tick duration actually is
-7. Searched all callers of `getNowSeconds`, `getBlockTimestamp`, `currentDefaultTick`, `useBlockTimestamp`
+### Step 1: Traced the chat send flow (UI -> Gateway -> DB)
 
-## Evidence
+The UI calls `sendMyAgentMessage()` which POSTs to `POST /my/agents/:agentId/messages`.
 
-### Finding 1: The Anti-Rewind Math.max Is a One-Way Ratchet That Accumulates Drift
+**Finding:** The gateway's `POST /my/agents/:agentId/messages` handler (lines 475-500 in `agent-gateway/src/index.ts`) **only saves the message to the database**. It does NOT:
+- Forward the message to the coordinator DO
+- Create a wake event
+- Enqueue the agent for execution
+- Send the message through `AGENT_RUN_QUEUE`
 
-- **Location:** `client/apps/game/src/hooks/store/use-chain-time-store.ts:56`
-- **Code:**
-  ```ts
-  const currentNowMs = computeNowMs(state.anchorTimestampMs, state.anchorPerfMs);
-  const anchorTimestampMs = Math.max(heartbeat.timestamp, currentNowMs);
-  ```
-- **Observation:** When a new heartbeat arrives from the chain, the store takes the **maximum** of the chain's reported
-  timestamp and the client's current interpolated time. If the client has drifted ahead (which it will -- see Finding
-  2), the chain's heartbeat is **ignored** and the client's inflated time becomes the new anchor.
-- **Relevance:** This is the core bug. The anti-rewind logic prevents the clock from ever correcting downward. Every
-  poll that finds the chain behind the client's interpolated time is a missed correction opportunity. Drift is
-  monotonically non-decreasing.
+Compare with the working `POST /agents/:agentId/prompt` endpoint (lines 594-660) which does all four:
+1. Posts message to coordinator DO (`/messages`)
+2. Creates a `user_prompt` event on the coordinator (`/events`)
+3. Wakes the coordinator (`/wake`)
+4. Enqueues a job on `AGENT_RUN_QUEUE`
 
-### Finding 2: Client Interpolation Uses performance.now() Which Drifts From Chain Time
+### Step 2: Confirmed the chat-bridge is unrelated to player chat
 
-- **Location:** `client/apps/game/src/hooks/store/use-chain-time-store.ts:29-36`
-- **Code:**
-  ```ts
-  const computeNowMs = (anchorTimestampMs, anchorPerfMs) => {
-    const deltaMs = getPerfNowMs() - anchorPerfMs;
-    return anchorTimestampMs + Math.max(0, deltaMs);
-  };
-  ```
-- **Observation:** Between polls, time is interpolated by adding `performance.now()` delta to the anchor.
-  `performance.now()` tracks wall-clock time at ~1ms resolution. But the chain's block timestamps advance only when
-  blocks are produced. If block production is slower than wall-clock (even by milliseconds per block), the interpolated
-  time will systematically overshoot the next block timestamp.
-- **Relevance:** With a 60-second poll interval, even a small systematic bias (e.g., chain blocks produced every 3.01
-  seconds instead of 3.00) accumulates to hundreds of milliseconds per poll cycle. Over an hour, this can reach seconds.
+`packages/agent-runtime/src/chat-bridge.ts` is a `publishAgentWorldChat` function used for the agent to publish messages TO the world (outbound), not for receiving player messages (inbound). It uses a WebSocket `RealtimeClient` to broadcast to a world zone.
 
-### Finding 3: Poll Interval Is 60 Seconds -- Too Slow to Limit Drift
+### Step 3: Traced session resolution for multi-world scenario
 
-- **Location:** `client/apps/game/src/ui/shared/components/chain-time-poller.tsx:8`
-- **Code:** `const POLL_INTERVAL_MS = 60_000;`
-- **Observation:** The chain is polled once per minute. Between polls, the client free-runs on `performance.now()`.
-  There is no drift correction, no clamping, no maximum-drift guard.
-- **Relevance:** 60 seconds of uncorrected interpolation is a long time. If the chain's block rate is even slightly
-  slower than real-time, the client accumulates drift for the full 60 seconds before the next heartbeat arrives -- and
-  then Finding 1 ensures that drift is never corrected.
+The session resolver (`CartridgeStoredSessionResolver` at `agent-executor/src/sessions/cartridge-stored-session-resolver.ts:42-43`) loads sessions by `agentId`:
 
-### Finding 4: Default Tick Duration Is 1 Second -- Drift Directly Maps to Tick Inflation
+```typescript
+async load(input: LoadAgentSessionInput<Record<string, unknown>>): Promise<CartridgeStoredResolvedSession> {
+    const stored = await this.loader.load(input.agentId);
+```
 
-- **Location:** `packages/core/src/managers/config-manager.ts:743-744`
-- **Code:**
-  ```ts
-  } else if (tickId === TickIds.Default) {
-    return 1;
-  }
-  ```
-- **Location:** `packages/core/src/utils/timestamp.ts:23`
-- **Code:**
-  ```ts
-  const currentDefaultTick = Math.floor(timestamp / Number(tickConfigDefault));
-  ```
-- **Observation:** The Default tick is 1 second. `currentDefaultTick = Math.floor(timestamp / 1) = timestamp`. Every
-  second of clock drift equals one extra tick. One extra tick means one extra second of production applied to every
-  producing resource.
-- **Relevance:** This is the amplification mechanism. A 5-second clock drift means 5 extra ticks of production projected
-  onto every resource balance across the entire game.
+The actual loader is `ExecutorRunStore.load()` (`agent-executor/src/persistence/executor-run-store.ts:122-160`), which queries:
+- `agents` table by `agents.id = agentId`
+- `agentSessions` table by `agentSessions.agentId = agentId`, ordered by `createdAt DESC`, `LIMIT 1`
 
-### Finding 5: Resource Balance Projection Uses Tick Delta Linearly
+### Step 4: Verified agent-to-world binding is 1:1
 
-- **Location:** `packages/core/src/managers/resource-manager.ts:630-644`
-- **Code:**
-  ```ts
-  private _amountProduced(production, currentTick, resourceId) {
-    const ticksSinceLastUpdate = currentTick - production.last_updated_at;
-    let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
-    ...
-  }
-  ```
-- **Observation:** `balanceWithProduction()` takes `currentTick` (which equals `currentDefaultTick` = the timestamp in
-  seconds) and subtracts `last_updated_at` (the on-chain timestamp when production was last synced). The difference is
-  multiplied by `production_rate`. Every extra second of drift adds `production_rate` units to the displayed balance.
-- **Relevance:** This is where the inflation manifests. The client shows `balance + (drifted_ticks * rate)` while the
-  chain knows `balance + (actual_ticks * rate)`. The difference is `drift_seconds * rate` per resource.
+Each agent record has a unique `id` and a `worldId`. The `agents` table has a unique index on `(kind, ownerType, ownerId, worldId, displayName)` (schema at `packages/agent-runtime/src/db/schema.ts:71-77`).
 
-### Finding 6: CONSERVATIVE_TICK_BUFFER Only Helps for Transactions, Not Display
+When a player launches an agent for a second game (different worldId), `POST /my/agents` at line 151 calls `getPlayerAgentByWorld(ownerId, payload.worldId)`. Since the worldId is different, it creates a **new agent record** with a new UUID. Each world gets its own agent with its own session.
 
-- **Location:** `packages/core/src/utils/timestamp.ts:12,39-47`
-- **Code:**
-  ```ts
-  const CONSERVATIVE_TICK_BUFFER = 1;
-  // ...
-  currentDefaultTick: Math.max(0, currentDefaultTick - CONSERVATIVE_TICK_BUFFER),
-  ```
-- **Observation:** `getConservativeBlockTimestamp()` subtracts 1 tick from the current tick. This is used only in
-  transaction validation paths (e.g., `use-transfer-automation-runner.ts:144`). The display paths (resource panels,
-  upgrade checks, etc.) all use `getBlockTimestamp()` directly, which has no buffer.
-- **Relevance:** The 1-tick buffer was designed to prevent tx failures, but (a) if drift exceeds 1 second it is
-  insufficient, and (b) it does not address the displayed balance inflation at all. Users see inflated balances and try
-  to spend them.
+### Step 5: Verified session isolation per agent
 
-### Finding 7: Two Separate Time Systems with No Synchronization Between Them
+The `agentSessions` table links sessions to agents via `agentId`, not via `ownerId/playerId`. The `ExecutorRunStore.load()` (line 132-136) filters sessions by `agentSessions.agentId = agentId`. The `loadLatestSession()` method in the postgres repo (line 566-574) also fetches only for a specific `agentId`.
 
-- **Location:** `client/apps/game/src/ui/layouts/world.tsx:70-71`
-- **Code:**
-  ```tsx
-  <BlockTimestampPoller />
-  <ChainTimePoller />
-  ```
-- **Observation:** There are TWO independent time systems:
-  1. **ChainTimeStore** (`use-chain-time-store.ts`) -- polls RPC every 60s, interpolates with `performance.now()`, has
-     anti-rewind. This feeds `getBlockTimestamp()` via `setBlockTimestampSource()`.
-  2. **BlockTimestampStore** (`use-block-timestamp-store.ts`) -- polls every 10s by calling `getBlockTimestamp()` (which
-     reads from ChainTimeStore) and caches the tick values.
-- **Relevance:** The BlockTimestampStore re-derives ticks every 10s from the ChainTimeStore. It cannot correct drift --
-  it just consumes the already-drifted timestamp. The 10s polling of BlockTimestampStore means UI components may also
-  show stale ticks (up to 10s old), but that is minor compared to the accumulating drift in ChainTimeStore.
+No cross-agent session query exists anywhere in the codebase. Sessions are properly scoped.
 
-### Finding 8: Heartbeat Stale-Check Only Guards Against Out-of-Order, Not Drift
+### Step 6: Investigated the stamina error scenario
 
-- **Location:** `client/apps/game/src/hooks/store/use-chain-time-store.ts:45-53`
-- **Code:**
-  ```ts
-  if (state.lastHeartbeat && state.lastHeartbeat.timestamp > heartbeat.timestamp) {
-    // discard stale heartbeat
-    return state;
-  }
-  ```
-- **Observation:** This only rejects heartbeats with a timestamp older than the previous heartbeat. It does NOT reject
-  heartbeats that are older than the current interpolated time (which is the drift scenario). The `Math.max` on line 56
-  handles that case by... keeping the drifted time.
+The `completePlayerAgentSetup` (line 136-188 in postgres repo) explicitly matches by both `agentId` AND `authSessionId`, preventing cross-write between agents. Two agents for the same player in different worlds will have completely separate session keys.
 
-## Caller Census: How Widespread Is Clock Usage
+The stamina error is therefore NOT caused by session key cross-contamination.
 
-The drifted clock reaches the entire game through these paths:
+## Evidence Summary
 
-**Direct `getBlockTimestamp()` callers (imperative, outside React):** ~15 call sites
+### Finding 1: POST /my/agents/:agentId/messages is store-only (CRITICAL BUG)
+- **Location:** `client/apps/agent-gateway/src/index.ts:475-500`
+- **Observation:** Saves message to DB but never wakes the agent
+- **Relevance:** This is why chat does not work -- messages are stored but the agent never processes them
 
-- `army-manager.ts` (6 calls) -- army movement timing
-- `worldmap.tsx` (2 calls) -- map interactions
-- `hexception.tsx` (1 call) -- building construction
-- `select-preview-building.tsx` (3 calls) -- construction UI
-- `market-modal.tsx`, `market-header.tsx` -- trading
-- `castle.tsx` -- realm upgrades
-- `resource-arrivals.tsx` -- arrival timing
-- `world-update-listener.ts` -- event processing
-- `use-automation.tsx`, `use-transfer-automation-runner.ts`, `use-exploration-automation-runner.ts` -- automation
+### Finding 2: POST /agents/:agentId/prompt has the full wake logic
+- **Location:** `client/apps/agent-gateway/src/index.ts:594-660`
+- **Observation:** Posts to coordinator, creates event, wakes, enqueues job
+- **Relevance:** Shows the correct implementation that is missing from the /my/ endpoint
 
-**React hook `useBlockTimestamp()` callers (reactive, re-render on tick):** ~12 components
+### Finding 3: Sessions are properly scoped per-agent (per-world)
+- **Location:** `agent-executor/src/persistence/executor-run-store.ts:122-160`
+- **Observation:** Session loader queries by `agentId` only, not by player
+- **Relevance:** Rules out session key cross-contamination between worlds
 
-- `use-structure-upgrade.ts` -- upgrade eligibility
-- `bridge.tsx` -- bridging
-- `realm-info-panel.tsx`, `realm-details.tsx` -- realm display
-- `buildings-list.tsx` -- production display
-- `market-order-panel.tsx` (5 useMemo calls) -- order validation
-- `realm-transfer.tsx` -- transfer UI
-- `transfer-automation-panel.tsx` -- automation panel
-- `tick-progress.tsx` -- tick display
-- `army-list.tsx` -- army display
-- `left-command-sidebar.tsx` -- sidebar
+### Finding 4: Agent-world binding is enforced by unique index
+- **Location:** `packages/agent-runtime/src/db/schema.ts:71-77`
+- **Observation:** Unique index on `(kind, ownerType, ownerId, worldId, displayName)` prevents duplicates
+- **Relevance:** Each world gets a distinct agent record; no sharing
 
-**`getNowSeconds` callers:** `store-managers.tsx` for auto-claim timing, season-end checks
-
-**Total impact:** Every resource balance displayed anywhere in the game, every transaction validation, every automation
-decision, every army movement calculation uses the potentially-drifted clock.
+### Finding 5: Agent launch for second world creates new agent
+- **Location:** `client/apps/agent-gateway/src/index.ts:151-163`
+- **Observation:** `getPlayerAgentByWorld(ownerId, payload.worldId)` returns null for a new world, triggering new agent creation
+- **Relevance:** Confirms world isolation at the agent record level
 
 ## Root Cause Analysis
 
-The root cause is the combination of three design choices:
+### Issue 1: Chat messages not reaching agent
 
-1. **One-way ratchet (Math.max):** The anti-rewind logic on line 56 of `use-chain-time-store.ts` prevents the clock from
-   ever correcting backward. This was likely intended to prevent visual "time going backward" glitches but creates an
-   accumulating positive bias.
+**Root Cause:** The `POST /my/agents/:agentId/messages` endpoint (lines 475-500) is a "store only" handler. It saves the user's message to the persistence layer but does not forward the message to the coordinator, create a wake event, or enqueue a run job. The agent never receives or processes the message.
 
-2. **Wall-clock interpolation without drift correction:** Between 60-second polls, the client runs on
-   `performance.now()` which tracks real wall-clock time. The chain's block timestamps do not necessarily advance at
-   wall-clock rate (blocks may be produced at irregular intervals, or the chain may have its own clock that differs from
-   the client's).
+**Confidence:** HIGH
 
-3. **1-second tick granularity:** Because `TickIds.Default = 1 second`, every millisecond of accumulated drift
-   eventually rounds up to a whole extra tick, directly inflating production calculations.
+### Issue 2: Stamina error on wrong entity
 
-**Maximum possible drift:** Unbounded. The drift is monotonically non-decreasing. After N poll cycles:
+**Root Cause:** Sessions are properly isolated per-agent (per-world). The stamina error is NOT caused by session key cross-contamination. More likely causes:
+- The agent is operating on the correct world but selecting a different entity than the one the user expects
+- The entity's stamina was depleted by a previous autonomous tick before the user checked
+- The agent is reading stale world state from Torii
 
-- If the chain is consistently D ms behind wall-clock per 60s interval, drift after N polls = N \* D ms.
-- With the tab open for 1 hour (60 polls), if chain lags by even 100ms per cycle, drift = 6 seconds = 6 extra ticks of
-  production on every resource.
-- Tab open overnight (8 hours, 480 polls): drift could reach 48+ seconds.
-- If the user's machine sleeps and resumes, `performance.now()` may jump, creating a massive one-time drift that can
-  never be corrected.
+**Confidence:** HIGH that it is NOT a session issue. LOW confidence on identifying the exact stamina cause without game-level logs.
 
-**Confidence:** High
-
-**Alternative hypotheses:**
-
-- Network latency in RPC responses could add a systematic positive bias to the heartbeat timestamp (poll latency is
-  measured but not compensated for).
-- Browser tab throttling could cause `performance.now()` deltas to lag, but this would cause under-counting, not
-  over-counting, so it is not the primary issue.
+**Alternative hypotheses for stamina:**
+- The agent's previous autonomous tick spent the stamina
+- The agent controls a different army/entity than the user is viewing
+- Stale Torii cache giving wrong stamina values
 
 ## Recommended Fix
 
+### Fix 1: Chat messages not waking agent (CRITICAL)
+
 **Files to modify:**
-
-1. **`client/apps/game/src/hooks/store/use-chain-time-store.ts` (line 56)** -- Replace `Math.max` with drift-correcting
-   logic. Options:
-   - **Option A (simple clamp):** Allow the anchor to move backward up to some threshold (e.g., 5 seconds) per
-     heartbeat: `anchorTimestampMs = heartbeat.timestamp` (always trust the chain). Add a separate "display smoothing"
-     layer if visual jitter is a concern.
-   - **Option B (exponential correction):** If client is ahead, blend toward the chain value:
-     `anchorTimestampMs = currentNowMs + alpha * (heartbeat.timestamp - currentNowMs)` where alpha controls correction
-     speed.
-   - **Option C (hard reset with threshold):** If drift exceeds a threshold (e.g., 3 seconds), hard-reset to chain time.
-     Otherwise, keep interpolating.
-
-2. **`client/apps/game/src/ui/shared/components/chain-time-poller.tsx` (line 8)** -- Consider reducing
-   `POLL_INTERVAL_MS` from 60000 to 10000-15000 to limit maximum drift between corrections.
-
-3. **`packages/core/src/utils/timestamp.ts` (line 12)** -- Consider increasing `CONSERVATIVE_TICK_BUFFER` to 2-3 ticks
-   if drift correction is gradual rather than immediate, to provide a larger safety margin for transactions.
+- `client/apps/agent-gateway/src/index.ts` (lines 475-500)
 
 **Steps:**
+1. After saving the message with `repository.appendPlayerAgentMessage()` (line 498), add the wake-and-enqueue logic from `POST /agents/:agentId/prompt`:
+   - Get the coordinator stub: `getCoordinatorStub(c.env, detail.id)`
+   - Post message to coordinator: `stub.fetch("https://agent.internal/messages", ...)`
+   - Create and post a `user_prompt` event: `stub.fetch("https://agent.internal/events", ...)`
+   - Wake the coordinator: `stub.fetch("https://agent.internal/wake", ...)`
+   - Enqueue on `AGENT_RUN_QUEUE` if available
 
-1. In `setHeartbeat`, replace line 56 (`Math.max(heartbeat.timestamp, currentNowMs)`) with logic that always trusts the
-   chain timestamp, or at minimum allows downward correction.
-2. Reduce poll interval to 10-15 seconds.
-3. Add a maximum drift guard: if interpolated time exceeds chain time by more than N seconds, hard-reset.
-4. Consider adding a `performance.now()` sanity check for tab sleep/resume scenarios (compare `performance.now()` delta
-   with `Date.now()` delta; if they diverge significantly, hard-reset).
+2. Consider extracting a shared `wakeAgentForUserPrompt(env, agentId, message)` helper to avoid duplicating the wake logic between `POST /my/agents/:agentId/messages` and `POST /agents/:agentId/prompt`.
+
+### Fix 2: Stamina investigation (LOWER PRIORITY)
+
+To rule out any data-level issue, query the database:
+```sql
+SELECT a.id, a.world_id, a.owner_id, s.id as session_id, s.status, s.session_account_address, s.created_at
+FROM agents a
+LEFT JOIN agent_sessions s ON s.agent_id = a.id
+WHERE a.owner_id = '<player_address>'
+ORDER BY a.created_at, s.created_at;
+```
+Verify each agent has exactly one approved session pointing to the correct world.
+
+## Answers to Specific Questions
+
+**Q1: When a player has agents in 2 different worlds, how does the session resolver pick which session to use?**
+A: Each world has its own agent record with a unique agentId. The session resolver loads by agentId (not by player). So agent-for-world-1 loads session-for-world-1, and agent-for-world-2 loads session-for-world-2. No ambiguity.
+
+**Q2: Is the session scoped to worldId or shared across all agents for a player?**
+A: Scoped to agentId, which is 1:1 with worldId for a given player. Not shared.
+
+**Q3: In the chat flow, how is the message routed to the correct agent instance?**
+A: The UI sends to `POST /my/agents/:agentId/messages` with the specific agentId. The gateway looks up the agent by (ownerId, agentId) and stores the message for that agent's thread. **However, the message is never forwarded to the executor -- this is the bug.**
+
+**Q4: Could a stale/wrong session cause the agent to operate on entities from the wrong world?**
+A: No. Sessions are isolated per-agent. A stale session would cause an auth error, not a wrong-world error.
 
 ## Prevention
 
-1. **Invariant:** The client clock should never be allowed to exceed the chain's latest known block timestamp by more
-   than `(poll_interval + max_block_time)` seconds. Assert this in debug builds.
-2. **Monitoring:** The `logChainTimeDebug` infrastructure already logs `rewindPreventedMs`. Surface this as a metric; if
-   it is consistently > 0, drift is accumulating.
-3. **Testing:** Add a unit test that simulates a chain returning timestamps that lag wall-clock by a fixed amount per
-   poll, and verify that after 100 polls the client clock has not drifted more than a bounded amount.
+1. Extract the "store message + wake agent" logic into a shared function used by both `/my/` and `/agents/` message endpoints.
+2. Add integration tests verifying that POST to `/my/agents/:agentId/messages` triggers agent execution.
+3. Add a comment linking the two message endpoints so future developers keep them in sync.

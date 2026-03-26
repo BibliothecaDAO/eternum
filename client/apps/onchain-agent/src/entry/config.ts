@@ -69,6 +69,9 @@ export interface AgentConfig {
 
   /** Starknet address of the VRF provider contract. Override via `VRF_PROVIDER_ADDRESS` env var. */
   vrfProviderAddress: string;
+
+  /** Base URL of the realtime server for chat operations. Override via `REALTIME_SERVER_URL` env var. */
+  realtimeServerUrl?: string;
 }
 
 /** Normalize a hex address to 0x + 64 hex chars (zero-padded). */
@@ -138,5 +141,6 @@ export function loadConfig(overrides: Partial<AgentConfig> = {}): AgentConfig {
         ? join(homedir(), ".axis", "worlds", worldAddress)
         : join(homedir(), ".axis", "worlds", "_pending")),
     vrfProviderAddress: overrides.vrfProviderAddress ?? env.VRF_PROVIDER_ADDRESS ?? DEFAULT_VRF_PROVIDER_ADDRESS,
+    realtimeServerUrl: overrides.realtimeServerUrl ?? env.REALTIME_SERVER_URL ?? "https://eternum-production.up.railway.app",
   };
 }

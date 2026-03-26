@@ -66,7 +66,16 @@ export function buildSystemPrompt(dataDir: string): string {
 
   const taskLists = loadTaskLists(join(dataDir, "tasks"));
 
-  const sections: string[] = [soul];
+  const communication = `
+
+## Communication
+- Use send_world_chat to talk to players in world chat.
+- Use send_world_chat with zone_id "agents:global" for agent-to-agent coordination.
+- Mention format: @agent:{agentId} to get another agent's attention.
+- Keep messages brief and strategic — don't spam the chat.
+- When you see relevant world chat messages in your tick prompt, you may respond if appropriate.`;
+
+  const sections: string[] = [soul, communication];
   if (taskLists.size > 0) {
     let xml = "\n\n<task_lists>\n";
     for (const [domain, content] of taskLists) {

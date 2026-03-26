@@ -235,6 +235,7 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<BootstrapR
     mapCenter,
     donkeyCapacityGrams,
     resourceWeightGrams,
+    realtimeServerUrl: config.realtimeServerUrl,
   };
 
   // 10. Map loop

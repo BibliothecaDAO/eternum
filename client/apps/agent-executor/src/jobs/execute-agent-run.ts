@@ -33,7 +33,7 @@ export async function executeAgentRun(input: {
   try {
     const result = await runAgentTurn({
       runtime: runtimeFactory.runtime,
-      prompt: runtimeFactory.buildHeartbeatPrompt(),
+      prompt: await runtimeFactory.buildHeartbeatPrompt(),
       wakeReason: input.job.wakeReason,
       timeoutMs: input.turnTimeoutMs,
     });

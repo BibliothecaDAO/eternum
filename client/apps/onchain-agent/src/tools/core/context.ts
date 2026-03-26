@@ -51,6 +51,13 @@ export interface ToolContext {
    * `sendResources` to compute total cargo weight and donkey cost.
    */
   resourceWeightGrams?: Map<number, number>;
+
+  /** Base URL of the realtime server for chat operations. */
+  realtimeServerUrl?: string;
+  /** Agent ID used for chat sender identification. */
+  agentId?: string;
+  /** Agent kind (player/npc) for chat metadata. */
+  agentKind?: "player" | "npc";
 }
 
 /** Convert raw contract X coordinate to display coordinate. */

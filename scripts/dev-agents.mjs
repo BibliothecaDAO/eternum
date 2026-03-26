@@ -66,6 +66,7 @@ const services = [
     env: {
       PORT: String(gatewayPort),
       AGENT_CLIENT_ORIGIN: `https://localhost:${gamePort}`,
+      REALTIME_SERVER_URL: process.env.REALTIME_SERVER_URL ?? "https://eternum-production.up.railway.app",
     },
   },
   {
@@ -74,6 +75,7 @@ const services = [
     args: ["--dir", "./client/apps/agent-executor", "dev"],
     env: {
       PORT: String(executorPort),
+      REALTIME_SERVER_URL: process.env.REALTIME_SERVER_URL ?? "https://eternum-production.up.railway.app",
     },
   },
   {
@@ -103,6 +105,7 @@ const services = [
         ],
     env: {
       VITE_PUBLIC_AGENT_GATEWAY_URL: `http://127.0.0.1:${gatewayPort}`,
+      VITE_PUBLIC_REALTIME_URL: process.env.REALTIME_SERVER_URL ?? "https://eternum-production.up.railway.app",
     },
   },
 ];
