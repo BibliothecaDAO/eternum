@@ -270,13 +270,13 @@ importers:
     dependencies:
       '@apibara/indexer':
         specifier: 2.1.0-beta.58
-        version: 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@4.3.6)
+        version: 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)
       '@apibara/plugin-drizzle':
         specifier: 2.1.0-beta.57
-        version: 2.1.0-beta.57(@electric-sql/pglite@0.4.1)(bufferutil@4.1.0)(drizzle-orm@0.39.3(@electric-sql/pglite@0.4.1)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.3.11)(pg@8.18.0))(pg@8.18.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@4.3.6)
+        version: 2.1.0-beta.57(@electric-sql/pglite@0.4.1)(bufferutil@4.1.0)(drizzle-orm@0.39.3(@electric-sql/pglite@0.4.1)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.3.11)(pg@8.18.0))(pg@8.18.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)
       '@apibara/starknet':
         specifier: 2.1.0-beta.58
-        version: 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+        version: 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@bibliothecadao/amm-sdk':
         specifier: workspace:*
         version: link:../../../packages/amm-sdk
@@ -285,7 +285,7 @@ importers:
         version: 1.19.9(hono@4.11.10)
       apibara:
         specifier: 2.1.0-beta.57
-        version: 2.1.0-beta.57(@babel/runtime@7.28.6)(bufferutil@4.1.0)(magicast@0.3.5)(rollup@4.57.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@4.3.6)
+        version: 2.1.0-beta.57(@babel/runtime@7.28.6)(bufferutil@4.1.0)(magicast@0.3.5)(rollup@4.57.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)
       drizzle-orm:
         specifier: ^0.39.0
         version: 0.39.3(@electric-sql/pglite@0.4.1)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.3.11)(pg@8.18.0)
@@ -295,6 +295,58 @@ importers:
       pg:
         specifier: ^8.13.0
         version: 8.18.0
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@types/pg':
+        specifier: ^8.11.0
+        version: 8.16.0
+      drizzle-kit:
+        specifier: ^0.30.0
+        version: 0.30.6
+      tsx:
+        specifier: ^4.0.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  client/apps/amm-indexerv2:
+    dependencies:
+      '@apibara/indexer':
+        specifier: 2.1.0-beta.58
+        version: 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)
+      '@apibara/plugin-drizzle':
+        specifier: 2.1.0-beta.57
+        version: 2.1.0-beta.57(@electric-sql/pglite@0.4.1)(bufferutil@4.1.0)(drizzle-orm@0.39.3(@electric-sql/pglite@0.4.1)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.3.11)(pg@8.18.0))(pg@8.18.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)
+      '@apibara/starknet':
+        specifier: 2.1.0-beta.58
+        version: 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@bibliothecadao/ammv2-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/ammv2-sdk
+      '@hono/node-server':
+        specifier: ^1.0.0
+        version: 1.19.9(hono@4.11.10)
+      apibara:
+        specifier: 2.1.0-beta.57
+        version: 2.1.0-beta.57(@babel/runtime@7.28.6)(bufferutil@4.1.0)(magicast@0.3.5)(rollup@4.57.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)
+      drizzle-orm:
+        specifier: ^0.39.0
+        version: 0.39.3(@electric-sql/pglite@0.4.1)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.3.11)(pg@8.18.0)
+      hono:
+        specifier: ^4.0.0
+        version: 4.11.10
+      pg:
+        specifier: ^8.13.0
+        version: 8.18.0
+      starknet:
+        specifier: 'catalog:'
+        version: 8.9.2
     devDependencies:
       '@electric-sql/pglite':
         specifier: ^0.4.1
@@ -504,9 +556,9 @@ importers:
 
   client/apps/game:
     dependencies:
-      '@bibliothecadao/amm-sdk':
+      '@bibliothecadao/ammv2-sdk':
         specifier: workspace:*
-        version: link:../../../packages/amm-sdk
+        version: link:../../../packages/ammv2-sdk
       '@bibliothecadao/dojo':
         specifier: workspace:*
         version: link:../../../packages/dojo
@@ -1133,6 +1185,22 @@ importers:
         version: 1.3.11
 
   packages/amm-sdk:
+    dependencies:
+      starknet:
+        specifier: 'catalog:'
+        version: 8.9.2
+    devDependencies:
+      tsup:
+        specifier: ^8.0.2
+        version: 8.5.1(@swc/core@1.15.11(@swc/helpers@0.5.18))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.4.4
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/ammv2-sdk:
     dependencies:
       starknet:
         specifier: 'catalog:'
@@ -15870,9 +15938,9 @@ snapshots:
     optionalDependencies:
       zod: 4.3.6
 
-  '@apibara/indexer@2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@4.3.6)':
+  '@apibara/indexer@2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)':
     dependencies:
-      '@apibara/protocol': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@apibara/protocol': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       ci-info: 4.4.0
       consola: 3.4.2
@@ -15887,10 +15955,10 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@apibara/plugin-drizzle@2.1.0-beta.57(@electric-sql/pglite@0.4.1)(bufferutil@4.1.0)(drizzle-orm@0.39.3(@electric-sql/pglite@0.4.1)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.3.11)(pg@8.18.0))(pg@8.18.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@4.3.6)':
+  '@apibara/plugin-drizzle@2.1.0-beta.57(@electric-sql/pglite@0.4.1)(bufferutil@4.1.0)(drizzle-orm@0.39.3(@electric-sql/pglite@0.4.1)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.3.11)(pg@8.18.0))(pg@8.18.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)':
     dependencies:
-      '@apibara/indexer': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@4.3.6)
-      '@apibara/protocol': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@apibara/indexer': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)
+      '@apibara/protocol': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       drizzle-orm: 0.39.3(@electric-sql/pglite@0.4.1)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.3.11)(pg@8.18.0)
       postgres-range: 1.1.4
     optionalDependencies:
@@ -15903,23 +15971,23 @@ snapshots:
       - vitest
       - zod
 
-  '@apibara/protocol@2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@apibara/protocol@2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       consola: 3.4.2
       long: 5.3.2
       nice-grpc: 2.1.14
       nice-grpc-common: 2.0.2
       protobufjs: 7.5.4
-      viem: 2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      viem: 2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
     transitivePeerDependencies:
       - bufferutil
       - typescript
       - utf-8-validate
       - zod
 
-  '@apibara/starknet@2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@apibara/starknet@2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@apibara/protocol': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@apibara/protocol': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@scure/starknet': 1.1.2
       abi-wan-kanabi: 2.2.4
       long: 5.3.2
@@ -19041,7 +19109,7 @@ snapshots:
     dependencies:
       graphql: 16.12.0
       lodash.sortby: 4.7.0
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@graphql-tools/executor-common@0.0.4(graphql@16.12.0)':
     dependencies:
@@ -22288,7 +22356,7 @@ snapshots:
 
   '@scure/bip32@1.7.0':
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
@@ -26323,10 +26391,10 @@ snapshots:
       normalize-path: 3.0.0
       picomatch: 2.3.1
 
-  apibara@2.1.0-beta.57(@babel/runtime@7.28.6)(bufferutil@4.1.0)(magicast@0.3.5)(rollup@4.57.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@4.3.6):
+  apibara@2.1.0-beta.57(@babel/runtime@7.28.6)(bufferutil@4.1.0)(magicast@0.3.5)(rollup@4.57.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76):
     dependencies:
-      '@apibara/indexer': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@4.3.6)
-      '@apibara/protocol': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@apibara/indexer': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@1.8.0))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(zod@3.25.76)
+      '@apibara/protocol': 2.1.0-beta.58(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@rollup/plugin-replace': 6.0.3(rollup@4.57.1)
       '@rollup/plugin-virtual': 3.0.2(rollup@4.57.1)
       c12: 1.11.2(magicast@0.3.5)

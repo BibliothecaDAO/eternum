@@ -2,13 +2,15 @@ import { Button } from "@/ui/design-system/atoms";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { useAmm } from "@/hooks/use-amm";
 import { useCallback, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { parseTokenAmount, formatTokenAmount, computeLpBurn, type Pool } from "@bibliothecadao/amm-sdk";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { computeLpBurn, formatTokenAmount, parseTokenAmount, type Pool } from "@/services/amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
 import { resolveSelectedAmmPool } from "./amm-model";
+import { AMM_READ_QUERY_OPTIONS, invalidateAmmReadQueries } from "./amm-queries";
 
 export const AmmRemoveLiquidity = () => {
-  const { client, executeSwap, isConfigured } = useAmm();
+  const { client, executeSwap, isConfigured, account } = useAmm();
+  const queryClient = useQueryClient();
   const selectedPool = useAmmStore((s) => s.selectedPool);
 
   const [lpAmount, setLpAmount] = useState(0);
@@ -18,8 +20,7 @@ export const AmmRemoveLiquidity = () => {
     queryKey: ["amm-pools"],
     queryFn: async () => client?.api.getPools() ?? [],
     enabled: Boolean(client),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   const pool = useMemo(() => resolveSelectedAmmPool(pools, selectedPool), [pools, selectedPool]);
@@ -35,7 +36,7 @@ export const AmmRemoveLiquidity = () => {
   }, [lpAmount, pool]);
 
   const handleRemove = useCallback(async () => {
-    if (!client || !pool || lpAmount <= 0 || !burnResult) return;
+    if (!client || !pool || lpAmount <= 0 || !burnResult || !account?.address) return;
     setIsLoading(true);
     try {
       const lpBigint = parseTokenAmount(lpAmount.toString());
@@ -43,19 +44,21 @@ export const AmmRemoveLiquidity = () => {
       const tokenMin = (burnResult.tokenOut * 95n) / 100n;
 
       const call = client.liquidity.removeLiquidity({
-        ammAddress: client.ammAddress,
         tokenAddress: pool.tokenAddress,
+        lpTokenAddress: pool.lpTokenAddress,
         lpAmount: lpBigint,
         lordsMin,
         tokenMin,
+        recipientAddress: account.address,
       });
 
       await executeSwap(call);
+      await invalidateAmmReadQueries(queryClient);
       setLpAmount(0);
     } finally {
       setIsLoading(false);
     }
-  }, [lpAmount, burnResult, pool, client, executeSwap]);
+  }, [account?.address, burnResult, client, executeSwap, lpAmount, pool, queryClient]);
 
   const canRemove = Boolean(client && pool && lpAmount > 0 && burnResult !== null);
 

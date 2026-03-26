@@ -1,11 +1,12 @@
 import { useAmm } from "@/hooks/use-amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
+import { formatTokenAmount, type SwapEvent } from "@/services/amm";
 import { useQuery } from "@tanstack/react-query";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatTokenAmount, type SwapEvent } from "@bibliothecadao/amm-sdk";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { formatAmmSpotPrice } from "./amm-format";
+import { AMM_READ_QUERY_OPTIONS } from "./amm-queries";
 
 function formatTradeAmount(value: bigint): string {
   const formatted = formatTokenAmount(value);
@@ -29,8 +30,7 @@ export const AmmTradeHistory = () => {
       return client.api.getSwapHistory(selectedPool, { limit: 50 });
     },
     enabled: Boolean(client),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   if (!isConfigured || !client) {

@@ -24,7 +24,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@bibliothecadao/amm-sdk": "workspace:*",
+    "@bibliothecadao/ammv2-sdk": "workspace:*",
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",

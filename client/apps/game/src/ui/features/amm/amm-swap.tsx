@@ -1,16 +1,17 @@
 import { Button } from "@/ui/design-system/atoms";
 import { useAmm } from "@/hooks/use-amm";
+import { formatTokenAmount, parseTokenAmount, type Pool } from "@/services/amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
 import { AmmTokenInput, type TokenOption } from "./amm-token-input";
 import { AmmSwapConfirmation } from "./amm-swap-confirmation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatTokenAmount, parseTokenAmount, type Pool } from "@bibliothecadao/amm-sdk";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { buildAmmTokenOptions, resolveAmmSwapRoute, resolveAmmTokenName, resolveSelectedAmmPool } from "./amm-model";
-import { formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
+import { formatAmmFeeTo, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
+import { AMM_READ_QUERY_OPTIONS, invalidateAmmReadQueries } from "./amm-queries";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
 const RouteToken = ({ asset }: { asset: { displayName: string; shortLabel: string; iconResource: string | null } }) => (
@@ -44,7 +45,8 @@ function resolveSwapButtonLabel(
 }
 
 export const AmmSwap = () => {
-  const { client, config, executeSwap, isConfigured } = useAmm();
+  const { client, config, executeSwap, isConfigured, account } = useAmm();
+  const queryClient = useQueryClient();
   const slippageBps = useAmmStore((s) => s.slippageBps);
   const setSlippageBps = useAmmStore((s) => s.setSlippageBps);
   const selectedPool = useAmmStore((s) => s.selectedPool);
@@ -69,8 +71,7 @@ export const AmmSwap = () => {
     queryKey: ["amm-pools"],
     queryFn: async () => client?.api.getPools() ?? [],
     enabled: Boolean(client),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   const activePool = useMemo(() => resolveSelectedAmmPool(pools, selectedPool), [pools, selectedPool]);
@@ -174,42 +175,42 @@ export const AmmSwap = () => {
   );
 
   const handleSwapConfirm = useCallback(async () => {
-    if (!client || !route || !swapQuote) return;
+    if (!client || !route || !swapQuote || !account?.address) return;
     setIsSwapping(true);
     try {
       const amountIn = parseTokenAmount(payAmount.toString());
       const calls =
         route.kind === "routed"
           ? client.swap.swapTokenForTokenWithApproval({
-              ammAddress: client.ammAddress,
               tokenInAddress: route.inputPool.tokenAddress,
               tokenOutAddress: route.outputPool.tokenAddress,
               amountIn,
               minAmountOut: swapQuote.minimumReceived,
+              recipientAddress: account.address,
             })
           : route.isLordsInput
             ? client.swap.swapLordsForTokenWithApproval({
-                ammAddress: client.ammAddress,
-                lordsAddress: client.lordsAddress,
                 tokenAddress: route.pool.tokenAddress,
                 lordsAmount: amountIn,
                 minTokenOut: swapQuote.minimumReceived,
+                recipientAddress: account.address,
               })
             : client.swap.swapTokenForLordsWithApproval({
-                ammAddress: client.ammAddress,
                 tokenAddress: route.pool.tokenAddress,
                 tokenAmount: amountIn,
                 minLordsOut: swapQuote.minimumReceived,
+                recipientAddress: account.address,
               });
 
       await executeSwap(calls);
+      await invalidateAmmReadQueries(queryClient);
       setShowConfirmation(false);
       setPayAmount(0);
       setReceiveAmount(0);
     } finally {
       setIsSwapping(false);
     }
-  }, [client, executeSwap, payAmount, route, swapQuote]);
+  }, [account?.address, client, executeSwap, payAmount, queryClient, route, swapQuote]);
 
   const activePoolForFees = route?.kind === "direct" ? route.pool : route?.outputPool;
   const payAmountBigint = payAmount > 0 ? parseTokenAmount(payAmount.toString()) : 0n;
@@ -220,9 +221,6 @@ export const AmmSwap = () => {
   const lpFeePercent = activePoolForFees
     ? (Number(activePoolForFees.feeNum) / Number(activePoolForFees.feeDenom)) * 100
     : 0;
-  const protocolFeePercent = activePoolForFees
-    ? (Number(activePoolForFees.protocolFeeNum) / Number(activePoolForFees.protocolFeeDenom)) * 100
-    : 0;
 
   if (!isConfigured || !client) {
     return <div className="text-sm text-gold/40">The Agora is not configured.</div>;
@@ -231,13 +229,6 @@ export const AmmSwap = () => {
   if (!activePool) {
     return <div className="text-sm text-gold/40">No pools available.</div>;
   }
-
-  const routeDescription =
-    route?.kind === "routed"
-      ? `${resolveAmmAssetPresentation(payToken, config.lordsAddress).displayName} -> LORDS -> ${
-          resolveAmmAssetPresentation(receiveToken, config.lordsAddress).displayName
-        }`
-      : `${resolveAmmAssetPresentation(activePool.tokenAddress, config.lordsAddress).displayName} vs LORDS`;
 
   return (
     <div className="space-y-4">
@@ -341,7 +332,7 @@ export const AmmSwap = () => {
             },
             { label: "Minimum Received", value: formatTokenAmount(swapQuote.minimumReceived) },
             { label: "LP Fee", value: formatAmmPercent(lpFeePercent) },
-            { label: "Protocol Fee (veLORDS)", value: formatAmmPercent(protocolFeePercent) },
+            { label: "Fee To", value: activePoolForFees ? formatAmmFeeTo(activePoolForFees.feeTo) : "--" },
           ].map((metric) => (
             <div key={metric.label} className="rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
               <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">{metric.label}</div>

@@ -1,5 +1,9 @@
-import { STANDALONE_AMM_RESOURCES } from "@bibliothecadao/amm-sdk";
 import { findResourceById } from "@bibliothecadao/types";
+import localSeasonAddresses from "../../../../../../../contracts/common/addresses/local.json";
+import mainnetSeasonAddresses from "../../../../../../../contracts/common/addresses/mainnet.json";
+import sepoliaSeasonAddresses from "../../../../../../../contracts/common/addresses/sepolia.json";
+import slotSeasonAddresses from "../../../../../../../contracts/common/addresses/slot.json";
+import slottestSeasonAddresses from "../../../../../../../contracts/common/addresses/slottest.json";
 
 interface AmmAssetPresentation {
   tokenAddress: string;
@@ -8,6 +12,25 @@ interface AmmAssetPresentation {
   iconResource: string | null;
   isLords: boolean;
 }
+
+interface KnownAmmResource {
+  address: string;
+  displayName: string;
+  iconResource: string | null;
+}
+
+interface SeasonAddressCatalog {
+  resources: Record<string, (string | number)[]>;
+}
+
+const KNOWN_AMM_SEASON_ADDRESSES: SeasonAddressCatalog[] = [
+  localSeasonAddresses,
+  mainnetSeasonAddresses,
+  sepoliaSeasonAddresses,
+  slotSeasonAddresses,
+  slottestSeasonAddresses,
+];
+const KNOWN_AMM_RESOURCES = buildKnownAmmResources();
 
 function normalizeTokenAddress(tokenAddress: string): string {
   try {
@@ -56,7 +79,7 @@ export function resolveAmmAssetPresentation(tokenAddress: string, lordsAddress: 
     };
   }
 
-  const resource = STANDALONE_AMM_RESOURCES.find((candidate) => candidate.address === normalizedTokenAddress);
+  const resource = KNOWN_AMM_RESOURCES.get(normalizedTokenAddress);
   if (!resource) {
     return {
       tokenAddress: normalizedTokenAddress,
@@ -67,14 +90,50 @@ export function resolveAmmAssetPresentation(tokenAddress: string, lordsAddress: 
     };
   }
 
-  const resourceDefinition = findResourceById(resource.id);
-  const iconResource = resourceDefinition?.trait ?? null;
-
   return {
     tokenAddress: normalizedTokenAddress,
-    displayName: resource.name,
-    shortLabel: resolveShortLabel(resource.name),
-    iconResource,
+    displayName: resource.displayName,
+    shortLabel: resolveShortLabel(resource.displayName),
+    iconResource: resource.iconResource,
     isLords: false,
   };
+}
+
+function buildKnownAmmResources(): Map<string, KnownAmmResource> {
+  const resourcesByAddress = new Map<string, KnownAmmResource>();
+
+  for (const seasonAddresses of KNOWN_AMM_SEASON_ADDRESSES) {
+    appendSeasonResources(resourcesByAddress, seasonAddresses);
+  }
+
+  return resourcesByAddress;
+}
+
+function appendSeasonResources(
+  resourcesByAddress: Map<string, KnownAmmResource>,
+  seasonAddresses: SeasonAddressCatalog,
+) {
+  for (const resourceEntry of Object.values(seasonAddresses.resources)) {
+    appendKnownResource(resourcesByAddress, resourceEntry);
+  }
+}
+
+function appendKnownResource(resourcesByAddress: Map<string, KnownAmmResource>, resourceEntry: (string | number)[]) {
+  const [resourceId, tokenAddress] = resourceEntry;
+  const normalizedTokenAddress = normalizeTokenAddress(String(tokenAddress));
+
+  if (resourcesByAddress.has(normalizedTokenAddress)) {
+    return;
+  }
+
+  const resourceDefinition = findResourceById(Number(resourceId));
+  if (!resourceDefinition) {
+    return;
+  }
+
+  resourcesByAddress.set(normalizedTokenAddress, {
+    address: normalizedTokenAddress,
+    displayName: resourceDefinition.trait,
+    iconResource: resourceDefinition.trait,
+  });
 }

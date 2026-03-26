@@ -1,4 +1,4 @@
-import type { Pool } from "@bibliothecadao/amm-sdk";
+import type { Pool } from "@/services/amm";
 
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import type { TokenOption } from "./amm-token-input";
@@ -25,12 +25,7 @@ export function buildAmmTokenOptions(pools: Pool[], lordsAddress: string): Token
       shortLabel: "LORDS",
       iconResource: "Lords",
     },
-    ...pools.map((pool) => ({
-      address: pool.tokenAddress,
-      name: resolveAmmTokenName(pool.tokenAddress, lordsAddress),
-      shortLabel: resolveAmmAssetPresentation(pool.tokenAddress, lordsAddress).shortLabel,
-      iconResource: resolveAmmAssetPresentation(pool.tokenAddress, lordsAddress).iconResource,
-    })),
+    ...pools.map((pool) => buildAmmTokenOption(pool, lordsAddress)),
   ];
 }
 
@@ -78,4 +73,15 @@ export function resolveAmmSwapRoute(
   const outputPool = pools.find((candidate) => candidate.tokenAddress === receiveToken);
 
   return inputPool && outputPool ? { kind: "routed", inputPool, outputPool } : null;
+}
+
+function buildAmmTokenOption(pool: Pool, lordsAddress: string): TokenOption {
+  const assetPresentation = resolveAmmAssetPresentation(pool.tokenAddress, lordsAddress);
+
+  return {
+    address: pool.tokenAddress,
+    name: assetPresentation.displayName,
+    shortLabel: assetPresentation.shortLabel,
+    iconResource: assetPresentation.iconResource,
+  };
 }

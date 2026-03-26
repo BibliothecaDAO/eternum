@@ -1,0 +1,45 @@
+{
+  "name": "@bibliothecadao/amm-indexerv2",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "apibara start --indexer ammv2",
+    "dev:watch": "apibara dev --indexers ammv2",
+    "build": "apibara build",
+    "start": "apibara start --indexer ammv2",
+    "db:init": "tsx scripts/ensure-database-schema.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "api:dev": "tsx api/server.ts",
+    "api:preview": "tsx scripts/start-standalone-preview.ts",
+    "test": "vitest run"
+  },
+  "knip": {
+    "entry": [
+      "apibara.config.ts",
+      "indexers/ammv2.indexer.ts",
+      "api/server.ts",
+      "scripts/start-standalone-preview.ts"
+    ]
+  },
+  "dependencies": {
+    "@apibara/indexer": "2.1.0-beta.58",
+    "@apibara/plugin-drizzle": "2.1.0-beta.57",
+    "@apibara/starknet": "2.1.0-beta.58",
+    "@bibliothecadao/ammv2-sdk": "workspace:*",
+    "@hono/node-server": "^1.0.0",
+    "apibara": "2.1.0-beta.57",
+    "drizzle-orm": "^0.39.0",
+    "hono": "^4.0.0",
+    "pg": "^8.13.0",
+    "starknet": "catalog:"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.4.1",
+    "@types/pg": "^8.11.0",
+    "drizzle-kit": "^0.30.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  }
+}

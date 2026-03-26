@@ -1,20 +1,21 @@
 import { Button, Tabs, cn } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useAmm } from "@/hooks/use-amm";
+import { computeSpotPrice, type Pool } from "@/services/amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
-import { computeSpotPrice, type Pool } from "@bibliothecadao/amm-sdk";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { AmmAddLiquidity } from "./amm-add-liquidity";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { AmmPoolList } from "./amm-pool-list";
 import { AmmPriceChart } from "./amm-price-chart";
+import { AMM_READ_QUERY_OPTIONS } from "./amm-queries";
 import { AmmRemoveLiquidity } from "./amm-remove-liquidity";
 import { resolveSelectedAmmPool } from "./amm-model";
 import { AmmSwap } from "./amm-swap";
 import { AmmTradeHistory } from "./amm-trade-history";
-import { formatAmmCompactAmount, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
+import { formatAmmCompactAmount, formatAmmFeeTo, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
 
 type AmmTabKey = "swap" | "liquidity" | "history";
 
@@ -26,8 +27,7 @@ function useAmmSelectionState() {
     queryKey: ["amm-pools"],
     queryFn: async () => client?.api.getPools() ?? [],
     enabled: Boolean(client),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   useEffect(() => {
@@ -117,8 +117,7 @@ const AmmSelectedPoolSummary = ({
       return client.api.getPoolStats(activePool.tokenAddress);
     },
     enabled: Boolean(activePool) && Boolean(client),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   if (!isConfigured) {
@@ -161,8 +160,8 @@ const AmmSelectedPoolSummary = ({
     { label: "24H Volume", value: statsQuery.data ? formatAmmCompactAmount(statsQuery.data.volume24h) : "--" },
     { label: "LP Fee", value: formatAmmPercent((Number(activePool.feeNum) / Number(activePool.feeDenom)) * 100) },
     {
-      label: "Protocol Fee (veLORDS)",
-      value: formatAmmPercent((Number(activePool.protocolFeeNum) / Number(activePool.protocolFeeDenom)) * 100),
+      label: "Fee To",
+      value: formatAmmFeeTo(statsQuery.data?.feeTo ?? activePool.feeTo),
     },
     { label: "24H Fees", value: statsQuery.data ? formatAmmCompactAmount(statsQuery.data.fees24h) : "--" },
   ];

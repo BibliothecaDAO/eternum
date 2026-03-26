@@ -1,12 +1,16 @@
 import { z } from "zod";
 import {
-  DEFAULT_STANDALONE_AMM_ADDRESS,
-  DEFAULT_STANDALONE_AMM_INDEXER_URL,
-  DEFAULT_STANDALONE_AMM_LORDS_ADDRESS,
-} from "@bibliothecadao/amm-sdk";
+  DEFAULT_STANDALONE_AMMV2_INDEXER_URL,
+  DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS,
+  DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS,
+} from "@bibliothecadao/ammv2-sdk";
 import { getSelectedChain } from "./src/runtime/world/store";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
+
+function resolveLegacyAmmRouterAddress(rawEnv: Record<string, string | undefined>) {
+  return rawEnv.VITE_PUBLIC_AMM_ROUTER_ADDRESS ?? rawEnv.VITE_PUBLIC_AMM_ADDRESS;
+}
 
 const envSchema = z.object({
   // Master account
@@ -65,18 +69,19 @@ const envSchema = z.object({
     .default("https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii"),
 
   // AMM
-  VITE_PUBLIC_AMM_ADDRESS: z
+  VITE_PUBLIC_AMM_ROUTER_ADDRESS: z
     .union([z.string().startsWith("0x"), z.literal("")])
     .optional()
-    .default(DEFAULT_STANDALONE_AMM_ADDRESS),
+    .default(DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS),
+  VITE_PUBLIC_AMM_ADDRESS: z.union([z.string().startsWith("0x"), z.literal("")]).optional(),
   VITE_PUBLIC_AMM_LORDS_ADDRESS: z
     .union([z.string().startsWith("0x"), z.literal("")])
     .optional()
-    .default(DEFAULT_STANDALONE_AMM_LORDS_ADDRESS),
+    .default(DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS),
   VITE_PUBLIC_AMM_INDEXER_URL: z
     .union([z.string().url(), z.literal("")])
     .optional()
-    .default(DEFAULT_STANDALONE_AMM_INDEXER_URL),
+    .default(DEFAULT_STANDALONE_AMMV2_INDEXER_URL),
 
   // Action Dispatcher
   VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),
@@ -223,7 +228,10 @@ const envSchema = z.object({
 
 let env: z.infer<typeof envSchema>;
 try {
-  env = envSchema.parse(import.meta.env);
+  env = envSchema.parse({
+    ...import.meta.env,
+    VITE_PUBLIC_AMM_ROUTER_ADDRESS: resolveLegacyAmmRouterAddress(_rawEnv),
+  });
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error("❌ Invalid environment variables:", JSON.stringify(error.errors, null, 2));

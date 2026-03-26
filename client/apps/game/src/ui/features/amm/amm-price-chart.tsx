@@ -1,5 +1,6 @@
 import { useAmm } from "@/hooks/use-amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
+import type { CandleInterval, PriceCandle } from "@/services/amm";
 import { useQuery } from "@tanstack/react-query";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import {
@@ -12,9 +13,9 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CandleInterval, PriceCandle } from "@bibliothecadao/amm-sdk";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { formatAmmCompactAmount, formatAmmSpotPrice } from "./amm-format";
+import { AMM_READ_QUERY_OPTIONS } from "./amm-queries";
 
 const INTERVALS: { label: string; value: CandleInterval }[] = [
   { label: "1h", value: "1h" },
@@ -37,8 +38,7 @@ export const AmmPriceChart = () => {
       return client.api.getPriceHistory(selectedPool, interval);
     },
     enabled: Boolean(client) && Boolean(selectedPool),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   const { data: stats } = useQuery({
@@ -48,8 +48,7 @@ export const AmmPriceChart = () => {
       return client.api.getPoolStats(selectedPool);
     },
     enabled: Boolean(client) && Boolean(selectedPool),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   const chartData = useMemo(

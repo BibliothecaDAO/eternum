@@ -10,7 +10,7 @@ vi.mock("@starknet-react/core", () => ({
 
 vi.mock("../../env", () => ({
   env: {
-    VITE_PUBLIC_AMM_ADDRESS: "0xaaa",
+    VITE_PUBLIC_AMM_ROUTER_ADDRESS: "0xaaa",
     VITE_PUBLIC_AMM_LORDS_ADDRESS: "0xbbb",
     VITE_PUBLIC_AMM_INDEXER_URL: "https://amm.example",
   },
@@ -49,6 +49,7 @@ describe("useAmm", () => {
     });
 
     expect(latestAmm?.client?.ammAddress).toBe("0xaaa");
+    expect(latestAmm?.client?.routerAddress).toBe("0xaaa");
     expect(latestAmm?.client?.lordsAddress).toBe("0xbbb");
     expect(latestAmm?.client?.api).toBeDefined();
   });

@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import type { Pool } from "@bibliothecadao/amm-sdk";
+import type { Pool } from "@/services/amm";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -15,15 +15,16 @@ const LORDS_ADDRESS = "0xlords";
 
 function createPool(tokenAddress: string): Pool {
   return {
+    pairAddress: `${tokenAddress}-pair`,
     tokenAddress,
     lpTokenAddress: `${tokenAddress}-lp`,
     lordsReserve: 1000n,
     tokenReserve: 500n,
     totalLpSupply: 250n,
+    feeAmount: 997n,
     feeNum: 3n,
     feeDenom: 1000n,
-    protocolFeeNum: 1n,
-    protocolFeeDenom: 1000n,
+    feeTo: "0x0",
   };
 }
 
