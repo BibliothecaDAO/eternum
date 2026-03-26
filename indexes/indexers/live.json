@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-26T17:02:34.919Z",
+  "updatedAt": "2026-03-26T19:32:35.083Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -391,6 +391,19 @@
         "describedAt": "2026-03-26T17:02:34.919Z"
       },
       "updatedAt": "2026-03-26T17:02:34.919Z"
+    },
+    "bltz-warzone-11": {
+      "gameName": "bltz-warzone-11",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-warzone-11/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-26T19:32:35.083Z"
+      },
+      "updatedAt": "2026-03-26T19:32:35.083Z"
     }
   }
 }
