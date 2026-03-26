@@ -5,15 +5,14 @@
   "owner": {
     "environment": "slot.eternum",
     "gameName": "mygame",
-    "launchRequestId": "23616270104-1",
+    "launchRequestId": "23616468613-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23616270104,
+    "workflowRunId": 23616468613,
     "workflowRunAttempt": 1,
     "stepId": "configure-world",
-    "leaseId": "a2bc5b08-f26f-49e5-8414-a8e900bb4f9a"
+    "leaseId": "e358e305-bac5-490c-bb96-d23d0cbc8950"
   },
-  "acquiredAt": "2026-03-26T20:27:12.172Z",
-  "heartbeatAt": "2026-03-26T20:27:21.055Z",
-  "expiresAt": "2026-03-26T20:27:21.055Z",
-  "releasedAt": "2026-03-26T20:27:21.055Z"
+  "acquiredAt": "2026-03-26T20:30:07.297Z",
+  "heartbeatAt": "2026-03-26T20:30:07.297Z",
+  "expiresAt": "2026-03-26T20:40:07.297Z"
 }
