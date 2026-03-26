@@ -5,6 +5,8 @@ import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { formatAmmCompactAmount, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
 
 const LORDS_ADDRESS = "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
+const SEPOLIA_LORDS_ADDRESS = "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c";
+const E18 = 10n ** 18n;
 
 describe("amm-asset-presentation", () => {
   it("resolves known resource pools and LORDS into icon-aware presentation models", () => {
@@ -57,12 +59,40 @@ describe("amm-asset-presentation", () => {
     });
   });
 
+  it("resolves sepolia resource addresses into icon-aware presentation models", () => {
+    expect(
+      resolveAmmAssetPresentation(
+        "0x4a4c05882e134e9887d242559a0dad369bd66cf6d0dca1e281aa5e1f2237da7",
+        SEPOLIA_LORDS_ADDRESS,
+      ),
+    ).toEqual({
+      tokenAddress: "0x4a4c05882e134e9887d242559a0dad369bd66cf6d0dca1e281aa5e1f2237da7",
+      displayName: "Wood",
+      shortLabel: "WOOD",
+      iconResource: "Wood",
+      isLords: false,
+    });
+
+    expect(
+      resolveAmmAssetPresentation(
+        "0x1b2b5e5ce9e683febd51eac131d19f41d05febdd1ef965df3ec29bcd7b06af4",
+        SEPOLIA_LORDS_ADDRESS,
+      ),
+    ).toEqual({
+      tokenAddress: "0x1b2b5e5ce9e683febd51eac131d19f41d05febdd1ef965df3ec29bcd7b06af4",
+      displayName: "Twilight Quartz",
+      shortLabel: "TWILIGHT",
+      iconResource: "Twilight Quartz",
+      isLords: false,
+    });
+  });
+
   it("formats compact values for AMM dashboard cards", () => {
     expect(formatAmmSpotPrice(1.668345)).toBe("1.6683");
     expect(formatAmmSpotPrice(0.0000000123)).toBe("<0.0001");
     expect(formatAmmPercent(0.3)).toBe("0.30%");
     expect(formatAmmPercent(12)).toBe("12.00%");
-    expect(formatAmmCompactAmount(125430n)).toBe("125.4K");
-    expect(formatAmmCompactAmount(950n)).toBe("950");
+    expect(formatAmmCompactAmount(125_430n * E18)).toBe("125.4K");
+    expect(formatAmmCompactAmount(950n * E18)).toBe("950");
   });
 });

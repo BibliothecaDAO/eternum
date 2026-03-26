@@ -1,82 +1,75 @@
 import { Button } from "@/ui/design-system/atoms";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { useAmm } from "@/hooks/use-amm";
+import { computeAddLiquidity, parseTokenAmount, type Pool } from "@/services/amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
-import { useCallback, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  parseTokenAmount,
-  formatTokenAmount,
-  quote,
-  computeLpMint,
-  computeAddLiquidity,
-  type Pool,
-} from "@bibliothecadao/amm-sdk";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
+import {
+  isPoolAwaitingInitialLiquidity,
+  resolveAutoFilledTokenAmount,
+  resolveLpTokensToMint,
+  resolvePoolSharePercent,
+} from "./amm-add-liquidity-model";
 import { formatAmmPercent } from "./amm-format";
 import { resolveSelectedAmmPool } from "./amm-model";
+import { AMM_READ_QUERY_OPTIONS, invalidateAmmReadQueries } from "./amm-queries";
 
 export const AmmAddLiquidity = () => {
-  const { client, executeSwap, isConfigured } = useAmm();
+  const { client, executeSwap, isConfigured, account } = useAmm();
+  const queryClient = useQueryClient();
   const selectedPool = useAmmStore((s) => s.selectedPool);
 
   const [lordsAmount, setLordsAmount] = useState(0);
   const [tokenAmount, setTokenAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const activePairAddressRef = useRef<string | null>(null);
 
   const { data: pools = [] } = useQuery<Pool[]>({
     queryKey: ["amm-pools"],
     queryFn: async () => client?.api.getPools() ?? [],
     enabled: Boolean(client),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   const pool = useMemo(() => resolveSelectedAmmPool(pools, selectedPool), [pools, selectedPool]);
+  const canEditTokenAmount = isPoolAwaitingInitialLiquidity(pool);
 
-  const handleLordsChange = useCallback(
-    (amount: number) => {
-      setLordsAmount(amount);
-      if (amount > 0 && pool && pool.lordsReserve > 0n) {
-        try {
-          const lordsBigint = parseTokenAmount(amount.toString());
-          const tokenOptimal = quote(lordsBigint, pool.lordsReserve, pool.tokenReserve);
-          setTokenAmount(parseFloat(formatTokenAmount(tokenOptimal)));
-        } catch {
-          setTokenAmount(0);
-        }
-      } else {
-        setTokenAmount(0);
-      }
-    },
-    [pool],
-  );
+  useEffect(() => {
+    const nextPairAddress = pool?.pairAddress ?? null;
+    if (nextPairAddress !== activePairAddressRef.current) {
+      activePairAddressRef.current = nextPairAddress;
+      setLordsAmount(0);
+      setTokenAmount(0);
+      return;
+    }
+
+    if (!pool || canEditTokenAmount || lordsAmount <= 0) {
+      return;
+    }
+
+    setTokenAmount(resolveAutoFilledTokenAmount(pool, lordsAmount));
+  }, [canEditTokenAmount, lordsAmount, pool]);
+
+  const handleLordsChange = useCallback((amount: number) => {
+    setLordsAmount(amount);
+  }, []);
+
+  const handleTokenChange = useCallback((amount: number) => {
+    setTokenAmount(amount);
+  }, []);
 
   const lpTokensToMint = useMemo(() => {
-    if (lordsAmount <= 0 || !pool) return "0";
-    try {
-      const lordsBigint = parseTokenAmount(lordsAmount.toString());
-      const lp = computeLpMint(lordsBigint, pool.lordsReserve, pool.totalLpSupply);
-      return formatTokenAmount(lp);
-    } catch {
-      return "0";
-    }
-  }, [lordsAmount, pool]);
+    return resolveLpTokensToMint(pool, lordsAmount, tokenAmount);
+  }, [lordsAmount, pool, tokenAmount]);
 
   const poolSharePercent = useMemo(() => {
-    if (lordsAmount <= 0 || !pool) return "0";
-    try {
-      const lordsBigint = parseTokenAmount(lordsAmount.toString());
-      const lp = computeLpMint(lordsBigint, pool.lordsReserve, pool.totalLpSupply);
-      const newTotal = pool.totalLpSupply + lp;
-      return ((Number(lp) / Number(newTotal)) * 100).toFixed(2);
-    } catch {
-      return "0";
-    }
-  }, [lordsAmount, pool]);
+    return resolvePoolSharePercent(pool, lordsAmount, tokenAmount);
+  }, [lordsAmount, pool, tokenAmount]);
 
   const handleAddLiquidity = useCallback(async () => {
-    if (!client || !pool || lordsAmount <= 0 || tokenAmount <= 0) return;
+    if (!client || !pool || lordsAmount <= 0 || tokenAmount <= 0 || !account?.address) return;
     setIsLoading(true);
     try {
       const lordsBigint = parseTokenAmount(lordsAmount.toString());
@@ -91,22 +84,22 @@ export const AmmAddLiquidity = () => {
       const tokenMin = (tokenUsed * 95n) / 100n;
 
       const calls = client.liquidity.addLiquidityWithApproval({
-        ammAddress: client.ammAddress,
-        lordsAddress: client.lordsAddress,
         tokenAddress: pool.tokenAddress,
         lordsAmount: lordsUsed,
         tokenAmount: tokenUsed,
         lordsMin,
         tokenMin,
+        recipientAddress: account.address,
       });
 
       await executeSwap(calls);
+      await invalidateAmmReadQueries(queryClient);
       setLordsAmount(0);
       setTokenAmount(0);
     } finally {
       setIsLoading(false);
     }
-  }, [lordsAmount, tokenAmount, pool, client, executeSwap]);
+  }, [account?.address, client, executeSwap, lordsAmount, pool, queryClient, tokenAmount]);
 
   const canAdd = Boolean(client && pool && lordsAmount > 0 && tokenAmount > 0);
 
@@ -119,9 +112,14 @@ export const AmmAddLiquidity = () => {
   }
 
   const asset = resolveAmmAssetPresentation(pool.tokenAddress, client.lordsAddress);
+  const helperText = canEditTokenAmount
+    ? `This pool has no liquidity yet. Enter both deposits to set the opening LORDS/${asset.shortLabel} price.`
+    : `The ${asset.shortLabel} side follows the current pool ratio.`;
 
   return (
     <div className="space-y-4">
+      <div className="rounded-2xl border border-gold/10 bg-gold/8 px-3 py-2 text-xs text-gold/70">{helperText}</div>
+
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-2xl border border-gold/10 bg-black/25 p-3">
           <div className="mb-2 text-[11px] uppercase tracking-[0.18em] text-gold/45">Deposit LORDS</div>
@@ -138,10 +136,10 @@ export const AmmAddLiquidity = () => {
           <div className="mb-2 text-[11px] uppercase tracking-[0.18em] text-gold/45">Deposit {asset.displayName}</div>
           <NumberInput
             value={tokenAmount}
-            onChange={setTokenAmount}
+            onChange={handleTokenChange}
             arrows={false}
             allowDecimals
-            disabled
+            disabled={!canEditTokenAmount}
             className="h-12 rounded-2xl border border-gold/10 bg-gold/12"
           />
         </div>
@@ -154,7 +152,7 @@ export const AmmAddLiquidity = () => {
         </div>
         <div className="rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
           <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">New Pool Share</div>
-          <div className="mt-1 text-sm font-semibold text-gold">{formatAmmPercent(Number(poolSharePercent))}</div>
+          <div className="mt-1 text-sm font-semibold text-gold">{formatAmmPercent(poolSharePercent)}</div>
         </div>
       </div>
 

@@ -6,7 +6,7 @@
     "build": "pnpm --dir ./client/apps/game build",
     "build:docs": "cd client/apps/game-docs && pnpm build",
     "build:landing": "pnpm --dir ./client/apps/landing build",
-    "build:packages": "pnpm --dir ./packages/types build && pnpm --dir ./packages/amm-sdk build && pnpm --dir ./packages/torii build && pnpm --dir ./packages/provider build && pnpm --dir ./packages/dojo build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",
+    "build:packages": "pnpm --dir ./packages/types build && pnpm --dir ./packages/amm-sdk build && pnpm --dir ./packages/ammv2-sdk build && pnpm --dir ./packages/torii build && pnpm --dir ./packages/provider build && pnpm --dir ./packages/dojo build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",
     "build:mobile": "pnpm --dir ./client/apps/eternum-mobile build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
     "dev": "pnpm --dir ./client/apps/game dev",
@@ -215,6 +215,15 @@
     "manifest:copy-abis:sepolia": "node scripts/copy-abis.mjs sepolia",
     "manifest:copy-abis:mainnet": "node scripts/copy-abis.mjs mainnet"
   },
+  "knip": {
+    "ignoreFiles": [
+      "client/apps/amm-indexer/apibara.config.ts",
+      "client/apps/amm-indexer/indexers/amm.indexer.ts",
+      "client/apps/amm-indexerv2/apibara.config.ts",
+      "client/apps/amm-indexerv2/indexers/ammv2.indexer.ts",
+      "client/apps/amm-indexerv2/indexers/factory-client.ts"
+    ]
+  },
   "dependencies": {
     "@cartridge/connector": "catalog:",
     "@cartridge/controller": "catalog:",
@@ -260,6 +269,7 @@
       "client/apps/eternum-mobile",
       "client/apps/onchain-agent",
       "client/apps/amm-indexer",
+      "client/apps/amm-indexerv2",
       "config",
       "packages/*",
       "contracts/season_pass/scripts/deployment",

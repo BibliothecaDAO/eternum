@@ -1,8 +1,14 @@
+const AMM_AMOUNT_DECIMALS = 18;
+const AMM_AMOUNT_DIVISOR = 10n ** BigInt(AMM_AMOUNT_DECIMALS);
+
 function trimFixedNumber(value: number, fractionDigits: number): string {
-  return value
-    .toFixed(fractionDigits)
-    .replace(/\.?0+$/, "")
-    .replace(/(\.\d*?)0+$/, "$1");
+  const fixedValue = value.toFixed(fractionDigits);
+
+  if (!fixedValue.includes(".")) {
+    return fixedValue;
+  }
+
+  return fixedValue.replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
 }
 
 function formatCompactBigInt(value: bigint): string {
@@ -42,7 +48,7 @@ function formatCompactNumber(value: number): string {
 
 export function formatAmmCompactAmount(value: bigint | number): string {
   if (typeof value === "bigint") {
-    return formatCompactBigInt(value);
+    return formatCompactBigIntAmount(value);
   }
 
   if (!Number.isFinite(value)) {
@@ -50,6 +56,22 @@ export function formatAmmCompactAmount(value: bigint | number): string {
   }
 
   return formatCompactNumber(Math.max(value, 0));
+}
+
+function formatCompactBigIntAmount(value: bigint): string {
+  const normalizedValue = normalizeAmmAmount(value);
+
+  if (!Number.isFinite(normalizedValue)) {
+    return formatCompactBigInt(value / AMM_AMOUNT_DIVISOR);
+  }
+
+  return formatCompactNumber(Math.max(normalizedValue, 0));
+}
+
+function normalizeAmmAmount(value: bigint): number {
+  const whole = value / AMM_AMOUNT_DIVISOR;
+  const remainder = value % AMM_AMOUNT_DIVISOR;
+  return Number(whole) + Number(remainder) / Number(AMM_AMOUNT_DIVISOR);
 }
 
 export function formatAmmSpotPrice(value: number): string {
@@ -71,4 +93,18 @@ export function formatAmmPercent(value: number): string {
   }
 
   return `${value.toFixed(2)}%`;
+}
+
+export function formatAmmFeeTo(address: string): string {
+  const normalizedAddress = address.trim().toLowerCase();
+
+  if (!normalizedAddress || normalizedAddress === "0x0") {
+    return "Off";
+  }
+
+  if (normalizedAddress.length <= 12) {
+    return normalizedAddress;
+  }
+
+  return `${normalizedAddress.slice(0, 6)}...${normalizedAddress.slice(-4)}`;
 }

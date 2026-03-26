@@ -26,18 +26,19 @@ describe("AMM feature wiring", () => {
   it("gives the standalone AMM route non-empty defaults in env.ts", () => {
     const source = readSource("env.ts");
 
-    expect(source).toContain("DEFAULT_STANDALONE_AMM_ADDRESS");
-    expect(source).toContain("DEFAULT_STANDALONE_AMM_LORDS_ADDRESS");
-    expect(source).toContain("DEFAULT_STANDALONE_AMM_INDEXER_URL");
-    expect(source).toContain(".default(DEFAULT_STANDALONE_AMM_ADDRESS)");
-    expect(source).toContain(".default(DEFAULT_STANDALONE_AMM_LORDS_ADDRESS)");
-    expect(source).toContain(".default(DEFAULT_STANDALONE_AMM_INDEXER_URL)");
+    expect(source).toContain("DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS");
+    expect(source).toContain("DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS");
+    expect(source).toContain("DEFAULT_STANDALONE_AMMV2_INDEXER_URL");
+    expect(source).toContain("VITE_PUBLIC_AMM_ROUTER_ADDRESS");
+    expect(source).toContain(".default(DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS)");
+    expect(source).toContain(".default(DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS)");
+    expect(source).toContain(".default(DEFAULT_STANDALONE_AMMV2_INDEXER_URL)");
   });
 
   it("resolves runtime config from env instead of placeholders", () => {
     const source = readSource("src/hooks/use-amm.ts");
 
-    expect(source).toContain("VITE_PUBLIC_AMM_ADDRESS");
+    expect(source).toContain("VITE_PUBLIC_AMM_ROUTER_ADDRESS");
     expect(source).toContain("VITE_PUBLIC_AMM_LORDS_ADDRESS");
     expect(source).toContain("VITE_PUBLIC_AMM_INDEXER_URL");
     expect(source).not.toContain("PLACEHOLDER_AMM_ADDRESS");
@@ -86,5 +87,20 @@ describe("AMM feature wiring", () => {
     const source = readSource("src/ui/features/world/latest-features.ts");
 
     expect(source).toContain("AMM");
+  });
+
+  it("keeps AMM reads fresh and invalidates cached views after write flows", () => {
+    const queriesSource = readSource("src/ui/features/amm/amm-queries.ts");
+    const swapSource = readSource("src/ui/features/amm/amm-swap.tsx");
+    const addLiquiditySource = readSource("src/ui/features/amm/amm-add-liquidity.tsx");
+    const removeLiquiditySource = readSource("src/ui/features/amm/amm-remove-liquidity.tsx");
+
+    expect(queriesSource).toContain("AMM_READ_REFRESH_INTERVAL_MS = 10_000");
+    expect(queriesSource).toContain('queryKey: ["amm-pools"]');
+    expect(queriesSource).toContain('queryKey: ["amm-positions"]');
+    expect(queriesSource).toContain("invalidateAmmReadQueries");
+    expect(swapSource).toContain("invalidateAmmReadQueries(queryClient)");
+    expect(addLiquiditySource).toContain("invalidateAmmReadQueries(queryClient)");
+    expect(removeLiquiditySource).toContain("invalidateAmmReadQueries(queryClient)");
   });
 });

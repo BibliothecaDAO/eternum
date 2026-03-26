@@ -1,13 +1,14 @@
 import { Button } from "@/ui/design-system/atoms";
 import { useAmm } from "@/hooks/use-amm";
+import { computeSpotPrice, type Pool } from "@/services/amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
 import { AmmPoolRow } from "./amm-pool-row";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { formatTokenAmount, computeSpotPrice, type Pool } from "@bibliothecadao/amm-sdk";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { formatAmmCompactAmount, formatAmmSpotPrice } from "./amm-format";
+import { AMM_READ_QUERY_OPTIONS } from "./amm-queries";
 
 interface AmmPoolListProps {
   className?: string;
@@ -45,8 +46,7 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
     queryKey: ["amm-pools"],
     queryFn: async () => client?.api.getPools() ?? [],
     enabled: Boolean(client),
-    retry: false,
-    refetchOnWindowFocus: false,
+    ...AMM_READ_QUERY_OPTIONS,
   });
 
   useEffect(() => {

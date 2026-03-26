@@ -1,0 +1,48 @@
+{
+  "signer": {
+    "accountAddress": "0x06292EeFbFf50689b0e4D007e6AD17AbeE996e08E66E62762F0c4Bc170738402"
+  },
+  "contracts": {
+    "pair": {
+      "roleActions": {
+        "targetContractAddresses": [],
+        "grantRoles": {},
+        "revokeRoles": {}
+      }
+    },
+    "factory": {
+      "roleActions": {
+        "targetContractAddresses": [],
+        "grantRoles": {
+          "DEFAULT_ADMIN_ROLE": [
+            "0x06292EeFbFf50689b0e4D007e6AD17AbeE996e08E66E62762F0c4Bc170738402"
+          ],
+          "FEE_TO_MANAGER_ROLE": [
+            "0x06292EeFbFf50689b0e4D007e6AD17AbeE996e08E66E62762F0c4Bc170738402"
+          ],
+          "POOL_CREATOR_ROLE": [
+            "0x06292EeFbFf50689b0e4D007e6AD17AbeE996e08E66E62762F0c4Bc170738402"
+          ],
+          "UPGRADER_ROLE": [
+            "0x06292EeFbFf50689b0e4D007e6AD17AbeE996e08E66E62762F0c4Bc170738402"
+          ]
+        },
+        "revokeRoles": {}
+      }
+    },
+    "router": {
+      "roleActions": {
+        "targetContractAddresses": [],
+        "grantRoles": {
+          "DEFAULT_ADMIN_ROLE": [
+            "0x06292EeFbFf50689b0e4D007e6AD17AbeE996e08E66E62762F0c4Bc170738402"
+          ],
+          "UPGRADER_ROLE": [
+            "0x06292EeFbFf50689b0e4D007e6AD17AbeE996e08E66E62762F0c4Bc170738402"
+          ]
+        },
+        "revokeRoles": {}
+      }
+    }
+  }
+}

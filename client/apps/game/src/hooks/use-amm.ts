@@ -1,26 +1,26 @@
-import { AmmClient } from "@bibliothecadao/amm-sdk";
 import { useMemo, useCallback } from "react";
 import { useAccount } from "@starknet-react/core";
 import type { Call } from "starknet";
 import { env } from "../../env";
+import { GameAmmClient } from "@/services/amm";
 
 interface AmmRuntimeConfig {
-  ammAddress: string;
   indexerUrl: string;
   isConfigured: boolean;
   lordsAddress: string;
+  routerAddress: string;
 }
 
 function resolveAmmRuntimeConfig(): AmmRuntimeConfig {
-  const ammAddress = env.VITE_PUBLIC_AMM_ADDRESS;
+  const routerAddress = env.VITE_PUBLIC_AMM_ROUTER_ADDRESS;
   const lordsAddress = env.VITE_PUBLIC_AMM_LORDS_ADDRESS;
   const indexerUrl = env.VITE_PUBLIC_AMM_INDEXER_URL;
 
   return {
-    ammAddress,
+    routerAddress,
     lordsAddress,
     indexerUrl,
-    isConfigured: ammAddress.length > 0 && lordsAddress.length > 0 && indexerUrl.length > 0,
+    isConfigured: routerAddress.length > 0 && lordsAddress.length > 0 && indexerUrl.length > 0,
   };
 }
 
@@ -31,8 +31,8 @@ export function useAmm() {
   const client = useMemo(
     () =>
       runtimeConfig.isConfigured
-        ? new AmmClient({
-            ammAddress: runtimeConfig.ammAddress,
+        ? new GameAmmClient({
+            routerAddress: runtimeConfig.routerAddress,
             lordsAddress: runtimeConfig.lordsAddress,
             indexerUrl: runtimeConfig.indexerUrl,
           })

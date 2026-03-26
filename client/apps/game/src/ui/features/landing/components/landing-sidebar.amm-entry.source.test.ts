@@ -15,7 +15,8 @@ describe("Landing dashboard AMM entry", () => {
 
     expect(navigationSource).toContain('type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile"');
     expect(navigationSource).toContain('id: "amm"');
-    expect(navigationSource).toContain('label: "AMM"');
+    expect(navigationSource).toContain('label: "Agora"');
+    expect(navigationSource).toContain('label: "AGORA"');
     expect(navigationSource).toContain('basePath: "/amm"');
     expect(headerSource).toContain("{ icon:");
     expect(headerSource).toContain('label: "AMM"');

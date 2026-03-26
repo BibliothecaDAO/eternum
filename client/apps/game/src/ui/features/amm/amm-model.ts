@@ -1,4 +1,4 @@
-import type { Pool } from "@bibliothecadao/amm-sdk";
+import type { Pool } from "@/services/amm";
 
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import type { TokenOption } from "./amm-token-input";
@@ -17,6 +17,15 @@ interface RoutedAmmSwapRoute {
 
 type AmmSwapRoute = DirectAmmSwapRoute | RoutedAmmSwapRoute;
 
+interface AmmFeeBreakdown {
+  lpFeePercent: number;
+  protocolFeePercent: number;
+  totalFeePercent: number;
+}
+
+const LP_FEE_SHARE = 2 / 3;
+const PROTOCOL_FEE_SHARE = 1 / 3;
+
 export function buildAmmTokenOptions(pools: Pool[], lordsAddress: string): TokenOption[] {
   return [
     {
@@ -25,12 +34,7 @@ export function buildAmmTokenOptions(pools: Pool[], lordsAddress: string): Token
       shortLabel: "LORDS",
       iconResource: "Lords",
     },
-    ...pools.map((pool) => ({
-      address: pool.tokenAddress,
-      name: resolveAmmTokenName(pool.tokenAddress, lordsAddress),
-      shortLabel: resolveAmmAssetPresentation(pool.tokenAddress, lordsAddress).shortLabel,
-      iconResource: resolveAmmAssetPresentation(pool.tokenAddress, lordsAddress).iconResource,
-    })),
+    ...pools.map((pool) => buildAmmTokenOption(pool, lordsAddress)),
   ];
 }
 
@@ -40,6 +44,16 @@ export function resolveAmmPoolName(tokenAddress: string): string {
 
 export function resolveAmmTokenName(tokenAddress: string, lordsAddress: string): string {
   return resolveAmmAssetPresentation(tokenAddress, lordsAddress).displayName;
+}
+
+export function resolveAmmFeeBreakdown(pool: Pick<Pool, "feeDenom" | "feeNum"> | null | undefined): AmmFeeBreakdown {
+  const totalFeePercent = resolveTotalFeePercent(pool);
+
+  return {
+    totalFeePercent,
+    lpFeePercent: totalFeePercent * LP_FEE_SHARE,
+    protocolFeePercent: totalFeePercent * PROTOCOL_FEE_SHARE,
+  };
 }
 
 export function resolveSelectedAmmPool(pools: Pool[], selectedPool: string | null): Pool | null {
@@ -78,4 +92,23 @@ export function resolveAmmSwapRoute(
   const outputPool = pools.find((candidate) => candidate.tokenAddress === receiveToken);
 
   return inputPool && outputPool ? { kind: "routed", inputPool, outputPool } : null;
+}
+
+function buildAmmTokenOption(pool: Pool, lordsAddress: string): TokenOption {
+  const assetPresentation = resolveAmmAssetPresentation(pool.tokenAddress, lordsAddress);
+
+  return {
+    address: pool.tokenAddress,
+    name: assetPresentation.displayName,
+    shortLabel: assetPresentation.shortLabel,
+    iconResource: assetPresentation.iconResource,
+  };
+}
+
+function resolveTotalFeePercent(pool: Pick<Pool, "feeDenom" | "feeNum"> | null | undefined): number {
+  if (!pool || pool.feeDenom <= 0n) {
+    return 0;
+  }
+
+  return (Number(pool.feeNum) / Number(pool.feeDenom)) * 100;
 }
