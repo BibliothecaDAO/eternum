@@ -63,6 +63,10 @@ export abstract class WarpTravel extends HexagonScene {
     });
   }
 
+  protected isInitialWarpTravelSetupInFlight(): boolean {
+    return this.initialSetupPromise !== null;
+  }
+
   private getWarpTravelLifecycleState(): WarpTravelLifecycleState {
     return {
       hasInitialized: this.hasInitialized,

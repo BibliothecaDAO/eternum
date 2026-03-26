@@ -1912,11 +1912,11 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmyCreate(actionPath, selectedEntityId);
         }
         this.logInteractionDebug("action_executed_from_right_click", {
+          ...this.getInteractionDebugSnapshot(),
           actionType,
           selectedEntityId,
           clickedHexKey,
           actionPathLength: actionPath.length,
-          ...this.getInteractionDebugSnapshot(),
         });
         return;
       }
@@ -2900,7 +2900,7 @@ export default class WorldmapScene extends WarpTravel {
     this.claimInteractionOwnership();
     this.logInteractionDebug("setup_start", {
       hasInitialized: this.hasInitialized,
-      hasInitialSetupPromise: this.initialSetupPromise !== null,
+      hasInitialSetupPromise: this.isInitialWarpTravelSetupInFlight(),
       existingStoreSubscriptionCount: this.storeSubscriptions.length,
     });
     this.syncUrlChangedListenerLifecycle("setup");
@@ -7420,11 +7420,11 @@ export default class WorldmapScene extends WarpTravel {
 
     const selectedEntityId = uiState.entityActions.selectedEntityId;
     this.logInteractionDebug("sync_state_from_store", {
+      ...this.getInteractionDebugSnapshot(),
       selectedEntityId,
       actionPathCount: uiState.entityActions.actionPaths.size,
       hoveredHex: uiState.entityActions.hoveredHex,
       selectedHex: uiState.selectedHex,
-      ...this.getInteractionDebugSnapshot(),
     });
     if (selectedEntityId === null || selectedEntityId === undefined) {
       this.clearEntitySelection();
