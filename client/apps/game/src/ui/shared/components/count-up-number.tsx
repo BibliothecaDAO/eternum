@@ -87,9 +87,7 @@ export const CountUpNumber = ({
   }, [value]);
 
   return (
-    <span
-      className={`${className} ${isAnimating ? highlightClassName : ""} transition-colors duration-300`}
-    >
+    <span className={`${className} ${isAnimating ? highlightClassName : ""} transition-colors duration-300`}>
       {format(displayValue)}
     </span>
   );
