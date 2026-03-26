@@ -1,5 +1,10 @@
 #[starknet::component]
 pub mod PairComponent {
+    // NOTE: RealmsSwap intentionally diverges from classic Uniswap v2 here.
+    // Protocol fee minting is tuned to capture 1/3 of fee growth instead of 1/6.
+    // Example: with a 1.5% total swap fee, this targets roughly 0.5% to protocol
+    // and 1.0% remaining to LPs, still paid out later as LP minting.
+    // see `let denominator = root_k * math::TWO + root_k_last` below
     use ammv2::packages::core::interfaces::callee::{IRealmsSwapCalleeDispatcher, IRealmsSwapCalleeDispatcherTrait};
     use ammv2::packages::core::interfaces::factory::{IRealmsSwapFactoryDispatcher, IRealmsSwapFactoryDispatcherTrait};
     use ammv2::packages::core::interfaces::pair::IRealmsSwapPair;
@@ -376,7 +381,14 @@ pub mod PairComponent {
                 let root_k_last = math::sqrt(k_last);
                 if root_k > root_k_last {
                     let numerator = (root_k - root_k_last) * total_supply(@self);
-                    let denominator = root_k * math::FIVE + root_k_last;
+                    // Original Uniswap v2 1/6 protocol-capture line:
+                    // let denominator = root_k * math::FIVE + root_k_last;
+                    // RealmsSwap changes this to roughly 1/3 of fee growth.
+                    // Example: at 1.5% total swap fee, this targets roughly 0.5% protocol
+                    // and 1.0% remaining for LPs, realized later via LP minting.
+                    // To retune later, change the coefficient here:
+                    // N = 5 => about 1/6 to protocol, N = 2 => about 1/3 to protocol.
+                    let denominator = root_k * math::TWO + root_k_last;
                     let liquidity = numerator / denominator;
                     if liquidity > 0 {
                         mint_lp(ref self, fee_to, liquidity);

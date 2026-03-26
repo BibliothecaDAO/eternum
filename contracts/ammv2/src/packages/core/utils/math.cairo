@@ -5,6 +5,7 @@ use starknet::ContractAddress;
 
 pub const MINIMUM_LIQUIDITY: u256 = 1000;
 pub const DEFAULT_fee_amount: u256 = 997;
+pub const TWO: u256 = 2;
 pub const FIVE: u256 = 5;
 pub const THOUSAND: u256 = 1000;
 pub const MILLION: u256 = 1_000_000;
