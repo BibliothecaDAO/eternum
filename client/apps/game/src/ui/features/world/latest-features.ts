@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-26",
+    title: "Mode-Isolated Game UI",
+    description:
+      "Blitz and Eternum interfaces now stay isolated by world mode: Faith-only panels are hidden in Blitz, Blitz Prize/MMR tabs are hidden in Eternum, and unknown-mode game cards stay in a neutral detecting state until mode resolves.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Passive Army Stamina Refresh",
     description:
       "Army stamina shown above units now keeps updating after chain-time corrections instead of waiting for another army action to refresh the display.",

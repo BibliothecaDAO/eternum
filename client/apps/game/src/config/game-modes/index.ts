@@ -9,7 +9,7 @@ import {
   getResourceTiers,
 } from "@bibliothecadao/types";
 import { buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
-import { env } from "../../../env";
+import { resolveGameModeFromBlitzFlag } from "./resolved-mode";
 
 export type GameModeId = "eternum" | "blitz";
 
@@ -83,7 +83,6 @@ export interface GameModeConfig {
     structureModelPaths: ReturnType<typeof getStructureModelPaths>;
     buildingModelPaths: ReturnType<typeof buildingModelPaths>;
   };
-  matches: () => boolean;
 }
 
 const BASE_BUILDING_EXCLUSIONS = new Set<string>([
@@ -171,7 +170,6 @@ const blitzConfig: GameModeConfig = {
     structureModelPaths: getStructureModelPaths(true),
     buildingModelPaths: buildingModelPaths(true),
   },
-  matches: () => Boolean(configManager.getBlitzConfig()?.blitz_mode_on),
 };
 
 const eternumConfig: GameModeConfig = {
@@ -229,31 +227,38 @@ const eternumConfig: GameModeConfig = {
     structureModelPaths: getStructureModelPaths(false),
     buildingModelPaths: buildingModelPaths(false),
   },
-  matches: () => true,
 };
 
-const GAME_MODE_ORDER: GameModeConfig[] = [blitzConfig, eternumConfig];
 const GAME_MODE_BY_ID: Record<GameModeId, GameModeConfig> = {
   blitz: blitzConfig,
   eternum: eternumConfig,
 };
-const FORCED_GAME_MODE_ID: GameModeId | undefined = env.VITE_PUBLIC_FORCE_GAME_MODE_ID;
 
-const resolveGameModeConfig = (): GameModeConfig => {
-  if (FORCED_GAME_MODE_ID) {
-    return GAME_MODE_BY_ID[FORCED_GAME_MODE_ID];
-  }
-
-  for (const mode of GAME_MODE_ORDER) {
-    if (mode.matches()) {
-      return mode;
-    }
-  }
-  return eternumConfig;
+type GameModeConfigOptions = {
+  modeId?: GameModeId;
+  blitzModeOn?: unknown;
 };
 
-export const getGameModeConfig = (): GameModeConfig => resolveGameModeConfig();
+const resolveRuntimeGameModeId = (blitzModeOn: unknown): GameModeId => {
+  const resolvedMode = resolveGameModeFromBlitzFlag(blitzModeOn);
+  if (resolvedMode === "blitz" || resolvedMode === "eternum") {
+    return resolvedMode;
+  }
+  return "eternum";
+};
 
-export const getGameModeId = (): GameModeId => getGameModeConfig().id;
+const resolveGameModeConfig = (options: GameModeConfigOptions = {}): GameModeConfig => {
+  if (options.modeId) {
+    return GAME_MODE_BY_ID[options.modeId];
+  }
 
-const getGameModeConfigById = (id: GameModeId): GameModeConfig => GAME_MODE_BY_ID[id];
+  const worldBlitzModeOnFlag = options.blitzModeOn ?? configManager.getBlitzConfig()?.blitz_mode_on;
+  return GAME_MODE_BY_ID[resolveRuntimeGameModeId(worldBlitzModeOnFlag)];
+};
+
+export const getGameModeConfig = (options: GameModeConfigOptions = {}): GameModeConfig =>
+  resolveGameModeConfig(options);
+
+export const getGameModeId = (options: GameModeConfigOptions = {}): GameModeId => getGameModeConfig(options).id;
+
+export const getGameModeIdFromBlitzModeOn = (blitzModeOn: unknown): GameModeId => resolveRuntimeGameModeId(blitzModeOn);
