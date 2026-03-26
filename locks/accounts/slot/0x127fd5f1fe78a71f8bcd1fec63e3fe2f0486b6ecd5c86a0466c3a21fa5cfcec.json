@@ -3,17 +3,16 @@
   "chain": "slot",
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
-    "environment": "slot.eternum",
-    "gameName": "mygame",
-    "launchRequestId": "23616468613-1",
+    "environment": "slot.blitz",
+    "gameName": "bltz-crisp-881",
+    "launchRequestId": "23622685483-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23616468613,
+    "workflowRunId": 23622685483,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "e358e305-bac5-490c-bb96-d23d0cbc8950"
+    "stepId": "create-world",
+    "leaseId": "d9e3b15e-52ea-4e9a-a5a2-3c38c06bc94b"
   },
-  "acquiredAt": "2026-03-26T20:30:07.297Z",
-  "heartbeatAt": "2026-03-26T20:30:12.591Z",
-  "expiresAt": "2026-03-26T20:30:12.591Z",
-  "releasedAt": "2026-03-26T20:30:12.591Z"
+  "acquiredAt": "2026-03-26T23:15:39.008Z",
+  "heartbeatAt": "2026-03-26T23:15:39.008Z",
+  "expiresAt": "2026-03-26T23:25:39.008Z"
 }
