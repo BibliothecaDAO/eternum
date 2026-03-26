@@ -12,7 +12,7 @@ import { AmmPoolList } from "./amm-pool-list";
 import { AmmPriceChart } from "./amm-price-chart";
 import { AMM_READ_QUERY_OPTIONS } from "./amm-queries";
 import { AmmRemoveLiquidity } from "./amm-remove-liquidity";
-import { resolveSelectedAmmPool } from "./amm-model";
+import { resolveAmmFeeBreakdown, resolveSelectedAmmPool } from "./amm-model";
 import { AmmSwap } from "./amm-swap";
 import { AmmTradeHistory } from "./amm-trade-history";
 import { formatAmmCompactAmount, formatAmmFeeTo, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
@@ -154,11 +154,13 @@ const AmmSelectedPoolSummary = ({
   const asset = resolveAmmAssetPresentation(activePool.tokenAddress, config.lordsAddress);
   const currentSpotPrice =
     statsQuery.data?.spotPrice ?? computeSpotPrice(activePool.lordsReserve, activePool.tokenReserve);
+  const feeBreakdown = resolveAmmFeeBreakdown(activePool);
   const metrics = [
     { label: "Spot Price", value: `${formatAmmSpotPrice(currentSpotPrice)} LORDS` },
     { label: "TVL", value: formatAmmCompactAmount(activePool.lordsReserve * 2n) },
     { label: "24H Volume", value: statsQuery.data ? formatAmmCompactAmount(statsQuery.data.volume24h) : "--" },
-    { label: "LP Fee", value: formatAmmPercent((Number(activePool.feeNum) / Number(activePool.feeDenom)) * 100) },
+    { label: "LP Fee", value: formatAmmPercent(feeBreakdown.lpFeePercent) },
+    { label: "Protocol Fee", value: formatAmmPercent(feeBreakdown.protocolFeePercent) },
     {
       label: "Fee To",
       value: formatAmmFeeTo(statsQuery.data?.feeTo ?? activePool.feeTo),

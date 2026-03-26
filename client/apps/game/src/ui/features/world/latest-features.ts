@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-26",
+    title: "Agora Fee Split Labels",
+    description:
+      "The Agora now shows LP fees and protocol fees as separate values in the pool and swap panels, so the displayed fee split matches the live RealmsSwap economics instead of treating the full trade fee as LP revenue.",
+    type: "fix",
+  },
+  {
     date: "2026-03-24",
     title: "Dashboard Agora Refresh",
     description:

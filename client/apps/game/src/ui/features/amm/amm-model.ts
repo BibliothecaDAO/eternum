@@ -17,6 +17,15 @@ interface RoutedAmmSwapRoute {
 
 type AmmSwapRoute = DirectAmmSwapRoute | RoutedAmmSwapRoute;
 
+interface AmmFeeBreakdown {
+  lpFeePercent: number;
+  protocolFeePercent: number;
+  totalFeePercent: number;
+}
+
+const LP_FEE_SHARE = 2 / 3;
+const PROTOCOL_FEE_SHARE = 1 / 3;
+
 export function buildAmmTokenOptions(pools: Pool[], lordsAddress: string): TokenOption[] {
   return [
     {
@@ -35,6 +44,16 @@ export function resolveAmmPoolName(tokenAddress: string): string {
 
 export function resolveAmmTokenName(tokenAddress: string, lordsAddress: string): string {
   return resolveAmmAssetPresentation(tokenAddress, lordsAddress).displayName;
+}
+
+export function resolveAmmFeeBreakdown(pool: Pick<Pool, "feeDenom" | "feeNum"> | null | undefined): AmmFeeBreakdown {
+  const totalFeePercent = resolveTotalFeePercent(pool);
+
+  return {
+    totalFeePercent,
+    lpFeePercent: totalFeePercent * LP_FEE_SHARE,
+    protocolFeePercent: totalFeePercent * PROTOCOL_FEE_SHARE,
+  };
 }
 
 export function resolveSelectedAmmPool(pools: Pool[], selectedPool: string | null): Pool | null {
@@ -84,4 +103,12 @@ function buildAmmTokenOption(pool: Pool, lordsAddress: string): TokenOption {
     shortLabel: assetPresentation.shortLabel,
     iconResource: assetPresentation.iconResource,
   };
+}
+
+function resolveTotalFeePercent(pool: Pick<Pool, "feeDenom" | "feeNum"> | null | undefined): number {
+  if (!pool || pool.feeDenom <= 0n) {
+    return 0;
+  }
+
+  return (Number(pool.feeNum) / Number(pool.feeDenom)) * 100;
 }

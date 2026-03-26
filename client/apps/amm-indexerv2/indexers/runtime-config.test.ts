@@ -39,10 +39,37 @@ describe("resolveIndexerRuntimeConfig", () => {
 });
 
 describe("resolveIndexerStartingBlock", () => {
-  it("defaults to the current head block when STARTING_BLOCK is unset", async () => {
+  it("defaults to the known Sepolia launch block when STARTING_BLOCK is unset", async () => {
     await expect(
       resolveIndexerStartingBlock(
         {
+          factoryAddress: "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+          rpcUrl: "https://starknet.example/rpc",
+          startingBlock: undefined,
+        },
+        async () => 12345,
+      ),
+    ).resolves.toBe(8081754n);
+  });
+
+  it("defaults to the known mainnet launch block when STARTING_BLOCK is unset", async () => {
+    await expect(
+      resolveIndexerStartingBlock(
+        {
+          factoryAddress: "0x446f3d4e46eb3fceecdf444403347c09b6fff4606e87e5cc25d18a2474300fc",
+          rpcUrl: "https://starknet.example/rpc",
+          startingBlock: undefined,
+        },
+        async () => 12345,
+      ),
+    ).resolves.toBe(8139476n);
+  });
+
+  it("falls back to the current head block when STARTING_BLOCK is unset for an unknown factory", async () => {
+    await expect(
+      resolveIndexerStartingBlock(
+        {
+          factoryAddress: "0x123",
           rpcUrl: "https://starknet.example/rpc",
           startingBlock: undefined,
         },
@@ -55,6 +82,7 @@ describe("resolveIndexerStartingBlock", () => {
     await expect(
       resolveIndexerStartingBlock(
         {
+          factoryAddress: "0x123",
           rpcUrl: "https://starknet.example/rpc",
           startingBlock: "12345",
         },
@@ -67,6 +95,7 @@ describe("resolveIndexerStartingBlock", () => {
     await expect(
       resolveIndexerStartingBlock(
         {
+          factoryAddress: "0x123",
           rpcUrl: "https://starknet.example/rpc",
           startingBlock: "not-a-number",
         },
@@ -79,6 +108,7 @@ describe("resolveIndexerStartingBlock", () => {
     await expect(
       resolveIndexerStartingBlock(
         {
+          factoryAddress: "0x123",
           rpcUrl: "https://starknet.example/rpc",
           startingBlock: "12000",
         },

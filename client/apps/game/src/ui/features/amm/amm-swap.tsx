@@ -8,7 +8,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { buildAmmTokenOptions, resolveAmmSwapRoute, resolveAmmTokenName, resolveSelectedAmmPool } from "./amm-model";
+import {
+  buildAmmTokenOptions,
+  resolveAmmFeeBreakdown,
+  resolveAmmSwapRoute,
+  resolveAmmTokenName,
+  resolveSelectedAmmPool,
+} from "./amm-model";
 import { formatAmmFeeTo, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { AMM_READ_QUERY_OPTIONS, invalidateAmmReadQueries } from "./amm-queries";
@@ -218,9 +224,7 @@ export const AmmSwap = () => {
   const canSwap = Boolean(
     isConfigured && client && route && payAmount > 0 && receiveAmount > 0 && !insufficientBalance,
   );
-  const lpFeePercent = activePoolForFees
-    ? (Number(activePoolForFees.feeNum) / Number(activePoolForFees.feeDenom)) * 100
-    : 0;
+  const feeBreakdown = resolveAmmFeeBreakdown(activePoolForFees);
 
   if (!isConfigured || !client) {
     return <div className="text-sm text-gold/40">The Agora is not configured.</div>;
@@ -331,7 +335,8 @@ export const AmmSwap = () => {
               tone: swapQuote.priceImpact > 5 ? "text-danger" : "text-gold",
             },
             { label: "Minimum Received", value: formatTokenAmount(swapQuote.minimumReceived) },
-            { label: "LP Fee", value: formatAmmPercent(lpFeePercent) },
+            { label: "LP Fee", value: formatAmmPercent(feeBreakdown.lpFeePercent) },
+            { label: "Protocol Fee", value: formatAmmPercent(feeBreakdown.protocolFeePercent) },
             { label: "Fee To", value: activePoolForFees ? formatAmmFeeTo(activePoolForFees.feeTo) : "--" },
           ].map((metric) => (
             <div key={metric.label} className="rounded-xl border border-gold/10 bg-black/20 px-3 py-2">

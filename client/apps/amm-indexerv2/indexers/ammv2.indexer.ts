@@ -13,6 +13,7 @@ const runtimeConfig = resolveIndexerRuntimeConfig({
 });
 
 const startingBlock = await resolveIndexerStartingBlock({
+  factoryAddress: runtimeConfig.factoryAddress,
   rpcUrl: runtimeConfig.rpcUrl,
   startingBlock: process.env.STARTING_BLOCK,
 });

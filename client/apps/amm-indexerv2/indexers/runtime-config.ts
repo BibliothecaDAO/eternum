@@ -8,9 +8,15 @@ interface IndexerRuntimeConfig {
 type RuntimeConfigKey = "FACTORY_ADDRESS" | "RPC_URL";
 
 interface StartingBlockConfig {
+  factoryAddress: string;
   rpcUrl: string;
   startingBlock: string | undefined;
 }
+
+const KNOWN_FACTORY_STARTING_BLOCKS = {
+  "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c": 8081754n,
+  "0x446f3d4e46eb3fceecdf444403347c09b6fff4606e87e5cc25d18a2474300fc": 8139476n,
+} as const;
 
 export class InvalidIndexerRuntimeConfigError extends Error {
   readonly errorType = "invalid_runtime_config";
@@ -44,14 +50,19 @@ export async function resolveIndexerStartingBlock(
   config: StartingBlockConfig,
   loadHeadBlockNumber: (rpcUrl: string) => Promise<number> = fetchCurrentHeadBlockNumber,
 ): Promise<bigint> {
-  const currentHeadBlock = BigInt(await loadHeadBlockNumber(config.rpcUrl));
   const configuredStartingBlock = parseConfiguredStartingBlock(config.startingBlock);
 
-  if (configuredStartingBlock === null) {
-    return currentHeadBlock;
+  if (configuredStartingBlock !== null) {
+    return configuredStartingBlock;
   }
 
-  return configuredStartingBlock;
+  const knownStartingBlock = resolveKnownFactoryStartingBlock(config.factoryAddress);
+
+  if (knownStartingBlock !== null) {
+    return knownStartingBlock;
+  }
+
+  return BigInt(await loadHeadBlockNumber(config.rpcUrl));
 }
 
 function validateAddress(key: RuntimeConfigKey, value: string): string {
@@ -101,6 +112,12 @@ function parseConfiguredStartingBlock(value: string | undefined): bigint | null 
   } catch {
     throw new InvalidIndexerStartingBlockError(trimmed);
   }
+}
+
+function resolveKnownFactoryStartingBlock(factoryAddress: string): bigint | null {
+  const normalizedFactoryAddress = normalizeAddress(factoryAddress);
+
+  return KNOWN_FACTORY_STARTING_BLOCKS[normalizedFactoryAddress as keyof typeof KNOWN_FACTORY_STARTING_BLOCKS] ?? null;
 }
 
 async function fetchCurrentHeadBlockNumber(rpcUrl: string): Promise<number> {
