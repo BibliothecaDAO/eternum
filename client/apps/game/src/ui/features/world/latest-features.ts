@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-26",
+    title: "Stabilized Hex Right-Clicks",
+    description:
+      "Worldmap actions now keep responding on highlighted hexes after fast local-to-world transitions and after entering a different game, without needing a full page refresh.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Realm Upgrade Sync Lock",
     description:
       "Realm upgrade buttons now stay pending until the transaction fails or the synced realm level catches up, avoiding duplicate upgrade clicks while backend data is still refreshing.",

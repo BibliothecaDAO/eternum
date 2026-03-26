@@ -22,6 +22,7 @@ interface WorldmapLifecycleFixture {
     resourceFXManager: number;
   };
   switchOffCalls: number;
+  interactionResetCalls: number;
   refreshRequests: number;
   setup: () => void;
   switchOff: () => void;
@@ -42,6 +43,7 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
   let isSwitchedOff = false;
   let isUrlChangedListenerAttached = false;
   let switchOffCalls = 0;
+  let interactionResetCalls = 0;
   let refreshRequests = 0;
   const destroyCalls = {
     armyManager: 0,
@@ -67,6 +69,10 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
     isUrlChangedListenerAttached = decision.nextIsUrlChangedListenerAttached;
   };
 
+  const resetInteractionSelectionForSwitchOff = () => {
+    interactionResetCalls += 1;
+  };
+
   return {
     debugWindow,
     listenerAdds,
@@ -74,6 +80,9 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
     destroyCalls,
     get switchOffCalls() {
       return switchOffCalls;
+    },
+    get interactionResetCalls() {
+      return interactionResetCalls;
     },
     get refreshRequests() {
       return refreshRequests;
@@ -89,6 +98,7 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
     switchOff() {
       switchOffCalls += 1;
       isSwitchedOff = true;
+      resetInteractionSelectionForSwitchOff();
       syncUrlChangedListenerLifecycle("switchOff");
     },
     destroy() {

@@ -110,6 +110,13 @@ import {
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
+import {
+  claimWorldmapInteractionOwner,
+  getWorldmapInteractionOwnerInstanceId,
+  isWorldmapInteractionOwner,
+  releaseWorldmapInteractionOwner,
+} from "./worldmap-interaction-owner";
+import { getLiveWorldmapEntityActions, resetWorldmapEntityActions } from "./worldmap-interaction-state";
 import { resolveWorldmapHexClickPlan } from "./worldmap-selection-routing";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
@@ -383,7 +390,15 @@ let activeSpatialStreamManager: ToriiStreamManagerType | null = null;
 
 export const getActiveSpatialStreamManager = (): ToriiStreamManagerType | null => activeSpatialStreamManager;
 
+let worldmapInteractionDebugInstanceCounter = 0;
+
+function allocateWorldmapInteractionDebugInstanceId(): number {
+  worldmapInteractionDebugInstanceCounter += 1;
+  return worldmapInteractionDebugInstanceCounter;
+}
+
 export default class WorldmapScene extends WarpTravel {
+  private readonly interactionDebugInstanceId = allocateWorldmapInteractionDebugInstanceId();
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
   private readonly chunkGeometry = {
     size: WORLDMAP_CHUNK_POLICY.chunkSize,
@@ -649,6 +664,7 @@ export default class WorldmapScene extends WarpTravel {
   private chunkTransitionToken = 0;
   private actionPathsTransitionToken: number | null = null;
   private isApplyingLocalActionPathUpdate = false;
+  private isSceneExitInteractionResetInProgress = false;
   private chunkDiagnostics: WorldmapChunkDiagnostics = createWorldmapChunkDiagnostics();
   private chunkDiagnosticsBaselines: WorldmapChunkDiagnosticsBaselineEntry[] = [];
 
@@ -716,6 +732,11 @@ export default class WorldmapScene extends WarpTravel {
     sceneManager: SceneManager,
   ) {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
+
+    this.logInteractionDebug("scene_instance_created", {
+      sceneName: SceneName.WorldMap,
+      existingStoreSubscriptionCount: this.storeSubscriptions.length,
+    });
 
     this.dojo = dojoContext;
     const toriiClient = dojoContext.network?.toriiClient;
@@ -1659,7 +1680,7 @@ export default class WorldmapScene extends WarpTravel {
     // Handle label expansion on hover
     this.hoverLabelManager.onHexHover(hexCoords);
 
-    const { selectedEntityId, actionPaths } = this.state.entityActions;
+    const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
     if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
@@ -1761,14 +1782,29 @@ export default class WorldmapScene extends WarpTravel {
 
     if (clickPlan.selection.type === "army") {
       this.onArmySelection(clickPlan.selection.entityId, accountAddress);
+      this.logInteractionDebug("army_selected_via_left_click", {
+        entityId: clickPlan.selection.entityId,
+        hexCoords,
+        ...this.getInteractionDebugSnapshot(),
+      });
       return;
     }
 
     if (clickPlan.selection.type === "structure") {
       this.onStructureSelection(clickPlan.selection.entityId, hexCoords);
+      this.logInteractionDebug("structure_selected_via_left_click", {
+        entityId: clickPlan.selection.entityId,
+        hexCoords,
+        ...this.getInteractionDebugSnapshot(),
+      });
       return;
     }
 
+    this.logInteractionDebug("non_action_selection_cleared_via_left_click", {
+      hexCoords,
+      selectionType: clickPlan.selection.type,
+      ...this.getInteractionDebugSnapshot(),
+    });
     this.clearEntitySelection();
   }
 
@@ -1800,12 +1836,26 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const { structure } = this.getHexagonEntity(hexCoords);
-    const { selectedEntityId, actionPaths } = this.state.entityActions;
+    const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     const hasActiveEntityAction = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
+    const clickedHexKey = ActionPaths.posKey(hexCoords, true);
+
+    this.logInteractionDebug("right_click_received", {
+      hexCoords,
+      clickedHexKey,
+      hasAccount: Boolean(account),
+      isMineStructure: structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false,
+      ...this.getInteractionDebugSnapshot(),
+    });
 
     const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
     if (structure && isMineStructure && !hasActiveEntityAction) {
+      this.logInteractionDebug("opening_owned_structure_context_menu", {
+        structureId: structure.id,
+        hexCoords,
+        ...this.getInteractionDebugSnapshot(),
+      });
       this.interactionAdapter.openOwnedStructureContextMenu({
         event,
         structure,
@@ -1817,13 +1867,18 @@ export default class WorldmapScene extends WarpTravel {
     if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0 && hexCoords) {
       const actionPathLookup = resolveEntityActionPathLookup({
         hasSelectedEntity: true,
-        clickedHexKey: ActionPaths.posKey(hexCoords, true),
+        clickedHexKey,
         actionPaths,
         actionPathsTransitionToken: this.actionPathsTransitionToken,
         latestTransitionToken: this.chunkTransitionToken,
       });
 
       if (actionPathLookup.shouldClearStaleSelection) {
+        this.logInteractionDebug("clearing_stale_selection_after_right_click", {
+          hexCoords,
+          clickedHexKey,
+          ...this.getInteractionDebugSnapshot(),
+        });
         this.clearEntitySelection();
         return;
       }
@@ -1856,7 +1911,23 @@ export default class WorldmapScene extends WarpTravel {
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         }
+        this.logInteractionDebug("action_executed_from_right_click", {
+          ...this.getInteractionDebugSnapshot(),
+          actionType,
+          selectedEntityId,
+          clickedHexKey,
+          actionPathLength: actionPath.length,
+        });
+        return;
       }
+
+      this.logInteractionDebug("no_action_path_resolved_for_right_click", {
+        hexCoords,
+        clickedHexKey,
+        hasAccount: Boolean(account),
+        actionPathFound: Boolean(actionPathLookup.actionPath),
+        ...this.getInteractionDebugSnapshot(),
+      });
     }
   }
 
@@ -2613,17 +2684,19 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private syncEntityActionPathsTransitionToken(): void {
+    const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenSync({
-      selectedEntityId: this.state.entityActions.selectedEntityId,
-      actionPathCount: this.state.entityActions.actionPaths.size,
+      selectedEntityId,
+      actionPathCount: actionPaths.size,
       previousTransitionToken: this.actionPathsTransitionToken,
     });
   }
 
   private isMissingActionPathOwnershipState(): boolean {
+    const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     return shouldClearEntitySelectionForMissingActionPathOwnership({
-      selectedEntityId: this.state.entityActions.selectedEntityId,
-      actionPathCount: this.state.entityActions.actionPaths.size,
+      selectedEntityId,
+      actionPathCount: actionPaths.size,
       actionPathsTransitionToken: this.actionPathsTransitionToken,
       allowPendingLocalOwnership: this.isApplyingLocalActionPathUpdate,
     });
@@ -2642,7 +2715,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyContextualHoverPalette(hexCoords: HexPosition | null): void {
-    const selectedEntityId = this.state.entityActions.selectedEntityId;
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
     const hasSelection = selectedEntityId !== null && selectedEntityId !== undefined;
     const actionType = this.getHoveredActionType(hexCoords);
 
@@ -2659,9 +2732,8 @@ export default class WorldmapScene extends WarpTravel {
       return undefined;
     }
 
-    const actionPath = this.state.entityActions.actionPaths.get(
-      `${hexCoords.col + FELT_CENTER()},${hexCoords.row + FELT_CENTER()}`,
-    );
+    const hoveredHexKey = `${hexCoords.col + FELT_CENTER()},${hexCoords.row + FELT_CENTER()}`;
+    const actionPath = getLiveWorldmapEntityActions().actionPaths.get(hoveredHexKey);
     return actionPath ? ActionPaths.getActionType(actionPath) : undefined;
   }
 
@@ -2825,6 +2897,12 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private configureWarpTravelSetupStart(): void {
+    this.claimInteractionOwnership();
+    this.logInteractionDebug("setup_start", {
+      hasInitialized: this.hasInitialized,
+      hasInitialSetupPromise: this.isInitialWarpTravelSetupInFlight(),
+      existingStoreSubscriptionCount: this.storeSubscriptions.length,
+    });
     this.syncUrlChangedListenerLifecycle("setup");
     this.controls.maxDistance = this.worldmapMaxZoomDistance;
     this.camera.fov = resolveWorldmapCameraFieldOfViewDegrees();
@@ -2907,6 +2985,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   onSwitchOff(nextSceneName?: SceneName) {
+    this.logInteractionDebug("switch_off_invoked", {
+      nextSceneName,
+      existingStoreSubscriptionCount: this.storeSubscriptions.length,
+      ...this.getInteractionDebugSnapshot(),
+    });
     if (nextSceneName !== SceneName.WorldMap) {
       this.camera.fov = CAMERA_CONFIG.fov;
       this.camera.updateProjectionMatrix();
@@ -2929,6 +3012,8 @@ export default class WorldmapScene extends WarpTravel {
     this.toriiLoadingCounter = 0;
     this.state.setLoading(LoadingStateKey.Map, false);
 
+    this.resetInteractionSelectionForSwitchOff(nextSceneName);
+    this.releaseInteractionOwnership("switch_off");
     this.clearAllPendingActionFx();
     this.runWarpTravelSwitchOffLifecycle();
 
@@ -6015,9 +6100,10 @@ export default class WorldmapScene extends WarpTravel {
           return false;
         }
         const transitionToken = ++this.chunkTransitionToken;
+        const liveEntityActions = getLiveWorldmapEntityActions();
         this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenForForcedRefresh({
-          selectedEntityId: this.state.entityActions.selectedEntityId,
-          actionPathCount: this.state.entityActions.actionPaths.size,
+          selectedEntityId: liveEntityActions.selectedEntityId,
+          actionPathCount: liveEntityActions.actionPaths.size,
           currentChunk: this.currentChunk,
           targetChunk: chunkKey,
           nextTransitionToken: transitionToken,
@@ -6901,6 +6987,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   destroy() {
+    this.logInteractionDebug("destroy_called", {
+      existingStoreSubscriptionCount: this.storeSubscriptions.length,
+      ...this.getInteractionDebugSnapshot(),
+    });
     this.onSwitchOff();
     this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
@@ -7163,6 +7253,10 @@ export default class WorldmapScene extends WarpTravel {
 
   private registerStoreSubscriptions() {
     if (this.storeSubscriptions.length > 0) {
+      this.logInteractionDebug("store_subscriptions_registration_skipped", {
+        existingStoreSubscriptionCount: this.storeSubscriptions.length,
+        ...this.getInteractionDebugSnapshot(),
+      });
       return;
     }
 
@@ -7188,9 +7282,39 @@ export default class WorldmapScene extends WarpTravel {
       useUIStore.subscribe(
         (state) => state.entityActions,
         (nextEntityActions, previousEntityActions) => {
-          this.state.entityActions = nextEntityActions;
+          if (!this.isInteractionOwner()) {
+            this.logInteractionDebug("entity_actions_update_ignored_without_ownership", {
+              previousSelectedEntityId: previousEntityActions?.selectedEntityId,
+              nextSelectedEntityId: nextEntityActions.selectedEntityId,
+              previousActionPathCount: previousEntityActions?.actionPaths.size ?? 0,
+              nextActionPathCount: nextEntityActions.actionPaths.size,
+              ...this.getInteractionDebugSnapshot(),
+            });
+            return;
+          }
           this.syncEntityActionPathsTransitionToken();
+          this.logInteractionDebug("entity_actions_store_update", {
+            previousSelectedEntityId: previousEntityActions?.selectedEntityId,
+            nextSelectedEntityId: nextEntityActions.selectedEntityId,
+            previousActionPathCount: previousEntityActions?.actionPaths.size ?? 0,
+            nextActionPathCount: nextEntityActions.actionPaths.size,
+            nextHoveredHex: nextEntityActions.hoveredHex,
+            ...this.getInteractionDebugSnapshot(),
+          });
+          if (this.isSceneExitInteractionResetInProgress) {
+            this.logInteractionDebug("entity_actions_update_ignored_during_switch_off", {
+              nextSelectedEntityId: nextEntityActions.selectedEntityId,
+              nextActionPathCount: nextEntityActions.actionPaths.size,
+              ...this.getInteractionDebugSnapshot(),
+            });
+            return;
+          }
           if (this.isMissingActionPathOwnershipState()) {
+            this.logInteractionDebug("clearing_entity_selection_for_missing_ownership", {
+              nextSelectedEntityId: nextEntityActions.selectedEntityId,
+              nextActionPathCount: nextEntityActions.actionPaths.size,
+              ...this.getInteractionDebugSnapshot(),
+            });
             this.clearEntitySelection();
             return;
           }
@@ -7200,6 +7324,11 @@ export default class WorldmapScene extends WarpTravel {
               nextEntityActions.selectedEntityId,
             )
           ) {
+            this.logInteractionDebug("clearing_entity_selection_for_defined_to_null_transition", {
+              previousSelectedEntityId: previousEntityActions?.selectedEntityId,
+              nextSelectedEntityId: nextEntityActions.selectedEntityId,
+              ...this.getInteractionDebugSnapshot(),
+            });
             this.clearEntitySelection();
           }
         },
@@ -7230,14 +7359,26 @@ export default class WorldmapScene extends WarpTravel {
       ),
     );
 
+    this.logInteractionDebug("store_subscriptions_registered", {
+      registeredSubscriptionCount: this.storeSubscriptions.length,
+      ...this.getInteractionDebugSnapshot(),
+    });
     this.syncStateFromStore();
   }
 
   private disposeStoreSubscriptions() {
     if (this.storeSubscriptions.length === 0) {
+      this.logInteractionDebug("store_subscriptions_dispose_skipped", {
+        existingStoreSubscriptionCount: this.storeSubscriptions.length,
+        ...this.getInteractionDebugSnapshot(),
+      });
       return;
     }
 
+    this.logInteractionDebug("store_subscriptions_disposing", {
+      existingStoreSubscriptionCount: this.storeSubscriptions.length,
+      ...this.getInteractionDebugSnapshot(),
+    });
     this.storeSubscriptions.forEach((unsubscribe) => {
       try {
         unsubscribe();
@@ -7246,15 +7387,25 @@ export default class WorldmapScene extends WarpTravel {
       }
     });
     this.storeSubscriptions = [];
+    this.logInteractionDebug("store_subscriptions_disposed", {
+      remainingStoreSubscriptionCount: this.storeSubscriptions.length,
+      ...this.getInteractionDebugSnapshot(),
+    });
   }
 
   private syncStateFromStore() {
+    if (!this.isInteractionOwner()) {
+      this.logInteractionDebug("sync_state_from_store_skipped_without_ownership", {
+        ...this.getInteractionDebugSnapshot(),
+      });
+      return;
+    }
+
     const uiState = useUIStore.getState();
 
     this.updateSelectableArmies(uiState.selectableArmies);
     this.updatePlayerStructures(uiState.playerStructures);
 
-    this.state.entityActions = uiState.entityActions;
     this.syncEntityActionPathsTransitionToken();
     if (this.isMissingActionPathOwnershipState()) {
       this.clearEntitySelection();
@@ -7268,11 +7419,103 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const selectedEntityId = uiState.entityActions.selectedEntityId;
+    this.logInteractionDebug("sync_state_from_store", {
+      ...this.getInteractionDebugSnapshot(),
+      selectedEntityId,
+      actionPathCount: uiState.entityActions.actionPaths.size,
+      hoveredHex: uiState.entityActions.hoveredHex,
+      selectedHex: uiState.selectedHex,
+    });
     if (selectedEntityId === null || selectedEntityId === undefined) {
       this.clearEntitySelection();
-    } else {
-      this.state.updateEntityActionSelectedEntityId(selectedEntityId);
     }
+  }
+
+  private resetInteractionSelectionForSwitchOff(nextSceneName?: SceneName): void {
+    const shouldResetSharedInteractionState = this.isInteractionOwner();
+    this.logInteractionDebug("switch_off_reset_start", {
+      nextSceneName,
+      shouldResetSharedInteractionState,
+      ...this.getInteractionDebugSnapshot(),
+    });
+    this.isSceneExitInteractionResetInProgress = true;
+
+    try {
+      this.selectedHexManager.resetPosition();
+      this.state.setSelectedHex(null);
+      this.state.setHoveredHex(null);
+      this.highlightHexManager.highlightHexes([]);
+      this.selectionPulseManager.hideSelection();
+      this.selectionPulseManager.clearOwnershipPulses();
+      if (shouldResetSharedInteractionState) {
+        resetWorldmapEntityActions();
+      }
+      this.actionPathsTransitionToken = null;
+      this.previouslyHoveredHex = null;
+      document.body.style.cursor = "default";
+      this.applyContextualHoverPalette(null);
+    } finally {
+      this.isSceneExitInteractionResetInProgress = false;
+    }
+
+    this.logInteractionDebug("switch_off_reset_complete", {
+      nextSceneName,
+      shouldResetSharedInteractionState,
+      ...this.getInteractionDebugSnapshot(),
+    });
+  }
+
+  private claimInteractionOwnership(): void {
+    claimWorldmapInteractionOwner(this.interactionDebugInstanceId);
+    this.logInteractionDebug("interaction_owner_claimed", {
+      ownerInstanceId: getWorldmapInteractionOwnerInstanceId(),
+      ...this.getInteractionDebugSnapshot(),
+    });
+  }
+
+  private releaseInteractionOwnership(reason: "switch_off" | "destroy"): void {
+    const ownerBeforeRelease = getWorldmapInteractionOwnerInstanceId();
+    releaseWorldmapInteractionOwner(this.interactionDebugInstanceId);
+    this.logInteractionDebug("interaction_owner_released", {
+      reason,
+      ownerBeforeRelease,
+      ownerAfterRelease: getWorldmapInteractionOwnerInstanceId(),
+      ...this.getInteractionDebugSnapshot(),
+    });
+  }
+
+  private isInteractionOwner(): boolean {
+    return isWorldmapInteractionOwner(this.interactionDebugInstanceId);
+  }
+
+  private getInteractionDebugSnapshot() {
+    const liveEntityActions = getLiveWorldmapEntityActions();
+
+    return {
+      currentScene: this.sceneManager.getCurrentScene(),
+      activeInteractionOwnerInstanceId: getWorldmapInteractionOwnerInstanceId(),
+      isInteractionOwner: this.isInteractionOwner(),
+      selectedEntityId: liveEntityActions.selectedEntityId,
+      actionPathCount: liveEntityActions.actionPaths.size,
+      actionPathKeysSample: Array.from(liveEntityActions.actionPaths.keys()).slice(0, 6),
+      hoveredActionHex: liveEntityActions.hoveredHex,
+      selectedHex: this.state.selectedHex,
+      chunkTransitionToken: this.chunkTransitionToken,
+      actionPathsTransitionToken: this.actionPathsTransitionToken,
+      isSwitchedOff: this.isSwitchedOff,
+      isSceneExitInteractionResetInProgress: this.isSceneExitInteractionResetInProgress,
+    };
+  }
+
+  private logInteractionDebug(event: string, details: Record<string, unknown>): void {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    console.debug(`[WorldmapInteraction] ${event}`, {
+      instanceId: this.interactionDebugInstanceId,
+      ...details,
+    });
   }
 
   private updatePlayerStructures(structures: Structure[]) {
