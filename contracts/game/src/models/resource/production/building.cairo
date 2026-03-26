@@ -562,10 +562,10 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
 
         let produced_resource_type = (*self).produced_resource();
         let resource_factory_config: ResourceFactoryConfig = world.read_model(produced_resource_type);
-        let produced_amount_every_second: u128 = if structure_category == StructureCategory::Village.into() {
-            resource_factory_config.village_output_per_second.into()
-        } else {
+        let produced_amount_every_second: u128 = if structure_category == StructureCategory::Realm.into() {
             resource_factory_config.realm_output_per_second.into()
+        } else {
+            resource_factory_config.village_output_per_second.into()
         };
 
         produced_amount_every_second
