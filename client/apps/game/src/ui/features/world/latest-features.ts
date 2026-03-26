@@ -17,6 +17,13 @@ export const latestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-03-26",
+    title: "Unified Hex Biome Lighting",
+    description:
+      "Biome tiles now use a consistent surface style instead of mixing random lit and unlit variants, making the world map easier to read at a glance.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Passive Army Stamina Refresh",
     description:
       "Army stamina shown above units now keeps updating after chain-time corrections instead of waiting for another army action to refresh the display.",
