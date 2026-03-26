@@ -260,5 +260,3 @@ export const getGameModeConfig = (options: GameModeConfigOptions = {}): GameMode
   resolveGameModeConfig(options);
 
 export const getGameModeId = (options: GameModeConfigOptions = {}): GameModeId => getGameModeConfig(options).id;
-
-export const getGameModeIdFromBlitzModeOn = (blitzModeOn: unknown): GameModeId => resolveRuntimeGameModeId(blitzModeOn);

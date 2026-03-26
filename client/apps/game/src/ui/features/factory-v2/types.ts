@@ -48,7 +48,7 @@ export type FactoryRunStatus = "running" | "attention" | "waiting" | "complete";
 export type FactoryStepStatus = "pending" | "running" | "succeeded" | "already_done" | "blocked" | "failed";
 export type FactoryRunRecoveryState = "active" | "transitioning" | "stalled" | "failed" | "complete";
 export type FactorySeriesChildStatus = "pending" | "running" | "succeeded" | "failed";
-export type FactoryWorkflowIntervalMinutes = 5 | 15 | 30 | 60;
+type FactoryWorkflowIntervalMinutes = 5 | 15 | 30 | 60;
 export type FactorySeriesRetryIntervalMinutes = FactoryWorkflowIntervalMinutes;
 export type FactoryRotationEvaluationIntervalMinutes = FactoryWorkflowIntervalMinutes;
 
