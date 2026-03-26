@@ -2,6 +2,7 @@ import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store"
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
+import { CountUpNumber } from "@/ui/shared";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
@@ -319,13 +320,14 @@ export const ResourceChip = ({
         <div className={`self-center flex flex-wrap w-full gap-2 ${size === "large" ? "text-lg" : ""}`}>
           <div className="flex items-center gap-2">
             {icon}
-            <span
+            <CountUpNumber
+              value={displayBalance}
+              format={(v) => currencyFormat(v, 2)}
               className={`${isHovered ? "font-bold animate-pulse" : ""} ${
                 relicEffectActivated ? "text-relic font-semibold" : ""
               }`}
-            >
-              {currencyFormat(displayBalance, 2)}
-            </span>{" "}
+              highlightClassName="text-green font-bold scale-105"
+            />{" "}
             {relicEffectActivated && (
               <div className="flex items-center ml-1 gap-1">
                 <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />
