@@ -89,8 +89,14 @@ export const PlayersPanel = ({
 
   useEffect(() => {
     void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT });
+
+    const interval = window.setInterval(() => {
+      void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT });
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only fetch on initial mount - store handles caching/staleness
+  }, []); // Fetch on mount and auto-refresh every 60s
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
     // Sort players by points in descending order
