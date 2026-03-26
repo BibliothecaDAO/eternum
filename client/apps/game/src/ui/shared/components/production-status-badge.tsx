@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { useMemo, type FC } from "react";
 
 import clsx from "clsx";
 
@@ -14,6 +14,47 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 const resolveResourceIdFromLabel = (label: string): ResourcesIds | undefined => {
   const maybeId = (ResourcesIds as unknown as Record<string, ResourcesIds | string>)[label];
   return typeof maybeId === "number" ? maybeId : undefined;
+};
+
+/** Dominant color per resource — [r, g, b] extracted from icon artwork. */
+const RESOURCE_COLORS: Record<string, [number, number, number]> = {
+  Wood: [139, 90, 43],
+  Stone: [156, 156, 156],
+  Coal: [60, 60, 60],
+  Copper: [184, 115, 51],
+  Obsidian: [55, 25, 70],
+  Silver: [192, 192, 210],
+  Ironwood: [90, 120, 80],
+  ColdIron: [100, 140, 180],
+  Gold: [255, 200, 50],
+  Hartwood: [60, 140, 60],
+  Diamonds: [185, 242, 255],
+  Sapphire: [30, 80, 200],
+  Ruby: [200, 30, 50],
+  DeepCrystal: [120, 50, 200],
+  Ignium: [255, 80, 20],
+  EtherealSilica: [200, 220, 255],
+  TrueIce: [140, 220, 255],
+  TwilightQuartz: [180, 100, 220],
+  AlchemicalSilver: [170, 200, 230],
+  Adamantine: [50, 200, 150],
+  Mithral: [200, 170, 255],
+  Dragonhide: [180, 50, 30],
+  Wheat: [220, 180, 60],
+  Fish: [60, 150, 200],
+  Labor: [200, 170, 80],
+  AncientFragment: [200, 180, 100],
+  Essence: [120, 80, 200],
+  Research: [80, 180, 220],
+  Lords: [255, 215, 0],
+};
+
+const DEFAULT_PRODUCING_COLOR: [number, number, number] = [52, 211, 153]; // emerald fallback
+const IDLE_COLOR: [number, number, number] = [251, 191, 36]; // amber
+
+const getResourceColor = (label: string): [number, number, number] => {
+  const clean = label.replace(/\s/g, "").replace("'", "");
+  return RESOURCE_COLORS[clean] ?? DEFAULT_PRODUCING_COLOR;
 };
 
 interface ProductionStatusBadgeProps {
@@ -59,6 +100,8 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   const shouldPulse =
     isProducing && effectiveRemaining !== null && effectiveRemaining <= PRODUCTION_PULSE_THRESHOLD_SECONDS;
 
+  const [r, g, b] = useMemo(() => (isProducing ? getResourceColor(resourceLabel) : IDLE_COLOR), [isProducing, resourceLabel]);
+
   const preset =
     size === "md"
       ? {
@@ -89,13 +132,14 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
 
   const ringThickness = "border";
 
-  const ringClasses = isProducing
-    ? "border-emerald-400/80 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-    : "border-amber-400/70 shadow-[0_0_8px_rgba(251,191,36,0.25)]";
+  const ringStyle = {
+    borderColor: `rgba(${r}, ${g}, ${b}, ${isProducing ? 0.8 : 0.7})`,
+    boxShadow: `0 0 ${isProducing ? 10 : 8}px rgba(${r}, ${g}, ${b}, ${isProducing ? 0.3 : 0.25})`,
+  };
 
   const progressStyle = isProducing
     ? {
-        background: `conic-gradient(rgba(52, 211, 153, 0.55) ${progressPercent}%, rgba(52, 211, 153, 0.08) ${progressPercent}%)`,
+        background: `conic-gradient(rgba(${r}, ${g}, ${b}, 0.55) ${progressPercent}%, rgba(${r}, ${g}, ${b}, 0.08) ${progressPercent}%)`,
       }
     : undefined;
 
@@ -143,20 +187,27 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       )}
       {shouldPulse && (
         <span
-          className={clsx(
-            "absolute pointer-events-none rounded-full bg-emerald-400/20",
-            preset.ringOffset,
-            "animate-ping",
-          )}
+          className={clsx("absolute pointer-events-none rounded-full animate-ping", preset.ringOffset)}
+          style={{ backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)` }}
+        />
+      )}
+      {isProducing && (
+        <span
+          className={clsx("absolute pointer-events-none rounded-full", preset.ringOffset)}
+          style={{
+            background: `rgba(${r}, ${g}, ${b}, 0.06)`,
+            animation: "productionBreathe 2.5s ease-in-out infinite",
+            boxShadow: `0 0 12px 2px rgba(${r}, ${g}, ${b}, 0.15)`,
+          }}
         />
       )}
       <span
         className={clsx(
-          "absolute pointer-events-none rounded-full backdrop-blur-sm",
+          "absolute pointer-events-none rounded-full backdrop-blur-sm transition-all duration-700",
           preset.ringOffset,
           ringThickness,
-          ringClasses,
         )}
+        style={ringStyle}
       />
       {isProducing && (
         <span
@@ -166,10 +217,14 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       )}
       <div
         className={clsx(
-          "relative z-[1] flex items-center justify-center rounded-full border border-gold/[0.08] bg-[#1d1510]/95",
+          "relative z-[1] flex items-center justify-center rounded-full border border-gold/[0.08] bg-[#1d1510]/95 transition-shadow duration-700",
           preset.iconPadding,
-          "shadow-[0_0_8px_rgba(0,0,0,0.45)]",
         )}
+        style={{
+          boxShadow: isProducing
+            ? `0 0 8px rgba(0,0,0,0.45), inset 0 0 6px rgba(${r}, ${g}, ${b}, 0.15)`
+            : "0 0 8px rgba(0,0,0,0.45)",
+        }}
       >
         <ResourceIcon resource={resourceLabel} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
       </div>

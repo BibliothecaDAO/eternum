@@ -133,6 +133,18 @@ body {
   text-stroke: 1.5px black; /* Standard property */
 }
 
+@keyframes productionBreathe {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
+}
+
 .highlight-central-cell {
   animation: highlightPulse 2s infinite;
 }
