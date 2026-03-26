@@ -6,6 +6,11 @@
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import {
+  parseMaybeBooleanFlag,
+  resolveGameModeFromBlitzFlag,
+  type ResolvedGameMode,
+} from "@/config/game-modes/resolved-mode";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
@@ -140,7 +145,7 @@ const fetchTokenBalance = async (
 };
 
 export interface WorldConfigMeta {
-  mode: "blitz" | "eternum" | "unknown";
+  mode: ResolvedGameMode;
   startSettlingAt: number | null;
   startMainAt: number | null;
   endAt: number | null;
@@ -201,18 +206,6 @@ interface WorldAvailability {
   error: Error | null;
 }
 
-const parseMaybeBool = (v: unknown): boolean | null => {
-  if (v == null) return null;
-  if (typeof v === "boolean") return v;
-  if (typeof v === "number") return v !== 0;
-  if (typeof v === "string") {
-    const trimmed = v.trim().toLowerCase();
-    if (trimmed === "true" || trimmed === "1") return true;
-    if (trimmed === "false" || trimmed === "0") return false;
-  }
-  return null;
-};
-
 /**
  * Fetch player registration status from Torii SQL endpoint.
  * Uses `once_registered` field which stays true even after settlement
@@ -228,7 +221,7 @@ const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: stri
     const data = (await response.json()) as Record<string, unknown>[];
     const [row] = data;
     if (row && row.once_registered != null) {
-      return parseMaybeBool(row.once_registered);
+      return parseMaybeBooleanFlag(row.once_registered);
     }
     // Query succeeded but no row found — player is not registered
     return false;
@@ -336,9 +329,7 @@ const fetchWorldConfigMeta = async (
     const modeResponse = await fetch(modeUrl);
     if (!modeResponse.ok) return meta;
     const [modeRow] = (await modeResponse.json()) as Record<string, unknown>[];
-    const isBlitzMode = parseMaybeBool(modeRow?.blitz_mode_on);
-    if (isBlitzMode === true) meta.mode = "blitz";
-    if (isBlitzMode === false) meta.mode = "eternum";
+    meta.mode = resolveGameModeFromBlitzFlag(modeRow?.blitz_mode_on);
 
     const worldConfigQuery = meta.mode === "blitz" ? WORLD_CONFIG_BLITZ_QUERY : WORLD_CONFIG_ETERNUM_QUERY;
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(worldConfigQuery)}`;
@@ -375,7 +366,7 @@ const fetchWorldConfigMeta = async (
         if (row.registration_end_at != null)
           meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
 
-        meta.twoPlayerMode = parseMaybeBool(row.two_player_mode) ?? false;
+        meta.twoPlayerMode = parseMaybeBooleanFlag(row.two_player_mode) ?? false;
 
         // Calculate hyperstructures left from max_ring_count
         const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;

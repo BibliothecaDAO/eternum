@@ -21,7 +21,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const ONE_MONTH = 2628000;
 
-export const MarketResource = memo(
+const MarketResource = memo(
   ({
     entityId,
     resourceId,

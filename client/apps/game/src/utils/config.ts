@@ -1,4 +1,5 @@
 import { ToriiSetting } from "@/types";
+import { resolveGameModeFromBlitzFlag } from "@/config/game-modes/resolved-mode";
 import { ContractComponents, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -11,28 +12,14 @@ type ConfigResolutionOptions = {
   components?: ContractComponents;
 };
 
-const getForcedGameType = (): GameType | null => {
-  const forcedGameType = env.VITE_PUBLIC_FORCE_GAME_MODE_ID;
-  if (!forcedGameType) {
-    return null;
-  }
-
-  return forcedGameType;
-};
-
 const resolveGameTypeFromComponents = (components: ContractComponents): GameType => {
   const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-  return worldConfig?.blitz_mode_on ? "blitz" : "eternum";
+  return resolveGameModeFromBlitzFlag(worldConfig?.blitz_mode_on) === "blitz" ? "blitz" : "eternum";
 };
 
 const resolveGameType = (options?: ConfigResolutionOptions): GameType => {
   if (options?.gameType) {
     return options.gameType;
-  }
-
-  const forcedGameType = getForcedGameType();
-  if (forcedGameType) {
-    return forcedGameType;
   }
 
   if (options?.components) {

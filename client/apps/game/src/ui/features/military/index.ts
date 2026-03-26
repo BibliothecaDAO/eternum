@@ -15,7 +15,3 @@ export { Military } from "./military";
 
 // Utils - Used by other features
 export { formatBiomeBonus, formatTypeAndBonuses, getStaminaDisplay } from "./battle/combat-utils";
-
-// Army Components
-export { CooldownTimer, type DefenseTroop } from "./components/structure-defence";
-export { TroopChip } from "./components/troop-chip";

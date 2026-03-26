@@ -5,7 +5,7 @@ const DEFAULT_LIMIT = 20;
 const REGISTERED_POINTS_PRECISION = 1_000_000;
 const SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS = 10_000;
 
-export interface PlayerLeaderboardData {
+interface PlayerLeaderboardData {
   rank: number;
   address: string;
   displayName: string | null;
