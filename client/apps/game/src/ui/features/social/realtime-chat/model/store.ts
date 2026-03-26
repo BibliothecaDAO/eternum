@@ -565,8 +565,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       if (shouldIncrement) {
         AudioManager.getInstance().play("ui.msg_receive");
         const { onlinePlayers } = get();
-        const senderName = onlinePlayers[normalizedMessage.senderId]?.displayName
-          ?? normalizedMessage.senderId.slice(0, 8);
+        const senderName =
+          onlinePlayers[normalizedMessage.senderId]?.displayName ?? normalizedMessage.senderId.slice(0, 8);
         const preview = normalizedMessage.content.slice(0, 60);
         toast(`${senderName}: ${preview}`);
       }
