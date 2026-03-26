@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-26",
+    title: "Realm Upgrade Sync Lock",
+    description:
+      "Realm upgrade buttons now stay pending until the transaction fails or the synced realm level catches up, avoiding duplicate upgrade clicks while backend data is still refreshing.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-26",
     title: "Passive Army Stamina Refresh",
     description:
       "Army stamina shown above units now keeps updating after chain-time corrections instead of waiting for another army action to refresh the display.",

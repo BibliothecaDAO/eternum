@@ -1,6 +1,11 @@
-import { useCallback, useMemo } from "react";
-
+import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import {
+  type RealmUpgradeAction,
+  type RealmUpgradeActionStatus,
+  useRealmUpgradeStore,
+} from "@/hooks/store/use-realm-upgrade-store";
+import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import {
   configManager,
   divideByPrecision,
@@ -11,6 +16,16 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, getLevelName } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
+import { useCallback, useEffect, useMemo } from "react";
+import { toast } from "sonner";
+
+const REALM_UPGRADE_SYNC_TIMEOUT_MS = 30_000;
+const REALM_UPGRADE_SYNC_POLL_INTERVAL_MS = 1_000;
+
+type LiveRealmInfo = NonNullable<ReturnType<typeof getRealmInfo>>;
+type RealmUpgradeSyncTarget = Parameters<typeof getStructuresDataFromTorii>[2][number];
+type RealmUpgradeWaitProvider = { waitForTransactionWithCheck?: (txHash: string) => Promise<unknown> };
+type RealmUpgradeWaitAccount = { waitForTransaction?: (txHash: string) => Promise<unknown> };
 
 interface RawUpgradeCost {
   resource: number;
@@ -35,27 +50,135 @@ interface StructureUpgradeResult {
   missingRequirements: UpgradeRequirement[];
   isOwner: boolean;
   isMaxLevel: boolean;
+  upgradeActionState: RealmUpgradeActionStatus;
+  isUpgradeLoading: boolean;
+  isUpgradeLocked: boolean;
   handleUpgrade: () => Promise<void>;
 }
 
+const readLiveRealmInfo = (realmEntity: unknown, components: unknown): LiveRealmInfo | null => {
+  if (!realmEntity) {
+    return null;
+  }
+
+  return getRealmInfo(realmEntity as never, components as never) ?? null;
+};
+
+const buildRealmUpgradeSyncTarget = (structureInfo: LiveRealmInfo): RealmUpgradeSyncTarget => ({
+  entityId: structureInfo.entityId,
+  position: {
+    col: structureInfo.position.x,
+    row: structureInfo.position.y,
+  },
+});
+
+const hasRealmReachedExpectedLevel = ({
+  realmEntity,
+  components,
+  expectedLevel,
+}: {
+  realmEntity: unknown;
+  components: unknown;
+  expectedLevel: number;
+}) => {
+  const liveRealmInfo = readLiveRealmInfo(realmEntity, components);
+  return (liveRealmInfo?.level ?? 0) >= expectedLevel;
+};
+
+const waitForRealmUpgradePollInterval = async () => {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, REALM_UPGRADE_SYNC_POLL_INTERVAL_MS);
+  });
+};
+
+const syncRealmStructureIfPossible = async ({
+  toriiClient,
+  contractComponents,
+  syncTarget,
+}: {
+  toriiClient: Parameters<typeof getStructuresDataFromTorii>[0] | null | undefined;
+  contractComponents: Parameters<typeof getStructuresDataFromTorii>[1] | null | undefined;
+  syncTarget: RealmUpgradeSyncTarget;
+}) => {
+  if (!toriiClient || !contractComponents) {
+    return;
+  }
+
+  try {
+    await getStructuresDataFromTorii(toriiClient, contractComponents, [syncTarget]);
+  } catch (error) {
+    console.error("[realm-upgrade] Failed to refresh realm structure data", error);
+  }
+};
+
+const waitForRealmUpgradeSync = async ({
+  realmEntity,
+  components,
+  expectedLevel,
+  syncTarget,
+  toriiClient,
+  contractComponents,
+}: {
+  realmEntity: unknown;
+  components: unknown;
+  expectedLevel: number;
+  syncTarget: RealmUpgradeSyncTarget;
+  toriiClient: Parameters<typeof getStructuresDataFromTorii>[0] | null | undefined;
+  contractComponents: Parameters<typeof getStructuresDataFromTorii>[1] | null | undefined;
+}) => {
+  const maxAttempts = Math.ceil(REALM_UPGRADE_SYNC_TIMEOUT_MS / REALM_UPGRADE_SYNC_POLL_INTERVAL_MS);
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (hasRealmReachedExpectedLevel({ realmEntity, components, expectedLevel })) {
+      return true;
+    }
+
+    await syncRealmStructureIfPossible({ toriiClient, contractComponents, syncTarget });
+
+    if (hasRealmReachedExpectedLevel({ realmEntity, components, expectedLevel })) {
+      return true;
+    }
+
+    if (attempt < maxAttempts - 1) {
+      await waitForRealmUpgradePollInterval();
+    }
+  }
+
+  return hasRealmReachedExpectedLevel({ realmEntity, components, expectedLevel });
+};
+
+const resolveUpgradeActionState = (pendingUpgrade: RealmUpgradeAction | null) => {
+  return pendingUpgrade?.status ?? "idle";
+};
+
+const isRealmUpgradeLoadingState = (upgradeActionState: RealmUpgradeActionStatus) => {
+  return upgradeActionState === "submitting" || upgradeActionState === "confirming" || upgradeActionState === "syncing";
+};
+
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
-  const dojo = useDojo();
+  const { setup, account, network } = useDojo();
   const { currentDefaultTick } = useBlockTimestamp();
+  const pendingUpgrade = useRealmUpgradeStore((state) =>
+    structureEntityId ? (state.upgradesByRealm[structureEntityId] ?? null) : null,
+  );
+  const startUpgrade = useRealmUpgradeStore((state) => state.startUpgrade);
+  const setUpgradeStatus = useRealmUpgradeStore((state) => state.setUpgradeStatus);
+  const clearUpgrade = useRealmUpgradeStore((state) => state.clearUpgrade);
 
   const realmEntity = useMemo(
     () => (structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : null),
     [structureEntityId],
   );
 
-  const liveStructure = useComponentValue(dojo.setup.components.Structure, realmEntity as any);
-  const liveStructureBuildings = useComponentValue(dojo.setup.components.StructureBuildings, realmEntity as any);
-  const liveResources = useComponentValue(dojo.setup.components.Resource, realmEntity as any);
+  const liveStructure = useComponentValue(setup.components.Structure, realmEntity as any);
+  const liveStructureBuildings = useComponentValue(setup.components.StructureBuildings, realmEntity as any);
+  const liveResources = useComponentValue(setup.components.Resource, realmEntity as any);
 
   const structureInfo = useMemo(() => {
     if (!structureEntityId || !realmEntity || !liveStructure) return null;
 
-    return getRealmInfo(realmEntity, dojo.setup.components);
-  }, [structureEntityId, realmEntity, dojo.setup.components, liveStructure, liveStructureBuildings, liveResources]);
+    return readLiveRealmInfo(realmEntity, setup.components);
+  }, [structureEntityId, realmEntity, liveStructure, liveStructureBuildings, liveResources, setup.components]);
 
   const nextLevel = useMemo(() => {
     if (!structureInfo) return null;
@@ -74,7 +197,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
 
     return rawCosts.map((cost) => {
       try {
-        const balance = getBalance(structureEntityId, cost.resource, currentDefaultTick, dojo.setup.components);
+        const balance = getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.components);
         // Guard against Infinity or NaN values that can cause BigInt conversion errors
         const rawBalance = balance.balance;
         const safeBalance = Number.isFinite(rawBalance) ? rawBalance : 0;
@@ -97,7 +220,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
         };
       }
     });
-  }, [structureInfo, nextLevel, rawCosts, structureEntityId, currentDefaultTick, dojo.setup.components, liveResources]);
+  }, [currentDefaultTick, liveResources, nextLevel, rawCosts, setup.components, structureEntityId, structureInfo]);
 
   const { canUpgrade, upgradeProgress, missingRequirements } = useMemo(() => {
     if (!structureInfo || !nextLevel) {
@@ -127,18 +250,96 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     };
   }, [requirements, structureInfo, nextLevel]);
 
-  const handleUpgrade = useCallback(async () => {
-    if (!structureInfo) return;
+  const upgradeActionState = resolveUpgradeActionState(pendingUpgrade);
+  const isUpgradeLoading = isRealmUpgradeLoadingState(upgradeActionState);
+  const isUpgradeLocked = upgradeActionState !== "idle";
 
-    await dojo.setup.systemCalls.upgrade_realm({
-      signer: dojo.account.account,
-      realm_entity_id: structureInfo.entityId,
-    });
-  }, [dojo.account.account, dojo.setup.systemCalls, structureInfo]);
+  useEffect(() => {
+    if (!structureInfo || !pendingUpgrade) {
+      return;
+    }
+
+    if (structureInfo.level >= pendingUpgrade.expectedLevel) {
+      clearUpgrade(structureInfo.entityId);
+    }
+  }, [clearUpgrade, pendingUpgrade, structureInfo]);
+
+  const handleUpgrade = useCallback(async () => {
+    if (!structureInfo || !nextLevel) {
+      return;
+    }
+
+    const existingUpgrade = useRealmUpgradeStore.getState().getUpgrade(structureInfo.entityId);
+    if (existingUpgrade) {
+      return;
+    }
+
+    const syncTarget = buildRealmUpgradeSyncTarget(structureInfo);
+    const toriiComponents =
+      (network.contractComponents as Parameters<typeof getStructuresDataFromTorii>[1] | undefined) ?? null;
+
+    startUpgrade(structureInfo.entityId, nextLevel);
+
+    try {
+      const upgradeResult = await setup.systemCalls.upgrade_realm({
+        signer: account.account,
+        realm_entity_id: structureInfo.entityId,
+      });
+
+      const txHash = extractTransactionHash(upgradeResult);
+      if (!txHash) {
+        throw new Error("Realm upgrade transaction did not return a transaction hash.");
+      }
+
+      setUpgradeStatus(structureInfo.entityId, "confirming");
+
+      await waitForTransactionConfirmation({
+        txHash,
+        provider: network.provider as RealmUpgradeWaitProvider,
+        account: account.account as RealmUpgradeWaitAccount,
+        label: "realm upgrade",
+      });
+
+      setUpgradeStatus(structureInfo.entityId, "syncing");
+
+      const synced = await waitForRealmUpgradeSync({
+        realmEntity,
+        components: setup.components,
+        expectedLevel: nextLevel,
+        syncTarget,
+        toriiClient: network.toriiClient,
+        contractComponents: toriiComponents,
+      });
+
+      if (synced) {
+        clearUpgrade(structureInfo.entityId);
+        return;
+      }
+
+      setUpgradeStatus(structureInfo.entityId, "syncTimeout");
+      toast.error("Realm upgrade confirmed. Waiting for synced realm data before enabling the next upgrade.");
+    } catch (error) {
+      clearUpgrade(structureInfo.entityId);
+      throw error;
+    }
+  }, [
+    account.account,
+    clearUpgrade,
+    network.contractComponents,
+    network.provider,
+    network.toriiClient,
+    nextLevel,
+    realmEntity,
+    setUpgradeStatus,
+    setup.components,
+    setup.systemCalls,
+    startUpgrade,
+    structureInfo,
+  ]);
 
   if (!structureInfo) return null;
 
-  const isOwner = structureInfo.owner === ContractAddress(dojo.account.account.address);
+  const isOwner = structureInfo.owner === ContractAddress(account.account.address);
 
   return {
     currentLevel: structureInfo.level,
@@ -151,6 +352,9 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     missingRequirements,
     isOwner,
     isMaxLevel: nextLevel === null,
+    upgradeActionState,
+    isUpgradeLoading,
+    isUpgradeLocked,
     handleUpgrade,
   };
 };
