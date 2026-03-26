@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useDojo } from "@bibliothecadao/react";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
   calculateDonkeysNeeded,
   configManager,
@@ -11,25 +12,13 @@ import {
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { ClientComponents, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/structure-capabilities";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 
 const toRaw = (amountHuman: number) => BigInt(Math.floor(amountHuman * RESOURCE_PRECISION));
-
-const getStructureCategory = (
-  components: ClientComponents | null | undefined,
-  entityId: number,
-): StructureType | undefined => {
-  if (!components || !entityId) return undefined;
-  try {
-    const value = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-    return value?.category as StructureType | undefined;
-  } catch {
-    return undefined;
-  }
-};
 
 const normalizeOwnerValue = (owner: unknown): string | null => {
   if (typeof owner === "string") return owner.trim().toLowerCase();
@@ -59,6 +48,7 @@ export const useTransferAutomationRunner = () => {
     setup: { components, systemCalls },
     account: { account },
   } = useDojo();
+  const mode = useGameModeConfig();
 
   const entries = useTransferAutomationStore((s) => s.entries);
   const update = useTransferAutomationStore((s) => s.update);
@@ -184,13 +174,21 @@ export const useTransferAutomationRunner = () => {
               continue;
             }
 
-            // Military rule: if any selected is military, enforce Realm -> Realm
+            // Military transfers follow the active game mode's structure inventory rules.
             const hasMilitary = entry.resourceIds.some((rid) => isMilitaryResource(rid));
             if (hasMilitary) {
-              const sourceCat = getStructureCategory(components, sourceId);
-              const destCat = getStructureCategory(components, destId);
-              if (sourceCat !== StructureType.Realm || destCat !== StructureType.Realm) {
-                toast.warning("Scheduled transfer skipped: troops can only move Realm ↔ Realm.");
+              const validTransfer = canTransferMilitaryInventoryBetweenStructureIds({
+                components,
+                modeId: mode.id,
+                sourceEntityId: sourceId,
+                destinationEntityId: destId,
+              });
+              if (!validTransfer) {
+                toast.warning(
+                  mode.id === "blitz"
+                    ? "Scheduled transfer skipped: troops can only move between your owned structures in Blitz."
+                    : "Scheduled transfer skipped: troops can only move Realm ↔ Realm.",
+                );
                 scheduleNext(entry.id, nowMs);
                 continue;
               }
@@ -266,7 +264,17 @@ export const useTransferAutomationRunner = () => {
         scheduleNextCheck();
       }
     };
-  }, [components, account, isSeasonOver, scheduleNext, stopTransferAutomation, update, systemCalls, scheduleNextCheck]);
+  }, [
+    components,
+    account,
+    isSeasonOver,
+    mode.id,
+    scheduleNext,
+    stopTransferAutomation,
+    update,
+    systemCalls,
+    scheduleNextCheck,
+  ]);
 
   useEffect(() => {
     scheduleNextCheck();

@@ -69,7 +69,9 @@ export const SelectResources = ({
       {!canTransferMilitary && (
         <div className="bg-red-500/20 border border-red-500/40 p-3 rounded-md mb-4">
           <p className="text-red-400 text-sm">
-            Military resources can only be transferred between a village and its connected realm.
+            {mode.id === "blitz"
+              ? "Troops can only be transferred between your owned structures in Blitz."
+              : "Military resources can only be transferred between a village and its connected realm."}
           </p>
         </div>
       )}
