@@ -1,0 +1,18 @@
+{
+  "network": "slot",
+  "updatedAt": "2026-03-26T05:15:31.456Z",
+  "pairClassHash": "0x14027c588285c5c5a0f74dd26a7e29e63aacb2a15ed4ee88bf2e36c3ab94273",
+  "factoryClassHash": "0x6d527476393058203238520df01ce8527b919cbaf898152db448cac79ddb4a9",
+  "routerClassHash": "0x629c6680cf8d7efd2eff742007a38fb6f2385c5ac6c4796256e5822c43140c7",
+  "factory": "0x2960729fa2f980ed8b2be61eb7b5df93aa738914295cb49b5b07f05794a1615",
+  "defaultAdmin": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+  "deployerAccountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+  "factoryFeeAmountNumeratorAssumeDivIs1000": "0x3e5",
+  "factoryFeeTo": "0x0",
+  "pairDefaultAdmin": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+  "pairUpgrader": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+  "upgrader": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+  "router": "0xc03f840d42110bffd70f43f793c0f0297c719b67edbb2df15e2a4af254d93b",
+  "routerDefaultAdmin": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+  "routerUpgrader": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+}

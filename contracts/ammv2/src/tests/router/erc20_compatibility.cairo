@@ -101,7 +101,9 @@ fn test_swap_exact_tokens_for_tokens_accepts_camel_balance_and_transfer_from_tok
     let snake_out = *amounts.at(1);
 
     assert!(camel_in == 2 * E18, "swap should spend the quoted camel token input");
-    assert!(camel_before - camel_balance_of(setup.camel_token, BOB()) == camel_in, "camel spend should match the quote");
+    assert!(
+        camel_before - camel_balance_of(setup.camel_token, BOB()) == camel_in, "camel spend should match the quote",
+    );
     assert!(
         IERC20Dispatcher { contract_address: setup.snake_token }.balance_of(BOB()) - snake_before == snake_out,
         "snake receipt should match the router output",
@@ -110,6 +112,10 @@ fn test_swap_exact_tokens_for_tokens_accepts_camel_balance_and_transfer_from_tok
     let (camel_reserve_after, snake_reserve_after) = pair_reserves_for_tokens(
         setup.router, setup.pair, setup.camel_token, setup.snake_token,
     );
-    assert!(camel_reserve_after == camel_reserve_before + camel_in, "camel reserve should increase by the input amount");
-    assert!(snake_reserve_after == snake_reserve_before - snake_out, "snake reserve should decrease by the output amount");
+    assert!(
+        camel_reserve_after == camel_reserve_before + camel_in, "camel reserve should increase by the input amount",
+    );
+    assert!(
+        snake_reserve_after == snake_reserve_before - snake_out, "snake reserve should decrease by the output amount",
+    );
 }

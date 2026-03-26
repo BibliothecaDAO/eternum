@@ -1,4 +1,4 @@
-import { declareContract, deployContract, upgradeContract } from "./starknet.js";
+import { declareContract, deployContract, upgradeContracts } from "./starknet.js";
 import { getContractArtifactPaths } from "./artifacts.js";
 import { mergeJsonFile, readJsonFileIfExists } from "./files.js";
 
@@ -409,14 +409,11 @@ async function runUpgradeTargets({ manifest, runtimeConfig, state, upgradeIds })
           };
         });
 
-    for (const upgradeOperation of upgradeOperations) {
-      await upgradeContract({
-        accountAddress: runtimeConfig.accountAddress,
-        contractAddress: upgradeOperation.contractAddress,
-        label: upgradeTarget.label,
-        newClassHash: upgradeOperation.newClassHash,
-      });
-    }
+    await upgradeContracts({
+      accountAddress: runtimeConfig.accountAddress,
+      label: upgradeTarget.label,
+      upgradeOperations,
+    });
 
     const stateWithHook = await applyTargetHook({
       hook: upgradeTarget.afterUpgrade,

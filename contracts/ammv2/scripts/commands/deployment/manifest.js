@@ -202,7 +202,15 @@ function resolveConfiguredAdminAddresses(contractName) {
   );
 }
 
-function resolveConfiguredUpgradeOperations(contractName) {
+function resolveUpgradeClassHash(configuredValue, state, label) {
+  if (typeof configuredValue === "string" && configuredValue.startsWith("$")) {
+    return requireStateValue(state, configuredValue.slice(1), label);
+  }
+
+  return requireBigIntConfigValue(configuredValue, label);
+}
+
+function resolveConfiguredUpgradeOperations(contractName, state) {
   const configuredOperations = getContractUpgradeConfig(contractName);
 
   if (!Array.isArray(configuredOperations)) {
@@ -214,8 +222,9 @@ function resolveConfiguredUpgradeOperations(contractName) {
       configuredOperation.address,
       `upgrades.${contractName}[${index}].address`,
     ),
-    newClassHash: requireBigIntConfigValue(
+    newClassHash: resolveUpgradeClassHash(
       configuredOperation.toClassHash,
+      state,
       `upgrades.${contractName}[${index}].toClassHash`,
     ),
   }));
@@ -700,19 +709,22 @@ export const contractPackageManifest = {
   targetDir: path.join(packageRoot, "target", "release"),
   upgrades: [
     {
+      declarationIds: ["pair"],
       id: "pair",
       label: "RealmsSwap Pair",
-      resolveUpgradeOperations: () => resolveConfiguredUpgradeOperations("pair"),
+      resolveUpgradeOperations: ({ state }) => resolveConfiguredUpgradeOperations("pair", state),
     },
     {
+      declarationIds: ["factory"],
       id: "factory",
       label: "RealmsSwap Factory",
-      resolveUpgradeOperations: () => resolveConfiguredUpgradeOperations("factory"),
+      resolveUpgradeOperations: ({ state }) => resolveConfiguredUpgradeOperations("factory", state),
     },
     {
+      declarationIds: ["router"],
       id: "router",
       label: "RealmsSwap Router",
-      resolveUpgradeOperations: () => resolveConfiguredUpgradeOperations("router"),
+      resolveUpgradeOperations: ({ state }) => resolveConfiguredUpgradeOperations("router", state),
     },
   ],
 };

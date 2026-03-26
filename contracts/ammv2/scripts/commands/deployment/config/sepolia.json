@@ -85,8 +85,18 @@
     }
   },
   "upgrades": {
-    "pair": [],
+    "pair": [
+      {
+        "address": "",
+        "toClassHash": "$pairClassHash"
+      }
+    ],
     "factory": [],
-    "router": []
+    "router": [
+      {
+        "address": "",
+        "toClassHash": "$routerClassHash"
+      }
+    ]
   }
 }

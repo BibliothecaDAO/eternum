@@ -5,10 +5,7 @@ pub trait IMockCamelCompatibleERC20<TState> {
     fn approve(ref self: TState, spender: starknet::ContractAddress, amount: u256) -> bool;
     fn balanceOf(self: @TState, account: starknet::ContractAddress) -> u256;
     fn transferFrom(
-        ref self: TState,
-        sender: starknet::ContractAddress,
-        recipient: starknet::ContractAddress,
-        amount: u256,
+        ref self: TState, sender: starknet::ContractAddress, recipient: starknet::ContractAddress, amount: u256,
     ) -> bool;
 }
 

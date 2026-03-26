@@ -1,0 +1,321 @@
+{
+  "network": "sepolia",
+  "pools": {
+    "stone": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x1ab92ec17d328babb2fd5c481f07fc113cf90e9853be4e0de65a1924818c5a6",
+      "poolId": "stone",
+      "resourceId": 1,
+      "resourceKey": "STONE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x27dbfe27fc79ed10bc7e8c0889dd01d2b5e9d1c4e471a32d447b156f0a6fea1"
+    },
+    "coal": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x728986474399773f13aad61e4957992e44867be8c55f84939c9bca282a8226c",
+      "poolId": "coal",
+      "resourceId": 2,
+      "resourceKey": "COAL",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x68540b2989cb86c9f73f2615c41a53818598a4ee29731403dad2fcd3974e005"
+    },
+    "wood": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x58d279754bd3e199b3b7640734fe195dceb42e57b7ce9e627b60843305f634",
+      "poolId": "wood",
+      "resourceId": 3,
+      "resourceKey": "WOOD",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x4a4c05882e134e9887d242559a0dad369bd66cf6d0dca1e281aa5e1f2237da7"
+    },
+    "copper": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x1e719a60731fbcae3579cb3d75fc261d534ada8c165b2e2767603e2cdfb5410",
+      "poolId": "copper",
+      "resourceId": 4,
+      "resourceKey": "COPPER",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x7145a651518ba8d3fba6fd32f26ffc7fed82c4adc132e2fdb870eedf3bb7388"
+    },
+    "ironwood": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x32cc71586402e2ebb5ad0e0aa650456fb587767b02702e220991a677d3e8944",
+      "poolId": "ironwood",
+      "resourceId": 5,
+      "resourceKey": "IRONWOOD",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x135fcb4f92d3de5db0e3066423b4cf0ba8ca34d0396b16bbfb900c6f44f4aa1"
+    },
+    "obsidian": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x621260963aef7ad74bf412bb10364505fea3d60b35ec1ab0fee2bcca8d9c1dc",
+      "poolId": "obsidian",
+      "resourceId": 6,
+      "resourceKey": "OBSIDIAN",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0xe859b7b07540f28180e82db0719504d20fc8992dfe60018376f4c2e2bf23e"
+    },
+    "gold": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x6b3e2ce3c3412dc48a12cc3ad146e32344b61f56c1159affe2c7176c10d76d5",
+      "poolId": "gold",
+      "resourceId": 7,
+      "resourceKey": "GOLD",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x200f431ab1de40a831c8f34f49f5639784f209516dfac2de194a313752f0577"
+    },
+    "silver": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x7734857f1c668aee79b68b9cfa7575cfb340496769bc173565f1ad34ffa5b3a",
+      "poolId": "silver",
+      "resourceId": 8,
+      "resourceKey": "SILVER",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x6ffefcf8fd3be79579527ff98a383fce055433bd5c3bf0c58b90b492720e9a2"
+    },
+    "mithral": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x2b796400e5ddf2d67630dfb2e26e846181fc880b4330d153f35ca7256625a24",
+      "poolId": "mithral",
+      "resourceId": 9,
+      "resourceKey": "MITHRAL",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x30128c654d9e45e7f0778fd8db8901a9f0730e0f1c801443d3a5dd9dd3d1fe"
+    },
+    "alchemical-silver": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x79520c56f6b5f0774694659b6db4ca6df0ce5a6be5bd18dec5b812685e512ac",
+      "poolId": "alchemical-silver",
+      "resourceId": 10,
+      "resourceKey": "ALCHEMICALSILVER",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x5da7db4f14c4383b4ff8fe987373b30f354c2691f1f7981520fef901744803"
+    },
+    "cold-iron": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x2270216bef569d835cd90b657cb8f237a2e628f7568da2f2996325f6d3b1374",
+      "poolId": "cold-iron",
+      "resourceId": 11,
+      "resourceKey": "COLDIRON",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x6d230da2e30fec6316d00d667af5e5e1f57e75fe88a648e77fd726867a3ba4e"
+    },
+    "deep-crystal": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x66448a78893f885468f4ded06ca0317064f7a44fecd35318e651f66dc1ca54f",
+      "poolId": "deep-crystal",
+      "resourceId": 12,
+      "resourceKey": "DEEPCRYSTAL",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x3f8036b429ca0e87ad49b753e842f9a6d5cd9b4d9ae2bcac39f31fd09442142"
+    },
+    "ruby": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x7bfc0865a3cc11b3145a30853541c9441f5ec4037d068708c7b591139d6a6e9",
+      "poolId": "ruby",
+      "resourceId": 13,
+      "resourceKey": "RUBY",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x1f9134e263e2eeaea0d3ec61463f7cfab93f801357ebc22cf549471e006cad4"
+    },
+    "diamonds": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0xc030369c0df971391cdecb0124aa29c267898fc9512230d071a7b9d890c246",
+      "poolId": "diamonds",
+      "resourceId": 14,
+      "resourceKey": "DIAMONDS",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x3c30c6fac6d13c81df192e96e0106f3d96bb6124b1633de16a8e9f1d3007b04"
+    },
+    "hartwood": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x12be96785183b8a51b6eb10d6775303e2b2b8a3c68bccef2917df98589eb191",
+      "poolId": "hartwood",
+      "resourceId": 15,
+      "resourceKey": "HARTWOOD",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x6871164e7c3c0388b433c4327804f8c0f49a89e550ee7cb05c365a8ead425b8"
+    },
+    "ignium": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x49a30e04275fb960564b986235eff8891ca8e60dce676ca14d702a481ce9949",
+      "poolId": "ignium",
+      "resourceId": 16,
+      "resourceKey": "IGNIUM",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x5dded871841041de02f49959847e28b697b5c8a7694b76bf536794f4c579096"
+    },
+    "twilight-quartz": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x5bb541eca852e2f5c04a3a11092361ba6be5b3ab446f23db57cb1f4ecfd11c2",
+      "poolId": "twilight-quartz",
+      "resourceId": 17,
+      "resourceKey": "TWILIGHTQUARTZ",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x1b2b5e5ce9e683febd51eac131d19f41d05febdd1ef965df3ec29bcd7b06af4"
+    },
+    "true-ice": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x3fc0f13deb71e74c8b31fa9cacd1441facb59d01886d3b53ecd4c338f9d873f",
+      "poolId": "true-ice",
+      "resourceId": 18,
+      "resourceKey": "TRUEICE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x451392b77ee0f2acd1fdd6e9e9b3fda683c2b98e25dcae9d83cb4db4590dc11"
+    },
+    "adamantine": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x6315414258ecc95fa1b9e9a16656b8054bee2831cf6f219f2f4f8953248d8af",
+      "poolId": "adamantine",
+      "resourceId": 19,
+      "resourceKey": "ADAMANTINE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x66b3ee1b6654250c92c21c1778be501b4916e3565cdf5f0fcd447a23f4a3e53"
+    },
+    "sapphire": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x3a999c10f762b5a9eda2c2ef25547981d5b2ee3607c9d76a3553cfd04ea556a",
+      "poolId": "sapphire",
+      "resourceId": 20,
+      "resourceKey": "SAPPHIRE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x2da88199cc10602127f0da07bd7efd9be07cd5227afe73cc193e78db5848635"
+    },
+    "ethereal-silica": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x3fd80e06894a8507fc41b57eeb7f25929e45f7d1323e8fa648845c1c78a59c0",
+      "poolId": "ethereal-silica",
+      "resourceId": 21,
+      "resourceKey": "ETHEREALSILICA",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x46493bae2179fed9cdfb0164d5de0420c2a71a763c0acc21888daa8f0fc4894"
+    },
+    "dragonhide": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x4cb478a241a7dc5d588ba76efd90018cf03d7ba03779cfd1acec51c7047c37e",
+      "poolId": "dragonhide",
+      "resourceId": 22,
+      "resourceKey": "DRAGONHIDE",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x6828ed3e046a2915f3c933e6cef06a01aa01d1c12dcbdb71b2c21924d6332d3"
+    },
+    "ancient-fragment": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0xd3c1a79a3bfb7f3bb14fb3e7aaf7e60304a96c8157fa495ca1b91400ffe666",
+      "poolId": "ancient-fragment",
+      "resourceId": 24,
+      "resourceKey": "ANCIENTFRAGMENT",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x12ae4d3be23585efc6ed8bff7db6113c85e5bc1bffe85bc07a0156a27e6f473"
+    },
+    "donkey": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x1a511c54cbba2b3b5ef53ccadbfbaf3d4e306d23df037c134003c9e9e7c7bd1",
+      "poolId": "donkey",
+      "resourceId": 25,
+      "resourceKey": "DONKEY",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x71751ee8b7e4a6bc93aa47fe6b993549142f316c85dd522fd2300c9b958aa23"
+    },
+    "knight": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x21ee9c7887ae57eda246165473bff9df9f63f7a2fe9356847e151a79509cd46",
+      "poolId": "knight",
+      "resourceId": 26,
+      "resourceKey": "KNIGHT",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x96e1f074f7eb66076ee2d4daa26974d8d4e9fcbe667eafa0b74a393852750f"
+    },
+    "knight-ii": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x4622e0ed27fbf62e3535950fcb37c9e3f3bc353e93779fb729bc88258c6fa81",
+      "poolId": "knight-ii",
+      "resourceId": 27,
+      "resourceKey": "KNIGHT2",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x437422f8b15719c0141568220801c0bc6b68115feb5ecd559f8ca329d9c2380"
+    },
+    "knight-iii": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x762902919b3adb3da67411b6b0ce3dd52283510afb9451e6170e4331585924b",
+      "poolId": "knight-iii",
+      "resourceId": 28,
+      "resourceKey": "KNIGHT3",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0xaef5d836a0d0b63b0ac2e6c422594834d66604c76cb82136f4de2132badd7f"
+    },
+    "crossbowman": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x23af7241b2b6e9ee11c5660278a22a7ab595f6825bb983bb235ffe983cb43b3",
+      "poolId": "crossbowman",
+      "resourceId": 29,
+      "resourceKey": "CROSSBOWMAN",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x1b79851c36e6246dc4a8a8ecbc23c5cac899d3c1ef95edea8b9f4344ace4fec"
+    },
+    "crossbowman-ii": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x76806cffbb904f0ec7575168b80ee0da9a1e008755e6aa4bfdd1b5348f02dbe",
+      "poolId": "crossbowman-ii",
+      "resourceId": 30,
+      "resourceKey": "CROSSBOWMAN2",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x27661f2a7a9733f710c920d926ab9770e7674e7ed5eaf772c9efefb9bcdcd1d"
+    },
+    "crossbowman-iii": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x2ac3124817a22a0caa2666e20e42db6116fb43a3b35c6d6345f04a97f858a5d",
+      "poolId": "crossbowman-iii",
+      "resourceId": 31,
+      "resourceKey": "CROSSBOWMAN3",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0xd55e3884e04c68c5423a1088b926034f2c105a5570590526a4a4eaba6ea6aa"
+    },
+    "paladin": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x9e09ad2cabd8becb49d6af4b43a48340ce87f0897936e64968d72e0e8a409b",
+      "poolId": "paladin",
+      "resourceId": 32,
+      "resourceKey": "PALADIN",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x3f3a408dab52b6ec375c3a63eedcdb5b8ac7b693515a541992feee49bc1516"
+    },
+    "paladin-ii": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x733119e931cbf38be8ae3e19adcf5b23a826a6452243783825f54b3247e0120",
+      "poolId": "paladin-ii",
+      "resourceId": 33,
+      "resourceKey": "PALADIN2",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x110831540430a5cca6a4907832161bb4b932a2ca4393fa2cbba66e82c6c77b2"
+    },
+    "paladin-iii": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x7a6ac125af5bd74d7255fc8897cb16b38b14bec96e66fd0709316358e9eec64",
+      "poolId": "paladin-iii",
+      "resourceId": 34,
+      "resourceKey": "PALADIN3",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x66f0e6a75c52f6aa4bcf3fc1a05867fc86a2f270487ae6549b6f3c926700ff2"
+    },
+    "wheat": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x1a061e268279c1c0647b9369a7d7d1c7871266a8bf00ed2ea325ce56f28eb4e",
+      "poolId": "wheat",
+      "resourceId": 35,
+      "resourceKey": "WHEAT",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x1baba18714aba42870dc249e53a5f707157142928c7d249e02be62f942aa2"
+    },
+    "fish": {
+      "factoryAddress": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+      "lpTokenAddress": "0x521f7e0ef8670fba4495cb3232ce72abd69b8dcb54f20957421883116836085",
+      "poolId": "fish",
+      "resourceId": 36,
+      "resourceKey": "FISH",
+      "tokenA": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+      "tokenB": "0x4fe5ab57b2f85dae411e63523102701912cbb95c63935d80f7e1eb188624077"
+    }
+  },
+  "updatedAt": "2026-03-26T06:49:51.854Z"
+}

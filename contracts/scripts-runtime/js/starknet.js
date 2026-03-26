@@ -175,3 +175,19 @@ export async function upgradeContract({ accountAddress, contractAddress, label, 
     label: `${label} upgrade`,
   });
 }
+
+export async function upgradeContracts({ accountAddress, label, upgradeOperations }) {
+  if (!Array.isArray(upgradeOperations) || upgradeOperations.length === 0) {
+    throw new Error("upgradeContracts requires at least one upgrade operation");
+  }
+
+  return executeContractCalls({
+    accountAddress,
+    calls: upgradeOperations.map((upgradeOperation) => ({
+      calldata: [upgradeOperation.newClassHash],
+      contractAddress: upgradeOperation.contractAddress,
+      entrypoint: "upgrade",
+    })),
+    label: `${label} upgrade multicall`,
+  });
+}

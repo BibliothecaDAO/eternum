@@ -1,16 +1,10 @@
-import fs from "node:fs";
 import path from "node:path";
 import { loadJsonConfigFile, requireAddressConfigValue } from "../../../../scripts-runtime/js/config.js";
 import { readJsonFileIfExists, writeJsonFile } from "../../../../scripts-runtime/js/files.js";
 import { printRuntimeStep, printRuntimeValue } from "../../../../scripts-runtime/js/output.js";
 import { getProvider } from "../../../../scripts-runtime/js/starknet.js";
 import { readNamedArgumentValue } from "../../support/command.js";
-
-export function ensureRequiredInputFile(filePath, description) {
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`${description} not found at ${filePath}`);
-  }
-}
+import { ensureRequiredInputFile } from "../../support/files.js";
 
 function resolvePositionalCreatePoolSelectors(args) {
   return args.filter((arg, index) => {
