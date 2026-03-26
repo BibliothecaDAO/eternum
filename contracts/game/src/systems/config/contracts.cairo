@@ -281,25 +281,29 @@ pub mod config_systems {
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
         AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BitcoinMineConfig, BlitzExplorationConfig,
-        BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig, BlitzRegistrationConfigImpl,
-        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, FaithConfig,
-        HyperstrtConstructConfig, HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
-        ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
-        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
-        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
-        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WorldConfig,
-        WorldConfigUtilImpl,
+        BlitzHypersSettlementConfigImpl, BlitzMapDistanceProfileImpl, BlitzRegistrationConfig,
+        BlitzRegistrationConfigImpl, BlitzSettlementConfig, BlitzSettlementConfigImpl, BuildingCategoryConfig,
+        BuildingConfig, CapacityConfig, FaithConfig, HyperstrtConstructConfig, HyperstructureConfig,
+        HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+        ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig,
+        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig,
+        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+        VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
+        WorldConfig, WorldConfigUtilImpl,
     };
     use crate::models::mmr::MMRConfig;
     use crate::models::name::AddressName;
     use crate::models::position::{CENTER_COL, CoordImpl};
     use crate::models::resource::production::building::BuildingCategory;
     use crate::models::resource::resource::{ResourceList, ResourceMinMaxList};
-    use crate::systems::utils::blitz_exploration::iBlitzExplorationRewardsImpl;
+    use crate::systems::utils::blitz_profile::iBlitzProfileImpl;
     use crate::utils::achievements::index::AchievementTrait;
 
     // Constuctor
+
+    fn resolve_blitz_base_distance(reward_profile_id: u8) -> u32 {
+        BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id).base_distance
+    }
 
     fn dojo_init(self: @ContractState) {
         // [Event] Emit all Trophy events
@@ -876,15 +880,17 @@ pub mod config_systems {
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
+            let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_exploration_config"),
+            );
+            let base_distance = resolve_blitz_base_distance(blitz_exploration_config.reward_profile_id);
 
             WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
 
             WorldConfigUtilImpl::set_member(
                 ref world,
                 selector!("blitz_settlement_config"),
-                BlitzSettlementConfigImpl::new(
-                    settlement_config.base_distance.into(), single_realm_mode, two_player_mode,
-                ),
+                BlitzSettlementConfigImpl::new(base_distance, single_realm_mode, two_player_mode),
             );
 
             WorldConfigUtilImpl::set_member(
@@ -945,10 +951,20 @@ pub mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            iBlitzExplorationRewardsImpl::assert_known_blitz_exploration_reward_profile_id(reward_profile_id);
+            iBlitzProfileImpl::assert_known_blitz_profile_id(reward_profile_id);
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_exploration_config"), BlitzExplorationConfig { reward_profile_id },
             );
+
+            let mut blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_settlement_config"),
+            );
+            if blitz_settlement_config.step.is_non_zero() {
+                blitz_settlement_config.base_distance = resolve_blitz_base_distance(reward_profile_id);
+                WorldConfigUtilImpl::set_member(
+                    ref world, selector!("blitz_settlement_config"), blitz_settlement_config,
+                );
+            }
         }
     }
 

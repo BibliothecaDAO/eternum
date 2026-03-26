@@ -100,6 +100,7 @@ pub mod season {
 pub mod utils {
     pub mod bitcoin_mine;
     pub mod blitz_exploration;
+    pub mod blitz_profile;
     pub mod bridge;
     pub mod camp;
     pub mod distance;
