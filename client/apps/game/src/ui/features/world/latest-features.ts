@@ -10,13 +10,6 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
-    title: "Army Strength Toggle",
-    description:
-      "Create Army now keeps deployment cap and strength details tucked behind a toggle by default, so the troop setup flow stays cleaner until you need the extra numbers.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:
       "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",
