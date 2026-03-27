@@ -6,7 +6,7 @@ import clsx from "clsx";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import Timer from "lucide-react/dist/esm/icons/timer";
 import { GuardStaminaBar } from "../guard-stamina-bar";
-import { TransferDirection } from "../help-container";
+import { TransferDirection } from "./transfer-direction";
 
 interface SlotTroopInfo {
   slot: number;

@@ -1,5 +1,6 @@
 import { getGameModeConfig } from "@/config/game-modes";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
@@ -9,6 +10,7 @@ import {
   createGuardArmyDisplay,
   createOwnerDisplayElement,
   createProductionDisplay,
+  updateIncomingTroopDisplay,
   updateDirectionIndicators,
   updateGuardArmyDisplay,
   updateProductionDisplay,
@@ -58,6 +60,7 @@ interface StructureLabelData extends LabelData {
   };
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
@@ -82,6 +85,7 @@ export interface StructureInfoCompat {
   };
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  incomingTroopArrivals?: IncomingTroopArrival[];
 }
 
 export const convertStructureInfo = (structure: StructureInfoCompat): StructureLabelData => {
@@ -147,6 +151,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       const guardArmiesDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
       contentContainer.appendChild(guardArmiesDisplay);
     }
+
+    updateIncomingTroopDisplay(contentContainer, data.incomingTroopArrivals);
 
     if (data.activeProductions && data.activeProductions.length > 0) {
       const productionsDisplay = createProductionDisplay(data.activeProductions, cameraView);
@@ -386,6 +392,10 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       });
 
       ownerDisplay.replaceWith(updatedOwnerDisplay);
+    }
+
+    if (contentContainer) {
+      updateIncomingTroopDisplay(contentContainer, data.incomingTroopArrivals);
     }
 
     // Update active productions display

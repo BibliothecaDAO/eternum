@@ -79,6 +79,7 @@ describe("Blitz balance profiles", () => {
     expect(profiledConfig.season.durationSeconds).toBe(3_600);
     expect(profiledConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(2);
     expect(profiledConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Labor]).toBe(2);
+    expect(profiledConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(3);
     expect(profiledConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
     expect(profiledConfig.realmUpgradeCosts[RealmLevels.Kingdom]?.[0]?.amount).toBe(720);
     expect(findStartingResourceAmount(profiledConfig.startingResources, ResourcesIds.Labor)).toBe(1_500);
@@ -110,10 +111,12 @@ describe("Blitz balance profiles", () => {
     const baseConfig = getConfigFromNetwork("slot", "blitz");
     const resolvedConfig = resolveBlitzConfigForDuration("slot", 45);
 
+    expect(baseConfig.troop.limit.mercenariesTroopUpperBound).toBe(1_600);
     expect(resolvedConfig.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
     expect(resolvedConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(
       baseConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood],
     );
+    expect(resolvedConfig.troop.limit.mercenariesTroopUpperBound).toBe(1_600);
     expect(resolvedConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(
       baseConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount,
     );

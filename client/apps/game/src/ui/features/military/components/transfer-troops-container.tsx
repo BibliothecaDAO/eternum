@@ -32,8 +32,9 @@ import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
-import { TransferDirection } from "./help-container";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
+import { TransferDirection } from "./transfer-troops/transfer-direction";
+import { BALANCE_TRANSFER_SLOT, getSameStructureTransferBlockReason } from "./transfer-troops/transfer-eligibility";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 
@@ -48,7 +49,7 @@ interface TransferTroopsContainerProps {
   canToggleDirection?: boolean;
 }
 
-const BALANCE_SLOT = "balance" as const;
+const BALANCE_SLOT = BALANCE_TRANSFER_SLOT;
 
 type GuardSelection = number | typeof BALANCE_SLOT | null;
 
@@ -153,6 +154,25 @@ export const TransferTroopsContainer = ({
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
   const targetExplorerConnectedStructure = targetEntityData?.explorerConnectedStructure?.structure;
+  const sameStructureBlockReason = useMemo(
+    () =>
+      getSameStructureTransferBlockReason({
+        transferDirection,
+        selectedEntityId,
+        targetEntityId,
+        selectedExplorerOwner: selectedExplorerTroops?.owner ?? null,
+        targetExplorerOwner: targetExplorerTroops?.owner ?? null,
+        guardSlot,
+      }),
+    [
+      guardSlot,
+      selectedEntityId,
+      selectedExplorerTroops?.owner,
+      targetEntityId,
+      targetExplorerTroops?.owner,
+      transferDirection,
+    ],
+  );
 
   const troopCapacityLimit = useMemo(() => {
     const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
@@ -764,6 +784,7 @@ export const TransferTroopsContainer = ({
       { col: targetHex.x, row: targetHex.y },
     );
     if (direction === null) return;
+    if (sameStructureBlockReason) return;
 
     try {
       setLoading(true);
@@ -887,11 +908,7 @@ export const TransferTroopsContainer = ({
       return true;
     }
 
-    if (
-      transferDirection === TransferDirection.StructureToExplorer &&
-      guardSlot === BALANCE_SLOT &&
-      !isStructureOwnerOfExplorer
-    ) {
+    if (sameStructureBlockReason) {
       return true;
     }
 
@@ -1017,12 +1034,8 @@ export const TransferTroopsContainer = ({
       return "Please select a guard slot";
     }
 
-    if (
-      transferDirection === TransferDirection.StructureToExplorer &&
-      guardSlot === BALANCE_SLOT &&
-      !isStructureOwnerOfExplorer
-    ) {
-      return "Cannot use structure balance: Explorer is not owned by this structure";
+    if (sameStructureBlockReason) {
+      return sameStructureBlockReason;
     }
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
