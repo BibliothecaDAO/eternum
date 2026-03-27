@@ -501,20 +501,8 @@ export class StructureManager {
 
     // Use the centralized label transition function
     applyLabelTransitions(this.entityIdLabels, view);
-    this.refreshStructureLabelsForCameraView();
     this.updateShadowFlags();
   };
-
-  private refreshStructureLabelsForCameraView(): void {
-    this.entityIdLabels.forEach((label, entityId) => {
-      const structure = this.structures.getStructureByEntityId(entityId);
-      if (!structure) {
-        return;
-      }
-
-      updateStructureLabel(label.element, structure, this.currentCameraView);
-    });
-  }
 
   private updateShadowFlags(): void {
     const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;

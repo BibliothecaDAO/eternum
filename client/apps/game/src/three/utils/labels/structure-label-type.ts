@@ -152,7 +152,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       contentContainer.appendChild(guardArmiesDisplay);
     }
 
-    updateIncomingTroopDisplay(contentContainer, data.incomingTroopArrivals, inputView);
+    updateIncomingTroopDisplay(contentContainer, data.incomingTroopArrivals);
 
     if (data.activeProductions && data.activeProductions.length > 0) {
       const productionsDisplay = createProductionDisplay(data.activeProductions, cameraView);
@@ -395,7 +395,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     }
 
     if (contentContainer) {
-      updateIncomingTroopDisplay(contentContainer, data.incomingTroopArrivals, inputView);
+      updateIncomingTroopDisplay(contentContainer, data.incomingTroopArrivals);
     }
 
     // Update active productions display
