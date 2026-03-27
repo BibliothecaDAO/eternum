@@ -41,23 +41,6 @@ const SLOT_RADIUS = settlementPlannerHexRadius;
 const REALM_MARKER_RADIUS = 6;
 const VILLAGE_SLOT_RADIUS = 4.5;
 
-const getPlannerAnchorPoint = (target: SettlementPlannerTarget | null) => {
-  if (!target) return null;
-
-  switch (target.type) {
-    case "realm_slot":
-      return { x: target.slot.pixelX, y: target.slot.pixelY };
-    case "village_slot":
-      return { x: target.slot.pixelX, y: target.slot.pixelY };
-    case "realm":
-      return { x: target.realm.pixelX, y: target.realm.pixelY };
-    case "occupied_target":
-      return { x: target.slot.pixelX, y: target.slot.pixelY };
-    case "terrain":
-      return { x: target.tile.pixelX, y: target.tile.pixelY };
-  }
-};
-
 const getPlannerMapBounds = ({
   terrainTiles,
   realmSlots,
@@ -132,33 +115,12 @@ const clampPlannerCamera = (
   };
 };
 
-const buildPlannerCamera = (
-  bounds: SettlementPlannerMapBounds,
-  selectedTarget: SettlementPlannerTarget | null,
-): SettlementPlannerMapCamera => {
-  const anchor = getPlannerAnchorPoint(selectedTarget);
-  if (!anchor) {
-    return {
-      x: bounds.minX,
-      y: bounds.minY,
-      width: bounds.width,
-      height: bounds.height,
-    };
-  }
-
-  const focusWidth = Math.max(220, bounds.width * 0.72);
-  const focusHeight = Math.max(220, bounds.height * 0.72);
-
-  return clampPlannerCamera(
-    {
-      x: anchor.x - focusWidth / 2,
-      y: anchor.y - focusHeight / 2,
-      width: focusWidth,
-      height: focusHeight,
-    },
-    bounds,
-  );
-};
+const buildPlannerDefaultCamera = (bounds: SettlementPlannerMapBounds): SettlementPlannerMapCamera => ({
+  x: bounds.minX,
+  y: bounds.minY,
+  width: bounds.width,
+  height: bounds.height,
+});
 
 const plannerCameraToViewBox = (camera: SettlementPlannerMapCamera) =>
   `${camera.x} ${camera.y} ${camera.width} ${camera.height}`;
@@ -184,7 +146,7 @@ export const SettlementPlannerMap = ({
   isLoading = false,
 }: SettlementPlannerMapProps) => {
   const mapBounds = useMemo(() => getPlannerMapBounds(plannerData), [plannerData]);
-  const defaultMapCamera = useMemo(() => buildPlannerCamera(mapBounds, null), [mapBounds]);
+  const defaultMapCamera = useMemo(() => buildPlannerDefaultCamera(mapBounds), [mapBounds]);
   const [mapCamera, setMapCamera] = useState<SettlementPlannerMapCamera | null>(null);
   const [hoveredTargetKey, setHoveredTargetKey] = useState<string | null>(null);
   const mapSvgRef = useRef<SVGSVGElement | null>(null);
@@ -209,11 +171,6 @@ export const SettlementPlannerMap = ({
   useEffect(() => {
     setMapCamera((current) => (current ? clampPlannerCamera(current, mapBounds) : defaultMapCamera));
   }, [defaultMapCamera, mapBounds]);
-
-  useEffect(() => {
-    if (!selectedTarget) return;
-    setMapCamera(buildPlannerCamera(mapBounds, selectedTarget));
-  }, [selectedTarget, mapBounds]);
 
   const viewBox = useMemo(() => plannerCameraToViewBox(mapCamera ?? defaultMapCamera), [defaultMapCamera, mapCamera]);
 

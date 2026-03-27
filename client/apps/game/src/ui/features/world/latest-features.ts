@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
+    title: "Stable Planner Camera",
+    description:
+      "Selecting realm and village settlement targets in the Eternum planner now keeps your current map position and zoom, so you can compare nearby options without the view jumping away.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-27",
     title: "Unified Settlement Planner",
     description:
       "Eternum settlement now happens through one larger map-first planner that shows explored hexes, settled realms, and every free or busy village slot so your click directly decides whether you settle a realm or a village.",
