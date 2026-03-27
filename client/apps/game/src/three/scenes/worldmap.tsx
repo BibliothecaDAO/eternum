@@ -112,7 +112,8 @@ import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import {
   applyStrategicMapScaleDelta,
-  resolveStrategicMapEntryScale,
+  resolveMatchedStrategicMapScale,
+  resolveStrategicMapFallbackScale,
 } from "@/ui/features/world/components/strategic-map/strategic-map-viewport";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
 import {
@@ -135,7 +136,6 @@ import {
 } from "./worldmap-navigation/world-navigation-bridge";
 import {
   WORLDMAP_STRATEGIC_CAMERA_DISTANCE,
-  WORLDMAP_STRATEGIC_ENTRY_SCALE,
   WORLDMAP_STRATEGIC_EXIT_SCALE,
   WORLDMAP_TRANSITION_START_DISTANCE,
   createWorldNavigationModeMachineState,
@@ -3064,7 +3064,7 @@ export default class WorldmapScene extends WarpTravel {
         worldNavigationMode: "three_d",
         worldNavigationZoomLevel: 0,
         worldNavigationTransitionProgress: 0,
-        strategicMapScale: resolveStrategicMapEntryScale(),
+        strategicMapScale: resolveStrategicMapFallbackScale(),
       });
     }
     this.isSwitchedOff = true;
@@ -6696,7 +6696,6 @@ export default class WorldmapScene extends WarpTravel {
         transitionProgress: 1,
         zoomLevel: 1,
       };
-      useUIStore.setState({ strategicMapScale: resolveStrategicMapEntryScale() });
     }
 
     this.worldNavigationModeState = nextModeState;
@@ -6707,6 +6706,9 @@ export default class WorldmapScene extends WarpTravel {
       actualDistance: zoomSnapshot.actualDistance,
       transitionProgress: nextModeState.transitionProgress,
     });
+    if (this.worldNavigationModeState.mode !== "strategic_2d") {
+      this.syncWorldNavigationOverlayScale();
+    }
     this.publishWorldmapZoomSnapshot(zoomSnapshot);
     this.syncWorldNavigationStore(zoomSnapshot);
 
@@ -6768,7 +6770,7 @@ export default class WorldmapScene extends WarpTravel {
     if (this.isStrategicNavigationModeActive()) {
       const state = useUIStore.getState();
       const nextScale = applyStrategicMapScaleDelta({
-        currentScale: state.strategicMapScale || WORLDMAP_STRATEGIC_ENTRY_SCALE,
+        currentScale: state.strategicMapScale || resolveStrategicMapFallbackScale(),
         normalizedDelta: delta,
       });
 
@@ -6820,7 +6822,6 @@ export default class WorldmapScene extends WarpTravel {
     });
     useUIStore.setState({
       strategicMapCenterHex: targetHex,
-      strategicMapScale: resolveStrategicMapEntryScale(),
     });
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
   }
@@ -6916,6 +6917,45 @@ export default class WorldmapScene extends WarpTravel {
     this.armyLabelsGroup.visible = true;
     this.structureLabelsGroup.visible = true;
     this.chestLabelsGroup.visible = true;
+  }
+
+  private syncWorldNavigationOverlayScale(): void {
+    const viewport = this.resolveWorldNavigationViewport();
+    if (!viewport) {
+      return;
+    }
+
+    const state = useUIStore.getState();
+    const matchedScale = resolveMatchedStrategicMapScale({
+      camera: this.camera,
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
+      anchorHex: state.cameraTargetHex ?? this.resolveContractHexFromCameraTarget(),
+      fallbackScale: state.strategicMapScale || resolveStrategicMapFallbackScale(),
+    });
+
+    if (Math.abs(state.strategicMapScale - matchedScale) <= 0.001) {
+      return;
+    }
+
+    useUIStore.setState({ strategicMapScale: matchedScale });
+  }
+
+  private resolveWorldNavigationViewport(): { width: number; height: number } | null {
+    const canvas = this.controls.domElement;
+    if (!canvas) {
+      return null;
+    }
+
+    const bounds = canvas.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) {
+      return null;
+    }
+
+    return {
+      width: bounds.width,
+      height: bounds.height,
+    };
   }
 
   private clearWorldmapHoverState(): void {

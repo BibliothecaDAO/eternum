@@ -19,6 +19,8 @@ export interface ThreeStore {
   setWorldNavigationZoomLevel: (zoomLevel: number) => void;
   worldNavigationTransitionProgress: number;
   setWorldNavigationTransitionProgress: (progress: number) => void;
+  // In 3D/transition this tracks the live projection-matched overlay scale.
+  // In strategic mode it becomes the user-controlled zoom scale.
   strategicMapScale: number;
   setStrategicMapScale: (scale: number) => void;
   strategicMapCenterHex: HexPosition | null;

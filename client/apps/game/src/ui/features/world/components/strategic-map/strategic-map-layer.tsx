@@ -11,7 +11,7 @@ import { useEffect } from "react";
 
 import { StrategicMapRenderer } from "./strategic-map-renderer";
 import { resolveStrategicLayerBackdrop, type StrategicMapRenderMode } from "./strategic-map-style-profile";
-import { resolveStrategicMapEntryScale } from "./strategic-map-viewport";
+import { resolveStrategicMapFallbackScale } from "./strategic-map-viewport";
 import { useStrategicMapTiles } from "./use-strategic-map-tiles";
 
 export const StrategicMapLayer = () => {
@@ -31,6 +31,7 @@ export const StrategicMapLayer = () => {
   });
   const renderMode: StrategicMapRenderMode = worldNavigationMode === "strategic_2d" ? "strategic" : "transition";
   const layerBackdrop = resolveStrategicLayerBackdrop(renderMode);
+  const resolvedStrategicMapScale = strategicMapScale ?? resolveStrategicMapFallbackScale();
   const shouldLoadTiles = isMapView && (visualPolicy.overlayOpacity > 0 || worldNavigationMode === "strategic_2d");
   const { tiles, isLoading, error } = useStrategicMapTiles(shouldLoadTiles);
 
@@ -92,7 +93,7 @@ export const StrategicMapLayer = () => {
           navigationTarget={navigationTarget}
           cameraTargetHex={cameraTargetHex}
           centerHex={strategicMapCenterHex ?? cameraTargetHex ?? navigationTarget ?? selectedHex}
-          scale={worldNavigationMode === "strategic_2d" ? strategicMapScale : resolveStrategicMapEntryScale()}
+          scale={resolvedStrategicMapScale}
           interactive={visualPolicy.strategicLayerPointerEvents}
           className="absolute inset-0 h-full w-full touch-none select-none"
           visualPolicy={{

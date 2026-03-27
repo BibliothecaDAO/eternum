@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
+    title: "Matched Strategic Handoff",
+    description:
+      "When the world map flattens into the strategic view, the first 2D tiles now match the size of the 3D tiles underneath so the handoff feels continuous instead of jumping in scale.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-27",
     title: "Cartographic Strategic Zoom",
     description:
       "Strategic zoom now flattens the world into a clearer cartographic view, muting terrain noise and elevating settlements, armies, and frontier shape so long-range navigation reads like a true strategy map.",
