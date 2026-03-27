@@ -3,6 +3,7 @@ import Castle from "lucide-react/dist/esm/icons/castle";
 import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import Crown from "lucide-react/dist/esm/icons/crown";
 import Navigation from "lucide-react/dist/esm/icons/navigation";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import Skull from "lucide-react/dist/esm/icons/skull";
 import Trophy from "lucide-react/dist/esm/icons/trophy";
 import X from "lucide-react/dist/esm/icons/x";
@@ -17,6 +18,8 @@ const ICON_MAP: Record<HeadlineType, typeof Castle> = {
   elimination: Skull,
   "game-end": Trophy,
   "five-min-warning": Clock3,
+  "first-t2-army": Shield,
+  "first-t3-army": Shield,
 };
 
 interface NewsHeadlineBannerProps {

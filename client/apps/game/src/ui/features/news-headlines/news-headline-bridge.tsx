@@ -30,7 +30,56 @@ interface BattleEvent {
   battle_winner_id?: number;
   battle_defender_owner_address?: string;
   battle_attacker_owner_address?: string;
+  explorer_create_structure_id?: unknown;
+  explorer_create_tier?: unknown;
 }
+
+const parseTroopTier = (value: unknown, usesZeroBasedEncoding: boolean): 1 | 2 | 3 | null => {
+  if (value == null) return null;
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 1) {
+      return parseTroopTier(entries[0][0], usesZeroBasedEncoding);
+    }
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed.toUpperCase();
+    if (normalized === "T1") return 1;
+    if (normalized === "T2") return 2;
+    if (normalized === "T3") return 3;
+
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      try {
+        return parseTroopTier(JSON.parse(trimmed), usesZeroBasedEncoding);
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  const numericTier = parseNumeric(value);
+  if (numericTier == null) {
+    return null;
+  }
+
+  if (usesZeroBasedEncoding) {
+    if (numericTier === 0) return 1;
+    if (numericTier === 1) return 2;
+    if (numericTier === 2) return 3;
+    return null;
+  }
+
+  if (numericTier === 1 || numericTier === 2 || numericTier === 3) {
+    return numericTier;
+  }
+
+  return null;
+};
 
 export function NewsHeadlineBridge() {
   const { setup } = useDojo();
@@ -58,6 +107,9 @@ export function NewsHeadlineBridge() {
   const hyperOwnerRef = useRef<Map<number, string>>(new Map());
   const hyperInitializedRef = useRef(false);
   const gameEndFiredRef = useRef(false);
+  const troopMilestonesInitializedRef = useRef(false);
+  const firstT2ArmyFiredRef = useRef(false);
+  const firstT3ArmyFiredRef = useRef(false);
 
   // Navigation refs
   const navRef = useRef({ goToStructure, navigateToMapView, setSelectedHex, isMapView });
@@ -168,6 +220,77 @@ export function NewsHeadlineBridge() {
         } catch {
           // structure lookup not critical
         }
+      }
+    }
+  }, [storyEventLog, mapDataStore, enqueue]);
+
+  // --- First T2 / T3 army creation detection ---
+  useEffect(() => {
+    const now = Date.now();
+    const events = storyEventLog as unknown as BattleEvent[];
+
+    const creationEvents = events.filter((event) => event.story === "ExplorerCreateStory");
+    const numericTiers = creationEvents
+      .map((event) => parseNumeric(event.explorer_create_tier))
+      .filter((tier): tier is number => tier !== null);
+    const usesZeroBasedTierEncoding = numericTiers.includes(0);
+
+    if (!storyInitializedRef.current) {
+      return;
+    }
+
+    if (!troopMilestonesInitializedRef.current) {
+      firstT2ArmyFiredRef.current = creationEvents.some(
+        (event) => parseTroopTier(event.explorer_create_tier, usesZeroBasedTierEncoding) === 2,
+      );
+      firstT3ArmyFiredRef.current = creationEvents.some(
+        (event) => parseTroopTier(event.explorer_create_tier, usesZeroBasedTierEncoding) === 3,
+      );
+      troopMilestonesInitializedRef.current = true;
+      return;
+    }
+
+    const recentCreationEvents = creationEvents.filter((event) => event.timestampMs >= now - RECENT_HEADLINE_WINDOW_MS);
+
+    for (const event of recentCreationEvents) {
+      const troopTier = parseTroopTier(event.explorer_create_tier, usesZeroBasedTierEncoding);
+      const structureId = parseNumeric(event.explorer_create_structure_id);
+
+      if (troopTier !== 2 && troopTier !== 3) {
+        continue;
+      }
+
+      if (troopTier === 2 && firstT2ArmyFiredRef.current) {
+        continue;
+      }
+
+      if (troopTier === 3 && firstT3ArmyFiredRef.current) {
+        continue;
+      }
+
+      const structure = structureId !== null ? mapDataStore.getStructureById(structureId) : null;
+      const ownerName = structure?.ownerName || structure?.structureTypeName || "Unknown commander";
+      const headlineType = troopTier === 2 ? "first-t2-army" : "first-t3-army";
+
+      enqueue({
+        id: `${headlineType}:${event.tx_hash ?? event.id}`,
+        type: headlineType,
+        title: troopTier === 2 ? "FIRST T2 ARMY BUILT" : "FIRST T3 ARMY BUILT",
+        description: `"${ownerName}" fields the first Tier ${troopTier} army`,
+        icon: headlineType,
+        location:
+          structure && structureId !== null
+            ? { x: structure.coordX, y: structure.coordY, entityId: structureId }
+            : undefined,
+        timestamp: now,
+      });
+
+      if (troopTier === 2) {
+        firstT2ArmyFiredRef.current = true;
+      }
+
+      if (troopTier === 3) {
+        firstT3ArmyFiredRef.current = true;
       }
     }
   }, [storyEventLog, mapDataStore, enqueue]);

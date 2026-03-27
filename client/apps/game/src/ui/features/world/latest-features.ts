@@ -10,9 +10,16 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
+    title: "Troop Milestone Headlines",
+    description:
+      "News headline previews and live milestone banners now cover the first Tier 2 and first Tier 3 armies built, alongside realm falls, hyperstructure captures, eliminations, and the five-minute warning.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-27",
     title: "Manual Headline Preview",
     description:
-      "Added a developer-only Headline Preview section in the in-game settings so you can manually show the existing realm fall, hyperstructure capture, player elimination, and five-minute warning news banners without waiting for live triggers.",
+      "Added a developer-only Headline Preview section in the in-game settings so you can manually show realm fall, hyperstructure capture, player elimination, five-minute warning, and first T2/T3 army news banners without waiting for live triggers.",
     type: "feature",
   },
   {

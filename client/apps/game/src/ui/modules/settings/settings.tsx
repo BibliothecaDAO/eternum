@@ -507,8 +507,8 @@ export const SettingsWindow = () => {
             <section className="space-y-3">
               <Headline>Headline Preview</Headline>
               <div className="text-xs text-gray-gold">
-                Manually trigger the existing news headline mockups for realm falls, hyperstructure captures, player
-                eliminations, and game end.
+                Manually trigger the existing news headline banners for realm falls, hyperstructure captures, player
+                eliminations, the five-minute warning, and the first T2 and T3 armies built.
               </div>
               <div className="flex flex-wrap gap-2">
                 {NEWS_HEADLINE_PREVIEW_OPTIONS.map((headline) => (

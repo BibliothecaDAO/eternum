@@ -1,4 +1,11 @@
-export type HeadlineType = "realm-fall" | "hyper-capture" | "elimination" | "game-end" | "five-min-warning";
+export type HeadlineType =
+  | "realm-fall"
+  | "hyper-capture"
+  | "elimination"
+  | "game-end"
+  | "five-min-warning"
+  | "first-t2-army"
+  | "first-t3-army";
 
 export interface Headline {
   id: string;
