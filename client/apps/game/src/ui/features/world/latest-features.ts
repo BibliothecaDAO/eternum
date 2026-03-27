@@ -10,55 +10,6 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
-    title: "Centered Settlement Modal",
-    description:
-      "Eternum settlement screens now stay visually centered on desktop with a capped height and internal scrolling, keeping a clear gap below the window instead of stretching to the bottom of the screen.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-27",
-    title: "Planner Detail Crash Fix",
-    description:
-      "Selecting settled realms and village slots in the settlement planner no longer blanks the screen, and the detail card now keeps showing the realm's live owner, name, and resources when that data is available.",
-    type: "fix",
-  },
-  {
-    date: "2026-03-27",
-    title: "Planner Realm Detail Cards",
-    description:
-      "Selecting a settled realm or village slot in the settlement planner now shows the realm's name, resources, and a better owner label so you can choose village connections with more context.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-27",
-    title: "Season Pass Details Picker",
-    description:
-      "Season pass pickers now show each pass's realm name and decoded resource set, making it easier to choose the right pass when your wallet holds more than one.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-27",
-    title: "Pass Enumeration Fallback",
-    description:
-      "Season and village passes now fall back cleanly when a world's pass contract does not expose token enumeration, so missing ERC721 helper entrypoints no longer interrupt the settlement flow.",
-    type: "fix",
-  },
-  {
-    date: "2026-03-27",
-    title: "Stable Planner Camera",
-    description:
-      "Selecting realm and village settlement targets in the Eternum planner now keeps your current map position and zoom, so you can compare nearby options without the view jumping away.",
-    type: "fix",
-  },
-  {
-    date: "2026-03-27",
-    title: "Unified Settlement Planner",
-    description:
-      "Eternum settlement now happens through one larger map-first planner that shows explored hexes, settled realms, and every free or busy village slot so your click directly decides whether you settle a realm or a village.",
-    type: "feature",
-  },
-  {
-    date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:
       "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",
