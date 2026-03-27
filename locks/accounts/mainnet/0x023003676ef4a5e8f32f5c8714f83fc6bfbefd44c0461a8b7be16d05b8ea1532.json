@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "bltz-warzone",
-    "launchRequestId": "23626781730-1",
+    "launchRequestId": "23627859097-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23626781730,
+    "workflowRunId": 23627859097,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "29463074-2a19-4c8d-865f-06ec124cc641"
+    "stepId": "create-world",
+    "leaseId": "b56143bc-5e7c-444e-8d20-5c933f464e89"
   },
-  "acquiredAt": "2026-03-27T01:37:51.600Z",
-  "heartbeatAt": "2026-03-27T01:37:56.742Z",
-  "expiresAt": "2026-03-27T01:37:56.742Z",
-  "releasedAt": "2026-03-27T01:37:56.742Z"
+  "acquiredAt": "2026-03-27T02:17:08.848Z",
+  "heartbeatAt": "2026-03-27T02:17:08.848Z",
+  "expiresAt": "2026-03-27T02:27:08.848Z"
 }
