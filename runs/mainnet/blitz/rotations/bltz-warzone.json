@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23633904421-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-27T15:32:03.033Z",
+  "updatedAt": "2026-03-27T17:40:08.922Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -2732,7 +2732,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 15,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-warzone-15",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2916,7 +2916,9 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true
+          "paymasterSynced": true,
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-27T17:40:07.040Z"
         }
       },
       {
