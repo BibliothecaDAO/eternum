@@ -7,6 +7,7 @@
  * 3. Auto-transitions to game when ready
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRealmInfo } from "@bibliothecadao/eternum";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
@@ -50,6 +51,7 @@ import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
 import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
@@ -59,7 +61,17 @@ import {
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
+import { SeasonPassOptionCard } from "./season-pass-option-card";
 import { SettlementPlannerMap } from "./settlement-planner-map";
+import {
+  SettlementResourceBadges,
+  resolvePlannerResourceLabel as resolveResourceLabel,
+} from "./settlement-resource-badges";
+import {
+  buildPlannerRealmSelectionDetails,
+  resolvePlannerOwnerLabel,
+  type PlannerRealmSelectionDetails,
+} from "./settlement-planner-selection";
 import {
   isSettlementPlannerTargetStillValid,
   type SettlementPlannerOptimisticRealm,
@@ -109,11 +121,6 @@ const extractTransactionHash = (value: unknown): string | null => {
   }
 
   return null;
-};
-
-const resolveResourceLabel = (resourceId: number): string | null => {
-  const label = ResourcesIds[resourceId as ResourcesIds];
-  return typeof label === "string" ? label : null;
 };
 
 const ALL_VILLAGE_DIRECTIONS: readonly Direction[] = [
@@ -1396,49 +1403,12 @@ const SeasonPlacementPhase = ({
             {seasonPasses.map((pass) => {
               const isSelected = selectedSeasonPassTokenId === pass.tokenId;
               return (
-                <div
+                <SeasonPassOptionCard
                   key={pass.tokenId.toString()}
-                  className={cn(
-                    "rounded-lg border p-2 transition-colors",
-                    isSelected ? "border-gold/55 bg-gold/15" : "border-gold/20 bg-black/25 hover:border-gold/35",
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm text-gold truncate">{pass.realmName}</p>
-                      <p className="text-[11px] text-gold/50">Realm #{pass.realmId}</p>
-                    </div>
-                    <Button
-                      onClick={() => onSelectSeasonPass(pass.tokenId)}
-                      variant={isSelected ? "default" : "outline"}
-                      size="xs"
-                      forceUppercase={false}
-                      className={cn(isSelected ? "!bg-gold !text-brown" : "")}
-                    >
-                      {isSelected ? "Selected" : "Use"}
-                    </Button>
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {pass.resourceIds.length > 0 ? (
-                      pass.resourceIds.map((resourceId, index) => {
-                        const resourceLabel = resolveResourceLabel(resourceId);
-                        if (!resourceLabel) return null;
-                        return (
-                          <div
-                            key={`${pass.tokenId.toString()}-${resourceId}-${index}`}
-                            className="inline-flex items-center gap-1 rounded-md border border-gold/20 bg-black/25 px-1.5 py-1"
-                          >
-                            <ResourceIcon resource={resourceLabel} size="xs" withTooltip={false} />
-                            <span className="text-[10px] text-gold/70">{resourceLabel}</span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <span className="text-[11px] text-gold/50">No allowed resources decoded.</span>
-                    )}
-                  </div>
-                </div>
+                  pass={pass}
+                  isSelected={isSelected}
+                  onSelect={onSelectSeasonPass}
+                />
               );
             })}
           </div>
@@ -1498,6 +1468,9 @@ const SeasonPlacementPhase = ({
           <div className="rounded-md border border-gold/25 bg-black/25 px-2 py-1.5">
             <p className="text-[11px] text-gold/60">Selected pass</p>
             <p className="text-xs text-gold">{selectedPassDisplay}</p>
+            {selectedSeasonPass && (
+              <SettlementResourceBadges resourceIds={selectedSeasonPass.resourceIds} className="mt-2" />
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-2">
@@ -2007,6 +1980,7 @@ const SettlementPlannerPhase = ({
   seasonSettlementError,
   villageSettlementError,
   onEnterGame,
+  plannerComponents,
 }: {
   plannerData: ReturnType<typeof useSettlementPlannerData>;
   selectedTarget: SettlementPlannerTarget | null;
@@ -2061,6 +2035,7 @@ const SettlementPlannerPhase = ({
   seasonSettlementError: string | null;
   villageSettlementError: string | null;
   onEnterGame: () => void;
+  plannerComponents: SetupResult["components"] | null;
 }) => {
   const selectedRealmInfo = selectedTarget?.type === "realm" ? selectedTarget.realm : null;
   const selectedRealmSlot = selectedTarget?.type === "realm_slot" ? selectedTarget.slot : null;
@@ -2078,6 +2053,31 @@ const SettlementPlannerPhase = ({
     spiresSettledCount != null && spiresMaxCount != null
       ? `${Math.min(spiresSettledCount, spiresMaxCount)} / ${spiresMaxCount}`
       : "unknown";
+  const selectedPlannerRealmLiveInfo = useMemo(() => {
+    if (!plannerComponents) return null;
+
+    const realmEntityId = selectedPlannerRealm?.entityId ?? selectedRealmInfo?.entityId ?? null;
+    if (realmEntityId == null) return null;
+    return getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), plannerComponents) ?? null;
+  }, [plannerComponents, selectedPlannerRealm?.entityId, selectedRealmInfo?.entityId]);
+  const selectedPlannerRealmDetails = useMemo<PlannerRealmSelectionDetails | null>(() => {
+    return buildPlannerRealmSelectionDetails({
+      sourceRealm: selectedPlannerRealm ?? selectedRealmInfo,
+      liveRealm:
+        selectedPlannerRealmLiveInfo == null
+          ? null
+          : {
+              realmId: selectedPlannerRealmLiveInfo.realmId,
+              owner: selectedPlannerRealmLiveInfo.owner,
+              ownerName: selectedPlannerRealmLiveInfo.ownerName,
+              resources: selectedPlannerRealmLiveInfo.resources,
+            },
+    });
+  }, [selectedPlannerRealm, selectedPlannerRealmLiveInfo, selectedRealmInfo]);
+  const selectedPlannerOwnerLabel = resolvePlannerOwnerLabel(
+    selectedPlannerRealmDetails?.ownerName,
+    selectedPlannerRealmDetails?.ownerAddress,
+  );
 
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,1fr)]">
@@ -2086,7 +2086,7 @@ const SettlementPlannerPhase = ({
         selectedTarget={selectedTarget}
         onSelectTarget={onSelectTarget}
         isLoading={isLoadingPlanner}
-        mapHeightClassName="h-[380px] md:h-[620px]"
+        mapHeightClassName="h-[380px] md:h-[min(56vh,560px)]"
       />
 
       <aside className="flex min-h-0 flex-col gap-3 rounded-2xl border border-gold/25 bg-gradient-to-b from-[#181108]/95 via-[#120d07]/95 to-[#090603]/95 p-4">
@@ -2192,7 +2192,11 @@ const SettlementPlannerPhase = ({
                 )}
               >
                 Season pass:{" "}
-                {selectedSeasonPassTokenId != null ? `#${selectedSeasonPassTokenId.toString()}` : "missing"}
+                {selectedSeasonPass
+                  ? `${selectedSeasonPass.realmName} (Realm #${selectedSeasonPass.realmId})`
+                  : selectedSeasonPassTokenId != null
+                    ? `#${selectedSeasonPassTokenId.toString()}`
+                    : "missing"}
               </div>
             </div>
 
@@ -2214,26 +2218,23 @@ const SettlementPlannerPhase = ({
                   {seasonPasses.map((pass) => {
                     const isSelected = selectedSeasonPassTokenId === pass.tokenId;
                     return (
-                      <button
+                      <SeasonPassOptionCard
                         key={pass.tokenId.toString()}
-                        type="button"
-                        onClick={() => onSelectSeasonPass(pass.tokenId)}
-                        className={cn(
-                          "w-full rounded-lg border px-3 py-2 text-left transition-colors",
-                          isSelected ? "border-gold/55 bg-gold/15" : "border-gold/20 bg-black/30 hover:border-gold/35",
-                        )}
-                      >
-                        <p className="text-sm text-gold">
-                          {pass.realmName} <span className="text-gold/60">#{pass.realmId}</span>
-                        </p>
-                      </button>
+                        pass={pass}
+                        isSelected={isSelected}
+                        onSelect={onSelectSeasonPass}
+                        className="bg-black/30"
+                      />
                     );
                   })}
                 </div>
                 {selectedSeasonPass && (
-                  <p className="mt-2 text-[11px] text-gold/70">
-                    Selected pass: {selectedSeasonPass.realmName} (Realm #{selectedSeasonPass.realmId})
-                  </p>
+                  <div className="mt-2 rounded-lg border border-gold/20 bg-black/20 px-3 py-2">
+                    <p className="text-[11px] text-gold/70">
+                      Selected pass: {selectedSeasonPass.realmName} (Realm #{selectedSeasonPass.realmId})
+                    </p>
+                    <SettlementResourceBadges resourceIds={selectedSeasonPass.resourceIds} className="mt-2" />
+                  </div>
                 )}
                 {seasonPassInventoryError && (
                   <p className="mt-2 text-[11px] text-amber-200/85">{seasonPassInventoryError}</p>
@@ -2335,15 +2336,26 @@ const SettlementPlannerPhase = ({
             <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
               <p className="text-sm font-semibold text-gold">Settle Village</p>
               <p className="mt-1 text-xs text-gold/70">
-                {selectedPlannerRealm?.realmId != null ? `Realm #${selectedPlannerRealm.realmId}` : "Realm target"} ·{" "}
-                {DirectionName[selectedVillageSlot.direction]}
+                {selectedPlannerRealmDetails?.realmId != null
+                  ? `Realm #${selectedPlannerRealmDetails.realmId}`
+                  : "Realm target"}{" "}
+                · {DirectionName[selectedVillageSlot.direction]}
               </p>
-              <p className="mt-1 text-[11px] text-gold/60">
-                Owner: {selectedPlannerRealm?.ownerName ?? selectedPlannerRealm?.ownerAddress ?? "Unknown"}
-              </p>
+              {selectedPlannerRealmDetails?.realmName && (
+                <p className="mt-1 text-sm text-gold">{selectedPlannerRealmDetails.realmName}</p>
+              )}
+              <p className="mt-1 text-[11px] text-gold/60">Owner: {selectedPlannerOwnerLabel}</p>
               <p className="mt-1 text-[11px] text-gold/60">
                 Coordinate: x {selectedVillageSlot.coordX}, y {selectedVillageSlot.coordY}
               </p>
+              <div className="mt-3 rounded-lg border border-gold/20 bg-black/20 px-3 py-2">
+                <p className="text-[11px] text-gold/60">Realm resources</p>
+                <SettlementResourceBadges
+                  resourceIds={selectedPlannerRealmDetails?.resourceIds ?? []}
+                  className="mt-2"
+                  emptyLabel="Realm resources unavailable."
+                />
+              </div>
             </div>
 
             {selectedVillagePassTokenId != null ? (
@@ -2447,11 +2459,23 @@ const SettlementPlannerPhase = ({
         {selectedRealmInfo && (
           <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
             <p className="text-sm font-semibold text-gold">
-              {selectedRealmInfo.realmId != null ? `Realm #${selectedRealmInfo.realmId}` : "Settled Realm"}
+              {selectedPlannerRealmDetails?.realmName ??
+                (selectedRealmInfo.realmId != null ? `Realm #${selectedRealmInfo.realmId}` : "Settled Realm")}
             </p>
             <p className="mt-1 text-xs text-gold/70">
-              {selectedRealmInfo.ownerName ?? selectedRealmInfo.ownerAddress ?? "Unknown owner"}
+              {selectedPlannerRealmDetails?.realmId != null
+                ? `Realm #${selectedPlannerRealmDetails.realmId}`
+                : "Settled Realm"}
             </p>
+            <p className="mt-1 text-[11px] text-gold/60">Owner: {selectedPlannerOwnerLabel}</p>
+            <div className="mt-3 rounded-lg border border-gold/20 bg-black/20 px-3 py-2">
+              <p className="text-[11px] text-gold/60">Realm resources</p>
+              <SettlementResourceBadges
+                resourceIds={selectedPlannerRealmDetails?.resourceIds ?? []}
+                className="mt-2"
+                emptyLabel="Realm resources unavailable."
+              />
+            </div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-gold/75">
               <div className="rounded-md border border-gold/20 bg-black/25 px-2 py-1.5">
                 Villages: {selectedRealmInfo.villagesCount}
@@ -5063,10 +5087,24 @@ export const GameEntryModal = ({
       phase === "village-pass-required" ||
       phase === "village-placement" ||
       phase === "ready");
+  const usesDesktopCenteredSettlementLayout =
+    isEternumMode &&
+    (phase === "settlement-planner" ||
+      phase === "season-pass-required" ||
+      phase === "season-placement" ||
+      phase === "village-pass-required" ||
+      phase === "village-placement" ||
+      phase === "village-reveal" ||
+      phase === "ready");
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 bg-black/70 backdrop-blur-sm"
+      className={cn(
+        "fixed inset-0 z-50 flex justify-center bg-black/70 backdrop-blur-sm",
+        usesDesktopCenteredSettlementLayout
+          ? "items-start pt-16 sm:pt-24 lg:items-center lg:px-6 lg:py-8 lg:pt-8"
+          : "items-start pt-16 sm:pt-24",
+      )}
       onClick={handleBackdropClick}
     >
       <motion.div
@@ -5074,7 +5112,7 @@ export const GameEntryModal = ({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         className={cn(
-          "relative mx-4 w-full rounded-xl border border-gold/40 bg-brown/95 shadow-2xl backdrop-blur-sm",
+          "relative mx-4 flex w-full flex-col overflow-hidden rounded-xl border border-gold/40 bg-brown/95 shadow-2xl backdrop-blur-sm lg:mx-0",
           phase === "settlement-planner"
             ? "max-h-[92vh] max-w-7xl"
             : phase === "season-placement" || phase === "village-placement"
@@ -5082,6 +5120,7 @@ export const GameEntryModal = ({
               : phase === "village-reveal"
                 ? "max-w-lg"
                 : "max-w-md",
+          usesDesktopCenteredSettlementLayout && "lg:max-h-[min(54rem,calc(100vh-4rem))]",
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -5116,6 +5155,8 @@ export const GameEntryModal = ({
               ? "max-h-[calc(92vh-86px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
               : (phase === "season-placement" || phase === "village-placement") &&
                   "max-h-[calc(88vh-86px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
+            usesDesktopCenteredSettlementLayout &&
+              "lg:min-h-0 lg:flex-1 lg:max-h-none lg:overflow-y-auto lg:pr-4 lg:scrollbar-thin lg:scrollbar-thumb-gold/20 lg:scrollbar-track-transparent",
           )}
         >
           {showEternumSettlementModeToggle && (
@@ -5248,6 +5289,7 @@ export const GameEntryModal = ({
                   seasonSettlementError={seasonSettlementError}
                   villageSettlementError={villageSettlementError ?? ownedStructuresError}
                   onEnterGame={handleEnterGame}
+                  plannerComponents={setupResult?.components ?? null}
                 />
               </motion.div>
             )}
