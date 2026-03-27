@@ -1,17 +1,23 @@
 import { and, count, desc, eq, gte, inArray, lte, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { RpcProvider } from "starknet";
 import * as schema from "../src/schema";
 
 interface CreateAmmV2ApiAppParams {
   allowedOrigins?: string[];
   db: any;
+  lordsAddress?: string;
+  loadTokenTotalSupply?: LoadTokenTotalSupply;
+  rpcUrl?: string;
 }
 
 interface PaginationParams {
   limit: number;
   offset: number;
 }
+
+type LoadTokenTotalSupply = (tokenAddress: string) => Promise<bigint | null>;
 
 const ONE_DAY_IN_MS = 86_400_000;
 const LOCAL_BROWSER_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
@@ -20,6 +26,8 @@ const FIRST_PARTY_BROWSER_DOMAIN = "realms.world";
 export function createAmmV2ApiApp(params: CreateAmmV2ApiAppParams) {
   const app = new Hono();
   const allowedBrowserOrigins = buildAllowedBrowserOriginSet(params.allowedOrigins ?? []);
+  const loadTokenTotalSupply = params.loadTokenTotalSupply ?? buildTokenTotalSupplyLoader(params.rpcUrl);
+  const lordsAddress = normalizeOptionalAddress(params.lordsAddress);
 
   app.use(
     "/api/*",
@@ -169,6 +177,7 @@ export function createAmmV2ApiApp(params: CreateAmmV2ApiAppParams) {
       .where(and(eq(schema.pairSwaps.pairAddress, pair.pairAddress), gte(schema.pairSwaps.blockTimestamp, oneDayAgo)));
     const reserve0 = BigInt(pair.reserve0);
     const reserve1 = BigInt(pair.reserve1);
+    const resourceTokenAddress = resolveResourceTokenAddress(pair, lordsAddress);
     const volume0 = recentSwaps.reduce(
       (sum: bigint, row: any) => sum + BigInt(row.amount0In) + BigInt(row.amount0Out),
       0n,
@@ -185,6 +194,7 @@ export function createAmmV2ApiApp(params: CreateAmmV2ApiAppParams) {
       (sum: bigint, row: any) => sum + computeLpFee(BigInt(row.amount1In), BigInt(row.feeAmount)),
       0n,
     );
+    const resourceTokenSupply = resourceTokenAddress !== null ? await loadTokenTotalSupply(resourceTokenAddress) : null;
 
     return jsonResponse(c, {
       data: {
@@ -201,6 +211,7 @@ export function createAmmV2ApiApp(params: CreateAmmV2ApiAppParams) {
         lpFees0_24h: lpFees0.toString(),
         lpFees1_24h: lpFees1.toString(),
         swapCount24h: recentSwaps.length,
+        resourceTokenSupply,
       },
     });
   });
@@ -434,6 +445,53 @@ function comparePositionsByLpBalance(left: { lpBalance: string }, right: { lpBal
 
 function normalizeOptionalAddress(value: string | undefined): string | undefined {
   return value ? normalizeAddress(value) : undefined;
+}
+
+function resolveResourceTokenAddress(
+  pair: { token0Address: string; token1Address: string },
+  lordsAddress: string | undefined,
+): string | null {
+  if (!lordsAddress) {
+    return null;
+  }
+
+  if (normalizeAddress(pair.token0Address) === lordsAddress) {
+    return normalizeAddress(pair.token1Address);
+  }
+
+  if (normalizeAddress(pair.token1Address) === lordsAddress) {
+    return normalizeAddress(pair.token0Address);
+  }
+
+  return null;
+}
+
+function buildTokenTotalSupplyLoader(rpcUrl: string | undefined): LoadTokenTotalSupply {
+  if (!rpcUrl) {
+    return async () => null;
+  }
+
+  const provider = new RpcProvider({ nodeUrl: rpcUrl });
+
+  return async (tokenAddress: string) => {
+    try {
+      const result = await provider.callContract({
+        contractAddress: tokenAddress,
+        entrypoint: "total_supply",
+        calldata: [],
+      });
+
+      return parseU256Result(result);
+    } catch {
+      return null;
+    }
+  };
+}
+
+function parseU256Result(values: Array<string | bigint>): bigint {
+  const low = BigInt(values[0] ?? "0x0");
+  const high = BigInt(values[1] ?? "0x0");
+  return low + (high << 128n);
 }
 
 function normalizeAddress(value: string): string {

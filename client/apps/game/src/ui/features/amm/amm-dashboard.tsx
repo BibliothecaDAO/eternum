@@ -89,8 +89,8 @@ const SummarySkeleton = () => (
   <div className="rounded-[28px] border border-gold/10 bg-black/25 p-4 backdrop-blur-[10px]">
     <div className="animate-pulse space-y-3">
       <div className="h-6 w-40 rounded bg-gold/10" />
-      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, index) => (
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, index) => (
           <div key={index} className="h-16 rounded-2xl bg-gold/8" />
         ))}
       </div>
@@ -157,6 +157,10 @@ const AmmSelectedPoolSummary = ({
   const feeBreakdown = resolveAmmFeeBreakdown(activePool);
   const metrics = [
     { label: "Spot Price", value: `${formatAmmSpotPrice(currentSpotPrice)} LORDS` },
+    {
+      label: "MCap",
+      value: statsQuery.data?.marketCapLords != null ? formatAmmCompactAmount(statsQuery.data.marketCapLords) : "--",
+    },
     { label: "TVL", value: formatAmmCompactAmount(activePool.lordsReserve * 2n) },
     { label: "24H Volume", value: statsQuery.data ? formatAmmCompactAmount(statsQuery.data.volume24h) : "--" },
     { label: "LP Fee", value: formatAmmPercent(feeBreakdown.lpFeePercent) },
@@ -198,7 +202,7 @@ const AmmSelectedPoolSummary = ({
         </button>
       </div>
 
-      <div className="mt-3 grid gap-1.5 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mt-3 grid gap-1.5 grid-cols-2 md:grid-cols-4 xl:grid-cols-4">
         {metrics.map((metric, index) => (
           <div
             key={metric.label}
