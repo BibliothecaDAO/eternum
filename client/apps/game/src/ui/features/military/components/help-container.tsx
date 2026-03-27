@@ -2,13 +2,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActorType, ID } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
+import { TransferDirection } from "./transfer-troops/transfer-direction";
 import { TransferTroopsContainer } from "./transfer-troops-container";
-
-export enum TransferDirection {
-  ExplorerToStructure,
-  StructureToExplorer,
-  ExplorerToExplorer,
-}
 
 export const getActorTypes = (direction: TransferDirection) => {
   if (direction === TransferDirection.ExplorerToStructure) {

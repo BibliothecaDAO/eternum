@@ -7280,6 +7280,15 @@ export default class WorldmapScene extends WarpTravel {
 
     this.storeSubscriptions.push(
       useUIStore.subscribe(
+        (state) => state.publicIncomingTroopArrivalsByStructure,
+        (publicIncomingTroopArrivalsByStructure) => {
+          this.structureManager.setIncomingTroopArrivalsByStructure(publicIncomingTroopArrivalsByStructure);
+        },
+      ),
+    );
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
         (state) => state.entityActions,
         (nextEntityActions, previousEntityActions) => {
           if (!this.isInteractionOwner()) {
@@ -7405,6 +7414,7 @@ export default class WorldmapScene extends WarpTravel {
 
     this.updateSelectableArmies(uiState.selectableArmies);
     this.updatePlayerStructures(uiState.playerStructures);
+    this.structureManager.setIncomingTroopArrivalsByStructure(uiState.publicIncomingTroopArrivalsByStructure);
 
     this.syncEntityActionPathsTransitionToken();
     if (this.isMissingActionPathOwnershipState()) {

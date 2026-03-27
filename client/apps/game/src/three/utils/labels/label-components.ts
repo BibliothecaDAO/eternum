@@ -1,3 +1,5 @@
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { BANDITS_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 import { resolveOwnerDisplayName } from "./owner-display-name";
@@ -681,6 +683,97 @@ export const createContentContainer = (inputView: CameraView): HTMLElement & { w
   const result = contentContainer as unknown as HTMLElement & { wrapper: HTMLElement };
   result.wrapper = wrapperContainer;
   return result;
+};
+
+const createIncomingTroopList = (arrivals: IncomingTroopArrival[], _inputView: CameraView): HTMLElement => {
+  const container = document.createElement("div");
+  container.setAttribute("data-component", "incoming-troops-list");
+  container.classList.add("flex", "flex-col", "gap-1");
+
+  const nowSeconds = useChainTimeStore.getState().getNowSeconds();
+  const visibleArrivals = arrivals.slice(0, 3);
+  const rowTextSizeClass = "text-[10px]";
+
+  visibleArrivals.forEach((arrival) => {
+    const row = document.createElement("div");
+    row.classList.add(
+      "flex",
+      "items-center",
+      "gap-1.5",
+      "w-fit",
+      "rounded",
+      "bg-black/35",
+      "px-2",
+      "py-0.5",
+      rowTextSizeClass,
+      "font-medium",
+    );
+    row.setAttribute("data-role", "incoming-troop-row");
+
+    const count = document.createElement("span");
+    count.classList.add("text-white");
+    count.textContent = formatCompactNumber(arrival.count);
+    row.appendChild(count);
+
+    const typeBadge = document.createElement("span");
+    typeBadge.classList.add("rounded", "border", "border-gold/20", "bg-gold/10", "px-1.5", "py-0.5", "text-gold");
+    typeBadge.textContent = `${arrival.troopType} T${arrival.troopTier.replace("T", "")}`;
+    row.appendChild(typeBadge);
+
+    const eta = document.createElement("span");
+    eta.classList.add("text-gold/70");
+    eta.setAttribute("data-role", "incoming-troop-eta");
+    eta.textContent = formatTime(Math.max(0, Number(arrival.arrivesAt) - nowSeconds));
+    row.appendChild(eta);
+
+    container.appendChild(row);
+  });
+
+  if (arrivals.length > visibleArrivals.length) {
+    const overflow = document.createElement("div");
+    overflow.setAttribute("data-role", "incoming-troops-overflow");
+    overflow.classList.add(rowTextSizeClass, "font-medium", "text-gold/70");
+    overflow.textContent = `+${arrivals.length - visibleArrivals.length} more`;
+    container.appendChild(overflow);
+  }
+
+  return container;
+};
+
+export const updateIncomingTroopDisplay = (
+  contentContainer: HTMLElement,
+  arrivals: IncomingTroopArrival[] | undefined,
+  inputView: CameraView,
+): void => {
+  const existingContainer = contentContainer.querySelector('[data-component="incoming-troops"]') as HTMLElement | null;
+  const hasArrivals = Array.isArray(arrivals) && arrivals.length > 0;
+
+  if (!hasArrivals) {
+    existingContainer?.remove();
+    return;
+  }
+
+  if (!existingContainer) {
+    const container = document.createElement("div");
+    container.setAttribute("data-component", "incoming-troops");
+    container.classList.add("flex", "flex-col", "gap-1");
+    container.appendChild(createIncomingTroopList(arrivals, inputView));
+    const productionsDisplay = contentContainer.querySelector('[data-component="productions"]');
+    if (productionsDisplay) {
+      contentContainer.insertBefore(container, productionsDisplay);
+    } else {
+      contentContainer.appendChild(container);
+    }
+    return;
+  }
+
+  const existingList = existingContainer.querySelector('[data-component="incoming-troops-list"]');
+  const nextList = createIncomingTroopList(arrivals, inputView);
+  if (existingList) {
+    existingList.replaceWith(nextList);
+  } else {
+    existingContainer.appendChild(nextList);
+  }
 };
 
 /**

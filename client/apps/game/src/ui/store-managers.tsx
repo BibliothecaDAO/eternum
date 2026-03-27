@@ -10,6 +10,7 @@ import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/uti
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   formatArmies,
+  formatArrivals,
   getAddressName,
   getAllArrivals,
   getEntityIdFromKeys,
@@ -17,12 +18,13 @@ import {
   LeaderboardManager,
   ResourceArrivalManager,
   SelectableArmy,
+  summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
-import { ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 
@@ -237,6 +239,31 @@ const ResourceArrivalsStoreManager = () => {
     systemCalls,
     updateArrivalIndicators,
   ]);
+
+  return null;
+};
+
+const PublicTroopArrivalsStoreManager = () => {
+  const setPublicIncomingTroopArrivalsByStructure = useUIStore(
+    (state) => state.setPublicIncomingTroopArrivalsByStructure,
+  );
+  const chainNowMs = useChainTimeStore((state) => state.nowMs);
+  const {
+    setup: { components },
+  } = useDojo();
+  const resourceArrivals = useEntityQuery([Has(components.ResourceArrival)]);
+
+  useEffect(() => {
+    const rawArrivals = resourceArrivals
+      .map((entity) => getComponentValue(components.ResourceArrival, entity))
+      .filter(
+        (arrival): arrival is ComponentValue<ClientComponents["ResourceArrival"]["schema"]> =>
+          arrival !== undefined && arrival !== null,
+      );
+    const nowSeconds = Math.floor(chainNowMs / 1000);
+
+    setPublicIncomingTroopArrivalsByStructure(summarizeIncomingTroopArrivals(formatArrivals(rawArrivals), nowSeconds));
+  }, [chainNowMs, components.ResourceArrival, resourceArrivals, setPublicIncomingTroopArrivalsByStructure]);
 
   return null;
 };
@@ -612,6 +639,7 @@ export const StoreManagers = () => {
   return (
     <>
       <ResourceArrivalsStoreManager />
+      <PublicTroopArrivalsStoreManager />
       <RelicsStoreManager />
       <AutoRegisterPointsStoreManager />
       <PlayerStructuresStoreManager />
