@@ -7,7 +7,6 @@ import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/li
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
-import { sqlApi } from "@/services/api";
 import {
   configManager,
   divideByPrecision,
@@ -51,7 +50,8 @@ import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
-import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
+import { HexMinimap } from "./hex-minimap";
+import { useStrategicMapTiles } from "../strategic-map/use-strategic-map-tiles";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -902,54 +902,11 @@ const LocalTilePanel = () => {
 };
 
 const MinimapPanel = () => {
-  const [tiles, setTiles] = useState<MinimapTile[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const activeTab = useUIStore((state) => state.activeBottomPanelTab);
   const selectedHex = useUIStore((state) => state.selectedHex);
   const navigationTarget = useUIStore((state) => state.navigationTarget);
   const cameraTargetHex = useUIStore((state) => state.cameraTargetHex);
-
-  useEffect(() => {
-    if (activeTab !== "minimap") return;
-    let cancelled = false;
-    const loadTiles = async () => {
-      setIsLoading(true);
-      try {
-        const fetched = await sqlApi.fetchAllTiles();
-        if (!cancelled) {
-          setTiles(
-            fetched.map((tile) =>
-              normalizeMinimapTile({
-                col: tile.col,
-                row: tile.row,
-                biome: tile.biome,
-                occupier_id: tile.occupier_id?.toString(),
-                occupier_type: tile.occupier_type,
-                occupier_is_structure: tile.occupier_is_structure,
-              }),
-            ),
-          );
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load minimap data");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadTiles();
-    const interval = setInterval(loadTiles, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [activeTab]);
+  const { tiles, isLoading, error } = useStrategicMapTiles(activeTab === "minimap");
 
   return (
     <PanelFrame title="Minimap" attached>
@@ -980,12 +937,17 @@ export const BottomRightPanel = memo(() => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const activeTab = useUIStore((state) => state.activeBottomPanelTab);
   const setActiveTab = useUIStore((state) => state.setActiveBottomPanelTab);
+  const worldNavigationMode = useUIStore((state) => state.worldNavigationMode);
   const shouldShow = !showBlankOverlay;
   const isPanelOpen = shouldShow && activeTab !== null;
+  const isStrategicMode = worldNavigationMode === "strategic_2d";
 
   const availableTabs = useMemo(
-    () => (isMapView ? BOTTOM_PANEL_TABS : BOTTOM_PANEL_TABS.filter((tab) => tab.id === "tile")),
-    [isMapView],
+    () =>
+      isMapView
+        ? BOTTOM_PANEL_TABS.filter((tab) => !isStrategicMode || tab.id !== "minimap")
+        : BOTTOM_PANEL_TABS.filter((tab) => tab.id === "tile"),
+    [isMapView, isStrategicMode],
   );
 
   useEffect(() => {
@@ -993,6 +955,12 @@ export const BottomRightPanel = memo(() => {
       setActiveTab("tile");
     }
   }, [activeTab, isMapView, setActiveTab]);
+
+  useEffect(() => {
+    if (isStrategicMode && activeTab === "minimap") {
+      setActiveTab("tile");
+    }
+  }, [activeTab, isStrategicMode, setActiveTab]);
 
   const handleTabToggle = (tab: BottomPanelTabId) => {
     setActiveTab(activeTab === tab ? null : tab);
@@ -1007,14 +975,24 @@ export const BottomRightPanel = memo(() => {
       aria-hidden={!shouldShow}
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
-      <div className="relative w-full min-h-[44px] md:ml-auto md:w-[55%] lg:w-[44%] xl:w-[36%] 2xl:w-[32%]">
+      <div
+        className={cn(
+          "relative w-full min-h-[44px] md:ml-auto transition-all duration-200",
+          isStrategicMode
+            ? "md:w-[50%] lg:w-[39%] xl:w-[31%] 2xl:w-[28%]"
+            : "md:w-[55%] lg:w-[44%] xl:w-[36%] 2xl:w-[32%]",
+        )}
+      >
         <PanelTabs
           tabs={availableTabs}
           activeTab={activeTab}
           onSelect={handleTabToggle}
-          className="absolute right-2 bottom-full pb-2"
+          className={cn(
+            "absolute right-2 bottom-full pb-2 transition-opacity duration-200",
+            isStrategicMode && "opacity-80",
+          )}
         />
-        <div className="pointer-events-auto">
+        <div className={cn("pointer-events-auto transition-opacity duration-200", isStrategicMode && "opacity-90")}>
           <div className={cn(activeTab === "tile" && isPanelOpen ? "block" : "hidden")}>
             {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
           </div>
