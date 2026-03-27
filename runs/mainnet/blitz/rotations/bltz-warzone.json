@@ -12,9 +12,9 @@
   "requestedLaunchStep": "configure-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23667225455-1.json",
   "latestLaunchRequestId": "23667225455-1",
-  "currentStepId": "configure-worlds",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-27T20:59:43.958Z",
+  "updatedAt": "2026-03-27T21:00:01.872Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-27T21:14:40.322Z",
-    "lastEvaluatedAt": "2026-03-27T20:59:40.322Z"
+    "nextEvaluationAt": "2026-03-27T21:15:01.872Z",
+    "lastEvaluatedAt": "2026-03-27T21:00:01.872Z"
   },
   "steps": [
     {
@@ -59,9 +59,9 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
+      "latestEvent": "Waiting to run",
       "startedAt": "2026-03-27T20:59:43.958Z"
     },
     {
@@ -3309,9 +3309,126 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 18,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "village-spawn-resources",
+            "description": "Set discoverable village spawn resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -3332,8 +3449,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-03-27T20:59:57.300Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -3353,7 +3471,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x00b9d756fa82b892e841673b472e2a54f8d7f3036bef73d16f02bca7ec8cb710",
-          "createGameTxHash": "0x154a1b1607a2b56c051a1b36ec46cd9f0342eef89227a2be233c1e711a7afda"
+          "createGameTxHash": "0x154a1b1607a2b56c051a1b36ec46cd9f0342eef89227a2be233c1e711a7afda",
+          "configureTxHash": "0x68413c0d1b3048ba1a47fc23787dae8411b87259e65e1809f284c2087b864e7",
+          "worldConfigTxHash": "0x68413c0d1b3048ba1a47fc23787dae8411b87259e65e1809f284c2087b864e7"
         }
       },
       {
@@ -3453,6 +3573,55 @@
           }
         ],
         "artifacts": {}
+      },
+      {
+        "gameName": "bltz-warzone-21",
+        "startTime": 1774735200,
+        "startTimeIso": "2026-03-28T22:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 21,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
@@ -3462,13 +3631,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23667225455-1",
-    "workflowRunId": 23667225455,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-worlds",
-    "acquiredAt": "2026-03-27T20:59:43.958Z",
-    "expiresAt": "2026-03-27T21:44:43.958Z"
   }
 }
