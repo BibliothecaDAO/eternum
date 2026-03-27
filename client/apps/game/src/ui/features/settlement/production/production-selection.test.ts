@@ -6,6 +6,7 @@ import { resolveInitialSelectedRealm } from "./production-selection";
 
 const buildRealm = (entityId: number, name: string): RealmInfo =>
   ({
+    // The selection helpers only read entityId, so the test fixture can stay partial.
     entityId,
     position: { x: entityId, y: entityId + 1 },
     structure: {
@@ -19,7 +20,7 @@ const buildRealm = (entityId: number, name: string): RealmInfo =>
         name,
       },
     },
-  }) as RealmInfo;
+  }) as unknown as RealmInfo;
 
 describe("resolveInitialSelectedRealm", () => {
   const realms = [buildRealm(101, "Alpha"), buildRealm(202, "Beta"), buildRealm(303, "Gamma")];
