@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
+    title: "Manual Headline Preview",
+    description:
+      "Added a developer-only Headline Preview section in the in-game settings so you can manually show the existing realm fall, hyperstructure capture, player elimination, and five-minute warning news banners without waiting for live triggers.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:
       "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",

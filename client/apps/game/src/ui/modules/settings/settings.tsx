@@ -12,6 +12,7 @@ import { ToriiSetting } from "@/types";
 import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
+import { NEWS_HEADLINE_PREVIEW_OPTIONS, useNewsHeadlinePreviewStore } from "@/ui/features/news-headlines";
 import { OSWindow, settings } from "@/ui/features/world";
 import { openWorldSelectorModal } from "@/ui/features/world-selector";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
@@ -131,6 +132,9 @@ export const SettingsWindow = () => {
     const savedGuilds = localStorage.getItem("WHITELIST");
     return savedGuilds ? savedGuilds.split(",") : [];
   });
+  const canPreviewMajorGameEvents = import.meta.env.DEV;
+  const triggerNewsHeadlinePreview = useNewsHeadlinePreviewStore((state) => state.triggerPreview);
+  const dismissNewsHeadlinePreview = useNewsHeadlinePreviewStore((state) => state.dismissPreview);
 
   const handleGuildSelect = (guildId: string) => {
     setSelectedGuilds((prev) => {
@@ -498,6 +502,32 @@ export const SettingsWindow = () => {
               />
             </div>
           </section>
+
+          {canPreviewMajorGameEvents && (
+            <section className="space-y-3">
+              <Headline>Headline Preview</Headline>
+              <div className="text-xs text-gray-gold">
+                Manually trigger the existing news headline mockups for realm falls, hyperstructure captures, player
+                eliminations, and game end.
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {NEWS_HEADLINE_PREVIEW_OPTIONS.map((headline) => (
+                  <Button
+                    key={headline.type}
+                    size="xs"
+                    variant="outline"
+                    forceUppercase={false}
+                    onClick={() => triggerNewsHeadlinePreview(headline.type)}
+                  >
+                    {headline.label}
+                  </Button>
+                ))}
+                <Button size="xs" variant="danger" forceUppercase={false} onClick={dismissNewsHeadlinePreview}>
+                  Clear Preview
+                </Button>
+              </div>
+            </section>
+          )}
 
           {/* Footer Section */}
           <section className="space-y-4">

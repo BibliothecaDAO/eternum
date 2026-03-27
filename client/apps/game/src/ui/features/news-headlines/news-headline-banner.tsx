@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Castle from "lucide-react/dist/esm/icons/castle";
+import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import Crown from "lucide-react/dist/esm/icons/crown";
 import Navigation from "lucide-react/dist/esm/icons/navigation";
 import Skull from "lucide-react/dist/esm/icons/skull";
@@ -15,6 +16,7 @@ const ICON_MAP: Record<HeadlineType, typeof Castle> = {
   "hyper-capture": Crown,
   elimination: Skull,
   "game-end": Trophy,
+  "five-min-warning": Clock3,
 };
 
 interface NewsHeadlineBannerProps {
