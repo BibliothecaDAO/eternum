@@ -240,4 +240,32 @@ describe("createAmmV2ApiApp", () => {
 
     expect(response.headers.get("access-control-allow-origin")).toBe("https://eternum.realms.world");
   });
+
+  it("allows first-party Realms browser origins without extra configuration", async () => {
+    const { db, close } = await createTestAmmV2Database();
+    cleanup.push(close);
+    const app = createAmmV2ApiApp({ db });
+
+    const response = await app.request("http://ammv2.local/api/v1/pairs", {
+      headers: {
+        Origin: "https://blitz.realms.world",
+      },
+    });
+
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://blitz.realms.world");
+  });
+
+  it("rejects lookalike browser origins", async () => {
+    const { db, close } = await createTestAmmV2Database();
+    cleanup.push(close);
+    const app = createAmmV2ApiApp({ db });
+
+    const response = await app.request("http://ammv2.local/api/v1/pairs", {
+      headers: {
+        Origin: "https://blitz.realms.world.attacker.example",
+      },
+    });
+
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
+  });
 });
