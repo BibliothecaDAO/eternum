@@ -375,6 +375,24 @@ interface CancelFactoryRotationAutoRetryRequest {
   cancelReason?: string;
 }
 
+interface DeleteFactoryRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  gameName: string;
+  adminSecret: string;
+}
+
+interface DeleteFactorySeriesRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  seriesName: string;
+  adminSecret: string;
+}
+
+interface DeleteFactoryRotationRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  rotationName: string;
+  adminSecret: string;
+}
+
 interface UpdateFactoryIndexerTierRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName?: string;
@@ -642,6 +660,33 @@ export async function cancelFactoryRotationAutoRetry(request: CancelFactoryRotat
     method: "POST",
     headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
     body: JSON.stringify({ cancelReason }),
+  });
+}
+
+export async function deleteFactoryRun(request: DeleteFactoryRunRequest): Promise<void> {
+  const { adminSecret, environment, gameName } = request;
+  await fetchFactoryWorkerJson(`${buildFactoryRunPath(environment, gameName)}/actions/delete`, {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify({}),
+  });
+}
+
+export async function deleteFactorySeriesRun(request: DeleteFactorySeriesRunRequest): Promise<void> {
+  const { adminSecret, environment, seriesName } = request;
+  await fetchFactoryWorkerJson(`${buildFactorySeriesRunPath(environment, seriesName)}/actions/delete`, {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify({}),
+  });
+}
+
+export async function deleteFactoryRotationRun(request: DeleteFactoryRotationRunRequest): Promise<void> {
+  const { adminSecret, environment, rotationName } = request;
+  await fetchFactoryWorkerJson(`${buildFactoryRotationRunPath(environment, rotationName)}/actions/delete`, {
+    method: "POST",
+    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    body: JSON.stringify({}),
   });
 }
 

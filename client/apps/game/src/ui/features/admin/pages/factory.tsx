@@ -4,7 +4,7 @@ import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { EternumProvider } from "@bibliothecadao/provider";
-import { HexGrid, type Config as EternumConfig } from "@bibliothecadao/types";
+import { type Config as EternumConfig } from "@bibliothecadao/types";
 import {
   SetResourceFactoryConfig,
   setAgentConfig,
@@ -51,8 +51,6 @@ import { env } from "../../../../../env";
 import { AdminHeader } from "../components/admin-header";
 import {
   BANK_COUNT,
-  BANK_NAME_PREFIX,
-  BANK_STEPS_FROM_CENTER,
   CARTRIDGE_API_BASE,
   DEFAULT_NAMESPACE,
   FACTORY_ADDRESSES,
@@ -73,6 +71,7 @@ import {
   createIndexer as createIndexerService,
   updateIndexerTier as updateIndexerTierService,
 } from "../services/factory-indexer";
+import { buildAdminBanksForMapCenterOffset, fetchWorldMapCenterOffset } from "../services/world-banks";
 import { buildWorldConfigForFactory } from "../services/world-config-builder";
 import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
 import {
@@ -285,6 +284,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const { account, accountName } = useAccountStore();
 
   const currentChain = env.VITE_PUBLIC_CHAIN as ChainType;
+  const deployProfileMode: GameMode = (env.VITE_PUBLIC_FORCE_GAME_MODE_ID as GameMode) ?? "eternum";
   const { refreshStatuses, checkIndexerExists, getWorldDeployedAddressLocal } = useFactoryAdmin(currentChain);
   const factoryDeployRepeats = getFactoryDeployRepeatsForChain(currentChain);
   const defaultBlitzRegistration = useMemo(() => getDefaultBlitzRegistrationConfig(currentChain), [currentChain]);
@@ -297,7 +297,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   } = useFactorySeries(currentChain as Chain, account?.address ?? null);
 
   const [factoryAddress, setFactoryAddress] = useState<string>("");
-  const [version, setVersion] = useState<string>(getDefaultVersion(env.VITE_PUBLIC_FORCE_GAME_MODE_ID ?? "eternum"));
+  const [version, setVersion] = useState<string>(getDefaultVersion(deployProfileMode));
   const [namespace, setNamespace] = useState<string>(DEFAULT_NAMESPACE);
   const [worldName, setWorldName] = useState<string>("");
   const [seriesName, setSeriesName] = useState<string>("");
@@ -394,7 +394,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [battleDelaySecondsOverrides, setBattleDelaySecondsOverrides] = useState<Record<string, string>>({});
   const [agentMaxCurrentCountOverrides, setAgentMaxCurrentCountOverrides] = useState<Record<string, string>>({});
   const [agentMaxLifetimeCountOverrides, setAgentMaxLifetimeCountOverrides] = useState<Record<string, string>>({});
-  const activeGameMode: GameMode = (env.VITE_PUBLIC_FORCE_GAME_MODE_ID as GameMode) ?? "eternum";
+  const activeGameMode: GameMode = deployProfileMode;
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
@@ -1467,18 +1467,8 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
                                                   );
 
-                                                  // Build bank data from HexGrid
-                                                  const distantCoords =
-                                                    HexGrid.findHexCoordsfromCenter(BANK_STEPS_FROM_CENTER);
-                                                  const bankCoords = Object.values(distantCoords).map((coord) => ({
-                                                    alt: false,
-                                                    x: coord.x,
-                                                    y: coord.y,
-                                                  }));
-                                                  const banks = Array.from({ length: BANK_COUNT }, (_, i) => ({
-                                                    name: `${BANK_NAME_PREFIX} ${i + 1}`,
-                                                    coord: bankCoords[i],
-                                                  }));
+                                                  const mapCenterOffset = await fetchWorldMapCenterOffset(name);
+                                                  const banks = buildAdminBanksForMapCenterOffset(mapCenterOffset);
 
                                                   // Contract requires exactly 6 banks in one call
                                                   const tx = await localProvider.create_banks({
@@ -1572,7 +1562,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                           )}
                                         </div>
 
-                                        {/* Game Mode indicator (read-only, determined by VITE_PUBLIC_FORCE_GAME_MODE_ID) */}
+                                        {/* Deploy profile indicator (does not control runtime world mode detection) */}
                                         <div className="space-y-1">
                                           <label className="text-xs font-semibold text-gold/70">Game Mode</label>
                                           <div className="flex items-center gap-3">
@@ -1585,8 +1575,8 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                             <span className="font-mono">
                                               {activeGameMode}.{env.VITE_PUBLIC_CHAIN}.json
                                             </span>
-                                            . Change via{" "}
-                                            <span className="font-mono">VITE_PUBLIC_FORCE_GAME_MODE_ID</span> env var.
+                                            . Runtime mode is detected from each world's{" "}
+                                            <span className="font-mono">WorldConfig.blitz_mode_on</span> flag.
                                           </p>
                                         </div>
 

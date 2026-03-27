@@ -6,6 +6,7 @@ import { ensureRepoDirectory, resolveRepoPath } from "../shared/repo";
 import type { IndexerCreationMode, IndexerLiveState, IndexerRequest, IndexerTier } from "../types";
 
 const SLOT_COMMAND_MAX_BUFFER_BYTES = 10 * 1024 * 1024;
+const MAX_INDTERMINATE_TORII_STATE_DETAILS_CHARS = 1200;
 const TORII_TEMPLATE_PATH = "contracts/game/torii-template.toml";
 const TORII_OUTPUT_DIRECTORY = ".context/torii";
 const DEFAULT_WORLD_BLOCK = "0";
@@ -73,6 +74,28 @@ function buildSlotCommandFailureMessage(action: string, result: SpawnSyncReturns
   const exitCode = result.status ?? 1;
   const output = buildSlotCommandOutput(result);
   return output ? `Failed to ${action}: ${output}` : `Failed to ${action}: slot exited with code ${exitCode}`;
+}
+
+function summarizeIndeterminateToriiStateDetails(details: string | undefined): string | undefined {
+  const normalizedDetails = normalizeCapturedOutput(details);
+  if (!normalizedDetails) {
+    return undefined;
+  }
+
+  if (normalizedDetails.length <= MAX_INDTERMINATE_TORII_STATE_DETAILS_CHARS) {
+    return normalizedDetails;
+  }
+
+  return `${normalizedDetails.slice(0, MAX_INDTERMINATE_TORII_STATE_DETAILS_CHARS).trimEnd()}...`;
+}
+
+function buildIndeterminateToriiStateMessage(action: string, name: string, liveState: IndexerLiveState): string {
+  const baseMessage =
+    action === "create"
+      ? `Unable to verify whether Torii deployment "${name}" already exists. Refusing to create a duplicate while state is indeterminate.`
+      : `Unable to verify the Torii deployment state for "${name}". Refusing to ${action} while state is indeterminate.`;
+  const details = summarizeIndeterminateToriiStateDetails(liveState.describeError);
+  return details ? `${baseMessage}\nSlot output:\n${details}` : baseMessage;
 }
 
 function captureDescribeValue(output: string, label: string): string | undefined {
@@ -346,9 +369,7 @@ export function ensureSlotIndexerDeployment(
   }
 
   if (preExistingState.state === "indeterminate") {
-    throw new Error(
-      `Unable to verify whether Torii deployment "${request.worldName}" already exists. Refusing to create a duplicate while state is indeterminate.`,
-    );
+    throw new Error(buildIndeterminateToriiStateMessage("create", request.worldName, preExistingState));
   }
 
   const configPath = renderToriiConfig(request);
@@ -398,7 +419,7 @@ export function ensureSlotIndexerTier(
   }
 
   if (currentState.state === "indeterminate") {
-    throw new Error(`Unable to verify the Torii deployment state for "${options.name}"`);
+    throw new Error(buildIndeterminateToriiStateMessage("update the tier", options.name, currentState));
   }
 
   if (currentState.currentTier === options.tier) {
@@ -444,7 +465,7 @@ export function deleteSlotIndexerDeployment(
   }
 
   if (currentState.state === "indeterminate") {
-    throw new Error(`Unable to verify the Torii deployment state for "${options.name}"`);
+    throw new Error(buildIndeterminateToriiStateMessage("delete the deployment", options.name, currentState));
   }
 
   const slotCommandRunner = options.slotCommandRunner || runSlotCommand;

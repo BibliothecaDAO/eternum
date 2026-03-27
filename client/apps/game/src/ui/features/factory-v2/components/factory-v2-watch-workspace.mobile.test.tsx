@@ -19,6 +19,14 @@ vi.mock("../mode-appearance", () => ({
   })),
 }));
 
+vi.mock("./factory-v2-deployer-wallet-card", () => ({
+  FactoryV2DeployerWalletCard: ({ chain, environmentLabel }: { chain: string; environmentLabel: string }) => (
+    <div data-testid="factory-deployer-wallet-card">
+      {environmentLabel} deployer wallet {chain}
+    </div>
+  ),
+}));
+
 const clipboardWriteText = vi.fn();
 
 const waitForAsyncWork = async () => {
@@ -145,8 +153,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -171,6 +177,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(article?.className).toContain("md:max-w-md");
     expect(searchPanel?.textContent).toContain("Find a run");
     expect(searchPanel?.textContent).toContain("recent runs");
+    expect(container.textContent).toContain("Slot deployer wallet slot");
+    expect(selectedPanel?.textContent).toContain("Slot deployer wallet slot");
     expect(selectedPanel?.textContent).toContain("Setup progress");
     expect(selectedPanel?.textContent).toContain("In progress");
     expect(selectedPanel?.textContent).toContain("3 of 4 parts");
@@ -184,6 +192,78 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(currentProgressFill?.className).toContain("bg-[#7a4b22]");
     expect(currentProgressTrack?.textContent).toBe("");
     expect(actionBar?.className).toContain("sticky");
+  });
+
+  it("places the deployer wallet under prize funding controls", async () => {
+    const seriesRun = buildRun({
+      kind: "series",
+      mode: "eternum",
+      status: "attention",
+      summary: "Needs attention",
+      name: "bltz-weekend-cup",
+      steps: [
+        {
+          id: "create-series" as const,
+          title: "Create series",
+          summary: "done",
+          workflowName: "create-series",
+          status: "succeeded" as const,
+          verification: "done",
+          latestEvent: "done",
+        },
+      ],
+      children: [
+        {
+          id: "series-child-1",
+          gameName: "bltz-weekend-cup-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "succeeded",
+          latestEvent: "Ready",
+          currentStepId: null,
+          steps: [],
+          configReady: true,
+          worldAddress: "0x111",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[seriesRun]}
+          selectedRun={seriesRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn(async () => true)}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const prizeFundingToggle = container.querySelector(
+      '[data-testid="factory-prize-toggle"]',
+    ) as HTMLButtonElement | null;
+    const walletCard = container.querySelector('[data-testid="factory-deployer-wallet-card"]') as HTMLDivElement | null;
+
+    expect(prizeFundingToggle).not.toBeNull();
+    expect(walletCard).not.toBeNull();
+    expect(prizeFundingToggle?.textContent).toContain("Open prize funding");
+    expect(walletCard?.textContent).toContain("Slot deployer wallet slot");
+    expect(prizeFundingToggle!.compareDocumentPosition(walletCard!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("shows recent runs in the picker without auto-selecting one", async () => {
@@ -211,8 +291,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -241,6 +319,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
   });
 
   it("keeps recent runs visible even when the search panel is showing an error notice", async () => {
+    const noticeMessage = "Something went wrong while checking this game. We kept your place here.";
     const recentRun = buildRun({
       id: "recent-run-2",
       name: "bltz-recent-02",
@@ -260,13 +339,11 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
           isWatcherBusy={false}
           isResolvingRunName={false}
-          notice="Something went wrong while checking this game. We kept your place here."
+          notice={noticeMessage}
           lookupDisabledReason={null}
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -277,12 +354,24 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     });
 
     const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
+    const searchNotice = container.querySelector('[data-testid="factory-watch-search-notice"]');
 
-    expect(searchPanel?.textContent).toContain(
-      "Something went wrong while checking this game. We kept your place here.",
-    );
+    expect(searchPanel?.textContent).toContain(noticeMessage);
+    expect(searchNotice?.textContent).toContain("Run details");
+    expect(searchNotice?.textContent).toContain(noticeMessage);
     expect(searchPanel?.textContent).toContain("bltz-recent-02");
     expect(searchPanel?.textContent).toContain("Needs attention");
+
+    const copyButton = container.querySelector(
+      '[data-testid="factory-watch-search-notice-copy"]',
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      copyButton?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(noticeMessage);
   });
 
   it("shows the pending launch request as the first setup step", async () => {
@@ -363,8 +452,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -440,8 +527,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={onNudge}
           onStopAutoRetry={vi.fn()}
@@ -457,8 +542,83 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(container.textContent).toContain("Queued ahead");
     expect(container.textContent).toContain("Next evaluation");
     expect(container.textContent).toContain("Rotation games");
-    expect(container.textContent).not.toContain("Run now");
-    expect(container.textContent).not.toContain("Stop auto retry");
+    expect(container.textContent).not.toContain("Auto-retry");
+    expect(container.querySelector('button[aria-label="Run now"]')).toBeNull();
+    expect(container.querySelector('button[aria-label="Stop auto retry"]')).toBeNull();
+  });
+
+  it("shows stop auto retry for stalled rotations that still report running", async () => {
+    const onStopAutoRetry = vi.fn();
+    const rotationRun = buildRun({
+      kind: "rotation",
+      name: "bltz-bakers",
+      autoRetry: {
+        enabled: true,
+        intervalMinutes: 15,
+        nextRetryAt: null,
+        lastRetryAt: null,
+        cancelledAt: null,
+        cancelReason: null,
+      },
+      recovery: {
+        state: "stalled",
+        canContinue: true,
+        continueStepId: "create-worlds",
+      },
+      evaluation: {
+        intervalMinutes: 15,
+        nextEvaluationAt: "2026-03-24T15:22:03.341Z",
+        lastEvaluatedAt: "2026-03-24T15:07:03.341Z",
+        lastNudgedAt: null,
+      },
+      rotation: {
+        rotationName: "bltz-bakers",
+        maxGames: 4,
+        advanceWindowGames: 2,
+        createdGameCount: 2,
+        queuedGameCount: 1,
+        gameIntervalMinutes: 60,
+        firstGameStartTimeIso: "2026-03-24T15:00:00.000Z",
+      },
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[rotationRun]}
+          selectedRun={rotationRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={onStopAutoRetry}
+          hasAdminSecret
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const stopAutoRetryButton = container.querySelector('button[aria-label="Stop auto retry"]');
+
+    expect(stopAutoRetryButton).toBeTruthy();
+
+    await act(async () => {
+      (stopAutoRetryButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    expect(onStopAutoRetry).toHaveBeenCalledTimes(1);
   });
 
   it("shows rotation maintenance actions once the run needs attention", async () => {
@@ -507,8 +667,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -518,8 +676,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("Run now");
-    expect(container.textContent).toContain("Stop auto retry");
+    expect(container.querySelector('button[aria-label="Run now"]')).toBeTruthy();
+    expect(container.querySelector('button[aria-label="Stop auto retry"]')).toBeTruthy();
   });
 
   it("hides run now when a rotation is already complete", async () => {
@@ -560,8 +718,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -571,7 +727,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).not.toContain("Run now");
+    expect(container.querySelector('button[aria-label="Run now"]')).toBeNull();
   });
 
   it("shows all set instead of updating automatically for completed runs", async () => {
@@ -603,8 +759,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -660,8 +814,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -703,8 +855,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -743,8 +893,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -767,9 +915,59 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
     const searchPanel = container.querySelector('[data-testid="factory-watch-search-panel"]');
     const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
+    const searchNotice = container.querySelector('[data-testid="factory-watch-search-notice"]');
 
     expect(searchPanel?.textContent).toContain(missingRunNotice);
+    expect(searchNotice?.textContent).toContain(missingRunNotice);
     expect(selectedPanel?.textContent).not.toContain(missingRunNotice);
+  });
+
+  it("shows opening-run errors inside a compact copyable box", async () => {
+    const openingNotice = "Slot timed out while opening bltz-opening-01. Check again in a moment.";
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[]}
+          selectedRun={null}
+          activeRunName="bltz-opening-01"
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "checking", detail: "Updating automatically", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={openingNotice}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const pendingPanel = container.querySelector('[data-testid="factory-watch-pending-panel"]');
+    const pendingNotice = container.querySelector('[data-testid="factory-watch-pending-notice"]');
+
+    expect(pendingPanel?.textContent).toContain("Opening bltz-opening-01");
+    expect(pendingNotice?.textContent).toContain("Run details");
+    expect(pendingNotice?.textContent).toContain(openingNotice);
+
+    const copyButton = container.querySelector(
+      '[data-testid="factory-watch-pending-notice-copy"]',
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      copyButton?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(openingNotice);
   });
 
   it("hides continue when a game is already complete", async () => {
@@ -819,8 +1017,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -830,102 +1026,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).not.toContain("Continue");
-  });
-
-  it("lets operators check a child indexer without reopening the whole parent run", async () => {
-    const onBringChildIndexerLive = vi.fn();
-    const rotationRun = buildRun({
-      kind: "rotation",
-      status: "complete",
-      name: "bltz-knicker",
-      steps: [
-        {
-          id: "create-series" as const,
-          title: "Create series",
-          summary: "done",
-          workflowName: "create-series",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-        {
-          id: "create-indexers" as const,
-          title: "Create indexers",
-          summary: "done",
-          workflowName: "create-indexers",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-      ],
-      children: [
-        {
-          id: "rotation-child-1",
-          gameName: "bltz-knicker-01",
-          seriesGameNumber: 1,
-          startTimeIso: "2026-03-18T12:00:00.000Z",
-          status: "succeeded",
-          latestEvent: "Indexer is live",
-          currentStepId: null,
-          steps: [],
-          worldAddress: "0x111",
-          indexerCreated: true,
-        },
-        {
-          id: "rotation-child-2",
-          gameName: "bltz-knicker-02",
-          seriesGameNumber: 2,
-          startTimeIso: "2026-03-18T13:00:00.000Z",
-          status: "failed",
-          latestEvent: "Indexer needs attention",
-          currentStepId: "create-indexers",
-          steps: [],
-          worldAddress: "0x222",
-        },
-      ],
-    });
-
-    await act(async () => {
-      root.render(
-        <FactoryV2WatchWorkspace
-          mode="blitz"
-          runs={[rotationRun]}
-          selectedRun={rotationRun}
-          activeRunName={null}
-          acceptedRunMessage={null}
-          watcher={null}
-          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
-          isWatcherBusy={false}
-          isResolvingRunName={false}
-          notice={null}
-          lookupDisabledReason={null}
-          onSelectRun={vi.fn()}
-          onResolveRunByName={vi.fn(async () => false)}
-          onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={onBringChildIndexerLive}
-          onRefresh={vi.fn()}
-          onNudge={vi.fn()}
-          onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
-        />,
-      );
-      await waitForAsyncWork();
-    });
-
-    expect(container.textContent).toContain("Check indexer");
-    expect(container.textContent).toContain("Retry indexer");
-
-    const checkButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Check indexer"),
-    );
-
-    expect(checkButton).toBeTruthy();
-
-    checkButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-    expect(onBringChildIndexerLive).toHaveBeenCalledWith("bltz-knicker-01");
+    expect(container.querySelector('button[aria-label="Continue"]')).toBeNull();
   });
 
   it("defaults series prize funding to ready unfunded games and forwards the secret", async () => {
@@ -1017,8 +1118,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1068,6 +1167,110 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       adminSecret: "factory-secret",
       selectedGameNames: ["bltz-weekend-cup-01"],
     });
+  });
+
+  it("shows a resend cooldown after successful series prize funding", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
+
+    const onFundPrize = vi.fn(async () => true);
+    const seriesRun = buildRun({
+      kind: "series",
+      mode: "eternum",
+      status: "attention",
+      summary: "Needs attention",
+      name: "bltz-weekend-cup",
+      steps: [
+        {
+          id: "create-series" as const,
+          title: "Create series",
+          summary: "done",
+          workflowName: "create-series",
+          status: "succeeded" as const,
+          verification: "done",
+          latestEvent: "done",
+        },
+      ],
+      children: [
+        {
+          id: "series-child-1",
+          gameName: "bltz-weekend-cup-01",
+          seriesGameNumber: 1,
+          startTimeIso: "2026-03-18T12:00:00.000Z",
+          status: "succeeded",
+          latestEvent: "Ready",
+          currentStepId: null,
+          steps: [],
+          configReady: true,
+          worldAddress: "0x111",
+        },
+      ],
+    });
+
+    try {
+      await act(async () => {
+        root.render(
+          <FactoryV2WatchWorkspace
+            mode="blitz"
+            runs={[seriesRun]}
+            selectedRun={seriesRun}
+            activeRunName={null}
+            acceptedRunMessage={null}
+            watcher={null}
+            pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+            isWatcherBusy={false}
+            isResolvingRunName={false}
+            notice={null}
+            lookupDisabledReason={null}
+            onSelectRun={vi.fn()}
+            onResolveRunByName={vi.fn(async () => false)}
+            onContinue={vi.fn()}
+            onRefresh={vi.fn()}
+            onNudge={vi.fn()}
+            onStopAutoRetry={vi.fn()}
+            adminSecret="factory-secret"
+            hasAdminSecret
+            onFundPrize={onFundPrize}
+          />,
+        );
+        await waitForAsyncWork();
+      });
+
+      await openPrizeFundingSection(container);
+
+      const amountInput = container.querySelector('[data-testid="factory-prize-amount"]') as HTMLInputElement | null;
+      const submitButton = container.querySelector('[data-testid="factory-prize-submit"]') as HTMLButtonElement | null;
+
+      await act(async () => {
+        if (!amountInput || !submitButton) {
+          throw new Error("Expected prize funding controls to be rendered");
+        }
+
+        setInputValue(amountInput, "250");
+        submitButton.click();
+        await waitForAsyncWork();
+      });
+
+      expect(onFundPrize).toHaveBeenCalledWith({
+        amount: "250",
+        adminSecret: "factory-secret",
+        selectedGameNames: ["bltz-weekend-cup-01"],
+      });
+      expect(container.textContent).toContain("Prize funding sent for 1 game. Wait 30 seconds before sending again.");
+      expect(submitButton?.disabled).toBe(true);
+      expect(submitButton?.textContent).toContain("Wait 30s");
+
+      await act(async () => {
+        vi.advanceTimersByTime(30_000);
+        await waitForAsyncWork();
+      });
+
+      expect(container.textContent).not.toContain("Prize funding sent for 1 game.");
+      expect(submitButton?.disabled).toBe(false);
+      expect(submitButton?.textContent).toContain("Fund selected games");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("shows prize funding for an incomplete game once world config has succeeded", async () => {
@@ -1125,8 +1328,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1222,8 +1423,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1297,8 +1496,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={onStopAutoRetry}
@@ -1309,9 +1506,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       await waitForAsyncWork();
     });
 
-    const stopAutoRetryButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Stop auto retry"),
-    );
+    const stopAutoRetryButton = container.querySelector('button[aria-label="Stop auto retry"]');
 
     expect(stopAutoRetryButton).toBeTruthy();
 
@@ -1321,6 +1516,115 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     });
 
     expect(onStopAutoRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a delete run action for a selected stored run", async () => {
+    const onDeleteRun = vi.fn();
+    const run = buildRun({
+      status: "attention",
+      name: "bltz-trashfire",
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[run]}
+          selectedRun={run}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          onDeleteRun={onDeleteRun}
+          hasAdminSecret
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const deleteRunButton = container.querySelector('button[aria-label="Delete run"]');
+
+    expect(deleteRunButton).toBeTruthy();
+
+    await act(async () => {
+      (deleteRunButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    expect(onDeleteRun).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides continue after auto-retry was cancelled for a failed series", async () => {
+    const cancelledRun = buildRun({
+      kind: "series",
+      status: "attention",
+      name: "bltz-weekend-cup",
+      autoRetry: {
+        enabled: false,
+        intervalMinutes: 15,
+        nextRetryAt: null,
+        lastRetryAt: null,
+        cancelledAt: "2026-03-24T10:00:00.000Z",
+        cancelReason: "Paused by admin",
+      },
+      recovery: {
+        state: "failed",
+        canContinue: true,
+        continueStepId: "create-worlds",
+      },
+      steps: [
+        {
+          id: "create-worlds" as const,
+          title: "Create worlds",
+          summary: "Create worlds",
+          workflowName: "create-worlds",
+          status: "failed" as const,
+          verification: "failed",
+          latestEvent: "failed",
+        },
+      ],
+    });
+
+    await act(async () => {
+      root.render(
+        <FactoryV2WatchWorkspace
+          mode="blitz"
+          runs={[cancelledRun]}
+          selectedRun={cancelledRun}
+          activeRunName={null}
+          acceptedRunMessage={null}
+          watcher={null}
+          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
+          isWatcherBusy={false}
+          isResolvingRunName={false}
+          notice={null}
+          lookupDisabledReason={null}
+          onSelectRun={vi.fn()}
+          onResolveRunByName={vi.fn(async () => false)}
+          onContinue={vi.fn()}
+          onRefresh={vi.fn()}
+          onNudge={vi.fn()}
+          onStopAutoRetry={vi.fn()}
+          hasAdminSecret
+          onFundPrize={vi.fn()}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.querySelector('button[aria-label="Continue"]')).toBeNull();
+    expect(container.textContent).toContain("This series stopped and auto-retry is off.");
   });
 
   it("shows completed and pending child steps instead of a raw latest-event tx hash", async () => {
@@ -1386,8 +1690,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1462,8 +1764,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
@@ -1581,8 +1881,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
-          onBringIndexerLive={vi.fn()}
-          onBringChildIndexerLive={vi.fn()}
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}

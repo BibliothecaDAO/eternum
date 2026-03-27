@@ -15,6 +15,7 @@ import {
 } from "./github";
 import { recordFactorySeriesMaintenanceIndex } from "./maintenance-index";
 import { resolveFactorySeriesRunId, resolveFactorySeriesRunRecordPath } from "./paths";
+import { buildPersistedSeriesLaunchRequest } from "./persisted-launch-request";
 import { applyTargetedSeriesLikeGameStepStatus } from "./series-like-step-status";
 import { resolveSeriesStepTitle } from "./steps";
 import type {
@@ -106,25 +107,6 @@ function resolveSeriesSummaryStepEvent(summary: LaunchSeriesSummary, stepId: Lau
     default:
       return "Waiting to run";
   }
-}
-
-function buildPersistedSeriesLaunchRequest(
-  request: FactorySeriesRunRequestContext["request"],
-  summary: LaunchSeriesSummary,
-): FactorySeriesRunRequestContext["request"] {
-  return {
-    ...request,
-    seriesName: summary.seriesName,
-    autoRetryEnabled: summary.autoRetryEnabled,
-    autoRetryIntervalMinutes: resolveDefaultSeriesRetryIntervalMinutes(request),
-    games: summary.games.map((game) => ({
-      gameName: game.gameName,
-      startTime: game.startTime,
-      seriesGameNumber: game.seriesGameNumber,
-    })),
-    targetGameNames: undefined,
-    resumeSummary: undefined,
-  };
 }
 
 function buildFactorySeriesLaunchInputRecord(

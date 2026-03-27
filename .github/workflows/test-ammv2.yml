@@ -1,0 +1,23 @@
+name: test ammv2
+
+on:
+  pull_request:
+    paths:
+      - "contracts/ammv2/**"
+      - ".github/workflows/test-ammv2.yml"
+
+jobs:
+  test-ammv2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/ammv2/.tool-versions
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/ammv2/.tool-versions
+      - run: scarb build
+        working-directory: contracts/ammv2
+      - run: snforge test
+        working-directory: contracts/ammv2

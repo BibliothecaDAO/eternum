@@ -17,6 +17,7 @@ import {
 } from "./github";
 import { recordFactoryRotationMaintenanceIndex } from "./maintenance-index";
 import { resolveFactoryRotationRunId, resolveFactoryRotationRunRecordPath } from "./paths";
+import { buildPersistedRotationLaunchRequest } from "./persisted-launch-request";
 import { applyTargetedSeriesLikeGameStepStatus } from "./series-like-step-status";
 import { resolveRotationStepTitle } from "./steps";
 import type {
@@ -113,25 +114,6 @@ function buildFactoryRotationRunSteps(summary: LaunchRotationSummary): FactoryRo
     status: resolveRotationSummaryStepStatus(summary, stepId),
     latestEvent: resolveRotationSummaryStepEvent(summary, stepId),
   }));
-}
-
-function buildPersistedRotationLaunchRequest(
-  request: FactoryRotationRunRequestContext["request"],
-  summary: LaunchRotationSummary,
-): FactoryRotationRunRequestContext["request"] {
-  return {
-    ...request,
-    rotationName: summary.rotationName,
-    firstGameStartTime: summary.firstGameStartTime,
-    gameIntervalMinutes: summary.gameIntervalMinutes,
-    maxGames: summary.maxGames,
-    advanceWindowGames: summary.advanceWindowGames,
-    targetGameNames: undefined,
-    evaluationIntervalMinutes: summary.evaluationIntervalMinutes,
-    autoRetryEnabled: summary.autoRetryEnabled,
-    autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
-    resumeSummary: undefined,
-  };
 }
 
 function buildFactoryRotationLaunchInputRecord(

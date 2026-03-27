@@ -163,3 +163,7 @@ pub mod bitcoin_mine {
 pub mod spire {
     pub mod contracts;
 }
+
+pub mod alt_movement {
+    pub mod contracts;
+}

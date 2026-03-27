@@ -10,6 +10,8 @@ interface FactoryV2PrizeFundingCardProps {
   run: FactoryRun;
   isBusy: boolean;
   adminSecret: string;
+  successMessage: string | null;
+  cooldownSecondsRemaining: number;
   onSubmit: (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => Promise<void> | void;
 }
 
@@ -29,11 +31,19 @@ interface FactoryV2PrizeFundingState {
   games: FactoryV2PrizeFundingSeriesGame[];
 }
 
-export const FactoryV2PrizeFundingCard = ({ run, isBusy, adminSecret, onSubmit }: FactoryV2PrizeFundingCardProps) => {
+export const FactoryV2PrizeFundingCard = ({
+  run,
+  isBusy,
+  adminSecret,
+  successMessage,
+  cooldownSecondsRemaining,
+  onSubmit,
+}: FactoryV2PrizeFundingCardProps) => {
   const fundingState = useMemo(() => resolvePrizeFundingState(run), [run]);
   const fundingStateKey = useMemo(() => buildPrizeFundingStateKey(fundingState), [fundingState]);
   const [amount, setAmount] = useState("");
   const [selectedGameNames, setSelectedGameNames] = useState<string[]>(fundingState?.defaultSelectedGameNames ?? []);
+  const isCoolingDown = cooldownSecondsRemaining > 0;
 
   useEffect(() => {
     setAmount("");
@@ -133,14 +143,27 @@ export const FactoryV2PrizeFundingCard = ({ run, isBusy, adminSecret, onSubmit }
         <button
           type="button"
           data-testid="factory-prize-submit"
-          disabled={isBusy || !amount.trim() || !adminSecret.trim() || !canSubmit}
+          disabled={isBusy || isCoolingDown || !amount.trim() || !adminSecret.trim() || !canSubmit}
           onClick={() => {
             void submitFundingRequest();
           }}
           className="inline-flex w-full items-center justify-center rounded-full border border-black/10 bg-[#7a4b22] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#6d411c] disabled:cursor-not-allowed disabled:bg-[#7a4b22]/45"
         >
-          {isSeriesFunding ? "Fund selected games" : "Fund this game"}
+          {isCoolingDown
+            ? `Wait ${cooldownSecondsRemaining}s`
+            : isSeriesFunding
+              ? "Fund selected games"
+              : "Fund this game"}
         </button>
+        {successMessage ? (
+          <div
+            data-testid="factory-prize-success"
+            aria-live="polite"
+            className="rounded-[18px] border border-emerald-700/15 bg-emerald-50/80 px-3 py-2 text-left text-[12px] leading-5 text-emerald-950"
+          >
+            {successMessage}
+          </div>
+        ) : null}
       </div>
     </div>
   );

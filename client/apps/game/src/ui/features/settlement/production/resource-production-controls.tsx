@@ -1,5 +1,6 @@
 import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
+import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import {
   configManager,
   divideByPrecision,
@@ -8,7 +9,7 @@ import {
   getBuildingQuantity,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { getBuildingFromResource, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getBuildingFromResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
@@ -313,7 +314,9 @@ export const ResourceProductionControls = ({
             <span className="text-gold/80">Time Required:</span>
             <span>
               {ticks
-                ? formatTime(Math.floor((ticks / buildingCount) * (realm.category === StructureType.Village ? 2 : 1)))
+                ? formatTime(
+                    Math.floor((ticks / buildingCount) * (isVillageLikeStructureCategory(realm.category) ? 2 : 1)),
+                  )
                 : "0s"}
             </span>
           </h4>

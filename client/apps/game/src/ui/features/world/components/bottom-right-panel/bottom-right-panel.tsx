@@ -1,7 +1,9 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { BottomPanelTabId, useUIStore } from "@/hooks/store/use-ui-store";
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
+import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
@@ -28,6 +30,7 @@ import {
   BuildingTypeToString,
   ID,
   ResourcesIds,
+  StructureType,
   TileOccupier,
   findResourceById,
 } from "@bibliothecadao/types";
@@ -346,14 +349,16 @@ const LocalTilePanel = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const mode = useGameModeConfig();
 
-  const structureBase = useMemo(() => {
+  const selectedStructure = useMemo(() => {
     const structure = playerStructures.find((entry) => entry.entityId === structureEntityId);
     const base = structure?.structure?.base;
     if (base && base.coord_x !== undefined && base.coord_y !== undefined) {
       return {
         outerCol: Number(base.coord_x),
         outerRow: Number(base.coord_y),
+        category: normalizeStructureCategory(base.category),
       };
     }
 
@@ -371,6 +376,7 @@ const LocalTilePanel = () => {
       return {
         outerCol: Number(liveBase.coord_x),
         outerRow: Number(liveBase.coord_y),
+        category: normalizeStructureCategory(liveBase.category),
       };
     }
 
@@ -382,33 +388,33 @@ const LocalTilePanel = () => {
     if (!Number.isFinite(entityId) || entityId <= 0) return null;
     const syncPosition = selectedBuildingHex
       ? { col: selectedBuildingHex.outerCol, row: selectedBuildingHex.outerRow }
-      : structureBase
-        ? { col: structureBase.outerCol, row: structureBase.outerRow }
+      : selectedStructure
+        ? { col: selectedStructure.outerCol, row: selectedStructure.outerRow }
         : null;
     if (!syncPosition) return null;
     return {
       entityId: entityId as ID,
       position: syncPosition,
     };
-  }, [selectedBuildingHex, structureBase, structureEntityId]);
+  }, [selectedBuildingHex, selectedStructure, structureEntityId]);
   const structureSyncKey = structureSyncTarget ? `structure:${String(structureSyncTarget.entityId)}` : null;
   const isSyncingStructure = isSyncing(structureSyncKey);
 
   useEffect(() => {
-    if (!structureBase) return;
+    if (!selectedStructure) return;
     if (
       !selectedBuildingHex ||
-      selectedBuildingHex.outerCol !== structureBase.outerCol ||
-      selectedBuildingHex.outerRow !== structureBase.outerRow
+      selectedBuildingHex.outerCol !== selectedStructure.outerCol ||
+      selectedBuildingHex.outerRow !== selectedStructure.outerRow
     ) {
       setSelectedBuildingHex({
-        outerCol: structureBase.outerCol,
-        outerRow: structureBase.outerRow,
+        outerCol: selectedStructure.outerCol,
+        outerRow: selectedStructure.outerRow,
         innerCol: BUILDINGS_CENTER[0],
         innerRow: BUILDINGS_CENTER[1],
       });
     }
-  }, [selectedBuildingHex, setSelectedBuildingHex, structureBase]);
+  }, [selectedBuildingHex, selectedStructure, setSelectedBuildingHex]);
 
   const building = useMemo(() => {
     if (!selectedBuildingHex || !buildingComponent) return null;
@@ -432,9 +438,17 @@ const LocalTilePanel = () => {
     selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
     selectedBuildingHex.innerRow === BUILDINGS_CENTER[1];
 
+  const selectedStructureCategory = selectedStructure?.category ?? null;
   const hasBuilding = buildingCategory !== null && buildingCategory !== BuildingType.None;
   const buildingName = (() => {
-    if (isCastleTile) return "Castle";
+    if (isCastleTile) {
+      if (selectedStructureCategory === StructureType.Realm) return "Castle";
+      if (isVillageLikeStructureCategory(selectedStructureCategory)) return mode.labels.village;
+      if (selectedStructureCategory === StructureType.FragmentMine) return mode.labels.fragmentMine;
+      if (selectedStructureCategory === StructureType.Hyperstructure) return "Hyperstructure";
+      if (selectedStructureCategory === StructureType.Bank) return "Bank";
+      return "Structure";
+    }
     if (hasBuilding) {
       return BuildingTypeToString[buildingCategory as keyof typeof BuildingTypeToString] ?? "Building";
     }

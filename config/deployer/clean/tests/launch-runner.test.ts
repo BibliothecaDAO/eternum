@@ -42,12 +42,16 @@ const waitForFactoryWorldProfileMock = mock(async () => ({
 }));
 const resolveFactoryWorldProfileMock = mock(async () => null);
 const writeLaunchSummaryMock = mock(() => "/tmp/launch-summary.json");
+const loadLaunchSummaryIfPresentMock = mock(() => null);
 const resolveFactoryWorldConfigStepsMock = mock(() => []);
 const executeConfigStepsMock = mock(async ({ mode }: { mode?: string }) => ({
   mode: mode || "batched",
   steps: [],
   transactionHash: mode === "batched" ? "0xconfigure" : undefined,
+  artifacts: {},
 }));
+const deriveMapCenterOffsetFromWorldConfigTxMock = mock(() => 50);
+const buildBanksForMapCenterOffsetMock = mock(() => []);
 const ensureSlotIndexerDeploymentMock = mock(async () => ({
   mode: "slot-direct",
   action: "created",
@@ -143,7 +147,8 @@ mock.module("../config/steps", () => ({
 }));
 
 mock.module("../eternum", () => ({
-  buildDefaultBanks: () => [],
+  buildBanksForMapCenterOffset: buildBanksForMapCenterOffsetMock,
+  deriveMapCenterOffsetFromWorldConfigTx: deriveMapCenterOffsetFromWorldConfigTxMock,
   grantVillagePassRolesToWorldSystems: grantVillagePassRolesToWorldSystemsMock,
 }));
 
@@ -175,7 +180,7 @@ mock.module("../indexing/slot-torii", () => ({
 }));
 
 mock.module("../launch/io", () => ({
-  loadLaunchSummaryIfPresent: () => null,
+  loadLaunchSummaryIfPresent: loadLaunchSummaryIfPresentMock,
   writeLaunchSummary: writeLaunchSummaryMock,
 }));
 
@@ -214,6 +219,8 @@ describe("runLaunchStep mainnet launch steps", () => {
     waitForFactoryWorldProfileMock.mockClear();
     resolveFactoryWorldProfileMock.mockClear();
     writeLaunchSummaryMock.mockClear();
+    loadLaunchSummaryIfPresentMock.mockClear();
+    loadLaunchSummaryIfPresentMock.mockImplementation(() => null);
     resolveFactoryWorldConfigStepsMock.mockClear();
     resolveFactoryWorldConfigStepsMock.mockImplementation(() => []);
     executeConfigStepsMock.mockClear();
@@ -221,7 +228,12 @@ describe("runLaunchStep mainnet launch steps", () => {
       mode: mode || "batched",
       steps: [],
       transactionHash: mode === "batched" ? "0xconfigure" : undefined,
+      artifacts: {},
     }));
+    deriveMapCenterOffsetFromWorldConfigTxMock.mockClear();
+    deriveMapCenterOffsetFromWorldConfigTxMock.mockImplementation(() => 50);
+    buildBanksForMapCenterOffsetMock.mockClear();
+    buildBanksForMapCenterOffsetMock.mockImplementation(() => []);
     ensureSlotIndexerDeploymentMock.mockClear();
     ensureSlotIndexerDeploymentMock.mockImplementation(async () => ({
       mode: "slot-direct",
@@ -260,11 +272,38 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
       contractAddress: factoryAddress,
       entrypoint: "create_game",
-      calldata: ["felt:alpha", 70, "180", "0x0", 0],
+      calldata: ["felt:alpha", 50, "180", "0x0", 0],
     });
     expect(waitForTransactionMock.mock.calls).toHaveLength(15);
     expect(createGameDelayMock.mock.calls).toHaveLength(14);
     expect(summary.createGameTxHash).toBe("0xcreate15");
+  });
+
+  test("logs raw create_game calldata before each submission attempt", async () => {
+    const capturedLogs: string[] = [];
+    const originalWrite = process.stderr.write.bind(process.stderr);
+
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      capturedLogs.push(typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"));
+      return true;
+    }) as typeof process.stderr.write;
+
+    try {
+      await runLaunchStep({
+        environmentId: "mainnet.blitz",
+        stepId: "create-world",
+        gameName: "alpha",
+        startTime,
+        rpcUrl: "https://rpc.example",
+        factoryAddress,
+        accountAddress,
+        privateKey,
+      });
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+
+    expect(capturedLogs.join("")).toContain('Raw create_game calldata: ["felt:alpha",50,"180","0x0",0]');
   });
 
   test("submits create_game five times on slot across five retries", async () => {
@@ -428,6 +467,15 @@ describe("runLaunchStep mainnet launch steps", () => {
   });
 
   test("creates banks for mainnet eternum", async () => {
+    loadLaunchSummaryIfPresentMock.mockImplementation(() =>
+      buildStoredLaunchSummary({
+        environment: "mainnet.eternum",
+        chain: "mainnet",
+        gameType: "eternum",
+        worldConfigTxHash: "0xstored-world-config",
+      }),
+    );
+
     const summary = await runLaunchStep({
       environmentId: "mainnet.eternum",
       stepId: "create-banks",
@@ -441,8 +489,65 @@ describe("runLaunchStep mainnet launch steps", () => {
 
     expect(waitForFactoryWorldProfileMock).toHaveBeenCalledTimes(1);
     expect(createBanksMock).toHaveBeenCalledTimes(1);
+    expect(deriveMapCenterOffsetFromWorldConfigTxMock).toHaveBeenCalledWith("0xstored-world-config");
+    expect(buildBanksForMapCenterOffsetMock).toHaveBeenCalledWith(50);
     expect(summary.createBanksTxHash).toBe("0xbanks");
     expect(summary.worldAddress).toBe("0xworld");
+  });
+
+  test("stores the batched configure tx hash as worldConfigTxHash", async () => {
+    const summary = await runLaunchStep({
+      environmentId: "mainnet.eternum",
+      stepId: "configure-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(summary.configureTxHash).toBe("0xconfigure");
+    expect(summary.worldConfigTxHash).toBe("0xconfigure");
+  });
+
+  test("stores the sequential world-admin tx hash as worldConfigTxHash", async () => {
+    executeConfigStepsMock.mockImplementationOnce(async () => ({
+      mode: "sequential",
+      steps: [
+        {
+          id: "world-admin",
+          description: "Set world admin config",
+          transactionHash: "0xworld-admin",
+        },
+      ],
+      transactionHash: undefined,
+      artifacts: {
+        worldConfigTxHash: "0xworld-admin",
+      },
+    }));
+
+    const summary = await runLaunchStep({
+      environmentId: "mainnet.eternum",
+      stepId: "configure-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+      executionMode: "sequential",
+    });
+
+    expect(summary.configureTxHash).toBeUndefined();
+    expect(summary.worldConfigTxHash).toBe("0xworld-admin");
+    expect(summary.configSteps).toEqual([
+      {
+        id: "world-admin",
+        description: "Set world admin config",
+        transactionHash: "0xworld-admin",
+      },
+    ]);
   });
 
   test("creates the indexer directly via Slot and stores live torii state", async () => {
@@ -579,3 +684,21 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(summary.paymasterSynced).toBeUndefined();
   });
 });
+
+function buildStoredLaunchSummary(overrides: Record<string, unknown> = {}) {
+  return {
+    environment: "slot.blitz",
+    chain: "slot",
+    gameType: "blitz",
+    gameName: "alpha",
+    startTime: 1_700_000_000,
+    startTimeIso: "2023-11-14T22:13:20.000Z",
+    rpcUrl: "https://rpc.example",
+    factoryAddress: "0xfactory",
+    indexerCreated: false,
+    configMode: "batched",
+    configSteps: [],
+    dryRun: false,
+    ...overrides,
+  };
+}

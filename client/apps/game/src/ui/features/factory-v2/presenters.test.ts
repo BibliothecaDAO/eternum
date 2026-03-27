@@ -172,6 +172,28 @@ describe("factory run recovery actions", () => {
     });
   });
 
+  it("hides continue when auto-retry was explicitly cancelled", () => {
+    const run = buildFactoryRun({
+      kind: "series",
+      recovery: {
+        state: "failed",
+        canContinue: true,
+        continueStepId: "wait-for-factory-index",
+      },
+      autoRetry: {
+        enabled: false,
+        intervalMinutes: 15,
+        nextRetryAt: null,
+        lastRetryAt: null,
+        cancelledAt: "2026-03-24T10:00:00.000Z",
+        cancelReason: "Paused by admin",
+      },
+    });
+
+    expect(resolveRunPrimaryAction(run)).toBeNull();
+    expect(getRunDetailMessage(run)).toBe("This series stopped and auto-retry is off.");
+  });
+
   it("uses plain language for step detail rows", () => {
     const run = buildFactoryRun({
       steps: [

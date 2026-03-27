@@ -1,8 +1,4 @@
-export const RENDERER_BUILD_MODES = [
-  "legacy-webgl",
-  "experimental-webgpu-auto",
-  "experimental-webgpu-force-webgl",
-] as const;
+const RENDERER_BUILD_MODES = ["legacy-webgl", "experimental-webgpu-auto", "experimental-webgpu-force-webgl"] as const;
 
 export type RendererBuildMode = (typeof RENDERER_BUILD_MODES)[number];
 

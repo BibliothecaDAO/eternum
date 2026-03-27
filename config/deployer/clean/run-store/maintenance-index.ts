@@ -1,4 +1,4 @@
-import { updateGitHubBranchJsonFile } from "./github";
+import { readGitHubBranchJsonFile, updateGitHubBranchJsonFile } from "./github";
 import {
   resolveFactoryMaintenanceIndexPath,
   resolveFactoryRotationRunRecordPath,
@@ -231,6 +231,39 @@ async function recordFactoryMaintenanceIndexEntry(
       },
     }),
     `factory-runs: update ${kind} maintenance index for ${environment}/${entryKey}`,
+  );
+}
+
+export async function removeFactoryMaintenanceIndexEntry(
+  config: GitHubBranchStoreConfig,
+  environment: FactoryRunRecord["environment"],
+  kind: FactoryMaintenanceIndexKind,
+  entryKey: string,
+): Promise<void> {
+  const indexPath = resolveFactoryMaintenanceIndexPath(environment, kind);
+  const currentIndex = (await readGitHubBranchJsonFile<FactoryRunMaintenanceIndexRecord>(config, indexPath)).value;
+
+  if (!currentIndex?.entries?.[entryKey]) {
+    return;
+  }
+
+  await updateGitHubBranchJsonFile<FactoryRunMaintenanceIndexRecord>(
+    config,
+    indexPath,
+    (existingIndex) => {
+      const nextEntries = { ...(existingIndex?.entries || {}) };
+      delete nextEntries[entryKey];
+
+      return {
+        ...(existingIndex || buildEmptyMaintenanceIndex(environment, kind)),
+        version: 1,
+        environment,
+        kind,
+        updatedAt: new Date().toISOString(),
+        entries: nextEntries,
+      };
+    },
+    `factory-runs: remove stale ${kind} maintenance index for ${environment}/${entryKey}`,
   );
 }
 

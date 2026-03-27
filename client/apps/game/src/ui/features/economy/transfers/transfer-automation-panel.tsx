@@ -2,6 +2,11 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-draft-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  canTransferMilitaryInventoryBetweenStructures,
+  canTransferMilitaryInventoryFromStructure,
+  resolveStructureUiCapabilities,
+} from "@/ui/lib/structure-capabilities";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
@@ -12,7 +17,7 @@ import {
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import type { VillageIconKey } from "@/config/game-modes";
+import type { GameModeId, VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo } from "@bibliothecadao/react";
 import {
@@ -34,14 +39,15 @@ import Tent from "lucide-react/dist/esm/icons/tent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-const ESSENCE_SITE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
-
-const SOURCE_ALLOWED_CATEGORIES = new Set<StructureType>([
-  StructureType.Realm,
-  StructureType.Village,
-  StructureType.FragmentMine,
+const BLITZ_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
+const ETERNUM_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([
+  ResourcesIds.Donkey,
+  ResourcesIds.AncientFragment,
 ]);
-const DEST_ALLOWED_CATEGORIES = SOURCE_ALLOWED_CATEGORIES;
+const FRAGMENT_MINE_TRANSFER_MESSAGE_BY_MODE: Record<GameModeId, string> = {
+  blitz: "Essence rifts can only transfer Donkeys and Essence.",
+  eternum: "Fragment mines can only transfer Donkeys and Ancient Fragments.",
+};
 
 const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
   castle: Castle,
@@ -49,15 +55,15 @@ const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
 };
 
 const isFragmentMine = (structure: Structure | undefined) => structure?.category === StructureType.FragmentMine;
-const isRealm = (structure: Structure | undefined) => structure?.category === StructureType.Realm;
-const isAllowedSource = (structure: Structure) => SOURCE_ALLOWED_CATEGORIES.has(structure.category);
-const isAllowedDestination = (structure: Structure) => DEST_ALLOWED_CATEGORIES.has(structure.category);
+const canOpenTransferInventory = (structure: Structure) =>
+  resolveStructureUiCapabilities(structure.structure).canOpenTransferInventory;
 
 const getStructureIcon = (category: StructureType, villageIconKey: VillageIconKey) => {
   switch (category) {
     case StructureType.Realm:
       return Crown;
     case StructureType.Village:
+    case StructureType.Camp:
       return VILLAGE_ICON_BY_KEY[villageIconKey];
     case StructureType.FragmentMine:
       return Pickaxe;
@@ -80,7 +86,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   const favoriteDestinationIds = useMemo(() => new Set(favorites), [favorites]);
 
   const ownedSources = useMemo<Structure[]>(() => {
-    return playerStructures.filter((structure) => isAllowedSource(structure));
+    return playerStructures.filter((structure) => canOpenTransferInventory(structure));
   }, [playerStructures]);
 
   // Aggregate available resources across owned sources (balance > 0)
@@ -101,6 +107,11 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   const [interval, setIntervalMinutes] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const fragmentMineAllowedResources = useMemo(
+    () => (mode.id === "blitz" ? BLITZ_FRAGMENT_MINE_ALLOWED_RESOURCES : ETERNUM_FRAGMENT_MINE_ALLOWED_RESOURCES),
+    [mode.id],
+  );
+  const fragmentMineTransferMessage = FRAGMENT_MINE_TRANSFER_MESSAGE_BY_MODE[mode.id];
   const allowMultiDestination = selectedResources.length > 0;
   const actualDestinationCount = allowMultiDestination ? destinationIds.length : Math.min(destinationIds.length, 1);
   const destinationCountForLimits = allowMultiDestination ? Math.max(1, destinationIds.length || 1) : 1;
@@ -166,12 +177,11 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       if (!resourceComponent) continue;
 
       const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick);
-      const category = ps.category;
 
       for (const { resourceId, amount } of balances) {
         const rid = resourceId as ResourcesIds;
         if (amount <= 0) continue;
-        if (isMilitaryResource(rid) && category !== StructureType.Realm) {
+        if (isMilitaryResource(rid) && !canTransferMilitaryInventoryFromStructure(mode.id, ps.structure)) {
           continue;
         }
         const human = Number(amount) / RESOURCE_PRECISION;
@@ -181,7 +191,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
     }
     return totals;
-  }, [components, ownedSources, currentDefaultTick, selectedSourceId]);
+  }, [components, ownedSources, currentDefaultTick, selectedSourceId, mode.id]);
 
   const availableResources = useMemo(() => new Set(resourceTotals.keys()), [resourceTotals]);
 
@@ -236,8 +246,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   const filteredOwnedSources = useMemo(() => {
     if (!hasMilitarySelection) return ownedSources;
-    return ownedSources.filter((ps) => isRealm(ps));
-  }, [ownedSources, hasMilitarySelection]);
+    return ownedSources.filter((ps) => canTransferMilitaryInventoryFromStructure(mode.id, ps.structure));
+  }, [ownedSources, hasMilitarySelection, mode.id]);
 
   const eligibleSources = useMemo(() => {
     if (!components) return filteredOwnedSources;
@@ -277,13 +287,22 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   // Destinations: owned realms + villages (toggle does not affect source list)
   const ownedDestinations = useMemo<Structure[]>(() => {
-    return playerStructures.filter((structure) => isAllowedDestination(structure));
+    return playerStructures.filter((structure) => canOpenTransferInventory(structure));
   }, [playerStructures]);
 
   const filteredOwnedDestinations = useMemo(() => {
     if (!hasMilitarySelection) return ownedDestinations;
-    return ownedDestinations.filter((ps) => isRealm(ps));
-  }, [ownedDestinations, hasMilitarySelection]);
+    if (!selectedSource) {
+      return ownedDestinations.filter((ps) => canTransferMilitaryInventoryFromStructure(mode.id, ps.structure));
+    }
+    return ownedDestinations.filter((ps) =>
+      canTransferMilitaryInventoryBetweenStructures({
+        modeId: mode.id,
+        source: selectedSource.structure,
+        destination: ps.structure,
+      }),
+    );
+  }, [ownedDestinations, hasMilitarySelection, mode.id, selectedSource]);
 
   const destinationLookup = useMemo(() => {
     const map = new Map<number, Structure>();
@@ -294,9 +313,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   }, [ownedDestinations]);
 
   const [destSearch, setDestSearch] = useState("");
-  const allowEssenceDestinationPayload = useMemo(
-    () => selectedResources.every((rid) => ESSENCE_SITE_ALLOWED_RESOURCES.has(rid)),
-    [selectedResources],
+  const allowFragmentMineDestinationPayload = useMemo(
+    () => hasMilitarySelection || selectedResources.every((rid) => fragmentMineAllowedResources.has(rid)),
+    [hasMilitarySelection, selectedResources, fragmentMineAllowedResources],
   );
 
   const destinations = useMemo(() => {
@@ -311,7 +330,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         .replace(/[^a-z0-9 ]/g, "");
     const filtered = baseList
       .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
-      .filter((ps) => (allowEssenceDestinationPayload ? true : !isFragmentMine(ps)));
+      .filter((ps) => (allowFragmentMineDestinationPayload ? true : !isFragmentMine(ps)));
     const searched = !q
       ? filtered
       : filtered.filter((ps) => {
@@ -333,7 +352,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     filteredOwnedDestinations,
     destSearch,
     selectedSourceId,
-    allowEssenceDestinationPayload,
+    allowFragmentMineDestinationPayload,
     favoriteDestinationIds,
     mode.structure,
   ]);
@@ -372,14 +391,14 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   }, [hasMilitarySelection, selectedSourceId, filteredOwnedSources]);
 
   useEffect(() => {
-    if (allowEssenceDestinationPayload) return;
+    if (allowFragmentMineDestinationPayload) return;
     setDestinationIds((prev) =>
       prev.filter((id) => {
         const destination = destinationLookup.get(id);
         return destination ? !isFragmentMine(destination) : false;
       }),
     );
-  }, [allowEssenceDestinationPayload, destinationLookup]);
+  }, [allowFragmentMineDestinationPayload, destinationLookup]);
 
   // Ensure resourceConfigs exist for selected resources and remove stale ones
   useEffect(() => {
@@ -433,12 +452,13 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     }
   }, []);
 
-  const restrictToEssencePayload = selectedSource?.category === StructureType.FragmentMine;
+  const restrictToFragmentMinePayload =
+    selectedSource?.category === StructureType.FragmentMine && !hasMilitarySelection;
 
   const visibleResourceIds = useMemo(() => {
     return Array.from(availableResources)
       .filter((rid) => {
-        if (restrictToEssencePayload && !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid as ResourcesIds)) {
+        if (restrictToFragmentMinePayload && !fragmentMineAllowedResources.has(rid as ResourcesIds)) {
           return false;
         }
         if (resourceFilter === "military") return isMilitaryResource(rid as ResourcesIds);
@@ -454,21 +474,27 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         if (priA.position !== priB.position) return priA.position - priB.position;
         return ra - rb;
       });
-  }, [availableResources, restrictToEssencePayload, resourceFilter, getResourcePriority]);
+  }, [
+    availableResources,
+    restrictToFragmentMinePayload,
+    resourceFilter,
+    getResourcePriority,
+    fragmentMineAllowedResources,
+  ]);
 
   const hasRestrictedResourcesSelected = useMemo(
     () =>
-      Boolean(restrictToEssencePayload && selectedResources.some((rid) => !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid))),
-    [restrictToEssencePayload, selectedResources],
+      Boolean(restrictToFragmentMinePayload && selectedResources.some((rid) => !fragmentMineAllowedResources.has(rid))),
+    [restrictToFragmentMinePayload, selectedResources, fragmentMineAllowedResources],
   );
 
   useEffect(() => {
     if (!hasRestrictedResourcesSelected) return;
     setSelectedResources((prev) => {
-      const filtered = prev.filter((rid) => ESSENCE_SITE_ALLOWED_RESOURCES.has(rid));
+      const filtered = prev.filter((rid) => fragmentMineAllowedResources.has(rid));
       return filtered.length === prev.length ? prev : filtered;
     });
-  }, [hasRestrictedResourcesSelected]);
+  }, [hasRestrictedResourcesSelected, fragmentMineAllowedResources]);
 
   // Computed preview for absolute amounts and donkey capacity (fast path)
   const transferPreview = useMemo(() => {
@@ -595,18 +621,28 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       const src = ownedSources.find((structure) => Number(structure.entityId) === Number(selectedSourceId));
       const invalid =
         !src ||
-        src.category !== StructureType.Realm ||
-        resolvedDestinations.some((dst) => dst.category !== StructureType.Realm);
+        resolvedDestinations.some(
+          (dst) =>
+            !canTransferMilitaryInventoryBetweenStructures({
+              modeId: mode.id,
+              source: src.structure,
+              destination: dst.structure,
+            }),
+        );
       if (invalid) {
-        toast.error("Troops can only be transferred Realm ↔ Realm.");
+        toast.error(
+          mode.id === "blitz"
+            ? "Troops can only be transferred between your owned structures in Blitz."
+            : "Troops can only be transferred Realm ↔ Realm.",
+        );
         return;
       }
     }
 
-    const essenceDestinationInvalid =
-      !allowEssenceDestinationPayload && resolvedDestinations.some((dst) => isFragmentMine(dst));
-    if (essenceDestinationInvalid) {
-      toast.error("Essence rifts only accept Donkeys and Essence.");
+    const fragmentMineDestinationInvalid =
+      !allowFragmentMineDestinationPayload && resolvedDestinations.some((dst) => isFragmentMine(dst));
+    if (fragmentMineDestinationInvalid) {
+      toast.error(fragmentMineTransferMessage);
       return;
     }
 
@@ -733,7 +769,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     systemCalls,
     destinationLookup,
     allowMultiDestination,
-    allowEssenceDestinationPayload,
+    allowFragmentMineDestinationPayload,
+    fragmentMineTransferMessage,
     mode.structure,
   ]);
 
@@ -782,9 +819,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
             Reset
           </Button>
         </div>
-        {restrictToEssencePayload && (
-          <p className="text-xxs text-gold/60">Essence rifts can only transfer Donkeys and Essence.</p>
-        )}
+        {restrictToFragmentMinePayload && <p className="text-xxs text-gold/60">{fragmentMineTransferMessage}</p>}
         <div className="flex flex-wrap gap-2">
           {visibleResourceIds.map((rid) => {
             const resourceId = rid as ResourcesIds;

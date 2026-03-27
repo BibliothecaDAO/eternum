@@ -1,18 +1,26 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactorySeries } from "@/hooks/use-factory-series";
 import type { Chain } from "@contracts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  clearFactoryV2AdminSecret as clearStoredFactoryAdminSecret,
+  readFactoryV2AdminSecret as readStoredFactoryAdminSecret,
+  writeFactoryV2AdminSecret as writeStoredFactoryAdminSecret,
+} from "../admin-secret-storage";
 import { mapAndSortFactoryWorkerRuns, mapFactoryWorkerRun } from "../api/factory-run-mapper";
 import {
   cancelFactoryRotationAutoRetry,
   cancelFactorySeriesAutoRetry,
-  continueFactoryRun,
   continueFactoryRotationRun,
+  continueFactoryRun,
   continueFactorySeriesRun,
   createFactoryIndexers,
-  createFactoryRun,
   createFactoryRotationRun,
+  createFactoryRun,
   createFactorySeriesRun,
+  deleteFactoryRotationRun,
+  deleteFactoryRun,
+  deleteFactorySeriesRun,
   deleteFactoryIndexers,
   FactoryWorkerApiError,
   fundFactoryGamePrize,
@@ -22,16 +30,16 @@ import {
   listFactoryRuns,
   nudgeFactoryRotationRun,
   readFactoryLiveIndexers,
+  readFactoryRotationRunIfPresent,
   readFactoryRunByNameIfPresent,
   readFactoryRunIfPresent,
-  readFactoryRotationRunIfPresent,
   readFactorySeriesRunIfPresent,
   refreshFactoryLiveIndexers,
   updateFactoryIndexerTier,
-  type FactoryWorkerLiveIndexerEntry,
   type FactoryWorkerEnvironmentId,
   type FactoryWorkerGameLaunchScope,
   type FactoryWorkerLaunchStepId,
+  type FactoryWorkerLiveIndexerEntry,
   type FactoryWorkerRotationLaunchScope,
   type FactoryWorkerRunRecord,
   type FactoryWorkerSeriesLaunchScope,
@@ -44,42 +52,38 @@ import {
   getFactoryLaunchPresetsForMode,
   getFactoryPresetById,
   getPresetStartAtValue,
+  resolveFactoryEnvironmentIdForModeAndChain,
 } from "../catalog";
-import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildFactoryCreateRotationRunRequest } from "../create-rotation-run-request";
+import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildFactoryCreateSeriesRunRequest } from "../create-series-run-request";
 import { buildBlitzDurationOptions, supportsFactoryDuration } from "../duration";
 import { buildFandomizedGameName } from "../funny-names";
+import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import {
   readFactoryPendingLaunches,
   writeFactoryPendingLaunches,
   type FactoryPendingLaunch,
 } from "../pending-launch-storage";
-import {
-  clearFactoryV2AdminSecret as clearStoredFactoryAdminSecret,
-  readFactoryV2AdminSecret as readStoredFactoryAdminSecret,
-  writeFactoryV2AdminSecret as writeStoredFactoryAdminSecret,
-} from "../admin-secret-storage";
-import {
-  buildFactorySeriesGameDrafts,
-  DEFAULT_FACTORY_SERIES_GAME_COUNT,
-  resolveNextFactorySeriesGameNumber,
-} from "../series-drafts";
-import {
-  buildFactoryRotationPreviewGames,
-  DEFAULT_FACTORY_ROTATION_ADVANCE_WINDOW_GAMES,
-  DEFAULT_FACTORY_ROTATION_GAME_INTERVAL_MINUTES,
-  DEFAULT_FACTORY_ROTATION_MAX_GAMES,
-} from "../rotation-drafts";
-import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
-import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import { getSimpleStepTitle, getStepStatusMessage, resolveRunPrimaryAction } from "../presenters";
 import {
   canFundFactoryRunPrize,
   resolveDefaultFactoryPrizeFundingGameNames,
   type FactoryPrizeFundingEligibleRun,
 } from "../prize-funding";
+import {
+  buildFactoryRotationPreviewGames,
+  DEFAULT_FACTORY_ROTATION_ADVANCE_WINDOW_GAMES,
+  DEFAULT_FACTORY_ROTATION_GAME_INTERVAL_MINUTES,
+  DEFAULT_FACTORY_ROTATION_MAX_GAMES,
+} from "../rotation-drafts";
+import {
+  buildFactorySeriesGameDrafts,
+  DEFAULT_FACTORY_SERIES_GAME_COUNT,
+  resolveNextFactorySeriesGameNumber,
+} from "../series-drafts";
 import type {
+  FactoryActionFeedback,
   FactoryGameMode,
   FactoryLaunchPreset,
   FactoryLaunchTargetKind,
@@ -91,12 +95,15 @@ import type {
   FactorySeriesRetryIntervalMinutes,
   FactoryWatcherState,
 } from "../types";
+import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
 
 const RUN_LOOKUP_ATTEMPTS = 8;
 const RUN_LOOKUP_DELAY_MS = 1_500;
 const RUN_POLL_INTERVAL_MS = 5_000;
 const PRIZE_FUNDING_LOOKUP_ATTEMPTS = 40;
 const PRIZE_FUNDING_LOOKUP_DELAY_MS = 3_000;
+const LIVE_INDEXER_REFRESH_ATTEMPTS = 12;
+const LIVE_INDEXER_REFRESH_DELAY_MS = 3_000;
 const FIRST_UPDATE_WAIT_MESSAGE = "This game just started. We are waiting for it to appear.";
 const AUTO_UPDATE_MESSAGE = "Updating automatically.";
 const EXISTING_GAME_NOTICE = "That game already exists. We opened it for you.";
@@ -154,7 +161,7 @@ export const useFactoryV2 = () => {
   );
   const [selectedPresetId, setSelectedPresetId] = useState(initialPresetId);
   const [runsByEnvironment, setRunsByEnvironment] = useState<Record<string, FactoryRun[]>>({});
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(initialSelection.selectedRunId);
   const [draftGameName, setDraftGameName] = useState(initialSuggestedGameName);
   const [draftSeriesName, setDraftSeriesName] = useState(initialSuggestedSeriesName);
   const [draftRotationName, setDraftRotationName] = useState(initialSuggestedRotationName);
@@ -203,6 +210,7 @@ export const useFactoryV2 = () => {
   );
   const [liveIndexers, setLiveIndexers] = useState<FactoryWorkerLiveIndexerEntry[]>([]);
   const [liveIndexersUpdatedAt, setLiveIndexersUpdatedAt] = useState<string | null>(null);
+  const [hasLoadedLiveIndexersSnapshot, setHasLoadedLiveIndexersSnapshot] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const runsByEnvironmentRef = useRef<Record<string, FactoryRun[]>>({});
   const pendingLaunchesRef = useRef<FactoryPendingLaunch[]>(pendingLaunches);
@@ -377,6 +385,12 @@ export const useFactoryV2 = () => {
     }
 
     if (modeRuns.some((run) => run.id === selectedRunId)) {
+      return;
+    }
+
+    const matchingRun = resolveMatchingModeRunForPendingSelection(modeRuns, selectedRunId);
+    if (matchingRun) {
+      setSelectedRunId(matchingRun.id);
       return;
     }
 
@@ -583,7 +597,7 @@ export const useFactoryV2 = () => {
   ]);
 
   const selectMode = (mode: FactoryGameMode) => {
-    const nextEnvironmentId = getDefaultEnvironmentIdForMode(mode);
+    const nextEnvironmentId = resolveFactoryEnvironmentIdForModeAndChain(mode, selectedEnvironment?.chain ?? "slot");
     const nextPresetId = getDefaultPresetIdForModeSelection(mode);
     const nextPreset = getFactoryPresetById(nextPresetId);
     const nextRuns = runsByEnvironmentRef.current[nextEnvironmentId] ?? [];
@@ -972,109 +986,6 @@ export const useFactoryV2 = () => {
     );
   };
 
-  const bringIndexerLiveForSelectedRun = async () => {
-    if (!selectedRun || isWatcherBusy) {
-      return;
-    }
-
-    const environmentId = assertSupportedEnvironment(selectedRun.environment);
-    const indexerStepId = resolveIndexerRecoveryStepId(selectedRun);
-    const targetGameNames = resolveRunIndexerRecoveryGameNames(selectedRun);
-
-    if (!environmentId || !indexerStepId) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "reindex",
-        runName: selectedRun.name,
-        title: `Bringing ${selectedRun.name} online`,
-        detail: "Starting the indexer again.",
-        workflowName: indexerStepId,
-        statusLabel: "Starting",
-      },
-      async () => {
-        try {
-          await continueRun(environmentId, selectedRun, {
-            launchStep: indexerStepId,
-            gameNames: targetGameNames,
-          });
-        } catch (error) {
-          const openedConflictingRun = await openConflictingRunIfPresent(
-            error,
-            environmentId,
-            selectedRun.name,
-            selectedRun.kind,
-            "This game is already being brought online again. We opened it for you.",
-          );
-
-          if (openedConflictingRun) {
-            return;
-          }
-
-          throw error;
-        }
-
-        acceptRunStepLocally(environmentId, selectedRun, indexerStepId, "Got it. Bringing the indexer online again.");
-      },
-    );
-  };
-
-  const bringIndexerLiveForSelectedRunChild = async (gameName: string) => {
-    if (!selectedRun || isWatcherBusy || (selectedRun.kind !== "series" && selectedRun.kind !== "rotation")) {
-      return;
-    }
-
-    const environmentId = assertSupportedEnvironment(selectedRun.environment);
-    const indexerStepId = resolveIndexerRecoveryStepId(selectedRun);
-    const targetChild = selectedRun.children?.find((child) => child.gameName === gameName);
-
-    if (!environmentId || !indexerStepId || !targetChild || !canRetryChildIndexer(targetChild)) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "reindex",
-        runName: selectedRun.name,
-        title: `Checking ${targetChild.gameName}`,
-        detail: "Checking whether this game indexer is already live.",
-        workflowName: indexerStepId,
-        statusLabel: "Checking",
-      },
-      async () => {
-        try {
-          await continueRun(environmentId, selectedRun, {
-            launchStep: indexerStepId,
-            gameNames: [targetChild.gameName],
-          });
-        } catch (error) {
-          const openedConflictingRun = await openConflictingRunIfPresent(
-            error,
-            environmentId,
-            selectedRun.name,
-            selectedRun.kind,
-            "This run is already checking that child indexer again. We opened it for you.",
-          );
-
-          if (openedConflictingRun) {
-            return;
-          }
-
-          throw error;
-        }
-
-        acceptRunStepLocally(
-          environmentId,
-          selectedRun,
-          indexerStepId,
-          `Got it. Checking ${targetChild.gameName} again.`,
-        );
-      },
-    );
-  };
-
   const refreshSelectedRun = async () => {
     if (!selectedRun || isWatcherBusy) {
       return;
@@ -1169,16 +1080,63 @@ export const useFactoryV2 = () => {
     );
   };
 
-  const fundSelectedRunPrize = async ({ amount, adminSecret, selectedGameNames }: FactoryPrizeFundingRequest) => {
-    if (!selectedRun || isWatcherBusy || !canFundRunPrize(selectedRun)) {
-      return;
+  const deleteSelectedRun = async () => {
+    if (!selectedRun || isWatcherBusy || isPendingRun(selectedRun)) {
+      return false;
     }
 
     const environmentId = assertSupportedEnvironment(selectedRun.environment);
 
     if (!environmentId) {
       setNotice(resolveEnvironmentUnavailableReason(selectedRun.environment));
-      return;
+      return false;
+    }
+
+    const adminSecret = factoryAdminSecret.trim();
+
+    if (!adminSecret) {
+      setNotice("Add the factory admin secret above to delete this run.");
+      return false;
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`Delete ${selectedRun.name} and all of its stored run records? This cannot be undone.`)
+    ) {
+      return false;
+    }
+
+    const deletedRun = selectedRun;
+
+    return runWatchedAction(
+      {
+        kind: "delete_run",
+        runName: deletedRun.name,
+        title: `Deleting ${deletedRun.name}`,
+        detail: "Removing this run from Factory records and scheduler indexes.",
+        workflowName: "delete-run",
+        statusLabel: "Deleting",
+      },
+      async () => {
+        await deleteRunRecord(environmentId, deletedRun, adminSecret);
+        await refreshEnvironmentRuns(environmentId);
+        clearGuidedRecoveryState(deletedRun.id);
+        setSelectedRunId((currentRunId) => (currentRunId === deletedRun.id ? null : currentRunId));
+        setNotice(`Deleted ${deletedRun.name} from Factory records.`);
+      },
+    );
+  };
+
+  const fundSelectedRunPrize = async ({ amount, adminSecret, selectedGameNames }: FactoryPrizeFundingRequest) => {
+    if (!selectedRun || isWatcherBusy || !canFundRunPrize(selectedRun)) {
+      return false;
+    }
+
+    const environmentId = assertSupportedEnvironment(selectedRun.environment);
+
+    if (!environmentId) {
+      setNotice(resolveEnvironmentUnavailableReason(selectedRun.environment));
+      return false;
     }
 
     const normalizedAmount = amount.trim();
@@ -1186,10 +1144,10 @@ export const useFactoryV2 = () => {
     const normalizedSelectedGameNames = resolveRequestedPrizeFundingGameNames(selectedRun, selectedGameNames);
 
     if (!normalizedAmount || !normalizedSecret) {
-      return;
+      return false;
     }
 
-    await runWatchedAction(
+    return runWatchedAction(
       {
         kind: "fund_prize",
         runName: selectedRun.name,
@@ -1236,11 +1194,11 @@ export const useFactoryV2 = () => {
       {
         kind: "refresh_live_indexers",
         runName: selectedEnvironment?.label ?? "indexers",
-        title: "Loading live indexers",
+        title: "Loading indexers",
         detail:
           normalizedGameNames.length > 0
-            ? `Loading stored live indexer state for ${normalizedGameNames.length} listed games.`
-            : "Loading the stored live Slot indexer snapshot.",
+            ? `Loading the saved list for ${normalizedGameNames.length} typed names.`
+            : "Loading the saved indexer list.",
         workflowName: "factory-indexer-maintenance.yml",
         statusLabel: "Loading",
       },
@@ -1251,6 +1209,7 @@ export const useFactoryV2 = () => {
         });
         setLiveIndexers(response.entries);
         setLiveIndexersUpdatedAt(response.updatedAt);
+        setHasLoadedLiveIndexersSnapshot(true);
       },
     );
   };
@@ -1259,6 +1218,8 @@ export const useFactoryV2 = () => {
     const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
     const normalizedSecret = adminSecret.trim();
     const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
+    const previousSnapshotUpdatedAt = liveIndexersUpdatedAt;
+    const previousSnapshotFingerprint = buildLiveIndexerSnapshotFingerprint(liveIndexers);
 
     if (isWatcherBusy || !environmentId || !normalizedSecret) {
       return;
@@ -1268,13 +1229,13 @@ export const useFactoryV2 = () => {
       {
         kind: "refresh_live_indexers",
         runName: selectedEnvironment?.label ?? "indexers",
-        title: "Refreshing live indexers",
+        title: "Checking Slot",
         detail:
           normalizedGameNames.length > 0
-            ? `Refreshing live Slot state for ${normalizedGameNames.length} listed games.`
-            : "Refreshing every live Slot Torii deployment from the account.",
+            ? `Checking Slot for ${normalizedGameNames.length} typed names and updating this list.`
+            : "Checking Slot and updating this list.",
         workflowName: "factory-indexer-maintenance.yml",
-        statusLabel: "Refreshing",
+        statusLabel: "Checking",
       },
       async () => {
         await refreshFactoryLiveIndexers({
@@ -1282,7 +1243,29 @@ export const useFactoryV2 = () => {
           adminSecret: normalizedSecret,
           ...(normalizedGameNames.length > 0 ? { gameNames: normalizedGameNames } : {}),
         });
-        setNotice("Live indexer refresh started. Load the list again in a moment.");
+
+        const refreshedSnapshot = await waitForLiveIndexerSnapshotUpdate({
+          adminSecret: normalizedSecret,
+          gameNames: normalizedGameNames,
+          previousUpdatedAt: previousSnapshotUpdatedAt,
+          previousFingerprint: previousSnapshotFingerprint,
+        });
+
+        if (!refreshedSnapshot) {
+          setNotice("Still checking Slot. This list will update when the refresh finishes.");
+          return;
+        }
+
+        const nextSnapshotFingerprint = buildLiveIndexerSnapshotFingerprint(refreshedSnapshot.entries);
+
+        setLiveIndexers(refreshedSnapshot.entries);
+        setLiveIndexersUpdatedAt(refreshedSnapshot.updatedAt);
+        setHasLoadedLiveIndexersSnapshot(true);
+        setNotice(
+          nextSnapshotFingerprint === previousSnapshotFingerprint
+            ? "Slot checked. This list is already up to date."
+            : "Slot checked. This list is up to date.",
+        );
       },
     );
   };
@@ -1314,7 +1297,7 @@ export const useFactoryV2 = () => {
           adminSecret: normalizedSecret,
           gameNames: normalizedGameNames,
         });
-        setNotice("Indexer creation started. Refresh the live list in a moment.");
+        setNotice("Indexer recreate started. Update from Slot in a moment.");
       },
     );
   };
@@ -1347,7 +1330,7 @@ export const useFactoryV2 = () => {
           gameNames: normalizedGameNames,
           tier,
         });
-        setNotice("Indexer tier update started. Refresh the live list in a moment.");
+        setNotice("Tier update started. Update from Slot in a moment.");
       },
     );
   };
@@ -1358,10 +1341,12 @@ export const useFactoryV2 = () => {
     const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
 
     if (isWatcherBusy || !environmentId || !normalizedSecret || normalizedGameNames.length === 0) {
-      return;
+      return null;
     }
 
-    await runWatchedAction(
+    const successMessage = buildDeleteIndexersSuccessMessage(normalizedGameNames);
+
+    const result = await runWatchedActionWithFeedback(
       {
         kind: "delete_indexers",
         runName: selectedEnvironment?.label ?? "indexers",
@@ -1380,9 +1365,11 @@ export const useFactoryV2 = () => {
           adminSecret: normalizedSecret,
         });
 
-        setNotice("Indexer deletion started. Refresh the live list in a moment.");
+        setNotice(successMessage);
       },
     );
+
+    return result.ok ? { ok: true, message: successMessage } : result;
   };
 
   const resolveRunByName = async (requestedName: string) => {
@@ -1483,6 +1470,7 @@ export const useFactoryV2 = () => {
     hasSavedFactoryAdminSecret,
     liveIndexers,
     liveIndexersUpdatedAt,
+    hasLoadedLiveIndexersSnapshot,
     notice,
     environmentUnavailableReason,
     moreOptions,
@@ -1515,14 +1503,13 @@ export const useFactoryV2 = () => {
     continueSelectedRun,
     nudgeSelectedRun,
     cancelSelectedRunAutoRetry,
+    deleteSelectedRun,
     fundSelectedRunPrize,
     loadLiveIndexers,
     refreshLiveIndexerSnapshot,
     createIndexers,
     updateIndexerTiers,
     deleteIndexers,
-    bringIndexerLiveForSelectedRun,
-    bringIndexerLiveForSelectedRunChild,
     refreshSelectedRun,
     resolveRunByName,
   };
@@ -1542,6 +1529,9 @@ export const useFactoryV2 = () => {
   }
 
   function clearTransientState() {
+    setLiveIndexers([]);
+    setLiveIndexersUpdatedAt(null);
+    setHasLoadedLiveIndexersSnapshot(false);
     setNotice(null);
     setAcceptedRunState(null);
     setGuidedRecoveryState(null);
@@ -1726,24 +1716,33 @@ export const useFactoryV2 = () => {
     return null;
   }
 
-  async function runWatchedAction(nextWatcher: FactoryWatcherState, action: () => Promise<void>) {
+  async function runWatchedActionWithFeedback(
+    nextWatcher: FactoryWatcherState,
+    action: () => Promise<void>,
+  ): Promise<FactoryActionFeedback> {
     setWatcher(nextWatcher);
     setNotice(null);
 
     try {
       await action();
-      return true;
+      return { ok: true, message: "" };
     } catch (error) {
-      setNotice(resolveWorkerErrorMessage(error));
+      const errorMessage = resolveWorkerErrorMessage(error);
+      setNotice(errorMessage);
       setPollingState((currentState) => ({
         status: "paused",
         detail: resolvePollingPauseMessage(error),
         lastCheckedAt: currentState.lastCheckedAt,
       }));
-      return false;
+      return { ok: false, message: errorMessage };
     } finally {
       setWatcher(null);
     }
+  }
+
+  async function runWatchedAction(nextWatcher: FactoryWatcherState, action: () => Promise<void>) {
+    const result = await runWatchedActionWithFeedback(nextWatcher, action);
+    return result.ok;
   }
 
   async function continueRun(
@@ -1775,6 +1774,32 @@ export const useFactoryV2 = () => {
       environment: environmentId,
       gameName: run.name,
       launchStep: resolveGameContinueLaunchStep(options?.launchStep),
+    });
+  }
+
+  async function deleteRunRecord(environmentId: FactoryWorkerEnvironmentId, run: FactoryRun, adminSecret: string) {
+    if (run.kind === "series") {
+      await deleteFactorySeriesRun({
+        environment: environmentId,
+        seriesName: run.name,
+        adminSecret,
+      });
+      return;
+    }
+
+    if (run.kind === "rotation") {
+      await deleteFactoryRotationRun({
+        environment: environmentId,
+        rotationName: run.name,
+        adminSecret,
+      });
+      return;
+    }
+
+    await deleteFactoryRun({
+      environment: environmentId,
+      gameName: run.name,
+      adminSecret,
     });
   }
 
@@ -1889,6 +1914,33 @@ export const useFactoryV2 = () => {
     return false;
   }
 
+  async function waitForLiveIndexerSnapshotUpdate({
+    adminSecret,
+    gameNames,
+    previousUpdatedAt,
+    previousFingerprint,
+  }: {
+    adminSecret: string;
+    gameNames: string[];
+    previousUpdatedAt: string | null;
+    previousFingerprint: string;
+  }) {
+    for (let attempt = 0; attempt < LIVE_INDEXER_REFRESH_ATTEMPTS; attempt += 1) {
+      await delay(LIVE_INDEXER_REFRESH_DELAY_MS);
+
+      const nextSnapshot = await readFactoryLiveIndexers({
+        adminSecret,
+        ...(gameNames.length > 0 ? { gameNames } : {}),
+      });
+
+      if (didLiveIndexerSnapshotChange(nextSnapshot, previousUpdatedAt, previousFingerprint)) {
+        return nextSnapshot;
+      }
+    }
+
+    return null;
+  }
+
   function buildCreateRunRequest(environmentId: FactoryWorkerEnvironmentId, gameName: string) {
     return buildFactoryCreateRunRequest({
       environmentId,
@@ -2000,11 +2052,7 @@ export const useFactoryV2 = () => {
     updatePendingLaunches((currentPendingLaunches) =>
       currentPendingLaunches.filter(
         (pendingLaunch) =>
-          pendingLaunch.environmentId !== environmentId ||
-          !runs.some(
-            (run) =>
-              normalizePendingLaunchKey(environmentId, run.kind, run.name) === buildPendingLaunchKey(pendingLaunch),
-          ),
+          pendingLaunch.environmentId !== environmentId || !resolveMatchingRealRunForPendingLaunch(runs, pendingLaunch),
       ),
     );
   }
@@ -2028,6 +2076,7 @@ interface InitialFactorySelection {
   mode: FactoryGameMode;
   environmentId: string;
   launchKind: FactoryLaunchTargetKind | null;
+  selectedRunId: string | null;
   pendingLaunches: FactoryPendingLaunch[];
 }
 
@@ -2050,6 +2099,9 @@ function resolveInitialFactorySelection(): InitialFactorySelection {
     mode,
     environmentId: latestPendingLaunch?.environmentId ?? getDefaultEnvironmentIdForMode(mode),
     launchKind: latestPendingLaunch?.kind ?? null,
+    selectedRunId: latestPendingLaunch
+      ? buildPendingRunId(latestPendingLaunch.environmentId, latestPendingLaunch.kind, latestPendingLaunch.name)
+      : null,
     pendingLaunches,
   };
 }
@@ -2062,14 +2114,6 @@ function resolveLatestPendingLaunch(pendingLaunches: FactoryPendingLaunch[]) {
 
     return pendingLaunch.createdAt > latestPendingLaunch.createdAt ? pendingLaunch : latestPendingLaunch;
   }, null);
-}
-
-function resolveIndexerRecoveryStepId(run: FactoryRun) {
-  if (run.steps.some((step) => step.id === "create-indexers")) {
-    return "create-indexers";
-  }
-
-  return run.steps.some((step) => step.id === "create-indexer" || step.id === "wait-indexer") ? "create-indexer" : null;
 }
 
 function buildSuggestedGameName(mode: FactoryGameMode, runs: FactoryRun[]) {
@@ -2357,8 +2401,55 @@ function buildPendingLaunchKey(pendingLaunch: FactoryPendingLaunch) {
   return normalizePendingLaunchKey(pendingLaunch.environmentId, pendingLaunch.kind, pendingLaunch.name);
 }
 
+function resolveMatchingRealRunForPendingLaunch(runs: FactoryRun[], pendingLaunch: FactoryPendingLaunch) {
+  return runs.find(
+    (run) => normalizePendingLaunchKey(run.environment, run.kind, run.name) === buildPendingLaunchKey(pendingLaunch),
+  );
+}
+
+function resolveMatchingModeRunForPendingSelection(runs: FactoryRun[], selectedRunId: string) {
+  const pendingSelection = parsePendingRunId(selectedRunId);
+
+  if (!pendingSelection) {
+    return null;
+  }
+
+  return (
+    runs.find(
+      (run) =>
+        normalizePendingLaunchKey(run.environment, run.kind, run.name) ===
+        normalizePendingLaunchKey(pendingSelection.environmentId, pendingSelection.kind, pendingSelection.name),
+    ) ?? null
+  );
+}
+
 function normalizePendingLaunchKey(environmentId: string, kind: FactoryLaunchTargetKind, name: string) {
-  return `${kind}:${environmentId}:${name.trim().toLowerCase()}`;
+  return `${kind}:${environmentId}:${(name ?? "").trim().toLowerCase()}`;
+}
+
+function parsePendingRunId(selectedRunId: string) {
+  if (!selectedRunId.startsWith("pending:")) {
+    return null;
+  }
+
+  const [, rawKind, environmentId, ...nameParts] = selectedRunId.split(":");
+  if (
+    (rawKind !== "game" && rawKind !== "series" && rawKind !== "rotation") ||
+    !environmentId ||
+    nameParts.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    kind: rawKind,
+    environmentId,
+    name: nameParts.join(":"),
+  } satisfies {
+    kind: FactoryLaunchTargetKind;
+    environmentId: string;
+    name: string;
+  };
 }
 
 function arePendingLaunchesEqual(left: FactoryPendingLaunch[], right: FactoryPendingLaunch[]) {
@@ -2382,7 +2473,7 @@ function resolveMatchingRunByName(runs: FactoryRun[], requestedName: string, kin
     return null;
   }
 
-  return runs.find((run) => (!kind || run.kind === kind) && run.name.trim().toLowerCase() === normalizedName) ?? null;
+  return runs.find((run) => (!kind || run.kind === kind) && run.name?.trim().toLowerCase() === normalizedName) ?? null;
 }
 
 function resolveMatchingOwnedSeries<
@@ -2462,19 +2553,6 @@ function resolveEnvironmentUnavailableReason(environmentId?: string | null) {
 
 function canCancelRunAutoRetry(run: FactoryRun) {
   return (run.kind === "series" || run.kind === "rotation") && run.autoRetry?.enabled && !run.autoRetry.cancelledAt;
-}
-
-function resolveRunIndexerRecoveryGameNames(run: FactoryRun): string[] | undefined {
-  if (run.kind !== "series" && run.kind !== "rotation") {
-    return undefined;
-  }
-
-  const gameNames = (run.children ?? []).filter(canRetryChildIndexer).map((child) => child.gameName);
-  return gameNames.length > 0 ? gameNames : undefined;
-}
-
-function canRetryChildIndexer(child: NonNullable<FactoryRun["children"]>[number]) {
-  return Boolean(child?.worldAddress || child?.indexerCreated);
 }
 
 function canFundRunPrize(run: FactoryRun): run is FactoryPrizeFundingEligibleRun {
@@ -2606,4 +2684,37 @@ function delay(durationMs: number) {
   return new Promise<void>((resolve) => {
     window.setTimeout(resolve, durationMs);
   });
+}
+
+function didLiveIndexerSnapshotChange(
+  snapshot: { entries: FactoryWorkerLiveIndexerEntry[]; updatedAt: string | null },
+  previousUpdatedAt: string | null,
+  previousFingerprint: string,
+) {
+  if (snapshot.updatedAt && snapshot.updatedAt !== previousUpdatedAt) {
+    return true;
+  }
+
+  return buildLiveIndexerSnapshotFingerprint(snapshot.entries) !== previousFingerprint;
+}
+
+function buildLiveIndexerSnapshotFingerprint(entries: FactoryWorkerLiveIndexerEntry[]) {
+  return [...entries]
+    .sort((leftEntry, rightEntry) => leftEntry.gameName.localeCompare(rightEntry.gameName))
+    .map((entry) => {
+      if (entry.liveState.state === "existing") {
+        return `${entry.gameName}:existing:${entry.liveState.currentTier ?? ""}:${entry.liveState.url ?? ""}`;
+      }
+
+      return `${entry.gameName}:${entry.liveState.state}:${entry.liveState.stateSource}`;
+    })
+    .join("|");
+}
+
+function buildDeleteIndexersSuccessMessage(gameNames: string[]) {
+  if (gameNames.length === 1) {
+    return `Delete requested for ${gameNames[0]}. Check Slot in a moment.`;
+  }
+
+  return `Delete requested for ${gameNames.length} indexers. Check Slot in a moment.`;
 }

@@ -48,7 +48,7 @@ export type FactoryRunStatus = "running" | "attention" | "waiting" | "complete";
 export type FactoryStepStatus = "pending" | "running" | "succeeded" | "already_done" | "blocked" | "failed";
 export type FactoryRunRecoveryState = "active" | "transitioning" | "stalled" | "failed" | "complete";
 export type FactorySeriesChildStatus = "pending" | "running" | "succeeded" | "failed";
-export type FactoryWorkflowIntervalMinutes = 5 | 15 | 30 | 60;
+type FactoryWorkflowIntervalMinutes = 5 | 15 | 30 | 60;
 export type FactorySeriesRetryIntervalMinutes = FactoryWorkflowIntervalMinutes;
 export type FactoryRotationEvaluationIntervalMinutes = FactoryWorkflowIntervalMinutes;
 
@@ -62,6 +62,7 @@ export type FactoryWatcherKind =
   | "update_indexer_tier"
   | "reindex"
   | "delete_indexers"
+  | "delete_run"
   | "nudge"
   | "cancel_auto_retry"
   | "fund_prize";
@@ -235,4 +236,9 @@ export interface FactoryPollingState {
   status: FactoryPollingStatus;
   detail: string;
   lastCheckedAt: number | null;
+}
+
+export interface FactoryActionFeedback {
+  ok: boolean;
+  message: string;
 }

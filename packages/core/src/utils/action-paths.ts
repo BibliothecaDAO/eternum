@@ -12,6 +12,7 @@ export type ActionPath = {
 export enum ActionType {
   Move = "move",
   Attack = "attack",
+  SpireTravel = "spire_travel",
   Build = "build",
   Help = "help",
   Explore = "explore",

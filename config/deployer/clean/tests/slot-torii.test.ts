@@ -2,6 +2,7 @@ import type { SpawnSyncReturns } from "node:child_process";
 import { describe, expect, test } from "bun:test";
 import {
   deleteSlotIndexerDeployment,
+  ensureSlotIndexerDeployment,
   ensureSlotIndexerTier,
   listSlotToriiDeploymentNamesFromAccountInfo,
   resolveSlotToriiLiveState,
@@ -112,6 +113,46 @@ describe("ensureSlotIndexerTier", () => {
     expect(result.action).toBe("tier-updated");
     expect(result.previousTier).toBe("basic");
     expect(result.liveState.currentTier).toBe("legendary");
+  });
+});
+
+describe("ensureSlotIndexerDeployment", () => {
+  test("surfaces indeterminate Slot state details when create safety checks cannot verify live state", () => {
+    expect(() =>
+      ensureSlotIndexerDeployment(
+        {
+          env: "slot",
+          rpcUrl: "https://rpc.example",
+          namespaces: "s1_eternum",
+          worldName: "etrn-mango",
+          worldAddress: "0x0123",
+        },
+        {
+          slotCommandRunner: (args) => {
+            if (args.join(" ") === "d describe etrn-mango torii") {
+              return buildSlotResult({
+                status: 1,
+                stderr: "dial tcp 127.0.0.1:443: connect: connection refused",
+              });
+            }
+
+            if (args.join(" ") === "d list") {
+              return buildSlotResult({
+                status: 1,
+                stderr: "unauthorized",
+              });
+            }
+
+            throw new Error(`Unexpected slot args: ${args.join(" ")}`);
+          },
+        },
+      ),
+    ).toThrow(
+      'Unable to verify whether Torii deployment "etrn-mango" already exists. Refusing to create a duplicate while state is indeterminate.\n' +
+        "Slot output:\n" +
+        "dial tcp 127.0.0.1:443: connect: connection refused\n" +
+        "unauthorized",
+    );
   });
 });
 

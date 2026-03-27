@@ -420,6 +420,32 @@ describe("useFactoryV2 pending launch cache", () => {
     ]);
   });
 
+  it("keeps the current network when switching modes", async () => {
+    await act(async () => {
+      root.render(<HookHarness />);
+      await waitForAsyncWork();
+    });
+
+    await act(async () => {
+      getFactory().selectMode("eternum");
+      await waitForAsyncWork();
+    });
+
+    await act(async () => {
+      getFactory().selectEnvironment("mainnet.eternum");
+      await waitForAsyncWork();
+    });
+
+    expect(getFactory().selectedEnvironmentId).toBe("mainnet.eternum");
+
+    await act(async () => {
+      getFactory().selectMode("blitz");
+      await waitForAsyncWork();
+    });
+
+    expect(getFactory().selectedEnvironmentId).toBe("mainnet.blitz");
+  });
+
   it("clears cached pending launches when the run list already contains the real run", async () => {
     const realRun = buildRunRecord({
       runId: "run-real-1",

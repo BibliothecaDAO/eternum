@@ -13,7 +13,11 @@ import {
   DEFAULT_VERSION,
   DEFAULT_VRF_PROVIDER_ADDRESS,
 } from "../constants";
-import { buildDefaultBanks, grantVillagePassRolesToWorldSystems } from "../eternum";
+import {
+  buildBanksForMapCenterOffset,
+  deriveMapCenterOffsetFromWorldConfigTx,
+  grantVillagePassRolesToWorldSystems,
+} from "../eternum";
 import {
   isEternumDeploymentEnvironment,
   isMainnetDeploymentEnvironment,
@@ -32,6 +36,7 @@ import { buildLootChestMinterRoleGrantCall, grantRoles, resolveLootChestMinterRo
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
 import type {
+  ConfigExecutionResult,
   ConfigStepHooks,
   CreateGameDefaults,
   DeploymentEnvironment,
@@ -85,6 +90,12 @@ interface PreparedLaunchExecution {
   summary: LaunchGameSummary;
   deploymentConfig: LaunchConfig;
   configSteps: LaunchConfigSteps;
+}
+
+interface ConfiguredWorldResult {
+  transactionHash?: string;
+  worldConfigTxHash?: string;
+  steps: LaunchGameSummary["configSteps"];
 }
 
 interface ConfiguredLaunchDependencies {
@@ -366,6 +377,18 @@ function buildCreateGameCalldata(runtime: LaunchRuntime, request: LaunchGameRequ
   ];
 }
 
+function buildCreateGameCall(runtime: LaunchRuntime, request: LaunchGameRequest) {
+  return {
+    contractAddress: runtime.factoryAddress,
+    entrypoint: "create_game" as const,
+    calldata: buildCreateGameCalldata(runtime, request),
+  };
+}
+
+function formatCreateGameCalldata(call: ReturnType<typeof buildCreateGameCall>): string {
+  return JSON.stringify(call.calldata);
+}
+
 function resolveTotalCreateGameSubmissionCount(runtime: LaunchRuntime): number {
   return runtime.createGame.submissionCount * runtime.createGame.retryCount;
 }
@@ -386,25 +409,20 @@ async function submitCreateGameAttempt(
   totalAttempts: number,
 ): Promise<string> {
   const attemptLabel = buildCreateGameAttemptLabel(attemptNumber, totalAttempts);
-  const result = await runtime.progress.run(
-    attemptLabel,
-    () =>
-      account.execute({
-        contractAddress: runtime.factoryAddress,
-        entrypoint: "create_game",
-        calldata: buildCreateGameCalldata(runtime, request),
-      }),
-    {
-      start:
-        totalAttempts === 1
-          ? `Submitting create_game via ${shortenHash(runtime.factoryAddress)}`
-          : `Submitting create_game attempt ${attemptNumber}/${totalAttempts} via ${shortenHash(runtime.factoryAddress)}`,
-      success: (receipt, elapsedMs) =>
-        totalAttempts === 1
-          ? `create_game submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`
-          : `create_game attempt ${attemptNumber}/${totalAttempts} submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`,
-    },
-  );
+  const call = buildCreateGameCall(runtime, request);
+
+  runtime.progress.log(`Raw create_game calldata: ${formatCreateGameCalldata(call)}`);
+
+  const result = await runtime.progress.run(attemptLabel, () => account.execute(call), {
+    start:
+      totalAttempts === 1
+        ? `Submitting create_game via ${shortenHash(runtime.factoryAddress)}`
+        : `Submitting create_game attempt ${attemptNumber}/${totalAttempts} via ${shortenHash(runtime.factoryAddress)}`,
+    success: (receipt, elapsedMs) =>
+      totalAttempts === 1
+        ? `create_game submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`
+        : `create_game attempt ${attemptNumber}/${totalAttempts} submitted in ${formatDuration(elapsedMs)} (${shortenHash(receipt.transaction_hash)})`,
+  });
 
   return result.transaction_hash;
 }
@@ -611,7 +629,27 @@ function buildConfigExecutionContext(params: {
     provider: params.patchedProvider,
     config: params.deploymentConfig,
     logger: params.logger || console,
+    artifacts: {},
   };
+}
+
+function resolveWorldConfigTxHash(result: ConfigExecutionResult): string | undefined {
+  return result.mode === "batched" ? result.transactionHash : result.artifacts.worldConfigTxHash;
+}
+
+function buildBanksFromWorldConfigTxHash(worldConfigTxHash: string) {
+  const mapCenterOffset = deriveMapCenterOffsetFromWorldConfigTx(worldConfigTxHash);
+  return buildBanksForMapCenterOffset(mapCenterOffset);
+}
+
+function requireWorldConfigTxHash(summary: LaunchGameSummary): string {
+  if (summary.worldConfigTxHash) {
+    return summary.worldConfigTxHash;
+  }
+
+  throw new Error(
+    `Missing worldConfigTxHash for "${summary.gameName}". Run configure-world first or resume from a launch summary that captured it.`,
+  );
 }
 
 async function executeWorldConfig(params: {
@@ -654,7 +692,7 @@ async function configureWorld(params: {
   configSteps: LaunchConfigSteps;
   account: Account;
   patchedProvider: EternumProvider;
-}): Promise<{ transactionHash?: string; steps: LaunchGameSummary["configSteps"] }> {
+}): Promise<ConfiguredWorldResult> {
   const result = await executeWorldConfig({
     ...params,
     mode: params.runtime.executionMode,
@@ -662,6 +700,7 @@ async function configureWorld(params: {
 
   return {
     transactionHash: result.transactionHash,
+    worldConfigTxHash: resolveWorldConfigTxHash(result),
     steps: result.steps,
   };
 }
@@ -782,6 +821,7 @@ async function syncPaymasterIfNeeded(params: {
 async function createBanksIfNeeded(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
+  summary: LaunchGameSummary;
   patchedProvider: ConfiguredWorldProvider;
   providerSigner: ProviderSigner;
 }): Promise<string | undefined> {
@@ -800,7 +840,7 @@ async function createBanksIfNeeded(params: {
     () =>
       params.patchedProvider.create_banks({
         signer: params.providerSigner,
-        banks: buildDefaultBanks(),
+        banks: buildBanksFromWorldConfigTxHash(requireWorldConfigTxHash(params.summary)),
       }),
     {
       start: "Creating six default banks",
@@ -949,6 +989,9 @@ async function runConfigureWorldStep(
   });
 
   execution.summary.configureTxHash = configResult.transactionHash;
+  if (configResult.worldConfigTxHash) {
+    execution.summary.worldConfigTxHash = configResult.worldConfigTxHash;
+  }
   execution.summary.configSteps = configResult.steps;
 
   return resolvedDependencies;
@@ -993,6 +1036,7 @@ async function runCreateBanksStep(
   execution.summary.createBanksTxHash = await createBanksIfNeeded({
     runtime: execution.runtime,
     request: execution.request,
+    summary: execution.summary,
     patchedProvider: resolvedDependencies.worldContext.patchedProvider,
     providerSigner: resolvedDependencies.accountContext.providerSigner,
   });

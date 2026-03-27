@@ -2,6 +2,7 @@ import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store"
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
+import { CountUpNumber } from "@/ui/shared";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
@@ -13,9 +14,20 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { ID, RelicEffectWithEndTick, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { useDojo } from "@bibliothecadao/react";
+import {
+  ID,
+  RelicEffectWithEndTick,
+  RelicRecipientType,
+  ResourcesIds,
+  StructureType,
+  TickIds,
+} from "@bibliothecadao/types";
 import Factory from "lucide-react/dist/esm/icons/factory";
+import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -53,6 +65,9 @@ export const ResourceChip = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const {
+    setup: { components },
+  } = useDojo();
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
   const [amountProduced, setAmountProduced] = useState(0n);
@@ -227,6 +242,17 @@ export const ResourceChip = ({
     return mode.resources.canShowProductionShortcut(resourceId as ResourcesIds);
   }, [canOpenProduction, mode.resources, resourceId]);
 
+  const canOpenCraftRelic = useMemo(() => {
+    if (resourceEnumId !== ResourcesIds.Research || balance <= 0) {
+      return false;
+    }
+
+    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(resourceManager.entityId)]));
+    const structureCategory = Number(structure?.base?.category ?? structure?.category ?? 0);
+
+    return structureCategory === StructureType.Realm || structureCategory === StructureType.Village;
+  }, [balance, components.Structure, resourceEnumId, resourceManager.entityId]);
+
   const handleOpenProduction = useCallback(() => {
     if (!canShowProductionShortcut) return;
 
@@ -294,13 +320,14 @@ export const ResourceChip = ({
         <div className={`self-center flex flex-wrap w-full gap-2 ${size === "large" ? "text-lg" : ""}`}>
           <div className="flex items-center gap-2">
             {icon}
-            <span
+            <CountUpNumber
+              value={displayBalance}
+              format={(v) => currencyFormat(v, 2)}
               className={`${isHovered ? "font-bold animate-pulse" : ""} ${
                 relicEffectActivated ? "text-relic font-semibold" : ""
               }`}
-            >
-              {currencyFormat(displayBalance, 2)}
-            </span>{" "}
+              highlightClassName="text-green font-bold scale-105"
+            />{" "}
             {relicEffectActivated && (
               <div className="flex items-center ml-1 gap-1">
                 <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />
@@ -392,6 +419,31 @@ export const ResourceChip = ({
           className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Factory className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
+        </button>
+      )}
+      {canOpenCraftRelic && (
+        <button
+          data-tooltip-anchor
+          onClick={(event) => {
+            event.stopPropagation();
+            import("./craft-relic-popup").then(({ CraftRelicPopup }) => {
+              toggleModal(<CraftRelicPopup structureId={resourceManager.entityId} onClose={() => toggleModal(null)} />);
+            });
+          }}
+          onMouseEnter={(event) =>
+            setTooltip({
+              anchorElement: event.currentTarget,
+              content: "Craft Relic from Research",
+              position: "bottom",
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          disabled={disableButtons}
+          title="Craft relic from research"
+          aria-label="Craft relic from research"
+          className="ml-2 rounded border border-relic/35 bg-relic/10 p-1 text-relic2 transition hover:bg-relic/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <FlaskConical className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-current`} />
         </button>
       )}
       {showTransfer && (

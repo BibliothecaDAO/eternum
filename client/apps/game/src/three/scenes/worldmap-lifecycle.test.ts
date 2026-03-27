@@ -31,6 +31,7 @@ describe("Worldmap lifecycle baseline", () => {
     fixture.destroy();
 
     expect(fixture.switchOffCalls).toBe(1);
+    expect(fixture.interactionResetCalls).toBe(1);
     expect(fixture.listenerRemoves.length).toBe(1);
   });
 
@@ -69,6 +70,15 @@ describe("Worldmap lifecycle baseline", () => {
 
     expect(fixture.listenerRemoves.length).toBe(1);
     expect(fixture.listenerRemoves[0].event).toBe("urlChanged");
+  });
+
+  it("resets interaction selection exactly once during switch-off", () => {
+    const fixture = createWorldmapLifecycleFixture();
+
+    fixture.setup();
+    fixture.switchOff();
+
+    expect(fixture.interactionResetCalls).toBe(1);
   });
 
   it("short-circuits requestChunkRefresh when the worldmap scene is switched off", () => {

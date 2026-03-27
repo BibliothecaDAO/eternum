@@ -89,6 +89,7 @@ export interface FactoryRunArtifacts {
   worldAddress?: string;
   createGameTxHash?: string;
   configureTxHash?: string;
+  worldConfigTxHash?: string;
   lootChestRoleTxHash?: string;
   villagePassRoleTxHash?: string;
   createBanksTxHash?: string;

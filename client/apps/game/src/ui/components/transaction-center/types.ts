@@ -281,6 +281,8 @@ export const getTxMessage = (type: TransactionType): string => {
     // Chests & Relics
     case TransactionType.OPEN_CHEST:
       return "Opened treasure chest";
+    case TransactionType.BURN_RESEARCH_FOR_RELIC:
+      return "Crafted relic from research";
     case TransactionType.APPLY_RELIC:
       return "Applied relic";
 
@@ -558,6 +560,8 @@ export const getTxIcon = (type: TransactionType): string => {
     // Chests & Relics
     case TransactionType.OPEN_CHEST:
       return "📦";
+    case TransactionType.BURN_RESEARCH_FOR_RELIC:
+      return "🧪";
     case TransactionType.APPLY_RELIC:
       return "🔮";
 

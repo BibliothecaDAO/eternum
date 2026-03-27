@@ -59,47 +59,10 @@ on:
         description: "How often a rotation becomes due for evaluation"
         required: false
         type: string
-      dev_mode_on:
-        description: 'Optional override for dev mode ("true" or "false"). Leave blank to use the environment config.'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      single_realm_mode:
+      launch_options_json:
         description:
-          'Optional override for single realm mode ("true" or "false"). Leave blank to use the environment config.'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      two_player_mode:
-        description:
-          'Optional override for two player mode ("true" or "false"). Leave blank to use the environment config.'
-        required: false
-        default: ""
-        type: choice
-        options:
-          - ""
-          - "true"
-          - "false"
-      duration_seconds:
-        description:
-          "Optional override for duration in seconds. Leave blank to use the environment config. Used by blitz season
-          end_at."
-        required: false
-        type: string
-      map_config_overrides_json:
-        description: "Optional JSON object with raw map config overrides."
-        required: false
-        type: string
-      blitz_registration_overrides_json:
-        description: "Optional JSON object with raw Blitz registration overrides."
+          "Optional JSON object with replayable launch settings and overrides, including config flags, durations, and
+          advanced runtime options."
         required: false
         type: string
       auto_retry_enabled:
@@ -162,12 +125,7 @@ jobs:
       GAME_LAUNCH_MAX_GAMES: ${{ github.event.inputs.max_games }}
       GAME_LAUNCH_ADVANCE_WINDOW_GAMES: ${{ github.event.inputs.advance_window_games }}
       GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES: ${{ github.event.inputs.evaluation_interval_minutes }}
-      GAME_LAUNCH_DEV_MODE_ON: ${{ github.event.inputs.dev_mode_on }}
-      GAME_LAUNCH_SINGLE_REALM_MODE: ${{ github.event.inputs.single_realm_mode }}
-      GAME_LAUNCH_TWO_PLAYER_MODE: ${{ github.event.inputs.two_player_mode }}
-      GAME_LAUNCH_DURATION_SECONDS: ${{ github.event.inputs.duration_seconds }}
-      GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON: ${{ github.event.inputs.map_config_overrides_json }}
-      GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON: ${{ github.event.inputs.blitz_registration_overrides_json }}
+      GAME_LAUNCH_OPTIONS_JSON: ${{ github.event.inputs.launch_options_json }}
       GAME_LAUNCH_AUTO_RETRY_ENABLED: ${{ github.event.inputs.auto_retry_enabled }}
       GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES: ${{ github.event.inputs.auto_retry_interval_minutes }}
       GAME_LAUNCH_TARGET_GAME_NAMES_JSON: ${{ github.event.inputs.target_game_names_json }}
@@ -231,18 +189,149 @@ jobs:
             exit 1
           fi
 
-          if [ "${GAME_LAUNCH_STEP}" != "sync-paymaster" ] && { [ -z "${DOJO_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; }; then
+          write_launch_options_shell() {
+            local output_path=".context/game-launch/launch-options.sh"
+
+            if [ -z "${GAME_LAUNCH_OPTIONS_JSON}" ]; then
+              : > "${output_path}"
+              return 0
+            fi
+
+            GAME_LAUNCH_OPTIONS_JSON="${GAME_LAUNCH_OPTIONS_JSON}" node <<'NODE' > "${output_path}"
+          const raw = process.env.GAME_LAUNCH_OPTIONS_JSON || "";
+
+          let options;
+          try {
+            options = JSON.parse(raw);
+          } catch (error) {
+            console.error(`launch_options_json must be valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+            process.exit(1);
+          }
+
+          if (!options || typeof options !== "object" || Array.isArray(options)) {
+            console.error("launch_options_json must be a JSON object");
+            process.exit(1);
+          }
+
+          const mappings = {
+            rpcUrl: "GAME_LAUNCH_RPC_URL",
+            factoryAddress: "GAME_LAUNCH_FACTORY_ADDRESS",
+            accountAddress: "GAME_LAUNCH_ACCOUNT_ADDRESS",
+            devModeOn: "GAME_LAUNCH_DEV_MODE_ON",
+            singleRealmMode: "GAME_LAUNCH_SINGLE_REALM_MODE",
+            twoPlayerMode: "GAME_LAUNCH_TWO_PLAYER_MODE",
+            durationSeconds: "GAME_LAUNCH_DURATION_SECONDS",
+            mapConfigOverrides: "GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON",
+            blitzRegistrationOverrides: "GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON",
+            cartridgeApiBase: "GAME_LAUNCH_CARTRIDGE_API_BASE",
+            toriiNamespaces: "GAME_LAUNCH_TORII_NAMESPACES",
+            vrfProviderAddress: "GAME_LAUNCH_VRF_PROVIDER_ADDRESS",
+            executionMode: "GAME_LAUNCH_EXECUTION_MODE",
+            verboseConfigLogs: "GAME_LAUNCH_VERBOSE_CONFIG_LOGS",
+            version: "GAME_LAUNCH_VERSION",
+            maxActions: "GAME_LAUNCH_MAX_ACTIONS",
+            waitForFactoryIndexTimeoutMs: "GAME_LAUNCH_WAIT_TIMEOUT_MS",
+            waitForFactoryIndexPollMs: "GAME_LAUNCH_WAIT_POLL_MS",
+            skipIndexer: "GAME_LAUNCH_SKIP_INDEXER",
+            skipLootChestRoleGrant: "GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT",
+            skipBanks: "GAME_LAUNCH_SKIP_BANKS",
+            dryRun: "GAME_LAUNCH_DRY_RUN",
+          };
+
+          function shellQuote(value) {
+            return `'${String(value).replace(/'/g, `'\\''`)}'`;
+          }
+
+          for (const [key, envName] of Object.entries(mappings)) {
+            if (!(key in options) || options[key] === undefined || options[key] === null) {
+              continue;
+            }
+
+            const resolvedValue =
+              typeof options[key] === "object" ? JSON.stringify(options[key]) : String(options[key]);
+
+            process.stdout.write(`export ${envName}=${shellQuote(resolvedValue)}\n`);
+          }
+          NODE
+          }
+
+          mkdir -p .context/game-launch
+          write_launch_options_shell
+
+          # shellcheck disable=SC1091
+          source .context/game-launch/launch-options.sh
+
+          RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS="${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
+
+          if [ "${GAME_LAUNCH_STEP}" != "sync-paymaster" ] && { [ -z "${RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; }; then
             echo "Missing DOJO credentials for ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
           fi
 
-          mkdir -p .context/game-launch
-
           cat > .context/game-launch/launch-env.sh <<'EOF'
+          if [ -f .context/game-launch/launch-options.sh ]; then
+            # shellcheck disable=SC1091
+            source .context/game-launch/launch-options.sh
+          fi
+
+          append_optional_arg() {
+            local -n args_ref="$1"
+            local flag="$2"
+            local value="${3:-}"
+
+            if [ -n "${value}" ]; then
+              args_ref+=("${flag}" "${value}")
+            fi
+          }
+
+          resolve_configured_factory_address() {
+            printf '%s' "${GAME_LAUNCH_FACTORY_ADDRESS:-${FACTORY_ADDRESS:-}}"
+          }
+
+          resolve_configured_account_address() {
+            printf '%s' "${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
+          }
+
+          append_replayable_launch_args() {
+            local args_name="$1"
+            local -n args_ref="${args_name}"
+            local resolved_factory_address=""
+            local resolved_account_address=""
+            local resolved_execution_mode="${GAME_LAUNCH_EXECUTION_MODE:-batched}"
+
+            resolved_factory_address="$(resolve_configured_factory_address)"
+            resolved_account_address="$(resolve_configured_account_address)"
+
+            args_ref+=(
+              --mode "${resolved_execution_mode}"
+            )
+
+            append_optional_arg "${args_name}" --rpc-url "${GAME_LAUNCH_RPC_URL:-}"
+            append_optional_arg "${args_name}" --factory-address "${resolved_factory_address}"
+            append_optional_arg "${args_name}" --account-address "${resolved_account_address}"
+            append_optional_arg "${args_name}" --dev-mode-on "${GAME_LAUNCH_DEV_MODE_ON:-}"
+            append_optional_arg "${args_name}" --single-realm-mode "${GAME_LAUNCH_SINGLE_REALM_MODE:-}"
+            append_optional_arg "${args_name}" --two-player-mode "${GAME_LAUNCH_TWO_PLAYER_MODE:-}"
+            append_optional_arg "${args_name}" --duration-seconds "${GAME_LAUNCH_DURATION_SECONDS:-}"
+            append_optional_arg "${args_name}" --cartridge-api-base "${GAME_LAUNCH_CARTRIDGE_API_BASE:-}"
+            append_optional_arg "${args_name}" --torii-namespaces "${GAME_LAUNCH_TORII_NAMESPACES:-}"
+            append_optional_arg "${args_name}" --vrf-provider-address "${GAME_LAUNCH_VRF_PROVIDER_ADDRESS:-}"
+            append_optional_arg "${args_name}" --verbose-config-logs "${GAME_LAUNCH_VERBOSE_CONFIG_LOGS:-}"
+            append_optional_arg "${args_name}" --version "${GAME_LAUNCH_VERSION:-}"
+            append_optional_arg "${args_name}" --max-actions "${GAME_LAUNCH_MAX_ACTIONS:-}"
+            append_optional_arg "${args_name}" --wait-timeout-ms "${GAME_LAUNCH_WAIT_TIMEOUT_MS:-}"
+            append_optional_arg "${args_name}" --wait-poll-ms "${GAME_LAUNCH_WAIT_POLL_MS:-}"
+            append_optional_arg "${args_name}" --skip-indexer "${GAME_LAUNCH_SKIP_INDEXER:-}"
+            append_optional_arg "${args_name}" --skip-lootchest-role-grant "${GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT:-}"
+            append_optional_arg "${args_name}" --skip-banks "${GAME_LAUNCH_SKIP_BANKS:-}"
+            append_optional_arg "${args_name}" --dry-run "${GAME_LAUNCH_DRY_RUN:-}"
+            append_optional_arg "${args_name}" --map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON:-}"
+            append_optional_arg "${args_name}" --blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON:-}"
+          }
+
           args=(
             --launch-kind "${GAME_LAUNCH_KIND}"
             --environment "${GAME_LAUNCH_ENVIRONMENT}"
-            --mode batched
           )
 
           GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
@@ -292,33 +381,7 @@ jobs:
             )
           fi
 
-          if [ -n "${FACTORY_ADDRESS}" ]; then
-            args+=(--factory-address "${FACTORY_ADDRESS}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_DEV_MODE_ON}" ]; then
-            args+=(--dev-mode-on "${GAME_LAUNCH_DEV_MODE_ON}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_SINGLE_REALM_MODE}" ]; then
-            args+=(--single-realm-mode "${GAME_LAUNCH_SINGLE_REALM_MODE}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_TWO_PLAYER_MODE}" ]; then
-            args+=(--two-player-mode "${GAME_LAUNCH_TWO_PLAYER_MODE}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_DURATION_SECONDS}" ]; then
-            args+=(--duration-seconds "${GAME_LAUNCH_DURATION_SECONDS}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}" ]; then
-            args+=(--map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}" ]; then
-            args+=(--blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}")
-          fi
+          append_replayable_launch_args args
 
           if [ "${GAME_LAUNCH_KIND}" = "series" ] || [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
             if [ -n "${GAME_LAUNCH_AUTO_RETRY_ENABLED}" ]; then
@@ -367,13 +430,7 @@ jobs:
             )
           fi
 
-          if [ -n "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}" ]; then
-            run_store_args+=(--map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON}")
-          fi
-
-          if [ -n "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}" ]; then
-            run_store_args+=(--blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON}")
-          fi
+          append_replayable_launch_args run_store_args
 
           if [ "${GAME_LAUNCH_KIND}" = "series" ] || [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
             if [ -n "${GAME_LAUNCH_AUTO_RETRY_ENABLED}" ]; then
@@ -410,7 +467,7 @@ jobs:
           account_lease_args=(
             --environment "${GAME_LAUNCH_ENVIRONMENT}"
             --game "$(resolve_account_lease_owner_name)"
-            --account-address "${DOJO_ACCOUNT_ADDRESS}"
+            --account-address "$(resolve_configured_account_address)"
           )
 
           if [ -n "${FACTORY_RUN_STORE_BRANCH}" ]; then

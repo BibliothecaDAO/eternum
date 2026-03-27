@@ -384,9 +384,9 @@ const AutoRegisterPointsStoreManager = () => {
 
       log(`Registered: ${registeredPoints}, Unregistered: ${unregisteredPoints}`);
 
-      // Check condition: unregistered > registered
-      if (unregisteredPoints <= registeredPoints) {
-        log("Skipped: unregistered <= registered");
+      // Check condition: any unregistered points to claim
+      if (unregisteredPoints <= 0) {
+        log("Skipped: no unregistered points");
         return;
       }
 

@@ -474,6 +474,19 @@ describe("resolveEntityActionPathsTransitionTokenForForcedRefresh", () => {
     ).toBe(52);
   });
 
+  it("re-stamps ownership on same-chunk forced refresh even when prior ownership is missing", () => {
+    expect(
+      resolveEntityActionPathsTransitionTokenForForcedRefresh({
+        selectedEntityId: 7,
+        actionPathCount: 3,
+        currentChunk: "16,16",
+        targetChunk: "16,16",
+        nextTransitionToken: 52,
+        previousTransitionToken: null,
+      }),
+    ).toBe(52);
+  });
+
   it("does not change ownership for non-local forced refreshes", () => {
     expect(
       resolveEntityActionPathsTransitionTokenForForcedRefresh({

@@ -23,6 +23,8 @@ const FACTORY_LIVE_INDEXER_SNAPSHOT_PATH = "indexes/indexers/live.json";
 const DEFAULT_INDEXER_LEGENDARY_LEAD_MS = 30 * 60_000;
 const DEFAULT_INDEXER_PRO_COOLDOWN_MS = 40 * 60_000;
 const DEFAULT_INDEXER_TIER_REQUEST_COOLDOWN_MS = 15 * 60_000;
+const DEFAULT_FACTORY_RECENT_RUN_LIST_LIMIT = 50;
+const MAX_FACTORY_RECENT_RUN_LIST_LIMIT = 100;
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 const FACTORY_ENVIRONMENTS = ["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"];
 const GAME_PRIZE_FUNDING_STEP_ID = "configure-world";
@@ -123,6 +125,11 @@ async function handleRequest(request, env) {
         return await handleFundFactoryGamePrize(request, env, runRoute);
       }
 
+      if (request.method === "POST" && runRoute.action === "delete") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleDeleteFactoryRun(request, env, runRoute);
+      }
+
       return buildJsonResponse(request, env, { error: "Not found" }, 404);
     }
 
@@ -144,6 +151,11 @@ async function handleRequest(request, env) {
       if (request.method === "POST" && seriesRunRoute.action === "cancel-auto-retry") {
         requireFactoryWorkerAdminAuthorization(request, env);
         return await handleCancelFactorySeriesAutoRetry(request, env, seriesRunRoute);
+      }
+
+      if (request.method === "POST" && seriesRunRoute.action === "delete") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleDeleteFactorySeriesRun(request, env, seriesRunRoute);
       }
 
       return buildJsonResponse(request, env, { error: "Not found" }, 404);
@@ -171,6 +183,11 @@ async function handleRequest(request, env) {
       if (request.method === "POST" && rotationRunRoute.action === "cancel-auto-retry") {
         requireFactoryWorkerAdminAuthorization(request, env);
         return await handleCancelFactoryRotationAutoRetry(request, env, rotationRunRoute);
+      }
+
+      if (request.method === "POST" && rotationRunRoute.action === "delete") {
+        requireFactoryWorkerAdminAuthorization(request, env);
+        return await handleDeleteFactoryRotationRun(request, env, rotationRunRoute);
       }
 
       return buildJsonResponse(request, env, { error: "Not found" }, 404);
@@ -350,12 +367,9 @@ async function handleListFactoryRuns(request, url, env) {
   validateEnvironment(environment);
 
   const github = createGitHubClient(env);
-  const [gameRuns, seriesRuns, rotationRuns] = await Promise.all([
-    readFactoryRunsForEnvironment(github, environment, resolveRunStoreBranch(env)),
-    readFactorySeriesRunsForEnvironment(github, environment, resolveRunStoreBranch(env)),
-    readFactoryRotationRunsForEnvironment(github, environment, resolveRunStoreBranch(env)),
-  ]);
-  const runs = [...gameRuns, ...seriesRuns, ...rotationRuns];
+  const branch = resolveRunStoreBranch(env);
+  const limit = resolveFactoryRecentRunListLimit(url);
+  const runs = await readRecentFactoryRunsForEnvironment(github, environment, branch, limit);
   return buildJsonResponse(request, env, { runs: runs.map(enrichFactoryRunResponse) }, 200);
 }
 
@@ -719,6 +733,55 @@ async function handleCancelFactoryRotationAutoRetry(request, env, route) {
   });
 
   return buildJsonResponse(request, env, enrichFactoryRunResponse(nextRun), 200);
+}
+
+async function handleDeleteFactoryRun(request, env, route) {
+  const github = createGitHubClient(env);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactoryRunIfPresent(github, route.environment, route.gameName, branch);
+
+  if (!run) {
+    return buildJsonResponse(request, env, { error: resolveMissingRunMessage(route.environment, route.gameName) }, 404);
+  }
+
+  const deleted = await deleteFactoryStoredRun(github, branch, run);
+  return buildJsonResponse(request, env, { deleted }, 200);
+}
+
+async function handleDeleteFactorySeriesRun(request, env, route) {
+  const github = createGitHubClient(env);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactorySeriesRunIfPresent(github, route.environment, route.seriesName, branch);
+
+  if (!run) {
+    return buildJsonResponse(
+      request,
+      env,
+      { error: resolveMissingSeriesRunMessage(route.environment, route.seriesName) },
+      404,
+    );
+  }
+
+  const deleted = await deleteFactoryStoredRun(github, branch, run);
+  return buildJsonResponse(request, env, { deleted }, 200);
+}
+
+async function handleDeleteFactoryRotationRun(request, env, route) {
+  const github = createGitHubClient(env);
+  const branch = resolveRunStoreBranch(env);
+  const run = await readFactoryRotationRunIfPresent(github, route.environment, route.rotationName, branch);
+
+  if (!run) {
+    return buildJsonResponse(
+      request,
+      env,
+      { error: resolveMissingRotationRunMessage(route.environment, route.rotationName) },
+      404,
+    );
+  }
+
+  const deleted = await deleteFactoryStoredRun(github, branch, run);
+  return buildJsonResponse(request, env, { deleted }, 200);
 }
 
 async function handleReadFactoryRotationRun(request, route, env) {
@@ -1259,12 +1322,27 @@ function buildContinueWorkflowRequest(route, run, inputRecord, launchStep) {
     environment,
     gameName,
     gameStartTime: String(gameStartTime),
+    rpcUrl: rawRequest.rpcUrl,
+    factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
     singleRealmMode: rawRequest.singleRealmMode,
     twoPlayerMode: rawRequest.twoPlayerMode,
     durationSeconds: rawRequest.durationSeconds,
     mapConfigOverrides: rawRequest.mapConfigOverrides,
     blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
+    cartridgeApiBase: rawRequest.cartridgeApiBase,
+    toriiNamespaces: rawRequest.toriiNamespaces,
+    vrfProviderAddress: rawRequest.vrfProviderAddress,
+    executionMode: rawRequest.executionMode,
+    verboseConfigLogs: rawRequest.verboseConfigLogs,
+    version: rawRequest.version,
+    maxActions: rawRequest.maxActions,
+    waitForFactoryIndexTimeoutMs: rawRequest.waitForFactoryIndexTimeoutMs,
+    waitForFactoryIndexPollMs: rawRequest.waitForFactoryIndexPollMs,
+    skipIndexer: rawRequest.skipIndexer,
+    skipLootChestRoleGrant: rawRequest.skipLootChestRoleGrant,
+    skipBanks: rawRequest.skipBanks,
+    dryRun: rawRequest.dryRun,
     launchStep: normalizedLaunchStep,
   };
 }
@@ -1296,12 +1374,27 @@ function buildContinueSeriesWorkflowRequest(route, run, inputRecord, launchStep,
     environment,
     seriesName,
     games,
+    rpcUrl: rawRequest.rpcUrl,
+    factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
     singleRealmMode: rawRequest.singleRealmMode,
     twoPlayerMode: rawRequest.twoPlayerMode,
     durationSeconds: rawRequest.durationSeconds,
     mapConfigOverrides: rawRequest.mapConfigOverrides,
     blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
+    cartridgeApiBase: rawRequest.cartridgeApiBase,
+    toriiNamespaces: rawRequest.toriiNamespaces,
+    vrfProviderAddress: rawRequest.vrfProviderAddress,
+    executionMode: rawRequest.executionMode,
+    verboseConfigLogs: rawRequest.verboseConfigLogs,
+    version: rawRequest.version,
+    maxActions: rawRequest.maxActions,
+    waitForFactoryIndexTimeoutMs: rawRequest.waitForFactoryIndexTimeoutMs,
+    waitForFactoryIndexPollMs: rawRequest.waitForFactoryIndexPollMs,
+    skipIndexer: rawRequest.skipIndexer,
+    skipLootChestRoleGrant: rawRequest.skipLootChestRoleGrant,
+    skipBanks: rawRequest.skipBanks,
+    dryRun: rawRequest.dryRun,
     autoRetryEnabled: rawRequest.autoRetryEnabled,
     autoRetryIntervalMinutes: rawRequest.autoRetryIntervalMinutes,
     targetGameNames,
@@ -1339,12 +1432,27 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     maxGames: rawRequest.maxGames,
     advanceWindowGames: rawRequest.advanceWindowGames,
     evaluationIntervalMinutes: rawRequest.evaluationIntervalMinutes,
+    rpcUrl: rawRequest.rpcUrl,
+    factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
     singleRealmMode: rawRequest.singleRealmMode,
     twoPlayerMode: rawRequest.twoPlayerMode,
     durationSeconds: rawRequest.durationSeconds,
     mapConfigOverrides: rawRequest.mapConfigOverrides,
     blitzRegistrationOverrides: rawRequest.blitzRegistrationOverrides,
+    cartridgeApiBase: rawRequest.cartridgeApiBase,
+    toriiNamespaces: rawRequest.toriiNamespaces,
+    vrfProviderAddress: rawRequest.vrfProviderAddress,
+    executionMode: rawRequest.executionMode,
+    verboseConfigLogs: rawRequest.verboseConfigLogs,
+    version: rawRequest.version,
+    maxActions: rawRequest.maxActions,
+    waitForFactoryIndexTimeoutMs: rawRequest.waitForFactoryIndexTimeoutMs,
+    waitForFactoryIndexPollMs: rawRequest.waitForFactoryIndexPollMs,
+    skipIndexer: rawRequest.skipIndexer,
+    skipLootChestRoleGrant: rawRequest.skipLootChestRoleGrant,
+    skipBanks: rawRequest.skipBanks,
+    dryRun: rawRequest.dryRun,
     autoRetryEnabled: rawRequest.autoRetryEnabled,
     autoRetryIntervalMinutes: rawRequest.autoRetryIntervalMinutes,
     targetGameNames,
@@ -2174,6 +2282,20 @@ function matchFactoryRunRoute(pathname) {
     return { environment, gameName, action: "fund-prize" };
   }
 
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "delete"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const gameName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, gameName, action: "delete" };
+  }
+
   return null;
 }
 
@@ -2227,6 +2349,20 @@ function matchFactorySeriesRunRoute(pathname) {
     const seriesName = decodeURIComponent(parts[4]);
     validateEnvironment(environment);
     return { environment, seriesName, action: "cancel-auto-retry" };
+  }
+
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "series-runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "delete"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const seriesName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, seriesName, action: "delete" };
   }
 
   return null;
@@ -2298,6 +2434,20 @@ function matchFactoryRotationRunRoute(pathname) {
     return { environment, rotationName, action: "cancel-auto-retry" };
   }
 
+  if (
+    parts.length === 7 &&
+    parts[0] === "api" &&
+    parts[1] === "factory" &&
+    parts[2] === "rotation-runs" &&
+    parts[5] === "actions" &&
+    parts[6] === "delete"
+  ) {
+    const environment = decodeURIComponent(parts[3]);
+    const rotationName = decodeURIComponent(parts[4]);
+    validateEnvironment(environment);
+    return { environment, rotationName, action: "delete" };
+  }
+
   return null;
 }
 
@@ -2333,6 +2483,24 @@ async function readFactorySeriesRunsForEnvironment(github, environment, branch) 
 async function readFactoryRotationRunsForEnvironment(github, environment, branch) {
   const directoryPath = resolveFactoryRotationRunDirectoryPath(environment);
   return readFactoryRunsFromDirectory(github, directoryPath, branch);
+}
+
+async function readRecentFactoryRunsForEnvironment(github, environment, branch, limit) {
+  const recentEntries = await readRecentFactoryRunEntriesForEnvironment(github, environment, branch, limit);
+  const runs = await Promise.all(recentEntries.map((entry) => readBranchJsonIfPresent(github, entry.path, branch)));
+  return runs.filter(Boolean).sort(compareFactoryRunsByRecency);
+}
+
+async function readRecentFactoryRunEntriesForEnvironment(github, environment, branch, limit) {
+  const [gameEntries, seriesEntries, rotationEntries] = await Promise.all([
+    readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch),
+    readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch),
+    readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch),
+  ]);
+
+  return [...gameEntries, ...seriesEntries, ...rotationEntries]
+    .sort(compareFactoryMaintenanceEntriesByRecency)
+    .slice(0, limit);
 }
 
 async function readFactoryRunsFromDirectory(github, directoryPath, branch) {
@@ -2557,6 +2725,10 @@ function readFactoryMaintenanceIndexEntries(index) {
   return Object.values(index?.entries || {});
 }
 
+function compareFactoryMaintenanceEntriesByRecency(left, right) {
+  return compareFactoryUpdatedAtValues(right.updatedAt, left.updatedAt);
+}
+
 async function readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch) {
   return readFactoryMaintenanceIndexEntries(
     await readFactoryMaintenanceIndexIfPresent(github, environment, "game", branch),
@@ -2602,6 +2774,183 @@ async function updateFactoryMaintenanceIndexForRunRecord(github, branch, run) {
   );
 }
 
+async function removeFactoryMaintenanceIndexEntry(github, branch, environment, kind, entryKey) {
+  const indexPath = resolveFactoryMaintenanceIndexPath(environment, kind);
+  const currentIndex = await readFactoryMaintenanceIndexIfPresent(github, environment, kind, branch);
+
+  if (!currentIndex?.entries?.[entryKey]) {
+    return;
+  }
+
+  await updateBranchJsonFileValue(
+    github,
+    indexPath,
+    branch,
+    (existingIndex) => {
+      const nextEntries = { ...(existingIndex?.entries || {}) };
+      delete nextEntries[entryKey];
+
+      return {
+        ...(existingIndex || buildEmptyFactoryMaintenanceIndex(environment, kind)),
+        version: 1,
+        environment,
+        kind,
+        updatedAt: new Date().toISOString(),
+        entries: nextEntries,
+      };
+    },
+    `factory-runs: remove ${kind} maintenance index for ${environment}/${entryKey}`,
+  );
+}
+
+async function removeFactoryLiveIndexerSnapshotEntries(github, branch, gameNames) {
+  const uniqueGameNames = Array.from(new Set((gameNames || []).filter(Boolean)));
+
+  if (uniqueGameNames.length === 0) {
+    return;
+  }
+
+  const currentSnapshot = (await readBranchJsonIfPresent(github, FACTORY_LIVE_INDEXER_SNAPSHOT_PATH, branch)) || {
+    version: 1,
+    updatedAt: null,
+    entries: {},
+  };
+
+  if (!uniqueGameNames.some((gameName) => currentSnapshot.entries?.[gameName])) {
+    return;
+  }
+
+  await updateBranchJsonFileValue(
+    github,
+    FACTORY_LIVE_INDEXER_SNAPSHOT_PATH,
+    branch,
+    (existingSnapshot) => {
+      const nextEntries = { ...(existingSnapshot?.entries || {}) };
+
+      for (const gameName of uniqueGameNames) {
+        delete nextEntries[gameName];
+      }
+
+      return {
+        ...(existingSnapshot || {
+          version: 1,
+          updatedAt: null,
+          entries: {},
+        }),
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        entries: nextEntries,
+      };
+    },
+    `factory-runs: remove live indexer snapshot entries for ${uniqueGameNames.join(",")}`,
+  );
+}
+
+function resolveFactoryRunInputDirectoryPath(inputPath) {
+  if (!inputPath || !inputPath.includes("/")) {
+    return null;
+  }
+
+  return inputPath.slice(0, inputPath.lastIndexOf("/"));
+}
+
+function resolveFactoryStoredRunDeletionTarget(run) {
+  if (run?.kind === "series") {
+    return {
+      kind: "series",
+      environment: run.environment,
+      runName: run.seriesName,
+      recordPath: resolveFactorySeriesRunRecordPath(run.environment, run.seriesName),
+      inputDirectoryPath: resolveFactoryRunInputDirectoryPath(run.inputPath),
+      maintenanceKind: "series",
+      maintenanceEntryKey: run.seriesName,
+      gameNames: (run.summary?.games || []).map((game) => game.gameName).filter(Boolean),
+    };
+  }
+
+  if (run?.kind === "rotation") {
+    return {
+      kind: "rotation",
+      environment: run.environment,
+      runName: run.rotationName,
+      recordPath: resolveFactoryRotationRunRecordPath(run.environment, run.rotationName),
+      inputDirectoryPath: resolveFactoryRunInputDirectoryPath(run.inputPath),
+      maintenanceKind: "rotation",
+      maintenanceEntryKey: run.rotationName,
+      gameNames: (run.summary?.games || []).map((game) => game.gameName).filter(Boolean),
+    };
+  }
+
+  return {
+    kind: "game",
+    environment: run.environment,
+    runName: run.gameName,
+    recordPath: resolveFactoryRunRecordPath(run.environment, run.gameName),
+    inputDirectoryPath: resolveFactoryRunInputDirectoryPath(run.inputPath),
+    maintenanceKind: "game",
+    maintenanceEntryKey: run.gameName,
+    gameNames: [run.gameName].filter(Boolean),
+  };
+}
+
+async function deleteFactoryStoredRun(github, branch, run) {
+  const target = resolveFactoryStoredRunDeletionTarget(run);
+  const deletedInputPaths = await deleteFactoryRunInputDirectoryFiles(github, branch, target.inputDirectoryPath);
+
+  await removeFactoryMaintenanceIndexEntry(
+    github,
+    branch,
+    target.environment,
+    target.maintenanceKind,
+    target.maintenanceEntryKey,
+  );
+  await deleteBranchFileIfPresent(
+    github,
+    target.recordPath,
+    branch,
+    `factory-runs: delete ${target.kind} run ${target.environment}/${target.runName}`,
+  );
+  await removeFactoryLiveIndexerSnapshotEntries(github, branch, target.gameNames);
+
+  return {
+    kind: target.kind,
+    environment: target.environment,
+    runName: target.runName,
+    deletedRecordPath: target.recordPath,
+    deletedInputPaths,
+    removedLiveIndexerGameNames: target.gameNames,
+  };
+}
+
+function resolveFactoryRecentRunListLimit(url) {
+  const rawLimit = Number.parseInt(url.searchParams.get("limit") || "", 10);
+
+  if (!Number.isFinite(rawLimit) || rawLimit <= 0) {
+    return DEFAULT_FACTORY_RECENT_RUN_LIST_LIMIT;
+  }
+
+  return Math.min(rawLimit, MAX_FACTORY_RECENT_RUN_LIST_LIMIT);
+}
+
+function compareFactoryRunsByRecency(left, right) {
+  return compareFactoryUpdatedAtValues(right.updatedAt, left.updatedAt);
+}
+
+function compareFactoryUpdatedAtValues(leftUpdatedAt, rightUpdatedAt) {
+  const leftTimestamp = Date.parse(leftUpdatedAt || "");
+  const rightTimestamp = Date.parse(rightUpdatedAt || "");
+
+  if (Number.isFinite(leftTimestamp) && Number.isFinite(rightTimestamp) && leftTimestamp !== rightTimestamp) {
+    return leftTimestamp - rightTimestamp;
+  }
+
+  if (Number.isFinite(leftTimestamp) !== Number.isFinite(rightTimestamp)) {
+    return Number.isFinite(leftTimestamp) ? 1 : -1;
+  }
+
+  return String(leftUpdatedAt || "").localeCompare(String(rightUpdatedAt || ""));
+}
+
 async function dispatchGameLaunchWorkflow(github, request) {
   const response = await github.fetch(`/repos/${github.repo}/actions/workflows/${github.workflowFile}/dispatches`, {
     method: "POST",
@@ -2645,85 +2994,135 @@ async function dispatchFactoryPrizeFundingWorkflow(github, request) {
   };
 }
 
+function assignOptionalWorkflowInput(inputs, key, value) {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  if (typeof value === "string") {
+    if (value.length === 0) {
+      return;
+    }
+
+    inputs[key] = value;
+    return;
+  }
+
+  inputs[key] = String(value);
+}
+
+function assignOptionalLaunchOption(launchOptions, key, value) {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  if (typeof value === "string" && value.length === 0) {
+    return;
+  }
+
+  launchOptions[key] = value;
+}
+
+function buildReplayableLaunchOptions(request) {
+  const launchOptions = {};
+
+  assignOptionalLaunchOption(launchOptions, "rpcUrl", request.rpcUrl);
+  assignOptionalLaunchOption(launchOptions, "factoryAddress", request.factoryAddress);
+  assignOptionalLaunchOption(launchOptions, "accountAddress", request.accountAddress);
+  assignOptionalLaunchOption(launchOptions, "devModeOn", request.devModeOn);
+  assignOptionalLaunchOption(launchOptions, "singleRealmMode", request.singleRealmMode);
+  assignOptionalLaunchOption(launchOptions, "twoPlayerMode", request.twoPlayerMode);
+  assignOptionalLaunchOption(launchOptions, "durationSeconds", request.durationSeconds);
+  assignOptionalLaunchOption(launchOptions, "mapConfigOverrides", request.mapConfigOverrides);
+  assignOptionalLaunchOption(launchOptions, "blitzRegistrationOverrides", request.blitzRegistrationOverrides);
+  assignOptionalLaunchOption(launchOptions, "cartridgeApiBase", request.cartridgeApiBase);
+  assignOptionalLaunchOption(launchOptions, "toriiNamespaces", request.toriiNamespaces);
+  assignOptionalLaunchOption(launchOptions, "vrfProviderAddress", request.vrfProviderAddress);
+  assignOptionalLaunchOption(launchOptions, "executionMode", request.executionMode);
+  assignOptionalLaunchOption(launchOptions, "verboseConfigLogs", request.verboseConfigLogs);
+  assignOptionalLaunchOption(launchOptions, "version", request.version);
+  assignOptionalLaunchOption(launchOptions, "maxActions", request.maxActions);
+  assignOptionalLaunchOption(launchOptions, "waitForFactoryIndexTimeoutMs", request.waitForFactoryIndexTimeoutMs);
+  assignOptionalLaunchOption(launchOptions, "waitForFactoryIndexPollMs", request.waitForFactoryIndexPollMs);
+  assignOptionalLaunchOption(launchOptions, "skipIndexer", request.skipIndexer);
+  assignOptionalLaunchOption(launchOptions, "skipLootChestRoleGrant", request.skipLootChestRoleGrant);
+  assignOptionalLaunchOption(launchOptions, "skipBanks", request.skipBanks);
+  assignOptionalLaunchOption(launchOptions, "dryRun", request.dryRun);
+
+  return launchOptions;
+}
+
+function buildBaseLaunchWorkflowInputs(request) {
+  const inputs = {
+    launch_kind: request.launchKind || "game",
+    environment: request.environment,
+    launch_step: request.launchStep,
+  };
+
+  const launchOptions = buildReplayableLaunchOptions(request);
+  if (Object.keys(launchOptions).length > 0) {
+    inputs.launch_options_json = JSON.stringify(launchOptions);
+  }
+
+  return inputs;
+}
+
+function assignSeriesLaunchWorkflowInputs(inputs, request) {
+  assignOptionalWorkflowInput(inputs, "series_name", request.seriesName);
+  assignOptionalWorkflowInput(inputs, "series_games_json", JSON.stringify(request.games));
+  assignOptionalWorkflowInput(inputs, "auto_retry_enabled", request.autoRetryEnabled === false ? "false" : "true");
+  assignOptionalWorkflowInput(
+    inputs,
+    "auto_retry_interval_minutes",
+    request.autoRetryIntervalMinutes !== undefined ? String(request.autoRetryIntervalMinutes) : undefined,
+  );
+  assignOptionalWorkflowInput(
+    inputs,
+    "target_game_names_json",
+    request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : undefined,
+  );
+}
+
+function assignRotationLaunchWorkflowInputs(inputs, request) {
+  assignOptionalWorkflowInput(inputs, "rotation_name", request.rotationName);
+  assignOptionalWorkflowInput(inputs, "first_game_start_time", request.firstGameStartTime);
+  assignOptionalWorkflowInput(inputs, "game_interval_minutes", request.gameIntervalMinutes);
+  assignOptionalWorkflowInput(inputs, "max_games", request.maxGames);
+  assignOptionalWorkflowInput(inputs, "advance_window_games", request.advanceWindowGames);
+  assignOptionalWorkflowInput(inputs, "evaluation_interval_minutes", request.evaluationIntervalMinutes);
+  assignOptionalWorkflowInput(inputs, "auto_retry_enabled", request.autoRetryEnabled === false ? "false" : "true");
+  assignOptionalWorkflowInput(
+    inputs,
+    "auto_retry_interval_minutes",
+    request.autoRetryIntervalMinutes !== undefined ? String(request.autoRetryIntervalMinutes) : undefined,
+  );
+  assignOptionalWorkflowInput(
+    inputs,
+    "target_game_names_json",
+    request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : undefined,
+  );
+}
+
+function assignSingleGameWorkflowInputs(inputs, request) {
+  assignOptionalWorkflowInput(inputs, "game_name", request.gameName);
+  assignOptionalWorkflowInput(inputs, "game_start_time", request.gameStartTime);
+}
+
 function buildGameLaunchWorkflowInputs(request) {
+  const inputs = buildBaseLaunchWorkflowInputs(request);
+
   if (request.launchKind === "series") {
-    return {
-      launch_kind: "series",
-      environment: request.environment,
-      game_name: "",
-      game_start_time: "",
-      series_name: request.seriesName,
-      series_games_json: JSON.stringify(request.games),
-      dev_mode_on: toWorkflowBooleanInput(request.devModeOn),
-      single_realm_mode: toWorkflowBooleanInput(request.singleRealmMode),
-      two_player_mode: toWorkflowBooleanInput(request.twoPlayerMode),
-      duration_seconds: request.durationSeconds ? String(request.durationSeconds) : "",
-      map_config_overrides_json: request.mapConfigOverrides ? JSON.stringify(request.mapConfigOverrides) : "",
-      blitz_registration_overrides_json: request.blitzRegistrationOverrides
-        ? JSON.stringify(request.blitzRegistrationOverrides)
-        : "",
-      auto_retry_enabled: request.autoRetryEnabled === false ? "false" : "true",
-      auto_retry_interval_minutes: request.autoRetryIntervalMinutes ? String(request.autoRetryIntervalMinutes) : "",
-      target_game_names_json: request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : "",
-      launch_step: request.launchStep,
-    };
+    assignSeriesLaunchWorkflowInputs(inputs, request);
+    return inputs;
   }
 
   if (request.launchKind === "rotation") {
-    return {
-      launch_kind: "rotation",
-      environment: request.environment,
-      game_name: "",
-      game_start_time: "",
-      series_name: "",
-      series_games_json: "",
-      rotation_name: request.rotationName,
-      first_game_start_time: String(request.firstGameStartTime),
-      game_interval_minutes: String(request.gameIntervalMinutes),
-      max_games: String(request.maxGames),
-      advance_window_games: request.advanceWindowGames ? String(request.advanceWindowGames) : "",
-      evaluation_interval_minutes: String(request.evaluationIntervalMinutes),
-      dev_mode_on: toWorkflowBooleanInput(request.devModeOn),
-      single_realm_mode: toWorkflowBooleanInput(request.singleRealmMode),
-      two_player_mode: toWorkflowBooleanInput(request.twoPlayerMode),
-      duration_seconds: request.durationSeconds ? String(request.durationSeconds) : "",
-      map_config_overrides_json: request.mapConfigOverrides ? JSON.stringify(request.mapConfigOverrides) : "",
-      blitz_registration_overrides_json: request.blitzRegistrationOverrides
-        ? JSON.stringify(request.blitzRegistrationOverrides)
-        : "",
-      auto_retry_enabled: request.autoRetryEnabled === false ? "false" : "true",
-      auto_retry_interval_minutes: request.autoRetryIntervalMinutes ? String(request.autoRetryIntervalMinutes) : "",
-      target_game_names_json: request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : "",
-      launch_step: request.launchStep,
-    };
+    assignRotationLaunchWorkflowInputs(inputs, request);
+    return inputs;
   }
 
-  return {
-    launch_kind: "game",
-    environment: request.environment,
-    game_name: request.gameName,
-    game_start_time: request.gameStartTime,
-    series_name: "",
-    series_games_json: "",
-    target_game_names_json: "",
-    rotation_name: "",
-    first_game_start_time: "",
-    game_interval_minutes: "",
-    max_games: "",
-    advance_window_games: "",
-    evaluation_interval_minutes: "",
-    dev_mode_on: toWorkflowBooleanInput(request.devModeOn),
-    single_realm_mode: toWorkflowBooleanInput(request.singleRealmMode),
-    two_player_mode: toWorkflowBooleanInput(request.twoPlayerMode),
-    duration_seconds: request.durationSeconds ? String(request.durationSeconds) : "",
-    map_config_overrides_json: request.mapConfigOverrides ? JSON.stringify(request.mapConfigOverrides) : "",
-    blitz_registration_overrides_json: request.blitzRegistrationOverrides
-      ? JSON.stringify(request.blitzRegistrationOverrides)
-      : "",
-    auto_retry_enabled: "",
-    auto_retry_interval_minutes: "",
-    launch_step: request.launchStep,
-  };
+  assignSingleGameWorkflowInputs(inputs, request);
+  return inputs;
 }
 
 function validateMapConfigOverrides(value) {
@@ -3307,6 +3706,30 @@ function resolveIndexerDeleteTargetGameNames(availableGames, requestedGameNames,
   return normalizedGameNames;
 }
 
+async function readBranchDirectoryEntriesIfPresent(github, directoryPath, branch) {
+  if (!directoryPath) {
+    return [];
+  }
+
+  const response = await github.fetch(
+    `/repos/${github.repo}/contents/${directoryPath}?ref=${encodeURIComponent(branch)}`,
+    {
+      method: "GET",
+    },
+  );
+
+  if (response.status === 404) {
+    return [];
+  }
+
+  if (!response.ok) {
+    throw await toGitHubHttpError(response, `Failed to list ${directoryPath}`);
+  }
+
+  const payload = await response.json();
+  return Array.isArray(payload) ? payload.filter((entry) => entry?.type === "file" && entry.path && entry.sha) : [];
+}
+
 async function readBranchJsonWithMetadataIfPresent(github, path, branch) {
   const response = await github.fetch(`/repos/${github.repo}/contents/${path}?ref=${encodeURIComponent(branch)}`, {
     method: "GET",
@@ -3333,6 +3756,41 @@ async function readBranchJsonWithMetadataIfPresent(github, path, branch) {
     logFactoryError("run_store_parse_failed", { path, branch });
     throw new HttpError(502, `Failed to parse JSON at ${path}`);
   }
+}
+
+async function deleteBranchFileIfPresent(github, path, branch, commitMessage = `Delete ${path}`) {
+  const existingRecord = await readBranchJsonWithMetadataIfPresent(github, path, branch);
+
+  if (!existingRecord?.sha) {
+    return false;
+  }
+
+  const response = await github.fetch(`/repos/${github.repo}/contents/${path}`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      branch,
+      message: commitMessage,
+      sha: existingRecord.sha,
+    }),
+  });
+
+  if (!response.ok) {
+    throw await toGitHubHttpError(response, `Failed to delete ${path}`);
+  }
+
+  return true;
+}
+
+async function deleteFactoryRunInputDirectoryFiles(github, branch, directoryPath) {
+  const inputEntries = await readBranchDirectoryEntriesIfPresent(github, directoryPath, branch);
+  const deletedInputPaths = [];
+
+  for (const entry of inputEntries) {
+    await deleteBranchFileIfPresent(github, entry.path, branch, `factory-runs: delete launch input ${entry.path}`);
+    deletedInputPaths.push(entry.path);
+  }
+
+  return deletedInputPaths;
 }
 
 async function updateBranchJsonFileValue(github, path, branch, updateValue, commitMessage = `Update ${path}`) {
