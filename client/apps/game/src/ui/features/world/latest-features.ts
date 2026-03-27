@@ -10,13 +10,6 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
-    title: "Incoming Troop Labels",
-    description:
-      "Added public incoming troop indicators on structure labels and tightened troop transfers so cross-structure army swaps are blocked before submission.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:
       "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",
