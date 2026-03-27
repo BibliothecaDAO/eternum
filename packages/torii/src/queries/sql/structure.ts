@@ -88,6 +88,35 @@ export const STRUCTURE_QUERIES = {
     FROM \`s1_eternum-StructureVillageSlots\`
   `,
 
+  SETTLEMENT_PLANNER_REALMS: `
+    SELECT
+        s.entity_id,
+        s.\`metadata.realm_id\` AS realm_id,
+        s.owner AS owner_address,
+        sos.name AS owner_name,
+        s.\`base.coord_x\` AS coord_x,
+        s.\`base.coord_y\` AS coord_y,
+        COALESCE(s.\`metadata.villages_count\`, 0) AS villages_count,
+        svs.directions_left AS directions_left
+    FROM \`s1_eternum-Structure\` s
+    LEFT JOIN \`s1_eternum-StructureOwnerStats\` sos
+      ON sos.owner = s.owner
+    LEFT JOIN \`s1_eternum-StructureVillageSlots\` svs
+      ON svs.connected_realm_entity_id = s.entity_id
+    WHERE s.category == 1
+    ORDER BY s.\`metadata.realm_id\`, s.entity_id;
+  `,
+
+  SETTLEMENT_PLANNER_VILLAGES: `
+    SELECT
+        entity_id,
+        \`base.coord_x\` AS coord_x,
+        \`base.coord_y\` AS coord_y
+    FROM \`s1_eternum-Structure\`
+    WHERE category == 5
+    ORDER BY entity_id;
+  `,
+
   STRUCTURE_AND_EXPLORER_DETAILS: `
     SELECT
         s.owner AS owner_address,
