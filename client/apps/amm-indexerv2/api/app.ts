@@ -15,6 +15,7 @@ interface PaginationParams {
 
 const ONE_DAY_IN_MS = 86_400_000;
 const LOCAL_BROWSER_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
+const FIRST_PARTY_BROWSER_DOMAIN = "realms.world";
 
 export function createAmmV2ApiApp(params: CreateAmmV2ApiAppParams) {
   const app = new Hono();
@@ -226,7 +227,11 @@ function isAllowedBrowserOrigin(origin: string, allowedOrigins: Set<string>): bo
   }
 
   const parsedOrigin = new URL(normalizedOrigin);
-  return LOCAL_BROWSER_HOSTNAMES.has(parsedOrigin.hostname) || allowedOrigins.has(normalizedOrigin);
+  return (
+    LOCAL_BROWSER_HOSTNAMES.has(parsedOrigin.hostname) ||
+    isFirstPartyRealmsBrowserOrigin(parsedOrigin) ||
+    allowedOrigins.has(normalizedOrigin)
+  );
 }
 
 function normalizeBrowserOrigin(origin: string): string | null {
@@ -235,6 +240,14 @@ function normalizeBrowserOrigin(origin: string): string | null {
   } catch {
     return null;
   }
+}
+
+function isFirstPartyRealmsBrowserOrigin(origin: URL): boolean {
+  return origin.protocol === "https:" && matchesFirstPartyRealmsHostname(origin.hostname);
+}
+
+function matchesFirstPartyRealmsHostname(hostname: string): boolean {
+  return hostname === FIRST_PARTY_BROWSER_DOMAIN || hostname.endsWith(`.${FIRST_PARTY_BROWSER_DOMAIN}`);
 }
 
 function parsePagination(c: { req: { query: (key: string) => string | undefined } }): PaginationParams {
