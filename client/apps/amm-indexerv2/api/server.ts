@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS } from "@bibliothecadao/ammv2-sdk";
 import { serve } from "@hono/node-server";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createAmmV2DatabasePool, resolveAmmV2DatabaseConnectionString } from "../src/database-connection";
@@ -13,6 +14,8 @@ function createNodePgAmmV2ApiApp() {
   return createAmmV2ApiApp({
     db,
     allowedOrigins: resolveAllowedBrowserOrigins(process.env.AMMV2_API_ALLOWED_ORIGINS),
+    lordsAddress: process.env.AMMV2_LORDS_ADDRESS ?? DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS,
+    rpcUrl: process.env.RPC_URL,
   });
 }
 

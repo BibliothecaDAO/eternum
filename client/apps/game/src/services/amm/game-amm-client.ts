@@ -8,9 +8,11 @@ import {
   type CandleInterval,
   type PaginatedResponse,
   type PaginationOpts,
+  type PairStats,
   type PairSummary,
   type TimeRangeOpts,
 } from "@bibliothecadao/ammv2-sdk";
+import { computeMarketCapLords } from "./game-amm-market-cap";
 
 const FEE_DENOMINATOR = 1000n;
 
@@ -67,6 +69,8 @@ interface PoolStats {
   swapCount24h: number;
   spotPrice: number;
   feeTo: string;
+  resourceSupply: bigint | null;
+  marketCapLords: bigint | null;
 }
 
 interface UserPosition {
@@ -367,24 +371,13 @@ function mapPairToPool(pair: PairSummary, lordsAddress: string): Pool | null {
   };
 }
 
-function mapPairStats(
-  pair: PairSummary,
-  pairStats: {
-    volume0_24h: bigint;
-    volume1_24h: bigint;
-    lpFees0_24h: bigint;
-    lpFees1_24h: bigint;
-    swapCount24h: number;
-    feeTo: string;
-    spotPriceToken1PerToken0: number;
-    spotPriceToken0PerToken1: number;
-  },
-  lordsAddress: string,
-): PoolStats | null {
+function mapPairStats(pair: PairSummary, pairStats: PairStats, lordsAddress: string): PoolStats | null {
   const pairContext = resolveLordsPairContext(pair, lordsAddress);
   if (!pairContext) {
     return null;
   }
+
+  const spotPrice = pairContext.lordsIsToken0 ? pairStats.spotPriceToken0PerToken1 : pairStats.spotPriceToken1PerToken0;
 
   return {
     tokenAddress: pairContext.tokenAddress,
@@ -393,8 +386,10 @@ function mapPairStats(
     volume24h: pairContext.lordsIsToken0 ? pairStats.volume0_24h : pairStats.volume1_24h,
     fees24h: pairContext.lordsIsToken0 ? pairStats.lpFees0_24h : pairStats.lpFees1_24h,
     swapCount24h: pairStats.swapCount24h,
-    spotPrice: pairContext.lordsIsToken0 ? pairStats.spotPriceToken0PerToken1 : pairStats.spotPriceToken1PerToken0,
+    spotPrice,
     feeTo: pairStats.feeTo,
+    resourceSupply: pairStats.resourceTokenSupply,
+    marketCapLords: computeMarketCapLords(pairStats.resourceTokenSupply, spotPrice),
   };
 }
 

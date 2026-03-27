@@ -103,4 +103,21 @@ describe("AMM feature wiring", () => {
     expect(addLiquiditySource).toContain("invalidateAmmReadQueries(queryClient)");
     expect(removeLiquiditySource).toContain("invalidateAmmReadQueries(queryClient)");
   });
+
+  it("renders mcap in the selected pool summary", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(dashboardSource).toContain('label: "MCap"');
+    expect(dashboardSource).toContain("statsQuery.data?.marketCapLords");
+    expect(dashboardSource).toContain("xl:grid-cols-4");
+  });
+
+  it("offers pool ordering controls for market cap, resource ids, and tvl", () => {
+    const poolListSource = readSource("src/ui/features/amm/amm-pool-list.tsx");
+
+    expect(poolListSource).toContain('label: "MCap"');
+    expect(poolListSource).toContain('label: "Resource IDs"');
+    expect(poolListSource).toContain('label: "TVL"');
+    expect(poolListSource).toContain('orderBy: "mcap"');
+  });
 });

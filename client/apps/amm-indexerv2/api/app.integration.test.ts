@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAmmV2ApiApp } from "./app";
 import {
   buildBlock,
@@ -17,6 +17,8 @@ const FACTORY = "0xfac" as const;
 const PAIR = "0xaaa" as const;
 const TOKEN_0 = "0x01" as const;
 const TOKEN_1 = "0x02" as const;
+const LORDS = TOKEN_0;
+const RESOURCE = TOKEN_1;
 const ROUTER = "0x111" as const;
 const ALICE = "0xa1" as const;
 const BOB = "0xb1" as const;
@@ -25,7 +27,14 @@ const BURN = "0x1" as const;
 describe("createAmmV2ApiApp", () => {
   const cleanup: Array<() => Promise<void>> = [];
 
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-26T12:00:00.000Z"));
+  });
+
   afterEach(async () => {
+    vi.useRealTimers();
+
     while (cleanup.length > 0) {
       const close = cleanup.pop();
       if (close) {
@@ -208,6 +217,82 @@ describe("createAmmV2ApiApp", () => {
         amount1: "10800",
       },
     ]);
+  });
+
+  it("serves pair stats with resource token supply", async () => {
+    const { db, close } = await createTestAmmV2Database();
+    cleanup.push(close);
+    const indexedAt = new Date("2026-03-26T00:00:00.000Z");
+    const loadTokenTotalSupply = async (tokenAddress: string) => {
+      expect(tokenAddress).toBe("0x2");
+      return 123_456n;
+    };
+
+    await applyAmmV2BlockToDatabase({
+      txDb: db,
+      factoryAddress: FACTORY,
+      block: buildBlock(
+        [
+          buildPairCreatedEvent({
+            address: FACTORY,
+            token0: LORDS,
+            token1: RESOURCE,
+            pair: PAIR,
+            totalPairs: 1n,
+            eventIndex: 0,
+            transactionHash: "0xcreate",
+          }),
+          buildTransferEvent({
+            address: PAIR,
+            from: "0x0",
+            to: BURN,
+            amount: 1000n,
+            eventIndex: 1,
+            transactionHash: "0xmint",
+          }),
+          buildTransferEvent({
+            address: PAIR,
+            from: "0x0",
+            to: ALICE,
+            amount: 9000n,
+            eventIndex: 2,
+            transactionHash: "0xmint",
+          }),
+          buildSyncEvent({
+            address: PAIR,
+            reserve0: 20_000n,
+            reserve1: 40_000n,
+            eventIndex: 3,
+            transactionHash: "0xmint",
+          }),
+          buildMintEvent({
+            address: PAIR,
+            sender: ROUTER,
+            amount0: 20_000n,
+            amount1: 40_000n,
+            transactionSender: ALICE,
+            eventIndex: 4,
+            transactionHash: "0xmint",
+          }),
+        ],
+        12n,
+        indexedAt,
+      ),
+    });
+
+    const app = createAmmV2ApiApp({
+      db,
+      lordsAddress: LORDS,
+      loadTokenTotalSupply,
+    });
+
+    const statsResponse = await app.request(`http://ammv2.local/api/v1/pairs/${PAIR}/stats`);
+    const statsJson = await statsResponse.json();
+
+    expect(statsJson.data).toMatchObject({
+      pairAddress: PAIR,
+      resourceTokenSupply: "123456",
+    });
   });
 
   it("allows localhost browser origins", async () => {

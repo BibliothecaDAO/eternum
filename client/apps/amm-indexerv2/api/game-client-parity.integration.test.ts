@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GameAmmClient } from "../../game/src/services/amm/game-amm-client";
 import { createAmmV2ApiApp } from "./app";
 import { applyAmmV2BlockToDatabase } from "../indexers/ammv2-block-processor";
@@ -25,12 +25,19 @@ const BURN = "0x1" as const;
 const INDEXED_AT = new Date("2026-03-26T00:00:00.000Z");
 const EXPECTED_TIMESTAMP = Math.floor(INDEXED_AT.getTime() / 1000);
 const EXPECTED_PRICE = 22_000 / 36_000;
+const RESOURCE_SUPPLY = 36_000n;
 
 describe("AMMv2 game client parity", () => {
   const cleanup: Array<() => Promise<void>> = [];
 
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-26T12:00:00.000Z"));
+  });
+
   afterEach(async () => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
 
     while (cleanup.length > 0) {
       const close = cleanup.pop();
@@ -123,7 +130,14 @@ describe("AMMv2 game client parity", () => {
       ),
     });
 
-    const app = createAmmV2ApiApp({ db });
+    const app = createAmmV2ApiApp({
+      db,
+      lordsAddress: LORDS,
+      loadTokenTotalSupply: async (tokenAddress: string) => {
+        expect(tokenAddress).toBe("0x2");
+        return RESOURCE_SUPPLY;
+      },
+    });
     vi.stubGlobal(
       "fetch",
       vi.fn((input: string | URL | Request, init?: RequestInit) => {
@@ -164,6 +178,8 @@ describe("AMMv2 game client parity", () => {
       fees24h: 6n,
       swapCount24h: 1,
       feeTo: "0x0",
+      resourceSupply: RESOURCE_SUPPLY,
+      marketCapLords: 22_000n,
     });
     expect(stats?.spotPrice).toBeCloseTo(EXPECTED_PRICE, 12);
 
