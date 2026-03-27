@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { formatAmmCompactAmount, formatAmmSpotPrice } from "./amm-format";
+import { orderAmmPools, type AmmPoolOrder } from "./amm-model";
 import { AMM_READ_QUERY_OPTIONS } from "./amm-queries";
 
 interface AmmPoolListProps {
@@ -15,6 +16,12 @@ interface AmmPoolListProps {
   onPoolSelect?: (tokenAddress: string) => void;
   showHeader?: boolean;
 }
+
+const POOL_ORDER_OPTIONS: Array<{ orderBy: AmmPoolOrder; label: string }> = [
+  { orderBy: "mcap", label: "MCap" },
+  { orderBy: "resourceIds", label: "Resource IDs" },
+  { orderBy: "tvl", label: "TVL" },
+];
 
 const LoadingSkeleton = () => (
   <div className="space-y-2">
@@ -36,6 +43,7 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
   const { client, config, isConfigured } = useAmm();
   const selectedPool = useAmmStore((s) => s.selectedPool);
   const setSelectedPool = useAmmStore((s) => s.setSelectedPool);
+  const [poolOrder, setPoolOrder] = useState<AmmPoolOrder>("resourceIds");
 
   const {
     data: pools,
@@ -49,23 +57,54 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
     ...AMM_READ_QUERY_OPTIONS,
   });
 
-  useEffect(() => {
-    if (!selectedPool && pools && pools.length > 0) {
-      setSelectedPool(pools[0].tokenAddress);
-    }
-  }, [pools, selectedPool, setSelectedPool]);
+  const { data: marketCapByTokenAddress } = useQuery({
+    queryKey: ["amm-pool-ordering", pools?.map((pool) => pool.tokenAddress).join(",")],
+    queryFn: async () => {
+      if (!client || !pools) {
+        return new Map<string, bigint | null>();
+      }
+
+      const marketCapEntries = await Promise.all(
+        pools.map(async (pool) => {
+          const stats = await client.api.getPoolStats(pool.tokenAddress);
+          return [pool.tokenAddress, stats?.marketCapLords ?? null] as const;
+        }),
+      );
+
+      return new Map(marketCapEntries);
+    },
+    enabled: Boolean(client) && Boolean(pools?.length),
+    ...AMM_READ_QUERY_OPTIONS,
+  });
 
   const [search, setSearch] = useState("");
 
+  const orderedPools = useMemo(() => {
+    if (!pools) {
+      return [];
+    }
+
+    return orderAmmPools(pools, {
+      lordsAddress: config.lordsAddress,
+      orderBy: poolOrder,
+      marketCapByTokenAddress: marketCapByTokenAddress ?? new Map<string, bigint | null>(),
+    });
+  }, [config.lordsAddress, marketCapByTokenAddress, poolOrder, pools]);
+
+  useEffect(() => {
+    if (!selectedPool && orderedPools.length > 0) {
+      setSelectedPool(orderedPools[0].tokenAddress);
+    }
+  }, [orderedPools, selectedPool, setSelectedPool]);
+
   const filteredPools = useMemo(() => {
-    if (!pools) return [];
-    if (!search.trim()) return pools;
+    if (!search.trim()) return orderedPools;
     const term = search.trim().toLowerCase();
-    return pools.filter((pool) => {
+    return orderedPools.filter((pool) => {
       const asset = resolveAmmAssetPresentation(pool.tokenAddress, config.lordsAddress);
       return asset.displayName.toLowerCase().includes(term);
     });
-  }, [pools, search, config.lordsAddress]);
+  }, [orderedPools, search, config.lordsAddress]);
 
   if (!isConfigured || !client) {
     return (
@@ -135,6 +174,27 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
         onChange={(e) => setSearch(e.target.value)}
         className="mb-2 w-full rounded-xl border border-gold/10 bg-black/30 px-3 py-2 text-xs text-gold placeholder:text-gold/30 outline-none focus:border-gold/25"
       />
+
+      <div className="mb-3">
+        <div className="mb-1 px-1 text-[10px] uppercase tracking-[0.16em] text-gold/35">Order</div>
+        <div className="grid grid-cols-3 gap-1">
+          {POOL_ORDER_OPTIONS.map((option) => (
+            <button
+              key={option.orderBy}
+              type="button"
+              className={cn(
+                "rounded-xl border px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors",
+                poolOrder === option.orderBy
+                  ? "border-gold/25 bg-gold/15 text-gold"
+                  : "border-gold/10 bg-black/20 text-gold/55 hover:border-gold/20 hover:text-gold",
+              )}
+              onClick={() => setPoolOrder(option.orderBy)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="space-y-2">
         {filteredPools.length === 0 ? (

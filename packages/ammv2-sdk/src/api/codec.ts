@@ -77,6 +77,7 @@ export type RawPairStats = {
   lpFees0_24h: string | number;
   lpFees1_24h: string | number;
   swapCount24h: number;
+  resourceTokenSupply: string | number | null;
 };
 
 export type RawUserPairPosition = {
@@ -94,6 +95,8 @@ export type RawUserPairPosition = {
 
 const toBigInt = (value: string | number | bigint): bigint => BigInt(value);
 const toNumber = (value: string | number): number => Number(value);
+const toNullableBigInt = (value: string | number | bigint | null | undefined): bigint | null =>
+  value === null || value === undefined ? null : BigInt(value);
 
 const toUnixSeconds = (value: string | number): number =>
   typeof value === "number" ? value : Math.floor(new Date(value).getTime() / 1000);
@@ -181,6 +184,7 @@ export function decodePairStats(raw: RawPairStats): PairStats {
     lpFees0_24h: toBigInt(raw.lpFees0_24h),
     lpFees1_24h: toBigInt(raw.lpFees1_24h),
     swapCount24h: raw.swapCount24h,
+    resourceTokenSupply: toNullableBigInt(raw.resourceTokenSupply),
   };
 }
 

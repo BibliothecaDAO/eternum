@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildAmmTokenOptions,
+  orderAmmPools,
   resolveAmmFeeBreakdown,
   resolveAmmPoolName,
   resolveAmmSwapRoute,
@@ -13,8 +14,11 @@ import {
 } from "./amm-model";
 
 const LORDS_ADDRESS = "0xlords";
+const STONE_ADDRESS = "0x439a1c010e3e1bb2d43d43411000893c0042bd88f6c701611a0ea914d426da4";
+const COAL_ADDRESS = "0xce635e3f241b0ae78c46a929d84a9101910188f9c4024eaa7559556503c31a";
+const WOOD_ADDRESS = "0x40d8907cec0f7ae9c364dfb12485a1314d84c129bf1898d2f3d4b7fcc7d44f4";
 
-function createPool(tokenAddress: string): Pool {
+function createPool(tokenAddress: string, overrides?: Partial<Pool>): Pool {
   return {
     pairAddress: `${tokenAddress}-pair`,
     tokenAddress,
@@ -26,6 +30,7 @@ function createPool(tokenAddress: string): Pool {
     feeNum: 3n,
     feeDenom: 1000n,
     feeTo: "0x0",
+    ...overrides,
   };
 }
 
@@ -112,5 +117,50 @@ describe("amm-model", () => {
     expect(feeBreakdown.totalFeePercent).toBeCloseTo(0.3);
     expect(feeBreakdown.lpFeePercent).toBeCloseTo(0.2);
     expect(feeBreakdown.protocolFeePercent).toBeCloseTo(0.1);
+  });
+
+  it("orders AMM pools by market cap", () => {
+    const stonePool = createPool(STONE_ADDRESS);
+    const coalPool = createPool(COAL_ADDRESS);
+    const woodPool = createPool(WOOD_ADDRESS);
+
+    const orderedPools = orderAmmPools([woodPool, stonePool, coalPool], {
+      lordsAddress: LORDS_ADDRESS,
+      orderBy: "mcap",
+      marketCapByTokenAddress: new Map([
+        [WOOD_ADDRESS, 5n],
+        [STONE_ADDRESS, 20n],
+        [COAL_ADDRESS, 10n],
+      ]),
+    });
+
+    expect(orderedPools.map((pool) => pool.tokenAddress)).toEqual([STONE_ADDRESS, COAL_ADDRESS, WOOD_ADDRESS]);
+  });
+
+  it("orders AMM pools by resource id", () => {
+    const orderedPools = orderAmmPools(
+      [WOOD_ADDRESS, COAL_ADDRESS, STONE_ADDRESS].map((address) => createPool(address)),
+      {
+        lordsAddress: LORDS_ADDRESS,
+        orderBy: "resourceIds",
+        marketCapByTokenAddress: new Map(),
+      },
+    );
+
+    expect(orderedPools.map((pool) => pool.tokenAddress)).toEqual([STONE_ADDRESS, COAL_ADDRESS, WOOD_ADDRESS]);
+  });
+
+  it("orders AMM pools by tvl", () => {
+    const lowTvlPool = createPool(STONE_ADDRESS, { lordsReserve: 100n });
+    const highTvlPool = createPool(COAL_ADDRESS, { lordsReserve: 400n });
+    const midTvlPool = createPool(WOOD_ADDRESS, { lordsReserve: 250n });
+
+    const orderedPools = orderAmmPools([lowTvlPool, highTvlPool, midTvlPool], {
+      lordsAddress: LORDS_ADDRESS,
+      orderBy: "tvl",
+      marketCapByTokenAddress: new Map(),
+    });
+
+    expect(orderedPools.map((pool) => pool.tokenAddress)).toEqual([COAL_ADDRESS, WOOD_ADDRESS, STONE_ADDRESS]);
   });
 });

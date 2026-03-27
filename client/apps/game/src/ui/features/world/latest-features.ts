@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-27",
+    title: "AMM Market Cap Summary",
+    description:
+      "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-26",
     title: "Agora Fee Split Labels",
     description:

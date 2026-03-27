@@ -1,4 +1,5 @@
 import type { Pool } from "@/services/amm";
+import { findResourceIdByTrait } from "@bibliothecadao/types";
 
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import type { TokenOption } from "./amm-token-input";
@@ -22,6 +23,14 @@ interface AmmFeeBreakdown {
   protocolFeePercent: number;
   totalFeePercent: number;
 }
+
+interface OrderAmmPoolsOptions {
+  lordsAddress: string;
+  orderBy: AmmPoolOrder;
+  marketCapByTokenAddress: Map<string, bigint | null>;
+}
+
+export type AmmPoolOrder = "mcap" | "resourceIds" | "tvl";
 
 const LP_FEE_SHARE = 2 / 3;
 const PROTOCOL_FEE_SHARE = 1 / 3;
@@ -68,6 +77,10 @@ export function resolveSelectedAmmPool(pools: Pool[], selectedPool: string | nul
   return pools.find((pool) => pool.tokenAddress === selectedPool) ?? pools[0];
 }
 
+export function orderAmmPools(pools: Pool[], options: OrderAmmPoolsOptions): Pool[] {
+  return [...pools].sort((leftPool, rightPool) => compareAmmPools(leftPool, rightPool, options));
+}
+
 export function resolveAmmSwapRoute(
   pools: Pool[],
   lordsAddress: string,
@@ -103,6 +116,72 @@ function buildAmmTokenOption(pool: Pool, lordsAddress: string): TokenOption {
     shortLabel: assetPresentation.shortLabel,
     iconResource: assetPresentation.iconResource,
   };
+}
+
+function compareAmmPools(leftPool: Pool, rightPool: Pool, options: OrderAmmPoolsOptions): number {
+  if (options.orderBy === "mcap") {
+    return (
+      compareBigIntDescending(
+        options.marketCapByTokenAddress.get(leftPool.tokenAddress) ?? null,
+        options.marketCapByTokenAddress.get(rightPool.tokenAddress) ?? null,
+      ) ||
+      compareBigIntDescending(resolvePoolTvl(leftPool), resolvePoolTvl(rightPool)) ||
+      compareResourceIdAscending(leftPool, rightPool, options.lordsAddress) ||
+      compareTokenAddressAscending(leftPool, rightPool)
+    );
+  }
+
+  if (options.orderBy === "tvl") {
+    return (
+      compareBigIntDescending(resolvePoolTvl(leftPool), resolvePoolTvl(rightPool)) ||
+      compareResourceIdAscending(leftPool, rightPool, options.lordsAddress) ||
+      compareTokenAddressAscending(leftPool, rightPool)
+    );
+  }
+
+  return (
+    compareResourceIdAscending(leftPool, rightPool, options.lordsAddress) ||
+    compareBigIntDescending(resolvePoolTvl(leftPool), resolvePoolTvl(rightPool)) ||
+    compareTokenAddressAscending(leftPool, rightPool)
+  );
+}
+
+function compareResourceIdAscending(leftPool: Pool, rightPool: Pool, lordsAddress: string): number {
+  return (
+    resolveAmmPoolResourceId(leftPool.tokenAddress, lordsAddress) -
+    resolveAmmPoolResourceId(rightPool.tokenAddress, lordsAddress)
+  );
+}
+
+function resolveAmmPoolResourceId(tokenAddress: string, lordsAddress: string): number {
+  const assetPresentation = resolveAmmAssetPresentation(tokenAddress, lordsAddress);
+  return assetPresentation.isLords
+    ? Number.MAX_SAFE_INTEGER
+    : (findResourceIdByTrait(assetPresentation.displayName) ?? Number.MAX_SAFE_INTEGER);
+}
+
+function resolvePoolTvl(pool: Pick<Pool, "lordsReserve">): bigint {
+  return pool.lordsReserve * 2n;
+}
+
+function compareBigIntDescending(leftValue: bigint | null, rightValue: bigint | null): number {
+  if (leftValue === rightValue) {
+    return 0;
+  }
+
+  if (leftValue === null) {
+    return 1;
+  }
+
+  if (rightValue === null) {
+    return -1;
+  }
+
+  return leftValue > rightValue ? -1 : 1;
+}
+
+function compareTokenAddressAscending(leftPool: Pool, rightPool: Pool): number {
+  return leftPool.tokenAddress.localeCompare(rightPool.tokenAddress);
 }
 
 function resolveTotalFeePercent(pool: Pick<Pool, "feeDenom" | "feeNum"> | null | undefined): number {
