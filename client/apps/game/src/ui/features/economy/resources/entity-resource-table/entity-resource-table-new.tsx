@@ -328,11 +328,9 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const handleManageProduction = useCallback(
     (structureId: number, resourceId: ResourcesIds) => {
-      // Select the structure first by setting entity ID, then open modal
-      setStructureEntityId(structureId);
-      toggleModal(<ProductionModal preSelectedResource={resourceId} />);
+      toggleModal(<ProductionModal preSelectedRealmId={structureId} preSelectedResource={resourceId} />);
     },
-    [setStructureEntityId, toggleModal],
+    [toggleModal],
   );
 
   const handleOpenCraftRelic = useCallback(
