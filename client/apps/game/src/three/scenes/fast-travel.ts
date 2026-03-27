@@ -1,4 +1,17 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
+import {
+  ActionType,
+  ArmyActionManager,
+  getBlockTimestamp,
+  Position,
+  getTileAt,
+  type ExplorerTroopsTileSystemUpdate,
+  type ExplorerTroopsSystemUpdate,
+} from "@bibliothecadao/eternum";
+import { TileOccupier } from "@bibliothecadao/types";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { FELT_CENTER } from "@/ui/config";
+import type { ActionPath } from "@bibliothecadao/eternum";
 import { PathRenderer } from "../managers/path-renderer";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
 import { SelectionPulseManager } from "../managers/selection-pulse-manager";
@@ -47,6 +60,8 @@ export default class FastTravelScene extends WarpTravel {
   private pendingChunkRefreshForce = false;
   private hasCompletedSwitchOffCleanup = false;
   private hasDisposedFastTravelOwnedResources = false;
+  private worldUpdateUnsubscribes: Array<() => void> = [];
+  private scannedSpireHexKeys = new Set<string>();
   private savedBackground: Color | Texture | null = null;
   private savedFog: Fog | FogExp2 | null = null;
   private readonly chunkRefreshDebounceMs = FAST_TRAVEL_CHUNK_POLICY.refreshDebounceMs;
@@ -129,7 +144,81 @@ export default class FastTravelScene extends WarpTravel {
 
   private attachFastTravelManagerLabels(): void {}
 
-  private registerFastTravelStoreSubscriptions(): void {}
+  private registerFastTravelStoreSubscriptions(): void {
+    this.worldUpdateUnsubscribes = [];
+
+    // Listen for army tile updates on the alternate (ethereal) layer
+    const tileUnsub = this.worldUpdateListener.Army.onTileUpdate((update: ExplorerTroopsTileSystemUpdate) => {
+      if (!update.alt) return;
+
+      const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+      const hexCoords: FastTravelHexCoords = { col: normalized.x, row: normalized.y };
+      const entityId = String(update.entityId);
+
+      if (update.removed) {
+        this.sceneArmies = this.sceneArmies.filter((a) => a.entityId !== entityId);
+        this.requestChunkRefresh(true);
+        return;
+      }
+
+      // Army update
+      const existing = this.sceneArmies.findIndex((a) => a.entityId === entityId);
+      const armyInput: FastTravelArmyHydrationInput = {
+        entityId,
+        hexCoords,
+        ownerName: update.ownerName || "",
+      };
+
+      if (existing >= 0) {
+        this.sceneArmies[existing] = armyInput;
+      } else {
+        this.sceneArmies.push(armyInput);
+      }
+      this.requestChunkRefresh(true);
+    });
+    if (typeof tileUnsub === "function") this.worldUpdateUnsubscribes.push(tileUnsub);
+
+    // Listen for explorer troop updates (stamina, troop count changes) on alt layer
+    const troopsUnsub = this.worldUpdateListener.Army.onExplorerTroopsUpdate((update: ExplorerTroopsSystemUpdate) => {
+      if (!update.alt) return;
+
+      const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+      const hexCoords: FastTravelHexCoords = { col: normalized.x, row: normalized.y };
+      const entityId = String(update.entityId);
+
+      if (update.troopCount <= 0) {
+        this.sceneArmies = this.sceneArmies.filter((a) => a.entityId !== entityId);
+        this.requestChunkRefresh(true);
+        return;
+      }
+
+      const existing = this.sceneArmies.findIndex((a) => a.entityId === entityId);
+      const armyInput: FastTravelArmyHydrationInput = {
+        entityId,
+        hexCoords,
+        ownerName: update.ownerName || "",
+      };
+
+      if (existing >= 0) {
+        this.sceneArmies[existing] = armyInput;
+      } else {
+        this.sceneArmies.push(armyInput);
+      }
+      this.requestChunkRefresh(true);
+    });
+    if (typeof troopsUnsub === "function") this.worldUpdateUnsubscribes.push(troopsUnsub);
+
+    // Listen for dead armies
+    const deadUnsub = this.worldUpdateListener.Army.onDeadArmy((entityId) => {
+      const entityIdStr = String(entityId);
+      const hadArmy = this.sceneArmies.some((a) => a.entityId === entityIdStr);
+      this.sceneArmies = this.sceneArmies.filter((a) => a.entityId !== entityIdStr);
+      if (hadArmy) {
+        this.requestChunkRefresh(true);
+      }
+    });
+    if (typeof deadUnsub === "function") this.worldUpdateUnsubscribes.push(deadUnsub);
+  }
 
   private setupFastTravelCameraZoomHandler(): void {
     this.controls.removeEventListener("change", this.handleFastTravelControlsChange);
@@ -154,6 +243,8 @@ export default class FastTravelScene extends WarpTravel {
 
   private disposeFastTravelStoreSubscriptions(): void {
     this.controls.removeEventListener("change", this.handleFastTravelControlsChange);
+    this.worldUpdateUnsubscribes.forEach((unsub) => unsub());
+    this.worldUpdateUnsubscribes = [];
     if (this.chunkRefreshTimeout !== null) {
       window.clearTimeout(this.chunkRefreshTimeout);
       this.chunkRefreshTimeout = null;
@@ -198,6 +289,17 @@ export default class FastTravelScene extends WarpTravel {
     }
 
     if (!this.selectedArmyEntityId) {
+      return;
+    }
+
+    // Check if clicking a spire — trigger layer toggle (travel back to worldmap)
+    const clickedSpire = this.currentEntityAnchors.find(
+      (anchor) =>
+        anchor.kind === "spire" && anchor.hexCoords.col === hexCoords.col && anchor.hexCoords.row === hexCoords.row,
+    );
+
+    if (clickedSpire) {
+      this.commitSpireTraversal(hexCoords);
       return;
     }
 
@@ -310,33 +412,6 @@ export default class FastTravelScene extends WarpTravel {
     };
   }
 
-  private buildDemoArmies(focusHex: FastTravelHexCoords): FastTravelArmyHydrationInput[] {
-    return [
-      {
-        entityId: "fast-travel-army",
-        hexCoords: focusHex,
-        ownerName: "Warp Vanguard",
-      },
-    ];
-  }
-
-  private buildDemoSpires(focusHex: FastTravelHexCoords): FastTravelSpireHydrationInput[] {
-    return [
-      {
-        entityId: "fast-travel-spire-west",
-        label: "Western Spire",
-        worldHexCoords: { col: 400, row: 120 },
-        travelHexCoords: { col: focusHex.col - 2, row: focusHex.row + 1 },
-      },
-      {
-        entityId: "fast-travel-spire-east",
-        label: "Eastern Spire",
-        worldHexCoords: { col: 520, row: 240 },
-        travelHexCoords: { col: focusHex.col + 2, row: focusHex.row - 1 },
-      },
-    ];
-  }
-
   private requestChunkRefresh(force: boolean = false): void {
     if (this.isSwitchedOff) {
       return;
@@ -386,6 +461,15 @@ export default class FastTravelScene extends WarpTravel {
       startCol,
       startRow,
     });
+
+    // Build the visible hex window to scan for spires before hydration
+    const visibleHexWindow: FastTravelHexCoords[] = [];
+    for (let r = 0; r < chunkPlan.height; r++) {
+      for (let c = 0; c < chunkPlan.width; c++) {
+        visibleHexWindow.push({ col: chunkPlan.startCol + c, row: chunkPlan.startRow + r });
+      }
+    }
+    this.scanForSpires(visibleHexWindow);
 
     this.currentHydratedChunk = hydrateFastTravelChunkState({
       chunkKey: chunkPlan.chunkKey,
@@ -459,20 +543,39 @@ export default class FastTravelScene extends WarpTravel {
     this.interactiveHexManager.updateVisibleHexes(centerRow, centerCol, field.bounds.size.cols, field.bounds.size.rows);
   }
 
-  private resolveSceneArmies(focusHex: FastTravelHexCoords): FastTravelArmyHydrationInput[] {
-    if (this.sceneArmies.length === 0) {
-      this.sceneArmies = this.buildDemoArmies(focusHex);
-    }
-
+  private resolveSceneArmies(_focusHex: FastTravelHexCoords): FastTravelArmyHydrationInput[] {
     return this.sceneArmies;
   }
 
-  private resolveSceneSpires(focusHex: FastTravelHexCoords): FastTravelSpireHydrationInput[] {
-    if (this.sceneSpires.length === 0) {
-      this.sceneSpires = this.buildDemoSpires(focusHex);
-    }
-
+  private resolveSceneSpires(_focusHex: FastTravelHexCoords): FastTravelSpireHydrationInput[] {
     return this.sceneSpires;
+  }
+
+  private scanForSpires(visibleHexWindow: FastTravelHexCoords[]): void {
+    // Only scan hexes we haven't checked before to avoid repeated getTileAt lookups
+    const unscanedHexes = visibleHexWindow.filter(
+      (hex) => !this.scannedSpireHexKeys.has(`${hex.col},${hex.row}`),
+    );
+
+    if (unscanedHexes.length === 0) return;
+
+    const fc = FELT_CENTER();
+    for (const hex of unscanedHexes) {
+      this.scannedSpireHexKeys.add(`${hex.col},${hex.row}`);
+
+      const tile = getTileAt(this.dojo.components, true, hex.col + fc, hex.row + fc);
+      if (tile && tile.occupier_type === TileOccupier.Spire) {
+        const entityId = String(tile.occupier_id);
+        if (!this.sceneSpires.some((s) => s.entityId === entityId)) {
+          this.sceneSpires.push({
+            entityId,
+            label: "Spire",
+            worldHexCoords: hex,
+            travelHexCoords: hex,
+          });
+        }
+      }
+    }
   }
 
   private previewFastTravelMovement(targetHexCoords: FastTravelHexCoords): void {
@@ -502,6 +605,13 @@ export default class FastTravelScene extends WarpTravel {
       return;
     }
 
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      console.warn("[FastTravelScene] No account available for movement");
+      return;
+    }
+
+    // Optimistic visual update — move army marker immediately
     this.sceneArmies = this.sceneArmies.map((army) =>
       army.entityId === movement.selectedArmyEntityId ? { ...army, hexCoords: movement.targetHexCoords } : army,
     );
@@ -520,7 +630,64 @@ export default class FastTravelScene extends WarpTravel {
     this.selectedHexManager.setPosition(targetPoint.x, targetPoint.z);
     this.selectionPulseManager.hideSelection();
 
+    // Build ActionPath[] with contract coordinates for the system call
+    const actionPath: ActionPath[] = movement.pathHexes.map((hex) => ({
+      hex: { col: hex.col + FELT_CENTER(), row: hex.row + FELT_CENTER() },
+      actionType: ActionType.Move,
+    }));
+
+    const entityId = Number(movement.selectedArmyEntityId);
+    const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, entityId);
+    const { currentArmiesTick } = getBlockTimestamp();
+
+    armyActionManager.moveArmy(account, actionPath, true, currentArmiesTick).catch((error) => {
+      console.error("[FastTravelScene] Movement failed:", error);
+    });
+
     void this.refreshFastTravelScene();
+  }
+
+  private commitSpireTraversal(spireHexCoords: FastTravelHexCoords): void {
+    if (!this.selectedArmyEntityId) return;
+
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      console.warn("[FastTravelScene] No account available for spire traversal");
+      return;
+    }
+
+    // Find the selected army's current position
+    const selectedArmy = this.sceneArmies.find((a) => a.entityId === this.selectedArmyEntityId);
+    if (!selectedArmy) return;
+
+    // Build a 2-element ActionPath: [army position, spire position] with SpireTravel action type
+    const fc = FELT_CENTER();
+    const actionPath: ActionPath[] = [
+      {
+        hex: { col: selectedArmy.hexCoords.col + fc, row: selectedArmy.hexCoords.row + fc },
+        actionType: ActionType.SpireTravel,
+      },
+      {
+        hex: { col: spireHexCoords.col + fc, row: spireHexCoords.row + fc },
+        actionType: ActionType.SpireTravel,
+      },
+    ];
+
+    const entityId = Number(this.selectedArmyEntityId);
+    const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, entityId);
+    const { currentArmiesTick } = getBlockTimestamp();
+
+    armyActionManager
+      .moveArmy(account, actionPath, true, currentArmiesTick)
+      .then(() => {
+        // After successful traversal, the army moves to alt=false layer
+        // It will be removed from sceneArmies by the Torii subscription
+        // Switch back to worldmap scene
+        this.sceneManager.switchScene(SceneName.WorldMap);
+      })
+      .catch((error) => {
+        console.error("[FastTravelScene] Spire traversal failed:", error);
+      });
   }
 
   private clearFastTravelMovementPreview(): void {
@@ -594,6 +761,7 @@ export default class FastTravelScene extends WarpTravel {
     this.currentEntityAnchors = nextState.currentEntityAnchors;
     this.sceneArmies = nextState.sceneArmies;
     this.sceneSpires = nextState.sceneSpires;
+    this.scannedSpireHexKeys.clear();
     this.selectedArmyEntityId = nextState.selectedArmyEntityId;
     this.previewTargetHexKey = nextState.previewTargetHexKey;
     this.currentChunk = nextState.currentChunk;
