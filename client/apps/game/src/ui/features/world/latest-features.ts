@@ -10,6 +10,27 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
+    title: "Live Event Headlines",
+    description:
+      "Removed the developer-only headline preview controls from settings so major event banners now come only from live world events.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-27",
+    title: "Centered Event Plaques",
+    description:
+      "Major event banners now center against the full viewport with a more balanced plaque layout, so they stay visually centered even when the left world sidebar is open.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-27",
+    title: "Headline Banner Polish",
+    description:
+      "Major event headlines now use a more ornate framed banner with clearer hierarchy, calmer copy treatment, and stronger event accents so they fit the existing Eternum world UI instead of reading like a generic toast.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-27",
     title: "Troop Milestone Headlines",
     description:
       "News headline previews and live milestone banners now cover the first Tier 2 and first Tier 3 armies built, alongside realm falls, hyperstructure captures, eliminations, and the five-minute warning.",

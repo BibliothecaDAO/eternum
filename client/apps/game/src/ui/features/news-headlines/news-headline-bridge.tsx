@@ -16,7 +16,6 @@ import { AudioManager } from "@/audio/core/AudioManager";
 
 import { type Headline, HEADLINE_DISPLAY_MS, RECENT_HEADLINE_WINDOW_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
-import { useNewsHeadlinePreviewStore } from "./news-headline-preview-store";
 import { parseNumeric } from "../story-events/story-event-utils";
 
 /** Fields we access on story events — typed locally to avoid cascading module resolution issues */
@@ -92,12 +91,10 @@ export function NewsHeadlineBridge() {
 
   const { data: storyEventLog = [] } = useStoryEvents(350);
   const hyperstructures = useHyperstructures();
-  const previewHeadline = useNewsHeadlinePreviewStore((state) => state.activePreview);
-  const dismissPreview = useNewsHeadlinePreviewStore((state) => state.dismissPreview);
 
   // Queue state
   const [queue, setQueue] = useState<Headline[]>([]);
-  const currentHeadline = previewHeadline ?? queue[0] ?? null;
+  const currentHeadline = queue[0] ?? null;
 
   // Dedup
   const shownIdsRef = useRef(new Set<string>());
@@ -131,13 +128,8 @@ export function NewsHeadlineBridge() {
 
   // --- Dismiss ---
   const dismiss = useCallback(() => {
-    if (previewHeadline) {
-      dismissPreview();
-      return;
-    }
-
     setQueue((prev) => prev.slice(1));
-  }, [dismissPreview, previewHeadline]);
+  }, []);
 
   // --- Auto-dismiss timer ---
   useEffect(() => {
