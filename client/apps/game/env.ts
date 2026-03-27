@@ -218,6 +218,11 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_ETERNUM_UNIFIED_SETTLEMENT_PLANNER: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
   VITE_PERF_FPS_THRESHOLD: z.string().optional().default("30"),
   VITE_PERF_NETWORK_TIMEOUT: z.string().optional().default("5000"),
 

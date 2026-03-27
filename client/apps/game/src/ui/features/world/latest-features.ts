@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
+    title: "Unified Settlement Planner",
+    description:
+      "Eternum settlement now happens through one larger map-first planner that shows explored hexes, settled realms, and every free or busy village slot so your click directly decides whether you settle a realm or a village.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:
       "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",
