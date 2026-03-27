@@ -10,6 +10,20 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
+    title: "Cartographic Strategic Zoom",
+    description:
+      "Strategic zoom now flattens the world into a clearer cartographic view, muting terrain noise and elevating settlements, armies, and frontier shape so long-range navigation reads like a true strategy map.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-27",
+    title: "Strategic World Zoom",
+    description:
+      "World map zoom now smoothly transitions into a full-screen strategic map, letting you pan and select tiles across the whole world before zooming back into the same focused hex.",
+    type: "feature",
+  },
+  {
+    date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:
       "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",

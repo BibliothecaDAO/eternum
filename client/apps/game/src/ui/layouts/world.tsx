@@ -16,6 +16,7 @@ import { ActionInfo } from "../features/world/components/actions/action-info";
 import { ActionInstructions } from "../features/world/components/actions/action-instructions";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
+import { StrategicMapLayer } from "../features/world/components/strategic-map/strategic-map-layer";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
@@ -119,6 +120,8 @@ const HUD = () => (
     <div className="absolute z-20 w-auto top-0 h-screen left-0 flex pointer-events-none">
       <LeftCommandSidebar />
     </div>
+
+    <StrategicMapLayer />
 
     {/* Bottom-right: Tile info and minimap */}
     <BottomRightPanel />
