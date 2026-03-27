@@ -1,0 +1,12 @@
+{
+  "name": "contracts-scripts-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "dotenv": "^16.4.7",
+    "starknet": "^8.5.2"
+  }
+}
+

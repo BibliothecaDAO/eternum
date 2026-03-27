@@ -77,11 +77,4 @@ function startRateLimitCleanup(): void {
   );
 }
 
-function stopRateLimitCleanup(): void {
-  if (cleanupIntervalId) {
-    clearInterval(cleanupIntervalId);
-    cleanupIntervalId = null;
-  }
-}
-
 startRateLimitCleanup();

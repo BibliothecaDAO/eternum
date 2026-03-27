@@ -1,14 +1,10 @@
-import {
-  StructureType,
-  type Building,
-  type RealmInfo as RealmInfoType,
-  type ResourcesIds,
-} from "@bibliothecadao/types";
+import { type Building, type RealmInfo as RealmInfoType, type ResourcesIds } from "@bibliothecadao/types";
 import Bot from "lucide-react/dist/esm/icons/bot";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import { useEffect, useRef, useState } from "react";
 
 import { Tabs } from "@/ui/design-system/atoms";
+import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";
@@ -101,7 +97,7 @@ export const ProductionWorkflows = ({
           realmEntityId={realm.entityId.toString()}
           realmName={realmDisplayName}
           producedResources={producedResources}
-          entityType={realm.structure?.category === StructureType.Village ? "village" : "realm"}
+          entityType={isVillageLikeStructureCategory(realm.structure?.category) ? "village" : "realm"}
         />
       ),
     },

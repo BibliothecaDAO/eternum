@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
 import {
   BiomeSummaryCard,
@@ -172,9 +173,12 @@ const SelectedStructureActionPanel = ({
   onSimulateBattle: () => void;
 }) => {
   const { structure, isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
+  const resolvedWorldMode = useResolvedWorldGameMode();
+  const isEternumMode = resolvedWorldMode === "eternum";
 
   const structureCategory = structure?.base?.category;
   const isFaithEligible =
+    isEternumMode &&
     structureCategory !== undefined &&
     [StructureType.Realm, StructureType.Village].includes(Number(structureCategory) as StructureType);
 

@@ -1,5 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { sqlApi } from "@/services/api";
 import { displayAddress } from "@/ui/utils/utils";
 import {
@@ -269,11 +270,14 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
       case StructureType.FragmentMine:
         return "/images/buildings/construction/essence-rift.png";
       case StructureType.Village:
+      case StructureType.Camp:
         return "/images/buildings/construction/camp.png";
       case StructureType.Bank:
         return "/images/buildings/construction/bank.png";
       default:
-        return undefined;
+        return isVillageLikeStructureCategory(structure.base.category)
+          ? "/images/buildings/construction/camp.png"
+          : undefined;
     }
   }, [structure?.base?.category, structure?.base?.level]);
 

@@ -3,6 +3,8 @@ use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::models::config::{MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig};
 use crate::models::map::TileOccupier;
 use crate::models::position::Coord;
+use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
+use crate::models::resource::production::production::ProductionStrategyImpl;
 use crate::models::structure::StructureCategory;
 use crate::models::troop::{GuardSlot, TroopTier, TroopType};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
@@ -40,12 +42,13 @@ pub impl iCampDiscoveryImpl of iCampDiscoveryTrait {
     ) -> bool {
         // make camp structure
         let structure_id = world.dispatcher.uuid();
+        let camp_owner_address = Zero::zero();
         let structure_creation_library = structure_creation_library::get_dispatcher(@world);
         structure_creation_library
             .make_structure(
                 world,
                 coord,
-                Zero::zero(), // owner_id: No direct player ownership (bandits)
+                camp_owner_address,
                 structure_id,
                 StructureCategory::Camp,
                 array![].span(), // No initial resources
@@ -54,7 +57,18 @@ pub impl iCampDiscoveryImpl of iCampDiscoveryTrait {
                 false,
             );
 
-        // add guards to structure
+        BuildingImpl::create(
+            ref world,
+            camp_owner_address,
+            structure_id,
+            StructureCategory::Camp.into(),
+            coord,
+            BuildingCategory::ResourceLabor,
+            BuildingImpl::center(),
+        );
+
+        ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, structure_id);
+
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
         let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);

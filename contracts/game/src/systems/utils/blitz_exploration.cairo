@@ -1,30 +1,11 @@
 use core::array::SpanTrait;
 use crate::constants::ResourceTypes;
-
-pub const OFFICIAL_60_BLITZ_EXPLORATION_REWARD_PROFILE_ID: u8 = 1;
-pub const OFFICIAL_90_BLITZ_EXPLORATION_REWARD_PROFILE_ID: u8 = 2;
-pub const DEFAULT_BLITZ_EXPLORATION_REWARD_PROFILE_ID: u8 = OFFICIAL_90_BLITZ_EXPLORATION_REWARD_PROFILE_ID;
+use crate::systems::utils::blitz_profile::{
+    DEFAULT_BLITZ_PROFILE_ID, OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
+};
 
 #[generate_trait]
 pub impl iBlitzExplorationRewardsImpl of iBlitzExplorationRewardsTrait {
-    fn is_known_blitz_exploration_reward_profile_id(reward_profile_id: u8) -> bool {
-        reward_profile_id == OFFICIAL_60_BLITZ_EXPLORATION_REWARD_PROFILE_ID
-            || reward_profile_id == OFFICIAL_90_BLITZ_EXPLORATION_REWARD_PROFILE_ID
-    }
-
-    fn assert_known_blitz_exploration_reward_profile_id(reward_profile_id: u8) {
-        assert!(Self::is_known_blitz_exploration_reward_profile_id(reward_profile_id), "unknown blitz reward profile");
-    }
-
-    fn resolve_blitz_exploration_reward_profile_id(reward_profile_id: u8) -> u8 {
-        if reward_profile_id == 0 {
-            return DEFAULT_BLITZ_EXPLORATION_REWARD_PROFILE_ID;
-        }
-
-        Self::assert_known_blitz_exploration_reward_profile_id(reward_profile_id);
-        reward_profile_id
-    }
-
     fn get_official_60_blitz_exploration_rewards() -> Span<(u8, u128, u128)> {
         array![
             (ResourceTypes::ESSENCE, 150, 3_500), (ResourceTypes::ESSENCE, 300, 2_500),
@@ -45,8 +26,8 @@ pub impl iBlitzExplorationRewardsImpl of iBlitzExplorationRewardsTrait {
     }
 
     fn split_blitz_exploration_rewards_and_probabilities(reward_profile_id: u8) -> (Span<(u8, u128)>, Span<u128>) {
-        let resolved_reward_profile_id = Self::resolve_blitz_exploration_reward_profile_id(reward_profile_id);
-        let mut zipped = if resolved_reward_profile_id == OFFICIAL_60_BLITZ_EXPLORATION_REWARD_PROFILE_ID {
+        let resolved_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(reward_profile_id);
+        let mut zipped = if resolved_reward_profile_id == OFFICIAL_60_BLITZ_PROFILE_ID {
             Self::get_official_60_blitz_exploration_rewards()
         } else {
             Self::get_official_90_blitz_exploration_rewards()
@@ -74,10 +55,10 @@ pub impl iBlitzExplorationRewardsImpl of iBlitzExplorationRewardsTrait {
 mod tests {
     use core::array::SpanTrait;
     use crate::constants::ResourceTypes;
-    use super::{
-        DEFAULT_BLITZ_EXPLORATION_REWARD_PROFILE_ID, OFFICIAL_60_BLITZ_EXPLORATION_REWARD_PROFILE_ID,
-        OFFICIAL_90_BLITZ_EXPLORATION_REWARD_PROFILE_ID, iBlitzExplorationRewardsImpl,
+    use crate::systems::utils::blitz_profile::{
+        DEFAULT_BLITZ_PROFILE_ID, OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
     };
+    use super::iBlitzExplorationRewardsImpl;
 
     fn assert_reward_row(
         rewards: Span<(u8, u128, u128)>,
@@ -109,16 +90,16 @@ mod tests {
 
     #[test]
     fn resolves_zero_to_the_default_profile_id() {
-        let resolved_reward_profile_id = iBlitzExplorationRewardsImpl::resolve_blitz_exploration_reward_profile_id(0);
+        let resolved_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(0);
 
-        assert_eq!(resolved_reward_profile_id, DEFAULT_BLITZ_EXPLORATION_REWARD_PROFILE_ID);
-        assert_eq!(resolved_reward_profile_id, OFFICIAL_90_BLITZ_EXPLORATION_REWARD_PROFILE_ID);
+        assert_eq!(resolved_reward_profile_id, DEFAULT_BLITZ_PROFILE_ID);
+        assert_eq!(resolved_reward_profile_id, OFFICIAL_90_BLITZ_PROFILE_ID);
     }
 
     #[test]
     #[should_panic]
     fn rejects_unknown_profile_ids() {
-        iBlitzExplorationRewardsImpl::resolve_blitz_exploration_reward_profile_id(7);
+        iBlitzProfileImpl::resolve_blitz_profile_id(7);
     }
 
     #[test]
@@ -153,7 +134,7 @@ mod tests {
     #[test]
     fn splits_the_official_60_reward_rows_and_probabilities() {
         let (rewards, probabilities) = iBlitzExplorationRewardsImpl::split_blitz_exploration_rewards_and_probabilities(
-            OFFICIAL_60_BLITZ_EXPLORATION_REWARD_PROFILE_ID,
+            OFFICIAL_60_BLITZ_PROFILE_ID,
         );
 
         assert_eq!(rewards.len(), 6);

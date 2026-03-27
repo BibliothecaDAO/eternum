@@ -12,7 +12,7 @@ use crate::systems::quest::constants::{
     CAPACITY_SELECTOR_SALT, GAME_SELECTOR_SALT, LEVEL_SELECTOR_SALT, MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY,
     QUEST_REWARD_BASE_MULTIPLIER, VERSION, VRF_OFFSET,
 };
-use crate::systems::utils::blitz_exploration::iBlitzExplorationRewardsImpl;
+use crate::systems::utils::blitz_profile::iBlitzProfileImpl;
 use crate::systems::utils::map::IMapImpl;
 use crate::systems::utils::troop::iExplorerImpl;
 use crate::utils::map::biomes::Biome;
@@ -439,8 +439,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
             world, selector!("blitz_exploration_config"),
         );
-        let blitz_exploration_reward_profile_id =
-            iBlitzExplorationRewardsImpl::resolve_blitz_exploration_reward_profile_id(
+        let blitz_exploration_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(
             blitz_exploration_config.reward_profile_id,
         );
         let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();

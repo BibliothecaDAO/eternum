@@ -3,6 +3,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ProductionModal } from "@/ui/features/settlement";
@@ -194,11 +195,12 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   ) as ComponentValue<ClientComponents["VillageTroop"]["schema"]> | null;
 
-  const isRealm = structure?.base?.category === StructureType.Realm;
   const isVillage = structure?.base?.category === StructureType.Village;
-  const isHyperstructure = structure?.base?.category === StructureType.Hyperstructure;
-  const isFragmentMine = structure?.base?.category === StructureType.FragmentMine;
   const isOwned = structure ? structure.owner === ContractAddress(account.account.address) : false;
+  const structureCapabilities = useMemo(() => resolveStructureUiCapabilities(structure), [structure]);
+  const canShowProductionCard = structureCapabilities.canOpenProduction;
+  const canShowBalanceCard = structureCapabilities.canOpenTransferInventory;
+  const canShowArmiesCard = structureCapabilities.canCreateFieldArmy || structureCapabilities.canManageGuardArmy;
 
   const realmId = useMemo(() => {
     if (!structureEntityId) return null;
@@ -253,8 +255,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   }, [productionBoostBonus, structure, currentArmiesTick]);
 
   const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
-
-  const canShowBalanceOnly = (isHyperstructure || isFragmentMine) && isOwned;
 
   const explorers = useExplorersByStructure({
     structureEntityId: structureEntityId ?? 0,
@@ -340,17 +340,17 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     }
   }, [account.account, canClaimVillageMilitia, network.provider, setup.systemCalls, structureEntityId]);
 
-  if (!structure || (!isRealm && !isVillage && !canShowBalanceOnly)) {
+  if (!structure || (!canShowProductionCard && !canShowBalanceCard && !canShowArmiesCard)) {
     return (
       <div className={cn("p-3 text-xxs text-gold/70", className)}>
-        Select a realm from the left panel to view production and balance.
+        Select a structure from the left panel to view production, balance, and armies.
       </div>
     );
   }
 
   return (
     <div className={cn("flex h-full flex-col gap-3 p-3 text-gold", className)}>
-      {(isRealm || isVillage) && (
+      {canShowProductionCard && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5">
@@ -398,38 +398,40 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
         </div>
       )}
 
-      <div className="rounded border border-gold/20 bg-black/50 p-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Balance</span>
-          <button
-            type="button"
-            onClick={handleOpenTransfer}
-            disabled={!structureEntityId}
-            className={cn(
-              "flex items-center gap-1 rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
-              !structureEntityId && "cursor-not-allowed opacity-50",
-              structureEntityId && "hover:bg-gold/10 hover:text-gold",
-            )}
-            aria-label="Open transfer panel"
-            title="Open transfer panel"
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-          </button>
+      {canShowBalanceCard && (
+        <div className="rounded border border-gold/20 bg-black/50 p-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Balance</span>
+            <button
+              type="button"
+              onClick={handleOpenTransfer}
+              disabled={!structureEntityId}
+              className={cn(
+                "flex items-center gap-1 rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
+                !structureEntityId && "cursor-not-allowed opacity-50",
+                structureEntityId && "hover:bg-gold/10 hover:text-gold",
+              )}
+              aria-label="Open transfer panel"
+              title="Open transfer panel"
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="mt-2">
+            <CompactEntityInventory
+              resources={resources}
+              recipientType={RelicRecipientType.Structure}
+              entityId={structureEntityId ?? undefined}
+              entityType={EntityType.STRUCTURE}
+              variant="tight"
+              showLabels={false}
+              maxItems={14}
+              allowRelicActivation
+              activeRelicIds={activeRelicIds}
+            />
+          </div>
         </div>
-        <div className="mt-2">
-          <CompactEntityInventory
-            resources={resources}
-            recipientType={RelicRecipientType.Structure}
-            entityId={structureEntityId ?? undefined}
-            entityType={EntityType.STRUCTURE}
-            variant="tight"
-            showLabels={false}
-            maxItems={14}
-            allowRelicActivation
-            activeRelicIds={activeRelicIds}
-          />
-        </div>
-      </div>
+      )}
 
       {relicEffects.length > 0 && structureEntityId && (
         <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
@@ -497,7 +499,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
         </div>
       )}
 
-      {(isRealm || isVillage) && (
+      {canShowArmiesCard && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Armies</span>
@@ -506,19 +508,21 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                 type="button"
                 className={cn(
                   "rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
-                  (!isOwned || !structureEntityId) && "cursor-not-allowed opacity-50",
+                  (!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy) &&
+                    "cursor-not-allowed opacity-50",
                   isOwned &&
                     structureEntityId &&
+                    structureCapabilities.canCreateFieldArmy &&
                     "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
                 )}
                 onClick={() => {
-                  if (!structureEntityId || !isOwned) return;
+                  if (!structureEntityId || !isOwned || !structureCapabilities.canCreateFieldArmy) return;
                   openArmyCreationPopup({
                     structureId: Number(structureEntityId),
                     isExplorer: true,
                   });
                 }}
-                disabled={!isOwned || !structureEntityId}
+                disabled={!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy}
                 aria-label="Create field army"
                 title="Create field army"
               >
@@ -528,13 +532,15 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                 type="button"
                 className={cn(
                   "rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
-                  (!isOwned || !structureEntityId) && "cursor-not-allowed opacity-50",
+                  (!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy) &&
+                    "cursor-not-allowed opacity-50",
                   isOwned &&
                     structureEntityId &&
+                    structureCapabilities.canManageGuardArmy &&
                     "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
                 )}
                 onClick={() => {
-                  if (!structureEntityId || !isOwned) return;
+                  if (!structureEntityId || !isOwned || !structureCapabilities.canManageGuardArmy) return;
                   const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
                   openArmyCreationPopup({
                     structureId: Number(structureEntityId),
@@ -542,7 +548,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                     maxDefenseSlots,
                   });
                 }}
-                disabled={!isOwned || !structureEntityId}
+                disabled={!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy}
                 aria-label="Create defense army"
                 title="Create defense army"
               >

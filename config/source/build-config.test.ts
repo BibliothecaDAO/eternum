@@ -99,6 +99,7 @@ describe("buildConfig", () => {
 
     expect(sixtyMinuteConfig.season.durationSeconds).toBe(3_600);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(2);
+    expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Labor]).toBe(2);
     expect(sixtyMinuteConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
     expect(sixtyMinuteConfig.blitz.exploration.rewardProfileId).toBe("official-60");
     expect(sixtyMinuteConfig.blitz.exploration.rewards).toHaveLength(6);

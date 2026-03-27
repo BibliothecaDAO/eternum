@@ -2,7 +2,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { configManager, getEntityIdFromKeys, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { getProducedResource, ID, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getProducedResource, ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
@@ -10,6 +10,7 @@ import CheckCircle2Icon from "lucide-react/dist/esm/icons/check-circle-2";
 import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
+import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
@@ -298,7 +299,7 @@ export const ProductionSidebar = memo(
       const campStructures: RealmInfo[] = [];
 
       realms.forEach((realm) => {
-        if (realm.structure?.category === StructureType.Village) {
+        if (isVillageLikeStructureCategory(realm.structure?.category)) {
           campStructures.push(realm);
         } else {
           realmStructures.push(realm);
@@ -325,8 +326,9 @@ export const ProductionSidebar = memo(
       () => realms.find((realm) => realm.entityId === selectedRealmEntityId),
       [realms, selectedRealmEntityId],
     );
-    const selectedEntityType: AutomationTab =
-      selectedRealmInfo?.structure?.category === StructureType.Village ? "village" : "realm";
+    const selectedEntityType: AutomationTab = isVillageLikeStructureCategory(selectedRealmInfo?.structure?.category)
+      ? "village"
+      : "realm";
 
     const [activeTab, setActiveTab] = useState<AutomationTab>(() => {
       if (selectedEntityType === "village" && villageCount > 0) {
@@ -414,7 +416,7 @@ export const ProductionSidebar = memo(
         const realmInfo = structureMap.get(realmId);
         if (!realmInfo) return;
 
-        const entityType = realmInfo.structure?.category === StructureType.Village ? "village" : "realm";
+        const entityType = isVillageLikeStructureCategory(realmInfo.structure?.category) ? "village" : "realm";
         const realmName = mode.structure.getName(realmInfo.structure).name;
         upsertRealm(realmId, { realmName, entityType });
         setRealmPreset(realmId, pendingPreset.presetId);

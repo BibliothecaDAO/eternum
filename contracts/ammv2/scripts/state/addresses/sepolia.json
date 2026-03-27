@@ -1,0 +1,18 @@
+{
+  "network": "sepolia",
+  "updatedAt": "2026-03-26T06:46:02.315Z",
+  "pairClassHash": "0x1af37a90b19a5e90be1d7b6aa1fdd81757d0b24a422dc2ec5af668981ecf8b1",
+  "factoryClassHash": "0x6d527476393058203238520df01ce8527b919cbaf898152db448cac79ddb4a9",
+  "routerClassHash": "0x52e8b0ab77778fc314652cf79eae6cae714bf503567e76143d8ef79071d6b69",
+  "factory": "0x2dd3000ad7a7acc16f9de35c35d74d337142342690e97ec0191b8646e32238c",
+  "defaultAdmin": "0x1bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39",
+  "deployerAccountAddress": "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39",
+  "factoryFeeAmountNumeratorAssumeDivIs1000": "0x3e5",
+  "factoryFeeTo": "0x1bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39",
+  "pairDefaultAdmin": "0x1bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39",
+  "pairUpgrader": "0x1bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39",
+  "upgrader": "0x1bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39",
+  "router": "0x326cd83136133438d7d699fe7f2b66f544aea4ce67452051a6d2ec44ae48efc",
+  "routerDefaultAdmin": "0x1bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39",
+  "routerUpgrader": "0x1bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39"
+}

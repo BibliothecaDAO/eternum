@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useOwnedMilitaryStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import {
   createPendingWorldmapFxKey,
@@ -18,12 +19,7 @@ import {
   getEntityIdFromKeys,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import {
-  useDojo,
-  useExplorersByStructure,
-  usePlayerOwnedRealmsInfo,
-  usePlayerOwnedVillagesInfo,
-} from "@bibliothecadao/react";
+import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import {
   Direction,
   DISPLAYED_SLOT_NUMBER_MAP,
@@ -90,24 +86,17 @@ export const UnifiedArmyCreationModal = ({
   } = useDojo();
   const queryClient = useQueryClient();
   const mode = useGameModeConfig();
-
-  const playerRealms = usePlayerOwnedRealmsInfo();
-  const playerVillages = usePlayerOwnedVillagesInfo();
+  const playerStructures = useOwnedMilitaryStructureInfos();
   const selectedStructureId = useUIStore((state) => state.structureEntityId);
-
-  const playerStructures = useMemo(() => {
-    return [...playerRealms, ...playerVillages]
-      .filter((realm) => {
-        const maxAttack = realm.structure.base.troop_max_explorer_count || 0;
-        const maxDefense = realm.structure.base.troop_max_guard_count || 0;
-        return maxAttack > 0 || maxDefense > 0;
-      })
-      .toSorted((a, b) => {
+  const sortedPlayerStructures = useMemo(
+    () =>
+      playerStructures.toSorted((a, b) => {
         const nameA = mode.structure.getName(a.structure).name;
         const nameB = mode.structure.getName(b.structure).name;
         return nameA.localeCompare(nameB);
-      });
-  }, [playerRealms, playerVillages, mode]);
+      }),
+    [playerStructures, mode],
+  );
 
   const [isLoading, setIsLoading] = useState(false);
   const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
@@ -184,8 +173,8 @@ export const UnifiedArmyCreationModal = ({
       return resolvedSelectedStructureId;
     }
 
-    return playerStructures[0]?.entityId ?? 0;
-  }, [shouldFollowSelection, resolvedSelectedStructureId, resolvedStructureIdProp, playerStructures]);
+    return sortedPlayerStructures[0]?.entityId ?? 0;
+  }, [shouldFollowSelection, resolvedSelectedStructureId, resolvedStructureIdProp, sortedPlayerStructures]);
 
   const structureComponent = useMemo(() => {
     if (!activeStructureId) return null;
@@ -193,8 +182,8 @@ export const UnifiedArmyCreationModal = ({
   }, [components, activeStructureId]);
 
   const activeStructureInfo = useMemo(
-    () => playerStructures.find((realm) => realm.entityId === activeStructureId),
-    [playerStructures, activeStructureId],
+    () => sortedPlayerStructures.find((realm) => realm.entityId === activeStructureId),
+    [sortedPlayerStructures, activeStructureId],
   );
 
   const structureBase = activeStructureInfo?.structure.base ?? structureComponent?.base;

@@ -1,0 +1,92 @@
+{
+  "signer": {
+    "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+  },
+  "contracts": {
+    "factory": {
+      "deployContract": {
+        "constructor": {
+          "calldata": {
+            "defaultAdmin": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+            "upgrader": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+          }
+        },
+        "postDeployActions": {
+          "steps": [
+            {
+              "grantRoles": {
+                "DEFAULT_ADMIN_ROLE": [
+                  "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+                ],
+                "FEE_TO_MANAGER_ROLE": [
+                  "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+                ],
+                "POOL_CREATOR_ROLE": [
+                  "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+                ],
+                "UPGRADER_ROLE": [
+                  "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+                ]
+              }
+            },
+            {
+              "setFeeAmountNumeratorAssumeDivIs1000": "997"
+            },
+            {
+              "setFeeTo": "0x0"
+            },
+            {
+              "setPairDefaultAdmin": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+            },
+            {
+              "setPairUpgrader": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+            },
+            {
+              "revokeRoles": {}
+            }
+          ]
+        },
+        "finalAdminActions": {
+          "grantRoles": {},
+          "revokeRoles": {}
+        }
+      }
+    },
+    "router": {
+      "deployContract": {
+        "constructor": {
+          "calldata": {
+            "defaultAdmin": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+            "upgrader": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+          }
+        },
+        "postDeployActions": {
+          "steps": [
+            {
+              "grantRoles": {
+                "DEFAULT_ADMIN_ROLE": [
+                  "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+                ],
+                "UPGRADER_ROLE": [
+                  "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+                ]
+              }
+            },
+            {
+              "revokeRoles": {}
+            }
+          ]
+        },
+        "finalAdminActions": {
+          "grantRoles": {},
+          "revokeRoles": {}
+        }
+      }
+    }
+  },
+  "upgrades": {
+    "pair": [],
+    "factory": [],
+    "router": []
+  }
+}

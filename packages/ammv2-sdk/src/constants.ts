@@ -1,0 +1,3 @@
+export const DEFAULT_SLIPPAGE_BPS = 50n;
+export const DEFAULT_DEADLINE_OFFSET = 1200;
+export const MINIMUM_LIQUIDITY = 1000n;

@@ -8,7 +8,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
-import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView } from "./ui/features/landing";
+import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView } from "./ui/features/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
@@ -57,6 +57,9 @@ function App() {
 
               {/* Markets */}
               <Route path="markets" element={<MarketsView />} />
+
+              {/* AMM */}
+              <Route path="amm" element={<AmmView />} />
 
               {/* Leaderboard */}
               <Route path="leaderboard" element={<LeaderboardView />} />
