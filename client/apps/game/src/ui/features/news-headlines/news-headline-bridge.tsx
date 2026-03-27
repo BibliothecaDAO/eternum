@@ -103,8 +103,7 @@ export function NewsHeadlineBridge() {
     }
 
     const recentBattles = events.filter(
-      (event) =>
-        event.story === "BattleStory" && event.timestampMs >= now - RECENT_HEADLINE_WINDOW_MS,
+      (event) => event.story === "BattleStory" && event.timestampMs >= now - RECENT_HEADLINE_WINDOW_MS,
     );
 
     for (const event of recentBattles) {
@@ -220,26 +219,29 @@ export function NewsHeadlineBridge() {
   }, [gameWinner, enqueue]);
 
   // --- Navigation handler ---
-  const handleNavigate = useCallback(async (location: { x: number; y: number; entityId: number }) => {
-    const { goToStructure, navigateToMapView, setSelectedHex, isMapView } = navRef.current;
-    const position = new Position({ x: location.x, y: location.y });
+  const handleNavigate = useCallback(
+    async (location: { x: number; y: number; entityId: number }) => {
+      const { goToStructure, navigateToMapView, setSelectedHex, isMapView } = navRef.current;
+      const position = new Position({ x: location.x, y: location.y });
 
-    const col = Number(location.x);
-    const row = Number(location.y);
-    if (Number.isFinite(col) && Number.isFinite(row)) {
-      const next = { col, row };
-      setSelectedHex(next);
-      setTimeout(() => setSelectedHex(next), 0);
-    }
+      const col = Number(location.x);
+      const row = Number(location.y);
+      if (Number.isFinite(col) && Number.isFinite(row)) {
+        const next = { col, row };
+        setSelectedHex(next);
+        setTimeout(() => setSelectedHex(next), 0);
+      }
 
-    try {
-      await goToStructure(location.entityId, position, isMapView);
-    } catch {
-      navigateToMapView(position);
-    }
+      try {
+        await goToStructure(location.entityId, position, isMapView);
+      } catch {
+        navigateToMapView(position);
+      }
 
-    dismiss();
-  }, [dismiss]);
+      dismiss();
+    },
+    [dismiss],
+  );
 
   // --- Prune old IDs ---
   useEffect(() => {

@@ -43,12 +43,8 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
               <div className="flex min-w-0 items-center gap-3">
                 <Icon className="h-5 w-5 flex-shrink-0 text-gold" aria-hidden />
                 <div className="flex min-w-0 flex-col">
-                  <span className="text-xs font-bold uppercase tracking-wider text-brilliance">
-                    {headline.title}
-                  </span>
-                  <span className="truncate text-[11px] leading-snug text-gold/80">
-                    {headline.description}
-                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-brilliance">{headline.title}</span>
+                  <span className="truncate text-[11px] leading-snug text-gold/80">{headline.description}</span>
                 </div>
               </div>
 
