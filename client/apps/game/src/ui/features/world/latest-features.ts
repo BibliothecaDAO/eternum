@@ -10,41 +10,6 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
-    title: "Live Event Headlines",
-    description:
-      "Removed the developer-only headline preview controls from settings so major event banners now come only from live world events.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-27",
-    title: "Centered Event Plaques",
-    description:
-      "Major event banners now center against the full viewport with a more balanced plaque layout, so they stay visually centered even when the left world sidebar is open.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-27",
-    title: "Headline Banner Polish",
-    description:
-      "Major event headlines now use a more ornate framed banner with clearer hierarchy, calmer copy treatment, and stronger event accents so they fit the existing Eternum world UI instead of reading like a generic toast.",
-    type: "improvement",
-  },
-  {
-    date: "2026-03-27",
-    title: "Troop Milestone Headlines",
-    description:
-      "News headline previews and live milestone banners now cover the first Tier 2 and first Tier 3 armies built, alongside realm falls, hyperstructure captures, eliminations, and the five-minute warning.",
-    type: "feature",
-  },
-  {
-    date: "2026-03-27",
-    title: "Manual Headline Preview",
-    description:
-      "Added a developer-only Headline Preview section in the in-game settings so you can manually show realm fall, hyperstructure capture, player elimination, five-minute warning, and first T2/T3 army news banners without waiting for live triggers.",
-    type: "feature",
-  },
-  {
-    date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:
       "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",
