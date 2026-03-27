@@ -7,6 +7,9 @@ use crate::alias::ID;
 use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
 use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::systems::utils::blitz_profile::{
+    OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
+};
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 use crate::utils::math::PercentageImpl;
 use crate::utils::random::VRFImpl;
@@ -497,6 +500,55 @@ pub struct BlitzSettlementConfig {
     pub two_player_mode: bool,
 }
 
+#[derive(Copy, Drop)]
+pub struct BlitzMapDistanceProfile {
+    pub base_distance: u32,
+    pub step_tile_distance: u32,
+    pub ring_tile_distance: u32,
+    pub mirror_first_step_tile_distance: u32,
+    pub mirror_second_step_tile_distance: u32,
+    pub realm_tile_radius: u32,
+    pub center_tile_radius: u32,
+}
+
+#[generate_trait]
+pub impl BlitzMapDistanceProfileImpl of BlitzMapDistanceProfileTrait {
+    fn resolve_by_reward_profile_id(reward_profile_id: u8) -> BlitzMapDistanceProfile {
+        let resolved_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(reward_profile_id);
+
+        if resolved_reward_profile_id == OFFICIAL_60_BLITZ_PROFILE_ID {
+            return Self::official_60();
+        }
+
+        assert!(resolved_reward_profile_id == OFFICIAL_90_BLITZ_PROFILE_ID, "unknown blitz map distance profile");
+        Self::official_90()
+    }
+
+    fn official_60() -> BlitzMapDistanceProfile {
+        BlitzMapDistanceProfile {
+            base_distance: 6,
+            step_tile_distance: 12,
+            ring_tile_distance: 12,
+            mirror_first_step_tile_distance: 9,
+            mirror_second_step_tile_distance: 3,
+            realm_tile_radius: 3,
+            center_tile_radius: 2,
+        }
+    }
+
+    fn official_90() -> BlitzMapDistanceProfile {
+        BlitzMapDistanceProfile {
+            base_distance: 8,
+            step_tile_distance: 15,
+            ring_tile_distance: 15,
+            mirror_first_step_tile_distance: 11,
+            mirror_second_step_tile_distance: 4,
+            realm_tile_radius: 3,
+            center_tile_radius: 2,
+        }
+    }
+}
+
 #[generate_trait]
 pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     fn new(base_distance: u32, single_realm_mode: bool, two_player_mode: bool) -> BlitzSettlementConfig {
@@ -515,11 +567,12 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
         }
     }
 
-    fn generate_coords(self: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
+    fn generate_coords(self: BlitzSettlementConfig, map_center: Coord, reward_profile_id: u8) -> Array<Coord> {
         if self.two_player_mode {
             return Blitz2PlayerSettlementConfigImpl::generate_coords(self, map_center);
         } else {
-            return BlitzMultplePlayerSettlementConfigImpl::generate_coords(self, map_center);
+            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id);
+            return BlitzMultplePlayerSettlementConfigImpl::generate_coords(self, map_center, distance_profile);
         }
     }
 }
@@ -545,29 +598,11 @@ pub impl BlitzMultplePlayerSettlementConfigImpl of BlitzMultplePlayerSettlementC
         self.step * 2
     }
 
-    fn step_tile_distance() -> u32 {
-        15
-    }
-
-    fn realm_tile_radius() -> u32 {
-        3
-    }
-
-    fn center_tile_radius() -> u32 {
-        2 // must be divisible by 2
-    }
-
-    fn mirror_first_step_tile_distance() -> u32 {
-        11
-    }
-
-    fn mirror_second_step_tile_distance() -> u32 {
-        4
-    }
-
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
 
-    fn generate_coords(self: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
+    fn generate_coords(
+        self: BlitzSettlementConfig, map_center: Coord, distance_profile: BlitzMapDistanceProfile,
+    ) -> Array<Coord> {
         let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
             (Direction::NorthEast, Direction::West), (Direction::West, Direction::SouthEast),
@@ -575,31 +610,35 @@ pub impl BlitzMultplePlayerSettlementConfigImpl of BlitzMultplePlayerSettlementC
             (Direction::SouthWest, Direction::East), (Direction::East, Direction::NorthWest),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(self.side);
-        assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
+        let base_distance = distance_profile.base_distance;
+        let step_tile_distance = distance_profile.step_tile_distance;
+        let realm_tile_radius = distance_profile.realm_tile_radius;
+        let center_tile_radius = distance_profile.center_tile_radius;
+        assert!(base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
 
         // get the coord of the first structure on step 1 of the selected side
         let side_first_structure__step_one: Coord = start_coord
-            .neighbor_after_distance(start_direction, self.base_distance)
-            .neighbor_after_distance(triangle_direction, self.base_distance / 2);
+            .neighbor_after_distance(start_direction, base_distance)
+            .neighbor_after_distance(triangle_direction, base_distance / 2);
 
         // get the coord of the first structure on selected layer of the selected side
         let side_first_structure__step_x = side_first_structure__step_one
-            .neighbor_after_distance(start_direction, Self::step_tile_distance() * (self.step - 1));
+            .neighbor_after_distance(start_direction, step_tile_distance * (self.step - 1));
 
         let is_mirrored = self.point > self.max_points() / 2;
         if !is_mirrored {
             let destination_start_coord: Coord = side_first_structure__step_x
-                .neighbor_after_distance(triangle_direction, Self::step_tile_distance() * (self.point - 1));
+                .neighbor_after_distance(triangle_direction, step_tile_distance * (self.point - 1));
 
             // coords a, b and c form a triangle
             let a = destination_start_coord;
-            let b = destination_start_coord.neighbor_after_distance(start_direction, Self::realm_tile_radius());
-            let c = b.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
+            let b = destination_start_coord.neighbor_after_distance(start_direction, realm_tile_radius);
+            let c = b.neighbor_after_distance(triangle_direction, realm_tile_radius);
 
             // coord middle is the middle of the triangle
             let middle = a
-                .neighbor_after_distance(start_direction, Self::center_tile_radius())
-                .neighbor_after_distance(triangle_direction, Self::center_tile_radius() / 2);
+                .neighbor_after_distance(start_direction, center_tile_radius)
+                .neighbor_after_distance(triangle_direction, center_tile_radius / 2);
 
             if self.single_realm_mode {
                 return array![middle];
@@ -609,19 +648,19 @@ pub impl BlitzMultplePlayerSettlementConfigImpl of BlitzMultplePlayerSettlementC
         } else {
             let start_point = self.max_points() - self.point + 1;
             let destination_start_coord: Coord = side_first_structure__step_x
-                .neighbor_after_distance(triangle_direction, Self::step_tile_distance() * (start_point - 1));
+                .neighbor_after_distance(triangle_direction, step_tile_distance * (start_point - 1));
 
             // coords a, b and c form a triangle
             let a = destination_start_coord
-                .neighbor_after_distance(start_direction, Self::mirror_first_step_tile_distance())
-                .neighbor_after_distance(triangle_direction, Self::mirror_second_step_tile_distance());
-            let b = a.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
-            let c = b.neighbor_after_distance(start_direction, Self::realm_tile_radius());
+                .neighbor_after_distance(start_direction, distance_profile.mirror_first_step_tile_distance)
+                .neighbor_after_distance(triangle_direction, distance_profile.mirror_second_step_tile_distance);
+            let b = a.neighbor_after_distance(triangle_direction, realm_tile_radius);
+            let c = b.neighbor_after_distance(start_direction, realm_tile_radius);
 
             // coord middle is the middle of the triangle
             let middle = a
-                .neighbor_after_distance(triangle_direction, Self::center_tile_radius())
-                .neighbor_after_distance(start_direction, Self::center_tile_radius() / 2);
+                .neighbor_after_distance(triangle_direction, center_tile_radius)
+                .neighbor_after_distance(start_direction, center_tile_radius / 2);
 
             if self.single_realm_mode {
                 return array![middle];
@@ -692,11 +731,14 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
         }
     }
 
-    fn next_coord(self: BlitzHypersSettlementConfig, map_center: Coord, two_player_mode: bool) -> Coord {
+    fn next_coord(
+        self: BlitzHypersSettlementConfig, map_center: Coord, two_player_mode: bool, reward_profile_id: u8,
+    ) -> Coord {
         if two_player_mode {
             return Blitz2PlayerHypersSettlementConfigImpl::next_coord(self, map_center);
         } else {
-            return BlitzMultiplePlayerHypersSettlementConfigImpl::next_coord(self, map_center);
+            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id);
+            return BlitzMultiplePlayerHypersSettlementConfigImpl::next_coord(self, map_center, distance_profile);
         }
     }
 
@@ -733,12 +775,10 @@ pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHyp
         }
     }
 
-    fn ring_tile_distance() -> u32 {
-        15
-    }
-
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
-    fn next_coord(config: BlitzHypersSettlementConfig, map_center: Coord) -> Coord {
+    fn next_coord(
+        config: BlitzHypersSettlementConfig, map_center: Coord, distance_profile: BlitzMapDistanceProfile,
+    ) -> Coord {
         let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
             (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
@@ -747,8 +787,12 @@ pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHyp
         ];
         let (start_direction, triangle_direction) = *start_directions.at(config.side);
         return start_coord
-            .neighbor_after_distance(start_direction, Self::ring_tile_distance() * config.current_ring_count.into())
-            .neighbor_after_distance(triangle_direction, Self::ring_tile_distance() * (config.point.into() - 1));
+            .neighbor_after_distance(
+                start_direction, distance_profile.ring_tile_distance * config.current_ring_count.into(),
+            )
+            .neighbor_after_distance(
+                triangle_direction, distance_profile.ring_tile_distance * (config.point.into() - 1),
+            );
     }
 
 

@@ -40,6 +40,15 @@
         color: #cccccc;
       }
 
+      .control-group select {
+        min-width: 200px;
+        padding: 8px 10px;
+        border: 1px solid #555;
+        border-radius: 6px;
+        background-color: #1a1a1a;
+        color: #ffffff;
+      }
+
       .control-group input[type="range"] {
         width: 200px;
         height: 6px;
@@ -95,6 +104,13 @@
         min-width: 30px;
         display: inline-block;
         text-align: right;
+      }
+
+      .control-help {
+        color: #aaaaaa;
+        font-size: 0.85em;
+        max-width: 220px;
+        line-height: 1.35;
       }
 
       @keyframes pulse {
@@ -187,6 +203,16 @@
       <h1>Blitz Settlement Hex Grid Map Visualizer</h1>
 
       <div class="controls">
+        <div class="control-group">
+          <label for="distanceProfile">Multiplayer Layout Profile:</label>
+          <select id="distanceProfile">
+            <option value="official90">Official 90</option>
+            <option value="official60">Official 60</option>
+            <option value="custom">Custom</option>
+          </select>
+          <div class="control-help" id="distanceProfileSummary">Official 90: base 8, step 15, ring 15, mirror 11/4</div>
+        </div>
+
         <div class="control-group">
           <label for="baseDistance">Base Distance: <span id="baseDistanceValue">8</span></label>
           <input type="range" id="baseDistance" value="8" min="2" max="100" step="2" />
@@ -356,12 +382,16 @@
         <p>
           <strong>Hyperstructures:</strong> 🏗️ Placed in hexagonal rings with Ring N containing N points per side × 6
           sides = N×6 total hyperstructures. Ring 0 has 1 center hyperstructure, Ring 1 has 6, Ring 2 has 12, Ring 3 has
-          18, etc. Ring distance is fixed at 15 tiles.
+          18, etc. Ring distance follows the selected official profile: 15 for official 90, 12 for official 60.
         </p>
         <p>
           <strong>2-Player Mode:</strong> Uses the current Cairo implementation exactly. Settlements: side 0 = west
           triangle, side 1+ = east triangle. Hyperstructures: fixed max ring count = 2, producing exactly 3 positions
           (center + 2 side positions at line distance 6).
+        </p>
+        <p>
+          <strong>Official Profiles:</strong> Select Official 90 or Official 60 to snap the multiplayer sliders to the
+          contract presets. Editing a profile-controlled slider switches the visualizer to Custom.
         </p>
         <p><strong>Auto-Update:</strong> ✅ Map regenerates automatically when sliders change</p>
         <p>
@@ -387,11 +417,41 @@
       const CENTER_COL = 2147483646;
       const CENTER_ROW = 2147483646;
 
-      // These will be made configurable via sliders
-      let STEP_TILE_DISTANCE = 15;
-      let REALM_TILE_RADIUS = 3;
-      let MIRROR_FIRST_STEP_TILE_DISTANCE = 11;
-      let MIRROR_SECOND_STEP_TILE_DISTANCE = 4;
+      const DISTANCE_PROFILES = {
+        official90: {
+          label: "Official 90",
+          baseDistance: 8,
+          stepTileDistance: 15,
+          realmTileRadius: 3,
+          mirrorFirstDistance: 11,
+          mirrorSecondDistance: 4,
+          ringDistance: 15,
+        },
+        official60: {
+          label: "Official 60",
+          baseDistance: 6,
+          stepTileDistance: 12,
+          realmTileRadius: 3,
+          mirrorFirstDistance: 9,
+          mirrorSecondDistance: 3,
+          ringDistance: 12,
+        },
+      };
+      const DEFAULT_DISTANCE_PROFILE_ID = "official90";
+      const DISTANCE_PROFILE_SLIDER_FIELDS = {
+        baseDistance: "baseDistance",
+        stepTileDistance: "stepTileDistance",
+        realmTileRadius: "realmTileRadius",
+        mirrorFirstDistance: "mirrorFirstDistance",
+        mirrorSecondDistance: "mirrorSecondDistance",
+        ringDistance: "ringDistance",
+      };
+
+      // These are configurable via the profile selector and sliders
+      let STEP_TILE_DISTANCE = DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].stepTileDistance;
+      let REALM_TILE_RADIUS = DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].realmTileRadius;
+      let MIRROR_FIRST_STEP_TILE_DISTANCE = DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].mirrorFirstDistance;
+      let MIRROR_SECOND_STEP_TILE_DISTANCE = DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].mirrorSecondDistance;
 
       // Direction enum matching Cairo implementation
       const Direction = {
@@ -1227,7 +1287,7 @@
         }
 
         static ringTileDistance() {
-          return 15;
+          return DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].ringDistance;
         }
 
         nextCoord() {
@@ -1310,6 +1370,85 @@
         }
       }
 
+      function setSliderValue(sliderId, value) {
+        const slider = document.getElementById(sliderId);
+        if (!slider) {
+          return;
+        }
+
+        slider.value = value;
+        updateSliderValue(sliderId);
+      }
+
+      function getSelectedDistanceProfileId() {
+        return document.getElementById("distanceProfile").value;
+      }
+
+      function resolveSelectedDistanceProfile() {
+        return DISTANCE_PROFILES[getSelectedDistanceProfileId()] ?? null;
+      }
+
+      function updateDistanceProfileSummary() {
+        const summary = document.getElementById("distanceProfileSummary");
+        const selectedProfile = resolveSelectedDistanceProfile();
+        const profileIgnoredSuffix = isTwoPlayerMode() ? " 2-player mode ignores multiplayer profile distances." : "";
+
+        if (selectedProfile) {
+          summary.textContent =
+            `${selectedProfile.label}: base ${selectedProfile.baseDistance}, step ${selectedProfile.stepTileDistance}, ` +
+            `ring ${selectedProfile.ringDistance}, mirror ${selectedProfile.mirrorFirstDistance}/${selectedProfile.mirrorSecondDistance}.` +
+            profileIgnoredSuffix;
+          return;
+        }
+
+        summary.textContent =
+          `Custom: base ${document.getElementById("baseDistance").value}, step ${document.getElementById("stepTileDistance").value}, ` +
+          `ring ${document.getElementById("ringDistance").value}, mirror ${document.getElementById("mirrorFirstDistance").value}/${document.getElementById("mirrorSecondDistance").value}.` +
+          profileIgnoredSuffix;
+      }
+
+      function applyDistanceProfile(profileId, regenerate = true) {
+        const profile = DISTANCE_PROFILES[profileId];
+        if (!profile) {
+          updateDistanceProfileSummary();
+          if (regenerate) {
+            generateMap();
+          }
+          return;
+        }
+
+        setSliderValue("baseDistance", profile.baseDistance);
+        setSliderValue("stepTileDistance", profile.stepTileDistance);
+        setSliderValue("realmTileRadius", profile.realmTileRadius);
+        setSliderValue("mirrorFirstDistance", profile.mirrorFirstDistance);
+        setSliderValue("mirrorSecondDistance", profile.mirrorSecondDistance);
+        setSliderValue("ringDistance", profile.ringDistance);
+        updateDistanceProfileSummary();
+
+        if (regenerate) {
+          generateMap();
+        }
+      }
+
+      function syncProfileSelectionForSlider(sliderId) {
+        const selectedProfileId = getSelectedDistanceProfileId();
+        if (selectedProfileId === "custom") {
+          return;
+        }
+
+        const profileField = DISTANCE_PROFILE_SLIDER_FIELDS[sliderId];
+        if (!profileField) {
+          return;
+        }
+
+        const selectedProfile = DISTANCE_PROFILES[selectedProfileId];
+        const currentValue = parseInt(document.getElementById(sliderId).value);
+        if (currentValue !== selectedProfile[profileField]) {
+          document.getElementById("distanceProfile").value = "custom";
+          updateDistanceProfileSummary();
+        }
+      }
+
       function setupSliderValueUpdates() {
         const sliders = [
           "baseDistance",
@@ -1349,6 +1488,8 @@
         console.log("generateMap() called"); // Debug log
 
         const twoPlayerMode = isTwoPlayerMode();
+        const distanceProfileId = getSelectedDistanceProfileId();
+        const distanceProfile = DISTANCE_PROFILES[distanceProfileId] ?? null;
         const baseDistance = parseInt(document.getElementById("baseDistance").value);
         const maxPoints = parseInt(document.getElementById("maxPoints").value);
         const ringDistance = parseInt(document.getElementById("ringDistance").value);
@@ -1367,6 +1508,7 @@
           hexSize,
           showGrid,
           twoPlayerMode,
+          distanceProfileId,
           STEP_TILE_DISTANCE,
           REALM_TILE_RADIUS,
           MIRROR_FIRST_STEP_TILE_DISTANCE,
@@ -1418,9 +1560,15 @@
 
           // Update info with success
           if (twoPlayerMode) {
-            configElement.innerHTML = `✅ 2-player mode: generated ${currentSettlements.length} settlement calls and ${hyperstructures.length} hyperstructures (center + 2 side positions). Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
+            configElement.innerHTML =
+              `✅ 2-player mode: generated ${currentSettlements.length} settlement calls and ${hyperstructures.length} ` +
+              `hyperstructures (center + 2 side positions). Multiplayer profile: ${distanceProfile ? distanceProfile.label : "Custom"} ` +
+              `(ignored in 2-player mode). Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
           } else {
-            configElement.innerHTML = `✅ Generated ${currentSettlements.length} settlements (${nonMirroredCount} normal, ${mirroredCount} mirrored) up to step ${maxStep}, ${hyperstructures.length} hyperstructures. Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
+            configElement.innerHTML =
+              `✅ Generated ${currentSettlements.length} settlements (${nonMirroredCount} normal, ${mirroredCount} mirrored) ` +
+              `up to step ${maxStep}, ${hyperstructures.length} hyperstructures. Layout profile: ` +
+              `${distanceProfile ? distanceProfile.label : "Custom"}. Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
           }
           configElement.style.color = "#4CAF50";
 
@@ -1641,6 +1789,8 @@
       // Initialize with default values
       window.addEventListener("load", function () {
         setupSliderValueUpdates(); // Setup slider value displays first
+        document.getElementById("distanceProfile").value = DEFAULT_DISTANCE_PROFILE_ID;
+        applyDistanceProfile(DEFAULT_DISTANCE_PROFILE_ID, false);
         generateMap(); // Generate initial map
         setupAutoUpdate(); // Setup auto-update listeners after initial generation
       });
@@ -1663,6 +1813,7 @@
         };
         const showGridInput = document.getElementById("showGrid");
         const twoPlayerModeInput = document.getElementById("twoPlayerMode");
+        const distanceProfileInput = document.getElementById("distanceProfile");
 
         // Setup listeners for each slider
         Object.keys(sliders).forEach((key) => {
@@ -1682,6 +1833,7 @@
               }
             }
 
+            syncProfileSelectionForSlider(key);
             generateMap();
           });
 
@@ -1698,6 +1850,7 @@
 
                 console.log(`${key} input:`, value);
                 addInputFeedback(this);
+                syncProfileSelectionForSlider(key);
                 generateMap();
               }
             }, 300),
@@ -1714,6 +1867,20 @@
         // Two-player mode toggle
         twoPlayerModeInput.addEventListener("change", function () {
           console.log("Two player mode changed:", this.checked);
+          updateDistanceProfileSummary();
+          generateMap();
+        });
+
+        distanceProfileInput.addEventListener("change", function () {
+          console.log("Distance profile changed:", this.value);
+          addInputFeedback(this);
+
+          if (DISTANCE_PROFILES[this.value]) {
+            applyDistanceProfile(this.value);
+            return;
+          }
+
+          updateDistanceProfileSummary();
           generateMap();
         });
 

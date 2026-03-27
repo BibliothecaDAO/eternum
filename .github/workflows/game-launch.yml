@@ -475,7 +475,7 @@ jobs:
           fi
 
           sync_current_config() {
-            pnpm run "config:sync:${GAME_LAUNCH_NETWORK}:${GAME_LAUNCH_GAME_TYPE}" >/dev/null
+            pnpm run "config:sync:${GAME_LAUNCH_NETWORK}" >/dev/null
           }
 
           run_launch_step_command() {

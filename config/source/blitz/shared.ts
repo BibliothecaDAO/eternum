@@ -108,6 +108,7 @@ export function buildOfficialBlitzResourceOutputs(
     [ResourcesIds.Mithral]: profileMultiplier,
     [ResourcesIds.Dragonhide]: profileMultiplier,
     [ResourcesIds.Donkey]: donkeyOutputAmount,
+    [ResourcesIds.Labor]: profileMultiplier,
     [ResourcesIds.Knight]: 5 * profileMultiplier,
     [ResourcesIds.KnightT2]: 5 * profileMultiplier,
     [ResourcesIds.KnightT3]: 5 * profileMultiplier,

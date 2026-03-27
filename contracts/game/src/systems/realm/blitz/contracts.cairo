@@ -21,7 +21,7 @@ pub mod blitz_realm_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, blitz_produceable_resources};
     use crate::models::config::{
-        BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzHypersSettlementConfig,
+        BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzExplorationConfig, BlitzHypersSettlementConfig,
         BlitzHypersSettlementConfigImpl, BlitzPlayerRegisterList, BlitzRealmPlayerRegister, BlitzRealmPositionRegister,
         BlitzRealmSettleFinish, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
@@ -224,8 +224,12 @@ pub mod blitz_realm_systems {
             let mut blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_settlement_config"),
             );
+            let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_exploration_config"),
+            );
             let map_center: Coord = CoordImpl::center(ref world);
-            let mut coords: Array<Coord> = blitz_settlement_config.generate_coords(map_center);
+            let mut coords: Array<Coord> = blitz_settlement_config
+                .generate_coords(map_center, blitz_exploration_config.reward_profile_id);
             // save the updated blitz settlement config
             blitz_settlement_config.next();
             WorldConfigUtilImpl::set_member(ref world, selector!("blitz_settlement_config"), blitz_settlement_config);
@@ -308,6 +312,9 @@ pub mod blitz_realm_systems {
             let blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_settlement_config"),
             );
+            let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_exploration_config"),
+            );
 
             // create center hyperstructure [when num hyperstructures is 0]
             let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
@@ -323,7 +330,9 @@ pub mod blitz_realm_systems {
                 }
 
                 let next_coord: Coord = blitz_hyperstructure_settlement_config
-                    .next_coord(map_center, blitz_settlement_config.two_player_mode);
+                    .next_coord(
+                        map_center, blitz_settlement_config.two_player_mode, blitz_exploration_config.reward_profile_id,
+                    );
                 iHyperstructureDiscoveryImpl::create(
                     ref world,
                     next_coord,

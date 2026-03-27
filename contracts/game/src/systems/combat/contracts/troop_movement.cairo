@@ -38,7 +38,7 @@ pub mod troop_movement_systems {
     use crate::models::weight::Weight;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
-    use crate::systems::utils::blitz_exploration::iBlitzExplorationRewardsImpl;
+    use crate::systems::utils::blitz_profile::iBlitzProfileImpl;
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::mine::iMineDiscoveryImpl;
@@ -400,8 +400,7 @@ pub mod troop_movement_systems {
             let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_exploration_config"),
             );
-            let blitz_exploration_reward_profile_id =
-                iBlitzExplorationRewardsImpl::resolve_blitz_exploration_reward_profile_id(
+            let blitz_exploration_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(
                 blitz_exploration_config.reward_profile_id,
             );
             let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
