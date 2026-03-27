@@ -10,13 +10,6 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-27",
-    title: "Production Usage Spacing",
-    description:
-      "Improved the production automation resource usage chips so longer values wrap cleanly instead of crowding and overlapping inside the popup.",
-    type: "fix",
-  },
-  {
-    date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:
       "The Agora AMM summary now shows each selected resource's market cap in LORDS, and the pool rail can be reordered by market cap, resource ID, or TVL so you can scan markets the way you want.",
