@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "23622685483-1",
   "currentStepId": null,
   "createdAt": "2026-03-26T23:15:30.387Z",
-  "updatedAt": "2026-03-27T01:05:37.070Z",
+  "updatedAt": "2026-03-27T01:07:08.368Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x538c3b1f3c080b9059df26e4f13aa5cb6ac6736d462ca8b3c1ca4c8d14954b1",
     "lootChestRoleTxHash": "0x3cd3a21cad2ec4cebadd4bc63aaa7bb5820074b7cfff0e7f2ebf2f6d8d255e4",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-crisp-881/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-03-26T23:22:18.110Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-03-27T01:05:35.775Z"
+    "lastIndexerDescribeAt": "2026-03-27T01:07:08.368Z"
   },
   "completedAt": "2026-03-26T23:18:16.436Z"
 }
