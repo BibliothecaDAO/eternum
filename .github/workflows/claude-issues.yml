@@ -31,7 +31,7 @@ jobs:
                   "--rm",
                   "-e",
                   "GITHUB_PERSONAL_ACCESS_TOKEN",
-                  "ghcr.io/github/github-mcp-server:sha-7aced2b"
+                  "ghcr.io/github/github-mcp-server:latest"
                 ],
                 "env": {
                   "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PAT }}"
@@ -99,6 +99,7 @@ jobs:
         uses: anthropics/claude-code-base-action@beta
         with:
           prompt_file: /tmp/claude-prompts/triage-prompt.txt
+          model: "claude-sonnet-4-6"
           allowed_tools:
             "Bash(gh label
             list),mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues"
