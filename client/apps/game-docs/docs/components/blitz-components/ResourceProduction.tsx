@@ -139,88 +139,88 @@ const componentStyles = {
 
 // Component for Blitz Mode Resource Production (Hardcoded)
 export const BlitzSimpleResourceProduction = () => {
-  // Hardcoded data for Blitz mode - 9 resources with wheat and labor inputs
+  // Hardcoded data for Blitz mode - 9 resources with wheat and labor inputs (Series 0: output doubled to 2/s)
   const blitzResources = [
     {
       id: ResourcesIds.Wood,
       name: "Wood",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 0.5, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 1, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Coal,
       name: "Coal",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 1, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 2, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Copper,
       name: "Copper",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 1, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 2, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Ironwood,
       name: "Ironwood",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 5, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.ColdIron,
       name: "Cold Iron",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 5, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Gold,
       name: "Gold",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 5, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Adamantine,
       name: "Adamantine",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 8, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 20, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Mithral,
       name: "Mithral",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 8, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 20, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Dragonhide,
       name: "Dragonhide",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
+        { resource: ResourcesIds.Wheat, amount: 8, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 20, name: "Labor" },
       ],
-      output: 1,
+      output: 2,
     },
   ];
 
@@ -275,97 +275,97 @@ export const BlitzSimpleResourceProduction = () => {
 
 // Component for Blitz Standard Mode Resource Production (Hardcoded)
 export const BlitzStandardResourceProduction = () => {
-  // Hardcoded data for Blitz standard mode
+  // Hardcoded data for Blitz standard mode (Series 0: output doubled to 2/s)
   const blitzStandardResources = [
     {
       id: ResourcesIds.Wood,
       name: "Wood",
-      wheat: 1,
+      wheat: 2,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.2, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
+        { resource: ResourcesIds.Coal, amount: 0.4, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Coal,
       name: "Coal",
-      wheat: 1,
+      wheat: 2,
       inputs: [
-        { resource: ResourcesIds.Wood, amount: 0.3, name: "Wood" },
-        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
+        { resource: ResourcesIds.Wood, amount: 0.6, name: "Wood" },
+        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Copper,
       name: "Copper",
-      wheat: 1,
+      wheat: 2,
       inputs: [
-        { resource: ResourcesIds.Wood, amount: 0.3, name: "Wood" },
-        { resource: ResourcesIds.Coal, amount: 0.2, name: "Coal" },
+        { resource: ResourcesIds.Wood, amount: 0.6, name: "Wood" },
+        { resource: ResourcesIds.Coal, amount: 0.4, name: "Coal" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Ironwood,
       name: "Ironwood",
-      wheat: 2,
+      wheat: 4,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.6, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
+        { resource: ResourcesIds.Coal, amount: 1.2, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.ColdIron,
       name: "Cold Iron",
-      wheat: 2,
+      wheat: 4,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.6, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
+        { resource: ResourcesIds.Coal, amount: 1.2, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Gold,
       name: "Gold",
-      wheat: 2,
+      wheat: 4,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.6, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
+        { resource: ResourcesIds.Coal, amount: 1.2, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Adamantine,
       name: "Adamantine",
-      wheat: 3,
+      wheat: 6,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.9, name: "Coal" },
-        { resource: ResourcesIds.Ironwood, amount: 0.6, name: "Ironwood" },
+        { resource: ResourcesIds.Coal, amount: 1.8, name: "Coal" },
+        { resource: ResourcesIds.Ironwood, amount: 1.2, name: "Ironwood" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Mithral,
       name: "Mithral",
-      wheat: 3,
+      wheat: 6,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.9, name: "Coal" },
-        { resource: ResourcesIds.ColdIron, amount: 0.6, name: "Cold Iron" },
+        { resource: ResourcesIds.Coal, amount: 1.8, name: "Coal" },
+        { resource: ResourcesIds.ColdIron, amount: 1.2, name: "Cold Iron" },
       ],
-      output: 1,
+      output: 2,
     },
     {
       id: ResourcesIds.Dragonhide,
       name: "Dragonhide",
-      wheat: 3,
+      wheat: 6,
       inputs: [
-        { resource: ResourcesIds.Coal, amount: 0.9, name: "Coal" },
-        { resource: ResourcesIds.Gold, amount: 0.6, name: "Gold" },
+        { resource: ResourcesIds.Coal, amount: 1.8, name: "Coal" },
+        { resource: ResourcesIds.Gold, amount: 1.2, name: "Gold" },
       ],
-      output: 1,
+      output: 2,
     },
   ];
 
@@ -485,11 +485,11 @@ export const BlitzLaborProduction = () => {
 
 // Component for Blitz Simple Troop Production (Hardcoded)
 export const BlitzSimpleTroopProduction = () => {
-  // Hardcoded data for Blitz simple troop production
+  // Hardcoded data for Blitz simple troop production (Series 0: costs and output doubled, essence unchanged)
   const blitzSimpleTroops = [
-    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, labor: 0.5, output: 5 },
-    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, labor: 0.5, output: 5 },
-    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, labor: 0.5, output: 5 },
+    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 4, labor: 1, output: 10 },
+    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 4, labor: 1, output: 10 },
+    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 4, labor: 1, output: 10 },
   ];
 
   return (
@@ -545,115 +545,115 @@ export const BlitzSimpleTroopProduction = () => {
 
 // Component for Blitz Standard Troop Production (Hardcoded)
 export const BlitzStandardTroopProduction = () => {
-  // Hardcoded data for Blitz standard troop production
+  // Hardcoded data for Blitz standard troop production (Series 0: resource/labor costs and output doubled, essence unchanged)
   const blitzStandardTroops = [
     // T1
     {
       id: ResourcesIds.Knight,
       name: "T1 Knight",
-      wheat: 2,
+      wheat: 4,
       troopInput: null,
       troopInputRate: null,
-      inputs: [{ resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" }],
-      output: 5,
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" }],
+      output: 10,
     },
     {
       id: ResourcesIds.Crossbowman,
       name: "T1 Crossbowman",
-      wheat: 2,
+      wheat: 4,
       troopInput: null,
       troopInputRate: null,
-      inputs: [{ resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" }],
-      output: 5,
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" }],
+      output: 10,
     },
     {
       id: ResourcesIds.Paladin,
       name: "T1 Paladin",
-      wheat: 2,
+      wheat: 4,
       troopInput: null,
       troopInputRate: null,
-      inputs: [{ resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" }],
-      output: 5,
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" }],
+      output: 10,
     },
     // T2
     {
       id: ResourcesIds.KnightT2,
       name: "T2 Knight",
-      wheat: 3,
+      wheat: 6,
       troopInput: ResourcesIds.Knight,
-      troopInputRate: 10,
+      troopInputRate: 20,
       inputs: [
-        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
-        { resource: ResourcesIds.ColdIron, amount: 0.6, name: "Cold Iron" },
+        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
+        { resource: ResourcesIds.ColdIron, amount: 1.2, name: "Cold Iron" },
         { resource: ResourcesIds.Essence, amount: 1, name: "Essence" },
       ],
-      output: 5,
+      output: 10,
     },
     {
       id: ResourcesIds.CrossbowmanT2,
       name: "T2 Crossbowman",
-      wheat: 3,
+      wheat: 6,
       troopInput: ResourcesIds.Crossbowman,
-      troopInputRate: 10,
+      troopInputRate: 20,
       inputs: [
-        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
-        { resource: ResourcesIds.Ironwood, amount: 0.6, name: "Ironwood" },
+        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
+        { resource: ResourcesIds.Ironwood, amount: 1.2, name: "Ironwood" },
         { resource: ResourcesIds.Essence, amount: 1, name: "Essence" },
       ],
-      output: 5,
+      output: 10,
     },
     {
       id: ResourcesIds.PaladinT2,
       name: "T2 Paladin",
-      wheat: 3,
+      wheat: 6,
       troopInput: ResourcesIds.Paladin,
-      troopInputRate: 10,
+      troopInputRate: 20,
       inputs: [
-        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
-        { resource: ResourcesIds.Gold, amount: 0.6, name: "Gold" },
+        { resource: ResourcesIds.Copper, amount: 0.4, name: "Copper" },
+        { resource: ResourcesIds.Gold, amount: 1.2, name: "Gold" },
         { resource: ResourcesIds.Essence, amount: 1, name: "Essence" },
       ],
-      output: 5,
+      output: 10,
     },
     // T3
     {
       id: ResourcesIds.KnightT3,
       name: "T3 Knight",
-      wheat: 4,
+      wheat: 8,
       troopInput: ResourcesIds.KnightT2,
-      troopInputRate: 10,
+      troopInputRate: 20,
       inputs: [
-        { resource: ResourcesIds.ColdIron, amount: 0.4, name: "Cold Iron" },
-        { resource: ResourcesIds.Mithral, amount: 0.8, name: "Mithral" },
+        { resource: ResourcesIds.ColdIron, amount: 0.8, name: "Cold Iron" },
+        { resource: ResourcesIds.Mithral, amount: 1.6, name: "Mithral" },
         { resource: ResourcesIds.Essence, amount: 3, name: "Essence" },
       ],
-      output: 5,
+      output: 10,
     },
     {
       id: ResourcesIds.CrossbowmanT3,
       name: "T3 Crossbowman",
-      wheat: 4,
+      wheat: 8,
       troopInput: ResourcesIds.CrossbowmanT2,
-      troopInputRate: 10,
+      troopInputRate: 20,
       inputs: [
-        { resource: ResourcesIds.Ironwood, amount: 0.4, name: "Ironwood" },
-        { resource: ResourcesIds.Adamantine, amount: 0.8, name: "Adamantine" },
+        { resource: ResourcesIds.Ironwood, amount: 0.8, name: "Ironwood" },
+        { resource: ResourcesIds.Adamantine, amount: 1.6, name: "Adamantine" },
         { resource: ResourcesIds.Essence, amount: 3, name: "Essence" },
       ],
-      output: 5,
+      output: 10,
     },
     {
       id: ResourcesIds.PaladinT3,
       name: "T3 Paladin",
-      wheat: 4,
+      wheat: 8,
       troopInput: ResourcesIds.PaladinT2,
-      troopInputRate: 10,
+      troopInputRate: 20,
       inputs: [
-        { resource: ResourcesIds.Gold, amount: 0.4, name: "Gold" },
-        { resource: ResourcesIds.Dragonhide, amount: 0.8, name: "Dragonhide" },
+        { resource: ResourcesIds.Gold, amount: 0.8, name: "Gold" },
+        { resource: ResourcesIds.Dragonhide, amount: 1.6, name: "Dragonhide" },
         { resource: ResourcesIds.Essence, amount: 3, name: "Essence" },
       ],
-      output: 5,
+      output: 10,
     },
   ];
 
@@ -745,13 +745,13 @@ export const BlitzDonkeyProduction = () => {
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceGroupStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />3
+                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />5
                   </div>
                 </div>
               </td>
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceItemStyle}>
-                  <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />3
+                  <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />5
                 </div>
               </td>
             </tr>

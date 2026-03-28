@@ -27,37 +27,28 @@ export const BlitzRealmLeveling = () => {
     whiteSpace: "normal" as const, // Allow wrapping for the resources cell since it contains multiple items
   };
 
-  // Hardcoded realm leveling data for blitz
+  // Hardcoded realm leveling data for blitz (Series 0: all Realms start at City level)
   const levelData = [
-    {
-      currentLevel: "Settlement",
-      nextLevel: "City",
-      resources: [
-        { id: 23, amount: 180 }, // Labor
-        { id: 35, amount: 1200 }, // Wheat
-        { id: 38, amount: 250 }, // Essence
-      ],
-    },
     {
       currentLevel: "City",
       nextLevel: "Kingdom",
       resources: [
-        { id: 23, amount: 360 }, // Labor
+        { id: 23, amount: 720 }, // Labor
         { id: 35, amount: 2400 }, // Wheat
         { id: 38, amount: 600 }, // Essence
-        { id: 3, amount: 180 }, // Wood
+        { id: 3, amount: 360 }, // Wood
       ],
     },
     {
       currentLevel: "Kingdom",
       nextLevel: "Empire",
       resources: [
-        { id: 23, amount: 720 }, // Labor
+        { id: 23, amount: 1440 }, // Labor
         { id: 35, amount: 4800 }, // Wheat
         { id: 38, amount: 1200 }, // Essence
-        { id: 3, amount: 360 }, // Wood
-        { id: 2, amount: 180 }, // Coal
-        { id: 4, amount: 180 }, // Copper
+        { id: 3, amount: 720 }, // Wood
+        { id: 2, amount: 360 }, // Coal
+        { id: 4, amount: 360 }, // Copper
       ],
     },
   ];
