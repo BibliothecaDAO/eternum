@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23688079882-1.json",
   "latestLaunchRequestId": "23688079882-1",
-  "currentStepId": "wait-for-factory-indexes",
+  "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-28T15:17:15.088Z",
+  "updatedAt": "2026-03-28T15:17:21.014Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-28T15:32:05.973Z",
-    "lastEvaluatedAt": "2026-03-28T15:17:05.973Z"
+    "nextEvaluationAt": "2026-03-28T15:32:21.014Z",
+    "lastEvaluatedAt": "2026-03-28T15:17:21.014Z"
   },
   "steps": [
     {
@@ -56,10 +56,11 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games started",
-      "startedAt": "2026-03-28T15:17:15.088Z"
+      "latestEvent": "Waiting for games is complete",
+      "startedAt": "2026-03-28T15:17:15.088Z",
+      "finishedAt": "2026-03-28T15:17:21.014Z"
     },
     {
       "id": "configure-worlds",
@@ -4672,13 +4673,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23688079882-1",
-    "workflowRunId": 23688079882,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-indexes",
-    "acquiredAt": "2026-03-28T15:17:15.088Z",
-    "expiresAt": "2026-03-28T16:02:15.088Z"
   }
 }
