@@ -12,9 +12,9 @@
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23676568551-1.json",
   "latestLaunchRequestId": "23676568551-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-28T03:43:52.240Z",
+  "updatedAt": "2026-03-28T03:44:07.711Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-28T03:58:48.018Z",
-    "lastEvaluatedAt": "2026-03-28T03:43:48.018Z"
+    "nextEvaluationAt": "2026-03-28T03:59:07.711Z",
+    "lastEvaluatedAt": "2026-03-28T03:44:07.711Z"
   },
   "steps": [
     {
@@ -90,10 +90,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-03-28T03:43:52.240Z"
+      "latestEvent": "Setting up gas coverage is complete",
+      "startedAt": "2026-03-28T03:43:52.240Z",
+      "finishedAt": "2026-03-28T03:44:07.711Z"
     }
   ],
   "summary": {
@@ -3513,7 +3514,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 19,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3671,8 +3672,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-03-28T03:43:57.896Z"
           }
         ],
         "artifacts": {
@@ -3695,7 +3697,8 @@
             "worldAddress": "0x002783ffc3115684f152f41dd1f744e560f1261667a5f23b7b783a17ac435803",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -3705,7 +3708,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 20,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3863,8 +3866,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-03-28T03:44:00.579Z"
           }
         ],
         "artifacts": {
@@ -3887,7 +3891,8 @@
             "worldAddress": "0x052d773dd1ab56be2f9760c30f20c6140955eb8101ac63551e523e9efc0f9fa3",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -3897,7 +3902,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 21,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -4055,8 +4060,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-03-28T03:44:03.295Z"
           }
         ],
         "artifacts": {
@@ -4079,7 +4085,8 @@
             "worldAddress": "0x03a5a959d3789a8f457a8746999cf81164e8bac9268d32d8058a2539fac201fa",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -4089,7 +4096,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 22,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -4247,8 +4254,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-03-28T03:44:05.884Z"
           }
         ],
         "artifacts": {
@@ -4271,7 +4279,8 @@
             "worldAddress": "0x0211b1fc381a2fa45d55e4b565895caabbc696437ce137ca21feb1193b60632a",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       }
     ],
@@ -4282,13 +4291,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23676568551-1",
-    "workflowRunId": 23676568551,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-03-28T03:43:52.240Z",
-    "expiresAt": "2026-03-28T04:28:52.240Z"
   }
 }
