@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-warzone",
   "seriesName": "bltz-warzone",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23680943540-1.json",
   "latestLaunchRequestId": "23680943540-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-28T08:06:44.010Z",
+  "updatedAt": "2026-03-28T08:06:54.506Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 5,
+    "nextRetryAt": "2026-03-28T08:11:54.506Z",
     "lastRetryAt": "2026-03-25T14:30:44.339Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-28T08:21:40.542Z",
-    "lastEvaluatedAt": "2026-03-28T08:06:40.542Z"
+    "nextEvaluationAt": "2026-03-28T08:21:54.506Z",
+    "lastEvaluatedAt": "2026-03-28T08:06:54.506Z"
   },
   "steps": [
     {
@@ -47,10 +48,12 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-28T08:06:44.010Z"
+      "latestEvent": "Creating games failed: Error: Failed to read run-store file \"runs/mainnet/blitz/rotations/bltz-warzone.json\": 503 upstream connect error or disconnect/reset before headers. retried and the latest reset reason: remote connection failure, transport failure reason: delayed connect error: Connection refused\n    at readGitHubBranchJsonFile (/home/runner/work/eternum/eternum/config/deployer/clean/run-store/github.ts:102:15)\n    at async resolveRotationResumeSummary (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:106:27)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:140:54)",
+      "startedAt": "2026-03-28T08:06:44.010Z",
+      "finishedAt": "2026-03-28T08:06:54.506Z",
+      "errorMessage": "Error: Failed to read run-store file \"runs/mainnet/blitz/rotations/bltz-warzone.json\": 503 upstream connect error or disconnect/reset before headers. retried and the latest reset reason: remote connection failure, transport failure reason: delayed connect error: Connection refused\n    at readGitHubBranchJsonFile (/home/runner/work/eternum/eternum/config/deployer/clean/run-store/github.ts:102:15)\n    at async resolveRotationResumeSummary (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:106:27)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:140:54)"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -4476,13 +4479,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23680943540-1",
-    "workflowRunId": 23680943540,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-28T08:06:44.010Z",
-    "expiresAt": "2026-03-28T08:51:44.010Z"
   }
 }
