@@ -1,18 +1,18 @@
 const REGISTERED_POINTS_PRECISION = 1_000_000n;
 const UNRANKED_LEADERBOARD_POSITION = Number.MAX_SAFE_INTEGER;
 
-export interface FinalizedBlitzPlayerRankSnapshot {
+interface FinalizedBlitzPlayerRankSnapshot {
   playerAddress: bigint;
   rank: bigint | number;
   trialId: bigint;
 }
 
-export interface FinalizedBlitzStanding {
+interface FinalizedBlitzStanding {
   points: number;
   rank: number;
 }
 
-export interface ResolvedFinalizedBlitzStanding {
+interface ResolvedFinalizedBlitzStanding {
   includesLiveShareholderPoints: boolean;
   pointsOverride: number;
   rankOverride: number;
