@@ -6,14 +6,6 @@ export const getResourceAddresses = () => {
   return addresses;
 };
 
-export const getSeasonPassAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).seasonPass;
-};
-
-const getRealmsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).realms;
-};
-
 export const getLordsAddress = () => {
   if ((env.VITE_PUBLIC_CHAIN as Chain) == "mainnet") {
     return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lords;
@@ -23,8 +15,4 @@ export const getLordsAddress = () => {
 
 export const getClientFeeRecipient = () => {
   return env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT;
-};
-
-export const getVillagePassAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).villagePass;
 };

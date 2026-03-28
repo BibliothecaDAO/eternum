@@ -3039,7 +3039,11 @@ export const GameEntryModal = ({
         throw new Error("World manifest unavailable.");
       }
 
-      const contract = getContractByName(providerWithManifest.manifest as any, ETERNUM_NAMESPACE, systemName);
+      const contract = getContractByName(
+        providerWithManifest.manifest as Parameters<typeof getContractByName>[0],
+        ETERNUM_NAMESPACE,
+        systemName,
+      );
       const contractAddress =
         typeof contract === "string"
           ? contract
@@ -4020,9 +4024,8 @@ export const GameEntryModal = ({
     try {
       const { systemCalls } = setupResult;
       const { configManager } = await import("@bibliothecadao/eternum");
-      const { env } = await import("../../../../../env");
 
-      const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
+      const isMainnet = chain === "mainnet";
       const blitzConfig = configManager.getBlitzConfig?.();
       const singleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
 
@@ -4098,6 +4101,7 @@ export const GameEntryModal = ({
     isBlitzMode,
     handleEnterGame,
     worldName,
+    chain,
     readSettlementSnapshot,
     syncSettlementStateFromSnapshot,
     waitForSettlementTarget,
