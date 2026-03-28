@@ -58,7 +58,7 @@ const formatActivityValue = (count?: number | null, points?: number | null): str
   const hasPoints = typeof points === "number" && points > 0;
 
   if (hasCount && hasPoints) {
-    return `${COUNT_FORMATTER.format(count!)} · ${currencyIntlFormat(points!, 0)} pts`;
+    return `${COUNT_FORMATTER.format(count!)} · ${currencyIntlFormat(points!)} pts`;
   }
 
   if (hasCount) {
@@ -66,7 +66,7 @@ const formatActivityValue = (count?: number | null, points?: number | null): str
   }
 
   if (hasPoints) {
-    return `${currencyIntlFormat(points!, 0)} pts`;
+    return `${currencyIntlFormat(points!)} pts`;
   }
 
   return "—";

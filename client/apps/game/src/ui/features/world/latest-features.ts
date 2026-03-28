@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-28",
+    title: "Blitz Breakdown Precision",
+    description:
+      "Finalized Blitz leaderboard rows now keep decimal precision in each activity column, so the category point values line up visually with the final total instead of rounding whole columns up to the nearest thousand.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-28",
     title: "Finalized Blitz Point Columns",
     description:
       "The in-game Blitz Players table now removes live hyperstructure share points from the held-points column after final rankings lock, so the per-row breakdown matches the finalized prize standings.",
