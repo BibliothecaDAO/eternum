@@ -404,33 +404,7 @@ const ModeCoexistenceHero = ({
   const [hoveredMode, setHoveredMode] = useState<LandingModeFilter | null>(null);
 
   return (
-    <div className="rounded-3xl border border-gold/20 bg-black/60 p-4 md:p-6 backdrop-blur-xl overflow-hidden">
-      <div className="flex flex-col gap-2 mb-4">
-        <div className="text-[10px] uppercase tracking-[0.26em] text-gold/60">realms.world</div>
-        <h1 className="font-cinzel text-2xl md:text-3xl text-gold">Choose Your War</h1>
-        <p className="text-sm text-gold/70">
-          Campaign strategy or lightning matchmaking. Both live under one landing page.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-5">
-        {MODE_FILTER_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            onClick={() => onModeFilterChange(option.id)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs transition-all",
-              modeFilter === option.id
-                ? "border-gold/60 bg-gold/20 text-gold"
-                : "border-gold/20 bg-black/30 text-gold/70 hover:border-gold/40 hover:text-gold",
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
+    <div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {(Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).map((mode) => {
           const config = MODE_VISUALS[mode];
@@ -447,13 +421,23 @@ const ModeCoexistenceHero = ({
               onBlur={() => setHoveredMode(null)}
               onClick={() => onModeFilterChange(mode)}
               className={cn(
-                "group relative overflow-hidden rounded-2xl border text-left transition-all duration-300",
+                "group relative overflow-hidden rounded-2xl border-2 text-left transition-all duration-300",
                 "min-h-[220px] md:min-h-[260px]",
-                config.panelBorder,
-                config.panelGlow,
-                isEmphasized ? "opacity-100 scale-[1.005]" : "opacity-75",
+                isEmphasized
+                  ? cn(config.panelBorder, config.panelGlow, "opacity-100 scale-[1.005]")
+                  : "border-white/10 opacity-60 hover:opacity-80",
               )}
             >
+              {/* Animated selection ring */}
+              {isEmphasized && (
+                <div
+                  className={cn(
+                    "absolute inset-0 z-20 rounded-2xl pointer-events-none",
+                    "ring-2 ring-inset animate-pulse",
+                    mode === "season" ? "ring-emerald-400/70" : "ring-cyan-300/70",
+                  )}
+                />
+              )}
               <img
                 src={config.posterSrc}
                 alt=""
@@ -480,19 +464,19 @@ const ModeCoexistenceHero = ({
 
               <div className="relative z-10 h-full p-4 md:p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center rounded-full border border-white/30 bg-black/35 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white/80">
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] backdrop-blur-sm",
+                    mode === "season"
+                      ? "border-emerald-400/40 bg-emerald-900/40 text-emerald-200"
+                      : "border-cyan-400/40 bg-cyan-900/40 text-cyan-200",
+                  )}>
+                    <Icon className="h-3 w-3" />
                     {config.chip}
                   </span>
-                  <Icon className="h-5 w-5 text-white/85" />
                 </div>
 
                 <div>
                   <h3 className="font-cinzel text-xl md:text-2xl text-white">{config.title}</h3>
-                  <p className="text-sm text-white/80 mt-1">{config.subtitle}</p>
-                  <div className="inline-flex items-center gap-1 mt-3 text-xs text-white/90">
-                    {mode === "season" ? "Enter Campaigns" : "Enter Blitz"}
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </div>
                 </div>
               </div>
             </button>
@@ -537,18 +521,17 @@ const PlayTabContent = ({
   const [modeFilter, setModeFilter] = useState<LandingModeFilter>("blitz");
 
   return (
-    <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
+    <div className={cn("flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent", disabled && "opacity-50 pointer-events-none")}>
       <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={setModeFilter} />
 
       {modeFilter === "season" && (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">Eternum Live Data</div>
+        <div className="flex flex-col gap-4 flex-1 min-h-0">
+          <div className="flex flex-col gap-2 flex-1 min-h-0">
 
             {/* Three columns: Live | Upcoming | Ended */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
               {/* Live Games Column */}
-              <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
+              <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 px-3 pt-3 backdrop-blur-sm min-h-0 max-h-[50vh]">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
@@ -584,7 +567,7 @@ const PlayTabContent = ({
               </div>
 
               {/* Upcoming Games Column */}
-              <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
+              <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 px-3 pt-3 backdrop-blur-sm min-h-0 max-h-[50vh]">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
@@ -620,7 +603,7 @@ const PlayTabContent = ({
               </div>
 
               {/* Ended Games Column */}
-              <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px] md:col-span-2 xl:col-span-1">
+              <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 px-3 pt-3 backdrop-blur-sm min-h-0 max-h-[50vh] md:col-span-2 xl:col-span-1">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/20">
                     <Trophy className="h-3.5 w-3.5 text-gold" />
@@ -652,13 +635,12 @@ const PlayTabContent = ({
       )}
 
       {modeFilter === "blitz" && (
-        <div className="flex flex-col gap-2">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/80">Blitz Live Data</div>
+        <div className="flex flex-col gap-2 flex-1 min-h-0">
 
           {/* Three columns: Live | Upcoming | Ended */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
             {/* Live Games Column */}
-            <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
+            <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 px-3 pt-3 backdrop-blur-sm min-h-0 max-h-[50vh]">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
@@ -694,7 +676,7 @@ const PlayTabContent = ({
             </div>
 
             {/* Upcoming Games Column */}
-            <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
+            <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 px-3 pt-3 backdrop-blur-sm min-h-0 max-h-[50vh]">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
@@ -730,7 +712,7 @@ const PlayTabContent = ({
             </div>
 
             {/* Ended Games Column */}
-            <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px] md:col-span-2 xl:col-span-1">
+            <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 px-3 pt-3 backdrop-blur-sm min-h-0 max-h-[50vh] md:col-span-2 xl:col-span-1">
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/20">
                   <Trophy className="h-3.5 w-3.5 text-gold" />
