@@ -9,20 +9,20 @@
   "seriesName": "bltz-warzone",
   "status": "running",
   "executionMode": "guided_recovery",
-  "requestedLaunchStep": "configure-worlds",
-  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23667225455-1.json",
-  "latestLaunchRequestId": "23667225455-1",
+  "requestedLaunchStep": "create-worlds",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23676568551-1.json",
+  "latestLaunchRequestId": "23676568551-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-28T01:32:07.761Z",
+  "updatedAt": "2026-03-28T03:34:14.940Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23667225455,
+    "workflowRunId": 23676568551,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23667225455",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23676568551",
     "ref": "next",
-    "sha": "41a1df2fa151a5f54d9bea64f76a91c866d01a5e"
+    "sha": "7ebfba30bca4fee22aad1abfd1b3b4b51ae33235"
   },
   "autoRetry": {
     "enabled": true,
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-27T21:16:08.949Z",
-    "lastEvaluatedAt": "2026-03-27T21:01:08.949Z"
+    "nextEvaluationAt": "2026-03-28T03:49:14.940Z",
+    "lastEvaluatedAt": "2026-03-28T03:34:14.940Z"
   },
   "steps": [
     {
@@ -61,32 +61,28 @@
       "title": "Applying settings",
       "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-03-27T20:59:43.958Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-03-27T21:00:10.390Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-03-27T21:00:30.402Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
       "status": "pending",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-03-27T21:01:02.330Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -3603,6 +3599,55 @@
         "startTimeIso": "2026-03-28T22:00:00.000Z",
         "durationSeconds": 3600,
         "seriesGameNumber": 21,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-warzone-22",
+        "startTime": 1774753200,
+        "startTimeIso": "2026-03-29T03:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 22,
         "currentStepId": null,
         "latestEvent": "Waiting to run",
         "status": "pending",
