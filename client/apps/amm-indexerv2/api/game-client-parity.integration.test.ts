@@ -180,6 +180,7 @@ describe("AMMv2 game client parity", () => {
       feeTo: "0x0",
       resourceSupply: RESOURCE_SUPPLY,
       marketCapLords: 22_000n,
+      lpHolderCount: 3,
     });
     expect(stats?.spotPrice).toBeCloseTo(EXPECTED_PRICE, 12);
 
