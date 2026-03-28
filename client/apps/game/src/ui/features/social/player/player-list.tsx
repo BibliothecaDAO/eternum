@@ -40,6 +40,7 @@ interface PlayerWithStats extends PlayerCustom {
   leaderboardEntry: LandingLeaderboardEntry | null;
   leaderboardRank: number;
   leaderboardPoints: number;
+  includesLiveShareholderPoints: boolean;
   tilesExplored: number;
   tilesExploredPoints: number;
   cratesOpened: number;
@@ -132,13 +133,15 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
       const hyperstructuresTaken = entry?.hyperstructuresConquered ?? 0;
       const hyperstructuresTakenPoints = entry?.hyperstructurePoints ?? 0;
       const hyperstructuresHeld = player.hyperstructures ?? 0;
-      const hyperstructuresHeldPoints = entry?.hyperstructuresHeldPoints ?? 0;
+      const includesLiveShareholderPoints = Boolean(player.includesLiveShareholderPoints);
+      const hyperstructuresHeldPoints = includesLiveShareholderPoints ? (entry?.hyperstructuresHeldPoints ?? 0) : 0;
 
       return {
         ...player,
         leaderboardEntry: entry,
         leaderboardRank: player.leaderboardRankOverride ?? entry?.rank ?? player.rank ?? Number.MAX_SAFE_INTEGER,
         leaderboardPoints: player.leaderboardPointsOverride ?? entry?.points ?? player.points ?? 0,
+        includesLiveShareholderPoints,
         tilesExplored,
         tilesExploredPoints,
         cratesOpened,

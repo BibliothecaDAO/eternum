@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-28",
+    title: "Finalized Blitz Point Columns",
+    description:
+      "The in-game Blitz Players table now removes live hyperstructure share points from the held-points column after final rankings lock, so the per-row breakdown matches the finalized prize standings.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-28",
     title: "Blitz Leaderboard Alignment",
     description:
       "The in-game Blitz Players leaderboard now follows the same finalized rank and score order as the prize panel once rankings are locked, so both panels show the same standings.",
