@@ -2,21 +2,21 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-28T07:00:24.879Z",
+  "updatedAt": "2026-03-28T07:01:39.527Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
       "environment": "mainnet.blitz",
       "rotationName": "bltz-warzone",
       "path": "runs/mainnet/blitz/rotations/bltz-warzone.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23679545696-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23679865331-1.json",
       "status": "running",
-      "updatedAt": "2026-03-28T07:00:24.879Z",
+      "updatedAt": "2026-03-28T07:01:39.527Z",
       "workflowRef": "next",
-      "currentStepId": null,
+      "currentStepId": "create-worlds",
       "hasRunningStep": false,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
+      "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 5,
@@ -24,8 +24,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-28T07:15:24.879Z",
-        "lastEvaluatedAt": "2026-03-28T07:00:24.879Z"
+        "nextEvaluationAt": "2026-03-28T07:16:39.527Z",
+        "lastEvaluatedAt": "2026-03-28T07:01:39.527Z"
       },
       "games": [
         {
@@ -249,6 +249,12 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-03-28T03:43:46.172Z"
           }
+        },
+        {
+          "gameName": "bltz-warzone-23",
+          "startTime": 1774771200,
+          "durationSeconds": 3600,
+          "artifacts": {}
         }
       ]
     }
