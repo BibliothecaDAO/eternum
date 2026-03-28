@@ -180,7 +180,8 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       runtimeChain === "local" ? null : (deriveChainFromRpcUrl(runtimeRpcUrl) ?? resolveFallbackChain(runtimeChain)),
     [runtimeChain, runtimeRpcUrl],
   );
-  const resolvedChainId = runtimeChain === "local" ? KATANA_CHAIN_ID : resolvedChain!.chainId;
+  const resolvedChainId =
+    runtimeChain === "local" ? KATANA_CHAIN_ID : (resolvedChain?.chainId ?? constants.StarknetChainId.SN_SEPOLIA);
   const controllerSupportedRpcUrls = useMemo(() => buildControllerSupportedRpcUrls(runtimeRpcUrl), [runtimeRpcUrl]);
   const controller = useMemo(
     () =>

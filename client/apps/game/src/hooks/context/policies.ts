@@ -133,14 +133,6 @@ export const buildPolicies = (manifest: PolicyManifest) =>
           },
         ],
       },
-      [resolveVillagePassAddress()]: {
-        methods: [
-          {
-            name: "set_approval_for_all",
-            entrypoint: "set_approval_for_all",
-          },
-        ],
-      },
       [getContractByName(manifest, "s1_eternum", "config_systems").address]: {
         methods: [
           {
@@ -499,18 +491,6 @@ export const buildPolicies = (manifest: PolicyManifest) =>
             name: "withdraw",
             entrypoint: "withdraw",
           },
-          {
-            name: "dojo_name",
-            entrypoint: "dojo_name",
-          },
-          {
-            name: "world_dispatcher",
-            entrypoint: "world_dispatcher",
-          },
-        ],
-      },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "resource_systems").address]: {
-        methods: [
           {
             name: "approve",
             entrypoint: "approve",
