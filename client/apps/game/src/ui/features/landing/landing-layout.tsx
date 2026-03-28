@@ -79,15 +79,14 @@ const LandingLayoutContent = () => {
           "relative z-10 h-screen",
           // Padding for header and sidebar/bottom nav
           "pt-20 pb-24 lg:pb-8 lg:pl-16",
-          "flex flex-col",
-          "overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
+          "flex flex-col overflow-hidden",
         )}
       >
         {/* Modal host for landing routes */}
         <LandingModalHost />
 
         {/* Page content */}
-        <div className="flex-1 px-6 lg:px-10">
+        <div className="flex-1 flex flex-col min-h-0 px-4 lg:px-8 pb-4">
           <Outlet />
         </div>
       </main>
