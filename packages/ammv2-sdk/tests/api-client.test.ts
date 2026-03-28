@@ -196,4 +196,37 @@ describe("AmmV2ApiClient", () => {
       resourceTokenSupply: 123_456n,
     });
   });
+
+  it("decodes pair stats with lp holder count", async () => {
+    const fetchMock = vi.mocked(globalThis.fetch);
+    fetchMock.mockResolvedValue(
+      okJson({
+        data: {
+          pairAddress: "0xpair",
+          reserve0: "1000",
+          reserve1: "500",
+          totalLpSupply: "100",
+          feeAmount: "997",
+          feeTo: "0xfee",
+          spotPriceToken1PerToken0: 0.5,
+          spotPriceToken0PerToken1: 2,
+          volume0_24h: "10",
+          volume1_24h: "20",
+          lpFees0_24h: "1",
+          lpFees1_24h: "0",
+          swapCount24h: 4,
+          resourceTokenSupply: null,
+          lpHolderCount: 5,
+        },
+      }) as Response,
+    );
+
+    const client = new AmmV2ApiClient("https://ammv2.example");
+    const stats = await client.getPairStats("0xpair");
+
+    expect(stats).toMatchObject({
+      pairAddress: "0xpair",
+      lpHolderCount: 5,
+    });
+  });
 });

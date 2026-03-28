@@ -295,6 +295,82 @@ describe("createAmmV2ApiApp", () => {
     });
   });
 
+  it("includes lp holder count in pair stats", async () => {
+    const { db, close } = await createTestAmmV2Database();
+    cleanup.push(close);
+    const indexedAt = new Date("2026-03-26T00:00:00.000Z");
+
+    await applyAmmV2BlockToDatabase({
+      txDb: db,
+      factoryAddress: FACTORY,
+      block: buildBlock(
+        [
+          buildPairCreatedEvent({
+            address: FACTORY,
+            token0: TOKEN_0,
+            token1: TOKEN_1,
+            pair: PAIR,
+            totalPairs: 1n,
+            eventIndex: 0,
+            transactionHash: "0xcreate",
+          }),
+          buildTransferEvent({
+            address: PAIR,
+            from: "0x0",
+            to: BURN,
+            amount: 1000n,
+            eventIndex: 1,
+            transactionHash: "0xmint",
+          }),
+          buildTransferEvent({
+            address: PAIR,
+            from: "0x0",
+            to: ALICE,
+            amount: 9000n,
+            eventIndex: 2,
+            transactionHash: "0xmint",
+          }),
+          buildSyncEvent({
+            address: PAIR,
+            reserve0: 20_000n,
+            reserve1: 40_000n,
+            eventIndex: 3,
+            transactionHash: "0xmint",
+          }),
+          buildMintEvent({
+            address: PAIR,
+            sender: ROUTER,
+            amount0: 20_000n,
+            amount1: 40_000n,
+            transactionSender: ALICE,
+            eventIndex: 4,
+            transactionHash: "0xmint",
+          }),
+          buildTransferEvent({
+            address: PAIR,
+            from: ALICE,
+            to: BOB,
+            amount: 3_000n,
+            eventIndex: 5,
+            transactionHash: "0xmove",
+          }),
+        ],
+        12n,
+        indexedAt,
+      ),
+    });
+
+    const app = createAmmV2ApiApp({ db });
+
+    const statsResponse = await app.request(`http://ammv2.local/api/v1/pairs/${PAIR}/stats`);
+    const statsJson = await statsResponse.json();
+
+    expect(statsJson.data).toMatchObject({
+      pairAddress: PAIR,
+      lpHolderCount: 3,
+    });
+  });
+
   it("allows localhost browser origins", async () => {
     const { db, close } = await createTestAmmV2Database();
     cleanup.push(close);

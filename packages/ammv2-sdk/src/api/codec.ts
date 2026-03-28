@@ -78,6 +78,7 @@ export type RawPairStats = {
   lpFees1_24h: string | number;
   swapCount24h: number;
   resourceTokenSupply: string | number | null;
+  lpHolderCount: number;
 };
 
 export type RawUserPairPosition = {
@@ -185,6 +186,7 @@ export function decodePairStats(raw: RawPairStats): PairStats {
     lpFees1_24h: toBigInt(raw.lpFees1_24h),
     swapCount24h: raw.swapCount24h,
     resourceTokenSupply: toNullableBigInt(raw.resourceTokenSupply),
+    lpHolderCount: raw.lpHolderCount,
   };
 }
 
