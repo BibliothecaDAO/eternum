@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23685002928-1.json",
   "latestLaunchRequestId": "23685002928-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-28T12:20:11.433Z",
+  "updatedAt": "2026-03-28T12:20:19.347Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-28T12:35:07.427Z",
-    "lastEvaluatedAt": "2026-03-28T12:20:07.427Z"
+    "nextEvaluationAt": "2026-03-28T12:35:19.347Z",
+    "lastEvaluatedAt": "2026-03-28T12:20:19.347Z"
   },
   "steps": [
     {
@@ -92,10 +92,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-03-28T12:20:11.433Z"
+      "latestEvent": "Setting up gas coverage is complete",
+      "startedAt": "2026-03-28T12:20:11.433Z",
+      "finishedAt": "2026-03-28T12:20:19.347Z"
     }
   ],
   "summary": {
@@ -4485,7 +4486,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 24,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -4643,8 +4644,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-03-28T12:20:17.518Z"
           }
         ],
         "artifacts": {
@@ -4667,7 +4669,8 @@
             "worldAddress": "0x014221f6fe14beea78ea80d6cb941767a796055d970a90051075ef21e5a4d105",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       }
     ],
@@ -4678,13 +4681,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23685002928-1",
-    "workflowRunId": 23685002928,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-03-28T12:20:11.433Z",
-    "expiresAt": "2026-03-28T13:05:11.433Z"
   }
 }
