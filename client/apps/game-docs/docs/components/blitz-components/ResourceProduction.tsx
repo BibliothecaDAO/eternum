@@ -199,7 +199,7 @@ export const BlitzSimpleResourceProduction = () => {
       id: ResourcesIds.Adamantine,
       name: "Adamantine",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Wheat, amount: 3, name: "Wheat" },
         { resource: ResourcesIds.Labor, amount: 20, name: "Labor" },
       ],
       output: 2,
@@ -208,7 +208,7 @@ export const BlitzSimpleResourceProduction = () => {
       id: ResourcesIds.Mithral,
       name: "Mithral",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Wheat, amount: 3, name: "Wheat" },
         { resource: ResourcesIds.Labor, amount: 20, name: "Labor" },
       ],
       output: 2,
@@ -217,7 +217,7 @@ export const BlitzSimpleResourceProduction = () => {
       id: ResourcesIds.Dragonhide,
       name: "Dragonhide",
       inputs: [
-        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Wheat, amount: 3, name: "Wheat" },
         { resource: ResourcesIds.Labor, amount: 20, name: "Labor" },
       ],
       output: 2,
@@ -485,11 +485,11 @@ export const BlitzLaborProduction = () => {
 
 // Component for Blitz Simple Troop Production (Hardcoded)
 export const BlitzSimpleTroopProduction = () => {
-  // Hardcoded data for Blitz simple troop production (Series 0: costs and output doubled, essence unchanged)
+  // Hardcoded data for Blitz simple troop production (Series 0: labor doubled, output doubled, wheat/essence unchanged)
   const blitzSimpleTroops = [
-    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 4, labor: 1, output: 10 },
-    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 4, labor: 1, output: 10 },
-    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 4, labor: 1, output: 10 },
+    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, labor: 1, output: 10 },
+    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, labor: 1, output: 10 },
+    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, labor: 1, output: 10 },
   ];
 
   return (
@@ -545,13 +545,13 @@ export const BlitzSimpleTroopProduction = () => {
 
 // Component for Blitz Standard Troop Production (Hardcoded)
 export const BlitzStandardTroopProduction = () => {
-  // Hardcoded data for Blitz standard troop production (Series 0: resource/labor costs and output doubled, essence unchanged)
+  // Hardcoded data for Blitz standard troop production (Series 0: resource/labor costs doubled, output doubled, wheat/essence unchanged)
   const blitzStandardTroops = [
     // T1
     {
       id: ResourcesIds.Knight,
       name: "T1 Knight",
-      wheat: 4,
+      wheat: 2,
       troopInput: null,
       troopInputRate: null,
       inputs: [{ resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" }],
@@ -560,7 +560,7 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.Crossbowman,
       name: "T1 Crossbowman",
-      wheat: 4,
+      wheat: 2,
       troopInput: null,
       troopInputRate: null,
       inputs: [{ resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" }],
@@ -569,7 +569,7 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.Paladin,
       name: "T1 Paladin",
-      wheat: 4,
+      wheat: 2,
       troopInput: null,
       troopInputRate: null,
       inputs: [{ resource: ResourcesIds.Copper, amount: 0.8, name: "Copper" }],
@@ -579,7 +579,7 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.KnightT2,
       name: "T2 Knight",
-      wheat: 6,
+      wheat: 3,
       troopInput: ResourcesIds.Knight,
       troopInputRate: 20,
       inputs: [
@@ -592,7 +592,7 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.CrossbowmanT2,
       name: "T2 Crossbowman",
-      wheat: 6,
+      wheat: 3,
       troopInput: ResourcesIds.Crossbowman,
       troopInputRate: 20,
       inputs: [
@@ -605,7 +605,7 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.PaladinT2,
       name: "T2 Paladin",
-      wheat: 6,
+      wheat: 3,
       troopInput: ResourcesIds.Paladin,
       troopInputRate: 20,
       inputs: [
@@ -619,7 +619,7 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.KnightT3,
       name: "T3 Knight",
-      wheat: 8,
+      wheat: 4,
       troopInput: ResourcesIds.KnightT2,
       troopInputRate: 20,
       inputs: [
@@ -632,7 +632,7 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.CrossbowmanT3,
       name: "T3 Crossbowman",
-      wheat: 8,
+      wheat: 4,
       troopInput: ResourcesIds.CrossbowmanT2,
       troopInputRate: 20,
       inputs: [
@@ -645,7 +645,7 @@ export const BlitzStandardTroopProduction = () => {
     {
       id: ResourcesIds.PaladinT3,
       name: "T3 Paladin",
-      wheat: 8,
+      wheat: 4,
       troopInput: ResourcesIds.PaladinT2,
       troopInputRate: 20,
       inputs: [
@@ -745,7 +745,7 @@ export const BlitzDonkeyProduction = () => {
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceGroupStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />5
+                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />3
                   </div>
                 </div>
               </td>
