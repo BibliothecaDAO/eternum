@@ -24,6 +24,9 @@ export interface PlayerCustom extends PlayerInfo {
   isInvited: boolean;
   guild: GuildInfo | undefined;
   leaderboardEntry?: LandingLeaderboardEntry | null;
+  leaderboardRankOverride?: number;
+  leaderboardPointsOverride?: number;
+  includesLiveShareholderPoints?: boolean;
 }
 
 interface PlayerListProps {
@@ -37,6 +40,7 @@ interface PlayerWithStats extends PlayerCustom {
   leaderboardEntry: LandingLeaderboardEntry | null;
   leaderboardRank: number;
   leaderboardPoints: number;
+  includesLiveShareholderPoints: boolean;
   tilesExplored: number;
   tilesExploredPoints: number;
   cratesOpened: number;
@@ -54,7 +58,7 @@ const formatActivityValue = (count?: number | null, points?: number | null): str
   const hasPoints = typeof points === "number" && points > 0;
 
   if (hasCount && hasPoints) {
-    return `${COUNT_FORMATTER.format(count!)} · ${currencyIntlFormat(points!, 0)} pts`;
+    return `${COUNT_FORMATTER.format(count!)} · ${currencyIntlFormat(points!)} pts`;
   }
 
   if (hasCount) {
@@ -62,7 +66,7 @@ const formatActivityValue = (count?: number | null, points?: number | null): str
   }
 
   if (hasPoints) {
-    return `${currencyIntlFormat(points!, 0)} pts`;
+    return `${currencyIntlFormat(points!)} pts`;
   }
 
   return "—";
@@ -129,13 +133,15 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
       const hyperstructuresTaken = entry?.hyperstructuresConquered ?? 0;
       const hyperstructuresTakenPoints = entry?.hyperstructurePoints ?? 0;
       const hyperstructuresHeld = player.hyperstructures ?? 0;
-      const hyperstructuresHeldPoints = entry?.hyperstructuresHeldPoints ?? 0;
+      const includesLiveShareholderPoints = Boolean(player.includesLiveShareholderPoints);
+      const hyperstructuresHeldPoints = includesLiveShareholderPoints ? (entry?.hyperstructuresHeldPoints ?? 0) : 0;
 
       return {
         ...player,
         leaderboardEntry: entry,
-        leaderboardRank: entry?.rank ?? player.rank ?? Number.MAX_SAFE_INTEGER,
-        leaderboardPoints: entry?.points ?? player.points ?? 0,
+        leaderboardRank: player.leaderboardRankOverride ?? entry?.rank ?? player.rank ?? Number.MAX_SAFE_INTEGER,
+        leaderboardPoints: player.leaderboardPointsOverride ?? entry?.points ?? player.points ?? 0,
+        includesLiveShareholderPoints,
         tilesExplored,
         tilesExploredPoints,
         cratesOpened,
@@ -356,14 +362,14 @@ const PlayerRow = ({
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { leaderboardPoints, leaderboardRank, leaderboardEntry } = player;
+  const { leaderboardPoints, leaderboardRank } = player;
   const isUnranked = leaderboardRank === Number.MAX_SAFE_INTEGER;
   const tilesLabel = formatActivityValue(player.tilesExplored, player.tilesExploredPoints);
   const cratesLabel = formatActivityValue(player.cratesOpened, player.cratesOpenedPoints);
   const riftsLabel = formatActivityValue(player.riftsTaken, player.riftsTakenPoints);
   const hyperstructuresTakenLabel = formatActivityValue(player.hyperstructuresTaken, player.hyperstructuresTakenPoints);
   const hyperstructuresHeldLabel = formatActivityValue(player.hyperstructuresHeld, player.hyperstructuresHeldPoints);
-  const hasShareholderPoints = (leaderboardEntry?.unregisteredPoints ?? 0) > 0;
+  const hasShareholderPoints = Boolean(player.includesLiveShareholderPoints);
 
   // Determine row glow based on effect
   const hasRankUp = effect && effect.rankChange < 0;
