@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23689140008-1",
   "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-28T16:30:26.460Z",
+  "updatedAt": "2026-03-28T16:32:15.633Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -3710,7 +3710,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 20,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer tier updated basic -> legendary for bltz-warzone-20",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3880,11 +3880,11 @@
           "worldConfigTxHash": "0x3862bc27fffbe9642f934e6e5c2570d7f213942e7f43ce492ee42e3896da7d9",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "legendary",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-20/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-28T03:43:14.026Z",
+          "lastIndexerDescribeAt": "2026-03-28T16:32:15.633Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -3894,9 +3894,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-03-28T16:30:25.369Z"
+          "paymasterSynced": true
         }
       },
       {
