@@ -510,9 +510,7 @@ const ModeCoexistenceHero = ({
                 <div
                   className={cn(
                     "inline-flex items-center gap-1.5 mt-3 text-xs font-medium transition-all duration-500 ease-out delay-150",
-                    isEmphasized
-                      ? "text-gold translate-y-0 opacity-100"
-                      : "text-white/40 translate-y-3 opacity-0",
+                    isEmphasized ? "text-gold translate-y-0 opacity-100" : "text-white/40 translate-y-3 opacity-0",
                   )}
                 >
                   {mode === "season" ? "Enter Campaigns" : "Enter Blitz"}
