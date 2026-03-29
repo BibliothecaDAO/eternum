@@ -15,12 +15,13 @@ describe("Landing music player wiring", () => {
     expect(layoutSource).toContain("<LandingMusicPlayer />");
   });
 
-  it("offers playlist toggles and audio startup controls from the landing player", () => {
+  it("keeps the landing player minimal while preserving playback controls", () => {
     const playerSource = readSource("src/ui/features/landing/components/landing-music-player.tsx");
 
     expect(playerSource).toContain("requestStart");
-    expect(playerSource).toContain("setCustomTrack");
-    expect(playerSource).toContain("playlist.map");
-    expect(playerSource).toContain("Music ready");
+    expect(playerSource).toContain("handleToggleMute");
+    expect(playerSource).toContain("handleSkip");
+    expect(playerSource).toContain('aria-label="Music volume"');
+    expect(playerSource).toContain("currentTrackLabel");
   });
 });
