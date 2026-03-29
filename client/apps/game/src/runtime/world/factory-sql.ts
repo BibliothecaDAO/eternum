@@ -1,4 +1,4 @@
-import { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows } from "../../../../../../common/factory/endpoints";
+export { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows } from "../../../../../../common/factory/endpoints";
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value) return null;

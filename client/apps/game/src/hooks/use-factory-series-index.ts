@@ -27,6 +27,13 @@ export interface FactorySeriesIndex {
   games: FactorySeriesGame[];
 }
 
+const buildFactorySeriesIndex = (chain: Chain, paddedName: string, name: string): FactorySeriesIndex => ({
+  chain,
+  name,
+  paddedName,
+  games: [],
+});
+
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
@@ -66,14 +73,7 @@ const fetchSeriesIndex = async (chain: Chain): Promise<FactorySeriesIndex[]> => 
     if (!seriesName || !worldName) continue;
 
     const gameNumber = extractGameNumberFromRow(row);
-    const existing =
-      bySeries.get(seriesFelt) ??
-      ({
-        chain,
-        name: seriesName,
-        paddedName: seriesFelt,
-        games: [],
-      } satisfies FactorySeriesIndex);
+    const existing = bySeries.get(seriesFelt) ?? buildFactorySeriesIndex(chain, seriesFelt, seriesName);
 
     const hasGame = existing.games.some((game) => game.worldName === worldName);
     if (!hasGame) {
