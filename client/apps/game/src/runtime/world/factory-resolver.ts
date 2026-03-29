@@ -42,6 +42,22 @@ export const isToriiAvailable = async (toriiBaseUrl: string): Promise<boolean> =
   }
 };
 
+/**
+ * Fetch bulk world availability from the realtime server.
+ * Returns a map of world names to alive/dead status.
+ */
+export const fetchBulkAvailability = async (realtimeServerUrl: string): Promise<Record<string, boolean>> => {
+  try {
+    const response = await fetch(`${realtimeServerUrl}/api/availability/worlds`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return {};
+    return (await response.json()) as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+};
+
 const normalizeAddress = (value: unknown): string | null => {
   if (value == null) return null;
   if (typeof value === "string") return value;
