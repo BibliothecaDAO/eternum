@@ -1,38 +1,11 @@
-import {
-  decodePaddedFeltAscii,
-  extractNameFelt,
-  fetchFactoryRows,
-  getFactorySqlBaseUrl,
-} from "../../../../../common/factory/endpoints";
+import { fetchFactoryWorldNames } from "./factory-worlds";
 
 export interface WorldAvailabilityEntry {
   alive: boolean;
   lastChecked: number;
 }
 
-const FACTORY_WORLDS_QUERY = `SELECT name, address FROM [wf-WorldDeployed] LIMIT 1000;`;
-
 const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
-
-/**
- * Fetch world names from a factory indexer.
- */
-async function fetchWorldNamesFromFactory(chain: string, timeoutMs: number): Promise<string[]> {
-  const baseUrl = getFactorySqlBaseUrl(chain);
-  if (!baseUrl) return [];
-
-  const rows = await fetchFactoryRows(baseUrl, FACTORY_WORLDS_QUERY, { timeoutMs });
-
-  const names: string[] = [];
-  for (const row of rows) {
-    const nameFelt = extractNameFelt(row);
-    if (!nameFelt) continue;
-    const decoded = decodePaddedFeltAscii(nameFelt);
-    if (decoded) names.push(decoded);
-  }
-
-  return names;
-}
 
 export class ToriiAvailabilityService {
   private cache = new Map<string, WorldAvailabilityEntry>();
@@ -108,7 +81,7 @@ export class ToriiAvailabilityService {
 
     for (const chain of this.factoryChains) {
       try {
-        const names = await fetchWorldNamesFromFactory(chain, this.factoryTimeoutMs);
+        const names = await fetchFactoryWorldNames(chain, this.factoryTimeoutMs);
         for (const name of names) {
           allNames.add(name);
         }
