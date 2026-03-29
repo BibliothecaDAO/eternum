@@ -3,6 +3,7 @@ import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
+  resolvePendingArmyMovementTxFailurePlan,
   shouldAcceptArmyTabSelectionAttempt,
   shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
@@ -262,6 +263,56 @@ describe("resolvePendingArmyMovementFallbackPlan", () => {
       shouldDeleteFallbackTimeout: false,
       shouldClearPendingMovement: true,
       shouldRequestChunkRefresh: true,
+    });
+  });
+});
+
+describe("resolvePendingArmyMovementTxFailurePlan", () => {
+  it("clears pending movement when txHash maps to a pending entity", () => {
+    const txEntityMap = new Map<string, number>([["0xabc", 42]]);
+    const pendingEntities = new Set<number>([42]);
+
+    expect(
+      resolvePendingArmyMovementTxFailurePlan({
+        txHash: "0xabc",
+        txEntityMap,
+        pendingEntities,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: true,
+      entityId: 42,
+    });
+  });
+
+  it("does not clear when txHash is not in the mapping", () => {
+    const txEntityMap = new Map<string, number>();
+    const pendingEntities = new Set<number>([42]);
+
+    expect(
+      resolvePendingArmyMovementTxFailurePlan({
+        txHash: "0xunknown",
+        txEntityMap,
+        pendingEntities,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      entityId: undefined,
+    });
+  });
+
+  it("does not clear when entity is no longer pending (already resolved)", () => {
+    const txEntityMap = new Map<string, number>([["0xabc", 42]]);
+    const pendingEntities = new Set<number>();
+
+    expect(
+      resolvePendingArmyMovementTxFailurePlan({
+        txHash: "0xabc",
+        txEntityMap,
+        pendingEntities,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      entityId: 42,
     });
   });
 });
