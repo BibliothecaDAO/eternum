@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23711572734-1.json",
   "latestLaunchRequestId": "23711572734-1",
-  "currentStepId": "configure-worlds",
+  "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-29T14:47:26.421Z",
+  "updatedAt": "2026-03-29T14:47:38.214Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-29T15:02:22.242Z",
-    "lastEvaluatedAt": "2026-03-29T14:47:22.242Z"
+    "nextEvaluationAt": "2026-03-29T15:02:38.214Z",
+    "lastEvaluatedAt": "2026-03-29T14:47:38.214Z"
   },
   "steps": [
     {
@@ -65,10 +65,11 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-03-29T14:47:26.421Z"
+      "latestEvent": "Applying settings is complete",
+      "startedAt": "2026-03-29T14:47:26.421Z",
+      "finishedAt": "2026-03-29T14:47:38.214Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -5644,13 +5645,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23711572734-1",
-    "workflowRunId": 23711572734,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-worlds",
-    "acquiredAt": "2026-03-29T14:47:26.421Z",
-    "expiresAt": "2026-03-29T15:32:26.421Z"
   }
 }
