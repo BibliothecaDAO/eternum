@@ -123,13 +123,13 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
           {formatQuadrantBiomeLabel(biome)}
         </span>
       </div>
-      <div aria-label="Army bonuses" className="mt-1 grid auto-rows-fr grid-cols-3 gap-1.5" role="list">
+      <div aria-label="Army bonuses" className="mt-1 flex w-full items-stretch gap-1.5" role="list">
         {troopBonuses.map(({ troopType, config, tone, displayBonus }) => (
           <div
             key={troopType}
             data-bonus-card="true"
             role="listitem"
-            className={`flex h-full min-h-[102px] min-w-0 flex-col items-center rounded-xl border px-1.5 py-2 text-center ${tone.cardClassName}`}
+            className={`flex h-full min-h-[102px] min-w-0 flex-1 basis-0 flex-col items-center rounded-xl border px-1.5 py-2 text-center ${tone.cardClassName}`}
           >
             <div
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${tone.iconWrapClassName}`}
