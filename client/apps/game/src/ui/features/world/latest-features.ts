@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-29",
+    title: "Biome Bonus Card Refresh",
+    description:
+      "Biome tile panels now show army bonuses as clearer side-by-side combat cards, making troop advantages, penalties, and neutral terrain much faster to scan before a battle.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-28",
     title: "Blitz Breakdown Precision",
     description:
