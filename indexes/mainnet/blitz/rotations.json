@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-03-29T18:28:30.508Z",
+  "updatedAt": "2026-03-29T18:45:24.131Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -11,7 +11,7 @@
       "path": "runs/mainnet/blitz/rotations/bltz-warzone.json",
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23715945133-1.json",
       "status": "running",
-      "updatedAt": "2026-03-29T18:28:30.508Z",
+      "updatedAt": "2026-03-29T18:45:24.131Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -24,8 +24,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-29T18:43:30.508Z",
-        "lastEvaluatedAt": "2026-03-29T18:28:30.508Z"
+        "nextEvaluationAt": "2026-03-29T19:00:24.131Z",
+        "lastEvaluatedAt": "2026-03-29T18:45:24.131Z"
       },
       "games": [
         {
