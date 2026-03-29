@@ -92,7 +92,8 @@ describe("BiomeSummaryCard", () => {
 
     const bonusGrid = container.querySelector('[aria-label="Army bonuses"]');
 
-    expect(bonusGrid?.className).toContain("grid-cols-[repeat(auto-fit,minmax(110px,1fr))]");
+    expect(bonusGrid?.className).toContain("grid-cols-3");
+    expect(container.textContent).not.toContain("Army bonuses");
 
     const bonusCards = container.querySelectorAll('[data-bonus-card="true"]');
     expect(bonusCards).toHaveLength(3);
