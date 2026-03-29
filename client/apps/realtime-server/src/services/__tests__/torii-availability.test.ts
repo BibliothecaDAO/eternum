@@ -131,9 +131,7 @@ describe("ToriiAvailabilityService", () => {
     });
 
     it("handles factory returning empty results", async () => {
-      mockFetch.mockResolvedValue(
-        new Response(JSON.stringify([]), { status: 200 }),
-      );
+      mockFetch.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
 
       const service = new ToriiAvailabilityService({ factoryChains: ["mainnet"] });
       await service.pollOnce();
@@ -142,9 +140,7 @@ describe("ToriiAvailabilityService", () => {
     });
 
     it("deduplicates world names across chains", async () => {
-      const factoryResponse = [
-        { name: "0x616c706861", address: "0xabc" },
-      ];
+      const factoryResponse = [{ name: "0x616c706861", address: "0xabc" }];
 
       let probeCount = 0;
       mockFetch.mockImplementation(async (url, opts) => {
@@ -173,9 +169,7 @@ describe("ToriiAvailabilityService", () => {
     it("starts polling and can be stopped", async () => {
       vi.useFakeTimers();
 
-      mockFetch.mockResolvedValue(
-        new Response(JSON.stringify([]), { status: 200 }),
-      );
+      mockFetch.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
 
       const service = new ToriiAvailabilityService({
         factoryChains: ["mainnet"],
