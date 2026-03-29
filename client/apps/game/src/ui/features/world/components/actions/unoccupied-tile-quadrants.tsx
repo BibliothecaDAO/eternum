@@ -128,13 +128,17 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
       </div>
       <div className="flex flex-col gap-1.5">
         <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Army bonuses</span>
-        <div aria-label="Army bonuses" className="grid auto-rows-fr grid-cols-3 gap-2" role="list">
+        <div
+          aria-label="Army bonuses"
+          className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2"
+          role="list"
+        >
           {troopBonuses.map(({ troopType, config, tone, displayBonus }) => (
             <div
               key={troopType}
               data-bonus-card="true"
               role="listitem"
-              className={`flex h-full min-h-[132px] flex-col rounded-xl border px-2.5 py-2.5 ${tone.cardClassName}`}
+              className={`flex h-full min-h-[132px] min-w-0 flex-col rounded-xl border px-2.5 py-2.5 ${tone.cardClassName}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div
@@ -150,7 +154,7 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
               </div>
               <div className="mt-3 flex flex-1 flex-col justify-between gap-1">
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/70">
+                  <span className="break-words text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/70">
                     {config.label}
                   </span>
                   <span className={`text-xl font-bold leading-none ${tone.valueClassName}`}>{displayBonus}</span>
