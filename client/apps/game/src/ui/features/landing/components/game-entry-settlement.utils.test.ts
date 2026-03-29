@@ -4,6 +4,7 @@ import {
   buildSettlementExecutionPlan,
   deriveSettlementStatus,
   getExpectedSettlementCount,
+  hasReachedSettlementTarget,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
 
@@ -122,5 +123,16 @@ describe("buildSettlementExecutionPlan", () => {
     expect(plan.targetSettleCount).toBe(1);
     expect(plan.initialSettleCount).toBe(1);
     expect(plan.extraSettleCalls).toBe(0);
+  });
+});
+
+describe("hasReachedSettlementTarget", () => {
+  it("does not treat a fresh unindexed snapshot as settled progress", () => {
+    expect(hasReachedSettlementTarget(snapshot(), 1)).toBe(false);
+  });
+
+  it("returns true only after the settled count reaches the target", () => {
+    expect(hasReachedSettlementTarget(snapshot({ coordsCount: 2, settledCount: 0 }), 1)).toBe(false);
+    expect(hasReachedSettlementTarget(snapshot({ settledCount: 1 }), 1)).toBe(true);
   });
 });

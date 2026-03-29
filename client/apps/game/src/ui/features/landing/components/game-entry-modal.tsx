@@ -55,6 +55,7 @@ import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
 import {
   buildSettlementExecutionPlan,
   deriveSettlementStatus,
+  hasReachedSettlementTarget,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
@@ -2975,8 +2976,8 @@ export const GameEntryModal = ({
         const snapshot = await readSettlementSnapshot();
         if (snapshot) {
           latestSnapshot = snapshot;
-          const status = syncSettlementStateFromSnapshot(snapshot);
-          if (status.settledCount >= targetSettleCount || status.remainingToSettle === 0) {
+          syncSettlementStateFromSnapshot(snapshot);
+          if (hasReachedSettlementTarget(snapshot, targetSettleCount)) {
             return snapshot;
           }
         }

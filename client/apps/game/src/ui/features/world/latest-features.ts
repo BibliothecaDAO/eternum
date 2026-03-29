@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-29",
+    title: "Settlement Error Race Fix",
+    description:
+      "Blitz entry settlement no longer flashes a false failure state while your realms are still indexing, so successful settlement flows stay in progress until the game is actually ready to enter.",
+    type: "fix",
+  },
+  {
     date: "2026-03-28",
     title: "Blitz Breakdown Precision",
     description:

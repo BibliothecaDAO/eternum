@@ -16,6 +16,9 @@ type SettlementStatus = {
 
 export const getExpectedSettlementCount = (singleRealmMode: boolean): number => (singleRealmMode ? 1 : 3);
 
+export const hasReachedSettlementTarget = (snapshot: SettlementSnapshot, targetSettleCount: number): boolean =>
+  Math.max(0, snapshot.settledCount) >= Math.max(0, targetSettleCount);
+
 export const deriveSettlementStatus = (snapshot: SettlementSnapshot): SettlementStatus => {
   const coordsCount = Math.max(0, snapshot.coordsCount);
   const settledCount = Math.max(0, snapshot.settledCount);
