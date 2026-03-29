@@ -3216,6 +3216,8 @@ export default class WorldmapScene extends WarpTravel {
           if (lastUpdate > meta.scheduledAt) {
             this.pendingArmyRemovalMeta.delete(entityId);
             this.pendingArmyRemovals.delete(entityId);
+            this.armyManager.unsuppressArmy(entityId);
+            this.requestChunkRefresh(true, "default");
             return;
           }
 
@@ -3266,14 +3268,21 @@ export default class WorldmapScene extends WarpTravel {
     const deferred = Array.from(this.deferredChunkRemovals.entries());
     this.deferredChunkRemovals.clear();
 
+    let anyUnsuppressed = false;
     deferred.forEach(([entityId, { reason, scheduledAt }]) => {
       const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
       if (lastUpdate > scheduledAt) {
+        this.armyManager.unsuppressArmy(entityId);
+        anyUnsuppressed = true;
         return;
       }
 
       this.scheduleArmyRemoval(entityId, reason);
     });
+
+    if (anyUnsuppressed) {
+      this.requestChunkRefresh(true, "default");
+    }
   }
 
   private cancelPendingArmyRemoval(entityId: ID) {
