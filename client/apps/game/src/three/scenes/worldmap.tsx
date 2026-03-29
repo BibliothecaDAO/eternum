@@ -788,7 +788,8 @@ export default class WorldmapScene extends WarpTravel {
     // when a movement transaction reverts on-chain (the moveArmy promise resolves
     // immediately with PENDING, so the .catch() path never fires for on-chain reverts).
     this.handleTransactionFailed = (_error: any, meta?: any) => {
-      const txHash = typeof _error === "object" && _error?.transactionHash ? _error.transactionHash : meta?.transactionHash;
+      const txHash =
+        typeof _error === "object" && _error?.transactionHash ? _error.transactionHash : meta?.transactionHash;
       if (!txHash) return;
       const plan = resolvePendingArmyMovementTxFailurePlan({
         txHash,
