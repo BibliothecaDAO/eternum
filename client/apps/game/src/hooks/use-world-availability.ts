@@ -4,7 +4,7 @@
  * by caching results and sharing them across components.
  */
 import { getFactorySqlBaseUrl } from "@/runtime/world";
-import { isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { fetchBulkAvailability, isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import {
   parseMaybeBooleanFlag,
@@ -13,8 +13,9 @@ import {
 } from "@/config/game-modes/resolved-mode";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import type { Chain } from "@contracts";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
+import { env } from "../../env";
 
 const WORLD_CONFIG_TABLE = "s1_eternum-WorldConfig";
 const HYPERSTRUCTURE_GLOBALS_TABLE = "s1_eternum-HyperstructureGlobals";
@@ -479,9 +480,15 @@ const checkWorldAvailability = async (
   worldName: string,
   chain?: Chain,
   playerAddress?: string | null,
+  bulkAvailability?: Record<string, boolean>,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
   const toriiBaseUrl = buildToriiBaseUrl(worldName);
-  const isAvailable = await isToriiAvailable(toriiBaseUrl);
+
+  // Use bulk availability if available, otherwise fall back to direct probe
+  const isAvailable =
+    bulkAvailability != null
+      ? (bulkAvailability[worldName] ?? (await isToriiAvailable(toriiBaseUrl)))
+      : await isToriiAvailable(toriiBaseUrl);
 
   if (!isAvailable) {
     return { isAvailable: false, meta: null };
@@ -489,6 +496,18 @@ const checkWorldAvailability = async (
 
   const meta = await fetchWorldConfigMeta(toriiBaseUrl, worldName, chain, playerAddress);
   return { isAvailable: true, meta };
+};
+
+/** Fetch bulk world availability from the realtime server, cached with React Query. */
+const useBulkAvailability = (enabled: boolean) => {
+  return useQuery({
+    queryKey: ["bulkWorldAvailability"],
+    queryFn: () => fetchBulkAvailability(env.VITE_PUBLIC_REALTIME_URL),
+    enabled,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+  });
 };
 
 /**
@@ -500,11 +519,13 @@ const checkWorldAvailability = async (
  * @param playerAddress - Optional player address (padded felt) to check registration status
  */
 export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, playerAddress?: string | null) => {
+  const { data: bulkAvailability } = useBulkAvailability(enabled);
+
   const queries = useQueries({
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
       queryKey: ["worldAvailability", getWorldKey(world), playerAddress ?? "anonymous"],
-      queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress),
+      queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress, bulkAvailability),
       enabled: enabled && !!world.name,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes
