@@ -1,3 +1,10 @@
+import {
+  decodePaddedFeltAscii,
+  extractNameFelt,
+  fetchFactoryRows,
+  getFactorySqlBaseUrl,
+} from "../../../../../common/factory/endpoints";
+
 export interface WorldAvailabilityEntry {
   alive: boolean;
   lastChecked: number;
@@ -8,63 +15,13 @@ const FACTORY_WORLDS_QUERY = `SELECT name, address FROM [wf-WorldDeployed] LIMIT
 const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
 
 /**
- * Decode a zero-padded felt (hex string) into an ASCII string.
- */
-const decodePaddedFeltAscii = (felt: string): string => {
-  const hex = felt.startsWith("0x") || felt.startsWith("0X") ? felt.slice(2) : felt;
-  const stripped = hex.replace(/^0+/, "");
-  if (!stripped || stripped.length % 2 !== 0) return "";
-  let result = "";
-  for (let i = 0; i < stripped.length; i += 2) {
-    result += String.fromCharCode(parseInt(stripped.slice(i, i + 2), 16));
-  }
-  return result;
-};
-
-/**
- * Get the factory SQL base URL for a chain (inline to avoid cross-package import issues).
- */
-function getFactorySqlBaseUrl(chain: string): string {
-  switch (chain) {
-    case "mainnet":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`;
-    case "sepolia":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`;
-    case "slot":
-    case "slottest":
-    case "local":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`;
-    default:
-      return "";
-  }
-}
-
-/**
- * Extract the name felt from a factory row (handles multiple response shapes).
- */
-const extractNameFelt = (row: Record<string, unknown>): string | null => {
-  const direct = row.name ?? row["data.name"];
-  if (typeof direct === "string") return direct;
-  if (row.data && typeof row.data === "object" && !Array.isArray(row.data)) {
-    const nested = (row.data as Record<string, unknown>).name;
-    if (typeof nested === "string") return nested;
-  }
-  return null;
-};
-
-/**
  * Fetch world names from a factory indexer.
  */
-async function fetchWorldNamesFromFactory(chain: string): Promise<string[]> {
+async function fetchWorldNamesFromFactory(chain: string, timeoutMs: number): Promise<string[]> {
   const baseUrl = getFactorySqlBaseUrl(chain);
   if (!baseUrl) return [];
 
-  const url = `${baseUrl}?query=${encodeURIComponent(FACTORY_WORLDS_QUERY)}`;
-  const response = await fetch(url);
-  if (!response.ok) return [];
-
-  const rows = (await response.json()) as Record<string, unknown>[];
-  if (!Array.isArray(rows)) return [];
+  const rows = await fetchFactoryRows(baseUrl, FACTORY_WORLDS_QUERY, { timeoutMs });
 
   const names: string[] = [];
   for (const row of rows) {
@@ -80,14 +37,22 @@ async function fetchWorldNamesFromFactory(chain: string): Promise<string[]> {
 export class ToriiAvailabilityService {
   private cache = new Map<string, WorldAvailabilityEntry>();
   private pollIntervalId: ReturnType<typeof setInterval> | null = null;
+  private pollInFlight: Promise<void> | null = null;
   private factoryChains: string[];
   private pollIntervalMs: number;
   private probeTimeoutMs: number;
+  private factoryTimeoutMs: number;
 
-  constructor(opts?: { factoryChains?: string[]; pollIntervalMs?: number; probeTimeoutMs?: number }) {
+  constructor(opts?: {
+    factoryChains?: string[];
+    pollIntervalMs?: number;
+    probeTimeoutMs?: number;
+    factoryTimeoutMs?: number;
+  }) {
     this.factoryChains = opts?.factoryChains ?? ["mainnet", "slot"];
     this.pollIntervalMs = opts?.pollIntervalMs ?? 30_000;
     this.probeTimeoutMs = opts?.probeTimeoutMs ?? 5_000;
+    this.factoryTimeoutMs = opts?.factoryTimeoutMs ?? 10_000;
   }
 
   /**
@@ -125,11 +90,25 @@ export class ToriiAvailabilityService {
    * Run one full poll cycle: fetch world names from all factory chains, then probe each.
    */
   async pollOnce(): Promise<void> {
+    if (this.pollInFlight) {
+      return this.pollInFlight;
+    }
+
+    const pollPromise = this.runPollCycle().finally(() => {
+      if (this.pollInFlight === pollPromise) {
+        this.pollInFlight = null;
+      }
+    });
+    this.pollInFlight = pollPromise;
+    return pollPromise;
+  }
+
+  private async runPollCycle(): Promise<void> {
     const allNames = new Set<string>();
 
     for (const chain of this.factoryChains) {
       try {
-        const names = await fetchWorldNamesFromFactory(chain);
+        const names = await fetchWorldNamesFromFactory(chain, this.factoryTimeoutMs);
         for (const name of names) {
           allNames.add(name);
         }

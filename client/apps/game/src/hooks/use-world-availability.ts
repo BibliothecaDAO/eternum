@@ -519,14 +519,14 @@ const useBulkAvailability = (enabled: boolean) => {
  * @param playerAddress - Optional player address (padded felt) to check registration status
  */
 export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, playerAddress?: string | null) => {
-  const { data: bulkAvailability } = useBulkAvailability(enabled);
+  const { data: bulkAvailability, isPending: isBulkAvailabilityPending } = useBulkAvailability(enabled);
 
   const queries = useQueries({
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
       queryKey: ["worldAvailability", getWorldKey(world), playerAddress ?? "anonymous"],
       queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress, bulkAvailability),
-      enabled: enabled && !!world.name,
+      enabled: enabled && !!world.name && !isBulkAvailabilityPending,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes
       refetchInterval: 30 * 1000, // Auto-refresh every 30s to catch new registrations/forges

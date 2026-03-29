@@ -169,7 +169,7 @@ describe("ToriiAvailabilityService", () => {
     it("starts polling and can be stopped", async () => {
       vi.useFakeTimers();
 
-      mockFetch.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+      mockFetch.mockImplementation(() => Promise.resolve(new Response(JSON.stringify([]), { status: 200 })));
 
       const service = new ToriiAvailabilityService({
         factoryChains: ["mainnet"],
@@ -193,6 +193,34 @@ describe("ToriiAvailabilityService", () => {
       });
       expect(factoryCalls.length).toBe(2);
 
+      vi.useRealTimers();
+    });
+
+    it("does not start a second poll while the previous cycle is still running", async () => {
+      vi.useFakeTimers();
+
+      let resolveFactoryFetch: ((value: Response) => void) | null = null;
+      const factoryFetch = new Promise<Response>((resolve) => {
+        resolveFactoryFetch = resolve;
+      });
+
+      mockFetch.mockImplementation(() => factoryFetch);
+
+      const service = new ToriiAvailabilityService({
+        factoryChains: ["mainnet"],
+        pollIntervalMs: 1000,
+      });
+
+      service.start();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      resolveFactoryFetch?.(new Response(JSON.stringify([]), { status: 200 }));
+      await Promise.resolve();
+      service.stop();
       vi.useRealTimers();
     });
 
