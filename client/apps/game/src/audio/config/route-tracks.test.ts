@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { matchRoutePlaylist } from "./route-tracks";
 import { getGameModeId } from "@/config/game-modes";
@@ -21,10 +23,31 @@ describe("matchRoutePlaylist", () => {
     expect(match.tracks.length).toBeGreaterThan(0);
   });
 
-  it("matches cosmetics section with nested routes", () => {
+  it("matches the profile section with nested routes", () => {
     mockedGetGameModeId.mockReturnValue("eternum");
-    const match = matchRoutePlaylist("/cosmetics/skins");
-    expect(match.key).toBe("landing:cosmetics");
+    const match = matchRoutePlaylist("/profile/cosmetics");
+    expect(match.key).toBe("landing:profile");
+  });
+
+  it("matches the profile route with the landing account playlist", () => {
+    mockedGetGameModeId.mockReturnValue("eternum");
+    const match = matchRoutePlaylist("/profile");
+    expect(match.key).toBe("landing:profile");
+    expect(match.mode).toBe("sequence");
+  });
+
+  it("matches the markets route with a trading playlist", () => {
+    mockedGetGameModeId.mockReturnValue("eternum");
+    const match = matchRoutePlaylist("/markets");
+    expect(match.key).toBe("landing:markets");
+    expect(match.tracks.length).toBeGreaterThan(0);
+  });
+
+  it("matches the amm route with a dedicated trading playlist", () => {
+    mockedGetGameModeId.mockReturnValue("eternum");
+    const match = matchRoutePlaylist("/amm");
+    expect(match.key).toBe("landing:amm");
+    expect(match.tracks.length).toBeGreaterThan(0);
   });
 
   it("switches to blitz playlist when blitz flag is true", () => {

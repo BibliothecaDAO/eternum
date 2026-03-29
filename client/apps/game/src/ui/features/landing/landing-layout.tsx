@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { DynamicBackground } from "./components/background/dynamic-background";
 import { LandingHeader } from "./components/landing-header";
+import { LandingMusicPlayer } from "./components/landing-music-player";
 import { LandingSettings } from "./components/landing-settings";
 import { LandingSidebar } from "./components/landing-sidebar";
 import { MobileBottomNav } from "./components/mobile-bottom-nav";
@@ -93,6 +94,7 @@ const LandingLayoutContent = () => {
       </main>
 
       {/* Bottom navigation (mobile only) */}
+      <LandingMusicPlayer />
       <MobileBottomNav />
 
       {/* Settings modal */}
