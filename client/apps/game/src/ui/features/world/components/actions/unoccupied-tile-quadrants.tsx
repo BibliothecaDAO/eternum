@@ -123,28 +123,28 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
           {formatQuadrantBiomeLabel(biome)}
         </span>
       </div>
-      <div aria-label="Army bonuses" className="mt-1 flex w-full items-stretch gap-1.5" role="list">
+      <div aria-label="Army bonuses" className="mt-1 flex w-full flex-col gap-1.5" role="list">
         {troopBonuses.map(({ troopType, config, tone, displayBonus }) => (
           <div
             key={troopType}
             data-bonus-card="true"
             role="listitem"
-            className={`flex h-full min-h-[102px] min-w-0 flex-1 basis-0 flex-col items-center rounded-xl border px-1.5 py-2 text-center ${tone.cardClassName}`}
+            className={`flex min-h-[74px] w-full min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-left ${tone.cardClassName}`}
           >
             <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${tone.iconWrapClassName}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tone.iconWrapClassName}`}
             >
               <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
             </div>
-            <div className="mt-2 flex flex-1 flex-col justify-end gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="break-words text-[9px] font-semibold uppercase leading-[1.05] tracking-[0.12em] text-gold/72">
                 {config.label}
               </span>
-              <span className={`text-lg font-bold leading-none ${tone.valueClassName}`}>{displayBonus}</span>
-              <span className={`text-[8px] font-semibold uppercase leading-none ${tone.stateTextClassName}`}>
+              <span className={`text-[10px] font-semibold uppercase leading-none ${tone.stateTextClassName}`}>
                 {tone.stateLabel}
               </span>
             </div>
+            <span className={`shrink-0 text-xl font-bold leading-none ${tone.valueClassName}`}>{displayBonus}</span>
           </div>
         ))}
       </div>

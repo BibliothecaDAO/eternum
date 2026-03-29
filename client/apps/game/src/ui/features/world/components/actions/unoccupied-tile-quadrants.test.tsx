@@ -94,11 +94,12 @@ describe("BiomeSummaryCard", () => {
 
     expect(bonusGrid?.className).toContain("w-full");
     expect(bonusGrid?.className).toContain("flex");
+    expect(bonusGrid?.className).toContain("flex-col");
     expect(container.textContent).not.toContain("Army bonuses");
 
     const bonusCards = container.querySelectorAll('[data-bonus-card="true"]');
     expect(bonusCards).toHaveLength(3);
-    expect(Array.from(bonusCards).every((card) => card.className.includes("flex-1"))).toBe(true);
+    expect(Array.from(bonusCards).every((card) => card.className.includes("w-full"))).toBe(true);
 
     expect(container.textContent).toContain("Penalty");
     expect(container.textContent).toContain("Neutral");
