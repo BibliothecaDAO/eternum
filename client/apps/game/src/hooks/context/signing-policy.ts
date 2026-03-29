@@ -1,6 +1,9 @@
-import { env } from "../../../env";
+import type { Chain } from "@contracts";
 
-export const messages = [
+const resolveSigningDomainChainId = (chain: Chain): "SN_MAIN" | "SN_SEPOLIA" =>
+  chain === "mainnet" ? "SN_MAIN" : "SN_SEPOLIA";
+
+export const buildSigningMessages = (chain: Chain) => [
   {
     name: "Eternum Message Signing",
     description: "Allows signing messages for Eternum",
@@ -23,7 +26,7 @@ export const messages = [
     domain: {
       name: "Eternum",
       version: "1",
-      chainId: env.VITE_PUBLIC_CHAIN == "mainnet" ? "SN_MAIN" : "SN_SEPOLIA",
+      chainId: resolveSigningDomainChainId(chain),
       revision: "1",
     },
   },
