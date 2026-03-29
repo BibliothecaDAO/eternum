@@ -42,6 +42,17 @@ interface PendingArmyMovementFallbackPlan {
   shouldRequestChunkRefresh: boolean;
 }
 
+interface ResolvePendingArmyMovementTxFailurePlanInput {
+  txHash: string;
+  txEntityMap: Map<string, number>;
+  pendingEntities: Set<number>;
+}
+
+interface PendingArmyMovementTxFailurePlan {
+  shouldClearPendingMovement: boolean;
+  entityId: number | undefined;
+}
+
 /**
  * Tab cycling should prioritize the position currently rendered in the worldmap.
  * Fallback to selectable-army snapshot coordinates when render state is unavailable.
@@ -135,4 +146,24 @@ export function resolvePendingArmyMovementFallbackPlan(
     shouldClearPendingMovement,
     shouldRequestChunkRefresh: shouldClearPendingMovement,
   };
+}
+
+/**
+ * Decide whether to clear pending movement when a transaction fails on-chain.
+ * The txEntityMap correlates transaction hashes to the entity that initiated the move.
+ */
+export function resolvePendingArmyMovementTxFailurePlan(
+  input: ResolvePendingArmyMovementTxFailurePlanInput,
+): PendingArmyMovementTxFailurePlan {
+  const entityId = input.txEntityMap.get(input.txHash);
+
+  if (entityId === undefined) {
+    return { shouldClearPendingMovement: false, entityId: undefined };
+  }
+
+  if (!input.pendingEntities.has(entityId)) {
+    return { shouldClearPendingMovement: false, entityId };
+  }
+
+  return { shouldClearPendingMovement: true, entityId };
 }

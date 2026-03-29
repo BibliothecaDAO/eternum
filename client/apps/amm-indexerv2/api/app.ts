@@ -195,6 +195,11 @@ export function createAmmV2ApiApp(params: CreateAmmV2ApiAppParams) {
       0n,
     );
     const resourceTokenSupply = resourceTokenAddress !== null ? await loadTokenTotalSupply(resourceTokenAddress) : null;
+    const lpHolderCountResult = await params.db
+      .select({ total: count() })
+      .from(schema.pairLpBalances)
+      .where(and(eq(schema.pairLpBalances.pairAddress, pair.pairAddress), gte(schema.pairLpBalances.balance, "1")));
+    const lpHolderCount = lpHolderCountResult[0]?.total ?? 0;
 
     return jsonResponse(c, {
       data: {
@@ -212,6 +217,7 @@ export function createAmmV2ApiApp(params: CreateAmmV2ApiAppParams) {
         lpFees1_24h: lpFees1.toString(),
         swapCount24h: recentSwaps.length,
         resourceTokenSupply,
+        lpHolderCount,
       },
     });
   });

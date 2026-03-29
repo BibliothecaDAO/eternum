@@ -123,6 +123,7 @@ import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
+  resolvePendingArmyMovementTxFailurePlan,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import {
@@ -491,6 +492,8 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovements: Set<ID> = new Set();
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
+  private pendingArmyMovementTxMap: Map<string, ID> = new Map();
+  private handleTransactionFailed?: (...args: any[]) => void;
   private readonly stalePendingArmyMovementMs = 10_000;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager: StructureManager;
@@ -780,6 +783,25 @@ export default class WorldmapScene extends WarpTravel {
 
     // Initialize sync simulator with dojo context for ECS injection
     initializeSyncSimulator(dojoContext);
+
+    // Subscribe to provider tx failure events to clear pending army movement state
+    // when a movement transaction reverts on-chain (the moveArmy promise resolves
+    // immediately with PENDING, so the .catch() path never fires for on-chain reverts).
+    this.handleTransactionFailed = (_error: any, meta?: any) => {
+      const txHash =
+        typeof _error === "object" && _error?.transactionHash ? _error.transactionHash : meta?.transactionHash;
+      if (!txHash) return;
+      const plan = resolvePendingArmyMovementTxFailurePlan({
+        txHash,
+        txEntityMap: this.pendingArmyMovementTxMap,
+        pendingEntities: this.pendingArmyMovements,
+      });
+      if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
+        this.clearPendingArmyMovement(plan.entityId);
+      }
+      this.pendingArmyMovementTxMap.delete(txHash);
+    };
+    dojoContext.network?.provider?.on("transactionFailed", this.handleTransactionFailed);
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
@@ -2035,12 +2057,17 @@ export default class WorldmapScene extends WarpTravel {
 
       armyActionManager
         .moveArmy(account!, actionPath, isTravelAction, getBlockTimestamp().currentArmiesTick)
-        .then(() => {
+        .then((result: any) => {
+          // Track txHash → entityId so provider transactionFailed events can clear pending state
+          const txHash = result?.transaction_hash;
+          if (txHash) {
+            this.pendingArmyMovementTxMap.set(txHash, selectedEntityId);
+          }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
         .catch((e) => {
-          // Transaction failed, remove from pending and cleanup
+          // Transaction failed at submission, remove from pending and cleanup
           this.clearPendingArmyMovement(selectedEntityId);
           cleanup();
           console.error("Army movement failed:", e);
@@ -2217,6 +2244,13 @@ export default class WorldmapScene extends WarpTravel {
     if (fallbackTimeout) {
       clearTimeout(fallbackTimeout);
       this.pendingArmyMovementFallbackTimeouts.delete(entityId);
+    }
+
+    // Remove any txHash entries pointing to this entity
+    for (const [txHash, eid] of this.pendingArmyMovementTxMap) {
+      if (eid === entityId) {
+        this.pendingArmyMovementTxMap.delete(txHash);
+      }
     }
 
     // Clear any lingering movement fx when pending state is cleared outside
@@ -7006,6 +7040,10 @@ export default class WorldmapScene extends WarpTravel {
     this.disposeWorldUpdateSubscriptions();
     this.pendingArmyMovements.forEach((entityId) => this.clearPendingArmyMovement(entityId));
     this.pendingArmyMovements.clear();
+    if (this.handleTransactionFailed) {
+      this.dojo.network?.provider?.off("transactionFailed", this.handleTransactionFailed);
+    }
+    this.pendingArmyMovementTxMap.clear();
     this.stopToriiBoundsCounterLog();
     if (this.toriiStreamManager === activeSpatialStreamManager) {
       activeSpatialStreamManager = null;

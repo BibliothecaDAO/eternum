@@ -424,6 +424,8 @@ export const ArmyCreate = ({
                           troopCount={projectedTroopCount}
                           maxTroopSize={troopCapacityLimit}
                           capacityRemaining={remainingCapacityDisplay}
+                          collapsible
+                          defaultExpanded={false}
                         />
                       </div>
                     )}

@@ -1,0 +1,245 @@
+name: release-game
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-game
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: create-game-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get current version
+        id: current
+        run: |
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Current version: ${VERSION}"
+
+      - name: Get latest release tag
+        id: latest_tag
+        run: |
+          LATEST_TAG=$(git tag -l 'game-v*' --sort=-version:refname | head -1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG=$(git rev-list --max-parents=0 HEAD)
+            echo "No previous release tag found, using initial commit"
+          fi
+          echo "tag=${LATEST_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Latest tag: ${LATEST_TAG}"
+
+      - name: Determine version bump
+        id: bump
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_BUMP: ${{ inputs.bump }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            BUMP="$INPUT_BUMP"
+          else
+            BUMP="patch"
+            MERGE_PR=$(gh pr list --state merged --base main --limit 1 --json number,labels --jq '.[0]')
+            if [ -n "$MERGE_PR" ]; then
+              LABELS=$(echo "$MERGE_PR" | jq -r '.labels[].name // empty')
+              if echo "$LABELS" | grep -q "release:major"; then
+                BUMP="major"
+              elif echo "$LABELS" | grep -q "release:minor"; then
+                BUMP="minor"
+              fi
+            fi
+          fi
+          echo "bump=${BUMP}" >> "$GITHUB_OUTPUT"
+          echo "Bump type: ${BUMP}"
+
+      - name: Calculate new version
+        id: new_version
+        env:
+          CURRENT_VERSION: ${{ steps.current.outputs.version }}
+          BUMP_TYPE: ${{ steps.bump.outputs.bump }}
+        run: |
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          case "$BUMP_TYPE" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "New version: ${NEW_VERSION}"
+
+      - name: Collect raw changes
+        id: raw_changes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
+        run: |
+          if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+            RANGE="${LATEST_TAG}..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          # Collect PR titles
+          {
+            git log "$RANGE" --merges --pretty=format:"%s" | while IFS= read -r line; do
+              PR_NUM=$(echo "$line" | grep -oP '#\d+' | head -1)
+              if [ -n "$PR_NUM" ]; then
+                PR_TITLE=$(gh pr view "${PR_NUM#\#}" --json title,labels --jq '"\(.title) [\(.labels | map(.name) | join(","))]"' 2>/dev/null || echo "")
+                if [ -n "$PR_TITLE" ]; then
+                  echo "PR ${PR_NUM}: ${PR_TITLE}"
+                fi
+              fi
+            done
+
+            # Direct commits (skip noise)
+            git log "$RANGE" --no-merges --pretty=format:"COMMIT: %s" \
+              | grep -v "COMMIT: chore:" \
+              | grep -v "COMMIT: factory-runs:" \
+              | grep -v "COMMIT: Merge " \
+              | head -30
+          } > /tmp/raw-changes.txt
+
+          echo "Collected changes:"
+          cat /tmp/raw-changes.txt
+
+      - name: Generate release notes with Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NEW_VERSION: ${{ steps.new_version.outputs.version }}
+          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          RAW_CHANGES=$(cat /tmp/raw-changes.txt)
+
+          # Build the prompt
+          PROMPT="You are writing release notes for Eternum, an onchain game built on Starknet/Dojo. Write concise, human-readable release notes for version v${NEW_VERSION}.
+
+          Here are the raw PR titles and commits since the last release (${LATEST_TAG}):
+
+          ${RAW_CHANGES}
+
+          Write the release notes in this format:
+          - Start with a 1-2 sentence summary of the most important changes
+          - Group changes into sections: Features, Improvements, Bug Fixes (only include sections that have items)
+          - Each item should be a single clear sentence, not just the PR title - rewrite them to be understandable by players and community members
+          - Skip internal/CI changes, factory-runs, and other noise that users don't care about
+          - Keep it concise - no more than 15 bullet points total
+          - Do NOT include a heading or version number (that's added separately)
+          - Do NOT include markdown headers (##) - just use **bold** for section names
+          - End with nothing - no sign-off or footer"
+
+          # Call Claude API
+          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: ${ANTHROPIC_API_KEY}" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "$(jq -n \
+              --arg prompt "$PROMPT" \
+              '{
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 1024,
+                messages: [{role: "user", content: $prompt}]
+              }')")
+
+          # Extract the text content
+          NOTES=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
+
+          if [ -z "$NOTES" ]; then
+            echo "Claude API call failed, falling back to raw notes"
+            echo "Error response: $RESPONSE"
+            # Fallback: use raw changes formatted simply
+            {
+              echo "### Changes"
+              echo ""
+              cat /tmp/raw-changes.txt | sed 's/^PR #/- /' | sed 's/^COMMIT: /- /'
+            } > /tmp/release-notes.md
+          else
+            echo "$NOTES" > /tmp/release-notes.md
+          fi
+
+          # Append changelog link
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "**Full Changelog**: https://github.com/${REPO}/compare/${LATEST_TAG}...game-v${NEW_VERSION}"
+          } >> /tmp/release-notes.md
+
+          echo "Generated release notes:"
+          cat /tmp/release-notes.md
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Bump version in package.json
+        env:
+          NEW_VERSION: ${{ steps.new_version.outputs.version }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = process.env.NEW_VERSION;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Commit version bump
+        env:
+          NEW_VERSION: ${{ steps.new_version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump game version to v${NEW_VERSION}"
+          git push origin main
+
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ steps.new_version.outputs.version }}
+        run: |
+          git tag "game-v${NEW_VERSION}"
+          git push origin "game-v${NEW_VERSION}"
+
+          gh release create "game-v${NEW_VERSION}" \
+            --title "Eternum v${NEW_VERSION}" \
+            --notes-file /tmp/release-notes.md \
+            --latest

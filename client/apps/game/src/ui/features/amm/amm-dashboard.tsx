@@ -162,7 +162,12 @@ const AmmSelectedPoolSummary = ({
       value: statsQuery.data?.marketCapLords != null ? formatAmmCompactAmount(statsQuery.data.marketCapLords) : "--",
     },
     { label: "TVL", value: formatAmmCompactAmount(activePool.lordsReserve * 2n) },
+    {
+      label: "Circulation",
+      value: statsQuery.data?.resourceSupply != null ? formatAmmCompactAmount(statsQuery.data.resourceSupply) : "--",
+    },
     { label: "24H Volume", value: statsQuery.data ? formatAmmCompactAmount(statsQuery.data.volume24h) : "--" },
+    { label: "LP Holders", value: statsQuery.data ? statsQuery.data.lpHolderCount.toLocaleString() : "--" },
     { label: "LP Fee", value: formatAmmPercent(feeBreakdown.lpFeePercent) },
     { label: "Protocol Fee", value: formatAmmPercent(feeBreakdown.protocolFeePercent) },
     {

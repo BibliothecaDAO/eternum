@@ -65,6 +65,7 @@ export interface PairStats {
   lpFees1_24h: bigint;
   swapCount24h: number;
   resourceTokenSupply: bigint | null;
+  lpHolderCount: number;
 }
 
 export interface UserPairPosition {
