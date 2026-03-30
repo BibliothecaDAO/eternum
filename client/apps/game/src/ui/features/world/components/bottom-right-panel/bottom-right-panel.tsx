@@ -127,13 +127,13 @@ const PanelFrame = ({ title, children, headerAction, className, attached = false
     )}
     style={{ height: BOTTOM_PANEL_HEIGHT }}
   >
-    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-3 py-1.5">
+    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-2 py-1 lg:px-3 lg:py-1.5">
       <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
         {title}
       </p>
       {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
     </header>
-    <div className="flex-1 min-h-0 overflow-hidden px-2.5 py-2">{children}</div>
+    <div className="flex-1 min-h-0 overflow-hidden px-1.5 py-1 lg:px-2.5 lg:py-2">{children}</div>
   </section>
 );
 
@@ -1007,7 +1007,7 @@ export const BottomRightPanel = memo(() => {
       aria-hidden={!shouldShow}
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
-      <div className="relative w-full min-h-[44px] md:ml-auto md:w-[44%] lg:w-[36%] xl:w-[32%]">
+      <div className="relative w-full min-h-[44px] md:ml-auto md:w-[55%] lg:w-[44%] xl:w-[36%] 2xl:w-[32%]">
         <PanelTabs
           tabs={availableTabs}
           activeTab={activeTab}

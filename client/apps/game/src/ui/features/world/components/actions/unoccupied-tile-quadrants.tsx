@@ -43,23 +43,52 @@ const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
     .trim();
 };
 
-const getQuadrantBonusStyles = (bonus: number) => {
+const resolveBiomeBonusCardTone = (bonus: number) => {
   if (bonus > 1) {
     return {
-      containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
-      textClass: "text-green-300",
+      stateLabel: "Advantage",
+      cardClassName:
+        "border-emerald-400/60 bg-[linear-gradient(180deg,rgba(11,77,54,0.82),rgba(12,28,22,0.96))] shadow-[0_14px_30px_rgba(16,185,129,0.18)]",
+      iconWrapClassName: "border-emerald-300/25 bg-emerald-400/12",
+      stateTextClassName: "text-emerald-100/95",
+      valueClassName: "text-emerald-200",
     };
   }
+
   if (bonus < 1) {
     return {
-      containerClass: "border-red-500/60 bg-red-900/30 shadow-red-500/20",
-      textClass: "text-red-300",
+      stateLabel: "Penalty",
+      cardClassName:
+        "border-red-400/60 bg-[linear-gradient(180deg,rgba(109,20,33,0.84),rgba(34,14,19,0.97))] shadow-[0_14px_30px_rgba(248,113,113,0.16)]",
+      iconWrapClassName: "border-red-300/25 bg-red-400/10",
+      stateTextClassName: "text-red-100/95",
+      valueClassName: "text-red-200",
     };
   }
+
   return {
-    containerClass: "border-gold/30 bg-brown-800/60 shadow-gold/10",
-    textClass: "text-gold/90",
+    stateLabel: "Neutral",
+    cardClassName:
+      "border-gold/35 bg-[linear-gradient(180deg,rgba(78,58,18,0.45),rgba(24,20,16,0.96))] shadow-[0_14px_30px_rgba(212,175,55,0.12)]",
+    iconWrapClassName: "border-gold/20 bg-gold/10",
+    stateTextClassName: "text-gold/80",
+    valueClassName: "text-gold",
   };
+};
+
+const buildBiomeTroopBonusCards = (biome: BiomeType) => {
+  return unoccupiedTileTroopTypes.map((troopType) => {
+    const config = unoccupiedTileTroopConfig[troopType];
+    const bonus = configManager.getBiomeCombatBonus(troopType, biome);
+    const tone = resolveBiomeBonusCardTone(bonus);
+
+    return {
+      troopType,
+      config,
+      tone,
+      displayBonus: bonus === 1 ? "0%" : formatBiomeBonus(bonus),
+    };
+  });
 };
 
 interface BiomeSummaryCardProps {
@@ -69,21 +98,7 @@ interface BiomeSummaryCardProps {
 }
 
 export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction = false }: BiomeSummaryCardProps) => {
-  const troopBonuses = useMemo(
-    () =>
-      unoccupiedTileTroopTypes.map((troopType) => {
-        const config = unoccupiedTileTroopConfig[troopType];
-        const bonus = configManager.getBiomeCombatBonus(troopType, biome);
-        const styles = getQuadrantBonusStyles(bonus);
-        return {
-          troopType,
-          config,
-          bonus,
-          styles,
-        };
-      }),
-    [biome],
-  );
+  const troopBonuses = useMemo(() => buildBiomeTroopBonusCards(biome), [biome]);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
@@ -108,24 +123,30 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
           {formatQuadrantBiomeLabel(biome)}
         </span>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Army bonuses</span>
-        <div className="grid grid-cols-1 gap-1">
-          {troopBonuses.map(({ troopType, config, bonus, styles }) => (
+      <div aria-label="Army bonuses" className="mt-1 flex w-full flex-col gap-1.5" role="list">
+        {troopBonuses.map(({ troopType, config, tone, displayBonus }) => (
+          <div
+            key={troopType}
+            data-bonus-card="true"
+            role="listitem"
+            className={`flex min-h-[74px] w-full min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-left ${tone.cardClassName}`}
+          >
             <div
-              key={troopType}
-              className={`flex items-center justify-between rounded-lg border px-2 py-1.5 shadow-sm ${styles.containerClass}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tone.iconWrapClassName}`}
             >
-              <div className="flex items-center gap-2">
-                <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
-                <span className="text-[10px] font-semibold text-gold/90">{config.label}</span>
-              </div>
-              <span className={`text-xs font-semibold ${styles.textClass}`}>
-                {bonus === 1 ? "0%" : formatBiomeBonus(bonus)}
+              <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="break-words text-[9px] font-semibold uppercase leading-[1.05] tracking-[0.12em] text-gold/72">
+                {config.label}
+              </span>
+              <span className={`text-[10px] font-semibold uppercase leading-none ${tone.stateTextClassName}`}>
+                {tone.stateLabel}
               </span>
             </div>
-          ))}
-        </div>
+            <span className={`shrink-0 text-xl font-bold leading-none ${tone.valueClassName}`}>{displayBonus}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

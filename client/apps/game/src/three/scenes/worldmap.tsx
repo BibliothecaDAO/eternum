@@ -3,7 +3,12 @@ import { toast } from "sonner";
 
 import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
-import { ToriiStreamManager, type BoundsDescriptor, type BoundsModelConfig } from "@/dojo/torii-stream-manager";
+import {
+  ToriiStreamManager,
+  type BoundsDescriptor,
+  type BoundsModelConfig,
+  type BoundsSubscriptionSetupTimeoutInfo,
+} from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -110,6 +115,7 @@ import {
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
+import { shouldTrackHydrationUpdateForFetch } from "./worldmap-hydration-tracking";
 import {
   claimWorldmapInteractionOwner,
   getWorldmapInteractionOwnerInstanceId,
@@ -123,6 +129,7 @@ import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
+  resolvePendingArmyMovementTxFailurePlan,
   shouldQueueArmySelectionRecovery,
 } from "./worldmap-army-tab-selection";
 import {
@@ -358,6 +365,7 @@ const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
+const TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS = env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
@@ -491,6 +499,8 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovements: Set<ID> = new Set();
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
+  private pendingArmyMovementTxMap: Map<string, ID> = new Map();
+  private handleTransactionFailed?: (...args: any[]) => void;
   private readonly stalePendingArmyMovementMs = 10_000;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager: StructureManager;
@@ -746,6 +756,8 @@ export default class WorldmapScene extends WarpTravel {
         setup: dojoContext,
         logging: false,
         onUpdate: () => useConnectionStore.getState().recordSpatialUpdate(),
+        subscriptionSetupTimeoutMs: TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS,
+        onSubscriptionSetupTimeout: (info) => this.handleToriiSubscriptionSetupTimeout(info),
       });
       activeSpatialStreamManager = this.toriiStreamManager;
       this.startToriiBoundsCounterLog();
@@ -780,6 +792,25 @@ export default class WorldmapScene extends WarpTravel {
 
     // Initialize sync simulator with dojo context for ECS injection
     initializeSyncSimulator(dojoContext);
+
+    // Subscribe to provider tx failure events to clear pending army movement state
+    // when a movement transaction reverts on-chain (the moveArmy promise resolves
+    // immediately with PENDING, so the .catch() path never fires for on-chain reverts).
+    this.handleTransactionFailed = (_error: any, meta?: any) => {
+      const txHash =
+        typeof _error === "object" && _error?.transactionHash ? _error.transactionHash : meta?.transactionHash;
+      if (!txHash) return;
+      const plan = resolvePendingArmyMovementTxFailurePlan({
+        txHash,
+        txEntityMap: this.pendingArmyMovementTxMap,
+        pendingEntities: this.pendingArmyMovements,
+      });
+      if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
+        this.clearPendingArmyMovement(plan.entityId);
+      }
+      this.pendingArmyMovementTxMap.delete(txHash);
+    };
+    dojoContext.network?.provider?.on("transactionFailed", this.handleTransactionFailed);
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
@@ -2035,12 +2066,17 @@ export default class WorldmapScene extends WarpTravel {
 
       armyActionManager
         .moveArmy(account!, actionPath, isTravelAction, getBlockTimestamp().currentArmiesTick)
-        .then(() => {
+        .then((result: any) => {
+          // Track txHash → entityId so provider transactionFailed events can clear pending state
+          const txHash = result?.transaction_hash;
+          if (txHash) {
+            this.pendingArmyMovementTxMap.set(txHash, selectedEntityId);
+          }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
         .catch((e) => {
-          // Transaction failed, remove from pending and cleanup
+          // Transaction failed at submission, remove from pending and cleanup
           this.clearPendingArmyMovement(selectedEntityId);
           cleanup();
           console.error("Army movement failed:", e);
@@ -2217,6 +2253,13 @@ export default class WorldmapScene extends WarpTravel {
     if (fallbackTimeout) {
       clearTimeout(fallbackTimeout);
       this.pendingArmyMovementFallbackTimeouts.delete(entityId);
+    }
+
+    // Remove any txHash entries pointing to this entity
+    for (const [txHash, eid] of this.pendingArmyMovementTxMap) {
+      if (eid === entityId) {
+        this.pendingArmyMovementTxMap.delete(txHash);
+      }
     }
 
     // Clear any lingering movement fx when pending state is cleared outside
@@ -3182,6 +3225,8 @@ export default class WorldmapScene extends WarpTravel {
           if (lastUpdate > meta.scheduledAt) {
             this.pendingArmyRemovalMeta.delete(entityId);
             this.pendingArmyRemovals.delete(entityId);
+            this.armyManager.unsuppressArmy(entityId);
+            this.requestChunkRefresh(true, "default");
             return;
           }
 
@@ -3232,14 +3277,21 @@ export default class WorldmapScene extends WarpTravel {
     const deferred = Array.from(this.deferredChunkRemovals.entries());
     this.deferredChunkRemovals.clear();
 
+    let anyUnsuppressed = false;
     deferred.forEach(([entityId, { reason, scheduledAt }]) => {
       const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
       if (lastUpdate > scheduledAt) {
+        this.armyManager.unsuppressArmy(entityId);
+        anyUnsuppressed = true;
         return;
       }
 
       this.scheduleArmyRemoval(entityId, reason);
     });
+
+    if (anyUnsuppressed) {
+      this.requestChunkRefresh(true, "default");
+    }
   }
 
   private cancelPendingArmyRemoval(entityId: ID) {
@@ -4936,6 +4988,15 @@ export default class WorldmapScene extends WarpTravel {
     }, 5000);
   }
 
+  private handleToriiSubscriptionSetupTimeout(info: BoundsSubscriptionSetupTimeoutInfo): void {
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_subscription_timeout");
+    console.warn("[WorldmapScene] Torii bounds subscription setup timed out", {
+      requestId: info.requestId,
+      label: info.label,
+      timeoutMs: info.timeoutMs,
+    });
+  }
+
   private stopToriiBoundsCounterLog(): void {
     if (!this.toriiBoundsLogInterval) {
       return;
@@ -5249,10 +5310,10 @@ export default class WorldmapScene extends WarpTravel {
 
     this.structureHydrationFetches.forEach((state, fetchKey) => {
       if (
-        normalized.x >= state.minCol &&
-        normalized.x <= state.maxCol &&
-        normalized.y >= state.minRow &&
-        normalized.y <= state.maxRow
+        shouldTrackHydrationUpdateForFetch(state, {
+          col: normalized.x,
+          row: normalized.y,
+        })
       ) {
         state.pendingCount += 1;
         matchedFetchKeys.push(fetchKey);
@@ -5281,10 +5342,10 @@ export default class WorldmapScene extends WarpTravel {
 
     this.tileHydrationFetches.forEach((state, fetchKey) => {
       if (
-        normalized.x >= state.minCol &&
-        normalized.x <= state.maxCol &&
-        normalized.y >= state.minRow &&
-        normalized.y <= state.maxRow
+        shouldTrackHydrationUpdateForFetch(state, {
+          col: normalized.x,
+          row: normalized.y,
+        })
       ) {
         state.pendingCount += 1;
         matchedFetchKeys.push(fetchKey);
@@ -7006,6 +7067,10 @@ export default class WorldmapScene extends WarpTravel {
     this.disposeWorldUpdateSubscriptions();
     this.pendingArmyMovements.forEach((entityId) => this.clearPendingArmyMovement(entityId));
     this.pendingArmyMovements.clear();
+    if (this.handleTransactionFailed) {
+      this.dojo.network?.provider?.off("transactionFailed", this.handleTransactionFailed);
+    }
+    this.pendingArmyMovementTxMap.clear();
     this.stopToriiBoundsCounterLog();
     if (this.toriiStreamManager === activeSpatialStreamManager) {
       activeSpatialStreamManager = null;

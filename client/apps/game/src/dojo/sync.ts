@@ -19,8 +19,14 @@ import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
+import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
 export const EVENT_QUERY_LIMIT = 40_000;
+
+interface SyncEntitiesSubscriptionOptions {
+  subscriptionSetupTimeoutMs?: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}
 
 let entityStreamSubscription: { cancel: () => void } | null = null;
 
@@ -223,6 +229,7 @@ export const syncEntitiesDebounced = async (
   entityKeyClause: Clause | undefined | null,
   logging = true,
   onUpdate?: () => void,
+  options?: SyncEntitiesSubscriptionOptions,
 ) => {
   if (logging) console.log("Starting syncEntities");
 
@@ -265,23 +272,32 @@ export const syncEntitiesDebounced = async (
     }
   };
 
-  const entitySub = await client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
-    if (logging) console.log("Entity updated", data);
-    queueUpdate(data, "entity");
-  });
+  try {
+    const subscriptions = await setupToriiSubscriptions({
+      createEntitySubscription: () =>
+        client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
+          if (logging) console.log("Entity updated", data);
+          queueUpdate(data, "entity");
+        }),
+      createEventSubscription: () =>
+        client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
+          if (logging) console.log("Event message updated", data.hashed_keys);
+          queueUpdate(data, "event");
+        }),
+      subscriptionSetupTimeoutMs: options?.subscriptionSetupTimeoutMs,
+      onSubscriptionSetupTimeout: options?.onSubscriptionSetupTimeout,
+    });
 
-  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
-    if (logging) console.log("Event message updated", data.hashed_keys);
-    queueUpdate(data, "event");
-  });
-
-  return {
-    cancel: () => {
-      entitySub.cancel();
-      eventSub.cancel();
-      queueProcessor.dispose();
-    },
-  };
+    return {
+      cancel: () => {
+        subscriptions.cancel();
+        queueProcessor.dispose();
+      },
+    };
+  } catch (error) {
+    queueProcessor.dispose();
+    throw error;
+  }
 };
 
 // initial sync runs before the game is playable and should sync minimal data

@@ -106,11 +106,11 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
 
   return (
     <div
-      className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-hidden"
+      className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overflow-x-hidden"
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
       {isSpire ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 md:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
           <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
             <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
           </EntityDetailSection>
@@ -119,7 +119,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
           </EntityDetailSection>
         </div>
       ) : isStructure ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 md:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
           <StructureBannerEntityDetail
             structureEntityId={occupierEntityId}
             maxInventory={14}
@@ -136,7 +136,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
           </EntityDetailSection>
         </div>
       ) : isChest ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 md:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
           <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
             <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
           </EntityDetailSection>
@@ -147,7 +147,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
       ) : isQuest ? (
         <QuestEntityDetail questEntityId={occupierEntityId} className="h-full min-h-0" {...sharedDetailProps} />
       ) : (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 md:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
           <ArmyBannerEntityDetail
             armyEntityId={occupierEntityId}
             showButtons={false}

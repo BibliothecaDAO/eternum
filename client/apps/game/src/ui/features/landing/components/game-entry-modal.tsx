@@ -7,6 +7,7 @@
  * 3. Auto-transitions to game when ready
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRealmInfo } from "@bibliothecadao/eternum";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
@@ -36,6 +37,7 @@ import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
+import { captureClientEvent } from "@/posthog";
 import { applyWorldSelection } from "@/runtime/world";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
@@ -49,6 +51,7 @@ import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
 import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
@@ -58,6 +61,24 @@ import {
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
+import { SeasonPassOptionCard } from "./season-pass-option-card";
+import { SettlementPlannerMap } from "./settlement-planner-map";
+import {
+  SettlementResourceBadges,
+  resolvePlannerResourceLabel as resolveResourceLabel,
+} from "./settlement-resource-badges";
+import {
+  buildPlannerRealmSelectionDetails,
+  resolvePlannerOwnerLabel,
+  type PlannerRealmSelectionDetails,
+} from "./settlement-planner-selection";
+import {
+  isSettlementPlannerTargetStillValid,
+  type SettlementPlannerOptimisticRealm,
+  type SettlementPlannerTarget,
+} from "./settlement-planner-utils";
+import { useSettlementPlannerData } from "./use-settlement-planner-data";
+import { env } from "../../../../../env";
 
 const DEBUG_MODAL = false;
 const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
@@ -100,11 +121,6 @@ const extractTransactionHash = (value: unknown): string | null => {
   }
 
   return null;
-};
-
-const resolveResourceLabel = (resourceId: number): string | null => {
-  const label = ResourcesIds[resourceId as ResourcesIds];
-  return typeof label === "string" ? label : null;
 };
 
 const ALL_VILLAGE_DIRECTIONS: readonly Direction[] = [
@@ -432,7 +448,7 @@ const mapVillageSettleError = (error: unknown): string => {
   }
 
   if (message.includes("connected entity is not a realm")) {
-    return "Choose one of your settled realms.";
+    return "Choose a settled realm.";
   }
 
   if (message.includes("connected realm already has") || message.includes("slot is not available")) {
@@ -753,6 +769,7 @@ type ModalPhase =
   | "forge"
   | "hyperstructure"
   | "settlement"
+  | "settlement-planner"
   | "season-pass-required"
   | "season-placement"
   | "village-pass-required"
@@ -1386,49 +1403,12 @@ const SeasonPlacementPhase = ({
             {seasonPasses.map((pass) => {
               const isSelected = selectedSeasonPassTokenId === pass.tokenId;
               return (
-                <div
+                <SeasonPassOptionCard
                   key={pass.tokenId.toString()}
-                  className={cn(
-                    "rounded-lg border p-2 transition-colors",
-                    isSelected ? "border-gold/55 bg-gold/15" : "border-gold/20 bg-black/25 hover:border-gold/35",
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm text-gold truncate">{pass.realmName}</p>
-                      <p className="text-[11px] text-gold/50">Realm #{pass.realmId}</p>
-                    </div>
-                    <Button
-                      onClick={() => onSelectSeasonPass(pass.tokenId)}
-                      variant={isSelected ? "default" : "outline"}
-                      size="xs"
-                      forceUppercase={false}
-                      className={cn(isSelected ? "!bg-gold !text-brown" : "")}
-                    >
-                      {isSelected ? "Selected" : "Use"}
-                    </Button>
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {pass.resourceIds.length > 0 ? (
-                      pass.resourceIds.map((resourceId, index) => {
-                        const resourceLabel = resolveResourceLabel(resourceId);
-                        if (!resourceLabel) return null;
-                        return (
-                          <div
-                            key={`${pass.tokenId.toString()}-${resourceId}-${index}`}
-                            className="inline-flex items-center gap-1 rounded-md border border-gold/20 bg-black/25 px-1.5 py-1"
-                          >
-                            <ResourceIcon resource={resourceLabel} size="xs" withTooltip={false} />
-                            <span className="text-[10px] text-gold/70">{resourceLabel}</span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <span className="text-[11px] text-gold/50">No allowed resources decoded.</span>
-                    )}
-                  </div>
-                </div>
+                  pass={pass}
+                  isSelected={isSelected}
+                  onSelect={onSelectSeasonPass}
+                />
               );
             })}
           </div>
@@ -1488,6 +1468,9 @@ const SeasonPlacementPhase = ({
           <div className="rounded-md border border-gold/25 bg-black/25 px-2 py-1.5">
             <p className="text-[11px] text-gold/60">Selected pass</p>
             <p className="text-xs text-gold">{selectedPassDisplay}</p>
+            {selectedSeasonPass && (
+              <SettlementResourceBadges resourceIds={selectedSeasonPass.resourceIds} className="mt-2" />
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-2">
@@ -1943,6 +1926,603 @@ const VillagePlacementPhase = ({
   );
 };
 
+const SettlementPlannerPhase = ({
+  plannerData,
+  selectedTarget,
+  onSelectTarget,
+  isLoadingPlanner,
+  plannerDataError,
+  plannerConflict,
+  plannerSuccess,
+  seasonTimingValid,
+  spiresSettled,
+  spiresSettledCount,
+  spiresMaxCount,
+  canEnterGame,
+  seasonPassBalance,
+  seasonPasses,
+  selectedSeasonPassTokenId,
+  onSelectSeasonPass,
+  onRefreshSeasonPassInventory,
+  isRefreshingSeasonPassInventory,
+  seasonPassInventoryError,
+  villagePassBalance,
+  villagePasses,
+  selectedVillagePassTokenId,
+  onSelectVillagePass,
+  onRefreshVillagePassInventory,
+  isRefreshingVillagePassInventory,
+  villagePassInventoryError,
+  distributorAddress,
+  distributorBalance,
+  distributorPasses,
+  isLoadingDistributorInventory,
+  distributorInventoryError,
+  onSendVillagePassToConnectedWallet,
+  isSendingVillagePass,
+  sendVillagePassError,
+  isWalletConnected,
+  onGetSeasonPass,
+  onGetVillagePass,
+  canUseSandboxMintFlow,
+  mintRealmTokenIdInput,
+  onMintRealmTokenIdInputChange,
+  onAutoSelectNextRealmTokenId,
+  isAutoSelectingNextRealmTokenId,
+  autoSelectNextRealmTokenIdError,
+  onMintRealmAndSeasonPass,
+  isMintingRealmAndSeasonPass,
+  mintRealmAndSeasonPassError,
+  onConfirmRealmSettlement,
+  onConfirmVillageSettlement,
+  isSubmittingRealmSettlement,
+  isSubmittingVillageSettlement,
+  seasonSettlementError,
+  villageSettlementError,
+  onEnterGame,
+  plannerComponents,
+}: {
+  plannerData: ReturnType<typeof useSettlementPlannerData>;
+  selectedTarget: SettlementPlannerTarget | null;
+  onSelectTarget: (target: SettlementPlannerTarget) => void;
+  isLoadingPlanner: boolean;
+  plannerDataError: string | null;
+  plannerConflict: string | null;
+  plannerSuccess: string | null;
+  seasonTimingValid: boolean;
+  spiresSettled: boolean;
+  spiresSettledCount: number | null;
+  spiresMaxCount: number | null;
+  canEnterGame: boolean;
+  seasonPassBalance: bigint;
+  seasonPasses: SeasonPassInventoryItem[];
+  selectedSeasonPassTokenId: bigint | null;
+  onSelectSeasonPass: (tokenId: bigint | null) => void;
+  onRefreshSeasonPassInventory: () => void;
+  isRefreshingSeasonPassInventory: boolean;
+  seasonPassInventoryError: string | null;
+  villagePassBalance: bigint;
+  villagePasses: VillagePassInventoryItem[];
+  selectedVillagePassTokenId: bigint | null;
+  onSelectVillagePass: (tokenId: bigint) => void;
+  onRefreshVillagePassInventory: () => void;
+  isRefreshingVillagePassInventory: boolean;
+  villagePassInventoryError: string | null;
+  distributorAddress: string;
+  distributorBalance: bigint;
+  distributorPasses: VillagePassInventoryItem[];
+  isLoadingDistributorInventory: boolean;
+  distributorInventoryError: string | null;
+  onSendVillagePassToConnectedWallet: () => void;
+  isSendingVillagePass: boolean;
+  sendVillagePassError: string | null;
+  isWalletConnected: boolean;
+  onGetSeasonPass: () => void;
+  onGetVillagePass: () => void;
+  canUseSandboxMintFlow: boolean;
+  mintRealmTokenIdInput: string;
+  onMintRealmTokenIdInputChange: (value: string) => void;
+  onAutoSelectNextRealmTokenId: () => void;
+  isAutoSelectingNextRealmTokenId: boolean;
+  autoSelectNextRealmTokenIdError: string | null;
+  onMintRealmAndSeasonPass: () => void;
+  isMintingRealmAndSeasonPass: boolean;
+  mintRealmAndSeasonPassError: string | null;
+  onConfirmRealmSettlement: () => void;
+  onConfirmVillageSettlement: () => void;
+  isSubmittingRealmSettlement: boolean;
+  isSubmittingVillageSettlement: boolean;
+  seasonSettlementError: string | null;
+  villageSettlementError: string | null;
+  onEnterGame: () => void;
+  plannerComponents: SetupResult["components"] | null;
+}) => {
+  const selectedRealmInfo = selectedTarget?.type === "realm" ? selectedTarget.realm : null;
+  const selectedRealmSlot = selectedTarget?.type === "realm_slot" ? selectedTarget.slot : null;
+  const selectedVillageSlot = selectedTarget?.type === "village_slot" ? selectedTarget.slot : null;
+  const selectedOccupiedTarget = selectedTarget?.type === "occupied_target" ? selectedTarget : null;
+  const selectedTerrainTile = selectedTarget?.type === "terrain" ? selectedTarget.tile : null;
+  const selectedPlannerRealm =
+    selectedVillageSlot != null
+      ? (plannerData.realms.find((realm) => realm.entityId === selectedVillageSlot.realmEntityId) ?? null)
+      : selectedRealmInfo;
+  const selectedSeasonPass = seasonPasses.find((pass) => pass.tokenId === selectedSeasonPassTokenId) ?? null;
+  const selectedVillagePass = villagePasses.find((pass) => pass.tokenId === selectedVillagePassTokenId) ?? null;
+  const plannerAction = selectedRealmSlot != null ? "realm" : selectedVillageSlot != null ? "village" : "info";
+  const spiresProgressLabel =
+    spiresSettledCount != null && spiresMaxCount != null
+      ? `${Math.min(spiresSettledCount, spiresMaxCount)} / ${spiresMaxCount}`
+      : "unknown";
+  const selectedPlannerRealmLiveInfo = useMemo(() => {
+    if (!plannerComponents) return null;
+
+    const realmEntityId = selectedPlannerRealm?.entityId ?? selectedRealmInfo?.entityId ?? null;
+    if (realmEntityId == null) return null;
+    return getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), plannerComponents) ?? null;
+  }, [plannerComponents, selectedPlannerRealm?.entityId, selectedRealmInfo?.entityId]);
+  const selectedPlannerRealmDetails = useMemo<PlannerRealmSelectionDetails | null>(() => {
+    return buildPlannerRealmSelectionDetails({
+      sourceRealm: selectedPlannerRealm ?? selectedRealmInfo,
+      liveRealm:
+        selectedPlannerRealmLiveInfo == null
+          ? null
+          : {
+              realmId: selectedPlannerRealmLiveInfo.realmId,
+              owner: selectedPlannerRealmLiveInfo.owner,
+              ownerName: selectedPlannerRealmLiveInfo.ownerName,
+              resources: selectedPlannerRealmLiveInfo.resources,
+            },
+    });
+  }, [selectedPlannerRealm, selectedPlannerRealmLiveInfo, selectedRealmInfo]);
+  const selectedPlannerOwnerLabel = resolvePlannerOwnerLabel(
+    selectedPlannerRealmDetails?.ownerName,
+    selectedPlannerRealmDetails?.ownerAddress,
+  );
+
+  return (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,1fr)]">
+      <SettlementPlannerMap
+        plannerData={plannerData}
+        selectedTarget={selectedTarget}
+        onSelectTarget={onSelectTarget}
+        isLoading={isLoadingPlanner}
+        mapHeightClassName="h-[380px] md:h-[min(56vh,560px)]"
+      />
+
+      <aside className="flex min-h-0 flex-col gap-3 rounded-2xl border border-gold/25 bg-gradient-to-b from-[#181108]/95 via-[#120d07]/95 to-[#090603]/95 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-gold">Action Panel</p>
+            <p className="text-[11px] text-gold/60">
+              {selectedTarget
+                ? plannerAction === "realm"
+                  ? "Realm settlement is driven by the selected hex."
+                  : plannerAction === "village"
+                    ? "Village settlement is driven by the selected slot."
+                    : "Inspect the current map target."
+                : "Select a map target to settle or inspect it."}
+            </p>
+          </div>
+          {canEnterGame && (
+            <Button onClick={onEnterGame} className="h-9 !rounded-md !bg-gold !text-brown" forceUppercase={false}>
+              <div className="flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                <span>Enter Game</span>
+              </div>
+            </Button>
+          )}
+        </div>
+
+        {plannerSuccess && (
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+            {plannerSuccess}
+          </div>
+        )}
+        {plannerConflict && (
+          <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+            {plannerConflict}
+          </div>
+        )}
+        {plannerDataError && (
+          <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+            {plannerDataError}
+          </div>
+        )}
+
+        {!selectedTarget && (
+          <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
+            <p className="text-sm font-semibold text-gold">Choose your next move</p>
+            <p className="mt-2 text-xs text-gold/70">
+              Free realm hexes create realms. Free slots around any settled realm create villages. Busy targets stay
+              visible so you can plan around them.
+            </p>
+            <div className="mt-3 grid grid-cols-1 gap-2 text-[11px] text-gold/75">
+              <div className="rounded-md border border-gold/20 bg-black/25 px-2 py-1.5">
+                Season timing: {seasonTimingValid ? "open" : "closed"}
+              </div>
+              <div className="rounded-md border border-gold/20 bg-black/25 px-2 py-1.5">
+                Realm settlement auto-creates missing spires when needed.
+              </div>
+              <div className="rounded-md border border-gold/20 bg-black/25 px-2 py-1.5">
+                Village settlement works on any realm with a free slot.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedRealmSlot && (
+          <div className="flex min-h-0 flex-col gap-3">
+            <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
+              <p className="text-sm font-semibold text-gold">Settle Realm</p>
+              <p className="mt-1 text-xs text-gold/70">
+                Side {selectedRealmSlot.side}, layer {selectedRealmSlot.layer}, point {selectedRealmSlot.point}
+              </p>
+              <p className="mt-1 text-[11px] text-gold/60">
+                Target coordinate: x {selectedRealmSlot.coordX}, y {selectedRealmSlot.coordY}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 text-[11px]">
+              <div
+                className={cn(
+                  "rounded-md border px-2 py-1.5",
+                  seasonTimingValid
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+                    : "border-red-500/25 bg-red-500/10 text-red-200",
+                )}
+              >
+                Season timing: {seasonTimingValid ? "ready" : "closed"}
+              </div>
+              <div
+                className={cn(
+                  "rounded-md border px-2 py-1.5",
+                  spiresSettled
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+                    : "border-amber-400/30 bg-amber-500/10 text-amber-100",
+                )}
+              >
+                Spires settled: {spiresSettled ? "ready" : `auto-create on submit (${spiresProgressLabel})`}
+              </div>
+              <div
+                className={cn(
+                  "rounded-md border px-2 py-1.5",
+                  selectedSeasonPassTokenId != null
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+                    : "border-red-500/25 bg-red-500/10 text-red-200",
+                )}
+              >
+                Season pass:{" "}
+                {selectedSeasonPass
+                  ? `${selectedSeasonPass.realmName} (Realm #${selectedSeasonPass.realmId})`
+                  : selectedSeasonPassTokenId != null
+                    ? `#${selectedSeasonPassTokenId.toString()}`
+                    : "missing"}
+              </div>
+            </div>
+
+            {selectedSeasonPassTokenId != null ? (
+              <div className="min-h-0 rounded-xl border border-gold/20 bg-black/25 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-gold">Season Pass</p>
+                  <Button
+                    onClick={onRefreshSeasonPassInventory}
+                    disabled={isRefreshingSeasonPassInventory}
+                    variant="outline"
+                    size="xs"
+                    forceUppercase={false}
+                  >
+                    {isRefreshingSeasonPassInventory ? "Refreshing..." : "Refresh"}
+                  </Button>
+                </div>
+                <div className="max-h-48 space-y-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+                  {seasonPasses.map((pass) => {
+                    const isSelected = selectedSeasonPassTokenId === pass.tokenId;
+                    return (
+                      <SeasonPassOptionCard
+                        key={pass.tokenId.toString()}
+                        pass={pass}
+                        isSelected={isSelected}
+                        onSelect={onSelectSeasonPass}
+                        className="bg-black/30"
+                      />
+                    );
+                  })}
+                </div>
+                {selectedSeasonPass && (
+                  <div className="mt-2 rounded-lg border border-gold/20 bg-black/20 px-3 py-2">
+                    <p className="text-[11px] text-gold/70">
+                      Selected pass: {selectedSeasonPass.realmName} (Realm #{selectedSeasonPass.realmId})
+                    </p>
+                    <SettlementResourceBadges resourceIds={selectedSeasonPass.resourceIds} className="mt-2" />
+                  </div>
+                )}
+                {seasonPassInventoryError && (
+                  <p className="mt-2 text-[11px] text-amber-200/85">{seasonPassInventoryError}</p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-3">
+                <p className="text-sm font-semibold text-gold">Season Pass Needed</p>
+                <p className="mt-1 text-xs text-gold/70">
+                  Keep this realm hex selected, then add a season pass and come straight back to confirm.
+                </p>
+                <Button
+                  onClick={onGetSeasonPass}
+                  className="mt-3 h-10 w-full !rounded-md !bg-gold !text-brown"
+                  forceUppercase={false}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Get a Season Pass</span>
+                  </div>
+                </Button>
+                <Button
+                  onClick={onRefreshSeasonPassInventory}
+                  disabled={isRefreshingSeasonPassInventory}
+                  variant="outline"
+                  className="mt-2 h-9 w-full"
+                  forceUppercase={false}
+                >
+                  {isRefreshingSeasonPassInventory ? "Refreshing..." : "Refresh Pass Status"}
+                </Button>
+                {canUseSandboxMintFlow && (
+                  <div className="mt-3 rounded-lg border border-gold/20 bg-black/25 p-3">
+                    <p className="text-[11px] text-gold/70">Sandbox shortcut: mint a mock realm and season pass.</p>
+                    <label className="mt-2 block text-[11px] text-gold/70">
+                      Realm ID
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={mintRealmTokenIdInput}
+                        onChange={(event) => onMintRealmTokenIdInputChange(event.target.value)}
+                        className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
+                      />
+                    </label>
+                    <Button
+                      onClick={onAutoSelectNextRealmTokenId}
+                      disabled={isAutoSelectingNextRealmTokenId || isMintingRealmAndSeasonPass}
+                      variant="outline"
+                      className="mt-2 h-9 w-full"
+                      forceUppercase={false}
+                    >
+                      {isAutoSelectingNextRealmTokenId ? "Finding..." : "Auto-select Next Free ID"}
+                    </Button>
+                    <Button
+                      onClick={onMintRealmAndSeasonPass}
+                      disabled={isMintingRealmAndSeasonPass}
+                      className="mt-2 h-10 w-full !rounded-md !bg-emerald-400 !text-brown"
+                      forceUppercase={false}
+                    >
+                      {isMintingRealmAndSeasonPass ? "Minting..." : "Mint Realm + Season Pass"}
+                    </Button>
+                    {autoSelectNextRealmTokenIdError && (
+                      <p className="mt-2 text-[11px] text-amber-200/85">{autoSelectNextRealmTokenIdError}</p>
+                    )}
+                    {mintRealmAndSeasonPassError && (
+                      <p className="mt-2 text-[11px] text-red-200">{mintRealmAndSeasonPassError}</p>
+                    )}
+                  </div>
+                )}
+                {seasonPassBalance > 0n && seasonPasses.length === 0 && (
+                  <p className="mt-2 text-[11px] text-amber-100/85">
+                    A season pass is detected but token enumeration is unavailable for this wallet.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {seasonSettlementError && <p className="text-[11px] text-red-200">{seasonSettlementError}</p>}
+
+            <Button
+              onClick={onConfirmRealmSettlement}
+              disabled={!seasonTimingValid || selectedSeasonPassTokenId == null || isSubmittingRealmSettlement}
+              className="h-11 w-full !rounded-md !bg-gold !text-brown"
+              forceUppercase={false}
+            >
+              <div className="flex items-center justify-center gap-2">
+                {isSubmittingRealmSettlement ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Castle className="h-4 w-4" />
+                )}
+                <span>{isSubmittingRealmSettlement ? "Settling Realm..." : "Settle Realm"}</span>
+              </div>
+            </Button>
+          </div>
+        )}
+
+        {selectedVillageSlot && (
+          <div className="flex min-h-0 flex-col gap-3">
+            <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
+              <p className="text-sm font-semibold text-gold">Settle Village</p>
+              <p className="mt-1 text-xs text-gold/70">
+                {selectedPlannerRealmDetails?.realmId != null
+                  ? `Realm #${selectedPlannerRealmDetails.realmId}`
+                  : "Realm target"}{" "}
+                · {DirectionName[selectedVillageSlot.direction]}
+              </p>
+              {selectedPlannerRealmDetails?.realmName && (
+                <p className="mt-1 text-sm text-gold">{selectedPlannerRealmDetails.realmName}</p>
+              )}
+              <p className="mt-1 text-[11px] text-gold/60">Owner: {selectedPlannerOwnerLabel}</p>
+              <p className="mt-1 text-[11px] text-gold/60">
+                Coordinate: x {selectedVillageSlot.coordX}, y {selectedVillageSlot.coordY}
+              </p>
+              <div className="mt-3 rounded-lg border border-gold/20 bg-black/20 px-3 py-2">
+                <p className="text-[11px] text-gold/60">Realm resources</p>
+                <SettlementResourceBadges
+                  resourceIds={selectedPlannerRealmDetails?.resourceIds ?? []}
+                  className="mt-2"
+                  emptyLabel="Realm resources unavailable."
+                />
+              </div>
+            </div>
+
+            {selectedVillagePassTokenId != null ? (
+              <div className="min-h-0 rounded-xl border border-gold/20 bg-black/25 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-gold">Village Pass</p>
+                  <Button
+                    onClick={onRefreshVillagePassInventory}
+                    disabled={isRefreshingVillagePassInventory}
+                    variant="outline"
+                    size="xs"
+                    forceUppercase={false}
+                  >
+                    {isRefreshingVillagePassInventory ? "Refreshing..." : "Refresh"}
+                  </Button>
+                </div>
+                <div className="max-h-48 space-y-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+                  {villagePasses.map((pass) => {
+                    const isSelected = selectedVillagePassTokenId === pass.tokenId;
+                    return (
+                      <button
+                        key={pass.tokenId.toString()}
+                        type="button"
+                        onClick={() => onSelectVillagePass(pass.tokenId)}
+                        className={cn(
+                          "w-full rounded-lg border px-3 py-2 text-left transition-colors",
+                          isSelected ? "border-gold/55 bg-gold/15" : "border-gold/20 bg-black/30 hover:border-gold/35",
+                        )}
+                      >
+                        <p className="text-sm text-gold">Village Pass #{pass.tokenId.toString()}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedVillagePass && (
+                  <p className="mt-2 text-[11px] text-gold/70">
+                    Selected pass: #{selectedVillagePass.tokenId.toString()}
+                  </p>
+                )}
+                {villagePassInventoryError && (
+                  <p className="mt-2 text-[11px] text-amber-200/85">{villagePassInventoryError}</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-3">
+                  <p className="text-sm font-semibold text-gold">Village Pass Needed</p>
+                  <p className="mt-1 text-xs text-gold/70">
+                    Keep this slot selected, then add a village pass and confirm from the same map target.
+                  </p>
+                  <Button
+                    onClick={onGetVillagePass}
+                    className="mt-3 h-10 w-full !rounded-md !bg-gold !text-brown"
+                    forceUppercase={false}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Open Marketplace</span>
+                    </div>
+                  </Button>
+                </div>
+                <VillagePassDistributorPanel
+                  distributorAddress={distributorAddress}
+                  distributorBalance={distributorBalance}
+                  distributorPasses={distributorPasses}
+                  isLoadingDistributorInventory={isLoadingDistributorInventory}
+                  distributorInventoryError={distributorInventoryError}
+                  onSendVillagePassToConnectedWallet={onSendVillagePassToConnectedWallet}
+                  isSendingVillagePass={isSendingVillagePass}
+                  sendVillagePassError={sendVillagePassError}
+                  isWalletConnected={isWalletConnected}
+                />
+                {villagePassBalance > 0n && villagePasses.length === 0 && (
+                  <p className="text-[11px] text-amber-100/85">
+                    A village pass is detected but token enumeration is unavailable for this wallet.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {villageSettlementError && <p className="text-[11px] text-red-200">{villageSettlementError}</p>}
+
+            <Button
+              onClick={onConfirmVillageSettlement}
+              disabled={!seasonTimingValid || selectedVillagePassTokenId == null || isSubmittingVillageSettlement}
+              className="h-11 w-full !rounded-md !bg-gold !text-brown"
+              forceUppercase={false}
+            >
+              <div className="flex items-center justify-center gap-2">
+                {isSubmittingVillageSettlement ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Castle className="h-4 w-4" />
+                )}
+                <span>{isSubmittingVillageSettlement ? "Settling Village..." : "Settle Village"}</span>
+              </div>
+            </Button>
+          </div>
+        )}
+
+        {selectedRealmInfo && (
+          <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
+            <p className="text-sm font-semibold text-gold">
+              {selectedPlannerRealmDetails?.realmName ??
+                (selectedRealmInfo.realmId != null ? `Realm #${selectedRealmInfo.realmId}` : "Settled Realm")}
+            </p>
+            <p className="mt-1 text-xs text-gold/70">
+              {selectedPlannerRealmDetails?.realmId != null
+                ? `Realm #${selectedPlannerRealmDetails.realmId}`
+                : "Settled Realm"}
+            </p>
+            <p className="mt-1 text-[11px] text-gold/60">Owner: {selectedPlannerOwnerLabel}</p>
+            <div className="mt-3 rounded-lg border border-gold/20 bg-black/20 px-3 py-2">
+              <p className="text-[11px] text-gold/60">Realm resources</p>
+              <SettlementResourceBadges
+                resourceIds={selectedPlannerRealmDetails?.resourceIds ?? []}
+                className="mt-2"
+                emptyLabel="Realm resources unavailable."
+              />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-gold/75">
+              <div className="rounded-md border border-gold/20 bg-black/25 px-2 py-1.5">
+                Villages: {selectedRealmInfo.villagesCount}
+              </div>
+              <div className="rounded-md border border-gold/20 bg-black/25 px-2 py-1.5">
+                Free slots: {selectedRealmInfo.freeDirectionCount}
+              </div>
+            </div>
+            {selectedRealmInfo.optimistic && (
+              <p className="mt-2 text-[11px] text-amber-100/85">
+                This realm is newly settled and still syncing. Its village slots will become actionable once indexed.
+              </p>
+            )}
+          </div>
+        )}
+
+        {selectedOccupiedTarget && (
+          <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-3">
+            <p className="text-sm font-semibold text-gold">
+              {selectedOccupiedTarget.occupiedType === "realm_slot" ? "Realm Hex Occupied" : "Village Slot Busy"}
+            </p>
+            {"direction" in selectedOccupiedTarget.slot && selectedOccupiedTarget.slot.pending ? (
+              <p className="mt-2 text-xs text-gold/70">
+                This realm was just settled. Wait for sync to finish before village slots become actionable.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-gold/70">
+                This target is already taken. Inspect it on the map, then choose another free location.
+              </p>
+            )}
+          </div>
+        )}
+
+        {selectedTerrainTile && (
+          <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
+            <p className="text-sm font-semibold text-gold">Explored Hex</p>
+            <p className="mt-1 text-xs text-gold/70">
+              Coordinate x {selectedTerrainTile.coordX}, y {selectedTerrainTile.coordY}
+            </p>
+            <p className="mt-1 text-[11px] text-gold/60">Biome index {selectedTerrainTile.biome}</p>
+          </div>
+        )}
+      </aside>
+    </div>
+  );
+};
+
 const VillageRevealPhase = ({
   result,
   onEnterGame,
@@ -2356,6 +2936,7 @@ export const GameEntryModal = ({
   const worldMode = worldMeta?.mode ?? "unknown";
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
+  const unifiedSettlementPlannerEnabled = env.VITE_PUBLIC_ETERNUM_UNIFIED_SETTLEMENT_PLANNER;
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
@@ -2396,12 +2977,17 @@ export const GameEntryModal = ({
   const [isSubmittingVillageSettlement, setIsSubmittingVillageSettlement] = useState(false);
   const [villageSettlementError, setVillageSettlementError] = useState<string | null>(null);
   const [villageRevealResult, setVillageRevealResult] = useState<VillageRevealResult | null>(null);
+  const [settlementPlannerTarget, setSettlementPlannerTarget] = useState<SettlementPlannerTarget | null>(null);
+  const [settlementPlannerConflict, setSettlementPlannerConflict] = useState<string | null>(null);
+  const [settlementPlannerSuccess, setSettlementPlannerSuccess] = useState<string | null>(null);
+  const [optimisticRealmPlacements, setOptimisticRealmPlacements] = useState<SettlementPlannerOptimisticRealm[]>([]);
   const [mintRealmTokenIdInput, setMintRealmTokenIdInput] = useState("1");
   const [isAutoSelectingNextRealmTokenId, setIsAutoSelectingNextRealmTokenId] = useState(false);
   const [autoSelectNextRealmTokenIdError, setAutoSelectNextRealmTokenIdError] = useState<string | null>(null);
   const [isMintingRealmAndSeasonPass, setIsMintingRealmAndSeasonPass] = useState(false);
   const [mintRealmAndSeasonPassError, setMintRealmAndSeasonPassError] = useState<string | null>(null);
   const hasEnteredGameRef = useRef(false);
+  const plannerOpenedRef = useRef(false);
 
   const activeWorldProfile = getActiveWorld();
   const selectedWorldRpcUrl = activeWorldProfile?.name === worldName ? (activeWorldProfile.rpcUrl ?? null) : null;
@@ -2505,6 +3091,16 @@ export const GameEntryModal = ({
     seasonOccupiedSlotsErrorRaw instanceof Error ? seasonOccupiedSlotsErrorRaw.message : null;
   const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
   const villageSlotsError = villageSlotsErrorRaw instanceof Error ? villageSlotsErrorRaw.message : null;
+  const settlementPlannerData = useSettlementPlannerData({
+    enabled: isOpen && isEternumMode && bootstrapStatus === "ready" && unifiedSettlementPlannerEnabled,
+    chain,
+    worldName,
+    layerMax: worldMeta?.settlementLayerMax ?? null,
+    layersSkipped: worldMeta?.settlementLayersSkipped ?? null,
+    baseDistance: worldMeta?.settlementBaseDistance ?? null,
+    mapCenterOffset: worldMeta?.mapCenterOffset ?? 0,
+    optimisticRealms: optimisticRealmPlacements,
+  });
   const seasonPassInventoryWarning = useMemo(() => {
     if (!seasonPassInventoryError) return null;
     const normalized = seasonPassInventoryError.toLowerCase();
@@ -2608,10 +3204,15 @@ export const GameEntryModal = ({
       setIsSubmittingVillageSettlement(false);
       setVillageSettlementError(null);
       setVillageRevealResult(null);
+      setSettlementPlannerTarget(null);
+      setSettlementPlannerConflict(null);
+      setSettlementPlannerSuccess(null);
+      setOptimisticRealmPlacements([]);
       setIsAutoSelectingNextRealmTokenId(false);
       setAutoSelectNextRealmTokenIdError(null);
       setIsMintingRealmAndSeasonPass(false);
       setMintRealmAndSeasonPassError(null);
+      plannerOpenedRef.current = false;
     }
   }, [isOpen]);
 
@@ -2650,6 +3251,9 @@ export const GameEntryModal = ({
       setSelectedVillageRealmEntityId(null);
       return;
     }
+    if (unifiedSettlementPlannerEnabled) {
+      return;
+    }
     if (settleableVillageRealms.length === 0) {
       setSelectedVillageRealmEntityId(null);
       return;
@@ -2661,11 +3265,14 @@ export const GameEntryModal = ({
       }
       return settleableVillageRealms[0]?.entityId ?? null;
     });
-  }, [isEternumMode, settleableVillageRealms]);
+  }, [isEternumMode, settleableVillageRealms, unifiedSettlementPlannerEnabled]);
 
   useEffect(() => {
     if (!isEternumMode) {
       setSelectedVillageDirection(null);
+      return;
+    }
+    if (unifiedSettlementPlannerEnabled) {
       return;
     }
 
@@ -2676,10 +3283,11 @@ export const GameEntryModal = ({
       const firstAvailableDirection = selectedVillageAvailableDirections.values().next().value as Direction | undefined;
       return firstAvailableDirection ?? null;
     });
-  }, [isEternumMode, selectedVillageAvailableDirections]);
+  }, [isEternumMode, selectedVillageAvailableDirections, unifiedSettlementPlannerEnabled]);
 
   useEffect(() => {
     if (!isEternumMode) return;
+    if (unifiedSettlementPlannerEnabled) return;
     const minimumLayer = Math.max(1, (worldMeta?.settlementLayersSkipped ?? 0) + 1);
     setSeasonPlacement((current) => {
       if (current.layer >= minimumLayer) return current;
@@ -2689,7 +3297,7 @@ export const GameEntryModal = ({
         point: 0,
       };
     });
-  }, [isEternumMode, worldMeta?.settlementLayersSkipped]);
+  }, [isEternumMode, worldMeta?.settlementLayersSkipped, unifiedSettlementPlannerEnabled]);
 
   useEffect(() => {
     setSeasonSettlementError(null);
@@ -2702,6 +3310,39 @@ export const GameEntryModal = ({
   useEffect(() => {
     setVillagePassDistributorTransferError(null);
   }, [account?.address, villagePassAddress, chain, worldName]);
+
+  useEffect(() => {
+    if (!unifiedSettlementPlannerEnabled || !settlementPlannerTarget) {
+      return;
+    }
+    if (settlementPlannerData.isLoading) {
+      return;
+    }
+    if (isSettlementPlannerTargetStillValid(settlementPlannerTarget, settlementPlannerData)) {
+      return;
+    }
+
+    setSettlementPlannerTarget(null);
+    setSettlementPlannerConflict("That location just changed. The planner refreshed and cleared the stale selection.");
+    captureClientEvent("planner_conflict_refreshed", {
+      worldName,
+      chain,
+    });
+  }, [unifiedSettlementPlannerEnabled, settlementPlannerTarget, settlementPlannerData, worldName, chain]);
+
+  useEffect(() => {
+    if (optimisticRealmPlacements.length === 0) {
+      return;
+    }
+
+    const syncedCoordKeys = new Set(
+      settlementPlannerData.snapshot.realms.map((realm) => `${realm.coordX}:${realm.coordY}`),
+    );
+
+    setOptimisticRealmPlacements((current) =>
+      current.filter((realm) => !syncedCoordKeys.has(`${realm.coordX}:${realm.coordY}`)),
+    );
+  }, [optimisticRealmPlacements.length, settlementPlannerData.snapshot.realms]);
 
   // Update task status
   const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
@@ -2790,10 +3431,17 @@ export const GameEntryModal = ({
     if (!selectedSeasonPlacementIsOccupied) return seasonPlacementValidationErrors;
     return [...seasonPlacementValidationErrors, "Destination occupied. Choose another side/layer/point."];
   }, [seasonPlacementValidationErrors, selectedSeasonPlacementIsOccupied]);
+  const settlementPlannerRealmTarget =
+    settlementPlannerTarget?.type === "realm_slot" ? settlementPlannerTarget.slot : null;
+  const settlementPlannerVillageTarget =
+    settlementPlannerTarget?.type === "village_slot" ? settlementPlannerTarget.slot : null;
 
   useEffect(() => {
     if (!isEternumMode) {
       setEternumSettlementMode("realm");
+      return;
+    }
+    if (unifiedSettlementPlannerEnabled) {
       return;
     }
     setEternumSettlementMode((current) => {
@@ -2801,7 +3449,7 @@ export const GameEntryModal = ({
       if (current === "village" && !hasVillagePass && hasSeasonPass) return "realm";
       return current;
     });
-  }, [isEternumMode, hasSeasonPass, hasVillagePass]);
+  }, [isEternumMode, hasSeasonPass, hasVillagePass, unifiedSettlementPlannerEnabled]);
 
   // Both checks must complete before we can determine the final phase
   const checksComplete = settlementCheckComplete && hyperstructureCheckComplete;
@@ -2825,6 +3473,11 @@ export const GameEntryModal = ({
         result = "loading";
       } else if (villageRevealResult) {
         result = "village-reveal";
+      } else if (unifiedSettlementPlannerEnabled) {
+        result =
+          hasSettledRealm && eternumEntryIntent === "play" && !seasonSettlementComplete
+            ? "ready"
+            : "settlement-planner";
       } else if (eternumSettlementMode === "village") {
         result = hasVillagePass ? "village-placement" : "village-pass-required";
       } else if (seasonSettlementComplete || (hasSettledRealm && eternumEntryIntent === "play")) {
@@ -2875,6 +3528,7 @@ export const GameEntryModal = ({
       villageDirectionSlots,
       villageRevealResult,
       eternumSettlementMode,
+      unifiedSettlementPlannerEnabled,
       eternumEntryIntent,
       seasonPlacement,
       seasonPlacementErrors,
@@ -2917,6 +3571,7 @@ export const GameEntryModal = ({
     villageDirectionSlots,
     villageRevealResult,
     eternumSettlementMode,
+    unifiedSettlementPlannerEnabled,
     eternumEntryIntent,
     seasonPlacement,
     seasonPlacementErrors,
@@ -2925,6 +3580,19 @@ export const GameEntryModal = ({
     canAttemptSeasonSettle,
     worldName,
   ]);
+
+  useEffect(() => {
+    if (phase !== "settlement-planner" || !unifiedSettlementPlannerEnabled || plannerOpenedRef.current) {
+      return;
+    }
+
+    plannerOpenedRef.current = true;
+    captureClientEvent("planner_opened", {
+      worldName,
+      chain,
+      entryIntent: eternumEntryIntent,
+    });
+  }, [phase, unifiedSettlementPlannerEnabled, worldName, chain, eternumEntryIntent]);
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
     if (!setupResult || !account?.address) return null;
@@ -3401,6 +4069,10 @@ export const GameEntryModal = ({
         setIsSubmittingVillageSettlement(false);
         setVillageSettlementError(null);
         setVillageRevealResult(null);
+        setSettlementPlannerTarget(null);
+        setSettlementPlannerConflict(null);
+        setSettlementPlannerSuccess(null);
+        setOptimisticRealmPlacements([]);
 
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
@@ -3485,11 +4157,45 @@ export const GameEntryModal = ({
     setIsSubmittingVillageSettlement(false);
     setVillageSettlementError(null);
     setVillageRevealResult(null);
+    setSettlementPlannerTarget(null);
+    setSettlementPlannerConflict(null);
+    setSettlementPlannerSuccess(null);
+    setOptimisticRealmPlacements([]);
+    plannerOpenedRef.current = false;
     // Trigger re-bootstrap
     setTimeout(() => {
       setBootstrapStatus("loading");
     }, 100);
   }, []);
+
+  const handleSettlementPlannerTargetSelect = useCallback(
+    (target: SettlementPlannerTarget) => {
+      setSettlementPlannerTarget(target);
+      setSettlementPlannerConflict(null);
+      setSettlementPlannerSuccess(null);
+
+      if (target.type === "realm_slot") {
+        setSeasonPlacement({
+          side: target.slot.side,
+          layer: target.slot.layer,
+          point: target.slot.point,
+        });
+      }
+
+      if (target.type === "village_slot") {
+        setSelectedVillageRealmEntityId(target.slot.realmEntityId);
+        setSelectedVillageDirection(target.slot.direction);
+      }
+
+      captureClientEvent("planner_target_selected", {
+        worldName,
+        chain,
+        targetType: target.type,
+        occupiedType: target.type === "occupied_target" ? target.occupiedType : null,
+      });
+    },
+    [worldName, chain],
+  );
 
   const handleGetSeasonPass = useCallback(() => {
     window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer");
@@ -3723,12 +4429,27 @@ export const GameEntryModal = ({
 
   const handleSeasonSettle = useCallback(async () => {
     if (!account?.address) return;
+    const activeSeasonPlacement =
+      unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget
+        ? {
+            side: settlementPlannerRealmTarget.side,
+            layer: settlementPlannerRealmTarget.layer,
+            point: settlementPlannerRealmTarget.point,
+          }
+        : seasonPlacement;
+    const activeSeasonPlacementErrors =
+      unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget ? [] : seasonPlacementErrors;
+
+    if (unifiedSettlementPlannerEnabled && !settlementPlannerRealmTarget) {
+      setSeasonSettlementError("Select a free realm hex on the planner map.");
+      return;
+    }
     if (!selectedSeasonPassTokenId) {
       setSeasonSettlementError("Select a season pass before settling.");
       return;
     }
-    if (seasonPlacementErrors.length > 0) {
-      setSeasonSettlementError(seasonPlacementErrors[0] ?? "Invalid settlement placement.");
+    if (activeSeasonPlacementErrors.length > 0) {
+      setSeasonSettlementError(activeSeasonPlacementErrors[0] ?? "Invalid settlement placement.");
       return;
     }
     if (!seasonTimingValid) {
@@ -3758,6 +4479,15 @@ export const GameEntryModal = ({
 
     setIsSubmittingSeasonSettlement(true);
     setSeasonSettlementError(null);
+    setSettlementPlannerConflict(null);
+
+    if (unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget) {
+      captureClientEvent("planner_submit_clicked", {
+        worldName,
+        chain,
+        targetType: "realm_slot",
+      });
+    }
 
     try {
       const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
@@ -3848,9 +4578,9 @@ export const GameEntryModal = ({
             owner,
             realmId,
             frontend,
-            seasonPlacement.side,
-            seasonPlacement.layer,
-            seasonPlacement.point,
+            activeSeasonPlacement.side,
+            activeSeasonPlacement.layer,
+            activeSeasonPlacement.point,
           ]),
         },
       );
@@ -3867,16 +4597,43 @@ export const GameEntryModal = ({
       void refetchSeasonPassInventory();
       void refetchDistributorVillagePassInventory();
       void refetchOwnedStructures();
-
       setSeasonSettlementComplete(true);
+      setSettlementPlannerSuccess("Realm settled. New village slots will unlock on the planner as sync catches up.");
+
+      if (unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget) {
+        setOptimisticRealmPlacements((current) => [
+          ...current.filter((realm) => realm.id !== settlementPlannerRealmTarget.id),
+          {
+            id: settlementPlannerRealmTarget.id,
+            coordX: settlementPlannerRealmTarget.coordX,
+            coordY: settlementPlannerRealmTarget.coordY,
+          },
+        ]);
+        setSettlementPlannerTarget(null);
+        void settlementPlannerData.refetch();
+        captureClientEvent("planner_submit_succeeded", {
+          worldName,
+          chain,
+          targetType: "realm_slot",
+        });
+      }
     } catch (error) {
       debugLog(worldName, "Season settlement failed:", error);
       setSeasonSettlementError(mapSeasonSettleError(error));
+      if (unifiedSettlementPlannerEnabled) {
+        captureClientEvent("planner_submit_failed", {
+          worldName,
+          chain,
+          targetType: "realm_slot",
+        });
+      }
     } finally {
       setIsSubmittingSeasonSettlement(false);
     }
   }, [
     account,
+    unifiedSettlementPlannerEnabled,
+    settlementPlannerRealmTarget,
     selectedSeasonPassTokenId,
     seasonPlacementErrors,
     seasonTimingValid,
@@ -3899,10 +4656,24 @@ export const GameEntryModal = ({
     refetchSeasonPassInventory,
     refetchDistributorVillagePassInventory,
     refetchOwnedStructures,
+    settlementPlannerData,
     queryClient,
   ]);
 
   const handleVillageSettle = useCallback(async () => {
+    const activeVillageRealmEntityId =
+      unifiedSettlementPlannerEnabled && settlementPlannerVillageTarget
+        ? settlementPlannerVillageTarget.realmEntityId
+        : selectedVillageRealmEntityId;
+    const activeVillageDirection =
+      unifiedSettlementPlannerEnabled && settlementPlannerVillageTarget
+        ? settlementPlannerVillageTarget.direction
+        : selectedVillageDirection;
+    const activeVillageDirectionAvailable =
+      unifiedSettlementPlannerEnabled && settlementPlannerVillageTarget
+        ? !settlementPlannerVillageTarget.occupied && !settlementPlannerVillageTarget.pending
+        : activeVillageDirection != null && selectedVillageAvailableDirections.has(activeVillageDirection);
+
     if (!account?.address) {
       setVillageSettlementError("Connect your wallet first.");
       return;
@@ -3923,21 +4694,34 @@ export const GameEntryModal = ({
       setVillageSettlementError("Select a village pass token before settling.");
       return;
     }
-    if (selectedVillageRealmEntityId == null) {
-      setVillageSettlementError("Select one of your settled realms.");
+    if (unifiedSettlementPlannerEnabled && !settlementPlannerVillageTarget) {
+      setVillageSettlementError("Select a free village slot on the planner map.");
       return;
     }
-    if (selectedVillageDirection == null) {
+    if (activeVillageRealmEntityId == null) {
+      setVillageSettlementError("Select a settled realm with a free village slot.");
+      return;
+    }
+    if (activeVillageDirection == null) {
       setVillageSettlementError("Select an available direction slot.");
       return;
     }
-    if (!selectedVillageAvailableDirections.has(selectedVillageDirection)) {
+    if (!activeVillageDirectionAvailable) {
       setVillageSettlementError("This direction slot is occupied. Choose another slot.");
       return;
     }
 
     setIsSubmittingVillageSettlement(true);
     setVillageSettlementError(null);
+    setSettlementPlannerConflict(null);
+
+    if (unifiedSettlementPlannerEnabled && settlementPlannerVillageTarget) {
+      captureClientEvent("planner_submit_clicked", {
+        worldName,
+        chain,
+        targetType: "village_slot",
+      });
+    }
 
     try {
       const signer = account as unknown as Account;
@@ -3946,8 +4730,8 @@ export const GameEntryModal = ({
       const villageSettlementCalls = buildVillageSettlementCalls({
         signerAddress: account.address,
         villagePassTokenId: selectedVillagePassTokenId,
-        connectedRealmEntityId: selectedVillageRealmEntityId,
-        direction: selectedVillageDirection,
+        connectedRealmEntityId: activeVillageRealmEntityId,
+        direction: activeVillageDirection,
         villagePassAddress,
         optionalPlayerName,
       });
@@ -3967,19 +4751,37 @@ export const GameEntryModal = ({
       setVillageRevealResult(revealResult);
       setVillageSettlementError(null);
       setEternumSettlementMode("village");
+      setSettlementPlannerSuccess("Village settled. Reveal complete; you can keep planning from the map.");
 
       refetchVillagePassInventory();
       void refetchOwnedStructures();
       void refetchRealmVillageSlots();
+      void settlementPlannerData.refetch();
+      if (unifiedSettlementPlannerEnabled) {
+        captureClientEvent("planner_submit_succeeded", {
+          worldName,
+          chain,
+          targetType: "village_slot",
+        });
+      }
     } catch (error) {
       debugLog(worldName, "Village settlement failed:", error);
       setVillageSettlementError(mapVillageSettleError(error));
+      if (unifiedSettlementPlannerEnabled) {
+        captureClientEvent("planner_submit_failed", {
+          worldName,
+          chain,
+          targetType: "village_slot",
+        });
+      }
     } finally {
       setIsSubmittingVillageSettlement(false);
     }
   }, [
     account,
     setupResult,
+    unifiedSettlementPlannerEnabled,
+    settlementPlannerVillageTarget,
     seasonTimingValid,
     villagePassAddress,
     selectedVillagePassTokenId,
@@ -3994,17 +4796,21 @@ export const GameEntryModal = ({
     refetchVillagePassInventory,
     refetchOwnedStructures,
     refetchRealmVillageSlots,
+    settlementPlannerData,
     worldName,
+    chain,
   ]);
 
   const handleSettleAnotherVillage = useCallback(() => {
     setVillageRevealResult(null);
     setVillageSettlementError(null);
     setEternumSettlementMode("village");
+    setSettlementPlannerSuccess("Village settled. Choose another free slot or enter the game.");
     void refetchOwnedStructures();
     void refetchRealmVillageSlots();
     refetchVillagePassInventory();
-  }, [refetchOwnedStructures, refetchRealmVillageSlots, refetchVillagePassInventory]);
+    void settlementPlannerData.refetch();
+  }, [refetchOwnedStructures, refetchRealmVillageSlots, refetchVillagePassInventory, settlementPlannerData]);
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
@@ -4020,7 +4826,6 @@ export const GameEntryModal = ({
     try {
       const { systemCalls } = setupResult;
       const { configManager } = await import("@bibliothecadao/eternum");
-      const { env } = await import("../../../../../env");
 
       const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
       const blitzConfig = configManager.getBlitzConfig?.();
@@ -4276,15 +5081,30 @@ export const GameEntryModal = ({
 
   const showEternumSettlementModeToggle =
     isEternumMode &&
+    !unifiedSettlementPlannerEnabled &&
     (phase === "season-pass-required" ||
       phase === "season-placement" ||
       phase === "village-pass-required" ||
       phase === "village-placement" ||
       phase === "ready");
+  const usesDesktopCenteredSettlementLayout =
+    isEternumMode &&
+    (phase === "settlement-planner" ||
+      phase === "season-pass-required" ||
+      phase === "season-placement" ||
+      phase === "village-pass-required" ||
+      phase === "village-placement" ||
+      phase === "village-reveal" ||
+      phase === "ready");
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 bg-black/70 backdrop-blur-sm"
+      className={cn(
+        "fixed inset-0 z-50 flex justify-center bg-black/70 backdrop-blur-sm",
+        usesDesktopCenteredSettlementLayout
+          ? "items-start pt-16 sm:pt-24 lg:items-center lg:px-6 lg:py-8 lg:pt-8"
+          : "items-start pt-16 sm:pt-24",
+      )}
       onClick={handleBackdropClick}
     >
       <motion.div
@@ -4292,12 +5112,15 @@ export const GameEntryModal = ({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         className={cn(
-          "relative mx-4 w-full rounded-xl border border-gold/40 bg-brown/95 shadow-2xl backdrop-blur-sm",
-          phase === "season-placement" || phase === "village-placement"
-            ? "max-h-[88vh] max-w-6xl"
-            : phase === "village-reveal"
-              ? "max-w-lg"
-              : "max-w-md",
+          "relative mx-4 flex w-full flex-col overflow-hidden rounded-xl border border-gold/40 bg-brown/95 shadow-2xl backdrop-blur-sm lg:mx-0",
+          phase === "settlement-planner"
+            ? "max-h-[92vh] max-w-7xl"
+            : phase === "season-placement" || phase === "village-placement"
+              ? "max-h-[88vh] max-w-6xl"
+              : phase === "village-reveal"
+                ? "max-w-lg"
+                : "max-w-md",
+          usesDesktopCenteredSettlementLayout && "lg:max-h-[min(54rem,calc(100vh-4rem))]",
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -4328,8 +5151,12 @@ export const GameEntryModal = ({
         <div
           className={cn(
             "px-6 pb-6",
-            (phase === "season-placement" || phase === "village-placement") &&
-              "max-h-[calc(88vh-86px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
+            phase === "settlement-planner"
+              ? "max-h-[calc(92vh-86px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
+              : (phase === "season-placement" || phase === "village-placement") &&
+                  "max-h-[calc(88vh-86px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
+            usesDesktopCenteredSettlementLayout &&
+              "lg:min-h-0 lg:flex-1 lg:max-h-none lg:overflow-y-auto lg:pr-4 lg:scrollbar-thin lg:scrollbar-thumb-gold/20 lg:scrollbar-track-transparent",
           )}
         >
           {showEternumSettlementModeToggle && (
@@ -4398,6 +5225,71 @@ export const GameEntryModal = ({
                   isSettling={isSettling}
                   onSettle={handleSettle}
                   onEnterGame={handleEnterGame}
+                />
+              </motion.div>
+            )}
+            {phase === "settlement-planner" && (
+              <motion.div
+                key="settlement-planner"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <SettlementPlannerPhase
+                  plannerData={settlementPlannerData}
+                  selectedTarget={settlementPlannerTarget}
+                  onSelectTarget={handleSettlementPlannerTargetSelect}
+                  isLoadingPlanner={settlementPlannerData.isLoading}
+                  plannerDataError={settlementPlannerData.snapshotError ?? settlementPlannerData.exploredTilesError}
+                  plannerConflict={settlementPlannerConflict}
+                  plannerSuccess={settlementPlannerSuccess}
+                  seasonTimingValid={seasonTimingValid}
+                  spiresSettled={spiresSettled}
+                  spiresSettledCount={spiresSettledCount}
+                  spiresMaxCount={spiresMaxCount}
+                  canEnterGame={hasSettledRealm || seasonSettlementComplete}
+                  seasonPassBalance={seasonPassBalance}
+                  seasonPasses={seasonPasses}
+                  selectedSeasonPassTokenId={selectedSeasonPassTokenId}
+                  onSelectSeasonPass={setSelectedSeasonPassTokenId}
+                  onRefreshSeasonPassInventory={refetchSeasonPassInventory}
+                  isRefreshingSeasonPassInventory={isLoadingSeasonPassInventory}
+                  seasonPassInventoryError={seasonPassInventoryWarning}
+                  villagePassBalance={villagePassBalance}
+                  villagePasses={villagePasses}
+                  selectedVillagePassTokenId={selectedVillagePassTokenId}
+                  onSelectVillagePass={setSelectedVillagePassTokenId}
+                  onRefreshVillagePassInventory={refetchVillagePassInventory}
+                  isRefreshingVillagePassInventory={isLoadingVillagePassInventory}
+                  villagePassInventoryError={villagePassInventoryWarning}
+                  distributorAddress={VILLAGE_PASS_DISTRIBUTOR_ADDRESS}
+                  distributorBalance={distributorVillagePassBalance}
+                  distributorPasses={distributorVillagePasses}
+                  isLoadingDistributorInventory={isLoadingDistributorVillagePassInventory}
+                  distributorInventoryError={distributorVillagePassInventoryWarning}
+                  onSendVillagePassToConnectedWallet={handleSendVillagePassToConnectedWallet}
+                  isSendingVillagePass={isSendingVillagePassFromDistributor}
+                  sendVillagePassError={villagePassDistributorTransferError}
+                  isWalletConnected={Boolean(account?.address)}
+                  onGetSeasonPass={handleGetSeasonPass}
+                  onGetVillagePass={handleGetVillagePass}
+                  canUseSandboxMintFlow={canUseSandboxMintFlow}
+                  mintRealmTokenIdInput={mintRealmTokenIdInput}
+                  onMintRealmTokenIdInputChange={setMintRealmTokenIdInput}
+                  onAutoSelectNextRealmTokenId={handleAutoSelectNextRealmTokenId}
+                  isAutoSelectingNextRealmTokenId={isAutoSelectingNextRealmTokenId}
+                  autoSelectNextRealmTokenIdError={autoSelectNextRealmTokenIdError}
+                  onMintRealmAndSeasonPass={handleMintRealmAndSeasonPass}
+                  isMintingRealmAndSeasonPass={isMintingRealmAndSeasonPass}
+                  mintRealmAndSeasonPassError={mintRealmAndSeasonPassError}
+                  onConfirmRealmSettlement={handleSeasonSettle}
+                  onConfirmVillageSettlement={handleVillageSettle}
+                  isSubmittingRealmSettlement={isSubmittingSeasonSettlement}
+                  isSubmittingVillageSettlement={isSubmittingVillageSettlement}
+                  seasonSettlementError={seasonSettlementError}
+                  villageSettlementError={villageSettlementError ?? ownedStructuresError}
+                  onEnterGame={handleEnterGame}
+                  plannerComponents={setupResult?.components ?? null}
                 />
               </motion.div>
             )}

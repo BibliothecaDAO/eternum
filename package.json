@@ -2,6 +2,9 @@
   "name": "eternum",
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "start": "pnpm run start:amm-indexerv2",
     "start:amm-indexerv2": "pnpm --dir ./client/apps/amm-indexerv2 start",

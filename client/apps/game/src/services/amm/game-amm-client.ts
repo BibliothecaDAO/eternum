@@ -71,6 +71,7 @@ interface PoolStats {
   feeTo: string;
   resourceSupply: bigint | null;
   marketCapLords: bigint | null;
+  lpHolderCount: number;
 }
 
 interface UserPosition {
@@ -390,6 +391,7 @@ function mapPairStats(pair: PairSummary, pairStats: PairStats, lordsAddress: str
     feeTo: pairStats.feeTo,
     resourceSupply: pairStats.resourceTokenSupply,
     marketCapLords: computeMarketCapLords(pairStats.resourceTokenSupply, spotPrice),
+    lpHolderCount: pairStats.lpHolderCount,
   };
 }
 
