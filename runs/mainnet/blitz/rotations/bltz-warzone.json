@@ -10,30 +10,30 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-worlds",
-  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23728226162-1.json",
-  "latestLaunchRequestId": "23728226162-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23728470847-1.json",
+  "latestLaunchRequestId": "23728470847-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-30T04:50:26.559Z",
+  "updatedAt": "2026-03-30T04:51:52.149Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23728226162,
+    "workflowRunId": 23728470847,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23728226162",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23728470847",
     "ref": "next",
     "sha": "7b9aac72ab3427422a1fcb2b368305ad32d4fbc3"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 5,
-    "nextRetryAt": "2026-03-30T04:55:26.559Z",
+    "nextRetryAt": "2026-03-30T04:56:52.149Z",
     "lastRetryAt": "2026-03-30T04:50:26.559Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-30T04:56:57.358Z",
-    "lastEvaluatedAt": "2026-03-30T04:41:57.358Z"
+    "nextEvaluationAt": "2026-03-30T05:06:52.149Z",
+    "lastEvaluatedAt": "2026-03-30T04:51:52.149Z"
   },
   "steps": [
     {
@@ -48,10 +48,7 @@
       "title": "Creating games",
       "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-warzone-32\" on mainnet.blitz\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+157ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Raw create_game calldata: [\"0x626c747a2d7761727a6f6e652d3332\",50,\"180\",\"0x626c747a2d7761727a6f6e65\",32]\n\u001b[2m[+158ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n\u001b[2m[+1.1s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 917ms: RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x5\",\n      \"0x626c747a2d7761727a6f6e652d3332\",\n      \"0x32\",\n      \"0xb4\",\n      \"0x626c747a2d7761727a6f6e65\",\n      \"0x20\"\n    ],\n    \"signature\": [\n      \"0x3caa3fabba8a843e35de93fdbc4c2e46a60fc4a816f3dd4ae6c3e1c1c349200\",\n      \"0x6ac2f1ddfca004849c25f69af7546c2b86ef1af2266ef7ecd2a71d525177a4c\"\n    ],\n    \"nonce\": \"0x171\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x10c73160\",\n        \"max_price_per_unit\": \"0x8deefdd00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x5a34f66d25af\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x156f0\",\n        \"max_price_per_unit\": \"0x11d40a4d74\"\n      }\n    },\n    \"tip\": \"0x1\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      55: Account validation failed: \"Resources bounds ({ l1_gas: { max_amount: 0, max_price_per_unit: 99183519147439 }, l2_gas: { max_amount: 281489760, max_price_per_unit: 38100000000 }, l1_data_gas: { max_amount: 87792, max_price_per_unit: 76571889012 } }) exceed balance (74184987124510784).\"\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-03-30T04:41:45.530Z",
-      "finishedAt": "2026-03-30T04:41:57.358Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-warzone-32\" on mainnet.blitz\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+157ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Raw create_game calldata: [\"0x626c747a2d7761727a6f6e652d3332\",50,\"180\",\"0x626c747a2d7761727a6f6e65\",32]\n\u001b[2m[+158ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n\u001b[2m[+1.1s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 917ms: RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x5\",\n      \"0x626c747a2d7761727a6f6e652d3332\",\n      \"0x32\",\n      \"0xb4\",\n      \"0x626c747a2d7761727a6f6e65\",\n      \"0x20\"\n    ],\n    \"signature\": [\n      \"0x3caa3fabba8a843e35de93fdbc4c2e46a60fc4a816f3dd4ae6c3e1c1c349200\",\n      \"0x6ac2f1ddfca004849c25f69af7546c2b86ef1af2266ef7ecd2a71d525177a4c\"\n    ],\n    \"nonce\": \"0x171\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x10c73160\",\n        \"max_price_per_unit\": \"0x8deefdd00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x5a34f66d25af\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x156f0\",\n        \"max_price_per_unit\": \"0x11d40a4d74\"\n      }\n    },\n    \"tip\": \"0x1\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      55: Account validation failed: \"Resources bounds ({ l1_gas: { max_amount: 0, max_price_per_unit: 99183519147439 }, l2_gas: { max_amount: 281489760, max_price_per_unit: 38100000000 }, l1_data_gas: { max_amount: 87792, max_price_per_unit: 76571889012 } }) exceed balance (74184987124510784).\"\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Creating games needs attention"
     },
     {
       "id": "wait-for-factory-indexes",
