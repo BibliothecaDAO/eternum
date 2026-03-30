@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "slot.blitz:bltz-cred-testing",
+  "launchRequestId": "23727513934-1",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-cred-testing",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-30T04:10:14.650Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23727513934,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23727513934",
+    "ref": "next",
+    "sha": "7b9aac72ab3427422a1fcb2b368305ad32d4fbc3"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "slot.blitz",
+    "gameName": "bltz-cred-testing",
+    "startTime": "2026-03-30T04:17:00.000Z",
+    "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+    "factoryAddress": "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 3600,
+    "mapConfigOverrides": {
+      "campFindProbability": 45875,
+      "campFindFailProbability": 19660
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 300
+  }
+}
