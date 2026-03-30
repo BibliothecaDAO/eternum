@@ -302,7 +302,7 @@ pub mod config_systems {
     // Constuctor
 
     fn resolve_blitz_base_distance(reward_profile_id: u8) -> u32 {
-        BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id).base_distance
+        BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id).base_distance
     }
 
     fn dojo_init(self: @ContractState) {

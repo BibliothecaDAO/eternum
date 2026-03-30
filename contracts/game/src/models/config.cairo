@@ -513,7 +513,7 @@ pub struct BlitzMapDistanceProfile {
 
 #[generate_trait]
 pub impl BlitzMapDistanceProfileImpl of BlitzMapDistanceProfileTrait {
-    fn resolve_by_reward_profile_id(reward_profile_id: u8) -> BlitzMapDistanceProfile {
+    fn resolve_by_blitz_profile_id(reward_profile_id: u8) -> BlitzMapDistanceProfile {
         let resolved_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(reward_profile_id);
 
         if resolved_reward_profile_id == OFFICIAL_60_BLITZ_PROFILE_ID {
@@ -547,6 +547,16 @@ pub impl BlitzMapDistanceProfileImpl of BlitzMapDistanceProfileTrait {
             center_tile_radius: 2,
         }
     }
+
+    fn hyperstructure_realm_scan_distance(self: BlitzMapDistanceProfile, single_realm_mode: bool) -> u32 {
+        let center_offset =
+            if single_realm_mode {
+                self.center_tile_radius
+            } else {
+                0
+            };
+        self.base_distance + center_offset
+    }
 }
 
 #[generate_trait]
@@ -571,7 +581,7 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
         if self.two_player_mode {
             return Blitz2PlayerSettlementConfigImpl::generate_coords(self, map_center);
         } else {
-            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id);
+            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id);
             return BlitzMultplePlayerSettlementConfigImpl::generate_coords(self, map_center, distance_profile);
         }
     }
@@ -737,7 +747,7 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
         if two_player_mode {
             return Blitz2PlayerHypersSettlementConfigImpl::next_coord(self, map_center);
         } else {
-            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id);
+            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id);
             return BlitzMultiplePlayerHypersSettlementConfigImpl::next_coord(self, map_center, distance_profile);
         }
     }

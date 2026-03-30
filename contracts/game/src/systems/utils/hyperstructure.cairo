@@ -4,7 +4,8 @@ use dojo::model::{Model, ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::constants::WORLD_CONFIG_ID;
 use crate::models::config::{
-    MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+    BlitzMapDistanceProfileImpl, BlitzSettlementConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig,
+    TroopStaminaConfig, WorldConfigUtilImpl,
 };
 use crate::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
 use crate::models::map::{Tile, TileOccupier};
@@ -158,25 +159,11 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
 #[generate_trait]
 pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
-    fn realm_tile_distance_three_realm_mode() -> u32 {
-        8 // 3-realm spawn coords use this offset from hyperstructures
-    }
-
-    fn realm_tile_distance_single_realm_mode() -> u32 {
-        10 // centered single-realm spawn coords use this offset from hyperstructures
-    }
-
-    fn realm_tile_distance(single_realm_mode: bool) -> u32 {
-        if single_realm_mode {
-            return Self::realm_tile_distance_single_realm_mode();
-        }
-        return Self::realm_tile_distance_three_realm_mode();
-    }
-
     fn count_surrounding_realms(
-        ref world: WorldStorage, hyperstructure_coord: Coord, single_realm_mode: bool, two_player_mode: bool,
+        ref world: WorldStorage, hyperstructure_coord: Coord, settlement_config: BlitzSettlementConfig,
+        reward_profile_id: u8,
     ) -> u8 {
-        if two_player_mode {
+        if settlement_config.two_player_mode {
             return 2_u8;
         }
         let mut start_coord: Coord = hyperstructure_coord;
@@ -186,7 +173,10 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
             (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
         ];
 
-        let realm_tile_distance = Self::realm_tile_distance(single_realm_mode);
+        let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id);
+        let realm_tile_distance = BlitzMapDistanceProfileImpl::hyperstructure_realm_scan_distance(
+            distance_profile, settlement_config.single_realm_mode,
+        );
         let mut count = 0;
         for direction in start_directions {
             let (start_direction, triangle_direction) = direction;
