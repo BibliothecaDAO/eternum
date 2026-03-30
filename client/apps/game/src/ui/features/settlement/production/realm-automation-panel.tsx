@@ -592,7 +592,7 @@ export const RealmAutomationPanel = ({
         {usageDisplayList.length === 0 ? (
           <p className="text-xs text-gold/60">No resources allocated yet.</p>
         ) : (
-          <ul className="grid grid-cols-4 gap-2">
+          <ul className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
             {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
               const label = resolveResourceLabel(resourceId);
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
@@ -601,17 +601,22 @@ export const RealmAutomationPanel = ({
                 <li
                   key={`usage-${resourceId}`}
                   className={clsx(
-                    "flex items-center gap-2 rounded border px-3 py-2 text-xs",
+                    "min-w-0 rounded border px-3 py-2 text-xs",
                     isOverBudget ? "border-danger/60 text-danger" : "border-gold/20 text-gold/80",
                   )}
                 >
-                  <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
-                  <div className="flex-1 flex items-center justify-between gap-2">
-                    <span>{label}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gold/50">{perCycleLabel}</span>
-                      <span className="text-gold/40">•</span>
-                      <span className="font-semibold text-gold">{Math.round(percent)}%</span>
+                  <div className="flex items-start gap-2">
+                    <div className="shrink-0">
+                      <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="truncate">{label}</span>
+                        <span className={clsx("shrink-0 font-semibold", isOverBudget ? "text-danger" : "text-gold")}>
+                          {Math.round(percent)}%
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gold/50">{perCycleLabel}</div>
                     </div>
                   </div>
                 </li>
