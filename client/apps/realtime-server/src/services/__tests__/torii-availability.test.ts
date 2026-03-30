@@ -118,6 +118,12 @@ describe("ToriiAvailabilityService", () => {
       const availability = service.getAvailability();
       expect(availability["alpha"]).toBe(true);
       expect(availability["beta"]).toBe(false);
+
+      const factoryCall = mockFetch.mock.calls.find(([url]) => {
+        const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+        return urlStr.includes("/x/eternum-factory-mainnet/torii/sql");
+      });
+      expect(factoryCall).toBeDefined();
     });
 
     it("handles factory fetch failure gracefully", async () => {
@@ -199,9 +205,11 @@ describe("ToriiAvailabilityService", () => {
     it("does not start a second poll while the previous cycle is still running", async () => {
       vi.useFakeTimers();
 
-      let resolveFactoryFetch: ((value: Response) => void) | null = null;
+      const factoryFetchControl: { resolve: ((value: Response) => void) | null } = {
+        resolve: null,
+      };
       const factoryFetch = new Promise<Response>((resolve) => {
-        resolveFactoryFetch = resolve;
+        factoryFetchControl.resolve = resolve;
       });
 
       mockFetch.mockImplementation(() => factoryFetch);
@@ -218,7 +226,11 @@ describe("ToriiAvailabilityService", () => {
       await vi.advanceTimersByTimeAsync(3000);
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
-      resolveFactoryFetch?.(new Response(JSON.stringify([]), { status: 200 }));
+      const resolvePendingFactoryFetch = factoryFetchControl.resolve;
+      if (!resolvePendingFactoryFetch) {
+        throw new Error("Expected the factory fetch resolver to be assigned");
+      }
+      resolvePendingFactoryFetch(new Response(JSON.stringify([]), { status: 200 }));
       await Promise.resolve();
       service.stop();
       vi.useRealTimers();
