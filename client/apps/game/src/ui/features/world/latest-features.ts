@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-31",
+    title: "Instant Contour Boot Loader",
+    description:
+      "First load now opens on an instant contour-map splash with a segmented progress bar, so the game no longer flashes a blank white screen while the shell and world loader hand off.",
+    type: "improvement",
+  },
+  {
     date: "2026-03-30",
     title: "Agora Pool Rail Polish",
     description:

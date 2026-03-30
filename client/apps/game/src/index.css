@@ -3,6 +3,177 @@
 @tailwind components;
 @tailwind utilities;
 
+.boot-loader-surface {
+  font-family:
+    "Space Grotesk",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.boot-loader-grid {
+  background-image:
+    linear-gradient(rgba(201, 169, 96, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 169, 96, 0.06) 1px, transparent 1px);
+  background-position: center center;
+  background-size: 96px 96px;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.5) 24%, transparent 82%);
+  opacity: 0.24;
+}
+
+.boot-loader-contour-group {
+  transform-origin: center center;
+}
+
+.boot-loader-contour-group-a {
+  animation: bootContourDriftA 26s ease-in-out infinite alternate;
+}
+
+.boot-loader-contour-group-b {
+  animation: bootContourDriftB 32s ease-in-out infinite alternate;
+}
+
+.boot-loader-contour-group-c {
+  animation: bootContourDriftC 38s ease-in-out infinite alternate;
+}
+
+.boot-loader-contour-line {
+  fill: none;
+  stroke: rgba(201, 169, 96, 0.85);
+  stroke-dasharray: 12 18 88 24;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  animation: bootContourFlow 24s linear infinite;
+}
+
+.boot-loader-contour-line-echo {
+  stroke-width: 1.1;
+}
+
+.boot-loader-bracket-symbol {
+  font-family:
+    "JetBrains Mono",
+    ui-monospace,
+    SFMono-Regular,
+    "SF Mono",
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.boot-loader-segment {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.boot-loader-segment-filled {
+  background: linear-gradient(180deg, rgba(246, 220, 147, 0.88) 0%, rgba(199, 157, 69, 0.9) 100%);
+  border-color: rgba(236, 204, 131, 0.92);
+  box-shadow:
+    0 0 14px rgba(201, 169, 96, 0.22),
+    inset 0 0 0 1px rgba(255, 247, 224, 0.18);
+}
+
+.boot-loader-segment-lead {
+  animation: bootSegmentLeadGlow 1.7s ease-in-out infinite;
+}
+
+.boot-loader-segment-indeterminate {
+  animation: bootSegmentSweep 1.6s ease-in-out infinite;
+}
+
+@keyframes bootContourFlow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -142;
+  }
+}
+
+@keyframes bootContourDriftA {
+  from {
+    transform: translate3d(-1.5%, -0.8%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(1.8%, 1.4%, 0) scale(1.06);
+  }
+}
+
+@keyframes bootContourDriftB {
+  from {
+    transform: translate3d(1.6%, -1.2%, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(-1.4%, 1.1%, 0) scale(1.02);
+  }
+}
+
+@keyframes bootContourDriftC {
+  from {
+    transform: translate3d(-0.8%, 1.2%, 0) scale(1.03);
+  }
+  to {
+    transform: translate3d(1.3%, -1.1%, 0) scale(1.05);
+  }
+}
+
+@keyframes bootSegmentSweep {
+  0%,
+  100% {
+    background: rgba(11, 14, 18, 0.08);
+    border-color: rgba(201, 169, 96, 0.3);
+    box-shadow: none;
+    transform: translateY(0);
+  }
+  35%,
+  55% {
+    background: linear-gradient(180deg, rgba(246, 220, 147, 0.86) 0%, rgba(199, 157, 69, 0.92) 100%);
+    border-color: rgba(236, 204, 131, 0.92);
+    box-shadow:
+      0 0 16px rgba(201, 169, 96, 0.24),
+      inset 0 0 0 1px rgba(255, 247, 224, 0.16);
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes bootSegmentLeadGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 14px rgba(201, 169, 96, 0.22),
+      inset 0 0 0 1px rgba(255, 247, 224, 0.18);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(201, 169, 96, 0.35),
+      inset 0 0 0 1px rgba(255, 247, 224, 0.24);
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-loader-contour-group-a,
+  .boot-loader-contour-group-b,
+  .boot-loader-contour-group-c,
+  .boot-loader-contour-line,
+  .boot-loader-segment-indeterminate,
+  .boot-loader-segment-lead {
+    animation: none !important;
+  }
+}
+
 .animate-scroll {
   animation: scroll 30s linear infinite;
 }

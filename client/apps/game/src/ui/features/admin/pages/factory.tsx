@@ -47,6 +47,7 @@ import XCircle from "lucide-react/dist/esm/icons/x-circle";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
+import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { env } from "../../../../../env";
 import { AdminHeader } from "../components/admin-header";
 import {
@@ -280,6 +281,8 @@ interface FactoryPageProps {
 }
 
 export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
+  useBootDocumentState("app-ready");
+
   const navigate = useNavigate();
   const { account, accountName } = useAccountStore();
 

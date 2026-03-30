@@ -1,10 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { BootLoaderShell, useBootDocumentState } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
-import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { getSceneWarmupProgress, resolveEntryOverlayPhase } from "./game-loading-overlay.utils";
 import { useNavigate } from "react-router-dom";
 
@@ -30,6 +30,8 @@ const POST_WORLD_MAP_LOAD_DELAY_MS = 3_000;
  * Falls back to a safety timeout if neither signal fires.
  */
 export const GameLoadingOverlay = () => {
+  useBootDocumentState("app-loading");
+
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const isSpectating = useUIStore((state) => state.isSpectating);
   const mapLoading = useUIStore((state) => state.loadingStates[LoadingStateKey.Map]);
@@ -188,22 +190,51 @@ export const GameLoadingOverlay = () => {
   }, [phase]);
 
   const overlayTitle = "Entering World View";
+  const activeStatement = statements[0] ?? "Rendering the world map...";
 
   return (
-    <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-sm">
-      <div className="bg-black/20 border-r border-[0.5px] border-gradient text-gold relative backdrop-filter backdrop-blur-[32px] panel-wood panel-wood-corners w-full max-w-[456px] p-4 sm:p-5">
-        <div className="text-center mb-3">
-          <div className="text-[10px] sm:text-xs uppercase tracking-widest text-gold/60">Step 2 of 2</div>
-          <h3 className="text-base sm:text-lg font-semibold text-gold mt-1">{overlayTitle}</h3>
+    <BootLoaderShell
+      className="absolute inset-0 z-[110]"
+      panelClassName="max-w-[32rem] px-5 py-6 sm:px-6 sm:py-7"
+      mode="determinate"
+      progress={progress}
+      title={overlayTitle}
+      subtitle={activeStatement}
+      caption="Step 2 of 2"
+      detail={
+        <div className="space-y-4">
+          <div className="flex items-center justify-between font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-xs uppercase tracking-[0.28em] text-gold/45">
+            <span>World handoff</span>
+            <span>{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
+          </div>
+          <div className="space-y-3">
+            {tasks.map((task) => {
+              const statusTone =
+                task.status === "complete"
+                  ? "border-gold/40 bg-gold/15 text-gold"
+                  : task.status === "running"
+                    ? "border-gold/35 bg-gold/10 text-gold/90"
+                    : "border-white/10 bg-white/5 text-[rgba(236,224,194,0.45)]";
+
+              return (
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-white/8 bg-black/25 px-4 py-3"
+                >
+                  <span className="font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-sm text-[rgba(236,224,194,0.84)]">
+                    {task.label}
+                  </span>
+                  <span
+                    className={`rounded-full border px-2.5 py-1 font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-[0.62rem] uppercase tracking-[0.22em] ${statusTone}`}
+                  >
+                    {task.status}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <BootstrapLoadingPanel
-          tasks={tasks}
-          progress={progress}
-          error={null}
-          onRetry={() => {}}
-          statements={statements}
-        />
-      </div>
-    </div>
+      }
+    />
   );
 };

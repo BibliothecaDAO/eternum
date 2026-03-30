@@ -10,6 +10,7 @@ import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
 import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView } from "./ui/features/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
+import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 
@@ -24,6 +25,8 @@ const FactoryV2Page = lazy(() =>
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
   const [backgroundImage] = useState(() => getRandomBackgroundImage());
+
+  useBootDocumentState(isConstructionMode ? "app-ready" : null);
 
   useEffect(() => {
     const handleBeforeUnload = () => {

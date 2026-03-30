@@ -50,10 +50,6 @@ vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
 }));
 
-vi.mock("@/ui/layouts/bootstrap-loading/bootstrap-loading-panel", () => ({
-  BootstrapLoadingPanel: () => <div data-testid="bootstrap-loading-panel" />,
-}));
-
 const { GameLoadingOverlay } = await import("./game-loading-overlay");
 
 describe("GameLoadingOverlay", () => {
@@ -99,5 +95,6 @@ describe("GameLoadingOverlay", () => {
     });
     expect(navigateMock).toHaveBeenCalledWith("/play/map?col=4&row=9");
     expect(container.textContent).toContain("Entering World View");
+    expect(container.textContent).toContain("Transitioning to the world map");
   });
 });
