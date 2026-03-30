@@ -1434,13 +1434,10 @@ mod tests {
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers and the swap
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
-        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
 
@@ -1450,18 +1447,14 @@ mod tests {
         let create_amount_to = 2 * RESOURCE_PRECISION;
         let swap_amount = 1 * RESOURCE_PRECISION;
         let spawn_direction_from = Direction::East;
-        let spawn_direction_to = Direction::West;
+        let spawn_direction_to = Direction::SouthEast;
 
-        // Act: Create the 'from' explorer
+        // Act: Create the explorers from the same structure
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        stop_cheat_caller_address(system_addr);
-
-        // Create the 'to' explorer
-        start_cheat_caller_address(system_addr, realm_owner);
         let to_explorer_id = dispatcher
-            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Assert 1: Verify initial states
@@ -1491,10 +1484,11 @@ mod tests {
         assert!(final_to_stamina <= initial_from_stamina, "Stamina constraint");
 
         // Check knight balance at realm layer (should be unaffected by the swap)
-        let final_knight_balance_realm1 = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
-        let final_knight_balance_realm2 = ResourceImpl::read_balance(ref world, realm2_id, ResourceTypes::KNIGHT_T1);
-        assert!(final_knight_balance_realm1 == starting_knight_t1_amount - create_amount_from, "Final Balance Realm 1");
-        assert!(final_knight_balance_realm2 == starting_knight_t1_amount - create_amount_to, "Final Balance Realm 2");
+        let final_knight_balance = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
+        assert!(
+            final_knight_balance == starting_knight_t1_amount - create_amount_from - create_amount_to,
+            "Final balance mismatch",
+        );
     }
 
     /// @notice Tests swapping troops when the swap amount equals the source explorer's total troops, causing deletion.
@@ -1506,13 +1500,10 @@ mod tests {
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers and the swap
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
-        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
 
@@ -1522,18 +1513,14 @@ mod tests {
         let create_amount_to = 2 * RESOURCE_PRECISION;
         let swap_amount = create_amount_from; // Swap all troops from 'from'
         let spawn_direction_from = Direction::East;
-        let spawn_direction_to = Direction::West;
+        let spawn_direction_to = Direction::SouthEast;
 
-        // Act 1: Create the 'from' explorer
+        // Act 1: Create the explorers from the same structure
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        stop_cheat_caller_address(system_addr);
-
-        // Act 2: Create the 'to' explorer
-        start_cheat_caller_address(system_addr, realm_owner);
         let to_explorer_id = dispatcher
-            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Assert 1: Verify initial states
@@ -1664,7 +1651,7 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_explorer_swap` reverts if the caller does not own the explorers' home structure.
+    /// @notice Tests that `explorer_explorer_swap` reverts if the caller does not own the shared home structure.
     #[test]
     #[should_panic(expected: 'Not Owner')]
     fn test_explorer_swap_revert_not_owner() {
@@ -1675,13 +1662,10 @@ mod tests {
         let other_caller = starknet::contract_address_const::<'other_caller'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
-        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
 
@@ -1691,20 +1675,17 @@ mod tests {
         let create_amount_to = 2 * RESOURCE_PRECISION;
         let swap_amount = 1 * RESOURCE_PRECISION;
         let spawn_direction_from = Direction::East;
-        let spawn_direction_to = Direction::West;
+        let spawn_direction_to = Direction::SouthEast;
 
-        // Act 1: Create the explorers (as owner)
+        // Act 1: Create the explorers from the same owned structure
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        stop_cheat_caller_address(system_addr);
-
-        start_cheat_caller_address(system_addr, other_caller);
         let to_explorer_id = dispatcher
-            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
-        // Act 2: Attempt the swap explorers from other_caller who only owns one of the explorers (expect panic)
+        // Act 2: Attempt the swap from a different caller
         start_cheat_caller_address(system_addr, other_caller);
         let swap_direction = Direction::East;
         dispatcher.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
@@ -1712,10 +1693,10 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_explorer_swap` reverts if the explorers have different owners.
+    /// @notice Tests that `explorer_explorer_swap` reverts if the explorers come from different structures.
     #[test]
-    #[should_panic(expected: 'Not Owner')]
-    fn test_explorer_swap_revert_different_owners() {
+    #[should_panic(expected: "both explorers must belong to the same structure")]
+    fn test_explorer_swap_revert_different_structures() {
         // Arrange
         let mut world = setup_troop_management_world();
 
@@ -1751,7 +1732,7 @@ mod tests {
             .explorer_create(realm_id_2, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
-        // Act 2: Attempt the swap between different owners (expect panic)
+        // Act 2: Attempt the swap between different structures (expect panic)
         start_cheat_caller_address(system_addr, realm_owner_1);
         let swap_direction = Direction::SouthEast;
         dispatcher.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
@@ -1769,13 +1750,10 @@ mod tests {
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { alt: false, x: 15, y: 10 };
-        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
-        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
 
@@ -1784,15 +1762,15 @@ mod tests {
         let create_amount_from = 3 * RESOURCE_PRECISION;
         let create_amount_to = 2 * RESOURCE_PRECISION;
         let swap_amount = 1 * RESOURCE_PRECISION;
-        let spawn_direction_from = Direction::NorthEast;
-        let spawn_direction_to = Direction::SouthEast;
+        let spawn_direction_from = Direction::East;
+        let spawn_direction_to = Direction::West;
 
-        // Act 1: Create the explorers
+        // Act 1: Create two explorers from the same structure on non-adjacent tiles
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
         let to_explorer_id = dispatcher
-            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap between non-adjacent explorers (expect panic)
@@ -1813,13 +1791,10 @@ mod tests {
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { alt: false, x: 10, y: 10 };
         let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
-        let realm2_coord = Coord { alt: false, x: 13, y: 10 };
-        let realm2_id = spawn_guard_test_realm(ref world, 2, realm_owner, realm2_coord);
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
-        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
 
@@ -1829,14 +1804,14 @@ mod tests {
         let create_amount_to = 2 * RESOURCE_PRECISION;
         let swap_amount = 4 * RESOURCE_PRECISION; // Swap MORE than the source has
         let spawn_direction_from = Direction::East;
-        let spawn_direction_to = Direction::West;
+        let spawn_direction_to = Direction::SouthEast;
 
-        // Act 1: Create the explorers
+        // Act 1: Create the explorers from the same structure
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
         let to_explorer_id = dispatcher
-            .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
+            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap with insufficient troops (expect panic)
@@ -1889,5 +1864,68 @@ mod tests {
         dispatcher.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         stop_cheat_caller_address(system_addr);
         // Assert - Handled by should_panic
+    }
+
+    /// @notice Tests that `explorer_guard_swap` reverts if the target guard belongs to a different structure.
+    #[test]
+    #[should_panic(expected: "explorer must belong to the same structure")]
+    fn test_explorer_guard_swap_revert_different_structure() {
+        let mut world = setup_troop_management_world();
+
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
+        let other_realm_coord = Coord { alt: false, x: 12, y: 10 };
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let other_realm_id = spawn_guard_test_realm(ref world, 2, realm_owner, other_realm_coord);
+
+        let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(
+            ref world, other_realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
+        );
+
+        let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
+        let category = TroopType::Knight;
+        let tier = TroopTier::T1;
+
+        start_cheat_caller_address(system_addr, realm_owner);
+        let explorer_id = dispatcher.explorer_create(realm_id, category, tier, 3 * RESOURCE_PRECISION, Direction::East);
+        dispatcher.guard_add(other_realm_id, GuardSlot::Delta, category, tier, 2 * RESOURCE_PRECISION);
+        dispatcher.explorer_guard_swap(
+            explorer_id, other_realm_id, Direction::East, GuardSlot::Delta, 1 * RESOURCE_PRECISION,
+        );
+        stop_cheat_caller_address(system_addr);
+    }
+
+    /// @notice Tests that `guard_explorer_swap` reverts if the target explorer belongs to a different structure.
+    #[test]
+    #[should_panic(expected: "explorer must belong to the same structure")]
+    fn test_guard_explorer_swap_revert_different_structure() {
+        let mut world = setup_troop_management_world();
+
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+        let realm_coord = Coord { alt: false, x: 10, y: 10 };
+        let other_realm_coord = Coord { alt: false, x: 12, y: 10 };
+        let realm_id = spawn_guard_test_realm(ref world, 1, realm_owner, realm_coord);
+        let other_realm_id = spawn_guard_test_realm(ref world, 2, realm_owner, other_realm_coord);
+
+        let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(
+            ref world, other_realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
+        );
+
+        let (system_addr, dispatcher) = get_troop_management_dispatcher(ref world);
+        let category = TroopType::Knight;
+        let tier = TroopTier::T1;
+
+        start_cheat_caller_address(system_addr, realm_owner);
+        dispatcher.guard_add(realm_id, GuardSlot::Delta, category, tier, 2 * RESOURCE_PRECISION);
+        let explorer_id = dispatcher
+            .explorer_create(other_realm_id, category, tier, 3 * RESOURCE_PRECISION, Direction::West);
+        dispatcher.guard_explorer_swap(
+            realm_id, GuardSlot::Delta, explorer_id, Direction::East, 1 * RESOURCE_PRECISION,
+        );
+        stop_cheat_caller_address(system_addr);
     }
 }
