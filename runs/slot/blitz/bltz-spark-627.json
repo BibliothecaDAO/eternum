@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "23727031788-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-30T03:48:10.089Z",
-  "updatedAt": "2026-03-30T03:49:14.399Z",
+  "updatedAt": "2026-03-30T03:49:18.001Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-30T03:49:18.001Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,5 +71,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-spark-627.json",
     "worldAddress": "0x04ce1e9aaf2715fb5a75a434276383fd5189a09c1c5c6d82ea9d4c6484dbbc60",
     "createGameTxHash": "0x1ca98b3db231e50959964bf72e6a3259923dd66d0f124221eeda0d8d512f7d8"
+  },
+  "activeLease": {
+    "launchRequestId": "23727031788-1",
+    "workflowRunId": 23727031788,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-30T03:49:18.001Z",
+    "expiresAt": "2026-03-30T04:34:18.001Z"
   }
 }
