@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-31",
+    title: "Dashboard Settings Crash Fix",
+    description:
+      "Opening dashboard settings no longer crashes outside the game world, so landing-page audio, graphics, and fullscreen controls now open safely without needing an in-game Dojo context.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-31",
     title: "Instant Contour Boot Loader",
     description:
       "First load now opens on an instant contour-map splash with a segmented progress bar, so the game no longer flashes a blank white screen while the shell and world loader hand off.",

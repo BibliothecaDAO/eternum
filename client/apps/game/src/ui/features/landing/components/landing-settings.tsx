@@ -1,11 +1,63 @@
 import { AudioCategory, useAudio, useMusicPlayer, ScrollingTrackName } from "@/audio";
 import { GraphicsSettings } from "@/ui/config";
-import { useScreenOrientation } from "@bibliothecadao/react";
 import Button from "@/ui/design-system/atoms/button";
 import { RangeInput } from "@/ui/design-system/atoms";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Maximize2, Minimize2, Music, Volume2, VolumeX, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+interface DocumentWithFullscreen extends HTMLDocument {
+  mozFullScreenElement?: Element;
+  msFullscreenElement?: Element;
+  webkitFullscreenElement?: Element;
+  msExitFullscreen?: () => void;
+  mozCancelFullScreen?: () => void;
+  webkitExitFullscreen?: () => void;
+}
+
+interface DocumentElementWithFullscreen extends HTMLElement {
+  msRequestFullscreen?: () => void;
+  mozRequestFullScreen?: () => void;
+  webkitRequestFullscreen?: () => void;
+}
+
+const isDocumentFullScreen = () => {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const doc = document as DocumentWithFullscreen;
+  return !!(
+    doc.fullscreenElement ||
+    doc.mozFullScreenElement ||
+    doc.webkitFullscreenElement ||
+    doc.msFullscreenElement
+  );
+};
+
+const enterFullScreen = (element: DocumentElementWithFullscreen) => {
+  if (element.requestFullscreen) {
+    void element.requestFullscreen();
+  } else if (element.msRequestFullscreen) {
+    element.msRequestFullscreen();
+  } else if (element.webkitRequestFullscreen) {
+    element.webkitRequestFullscreen();
+  } else if (element.mozRequestFullScreen) {
+    element.mozRequestFullScreen();
+  }
+};
+
+const exitFullScreen = (doc: DocumentWithFullscreen) => {
+  if (doc.exitFullscreen) {
+    void doc.exitFullscreen();
+  } else if (doc.msExitFullscreen) {
+    doc.msExitFullscreen();
+  } else if (doc.webkitExitFullscreen) {
+    doc.webkitExitFullscreen();
+  } else if (doc.mozCancelFullScreen) {
+    doc.mozCancelFullScreen();
+  }
+};
 
 interface LandingSettingsProps {
   onClose: () => void;
@@ -19,12 +71,35 @@ interface LandingSettingsProps {
 export const LandingSettings = ({ onClose, className }: LandingSettingsProps) => {
   const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
   const { trackName, next: nextTrack } = useMusicPlayer();
-  const { toggleFullScreen, isFullScreen } = useScreenOrientation();
-  const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
+  const [fullScreen, setFullScreen] = useState<boolean>(() => isDocumentFullScreen());
+
+  useEffect(() => {
+    const syncFullScreenState = () => {
+      setFullScreen(isDocumentFullScreen());
+    };
+
+    syncFullScreenState();
+
+    document.addEventListener("fullscreenchange", syncFullScreenState);
+    document.addEventListener("webkitfullscreenchange", syncFullScreenState as EventListener);
+    document.addEventListener("mozfullscreenchange", syncFullScreenState as EventListener);
+    document.addEventListener("MSFullscreenChange", syncFullScreenState as EventListener);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullScreenState);
+      document.removeEventListener("webkitfullscreenchange", syncFullScreenState as EventListener);
+      document.removeEventListener("mozfullscreenchange", syncFullScreenState as EventListener);
+      document.removeEventListener("MSFullscreenChange", syncFullScreenState as EventListener);
+    };
+  }, []);
 
   const handleFullScreen = () => {
-    toggleFullScreen();
-    setFullScreen(!fullScreen);
+    if (!isDocumentFullScreen()) {
+      enterFullScreen(document.documentElement as DocumentElementWithFullscreen);
+      return;
+    }
+
+    exitFullScreen(document as DocumentWithFullscreen);
   };
 
   // Get volume values with safe defaults
