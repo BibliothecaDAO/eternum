@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export type BootDocumentState = "booting" | "react-mounted" | "app-loading" | "app-ready";
+type BootDocumentState = "booting" | "react-mounted" | "app-loading" | "app-ready";
 
 const BOOT_SHELL_ID = "boot-shell";
 const BOOT_SHELL_REMOVAL_DELAY_MS = 420;
