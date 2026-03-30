@@ -9,6 +9,20 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-30",
+    title: "Torii Stream Timeout Recovery",
+    description:
+      "World map chunk streaming now times out and cleans up stuck Torii subscription handoffs, so chunk traversal can recover from a bad stream swap instead of locking the map in place.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Chunk Swap Stall Fix",
+    description:
+      "World map chunk swaps no longer wait on unrelated live tile and structure stream traffic, so traversal keeps moving even when the destination area is busy.",
+    type: "fix",
+  },
+  {
     date: "2026-03-29",
     title: "Biome Bonus Card Refresh",
     description:

@@ -1,4 +1,17 @@
+// @vitest-environment node
+
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@dojoengine/sdk", () => ({
+  AndComposeClause: vi.fn(() => ({
+    build: () => ({ mocked: true }),
+  })),
+  MemberClause: vi.fn(),
+}));
+
+vi.mock("@dojoengine/torii-client", () => ({
+  PatternMatching: {},
+}));
 
 vi.mock("./sync", () => ({
   syncEntitiesDebounced: vi.fn(),
@@ -121,5 +134,22 @@ describe("ToriiStreamManager", () => {
     expect(cancelFirst).toHaveBeenCalledTimes(1);
     expect(cancelSecond).toHaveBeenCalledTimes(1);
     expect(cancelThird).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the subscription setup timeout through to syncEntitiesDebounced", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    syncMock.mockImplementationOnce(async (...args) => {
+      const options = args[5] as { subscriptionSetupTimeoutMs?: number } | undefined;
+      throw new Error(`timeout:${options?.subscriptionSetupTimeoutMs ?? "missing"}`);
+    });
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+      subscriptionSetupTimeoutMs: 25,
+    });
+
+    await expect(manager.switchBounds(descriptor(0))).rejects.toThrow("timeout:25");
   });
 });

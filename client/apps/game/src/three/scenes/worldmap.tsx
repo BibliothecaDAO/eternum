@@ -110,6 +110,7 @@ import {
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
+import { shouldTrackHydrationUpdateForFetch } from "./worldmap-hydration-tracking";
 import {
   claimWorldmapInteractionOwner,
   getWorldmapInteractionOwnerInstanceId,
@@ -5292,10 +5293,10 @@ export default class WorldmapScene extends WarpTravel {
 
     this.structureHydrationFetches.forEach((state, fetchKey) => {
       if (
-        normalized.x >= state.minCol &&
-        normalized.x <= state.maxCol &&
-        normalized.y >= state.minRow &&
-        normalized.y <= state.maxRow
+        shouldTrackHydrationUpdateForFetch(state, {
+          col: normalized.x,
+          row: normalized.y,
+        })
       ) {
         state.pendingCount += 1;
         matchedFetchKeys.push(fetchKey);
@@ -5324,10 +5325,10 @@ export default class WorldmapScene extends WarpTravel {
 
     this.tileHydrationFetches.forEach((state, fetchKey) => {
       if (
-        normalized.x >= state.minCol &&
-        normalized.x <= state.maxCol &&
-        normalized.y >= state.minRow &&
-        normalized.y <= state.maxRow
+        shouldTrackHydrationUpdateForFetch(state, {
+          col: normalized.x,
+          row: normalized.y,
+        })
       ) {
         state.pendingCount += 1;
         matchedFetchKeys.push(fetchKey);

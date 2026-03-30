@@ -32,6 +32,7 @@ interface ToriiStreamManagerConfig {
   logging?: boolean;
   clauseBuilder?: (descriptor: BoundsDescriptor) => Clause | null;
   onUpdate?: () => void;
+  subscriptionSetupTimeoutMs?: number;
 }
 
 export interface GlobalModelStreamConfig {
@@ -39,6 +40,8 @@ export interface GlobalModelStreamConfig {
   keyCount?: number;
   patternMatching?: PatternMatching;
 }
+
+const DEFAULT_SUBSCRIPTION_SETUP_TIMEOUT_MS = 8_000;
 
 const defaultClauseBuilder = (descriptor: BoundsDescriptor): Clause | null => {
   const { models, additionalClauses } = descriptor;
@@ -95,6 +98,7 @@ export class ToriiStreamManager {
   private clauseBuilder: (descriptor: BoundsDescriptor) => Clause | null;
   private currentSignature: string | null = null;
   private lastDescriptor: BoundsDescriptor | null = null;
+  private readonly subscriptionSetupTimeoutMs: number;
 
   constructor({
     client,
@@ -102,12 +106,14 @@ export class ToriiStreamManager {
     logging = false,
     clauseBuilder = defaultClauseBuilder,
     onUpdate,
+    subscriptionSetupTimeoutMs = DEFAULT_SUBSCRIPTION_SETUP_TIMEOUT_MS,
   }: ToriiStreamManagerConfig) {
     this.client = client;
     this.setup = setup;
     this.logging = logging;
     this.clauseBuilder = clauseBuilder;
     this.onUpdate = onUpdate;
+    this.subscriptionSetupTimeoutMs = subscriptionSetupTimeoutMs;
   }
 
   async start(descriptor: BoundsDescriptor): Promise<BoundsSwitchResult> {
@@ -135,7 +141,9 @@ export class ToriiStreamManager {
     const requestId = ++this.latestSwitchRequestId;
 
     const task = this.switchQueue.then(async (): Promise<BoundsSwitchResult> => {
-      const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging, this.onUpdate);
+      const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging, this.onUpdate, {
+        subscriptionSetupTimeoutMs: this.subscriptionSetupTimeoutMs,
+      });
 
       // A newer request superseded this one while it was in flight; drop the stale subscription.
       if (requestId !== this.latestSwitchRequestId) {
