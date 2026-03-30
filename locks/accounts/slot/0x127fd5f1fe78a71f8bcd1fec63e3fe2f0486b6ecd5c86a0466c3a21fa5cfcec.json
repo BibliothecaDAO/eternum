@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-spark-627",
-    "launchRequestId": "23727031788-1",
+    "gameName": "bltz-cred-testing",
+    "launchRequestId": "23727513934-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23727031788,
+    "workflowRunId": 23727513934,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "c27b414b-3df8-43eb-8a3f-f248bf183557"
+    "stepId": "create-world",
+    "leaseId": "e68f236d-af15-45e5-94dd-6c68552e6885"
   },
-  "acquiredAt": "2026-03-30T03:49:52.541Z",
-  "heartbeatAt": "2026-03-30T03:50:08.449Z",
-  "expiresAt": "2026-03-30T03:50:08.449Z",
-  "releasedAt": "2026-03-30T03:50:08.449Z"
+  "acquiredAt": "2026-03-30T04:10:22.540Z",
+  "heartbeatAt": "2026-03-30T04:10:22.540Z",
+  "expiresAt": "2026-03-30T04:20:22.540Z"
 }
