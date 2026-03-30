@@ -63,6 +63,7 @@ import {
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
 import { SeasonPassOptionCard } from "./season-pass-option-card";
 import { SettlementPlannerMap } from "./settlement-planner-map";
+import { resolveGameEntryTarget } from "./game-entry-navigation";
 import {
   SettlementResourceBadges,
   resolvePlannerResourceLabel as resolveResourceLabel,
@@ -4406,23 +4407,28 @@ export const GameEntryModal = ({
   ]);
 
   // Enter game handler - navigates to the game.
-  // Does NOT prefetch structures from SQL — the GameLoadingOverlay will wait for
-  // usePlayerStructureSync to populate RECS, then navigate to the player's realm.
   const handleEnterGame = useCallback(() => {
-    // Ensure the loading overlay is visible (it may have been dismissed from a previous game)
-    useUIStore.getState().setShowBlankOverlay(true);
+    const uiStore = useUIStore.getState();
+    uiStore.setShowBlankOverlay(true);
 
-    // Set initial state — structureEntityId=0 means "not yet known".
-    // GameLoadingOverlay will update this once structures are synced into RECS.
-    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
-    setStructureEntityId(0, {
-      spectator: isSpectateMode,
-      worldMapPosition: { col: 0, row: 0 },
+    const directEntryTarget = resolveGameEntryTarget({
+      structureEntityId: uiStore.structureEntityId,
+      worldMapReturnPosition: uiStore.worldMapReturnPosition,
+      isSpectateMode,
     });
 
-    // Navigate with placeholder coords (0,0). The loading overlay will
-    // re-navigate to the player's realm once structures are available.
-    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
+    if (directEntryTarget) {
+      uiStore.setStructureEntityId(directEntryTarget.structureEntityId, {
+        spectator: directEntryTarget.spectator,
+        worldMapPosition: directEntryTarget.worldMapPosition,
+      });
+
+      navigate(directEntryTarget.url);
+      window.dispatchEvent(new Event("urlChanged"));
+      return;
+    }
+
+    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/map?col=0&row=0`;
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
   }, [navigate, isSpectateMode]);
@@ -5056,10 +5062,7 @@ export const GameEntryModal = ({
     const shouldAutoEnter = phase === "ready" && (!isEternumMode || eternumEntryIntent === "play");
     if (shouldAutoEnter) {
       debugLog(worldName, "Auto-entering game...");
-      const timer = setTimeout(() => {
-        handleEnterGame();
-      }, 500);
-      return () => clearTimeout(timer);
+      handleEnterGame();
     }
   }, [phase, handleEnterGame, worldName, isSpectateMode, isEternumMode, eternumEntryIntent]);
 
