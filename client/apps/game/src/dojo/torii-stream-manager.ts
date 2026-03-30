@@ -3,6 +3,7 @@ import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause, ToriiClient } from "@dojoengine/torii-wasm/types";
 import { syncEntitiesDebounced } from "./sync";
+import type { ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
 export interface BoundsModelConfig {
   model: string;
@@ -26,6 +27,10 @@ interface BoundsSwitchResult {
   outcome: BoundsSwitchOutcome;
 }
 
+export interface BoundsSubscriptionSetupTimeoutInfo extends ToriiSubscriptionSetupTimeoutInfo {
+  requestId: number;
+}
+
 interface ToriiStreamManagerConfig {
   client: ToriiClient;
   setup: SetupResult;
@@ -33,6 +38,7 @@ interface ToriiStreamManagerConfig {
   clauseBuilder?: (descriptor: BoundsDescriptor) => Clause | null;
   onUpdate?: () => void;
   subscriptionSetupTimeoutMs?: number;
+  onSubscriptionSetupTimeout?: (info: BoundsSubscriptionSetupTimeoutInfo) => void;
 }
 
 export interface GlobalModelStreamConfig {
@@ -99,6 +105,7 @@ export class ToriiStreamManager {
   private currentSignature: string | null = null;
   private lastDescriptor: BoundsDescriptor | null = null;
   private readonly subscriptionSetupTimeoutMs: number;
+  private readonly onSubscriptionSetupTimeout?: (info: BoundsSubscriptionSetupTimeoutInfo) => void;
 
   constructor({
     client,
@@ -107,6 +114,7 @@ export class ToriiStreamManager {
     clauseBuilder = defaultClauseBuilder,
     onUpdate,
     subscriptionSetupTimeoutMs = DEFAULT_SUBSCRIPTION_SETUP_TIMEOUT_MS,
+    onSubscriptionSetupTimeout,
   }: ToriiStreamManagerConfig) {
     this.client = client;
     this.setup = setup;
@@ -114,6 +122,7 @@ export class ToriiStreamManager {
     this.clauseBuilder = clauseBuilder;
     this.onUpdate = onUpdate;
     this.subscriptionSetupTimeoutMs = subscriptionSetupTimeoutMs;
+    this.onSubscriptionSetupTimeout = onSubscriptionSetupTimeout;
   }
 
   async start(descriptor: BoundsDescriptor): Promise<BoundsSwitchResult> {
@@ -143,6 +152,9 @@ export class ToriiStreamManager {
     const task = this.switchQueue.then(async (): Promise<BoundsSwitchResult> => {
       const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging, this.onUpdate, {
         subscriptionSetupTimeoutMs: this.subscriptionSetupTimeoutMs,
+        onSubscriptionSetupTimeout: (info) => {
+          this.onSubscriptionSetupTimeout?.({ ...info, requestId });
+        },
       });
 
       // A newer request superseded this one while it was in flight; drop the stale subscription.

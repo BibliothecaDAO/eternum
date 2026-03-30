@@ -8,6 +8,7 @@ describe("setupToriiSubscriptions", () => {
     vi.useFakeTimers();
 
     const cancelEntitySubscription = vi.fn();
+    const onSubscriptionSetupTimeout = vi.fn();
     const createEntitySubscription = vi.fn(
       async (): Promise<ToriiCancelableSubscription> => ({ cancel: cancelEntitySubscription }),
     );
@@ -18,6 +19,7 @@ describe("setupToriiSubscriptions", () => {
       createEntitySubscription,
       createEventSubscription,
       subscriptionSetupTimeoutMs: 25,
+      onSubscriptionSetupTimeout,
     });
     const rejectionAssertion = expect(setupPromise).rejects.toThrow(/event subscription/i);
 
@@ -25,6 +27,10 @@ describe("setupToriiSubscriptions", () => {
 
     await rejectionAssertion;
     expect(cancelEntitySubscription).toHaveBeenCalledTimes(1);
+    expect(onSubscriptionSetupTimeout).toHaveBeenCalledWith({
+      label: "event subscription",
+      timeoutMs: 25,
+    });
 
     vi.useRealTimers();
   });

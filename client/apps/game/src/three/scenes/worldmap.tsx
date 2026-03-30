@@ -3,7 +3,12 @@ import { toast } from "sonner";
 
 import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
-import { ToriiStreamManager, type BoundsDescriptor, type BoundsModelConfig } from "@/dojo/torii-stream-manager";
+import {
+  ToriiStreamManager,
+  type BoundsDescriptor,
+  type BoundsModelConfig,
+  type BoundsSubscriptionSetupTimeoutInfo,
+} from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -360,6 +365,7 @@ const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
+const TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS = env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
@@ -750,6 +756,8 @@ export default class WorldmapScene extends WarpTravel {
         setup: dojoContext,
         logging: false,
         onUpdate: () => useConnectionStore.getState().recordSpatialUpdate(),
+        subscriptionSetupTimeoutMs: TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS,
+        onSubscriptionSetupTimeout: (info) => this.handleToriiSubscriptionSetupTimeout(info),
       });
       activeSpatialStreamManager = this.toriiStreamManager;
       this.startToriiBoundsCounterLog();
@@ -4978,6 +4986,15 @@ export default class WorldmapScene extends WarpTravel {
       });
       this.resetToriiBoundsCounters();
     }, 5000);
+  }
+
+  private handleToriiSubscriptionSetupTimeout(info: BoundsSubscriptionSetupTimeoutInfo): void {
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_subscription_timeout");
+    console.warn("[WorldmapScene] Torii bounds subscription setup timed out", {
+      requestId: info.requestId,
+      label: info.label,
+      timeoutMs: info.timeoutMs,
+    });
   }
 
   private stopToriiBoundsCounterLog(): void {

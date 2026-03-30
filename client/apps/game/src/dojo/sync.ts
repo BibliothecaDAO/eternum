@@ -19,9 +19,14 @@ import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
-import { setupToriiSubscriptions } from "./torii-subscription-setup";
+import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
 export const EVENT_QUERY_LIMIT = 40_000;
+
+interface SyncEntitiesSubscriptionOptions {
+  subscriptionSetupTimeoutMs?: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}
 
 let entityStreamSubscription: { cancel: () => void } | null = null;
 
@@ -224,7 +229,7 @@ export const syncEntitiesDebounced = async (
   entityKeyClause: Clause | undefined | null,
   logging = true,
   onUpdate?: () => void,
-  options?: { subscriptionSetupTimeoutMs?: number },
+  options?: SyncEntitiesSubscriptionOptions,
 ) => {
   if (logging) console.log("Starting syncEntities");
 
@@ -280,6 +285,7 @@ export const syncEntitiesDebounced = async (
           queueUpdate(data, "event");
         }),
       subscriptionSetupTimeoutMs: options?.subscriptionSetupTimeoutMs,
+      onSubscriptionSetupTimeout: options?.onSubscriptionSetupTimeout,
     });
 
     return {
