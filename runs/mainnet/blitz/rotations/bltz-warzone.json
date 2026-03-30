@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23746396540-1",
   "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-30T13:30:14.705Z",
+  "updatedAt": "2026-03-30T13:30:23.076Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5456,7 +5456,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 29,
         "currentStepId": null,
-        "latestEvent": "Completed sync-paymaster",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5640,7 +5640,9 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true
+          "paymasterSynced": true,
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-03-30T13:30:21.706Z"
         }
       },
       {
