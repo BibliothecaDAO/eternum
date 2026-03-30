@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-30T03:52:11.159Z",
+  "updatedAt": "2026-03-30T03:57:16.546Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -651,6 +651,19 @@
         "describedAt": "2026-03-30T03:52:11.158Z"
       },
       "updatedAt": "2026-03-30T03:52:11.159Z"
+    },
+    "bltz-spark-627": {
+      "gameName": "bltz-spark-627",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-spark-627/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-30T03:57:16.546Z"
+      },
+      "updatedAt": "2026-03-30T03:57:16.546Z"
     }
   }
 }
