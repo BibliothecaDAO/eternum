@@ -7,6 +7,7 @@ use crate::alias::ID;
 use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
 use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::models::resource::resource::TroopResourceImpl;
 use crate::systems::utils::blitz_profile::{
     OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
 };
@@ -297,13 +298,18 @@ pub struct StructureCapacityConfig {
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct SpeedConfig {
     pub donkey_sec_per_km: u16,
+    pub donkey_sec_per_km_troops: u16,
 }
 
 #[generate_trait]
 pub impl SpeedImpl of SpeedTrait {
-    fn for_donkey(ref world: WorldStorage) -> u16 {
+    fn for_donkey(ref world: WorldStorage, resources: Span<(u8, u128)>) -> u16 {
         let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, selector!("speed_config"));
-        speed_config.donkey_sec_per_km
+        if TroopResourceImpl::contains_troops(resources) {
+            speed_config.donkey_sec_per_km_troops
+        } else {
+            speed_config.donkey_sec_per_km
+        }
     }
 }
 

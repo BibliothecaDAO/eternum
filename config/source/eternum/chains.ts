@@ -22,7 +22,7 @@ const LOCAL_ETERNUM_CHAIN_CONFIG: ConfigPatch = {
     delaySeconds: 0,
   },
   speed: {
-    donkey: 0,
+    donkey_for_resources: 0,
   },
   season: {
     startSettlingAfterSeconds: 59,

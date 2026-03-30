@@ -245,21 +245,23 @@ pub mod trade_systems {
 
             iDonkeyImpl::assert_can_transport(ref world, taker_structure.coord(), maker_structure.coord());
 
-            // compute resource arrival time
-            let donkey_speed = SpeedImpl::for_donkey(ref world);
-            let travel_time = iDistanceKmImpl::time_required(
-                ref world, maker_structure.coord(), taker_structure.coord(), donkey_speed, true,
-            );
-            let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
-
             // send the taker's resource to the maker
             let taker_pays_resource_amount: u128 = taker_buys_count.into()
                 * trade.taker_pays_min_resource_amount.into();
+            let taker_to_maker_speed = SpeedImpl::for_donkey(
+                ref world, array![(trade.taker_pays_resource_type, taker_pays_resource_amount)].span(),
+            );
+            let taker_to_maker_travel_time = iDistanceKmImpl::time_required(
+                ref world, taker_structure.coord(), maker_structure.coord(), taker_to_maker_speed, true,
+            );
+            let (maker_arrival_day, maker_arrival_slot) = ResourceArrivalImpl::arrival_slot(
+                ref world, taker_to_maker_travel_time,
+            );
             let mut maker_resources_array = ResourceArrivalImpl::read_slot(
-                ref world, trade.maker_id, arrival_day, arrival_slot,
+                ref world, trade.maker_id, maker_arrival_day, maker_arrival_slot,
             );
             let mut maker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
-                ref world, trade.maker_id, arrival_day,
+                ref world, trade.maker_id, maker_arrival_day,
             );
             ResourceArrivalImpl::slot_increase_balances(
                 ref maker_resources_array,
@@ -268,28 +270,41 @@ pub mod trade_systems {
             );
 
             ResourceArrivalImpl::write_slot(
-                ref world, trade.maker_id, arrival_day, arrival_slot, maker_resources_array,
+                ref world, trade.maker_id, maker_arrival_day, maker_arrival_slot, maker_resources_array,
             );
             ResourceArrivalImpl::write_day_total(
-                ref world, trade.maker_id, arrival_day, maker_resource_arrival_total_amount,
+                ref world, trade.maker_id, maker_arrival_day, maker_resource_arrival_total_amount,
             );
 
             // send the maker's resource to the taker
             let maker_gives_resource_amount: u128 = taker_buys_count.into()
                 * trade.maker_gives_min_resource_amount.into();
+            let maker_to_taker_speed = SpeedImpl::for_donkey(
+                ref world, array![(trade.maker_gives_resource_type, maker_gives_resource_amount)].span(),
+            );
+            let maker_to_taker_travel_time = iDistanceKmImpl::time_required(
+                ref world, maker_structure.coord(), taker_structure.coord(), maker_to_taker_speed, true,
+            );
+            let (taker_arrival_day, taker_arrival_slot) = ResourceArrivalImpl::arrival_slot(
+                ref world, maker_to_taker_travel_time,
+            );
             let mut taker_resources_array = ResourceArrivalImpl::read_slot(
-                ref world, taker_id, arrival_day, arrival_slot,
+                ref world, taker_id, taker_arrival_day, taker_arrival_slot,
             );
             let mut taker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
-                ref world, taker_id, arrival_day,
+                ref world, taker_id, taker_arrival_day,
             );
             ResourceArrivalImpl::slot_increase_balances(
                 ref taker_resources_array,
                 array![(trade.maker_gives_resource_type, maker_gives_resource_amount)].span(),
                 ref taker_resource_arrival_total_amount,
             );
-            ResourceArrivalImpl::write_slot(ref world, taker_id, arrival_day, arrival_slot, taker_resources_array);
-            ResourceArrivalImpl::write_day_total(ref world, taker_id, arrival_day, taker_resource_arrival_total_amount);
+            ResourceArrivalImpl::write_slot(
+                ref world, taker_id, taker_arrival_day, taker_arrival_slot, taker_resources_array,
+            );
+            ResourceArrivalImpl::write_day_total(
+                ref world, taker_id, taker_arrival_day, taker_resource_arrival_total_amount,
+            );
 
             // burn enough taker donkeys to carry resources given by maker
             let mut taker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, taker_id);

@@ -1536,6 +1536,7 @@ export function defineContractComponents(world: World) {
           },
           speed_config: {
             donkey_sec_per_km: RecsType.Number,
+            donkey_sec_per_km_troops: RecsType.Number,
           },
           map_config: {
             reward_resource_amount: RecsType.Number,
@@ -1771,6 +1772,7 @@ export function defineContractComponents(world: World) {
               "u128", // HyperstructureConfig initialize_shards_amount
               "Span<u8>", // HyperstructureCostConfig construction_resources_ids
               "u16", // SpeedConfig donkey_sec_per_km
+              "u16", // SpeedConfig donkey_sec_per_km_troops
               "u16", // MapConfig reward_resource_amount
               "u16", // MapConfig shards_mines_win_probability
               "u16", // MapConfig shards_mines_fail_probability

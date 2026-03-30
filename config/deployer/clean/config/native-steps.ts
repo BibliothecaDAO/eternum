@@ -634,7 +634,8 @@ export const setResourceBridgeFeesConfig: NativeStep = async ({ account, provide
 export const setSpeedConfig: NativeStep = async ({ account, provider, config }) => {
   await provider.set_donkey_speed_config(
     withSigner(account, {
-      sec_per_km: config.speed.donkey,
+      sec_per_km: config.speed.donkey_for_resources,
+      sec_per_km_troops: config.speed.donkey_for_troops,
     }),
   );
 };
