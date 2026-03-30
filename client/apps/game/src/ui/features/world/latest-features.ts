@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-30",
+    title: "Agora Pool Rail Polish",
+    description:
+      "The Agora pool rail now keeps its own desktop scroll, uses a themed sort control, and trims each pool row down to the essentials so market cap and TVL stay readable while you browse.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
     title: "Blitz Army Structure Lock",
     description:
       "Army transfer windows now immediately explain when Blitz blocks returns into camps, rifts, or hyperstructures, and when army-to-army swaps cross realm boundaries, so invalid troop moves are clear before you try to confirm them.",

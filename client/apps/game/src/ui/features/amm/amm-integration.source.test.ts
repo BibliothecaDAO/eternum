@@ -126,10 +126,13 @@ describe("AMM feature wiring", () => {
 
     expect(poolListSource).toContain('label: "Default"');
     expect(poolListSource).toContain('useState<AmmPoolOrder>("default")');
-    expect(poolListSource).toContain("<select");
+    expect(poolListSource).toContain("<Select");
+    expect(poolListSource).toContain("<SelectTrigger");
+    expect(poolListSource).toContain("<SelectContent");
+    expect(poolListSource).toContain("<SelectItem");
   });
 
-  it("shows spot price, market cap, and tvl in each pool row", () => {
+  it("shows spot price, market cap, and tvl in each pool row without the old crowded labels", () => {
     const poolListSource = readSource("src/ui/features/amm/amm-pool-list.tsx");
     const poolRowSource = readSource("src/ui/features/amm/amm-pool-row.tsx");
 
@@ -137,7 +140,20 @@ describe("AMM feature wiring", () => {
     expect(poolRowSource).toContain("spotPrice");
     expect(poolRowSource).toContain("marketCap");
     expect(poolRowSource).toContain("TVL");
-    expect(poolRowSource).toContain("Spot Price");
+    expect(poolRowSource).not.toContain("Spot Price");
+    expect(poolRowSource).not.toContain("pairLabel");
+    expect(poolRowSource).not.toContain("vs LORDS");
+    expect(poolRowSource).toContain("text-right");
+  });
+
+  it("keeps the desktop pool rail inside a viewport-bounded shell", () => {
+    const ammViewSource = readSource("src/ui/features/landing/views/amm-view.tsx");
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(ammViewSource).toContain("lg:h-[calc(100vh-7.5rem)]");
+    expect(ammViewSource).toContain("lg:overflow-hidden");
+    expect(dashboardSource).toContain("lg:h-full");
+    expect(dashboardSource).toContain("lg:overflow-hidden");
   });
 
   it("adds reserve cards and a voyager fee link to the selected pool summary", () => {

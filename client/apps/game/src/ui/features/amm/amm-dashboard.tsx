@@ -62,7 +62,7 @@ function useAmmSelectionState() {
 
 const AmmDesktopPoolRail = () => {
   return (
-    <aside className="hidden min-h-0 lg:block lg:w-[300px] lg:self-stretch">
+    <aside className="hidden min-h-0 lg:block lg:h-full lg:w-[300px]">
       <AmmPoolList className="h-full" />
     </aside>
   );
@@ -359,13 +359,13 @@ const AmmDashboardContent = () => {
   const [mobilePickerOpen, setMobilePickerOpen] = useState(false);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <AmmMobilePoolPicker open={mobilePickerOpen} onClose={() => setMobilePickerOpen(false)} />
 
-      <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
         <AmmDesktopPoolRail />
 
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1 lg:scrollbar-thin lg:scrollbar-thumb-gold/20 lg:scrollbar-track-transparent">
           <AmmSelectedPoolSummary
             activePool={activePool}
             isConfigured={isConfigured}
