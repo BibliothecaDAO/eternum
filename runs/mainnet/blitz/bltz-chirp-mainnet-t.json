@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-chirp-mainnet-t",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-chirp-mainnet-t/23732129599-1.json",
   "latestLaunchRequestId": "23732129599-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-03-30T06:59:58.772Z",
-  "updatedAt": "2026-03-30T07:06:49.500Z",
+  "updatedAt": "2026-03-30T07:06:56.255Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-03-30T07:06:49.500Z"
+      "latestEvent": "Setting up gas coverage succeeded",
+      "startedAt": "2026-03-30T07:06:49.500Z",
+      "finishedAt": "2026-03-30T07:06:56.255Z"
     }
   ],
   "artifacts": {
@@ -91,14 +92,8 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-chirp-mainnet-t/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-03-30T07:06:44.251Z"
+    "lastIndexerDescribeAt": "2026-03-30T07:06:44.251Z",
+    "paymasterSynced": true
   },
-  "activeLease": {
-    "launchRequestId": "23732129599-1",
-    "workflowRunId": 23732129599,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-03-30T07:06:49.500Z",
-    "expiresAt": "2026-03-30T07:51:49.500Z"
-  }
+  "completedAt": "2026-03-30T07:06:56.255Z"
 }
