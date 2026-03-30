@@ -62,7 +62,7 @@ const SEPOLIA_BLITZ_CHAIN_CONFIG: ConfigPatch = {
   troop: {
     limit: {
       mercenariesTroopLowerBound: 100,
-      mercenariesTroopUpperBound: 1500,
+      mercenariesTroopUpperBound: 1600,
     },
   },
   exploration: {

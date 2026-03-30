@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
@@ -8,6 +9,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
+import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -83,6 +85,24 @@ const normalizeEntityId = (entityId: ID | bigint | string | undefined | null): I
   return entityId;
 };
 
+const serializeIncomingTroopArrivals = (incomingTroopArrivals?: IncomingTroopArrival[]): string =>
+  incomingTroopArrivals
+    ?.map((arrival) => `${arrival.resourceId}:${arrival.troopTier}:${arrival.count}:${arrival.arrivesAt.toString()}`)
+    .join(",") ?? "";
+
+const filterPendingIncomingTroopArrivals = (
+  incomingTroopArrivals: IncomingTroopArrival[] | undefined,
+  nowSeconds: number,
+): IncomingTroopArrival[] => (incomingTroopArrivals ?? []).filter((arrival) => Number(arrival.arrivesAt) > nowSeconds);
+
+const buildIncomingTroopKey = (incomingTroopArrivals: IncomingTroopArrival[] | undefined, nowSeconds: number): string =>
+  filterPendingIncomingTroopArrivals(incomingTroopArrivals, nowSeconds)
+    .map(
+      (arrival) =>
+        `${arrival.resourceId}:${arrival.troopTier}:${arrival.count}:${Math.max(0, Number(arrival.arrivesAt) - nowSeconds)}`,
+    )
+    .join(",");
+
 interface PendingLabelUpdate {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
@@ -134,8 +154,8 @@ export class StructureManager {
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
   private transitionChunkByToken: Map<number, string> = new Map();
-  private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
-  private structuresWithActiveBattleTimer: Set<ID> = new Set(); // Track structures with active battle timers for O(1) lookup
+  private timedLabelInterval: NodeJS.Timeout | null = null; // Timer for updating battle and arrival countdowns
+  private structuresWithActiveTimedLabels: Set<ID> = new Set(); // Track structures with active timed labels for O(1) lookup
   private unsubscribeAccountStore?: () => void;
   private attachmentManager: CosmeticAttachmentManager;
   private structureAttachmentSignatures: Map<number, string> = new Map();
@@ -193,8 +213,8 @@ export class StructureManager {
     this.activeStructureAttachmentEntities.delete(entityNumericId);
     this.structureAttachmentSignatures.delete(entityNumericId);
 
-    // Remove from battle timer tracking
-    this.structuresWithActiveBattleTimer.delete(structure.entityId);
+    // Remove from timed label tracking
+    this.structuresWithActiveTimedLabels.delete(structure.entityId);
 
     // Remove associated label to prevent stale content
     this.removeEntityIdLabel(structure.entityId);
@@ -308,8 +328,8 @@ export class StructureManager {
     // Initialize points-based icon renderers
     this.initializePointsRenderers();
 
-    // Start battle timer updates
-    this.startBattleTimerUpdates();
+    // Start timed label updates
+    this.startTimedLabelUpdates();
   }
 
   private initializePointsRenderers(): void {
@@ -527,10 +547,10 @@ export class StructureManager {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
 
-    // Clean up battle timer interval
-    if (this.battleTimerInterval) {
-      clearInterval(this.battleTimerInterval);
-      this.battleTimerInterval = null;
+    // Clean up timed label interval
+    if (this.timedLabelInterval) {
+      clearInterval(this.timedLabelInterval);
+      this.timedLabelInterval = null;
     }
 
     // Clean up all pending label updates
@@ -584,7 +604,7 @@ export class StructureManager {
     this.structures.getStructures().clear();
     this.structureHexCoords.clear();
     this.chunkToStructures.clear();
-    this.structuresWithActiveBattleTimer.clear();
+    this.structuresWithActiveTimedLabels.clear();
     this.previousVisibleIds.clear();
 
     // Clean up points renderers
@@ -960,6 +980,7 @@ export class StructureManager {
       update.isAlly,
       finalGuardArmies,
       finalActiveProductions,
+      existingStructure?.incomingTroopArrivals,
       update.hyperstructureRealmCount,
       attackedFromDegrees ?? undefined,
       attackTowardDegrees ?? undefined,
@@ -975,8 +996,8 @@ export class StructureManager {
       structureRecord.attachments = cosmetic.attachments;
     }
 
-    // Track structures with active battle timers for efficient timer updates
-    this.updateBattleTimerTracking(entityId, battleCooldownEnd);
+    // Track structures with active timed labels for efficient timer updates
+    this.updateTimedLabelTracking(entityId, battleCooldownEnd, structureRecord?.incomingTroopArrivals);
 
     const existingLabel = this.entityIdLabels.get(entityId);
     if (existingLabel && structureRecord) {
@@ -2243,8 +2264,8 @@ export class StructureManager {
     structure.battleCooldownEnd = update.battleCooldownEnd;
     structure.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
-    // Track structures with active battle timers for efficient timer updates
-    this.updateBattleTimerTracking(entityId, update.battleCooldownEnd);
+    // Track structures with active timed labels for efficient timer updates
+    this.updateTimedLabelTracking(entityId, update.battleCooldownEnd, structure.incomingTroopArrivals);
 
     this.structures.updateStructure(entityId, structure);
 
@@ -2351,75 +2372,105 @@ export class StructureManager {
   }
 
   /**
-   * Update battle timer tracking for a structure.
-   * Adds to or removes from the active timer set based on whether the timer is active.
+   * Sync public incoming troop arrivals onto known structures and refresh visible labels as needed.
    */
-  private updateBattleTimerTracking(entityId: ID, battleCooldownEnd: number | undefined): void {
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    const isActive = battleCooldownEnd !== undefined && battleCooldownEnd > currentTimestamp;
+  public setIncomingTroopArrivalsByStructure(arrivalsByStructure: Record<string, IncomingTroopArrival[]>): void {
+    const nowSeconds = useChainTimeStore.getState().getNowSeconds();
 
-    if (isActive) {
-      this.structuresWithActiveBattleTimer.add(entityId);
-    } else {
-      this.structuresWithActiveBattleTimer.delete(entityId);
-    }
+    this.structures.getStructures().forEach((structuresByType) => {
+      structuresByType.forEach((structure) => {
+        const nextIncomingTroopArrivals = filterPendingIncomingTroopArrivals(
+          arrivalsByStructure[String(structure.entityId)],
+          nowSeconds,
+        );
+        const previousKey = serializeIncomingTroopArrivals(structure.incomingTroopArrivals);
+        const nextKey = serializeIncomingTroopArrivals(nextIncomingTroopArrivals);
+
+        if (previousKey !== nextKey) {
+          structure.incomingTroopArrivals =
+            nextIncomingTroopArrivals.length > 0 ? nextIncomingTroopArrivals : undefined;
+
+          const label = this.entityIdLabels.get(structure.entityId);
+          if (label) {
+            this.updateStructureLabelData(structure, label);
+          }
+        }
+
+        this.updateTimedLabelTracking(structure.entityId, structure.battleCooldownEnd, structure.incomingTroopArrivals);
+      });
+    });
   }
 
   /**
-   * Start the battle timer update system
+   * Update timed label tracking for a structure.
+   * Adds to or removes from the active timer set based on whether a battle timer or incoming troop countdown is active.
    */
-  private startBattleTimerUpdates(): void {
-    this.battleTimerInterval = setInterval(() => {
-      this.recomputeBattleTimersForAllStructures();
+  private updateTimedLabelTracking(
+    entityId: ID,
+    battleCooldownEnd: number | undefined,
+    incomingTroopArrivals?: IncomingTroopArrival[],
+  ): void {
+    const currentTimestamp = useChainTimeStore.getState().getNowSeconds();
+    const hasBattleTimer = battleCooldownEnd !== undefined && battleCooldownEnd > currentTimestamp;
+    const hasIncomingTroops = filterPendingIncomingTroopArrivals(incomingTroopArrivals, currentTimestamp).length > 0;
+
+    if (hasBattleTimer || hasIncomingTroops) {
+      this.structuresWithActiveTimedLabels.add(entityId);
+      return;
+    }
+
+    this.structuresWithActiveTimedLabels.delete(entityId);
+  }
+
+  /**
+   * Start the timed label update system
+   */
+  private startTimedLabelUpdates(): void {
+    this.timedLabelInterval = setInterval(() => {
+      this.recomputeTimedLabelDataForAllStructures();
     }, 1000);
   }
 
   /**
-   * Update battle timers for structures with active timers and update visible labels.
-   * Only iterates structures in structuresWithActiveBattleTimer set (O(active) instead of O(total)).
+   * Update battle timers and incoming troop countdowns for structures with active timed labels.
+   * Only iterates structures in structuresWithActiveTimedLabels set (O(active) instead of O(total)).
    */
-  private recomputeBattleTimersForAllStructures(): void {
-    // Collect expired timers to remove after iteration (can't modify Set while iterating)
-    const expiredTimers: ID[] = [];
+  private recomputeTimedLabelDataForAllStructures(): void {
+    const inactiveTimedLabels: ID[] = [];
+    const nowSeconds = useChainTimeStore.getState().getNowSeconds();
 
-    for (const entityId of this.structuresWithActiveBattleTimer) {
+    for (const entityId of this.structuresWithActiveTimedLabels) {
       const structure = this.structures.getStructureByEntityId(entityId);
       if (!structure) {
-        // Structure was removed, clean up tracking
-        expiredTimers.push(entityId);
+        inactiveTimedLabels.push(entityId);
         continue;
       }
 
       const newBattleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
-
-      // Timer has expired
-      if (newBattleTimerLeft === undefined) {
-        expiredTimers.push(entityId);
-        structure.battleTimerLeft = undefined;
-
-        // Update visible label if it exists
-        const label = this.entityIdLabels.get(entityId);
-        if (label) {
-          this.updateStructureLabelData(structure, label);
-        }
-        continue;
-      }
-
-      // Only update if timer has changed
+      const nextIncomingTroopArrivals = filterPendingIncomingTroopArrivals(structure.incomingTroopArrivals, nowSeconds);
       if (structure.battleTimerLeft !== newBattleTimerLeft) {
         structure.battleTimerLeft = newBattleTimerLeft;
+      }
 
-        // Update visible label if it exists
-        const label = this.entityIdLabels.get(entityId);
-        if (label) {
-          this.updateStructureLabelData(structure, label);
-        }
+      if (
+        serializeIncomingTroopArrivals(structure.incomingTroopArrivals) !==
+        serializeIncomingTroopArrivals(nextIncomingTroopArrivals)
+      ) {
+        structure.incomingTroopArrivals = nextIncomingTroopArrivals.length > 0 ? nextIncomingTroopArrivals : undefined;
+      }
+
+      if (newBattleTimerLeft === undefined && nextIncomingTroopArrivals.length === 0) {
+        inactiveTimedLabels.push(entityId);
+      }
+
+      const label = this.entityIdLabels.get(entityId);
+      if (label) {
+        this.updateStructureLabelData(structure, label);
       }
     }
 
-    // Remove expired timers from tracking set
-    for (const entityId of expiredTimers) {
-      this.structuresWithActiveBattleTimer.delete(entityId);
+    for (const entityId of inactiveTimedLabels) {
+      this.structuresWithActiveTimedLabels.delete(entityId);
     }
   }
 
@@ -2432,6 +2483,10 @@ export class StructureManager {
       structure.guardArmies?.map((g) => `${g.slot}:${g.category ?? ""}:${g.tier}:${g.count}`).join(",") ?? "";
     const productionKey =
       structure.activeProductions?.map((p) => `${p.buildingType}:${p.buildingCount}`).join(",") ?? "";
+    const incomingTroopKey = buildIncomingTroopKey(
+      structure.incomingTroopArrivals,
+      useChainTimeStore.getState().getNowSeconds(),
+    );
     const dataKey = [
       structure.isMine,
       structure.owner?.ownerName ?? "",
@@ -2440,6 +2495,7 @@ export class StructureManager {
       structure.attackedFromDegrees ?? "",
       structure.attackedTowardDegrees ?? "",
       productionKey,
+      incomingTroopKey,
       structure.level,
       structure.stage,
     ].join("|");
@@ -2486,6 +2542,7 @@ class Structures {
     isAlly: boolean,
     guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
     activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>,
+    incomingTroopArrivals?: IncomingTroopArrival[],
     hyperstructureRealmCount?: number,
     attackedFromDegrees?: number,
     attackedTowardDegrees?: number,
@@ -2520,6 +2577,7 @@ class Structures {
       // Enhanced data
       guardArmies,
       activeProductions,
+      incomingTroopArrivals,
       hyperstructureRealmCount,
       // Battle data
       attackedFromDegrees,

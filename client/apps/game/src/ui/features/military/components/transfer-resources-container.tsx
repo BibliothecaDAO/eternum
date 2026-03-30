@@ -17,7 +17,8 @@ import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@biblio
 import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { getActorTypes, TransferDirection } from "./help-container";
+import { getActorTypes } from "./help-container";
+import { TransferDirection } from "./transfer-troops/transfer-direction";
 
 const STRUCTURE_RELIC_IDS = new Set<number>(
   RELICS.filter(({ recipientType }) => recipientType === RelicRecipientType.Structure).map(({ id }) => id),

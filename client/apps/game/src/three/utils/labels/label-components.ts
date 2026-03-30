@@ -1,3 +1,5 @@
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { BANDITS_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 import { resolveOwnerDisplayName } from "./owner-display-name";
@@ -69,15 +71,6 @@ const getTierStyle = (tier: number): string => {
     default:
       return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold shadow-gold/10";
   }
-};
-
-/**
- * Troop tier to stars mapping
- */
-const TIERS_TO_STARS: Record<TroopTier, string> = {
-  [TroopTier.T1]: "⭐",
-  [TroopTier.T2]: "⭐⭐",
-  [TroopTier.T3]: "⭐⭐⭐",
 };
 
 const formatCompactNumber = (value?: number | null): string => {
@@ -681,6 +674,128 @@ export const createContentContainer = (inputView: CameraView): HTMLElement & { w
   const result = contentContainer as unknown as HTMLElement & { wrapper: HTMLElement };
   result.wrapper = wrapperContainer;
   return result;
+};
+
+const resolveTroopTierValue = (troopTier: TroopTier): number => {
+  return Number.parseInt(troopTier.replace("T", ""), 10) || 1;
+};
+
+const createIncomingTroopIcon = (resourceId: ResourcesIds): HTMLElement => {
+  const iconContainer = document.createElement("div");
+  iconContainer.classList.add("w-5", "h-5", "flex-shrink-0", "flex", "items-center", "justify-center");
+
+  const img = document.createElement("img");
+  img.src = `/images/resources/${resourceId}.png`;
+  img.classList.add("w-full", "h-full", "object-contain");
+  img.setAttribute("data-role", "incoming-troop-icon");
+  iconContainer.appendChild(img);
+
+  return iconContainer;
+};
+
+const createIncomingTroopCount = (count: number): HTMLElement => {
+  const countSpan = document.createElement("span");
+  countSpan.classList.add("font-semibold", "text-white");
+  countSpan.setAttribute("data-role", "incoming-troop-count");
+  countSpan.textContent = formatCompactNumber(count);
+  return countSpan;
+};
+
+const createIncomingTroopTierIndicator = (troopTier: TroopTier): HTMLElement => {
+  const tierValue = resolveTroopTierValue(troopTier);
+  const tierIndicator = document.createElement("span");
+  tierIndicator.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border", "leading-none");
+  tierIndicator.classList.add(...getTierStyle(tierValue).split(" "));
+  tierIndicator.setAttribute("data-role", "incoming-troop-tier");
+  tierIndicator.textContent = `T${tierValue}`;
+  return tierIndicator;
+};
+
+const createIncomingTroopEta = (arrivesAt: bigint, nowSeconds: number): HTMLElement => {
+  const etaContainer = document.createElement("span");
+  etaContainer.classList.add("flex", "items-center", "gap-1", "text-gold/70");
+  etaContainer.setAttribute("data-role", "incoming-troop-eta");
+
+  const etaIcon = document.createElement("span");
+  etaIcon.textContent = "⏳";
+  etaContainer.appendChild(etaIcon);
+
+  const etaValue = document.createElement("span");
+  etaValue.textContent = formatTime(Math.max(0, Number(arrivesAt) - nowSeconds));
+  etaContainer.appendChild(etaValue);
+
+  return etaContainer;
+};
+
+const createIncomingTroopRow = (arrival: IncomingTroopArrival, nowSeconds: number): HTMLElement => {
+  const row = document.createElement("div");
+  row.classList.add("flex", "items-center", "gap-1.5", "w-fit", "rounded", "bg-black/35", "px-2", "py-0.5");
+  row.setAttribute("data-role", "incoming-troop-row");
+
+  row.appendChild(createIncomingTroopIcon(arrival.resourceId));
+  row.appendChild(createIncomingTroopCount(arrival.count));
+  row.appendChild(createIncomingTroopTierIndicator(arrival.troopTier));
+  row.appendChild(createIncomingTroopEta(arrival.arrivesAt, nowSeconds));
+
+  return row;
+};
+
+const createIncomingTroopList = (arrivals: IncomingTroopArrival[]): HTMLElement => {
+  const container = document.createElement("div");
+  container.setAttribute("data-component", "incoming-troops-list");
+  container.classList.add("flex", "flex-col", "gap-1");
+
+  const nowSeconds = useChainTimeStore.getState().getNowSeconds();
+  const visibleArrivals = arrivals.slice(0, 3);
+
+  visibleArrivals.forEach((arrival) => {
+    container.appendChild(createIncomingTroopRow(arrival, nowSeconds));
+  });
+
+  if (arrivals.length > visibleArrivals.length) {
+    const overflow = document.createElement("div");
+    overflow.setAttribute("data-role", "incoming-troops-overflow");
+    overflow.classList.add("text-[10px]", "font-medium", "text-gold/70");
+    overflow.textContent = `+${arrivals.length - visibleArrivals.length} more`;
+    container.appendChild(overflow);
+  }
+
+  return container;
+};
+
+export const updateIncomingTroopDisplay = (
+  contentContainer: HTMLElement,
+  arrivals: IncomingTroopArrival[] | undefined,
+): void => {
+  const existingContainer = contentContainer.querySelector('[data-component="incoming-troops"]') as HTMLElement | null;
+  const hasArrivals = Array.isArray(arrivals) && arrivals.length > 0;
+
+  if (!hasArrivals) {
+    existingContainer?.remove();
+    return;
+  }
+
+  if (!existingContainer) {
+    const container = document.createElement("div");
+    container.setAttribute("data-component", "incoming-troops");
+    container.classList.add("flex", "flex-col", "gap-1");
+    container.appendChild(createIncomingTroopList(arrivals));
+    const productionsDisplay = contentContainer.querySelector('[data-component="productions"]');
+    if (productionsDisplay) {
+      contentContainer.insertBefore(container, productionsDisplay);
+    } else {
+      contentContainer.appendChild(container);
+    }
+    return;
+  }
+
+  const existingList = existingContainer.querySelector('[data-component="incoming-troops-list"]');
+  const nextList = createIncomingTroopList(arrivals);
+  if (existingList) {
+    existingList.replaceWith(nextList);
+  } else {
+    existingContainer.appendChild(nextList);
+  }
 };
 
 /**

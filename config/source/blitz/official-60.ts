@@ -100,7 +100,7 @@ const official60BlitzExplorationRewards = [
 function buildOfficial60BlitzResourceOutputs() {
   return {
     ...buildOfficialBlitzResourceOutputs(2),
-    [ResourcesIds.Donkey]: 5,
+    [ResourcesIds.Donkey]: 3,
     [ResourcesIds.Essence]: 20,
   };
 }
