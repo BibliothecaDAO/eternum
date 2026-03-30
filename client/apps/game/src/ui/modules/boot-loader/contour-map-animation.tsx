@@ -15,12 +15,7 @@ type ContourMapAnimationProps = {
 export const ContourMapAnimation = ({ className }: ContourMapAnimationProps) => {
   return (
     <div className={clsx("boot-loader-contours absolute inset-0 overflow-hidden", className)} aria-hidden="true">
-      <svg
-        className="h-full w-full"
-        viewBox="0 0 1440 900"
-        preserveAspectRatio="xMidYMid slice"
-        focusable="false"
-      >
+      <svg className="h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
         <defs>
           <radialGradient id="boot-loader-vignette" cx="50%" cy="48%" r="70%">
             <stop offset="0%" stopColor="rgba(0,0,0,0)" />

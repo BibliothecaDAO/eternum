@@ -11,7 +11,7 @@ describe("Landing settings isolation", () => {
   it("keeps the dashboard settings panel free of Dojo-bound react package hooks", () => {
     const source = readSource("src/ui/features/landing/components/landing-settings.tsx");
 
-    expect(source).not.toContain('@bibliothecadao/react');
+    expect(source).not.toContain("@bibliothecadao/react");
     expect(source).toContain("isDocumentFullScreen");
     expect(source).toContain("fullscreenchange");
   });

@@ -6,7 +6,7 @@ import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
 
 import App from "./app";
-import { markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader/boot-loader-state";
+import { BootLoaderCrashFallback, markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader";
 import { env } from "../env";
 
 declare global {
@@ -56,7 +56,7 @@ setBootDocumentState("react-mounted");
 root.render(
   <React.StrictMode>
     {sentryEnabled ? (
-      <Sentry.ErrorBoundary fallback={<div />}>
+      <Sentry.ErrorBoundary fallback={<BootLoaderCrashFallback />}>
         <App />
       </Sentry.ErrorBoundary>
     ) : (

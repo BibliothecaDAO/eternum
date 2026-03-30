@@ -47,7 +47,9 @@ export const BootLoaderShell = ({
           )}
         >
           {caption ? (
-            <div className="mb-3 text-[0.62rem] uppercase tracking-[0.44em] text-gold/45 sm:text-[0.68rem]">{caption}</div>
+            <div className="mb-3 text-[0.62rem] uppercase tracking-[0.44em] text-gold/45 sm:text-[0.68rem]">
+              {caption}
+            </div>
           ) : null}
           {title ? (
             <h2 className="font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-[1.2rem] font-semibold tracking-[0.08em] text-gold/92 sm:text-[1.4rem]">
