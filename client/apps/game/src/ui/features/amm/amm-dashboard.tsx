@@ -5,17 +5,23 @@ import { computeSpotPrice, type Pool } from "@/services/amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AmmAddLiquidity } from "./amm-add-liquidity";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { AmmPoolList } from "./amm-pool-list";
 import { AmmPriceChart } from "./amm-price-chart";
 import { AMM_READ_QUERY_OPTIONS } from "./amm-queries";
 import { AmmRemoveLiquidity } from "./amm-remove-liquidity";
-import { resolveAmmFeeBreakdown, resolveSelectedAmmPool } from "./amm-model";
+import { orderAmmPools, resolveAmmFeeBreakdown, resolveSelectedAmmPool } from "./amm-model";
 import { AmmSwap } from "./amm-swap";
 import { AmmTradeHistory } from "./amm-trade-history";
-import { formatAmmCompactAmount, formatAmmFeeTo, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
+import {
+  formatAmmCompactAmount,
+  formatAmmFeeTo,
+  formatAmmPercent,
+  formatAmmSpotPrice,
+  resolveAmmFeeToHref,
+} from "./amm-format";
 
 type AmmTabKey = "swap" | "liquidity" | "history";
 
@@ -29,26 +35,35 @@ function useAmmSelectionState() {
     enabled: Boolean(client),
     ...AMM_READ_QUERY_OPTIONS,
   });
+  const orderedPools = useMemo(
+    () =>
+      orderAmmPools(poolsQuery.data ?? [], {
+        lordsAddress: config.lordsAddress,
+        orderBy: "default",
+        marketCapByTokenAddress: new Map(),
+      }),
+    [config.lordsAddress, poolsQuery.data],
+  );
 
   useEffect(() => {
-    if (!selectedPool && poolsQuery.data && poolsQuery.data.length > 0) {
-      setSelectedPool(poolsQuery.data[0].tokenAddress);
+    if (!selectedPool && orderedPools.length > 0) {
+      setSelectedPool(orderedPools[0].tokenAddress);
     }
-  }, [poolsQuery.data, selectedPool, setSelectedPool]);
+  }, [orderedPools, selectedPool, setSelectedPool]);
 
   return {
     config,
     isConfigured,
     selectedPool,
-    activePool: resolveSelectedAmmPool(poolsQuery.data ?? [], selectedPool),
+    activePool: resolveSelectedAmmPool(orderedPools, selectedPool),
     poolsLoading: poolsQuery.isLoading,
   };
 }
 
 const AmmDesktopPoolRail = () => {
   return (
-    <aside className="hidden lg:block lg:w-[300px] xl:sticky xl:top-24 xl:self-start">
-      <AmmPoolList />
+    <aside className="hidden min-h-0 lg:block lg:w-[300px] lg:self-stretch">
+      <AmmPoolList className="h-full" />
     </aside>
   );
 };
@@ -66,7 +81,7 @@ const AmmMobilePoolPicker = ({ open, onClose }: { open: boolean; onClose: () => 
       }}
     >
       <div
-        className="w-full max-w-md rounded-[28px] border border-gold/10 bg-black/90 p-4 shadow-[0_28px_80px_-40px_rgba(0,0,0,0.95)] backdrop-blur-[12px]"
+        className="flex max-h-[70vh] w-full max-w-md flex-col rounded-[28px] border border-gold/10 bg-black/90 p-4 shadow-[0_28px_80px_-40px_rgba(0,0,0,0.95)] backdrop-blur-[12px]"
         onPointerDown={(event) => event.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -79,7 +94,7 @@ const AmmMobilePoolPicker = ({ open, onClose }: { open: boolean; onClose: () => 
           </button>
         </div>
 
-        <AmmPoolList showHeader={false} onPoolSelect={() => onClose()} />
+        <AmmPoolList className="min-h-0 flex-1" showHeader={false} onPoolSelect={() => onClose()} />
       </div>
     </BlankOverlayContainer>
   );
@@ -89,8 +104,8 @@ const SummarySkeleton = () => (
   <div className="rounded-[28px] border border-gold/10 bg-black/25 p-4 backdrop-blur-[10px]">
     <div className="animate-pulse space-y-3">
       <div className="h-6 w-40 rounded bg-gold/10" />
-      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, index) => (
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+        {Array.from({ length: 10 }).map((_, index) => (
           <div key={index} className="h-16 rounded-2xl bg-gold/8" />
         ))}
       </div>
@@ -155,27 +170,18 @@ const AmmSelectedPoolSummary = ({
   const currentSpotPrice =
     statsQuery.data?.spotPrice ?? computeSpotPrice(activePool.lordsReserve, activePool.tokenReserve);
   const feeBreakdown = resolveAmmFeeBreakdown(activePool);
-  const metrics = [
-    { label: "Spot Price", value: `${formatAmmSpotPrice(currentSpotPrice)} LORDS` },
-    {
-      label: "MCap",
-      value: statsQuery.data?.marketCapLords != null ? formatAmmCompactAmount(statsQuery.data.marketCapLords) : "--",
-    },
-    { label: "TVL", value: formatAmmCompactAmount(activePool.lordsReserve * 2n) },
-    {
-      label: "Circulation",
-      value: statsQuery.data?.resourceSupply != null ? formatAmmCompactAmount(statsQuery.data.resourceSupply) : "--",
-    },
-    { label: "24H Volume", value: statsQuery.data ? formatAmmCompactAmount(statsQuery.data.volume24h) : "--" },
-    { label: "LP Holders", value: statsQuery.data ? statsQuery.data.lpHolderCount.toLocaleString() : "--" },
-    { label: "LP Fee", value: formatAmmPercent(feeBreakdown.lpFeePercent) },
-    { label: "Protocol Fee", value: formatAmmPercent(feeBreakdown.protocolFeePercent) },
-    {
-      label: "Fee To",
-      value: formatAmmFeeTo(statsQuery.data?.feeTo ?? activePool.feeTo),
-    },
-    { label: "24H Fees", value: statsQuery.data ? formatAmmCompactAmount(statsQuery.data.fees24h) : "--" },
-  ];
+  const feeToAddress = statsQuery.data?.feeTo ?? activePool.feeTo;
+  const feeToHref = resolveAmmFeeToHref(feeToAddress, config.explorerBaseUrl);
+  const metricRows = buildSelectedPoolMetricRows({
+    activePool,
+    asset,
+    currentSpotPrice,
+    feeBreakdown,
+    feeToAddress,
+    marketCapLords: statsQuery.data?.marketCapLords ?? null,
+    volume24h: statsQuery.data?.volume24h ?? null,
+    fees24h: statsQuery.data?.fees24h ?? null,
+  });
 
   return (
     <section className="rounded-[28px] border border-gold/10 bg-black/30 px-4 py-3 shadow-[0_22px_60px_-38px_rgba(0,0,0,0.98)] backdrop-blur-[12px]">
@@ -207,16 +213,36 @@ const AmmSelectedPoolSummary = ({
         </button>
       </div>
 
-      <div className="mt-3 grid gap-1.5 grid-cols-2 md:grid-cols-4 xl:grid-cols-4">
-        {metrics.map((metric, index) => (
-          <div
-            key={metric.label}
-            className="rounded-xl border border-gold/10 bg-black/20 px-2.5 py-2 backdrop-blur-[8px]"
-          >
-            <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">{metric.label}</div>
-            <div className={cn("mt-1 font-semibold text-gold", index === 0 ? "font-cinzel text-lg" : "text-sm")}>
-              {metric.value}
-            </div>
+      <div className="mt-3 space-y-1.5">
+        {metricRows.map((row, rowIndex) => (
+          <div key={rowIndex} className="grid grid-cols-2 gap-1.5 md:grid-cols-5">
+            {row.map((metric, metricIndex) => (
+              <div
+                key={metric.label}
+                className="rounded-xl border border-gold/10 bg-black/20 px-2.5 py-2 backdrop-blur-[8px]"
+              >
+                <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">{metric.label}</div>
+                {metric.href && feeToHref ? (
+                  <a
+                    href={feeToHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 block truncate text-sm font-semibold text-gold underline-offset-2 hover:underline"
+                  >
+                    {metric.value}
+                  </a>
+                ) : (
+                  <div
+                    className={cn(
+                      "mt-1 truncate font-semibold text-gold",
+                      rowIndex === 0 && metricIndex === 0 ? "font-cinzel text-lg" : "text-sm",
+                    )}
+                  >
+                    {metric.value}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -259,6 +285,20 @@ const AmmLiquidityCard = ({ activePool }: { activePool: Pool | null }) => {
           ))}
         </div>
       </div>
+
+      {activePool && asset && (
+        <section className="rounded-2xl border border-gold/10 bg-black/25 p-3">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">Pool Balances</div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {buildLiquidityPoolBalanceCards(activePool, asset.displayName).map((metric) => (
+              <div key={metric.label} className="rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">{metric.label}</div>
+                <div className="mt-1 text-sm font-semibold text-gold">{metric.value}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {mode === "add" ? <AmmAddLiquidity /> : <AmmRemoveLiquidity />}
     </div>
@@ -348,3 +388,51 @@ const AmmDashboard = () => {
 };
 
 export default AmmDashboard;
+
+function buildSelectedPoolMetricRows({
+  activePool,
+  asset,
+  currentSpotPrice,
+  feeBreakdown,
+  feeToAddress,
+  marketCapLords,
+  volume24h,
+  fees24h,
+}: {
+  activePool: Pool;
+  asset: { displayName: string };
+  currentSpotPrice: number;
+  feeBreakdown: ReturnType<typeof resolveAmmFeeBreakdown>;
+  feeToAddress: string;
+  marketCapLords: bigint | null;
+  volume24h: bigint | null;
+  fees24h: bigint | null;
+}) {
+  return [
+    [
+      { label: "Spot Price", value: `${formatAmmSpotPrice(currentSpotPrice)} LORDS` },
+      { label: "MCap", value: formatNullableAmmAmount(marketCapLords) },
+      { label: "TVL", value: formatAmmCompactAmount(activePool.lordsReserve * 2n) },
+      { label: `${asset.displayName} in Pool`, value: formatAmmCompactAmount(activePool.tokenReserve) },
+      { label: "LORDS in Pool", value: formatAmmCompactAmount(activePool.lordsReserve) },
+    ],
+    [
+      { label: "24H Volume", value: formatNullableAmmAmount(volume24h) },
+      { label: "24H Fees", value: formatNullableAmmAmount(fees24h) },
+      { label: "LP Fee", value: formatAmmPercent(feeBreakdown.lpFeePercent) },
+      { label: "Protocol Fee", value: formatAmmPercent(feeBreakdown.protocolFeePercent) },
+      { label: "Fee To", value: formatAmmFeeTo(feeToAddress), href: true },
+    ],
+  ];
+}
+
+function buildLiquidityPoolBalanceCards(activePool: Pool, assetName: string) {
+  return [
+    { label: `${assetName} in pool`, value: formatAmmCompactAmount(activePool.tokenReserve) },
+    { label: "LORDS in pool", value: formatAmmCompactAmount(activePool.lordsReserve) },
+  ];
+}
+
+function formatNullableAmmAmount(value: bigint | null): string {
+  return value == null ? "--" : formatAmmCompactAmount(value);
+}
