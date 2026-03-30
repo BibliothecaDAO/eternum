@@ -72,8 +72,10 @@ const DEFAULT_AMM_POOL_SEQUENCE = [
   "PaladinT2",
   "PaladinT3",
 ] as const;
-const DEFAULT_AMM_POOL_INDEX_BY_NAME = new Map(DEFAULT_AMM_POOL_SEQUENCE.map((name, index) => [name, index]));
-const RESOURCE_ID_BY_TRAIT = new Map(resources.map((resource) => [resource.trait, resource.id]));
+const DEFAULT_AMM_POOL_INDEX_BY_NAME = new Map<string, number>(
+  DEFAULT_AMM_POOL_SEQUENCE.map((name, index) => [name, index]),
+);
+const RESOURCE_ID_BY_TRAIT = new Map<string, number>(resources.map((resource) => [resource.trait, resource.id]));
 
 export function buildAmmTokenOptions(pools: Pool[], lordsAddress: string): TokenOption[] {
   return [
