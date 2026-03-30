@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-30T04:22:41.656Z",
+  "updatedAt": "2026-03-30T04:22:57.482Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -157,17 +157,20 @@
       "gameName": "bltz-cred-test-2",
       "path": "runs/slot/blitz/bltz-cred-test-2.json",
       "inputPath": "inputs/slot/blitz/bltz-cred-test-2/23727717840-1.json",
-      "status": "running",
-      "updatedAt": "2026-03-30T04:22:41.656Z",
+      "status": "complete",
+      "updatedAt": "2026-03-30T04:22:57.482Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-03-30T05:07:41.656Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1774845180,
       "durationSeconds": 3600,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-03-30T04:22:55.591Z"
+      }
     }
   }
 }
