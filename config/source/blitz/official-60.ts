@@ -1,5 +1,6 @@
 import { BuildingType, RealmLevels, ResourcesIds } from "../../../packages/types/src/constants";
 import { COMPLEX_BUILDING_COSTS, SIMPLE_BUILDING_COSTS } from "./building";
+import { VICTORY_POINTS_MULTIPLIER } from "./points";
 import type { BlitzBalanceProfile } from "./shared";
 import {
   buildBlitzStartingResources,
@@ -96,6 +97,26 @@ const official60BlitzExplorationRewards = [
   { rewardId: ResourcesIds.Donkey, amount: 500, probabilityBps: 500 },
 ] as const;
 
+function buildOfficial60BlitzResourceOutputs() {
+  return {
+    ...buildOfficialBlitzResourceOutputs(2),
+    [ResourcesIds.Donkey]: 5,
+    [ResourcesIds.Essence]: 20,
+  };
+}
+
+const official60BlitzStaminaConfig = {
+  staminaInitial: 30,
+  staminaGainPerTick: 30,
+};
+
+const official60BlitzVictoryPointConfig = {
+  pointsForTileExploration: 5n * BigInt(VICTORY_POINTS_MULTIPLIER),
+  pointsForNonHyperstructureClaimAgainstBandits: 250n * BigInt(VICTORY_POINTS_MULTIPLIER),
+  pointsForRelicDiscovery: 250n * BigInt(VICTORY_POINTS_MULTIPLIER),
+  pointsForHyperstructureClaimAgainstBandits: 1_000n * BigInt(VICTORY_POINTS_MULTIPLIER),
+};
+
 export const official60BlitzProfile: BlitzBalanceProfile = {
   season: {
     durationSeconds: OFFICIAL_60_BLITZ_DURATION_SECONDS,
@@ -108,11 +129,15 @@ export const official60BlitzProfile: BlitzBalanceProfile = {
   },
   resources: {
     productionByComplexRecipe: buildOfficialBlitzComplexRecipes(2),
-    productionByComplexRecipeOutputs: buildOfficialBlitzResourceOutputs(2, 5),
+    productionByComplexRecipeOutputs: buildOfficial60BlitzResourceOutputs(),
     productionBySimpleRecipe: buildOfficialBlitzSimpleRecipes(2),
-    productionBySimpleRecipeOutputs: buildOfficialBlitzResourceOutputs(2, 5),
+    productionBySimpleRecipeOutputs: buildOfficial60BlitzResourceOutputs(),
     laborOutputPerResource: buildOfficialBlitzLaborOutputs(2),
   },
+  troop: {
+    stamina: official60BlitzStaminaConfig,
+  },
+  victoryPoints: official60BlitzVictoryPointConfig,
   buildings: {
     complexBuildingCosts: official60BlitzComplexBuildingCosts,
     simpleBuildingCost: official60BlitzSimpleBuildingCosts,

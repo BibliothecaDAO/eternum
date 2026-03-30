@@ -5,410 +5,738 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blitz Settlement Hex Grid Map</title>
     <style>
+      :root {
+        --bg-top: #fbfbfd;
+        --bg-bottom: #eef2f7;
+        --surface: rgba(255, 255, 255, 0.74);
+        --surface-strong: rgba(255, 255, 255, 0.9);
+        --surface-muted: rgba(248, 250, 252, 0.92);
+        --border: rgba(15, 23, 42, 0.08);
+        --ink: #111827;
+        --muted: #667085;
+        --accent: #0f766e;
+        --accent-soft: rgba(15, 118, 110, 0.12);
+        --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+        --shadow-soft: 0 14px 34px rgba(15, 23, 42, 0.06);
+        --radius-xl: 30px;
+        --radius-lg: 24px;
+        --radius-md: 18px;
+        --radius-sm: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-family:
+          "SF Pro Display",
+          "SF Pro Text",
+          "Helvetica Neue",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
         margin: 0;
-        padding: 20px;
-        background-color: #1a1a1a;
-        color: #ffffff;
+        padding: 28px;
+        background:
+          radial-gradient(circle at top left, rgba(15, 118, 110, 0.1), transparent 36%),
+          radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 34%),
+          linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+        color: var(--ink);
       }
 
       .container {
-        max-width: 1400px;
+        max-width: 1480px;
         margin: 0 auto;
       }
 
-      .controls {
-        background-color: #2d2d2d;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
+      .hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+        margin-bottom: 22px;
+      }
+
+      .hero-kicker {
+        margin: 0 0 10px;
+        color: var(--accent);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(2.5rem, 5vw, 4.4rem);
+        font-weight: 650;
+        letter-spacing: -0.05em;
+      }
+
+      .hero-subtitle {
+        max-width: 760px;
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 1.03rem;
+        line-height: 1.6;
+      }
+
+      .hero-badges {
         display: flex;
         flex-wrap: wrap;
-        gap: 20px;
+        justify-content: flex-end;
+        gap: 10px;
+        max-width: 360px;
+      }
+
+      .hero-badge {
+        display: inline-flex;
         align-items: center;
+        gap: 8px;
+        padding: 11px 16px;
+        border-radius: 999px;
+        background: var(--surface-strong);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        box-shadow: var(--shadow-soft);
+        color: #0f172a;
+        font-size: 0.9rem;
+        font-weight: 600;
+        backdrop-filter: blur(18px) saturate(1.2);
+      }
+
+      .control-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      .control-card,
+      .surface-card,
+      .canvas-container {
+        background: var(--surface);
+        backdrop-filter: blur(20px) saturate(1.2);
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        box-shadow: var(--shadow);
+        border-radius: var(--radius-xl);
+      }
+
+      .control-card {
+        grid-column: span 4;
+        padding: 24px;
+      }
+
+      .control-card--wide {
+        grid-column: span 12;
+      }
+
+      .card-heading {
+        margin-bottom: 18px;
+      }
+
+      .card-title {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+
+      .card-caption {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .control-stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .control-stack.two-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .control-group {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 8px;
+        min-width: 0;
       }
 
       .control-group label {
-        font-weight: bold;
-        color: #cccccc;
+        color: #1f2937;
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+
+      .control-group span {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .control-group select,
+      .control-group input[type="range"] {
+        width: 100%;
       }
 
       .control-group select {
-        min-width: 200px;
-        padding: 8px 10px;
-        border: 1px solid #555;
-        border-radius: 6px;
-        background-color: #1a1a1a;
-        color: #ffffff;
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface-muted);
+        color: var(--ink);
+        padding: 12px 14px;
+        font: inherit;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        transition:
+          border-color 160ms ease,
+          box-shadow 160ms ease,
+          transform 160ms ease;
       }
 
       .control-group input[type="range"] {
-        width: 200px;
+        appearance: none;
         height: 6px;
-        background: #555;
-        border-radius: 3px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(15, 118, 110, 0.22), rgba(15, 118, 110, 0.08));
         outline: none;
-        transition: all 0.3s ease;
+        transition: all 0.24s ease;
       }
 
       .control-group input[type="range"]::-webkit-slider-thumb {
         appearance: none;
-        width: 20px;
-        height: 20px;
-        background: #4caf50;
+        width: 22px;
+        height: 22px;
         border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.92);
+        background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
+        box-shadow: 0 8px 16px rgba(15, 118, 110, 0.25);
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: transform 140ms ease;
       }
 
       .control-group input[type="range"]::-webkit-slider-thumb:hover {
-        background: #45a049;
-        transform: scale(1.1);
+        transform: scale(1.08);
       }
 
       .control-group input[type="range"]::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: #4caf50;
+        width: 22px;
+        height: 22px;
         border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.92);
+        background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
+        box-shadow: 0 8px 16px rgba(15, 118, 110, 0.25);
         cursor: pointer;
-        border: none;
-        transition: all 0.3s ease;
-      }
-
-      .control-group input[type="range"]::-moz-range-thumb:hover {
-        background: #45a049;
-        transform: scale(1.1);
       }
 
       .control-group input[type="range"].updating {
-        background: #2196f3;
-        animation: slideGlow 1s ease-in-out;
+        background: linear-gradient(90deg, rgba(37, 99, 235, 0.28), rgba(37, 99, 235, 0.08));
+        animation: slideGlow 0.9s ease-in-out;
       }
 
       .control-group input[type="range"].updating::-webkit-slider-thumb {
-        background: #2196f3;
-        box-shadow: 0 0 10px rgba(33, 150, 243, 0.6);
+        background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
       }
 
-      .control-group span {
-        font-weight: bold;
-        color: #4caf50;
-        min-width: 30px;
-        display: inline-block;
-        text-align: right;
+      .inline-toggle {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        background: var(--surface-muted);
+        border: 1px solid rgba(15, 23, 42, 0.06);
       }
 
-      .control-help {
-        color: #aaaaaa;
-        font-size: 0.85em;
-        max-width: 220px;
-        line-height: 1.35;
+      .inline-toggle input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent);
       }
 
-      @keyframes pulse {
-        0% {
-          box-shadow: 0 0 8px rgba(33, 150, 243, 0.4);
-        }
-        50% {
-          box-shadow: 0 0 12px rgba(33, 150, 243, 0.6);
-        }
-        100% {
-          box-shadow: 0 0 8px rgba(33, 150, 243, 0.4);
-        }
-      }
-
-      @keyframes slideGlow {
-        0% {
-          background: #555;
-        }
-        50% {
-          background: #2196f3;
-        }
-        100% {
-          background: #555;
-        }
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
       }
 
       button {
-        padding: 10px 20px;
-        background-color: #4caf50;
-        color: white;
+        padding: 12px 16px;
+        background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+        color: #ffffff;
         border: none;
-        border-radius: 4px;
+        border-radius: 999px;
         cursor: pointer;
-        font-weight: bold;
+        font: inherit;
+        font-weight: 600;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+        transition:
+          transform 140ms ease,
+          box-shadow 140ms ease,
+          opacity 140ms ease;
       }
 
       button:hover {
-        background-color: #45a049;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .button-secondary {
+        background: rgba(255, 255, 255, 0.74);
+        color: var(--ink);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: none;
+      }
+
+      .step-actions {
+        margin-top: 12px;
+      }
+
+      .step-info-card {
+        padding: 16px 18px;
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.62);
+        border: 1px solid rgba(15, 23, 42, 0.06);
+        color: var(--muted);
+        min-height: 84px;
+      }
+
+      .step-info-card strong {
+        color: var(--ink);
       }
 
       .canvas-container {
-        background-color: #2d2d2d;
-        padding: 20px;
-        border-radius: 10px;
+        position: relative;
+        padding: 18px;
         text-align: center;
       }
 
       canvas {
-        border: 2px solid #555;
-        border-radius: 8px;
-        background-color: #1a1a1a;
+        width: min(100%, 1200px);
+        height: auto;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 26px;
+        background-color: #101317;
         cursor: grab;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
       }
 
       canvas:active {
         cursor: grabbing;
       }
 
-      .info {
-        background-color: #2d2d2d;
-        padding: 15px;
-        border-radius: 10px;
-        margin-top: 20px;
+      .map-diagnostics {
+        position: absolute;
+        top: 28px;
+        right: 28px;
+        width: min(320px, calc(100% - 56px));
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        border-radius: 20px;
+        padding: 14px 16px;
+        text-align: left;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+        backdrop-filter: blur(18px) saturate(1.2);
+      }
+
+      .map-diagnostics > strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--ink);
+      }
+
+      .map-diagnostics-line {
+        margin-top: 6px;
+        color: #334155;
+        font-size: 0.9rem;
+        line-height: 1.38;
+      }
+
+      .inspector-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .surface-card {
+        grid-column: span 6;
+        padding: 22px;
+      }
+
+      .surface-card--wide {
+        grid-column: span 6;
+      }
+
+      .surface-card h3 {
+        margin: 0 0 14px;
+        font-size: 1rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
       }
 
       .legend {
-        display: flex;
-        gap: 20px;
-        justify-content: center;
-        margin-top: 10px;
-        flex-wrap: wrap;
+        display: grid;
+        gap: 10px;
       }
 
       .legend-item {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        color: #334155;
+        font-size: 0.93rem;
       }
 
       .legend-color {
-        width: 20px;
-        height: 20px;
-        border-radius: 3px;
-        border: 1px solid #555;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        flex-shrink: 0;
+      }
+
+      .stat-content,
+      .status-copy,
+      .note-list {
+        color: var(--muted);
+        font-size: 0.94rem;
+        line-height: 1.55;
+      }
+
+      .status-copy {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+      }
+
+      .note-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .note-item {
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.52);
+        border: 1px solid rgba(15, 23, 42, 0.05);
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @keyframes slideGlow {
+        0% {
+          background: rgba(15, 118, 110, 0.16);
+        }
+        50% {
+          background: rgba(37, 99, 235, 0.24);
+        }
+        100% {
+          background: rgba(15, 118, 110, 0.16);
+        }
+      }
+
+      @media (max-width: 1120px) {
+        .hero {
+          flex-direction: column;
+        }
+
+        .hero-badges {
+          justify-content: flex-start;
+          max-width: none;
+        }
+
+        .control-card {
+          grid-column: span 6;
+        }
+
+        .surface-card {
+          grid-column: span 6;
+        }
+      }
+
+      @media (max-width: 760px) {
+        body {
+          padding: 18px;
+        }
+
+        .control-card,
+        .control-card--wide,
+        .surface-card,
+        .surface-card--wide {
+          grid-column: span 12;
+        }
+
+        .control-stack.two-col {
+          grid-template-columns: 1fr;
+        }
+
+        .map-diagnostics {
+          position: static;
+          width: 100%;
+          margin: 16px auto 0;
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Blitz Settlement Hex Grid Map Visualizer</h1>
-
-      <div class="controls">
-        <div class="control-group">
-          <label for="distanceProfile">Multiplayer Layout Profile:</label>
-          <select id="distanceProfile">
-            <option value="official90">Official 90</option>
-            <option value="official60">Official 60</option>
-            <option value="custom">Custom</option>
-          </select>
-          <div class="control-help" id="distanceProfileSummary">Official 90: base 8, step 15, ring 15, mirror 11/4</div>
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="hero-kicker">Blitz Layout Inspector</p>
+          <h1>Hex Map Studio</h1>
+          <p class="hero-subtitle">
+            Tune official layouts, inspect settlement spacing, and preview hyperstructure realm coverage.
+          </p>
         </div>
-
-        <div class="control-group">
-          <label for="baseDistance">Base Distance: <span id="baseDistanceValue">8</span></label>
-          <input type="range" id="baseDistance" value="8" min="2" max="100" step="2" />
+        <div class="hero-badges">
+          <div class="hero-badge" id="layoutBadge">Official 90</div>
+          <div class="hero-badge" id="realmCheckBadge">Distance 8</div>
+          <div class="hero-badge">Zoom <span id="zoomDisplay">100%</span></div>
         </div>
+      </header>
 
-        <div class="control-group">
-          <label for="maxPoints">Number of Settlements: <span id="maxPointsValue">96</span></label>
-          <input type="range" id="maxPoints" value="96" min="1" max="200" step="1" />
-        </div>
-
-        <div class="control-group">
-          <label for="stepTileDistance">Step Tile Distance: <span id="stepTileDistanceValue">15</span></label>
-          <input type="range" id="stepTileDistance" value="15" min="5" max="50" step="1" />
-        </div>
-
-        <div class="control-group">
-          <label for="realmTileRadius">Realm Tile Radius: <span id="realmTileRadiusValue">3</span></label>
-          <input type="range" id="realmTileRadius" value="3" min="1" max="20" step="1" />
-        </div>
-
-        <div class="control-group">
-          <label for="mirrorFirstDistance">Mirror First Distance: <span id="mirrorFirstDistanceValue">11</span></label>
-          <input type="range" id="mirrorFirstDistance" value="11" min="5" max="30" step="1" />
-        </div>
-
-        <div class="control-group">
-          <label for="mirrorSecondDistance"
-            >Mirror Second Distance: <span id="mirrorSecondDistanceValue">4</span></label
-          >
-          <input type="range" id="mirrorSecondDistance" value="4" min="1" max="15" step="1" />
-        </div>
-
-        <div class="control-group">
-          <label for="ringDistance">Hyperstructure Ring Distance: <span id="ringDistanceValue">15</span></label>
-          <input type="range" id="ringDistance" value="15" min="5" max="30" step="1" />
-        </div>
-
-        <div class="control-group">
-          <label for="hyperstructureRings">Hyperstructure Rings: <span id="hyperstructureRingsValue">6</span></label>
-          <input type="range" id="hyperstructureRings" value="6" min="0" max="12" step="1" />
-        </div>
-
-        <div class="control-group">
-          <label for="hexSize">Hex Size: <span id="hexSizeValue">8</span></label>
-          <input type="range" id="hexSize" value="8" min="1" max="50" step="1" />
-        </div>
-
-        <div class="control-group">
-          <label for="showGrid">Show Grid Lines:</label>
-          <input type="checkbox" id="showGrid" checked />
-        </div>
-
-        <div class="control-group">
-          <label for="twoPlayerMode">Two Player Mode (Exact Cairo):</label>
-          <input type="checkbox" id="twoPlayerMode" />
-        </div>
-
-        <div class="control-group">
-          <label>Current Zoom:</label>
-          <span id="zoomDisplay">100%</span>
-        </div>
-
-        <button onclick="animateSequence()">▶️ Animate</button>
-        <button onclick="resetView()">🎯 Reset View</button>
-        <button onclick="zoomIn()">🔍➕ Zoom In</button>
-        <button onclick="zoomOut()">🔍➖ Zoom Out</button>
-        <button onclick="generateMap()" style="opacity: 0.6; font-size: 0.8em">🔄 Manual Refresh</button>
-      </div>
-
-      <div
-        class="step-controls"
-        style="background-color: #2d2d2d; padding: 20px; border-radius: 10px; margin-bottom: 20px"
-      >
-        <h3 style="margin: 0 0 15px 0; color: #ffffff">Step Navigation</h3>
-        <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center">
-          <div class="control-group">
-            <label for="currentStep">Current Step: <span id="currentStepValue">All</span></label>
-            <input type="range" id="currentStep" value="0" min="0" max="10" step="1" />
+      <div class="control-grid">
+        <section class="control-card">
+          <div class="card-heading">
+            <p class="card-title">Layout</p>
+            <p class="card-caption">Profile, mode, and settlement spacing</p>
           </div>
+          <div class="control-stack two-col">
+            <div class="control-group">
+              <label for="layoutMode">Layout Mode</label>
+              <select id="layoutMode">
+                <option value="official90" selected>Official 90</option>
+                <option value="official60">Official 60</option>
+                <option value="twoPlayer">2-Player Exact Cairo</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
 
-          <button onclick="previousStep()">⬅️ Previous Step</button>
-          <button onclick="nextStep()">➡️ Next Step</button>
-          <button onclick="showAllSteps()">👁️ Show All</button>
-          <button onclick="animateSequence()">🎬 Auto Play</button>
-          <button onclick="stopAnimation()">⏹️ Stop</button>
+            <div class="control-group">
+              <label for="maxPoints">Number of Settlements: <span id="maxPointsValue">96</span></label>
+              <input type="range" id="maxPoints" value="96" min="1" max="200" step="1" />
+            </div>
 
-          <div
-            class="step-info"
-            style="margin-left: 20px; padding: 10px; background-color: #1a1a1a; border-radius: 5px; min-width: 200px"
-          >
-            <div><strong>Step Info:</strong></div>
-            <div id="stepDetails">Select a step to see details</div>
+            <div class="control-group">
+              <label for="baseDistance">Base Distance: <span id="baseDistanceValue">8</span></label>
+              <input type="range" id="baseDistance" value="8" min="2" max="100" step="2" />
+            </div>
+
+            <div class="control-group">
+              <label for="stepTileDistance">Step Tile Distance: <span id="stepTileDistanceValue">15</span></label>
+              <input type="range" id="stepTileDistance" value="15" min="5" max="50" step="1" />
+            </div>
+
+            <div class="control-group">
+              <label for="realmTileRadius">Realm Tile Radius: <span id="realmTileRadiusValue">3</span></label>
+              <input type="range" id="realmTileRadius" value="3" min="1" max="20" step="1" />
+            </div>
+
+            <div class="control-group">
+              <label for="mirrorFirstDistance"
+                >Mirror First Distance: <span id="mirrorFirstDistanceValue">11</span></label
+              >
+              <input type="range" id="mirrorFirstDistance" value="11" min="5" max="30" step="1" />
+            </div>
+
+            <div class="control-group">
+              <label for="mirrorSecondDistance"
+                >Mirror Second Distance: <span id="mirrorSecondDistanceValue">4</span></label
+              >
+              <input type="range" id="mirrorSecondDistance" value="4" min="1" max="15" step="1" />
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section class="control-card">
+          <div class="card-heading">
+            <p class="card-title">Hyperstructures</p>
+            <p class="card-caption">Ring spacing and realm coverage</p>
+          </div>
+          <div class="control-stack two-col">
+            <div class="control-group">
+              <label for="ringDistance">Hyperstructure Ring Distance: <span id="ringDistanceValue">15</span></label>
+              <input type="range" id="ringDistance" value="15" min="5" max="30" step="1" />
+            </div>
+
+            <div class="control-group">
+              <label for="hyperstructureRings"
+                >Hyperstructure Rings: <span id="hyperstructureRingsValue">4</span></label
+              >
+              <input type="range" id="hyperstructureRings" value="4" min="0" max="12" step="1" />
+            </div>
+          </div>
+        </section>
+
+        <section class="control-card">
+          <div class="card-heading">
+            <p class="card-title">Render</p>
+            <p class="card-caption">Viewport and overlay controls</p>
+          </div>
+          <div class="control-stack">
+            <div class="control-group">
+              <label for="hexSize">Hex Size: <span id="hexSizeValue">8</span></label>
+              <input type="range" id="hexSize" value="8" min="1" max="50" step="1" />
+            </div>
+
+            <div class="control-group inline-toggle">
+              <label for="showGrid">Show Grid</label>
+              <input type="checkbox" id="showGrid" checked />
+            </div>
+
+            <div class="control-group inline-toggle">
+              <label for="showHyperstructurePointsCheck">Show Points Check Overlay</label>
+              <input type="checkbox" id="showHyperstructurePointsCheck" checked />
+            </div>
+
+            <div class="control-group inline-toggle">
+              <label for="showAlignedPointsSlots">Show Realm Check Slots</label>
+              <input type="checkbox" id="showAlignedPointsSlots" checked />
+            </div>
+
+            <div class="button-row">
+              <button onclick="animateSequence()">Animate</button>
+              <button class="button-secondary" onclick="resetView()">Reset View</button>
+              <button class="button-secondary" onclick="zoomIn()">Zoom In</button>
+              <button class="button-secondary" onclick="zoomOut()">Zoom Out</button>
+              <button class="button-secondary" onclick="generateMap()">Refresh</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="control-card control-card--wide">
+          <div class="card-heading">
+            <p class="card-title">Timeline</p>
+            <p class="card-caption">Step-by-step settlement inspection</p>
+          </div>
+          <div class="control-stack">
+            <div class="control-group">
+              <label for="currentStep">Current Step: <span id="currentStepValue">All</span></label>
+              <input type="range" id="currentStep" value="0" min="0" max="10" step="1" />
+            </div>
+            <div class="button-row step-actions">
+              <button class="button-secondary" onclick="previousStep()">Previous</button>
+              <button class="button-secondary" onclick="nextStep()">Next</button>
+              <button class="button-secondary" onclick="showAllSteps()">Show All</button>
+              <button class="button-secondary" onclick="animateSequence()">Auto Play</button>
+              <button class="button-secondary" onclick="stopAnimation()">Stop</button>
+            </div>
+            <div class="step-info-card">
+              <strong>Step Snapshot</strong>
+              <div id="stepDetails">Select a step to see details</div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div class="canvas-container">
         <canvas id="hexCanvas" width="1200" height="800"></canvas>
-      </div>
-
-      <div class="legend">
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #ff6b6b"></div>
-          <span>Center</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #4ecdc4"></div>
-          <span>Normal Settlements</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #45b7d1"></div>
-          <span>Current Step Normal</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #96ceb4"></div>
-          <span>Previous Steps Normal</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #9c27b0"></div>
-          <span>Mirrored Settlements</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #e91e63"></div>
-          <span>Current Step Mirrored</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #ba68c8"></div>
-          <span>Previous Steps Mirrored</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #ffd700"></div>
-          <span>Center Hyperstructure</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #ff8c00"></div>
-          <span>Ring 1 Hyperstructures</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background-color: #ff4500"></div>
-          <span>Ring 2+ Hyperstructures</span>
-        </div>
-        <div class="legend-item">
-          <div
-            class="legend-color"
-            style="background-color: #ff9800; height: 1px; border-top: 1px dotted #ff9800"
-          ></div>
-          <span>Mirror Connection</span>
+        <div id="mapDiagnostics" class="map-diagnostics">
+          <strong>Realm Check Distance</strong>
+          <div id="mapDiagnosticsContent">Generate settlements to inspect the derived realm-check distances.</div>
         </div>
       </div>
 
-      <div class="info">
-        <h3>Blitz Settlement Configuration</h3>
-        <p>
-          <strong>Algorithm:</strong> Based on the Cairo implementation, this generates settlement coordinates in a
-          hexagonal pattern.
-        </p>
-        <p><strong>Grid Type:</strong> Pointy-top hexagons using even-r offset coordinates (matching position.cairo)</p>
-        <p>
-          <strong>Steps Explained:</strong> 🎯 Settlements are generated in concentric steps around the center. Step 1
-          creates 2 settlements per side (12 total), Step 2 creates 4 per side (24 total), etc. Each step has step×2
-          points per side, creating a hexagonal expansion pattern.
-        </p>
-        <p>
-          <strong>Step Formula:</strong> Each step N contains N×2 points per side × 6 sides = N×12 total settlements.
-          Half are normal, half are mirrored.
-        </p>
-        <p>
-          <strong>Hyperstructures:</strong> 🏗️ Placed in hexagonal rings with Ring N containing N points per side × 6
-          sides = N×6 total hyperstructures. Ring 0 has 1 center hyperstructure, Ring 1 has 6, Ring 2 has 12, Ring 3 has
-          18, etc. Ring distance follows the selected official profile: 15 for official 90, 12 for official 60.
-        </p>
-        <p>
-          <strong>2-Player Mode:</strong> Uses the current Cairo implementation exactly. Settlements: side 0 = west
-          triangle, side 1+ = east triangle. Hyperstructures: fixed max ring count = 2, producing exactly 3 positions
-          (center + 2 side positions at line distance 6).
-        </p>
-        <p>
-          <strong>Official Profiles:</strong> Select Official 90 or Official 60 to snap the multiplayer sliders to the
-          contract presets. Editing a profile-controlled slider switches the visualizer to Custom.
-        </p>
-        <p><strong>Auto-Update:</strong> ✅ Map regenerates automatically when sliders change</p>
-        <p>
-          <strong>Navigation:</strong> Mouse wheel to zoom, click and drag to pan, arrow keys to move, +/- keys to zoom
-        </p>
-        <p>
-          <strong>Mirroring:</strong> 🔗 Orange lines connect mirrored settlement pairs, purple settlements are mirrored
-          versions
-        </p>
-        <p>
-          <strong>Parameters:</strong> All Cairo constants are now configurable via sliders. Base distance must be even.
-        </p>
-        <div id="stepStatistics" style="margin-top: 10px; padding: 10px; background-color: #1a1a1a; border-radius: 5px">
-          <strong>Step Statistics:</strong>
-          <span id="stepStatsContent">Generate settlements to see step breakdown</span>
-        </div>
-        <p id="currentConfig"></p>
+      <div class="inspector-grid">
+        <section class="surface-card">
+          <h3>Legend</h3>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #ff6b6b"></div>
+              <span>Center</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #4ecdc4"></div>
+              <span>Normal Settlements</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #45b7d1"></div>
+              <span>Current Step Normal</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #96ceb4"></div>
+              <span>Previous Steps Normal</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #9c27b0"></div>
+              <span>Mirrored Settlements</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #e91e63"></div>
+              <span>Current Step Mirrored</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #ba68c8"></div>
+              <span>Previous Steps Mirrored</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #ffd700"></div>
+              <span>Center Hyperstructure</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #ff8c00"></div>
+              <span>Ring 1 Hyperstructures</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: #ff4500"></div>
+              <span>Ring 2+ Hyperstructures</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: transparent; border: 2px solid #00bcd4"></div>
+              <span>Realm Check Slot</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: rgba(76, 175, 80, 0.35); border-color: #4caf50"></div>
+              <span>Realm Check Match</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: rgba(244, 67, 54, 0.22); border-color: #f44336"></div>
+              <span>Realm Check Miss</span>
+            </div>
+            <div class="legend-item">
+              <div
+                class="legend-color"
+                style="background-color: #ff9800; height: 1px; border-top: 1px dotted #ff9800"
+              ></div>
+              <span>Mirror Connection</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="surface-card surface-card--wide" id="stepStatistics">
+          <h3>Step Breakdown</h3>
+          <div id="stepStatsContent" class="stat-content">Generate settlements to see step breakdown.</div>
+        </section>
+
+        <section class="surface-card surface-card--wide" id="hyperstructurePointsCheck">
+          <h3>Points Check</h3>
+          <div id="hyperstructurePointsCheckContent" class="stat-content">
+            Generate settlements to compare layout-aligned slots against the active realm check distance.
+          </div>
+        </section>
+
+        <section class="surface-card">
+          <h3>Notes</h3>
+          <div class="note-list">
+            <div class="note-item">
+              Official presets update layout geometry only. Realm-check source stays explicit.
+            </div>
+            <div class="note-item">
+              Formula mode derives the distance from settlement geometry instead of a stale constant.
+            </div>
+            <div class="note-item">Two-player mode bypasses the distance lookup and uses the fixed Cairo branch.</div>
+          </div>
+          <div id="currentConfig" class="status-copy">Ready to render.</div>
+        </section>
       </div>
     </div>
 
@@ -417,41 +745,12 @@
       const CENTER_COL = 2147483646;
       const CENTER_ROW = 2147483646;
 
-      const DISTANCE_PROFILES = {
-        official90: {
-          label: "Official 90",
-          baseDistance: 8,
-          stepTileDistance: 15,
-          realmTileRadius: 3,
-          mirrorFirstDistance: 11,
-          mirrorSecondDistance: 4,
-          ringDistance: 15,
-        },
-        official60: {
-          label: "Official 60",
-          baseDistance: 6,
-          stepTileDistance: 12,
-          realmTileRadius: 3,
-          mirrorFirstDistance: 9,
-          mirrorSecondDistance: 3,
-          ringDistance: 12,
-        },
-      };
-      const DEFAULT_DISTANCE_PROFILE_ID = "official90";
-      const DISTANCE_PROFILE_SLIDER_FIELDS = {
-        baseDistance: "baseDistance",
-        stepTileDistance: "stepTileDistance",
-        realmTileRadius: "realmTileRadius",
-        mirrorFirstDistance: "mirrorFirstDistance",
-        mirrorSecondDistance: "mirrorSecondDistance",
-        ringDistance: "ringDistance",
-      };
-
-      // These are configurable via the profile selector and sliders
-      let STEP_TILE_DISTANCE = DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].stepTileDistance;
-      let REALM_TILE_RADIUS = DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].realmTileRadius;
-      let MIRROR_FIRST_STEP_TILE_DISTANCE = DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].mirrorFirstDistance;
-      let MIRROR_SECOND_STEP_TILE_DISTANCE = DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].mirrorSecondDistance;
+      // These will be made configurable via sliders
+      let STEP_TILE_DISTANCE = 15;
+      let REALM_TILE_RADIUS = 3;
+      let MIRROR_FIRST_STEP_TILE_DISTANCE = 11;
+      let MIRROR_SECOND_STEP_TILE_DISTANCE = 4;
+      const CENTER_TILE_RADIUS = 2;
 
       // Direction enum matching Cairo implementation
       const Direction = {
@@ -471,6 +770,50 @@
         [Direction.NorthWest, Direction.SouthWest],
         [Direction.SouthWest, Direction.East],
         [Direction.East, Direction.NorthWest],
+      ];
+
+      const HYPERSTRUCTURE_REALM_CHECK_DIRECTIONS = [
+        [Direction.East, Direction.NorthWest],
+        [Direction.SouthEast, Direction.NorthEast],
+        [Direction.SouthWest, Direction.East],
+        [Direction.West, Direction.SouthEast],
+        [Direction.NorthWest, Direction.SouthWest],
+        [Direction.NorthEast, Direction.West],
+      ];
+
+      function coordKey(coord) {
+        return `${coord.x}:${coord.y}`;
+      }
+
+      const BLITZ_LAYOUT_PRESETS = {
+        official90: {
+          baseDistance: 8,
+          stepTileDistance: 15,
+          realmTileRadius: 3,
+          mirrorFirstDistance: 11,
+          mirrorSecondDistance: 4,
+          ringDistance: 15,
+          hyperstructureRings: 4,
+        },
+        official60: {
+          baseDistance: 6,
+          stepTileDistance: 12,
+          realmTileRadius: 3,
+          mirrorFirstDistance: 9,
+          mirrorSecondDistance: 3,
+          ringDistance: 12,
+          hyperstructureRings: 4,
+        },
+      };
+
+      const BLITZ_LAYOUT_PRESET_INPUT_IDS = [
+        "baseDistance",
+        "stepTileDistance",
+        "realmTileRadius",
+        "mirrorFirstDistance",
+        "mirrorSecondDistance",
+        "ringDistance",
+        "hyperstructureRings",
       ];
 
       class Coord {
@@ -670,6 +1013,11 @@
           this.hexSize = 8;
           this.showGrid = true;
           this.baseHexSize = 8;
+          this.currentHyperstructurePointsCheck = [];
+          this.currentHyperstructurePointsCheckOptions = {
+            showOverlay: true,
+            showAlignedSlots: true,
+          };
 
           // Zoom and pan state
           this.zoom = 1.0;
@@ -882,10 +1230,21 @@
           this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
-        drawSettlementMap(settlements, currentStep = -1, hyperstructures = []) {
+        drawSettlementMap(
+          settlements,
+          currentStep = -1,
+          hyperstructures = [],
+          hyperstructurePointsCheck = [],
+          hyperstructurePointsCheckOptions = {
+            showOverlay: true,
+            showAlignedSlots: true,
+          },
+        ) {
           this.currentSettlements = settlements;
           this.currentStep = currentStep;
           this.currentHyperstructures = hyperstructures;
+          this.currentHyperstructurePointsCheck = hyperstructurePointsCheck;
+          this.currentHyperstructurePointsCheckOptions = hyperstructurePointsCheckOptions;
           this.redraw();
         }
 
@@ -960,6 +1319,9 @@
 
           // Finally, draw mirrored settlement shapes/indicators
           this.drawMirroredIndicators();
+
+          // Diagnostic overlay goes on top so realm-check slots remain visible.
+          this.drawHyperstructurePointsCheck();
         }
 
         drawHyperstructures() {
@@ -1033,6 +1395,132 @@
           ctx.strokeStyle = "#000000";
           ctx.lineWidth = 1;
           ctx.stroke();
+        }
+
+        drawMiniHex(screenX, screenY, color, strokeColor, scale = 0.45) {
+          const size = this.hexSize * scale;
+          const ctx = this.ctx;
+
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 2;
+            const x = screenX + size * Math.cos(angle);
+            const y = screenY + size * Math.sin(angle);
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+          ctx.closePath();
+
+          ctx.fillStyle = color;
+          ctx.fill();
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = Math.max(1, this.hexSize * 0.08);
+          ctx.stroke();
+        }
+
+        drawStatusRing(screenX, screenY, color) {
+          const ctx = this.ctx;
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, this.hexSize * 1.25, 0, Math.PI * 2);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = Math.max(2, this.hexSize * 0.12);
+          ctx.stroke();
+        }
+
+        drawBadge(screenX, screenY, text, backgroundColor) {
+          const ctx = this.ctx;
+          const paddingX = 6;
+          const paddingY = 3;
+
+          ctx.save();
+          ctx.font = `600 ${Math.max(10, this.hexSize * 0.75)}px "SF Pro Display", "Helvetica Neue", sans-serif`;
+          const textWidth = ctx.measureText(text).width;
+          const width = textWidth + paddingX * 2;
+          const height = Math.max(16, this.hexSize * 1.2);
+          const left = screenX - width / 2;
+          const top = screenY - height / 2;
+          const radius = 6;
+
+          ctx.beginPath();
+          ctx.moveTo(left + radius, top);
+          ctx.lineTo(left + width - radius, top);
+          ctx.quadraticCurveTo(left + width, top, left + width, top + radius);
+          ctx.lineTo(left + width, top + height - radius);
+          ctx.quadraticCurveTo(left + width, top + height, left + width - radius, top + height);
+          ctx.lineTo(left + radius, top + height);
+          ctx.quadraticCurveTo(left, top + height, left, top + height - radius);
+          ctx.lineTo(left, top + radius);
+          ctx.quadraticCurveTo(left, top, left + radius, top);
+          ctx.closePath();
+
+          ctx.fillStyle = backgroundColor;
+          ctx.fill();
+          ctx.strokeStyle = "#111111";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, screenX, screenY + 0.5);
+          ctx.restore();
+        }
+
+        drawHyperstructurePointsCheck() {
+          if (!this.currentHyperstructurePointsCheck || this.currentHyperstructurePointsCheck.length === 0) {
+            return;
+          }
+
+          const { showOverlay, showAlignedSlots } = this.currentHyperstructurePointsCheckOptions;
+          if (!showOverlay) {
+            return;
+          }
+
+          this.currentHyperstructurePointsCheck.forEach((check) => {
+            const hyperstructureScreen = this.worldToScreen(check.hyperstructure.coord);
+            const isVisible =
+              hyperstructureScreen.x >= -this.hexSize * 3 &&
+              hyperstructureScreen.x <= this.canvas.width + this.hexSize * 3 &&
+              hyperstructureScreen.y >= -this.hexSize * 3 &&
+              hyperstructureScreen.y <= this.canvas.height + this.hexSize * 3;
+
+            if (!isVisible) {
+              return;
+            }
+
+            if (showAlignedSlots) {
+              check.slots.forEach((slot) => {
+                const screen = this.worldToScreen(slot.coord);
+                this.drawMiniHex(screen.x, screen.y, "rgba(0, 188, 212, 0.10)", "#00bcd4", 0.34);
+              });
+            }
+
+            check.slots.forEach((slot) => {
+              const screen = this.worldToScreen(slot.coord);
+              const fillColor = slot.matched ? "rgba(76, 175, 80, 0.35)" : "rgba(244, 67, 54, 0.22)";
+              const strokeColor = slot.matched ? "#4caf50" : "#f44336";
+              const scale = slot.matched ? 0.46 : 0.4;
+              this.drawMiniHex(screen.x, screen.y, fillColor, strokeColor, scale);
+            });
+
+            let statusColor = "#4caf50";
+            if (!check.hasAnyCoverage) {
+              statusColor = "#607d8b";
+            } else if (!check.hasFullCoverage) {
+              statusColor = "#ff9800";
+            }
+
+            this.drawStatusRing(hyperstructureScreen.x, hyperstructureScreen.y, statusColor);
+            this.drawBadge(
+              hyperstructureScreen.x,
+              hyperstructureScreen.y - this.hexSize * 1.9,
+              `${check.matchedCount}/${check.totalSlots}`,
+              statusColor,
+            );
+          });
         }
 
         drawMirroredConnections() {
@@ -1205,7 +1693,7 @@
                 this.ctx.fillStyle = "#ffffff";
                 this.ctx.strokeStyle = "#000000";
                 this.ctx.lineWidth = 3;
-                this.ctx.font = `bold ${Math.max(12, this.hexSize * 0.8)}px Arial`;
+                this.ctx.font = `650 ${Math.max(12, this.hexSize * 0.8)}px "SF Pro Display", "Helvetica Neue", sans-serif`;
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "middle";
 
@@ -1225,6 +1713,7 @@
       let currentDisplayStep = 0; // 0 means show all
       let maxStep = 0;
       let currentTwoPlayerMode = false;
+      let currentHyperstructurePointsCheck = [];
 
       function generateAllSettlements(baseDistance, maxPoints, twoPlayerMode) {
         const settlements = [];
@@ -1287,7 +1776,7 @@
         }
 
         static ringTileDistance() {
-          return DISTANCE_PROFILES[DEFAULT_DISTANCE_PROFILE_ID].ringDistance;
+          return 15;
         }
 
         nextCoord() {
@@ -1351,6 +1840,231 @@
         return hyperstructures;
       }
 
+      function buildSettlementCoordLookup(settlements) {
+        const coordLookup = new Map();
+        settlements.forEach((settlement) => {
+          settlement.coords.forEach((coord) => {
+            coordLookup.set(coordKey(coord), settlement);
+          });
+        });
+        return coordLookup;
+      }
+
+      function generateHyperstructureRealmCheckCoords(hyperstructureCoord, realmDistance) {
+        return HYPERSTRUCTURE_REALM_CHECK_DIRECTIONS.map(([startDirection, triangleDirection]) =>
+          hyperstructureCoord
+            .neighborAfterDistance(startDirection, realmDistance)
+            .neighborAfterDistance(triangleDirection, Math.floor(realmDistance / 2)),
+        );
+      }
+
+      function buildHyperstructurePointsCheck(hyperstructures, settlements, realmCheckDistance, twoPlayerMode) {
+        if (twoPlayerMode) {
+          return [];
+        }
+
+        const settlementCoordLookup = buildSettlementCoordLookup(settlements);
+
+        return hyperstructures.map((hyperstructure) => {
+          const slots = generateHyperstructureRealmCheckCoords(hyperstructure.coord, realmCheckDistance).map(
+            (coord) => ({
+              coord,
+              matched: settlementCoordLookup.has(coordKey(coord)),
+            }),
+          );
+          const matchedCount = slots.filter((slot) => slot.matched).length;
+
+          return {
+            hyperstructure,
+            slots,
+            matchedCount,
+            totalSlots: slots.length,
+            hasAnyCoverage: matchedCount > 0,
+            hasFullCoverage: matchedCount === slots.length,
+          };
+        });
+      }
+
+      function getHyperstructurePointsCheckOptions() {
+        return {
+          showOverlay: document.getElementById("showHyperstructurePointsCheck").checked,
+          showAlignedSlots: document.getElementById("showAlignedPointsSlots").checked,
+        };
+      }
+
+      function resolveHyperstructureRealmCheckDistance(baseDistance, singleRealmMode = false) {
+        const offset = singleRealmMode ? CENTER_TILE_RADIUS : 0;
+        const distance = baseDistance + offset;
+        const expression = singleRealmMode
+          ? `base_distance (${baseDistance}) + center_tile_radius (${CENTER_TILE_RADIUS})`
+          : `base_distance (${baseDistance})`;
+        const modeLabel = singleRealmMode ? "Single-Realm Preview" : "3-Realm Distance";
+
+        return { distance, expression, modeLabel };
+      }
+
+      function resolveHyperstructureRealmCheckConfig(baseDistance, twoPlayerMode = false) {
+        const activeDistance = resolveHyperstructureRealmCheckDistance(baseDistance, false);
+        const singleRealmPreview = resolveHyperstructureRealmCheckDistance(baseDistance, true);
+        return {
+          activeDistance,
+          singleRealmPreview,
+          badgeLabel: twoPlayerMode ? "2P Fixed" : `Distance ${activeDistance.distance}`,
+        };
+      }
+
+      function updateHeroBadges(twoPlayerMode, realmCheckConfig) {
+        const layoutBadge = document.getElementById("layoutBadge");
+        const realmCheckBadge = document.getElementById("realmCheckBadge");
+        const layoutMode = document.getElementById("layoutMode").value;
+        const layoutLabels = {
+          official90: "Official 90",
+          official60: "Official 60",
+          twoPlayer: "2-Player Exact Cairo",
+          custom: "Custom",
+        };
+
+        if (layoutBadge) {
+          const layoutLabel = layoutLabels[layoutMode] || "Custom";
+          layoutBadge.textContent = layoutLabel;
+        }
+
+        if (realmCheckBadge) {
+          realmCheckBadge.textContent = realmCheckConfig.badgeLabel;
+        }
+      }
+
+      function updateMapDiagnostics(baseDistance, realmCheckConfig, twoPlayerMode) {
+        const content = document.getElementById("mapDiagnosticsContent");
+        if (!content) {
+          return;
+        }
+
+        if (twoPlayerMode) {
+          content.innerHTML =
+            '<div class="map-diagnostics-line">2-player mode bypasses the realm-distance lookup and hard-returns multiplier 2.</div>';
+          return;
+        }
+
+        const activeDistance = realmCheckConfig.activeDistance;
+        const singleRealmPreview = realmCheckConfig.singleRealmPreview;
+
+        content.innerHTML = `
+          <div class="map-diagnostics-line"><strong>${activeDistance.modeLabel}:</strong> ${activeDistance.expression} = <span style="color: #4ecdc4;">${activeDistance.distance}</span></div>
+          <div class="map-diagnostics-line"><strong>${singleRealmPreview.modeLabel}:</strong> ${singleRealmPreview.expression} = <span style="color: #9fa8da;">${singleRealmPreview.distance}</span></div>
+          <div class="map-diagnostics-line"><strong>Active distance:</strong> <span style="color: #0f766e;">${activeDistance.distance}</span></div>
+        `;
+      }
+
+      function updateHyperstructurePointsCheckSummary(pointsCheck, realmCheckConfig, twoPlayerMode) {
+        const content = document.getElementById("hyperstructurePointsCheckContent");
+        if (!content) {
+          return;
+        }
+
+        if (twoPlayerMode) {
+          content.innerHTML =
+            "2-player mode bypasses the surrounding-realm lookup and hard-returns multiplier 2, so this diagnostic only applies to the multiplayer map path.";
+          return;
+        }
+
+        if (pointsCheck.length === 0) {
+          content.textContent = "Generate settlements to inspect surrounding realms for each hyperstructure.";
+          return;
+        }
+
+        const activeDistance = realmCheckConfig.activeDistance;
+        const singleRealmPreview = realmCheckConfig.singleRealmPreview;
+        const fullCoverageCount = pointsCheck.filter((check) => check.hasFullCoverage).length;
+        const partialCoverageCount = pointsCheck.filter(
+          (check) => check.hasAnyCoverage && !check.hasFullCoverage,
+        ).length;
+        const noCoverageCount = pointsCheck.filter((check) => !check.hasAnyCoverage).length;
+        const partialCoverageExamples = pointsCheck
+          .filter((check) => check.hasAnyCoverage && !check.hasFullCoverage)
+          .slice(0, 3)
+          .map(
+            (check) =>
+              `Ring ${check.hyperstructure.ring} · side ${check.hyperstructure.side} · ${check.matchedCount}/${check.totalSlots}`,
+          );
+        const partialCoverageSummary =
+          partialCoverageExamples.length > 0
+            ? `<div style="margin-top: 6px;"><strong>First partial-coverage cases:</strong> ${partialCoverageExamples.join(", ")}</div>`
+            : "";
+
+        content.innerHTML = `
+          <div><strong>${activeDistance.modeLabel}:</strong> ${activeDistance.expression} = ${activeDistance.distance}</div>
+          <div><strong>${singleRealmPreview.modeLabel}:</strong> ${singleRealmPreview.expression} = ${singleRealmPreview.distance}</div>
+          <div><strong>Active realm check distance:</strong> <span style="color: #0f766e;">${activeDistance.distance}</span></div>
+          <div style="margin-top: 6px;">
+            <strong>Summary:</strong> ${fullCoverageCount}/${pointsCheck.length} full coverage,
+            <span style="color: #ff9800;">${partialCoverageCount} partial coverage</span>,
+            <span style="color: #607d8b;">${noCoverageCount} no surrounding realms</span>
+          </div>
+          <div style="margin-top: 6px;">Per-hyperstructure badges show <strong>matched/possible</strong> surrounding realms.</div>
+          ${partialCoverageSummary}
+        `;
+      }
+
+      function setControlValue(controlId, value) {
+        const control = document.getElementById(controlId);
+        if (!control) {
+          return;
+        }
+
+        control.value = value.toString();
+        updateSliderValue(controlId);
+      }
+
+      function applyBlitzLayoutPreset(mode) {
+        if (mode === "twoPlayer") {
+          document.getElementById("layoutMode").value = mode;
+          return;
+        }
+
+        const preset = BLITZ_LAYOUT_PRESETS[mode];
+        if (!preset) {
+          return;
+        }
+
+        BLITZ_LAYOUT_PRESET_INPUT_IDS.forEach((controlId) => {
+          setControlValue(controlId, preset[controlId]);
+        });
+
+        document.getElementById("layoutMode").value = mode;
+      }
+
+      function matchesBlitzLayoutPreset(mode) {
+        const preset = BLITZ_LAYOUT_PRESETS[mode];
+        if (!preset || isTwoPlayerMode()) {
+          return false;
+        }
+
+        return BLITZ_LAYOUT_PRESET_INPUT_IDS.every((controlId) => {
+          const control = document.getElementById(controlId);
+          return control && control.value === preset[controlId].toString();
+        });
+      }
+
+      function syncBlitzLayoutModeWithControls() {
+        const layoutModeInput = document.getElementById("layoutMode");
+        if (!layoutModeInput) {
+          return;
+        }
+
+        if (layoutModeInput.value === "twoPlayer") {
+          return;
+        }
+
+        if (matchesBlitzLayoutPreset("official90")) {
+          layoutModeInput.value = "official90";
+        } else if (matchesBlitzLayoutPreset("official60")) {
+          layoutModeInput.value = "official60";
+        } else {
+          layoutModeInput.value = "custom";
+        }
+      }
+
       function addInputFeedback(inputElement) {
         inputElement.classList.add("updating");
         setTimeout(() => {
@@ -1367,85 +2081,6 @@
           } else {
             valueSpan.textContent = slider.value;
           }
-        }
-      }
-
-      function setSliderValue(sliderId, value) {
-        const slider = document.getElementById(sliderId);
-        if (!slider) {
-          return;
-        }
-
-        slider.value = value;
-        updateSliderValue(sliderId);
-      }
-
-      function getSelectedDistanceProfileId() {
-        return document.getElementById("distanceProfile").value;
-      }
-
-      function resolveSelectedDistanceProfile() {
-        return DISTANCE_PROFILES[getSelectedDistanceProfileId()] ?? null;
-      }
-
-      function updateDistanceProfileSummary() {
-        const summary = document.getElementById("distanceProfileSummary");
-        const selectedProfile = resolveSelectedDistanceProfile();
-        const profileIgnoredSuffix = isTwoPlayerMode() ? " 2-player mode ignores multiplayer profile distances." : "";
-
-        if (selectedProfile) {
-          summary.textContent =
-            `${selectedProfile.label}: base ${selectedProfile.baseDistance}, step ${selectedProfile.stepTileDistance}, ` +
-            `ring ${selectedProfile.ringDistance}, mirror ${selectedProfile.mirrorFirstDistance}/${selectedProfile.mirrorSecondDistance}.` +
-            profileIgnoredSuffix;
-          return;
-        }
-
-        summary.textContent =
-          `Custom: base ${document.getElementById("baseDistance").value}, step ${document.getElementById("stepTileDistance").value}, ` +
-          `ring ${document.getElementById("ringDistance").value}, mirror ${document.getElementById("mirrorFirstDistance").value}/${document.getElementById("mirrorSecondDistance").value}.` +
-          profileIgnoredSuffix;
-      }
-
-      function applyDistanceProfile(profileId, regenerate = true) {
-        const profile = DISTANCE_PROFILES[profileId];
-        if (!profile) {
-          updateDistanceProfileSummary();
-          if (regenerate) {
-            generateMap();
-          }
-          return;
-        }
-
-        setSliderValue("baseDistance", profile.baseDistance);
-        setSliderValue("stepTileDistance", profile.stepTileDistance);
-        setSliderValue("realmTileRadius", profile.realmTileRadius);
-        setSliderValue("mirrorFirstDistance", profile.mirrorFirstDistance);
-        setSliderValue("mirrorSecondDistance", profile.mirrorSecondDistance);
-        setSliderValue("ringDistance", profile.ringDistance);
-        updateDistanceProfileSummary();
-
-        if (regenerate) {
-          generateMap();
-        }
-      }
-
-      function syncProfileSelectionForSlider(sliderId) {
-        const selectedProfileId = getSelectedDistanceProfileId();
-        if (selectedProfileId === "custom") {
-          return;
-        }
-
-        const profileField = DISTANCE_PROFILE_SLIDER_FIELDS[sliderId];
-        if (!profileField) {
-          return;
-        }
-
-        const selectedProfile = DISTANCE_PROFILES[selectedProfileId];
-        const currentValue = parseInt(document.getElementById(sliderId).value);
-        if (currentValue !== selectedProfile[profileField]) {
-          document.getElementById("distanceProfile").value = "custom";
-          updateDistanceProfileSummary();
         }
       }
 
@@ -1481,15 +2116,13 @@
       }
 
       function isTwoPlayerMode() {
-        return document.getElementById("twoPlayerMode").checked;
+        return document.getElementById("layoutMode").value === "twoPlayer";
       }
 
       function generateMap() {
         console.log("generateMap() called"); // Debug log
 
         const twoPlayerMode = isTwoPlayerMode();
-        const distanceProfileId = getSelectedDistanceProfileId();
-        const distanceProfile = DISTANCE_PROFILES[distanceProfileId] ?? null;
         const baseDistance = parseInt(document.getElementById("baseDistance").value);
         const maxPoints = parseInt(document.getElementById("maxPoints").value);
         const ringDistance = parseInt(document.getElementById("ringDistance").value);
@@ -1499,16 +2132,18 @@
 
         // Update configurable constants
         updateConfigVariables();
+        syncBlitzLayoutModeWithControls();
+        const realmCheckConfig = resolveHyperstructureRealmCheckConfig(baseDistance, twoPlayerMode);
 
         console.log("Parameters:", {
           baseDistance,
           maxPoints,
           ringDistance,
           hyperstructureRings,
+          activeRealmCheckDistance: realmCheckConfig.activeDistance.distance,
           hexSize,
           showGrid,
           twoPlayerMode,
-          distanceProfileId,
           STEP_TILE_DISTANCE,
           REALM_TILE_RADIUS,
           MIRROR_FIRST_STEP_TILE_DISTANCE,
@@ -1550,8 +2185,20 @@
 
           // Generate hyperstructures
           const hyperstructures = generateHyperstructures(ringDistance, hyperstructureRings, twoPlayerMode);
+          currentHyperstructurePointsCheck = buildHyperstructurePointsCheck(
+            hyperstructures,
+            currentSettlements,
+            realmCheckConfig.activeDistance.distance,
+            twoPlayerMode,
+          );
 
-          renderer.drawSettlementMap(currentSettlements, -1, hyperstructures);
+          renderer.drawSettlementMap(
+            currentSettlements,
+            -1,
+            hyperstructures,
+            currentHyperstructurePointsCheck,
+            getHyperstructurePointsCheckOptions(),
+          );
 
           // Count mirrored vs non-mirrored and get max step reached
           const mirroredCount = currentSettlements.filter((s) => s.isMirrored).length;
@@ -1560,17 +2207,12 @@
 
           // Update info with success
           if (twoPlayerMode) {
-            configElement.innerHTML =
-              `✅ 2-player mode: generated ${currentSettlements.length} settlement calls and ${hyperstructures.length} ` +
-              `hyperstructures (center + 2 side positions). Multiplayer profile: ${distanceProfile ? distanceProfile.label : "Custom"} ` +
-              `(ignored in 2-player mode). Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
+            configElement.innerHTML = `✅ 2-player mode: generated ${currentSettlements.length} settlement calls and ${hyperstructures.length} hyperstructures (center + 2 side positions). Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
           } else {
-            configElement.innerHTML =
-              `✅ Generated ${currentSettlements.length} settlements (${nonMirroredCount} normal, ${mirroredCount} mirrored) ` +
-              `up to step ${maxStep}, ${hyperstructures.length} hyperstructures. Layout profile: ` +
-              `${distanceProfile ? distanceProfile.label : "Custom"}. Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
+            configElement.innerHTML = `✅ Generated ${currentSettlements.length} settlements (${nonMirroredCount} normal, ${mirroredCount} mirrored) up to step ${maxStep}, ${hyperstructures.length} hyperstructures. Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
           }
           configElement.style.color = "#4CAF50";
+          updateHeroBadges(twoPlayerMode, realmCheckConfig);
 
           // Reset color after a moment
           setTimeout(() => {
@@ -1583,6 +2225,8 @@
 
           // Generate step statistics
           updateStepStatistics();
+          updateMapDiagnostics(baseDistance, realmCheckConfig, twoPlayerMode);
+          updateHyperstructurePointsCheckSummary(currentHyperstructurePointsCheck, realmCheckConfig, twoPlayerMode);
 
           console.log("Map generation successful");
         } catch (error) {
@@ -1715,7 +2359,13 @@
         updateStepSlider();
 
         const displayStep = currentDisplayStep === 0 ? -1 : currentDisplayStep;
-        renderer.drawSettlementMap(currentSettlements, displayStep, renderer.currentHyperstructures);
+        renderer.drawSettlementMap(
+          currentSettlements,
+          displayStep,
+          renderer.currentHyperstructures,
+          currentHyperstructurePointsCheck,
+          getHyperstructurePointsCheckOptions(),
+        );
       }
 
       function previousStep() {
@@ -1789,8 +2439,7 @@
       // Initialize with default values
       window.addEventListener("load", function () {
         setupSliderValueUpdates(); // Setup slider value displays first
-        document.getElementById("distanceProfile").value = DEFAULT_DISTANCE_PROFILE_ID;
-        applyDistanceProfile(DEFAULT_DISTANCE_PROFILE_ID, false);
+        applyBlitzLayoutPreset(document.getElementById("layoutMode").value);
         generateMap(); // Generate initial map
         setupAutoUpdate(); // Setup auto-update listeners after initial generation
       });
@@ -1812,8 +2461,9 @@
           hexSize: document.getElementById("hexSize"),
         };
         const showGridInput = document.getElementById("showGrid");
-        const twoPlayerModeInput = document.getElementById("twoPlayerMode");
-        const distanceProfileInput = document.getElementById("distanceProfile");
+        const layoutModeInput = document.getElementById("layoutMode");
+        const showHyperstructurePointsCheckInput = document.getElementById("showHyperstructurePointsCheck");
+        const showAlignedPointsSlotsInput = document.getElementById("showAlignedPointsSlots");
 
         // Setup listeners for each slider
         Object.keys(sliders).forEach((key) => {
@@ -1833,7 +2483,7 @@
               }
             }
 
-            syncProfileSelectionForSlider(key);
+            syncBlitzLayoutModeWithControls();
             generateMap();
           });
 
@@ -1850,7 +2500,7 @@
 
                 console.log(`${key} input:`, value);
                 addInputFeedback(this);
-                syncProfileSelectionForSlider(key);
+                syncBlitzLayoutModeWithControls();
                 generateMap();
               }
             }, 300),
@@ -1864,24 +2514,21 @@
           renderer.redraw();
         });
 
-        // Two-player mode toggle
-        twoPlayerModeInput.addEventListener("change", function () {
-          console.log("Two player mode changed:", this.checked);
-          updateDistanceProfileSummary();
+        layoutModeInput.addEventListener("change", function () {
+          if (this.value !== "custom") {
+            applyBlitzLayoutPreset(this.value);
+          }
           generateMap();
         });
 
-        distanceProfileInput.addEventListener("change", function () {
-          console.log("Distance profile changed:", this.value);
-          addInputFeedback(this);
+        showHyperstructurePointsCheckInput.addEventListener("change", function () {
+          renderer.currentHyperstructurePointsCheckOptions = getHyperstructurePointsCheckOptions();
+          renderer.redraw();
+        });
 
-          if (DISTANCE_PROFILES[this.value]) {
-            applyDistanceProfile(this.value);
-            return;
-          }
-
-          updateDistanceProfileSummary();
-          generateMap();
+        showAlignedPointsSlotsInput.addEventListener("change", function () {
+          renderer.currentHyperstructurePointsCheckOptions = getHyperstructurePointsCheckOptions();
+          renderer.redraw();
         });
 
         // Step slider - navigate through steps

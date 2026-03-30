@@ -88,7 +88,8 @@ describe("buildConfig", () => {
     expect(slotEternum.mmr).toBeUndefined();
 
     expect(localBlitz.dev.mode.on).toBe(true);
-    expect(localBlitz.speed.donkey).toBe(0);
+    expect(localBlitz.speed.donkey_for_resources).toBe(0);
+    expect(localBlitz.speed.donkey_for_troops).toBe(0);
     expect(localBlitz.mmr?.enabled).toBe(true);
   });
 
@@ -98,8 +99,17 @@ describe("buildConfig", () => {
     const customDurationConfig = await buildConfig({ chain: "slot", gameType: "blitz", durationMinutes: 45 });
 
     expect(sixtyMinuteConfig.season.durationSeconds).toBe(3_600);
+    expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(5);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(2);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Labor]).toBe(2);
+    expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Essence]).toBe(20);
+    expect(sixtyMinuteConfig.troop.stamina.staminaInitial).toBe(30);
+    expect(sixtyMinuteConfig.troop.stamina.staminaGainPerTick).toBe(30);
+    expect(sixtyMinuteConfig.victoryPoints.pointsForTileExploration).toBe(5_000_000n);
+    expect(sixtyMinuteConfig.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits).toBe(250_000_000n);
+    expect(sixtyMinuteConfig.victoryPoints.pointsForRelicDiscovery).toBe(250_000_000n);
+    expect(sixtyMinuteConfig.victoryPoints.pointsForHyperstructureClaimAgainstBandits).toBe(1_000_000_000n);
+    expect(sixtyMinuteConfig.victoryPoints.hyperstructurePointsPerCycle).toBe(1_000_000n);
     expect(sixtyMinuteConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
     expect(sixtyMinuteConfig.blitz.exploration.rewardProfileId).toBe("official-60");
     expect(sixtyMinuteConfig.blitz.exploration.rewards).toHaveLength(6);
@@ -107,6 +117,10 @@ describe("buildConfig", () => {
     expect(customDurationConfig.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
     expect(customDurationConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(
       baseConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood],
+    );
+    expect(customDurationConfig.troop.stamina.staminaInitial).toBe(baseConfig.troop.stamina.staminaInitial);
+    expect(customDurationConfig.victoryPoints.pointsForTileExploration).toBe(
+      baseConfig.victoryPoints.pointsForTileExploration,
     );
     expect(customDurationConfig.blitz.exploration.rewardProfileId).toBe(baseConfig.blitz.exploration.rewardProfileId);
   });
