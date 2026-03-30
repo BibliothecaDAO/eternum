@@ -1,4 +1,17 @@
+// @vitest-environment node
+
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@dojoengine/sdk", () => ({
+  AndComposeClause: vi.fn(() => ({
+    build: () => ({ mocked: true }),
+  })),
+  MemberClause: vi.fn(),
+}));
+
+vi.mock("@dojoengine/torii-client", () => ({
+  PatternMatching: {},
+}));
 
 vi.mock("./sync", () => ({
   syncEntitiesDebounced: vi.fn(),
@@ -121,5 +134,78 @@ describe("ToriiStreamManager", () => {
     expect(cancelFirst).toHaveBeenCalledTimes(1);
     expect(cancelSecond).toHaveBeenCalledTimes(1);
     expect(cancelThird).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the subscription setup timeout through to syncEntitiesDebounced", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    syncMock.mockImplementationOnce(async (...args) => {
+      const options = args[5] as { subscriptionSetupTimeoutMs?: number } | undefined;
+      throw new Error(`timeout:${options?.subscriptionSetupTimeoutMs ?? "missing"}`);
+    });
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+      subscriptionSetupTimeoutMs: 25,
+    });
+
+    await expect(manager.switchBounds(descriptor(0))).rejects.toThrow("timeout:25");
+  });
+
+  it("allows a later bounds switch to recover after a timed out setup", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const cancelRecovered = vi.fn();
+
+    syncMock.mockRejectedValueOnce(new Error("timeout:25")).mockResolvedValueOnce({ cancel: cancelRecovered });
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+      subscriptionSetupTimeoutMs: 25,
+    });
+
+    await expect(manager.switchBounds(descriptor(0))).rejects.toThrow("timeout:25");
+
+    const recovered = await manager.switchBounds(descriptor(24));
+
+    manager.cancelCurrentSubscription();
+
+    expect(recovered.outcome).toBe("applied");
+    expect(cancelRecovered).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports subscription setup timeouts with the switch request id", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const onSubscriptionSetupTimeout = vi.fn();
+
+    syncMock.mockImplementationOnce(async (...args) => {
+      const options = args[5] as
+        | {
+            onSubscriptionSetupTimeout?: (info: { label: string; timeoutMs: number }) => void;
+          }
+        | undefined;
+      options?.onSubscriptionSetupTimeout?.({
+        label: "event subscription",
+        timeoutMs: 25,
+      });
+      throw new Error("timeout:25");
+    });
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+      subscriptionSetupTimeoutMs: 25,
+      onSubscriptionSetupTimeout,
+    });
+
+    await expect(manager.switchBounds(descriptor(0))).rejects.toThrow("timeout:25");
+    expect(onSubscriptionSetupTimeout).toHaveBeenCalledWith({
+      label: "event subscription",
+      timeoutMs: 25,
+      requestId: 1,
+    });
   });
 });
