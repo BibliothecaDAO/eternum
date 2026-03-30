@@ -1,16 +1,22 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
-import { setupToriiSubscriptions } from "./torii-subscription-setup";
+import { setupToriiSubscriptions, type ToriiCancelableSubscription } from "./torii-subscription-setup";
 
 describe("setupToriiSubscriptions", () => {
   it("cancels the entity subscription when the event subscription setup times out", async () => {
     vi.useFakeTimers();
 
     const cancelEntitySubscription = vi.fn();
+    const createEntitySubscription = vi.fn(
+      async (): Promise<ToriiCancelableSubscription> => ({ cancel: cancelEntitySubscription }),
+    );
+    const createEventSubscription = vi.fn(
+      (): Promise<ToriiCancelableSubscription> => new Promise<ToriiCancelableSubscription>(() => {}),
+    );
     const setupPromise = setupToriiSubscriptions({
-      createEntitySubscription: vi.fn().mockResolvedValue({ cancel: cancelEntitySubscription }),
-      createEventSubscription: vi.fn(() => new Promise(() => {})),
+      createEntitySubscription,
+      createEventSubscription,
       subscriptionSetupTimeoutMs: 25,
     });
     const rejectionAssertion = expect(setupPromise).rejects.toThrow(/event subscription/i);
@@ -27,16 +33,18 @@ describe("setupToriiSubscriptions", () => {
     vi.useFakeTimers();
 
     const cancelLateEventSubscription = vi.fn();
-    let resolveEventSubscription!: (subscription: { cancel: () => void }) => void;
+    let resolveEventSubscription!: (subscription: ToriiCancelableSubscription) => void;
+    const createEntitySubscription = vi.fn(async (): Promise<ToriiCancelableSubscription> => ({ cancel: vi.fn() }));
+    const createEventSubscription = vi.fn(
+      (): Promise<ToriiCancelableSubscription> =>
+        new Promise<ToriiCancelableSubscription>((resolve) => {
+          resolveEventSubscription = resolve;
+        }),
+    );
 
     const setupPromise = setupToriiSubscriptions({
-      createEntitySubscription: vi.fn().mockResolvedValue({ cancel: vi.fn() }),
-      createEventSubscription: vi.fn(
-        () =>
-          new Promise((resolve) => {
-            resolveEventSubscription = resolve;
-          }),
-      ),
+      createEntitySubscription,
+      createEventSubscription,
       subscriptionSetupTimeoutMs: 25,
     });
     const rejectionAssertion = expect(setupPromise).rejects.toThrow(/event subscription/i);

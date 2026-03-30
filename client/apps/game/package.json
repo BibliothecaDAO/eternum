@@ -2,6 +2,9 @@
   "name": "eternum-game-client",
   "version": "0.0.1",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "build:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
