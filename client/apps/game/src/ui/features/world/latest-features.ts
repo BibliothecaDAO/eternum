@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-30",
+    title: "Blitz Army Structure Lock",
+    description:
+      "Army transfer windows now immediately explain when Blitz blocks returns into camps, rifts, or hyperstructures, and when army-to-army swaps cross realm boundaries, so invalid troop moves are clear before you try to confirm them.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
     title: "Agora Pool Review Pass",
     description:
       "The Agora pool rail now defaults to a curated resource order, shows spot price, market cap, and TVL more clearly, and keeps pool browsing scrollable without losing the active trading panels.",
