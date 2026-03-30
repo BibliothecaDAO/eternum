@@ -38,6 +38,11 @@ const INVENTORY_STRUCTURE_CATEGORIES = new Set<StructureType>([
   StructureType.FragmentMine,
   StructureType.Hyperstructure,
 ]);
+const BLITZ_ARMY_TO_STRUCTURE_BLOCKED_CATEGORIES = new Set<StructureType>([
+  StructureType.Camp,
+  StructureType.FragmentMine,
+  StructureType.Hyperstructure,
+]);
 const POPULATION_STRUCTURE_CATEGORIES = new Set<StructureType>([
   StructureType.Realm,
   StructureType.Village,
@@ -148,6 +153,29 @@ export const canTransferMilitaryInventoryBetweenStructures = ({
   }
 
   return canTransferMilitaryInventoryInEternum(source, destination);
+};
+
+export const resolveArmyToStructureTransferRestriction = ({
+  modeId,
+  destination,
+}: {
+  modeId: GameModeId;
+  destination: StructureCapabilityTarget;
+}) => {
+  if (modeId !== "blitz") {
+    return null;
+  }
+
+  const destinationCategory = getStructureCategory(destination);
+  if (destinationCategory === null) {
+    return null;
+  }
+
+  if (!BLITZ_ARMY_TO_STRUCTURE_BLOCKED_CATEGORIES.has(destinationCategory)) {
+    return null;
+  }
+
+  return "cannot transfer army to structure";
 };
 
 const getStructureByEntityId = (

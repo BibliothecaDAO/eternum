@@ -1,5 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
+import { resolveArmyToStructureTransferRestriction } from "@/ui/lib/structure-capabilities";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
 
@@ -69,6 +71,7 @@ export const TransferTroopsContainer = ({
   onToggleDirection,
   canToggleDirection = false,
 }: TransferTroopsContainerProps) => {
+  const mode = useGameModeConfig();
   const {
     account: { account },
     network: { toriiClient },
@@ -153,6 +156,17 @@ export const TransferTroopsContainer = ({
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
   const targetExplorerConnectedStructure = targetEntityData?.explorerConnectedStructure?.structure;
+  const armyToStructureTransferRestriction = useMemo(() => {
+    if (transferDirection !== TransferDirection.ExplorerToStructure) {
+      return null;
+    }
+
+    return resolveArmyToStructureTransferRestriction({
+      modeId: mode.id,
+      destination: targetStructure,
+    });
+  }, [mode.id, targetStructure, transferDirection]);
+  const isArmyToStructureTransferBlocked = armyToStructureTransferRestriction !== null;
 
   const troopCapacityLimit = useMemo(() => {
     const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
@@ -758,6 +772,7 @@ export const TransferTroopsContainer = ({
   // Handle transfer
   const handleTransfer = async () => {
     if (!selectedHex || !targetEntityId) return;
+    if (isArmyToStructureTransferBlocked) return;
 
     const direction = getDirectionBetweenAdjacentHexes(
       { col: selectedHex.x, row: selectedHex.y },
@@ -881,6 +896,7 @@ export const TransferTroopsContainer = ({
   };
 
   const isTroopsTransferDisabled = (() => {
+    if (isArmyToStructureTransferBlocked) return true;
     if (troopAmount === 0) return true;
 
     if (guardSelectionRequired && guardSlot === null) {
@@ -1011,6 +1027,7 @@ export const TransferTroopsContainer = ({
 
   const getDisabledMessage = () => {
     if (loading) return "Processing transfer...";
+    if (armyToStructureTransferRestriction) return armyToStructureTransferRestriction;
     if (troopAmount === 0) return "Please select an amount of troops to transfer";
 
     if (guardSelectionRequired && guardSlot === null) {
