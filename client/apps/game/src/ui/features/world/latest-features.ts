@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-30",
+    title: "World Map First Entry",
+    description:
+      "Entering a game now opens on the world map centered on your realm instead of dropping straight into local realm view, so first load starts with broader context.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
     title: "Dashboard Music Picker",
     description:
       "The landing dashboard now includes a compact music player with per-route song picks, quick mute and skip controls, and a smoother handoff into game playlists when you enter a match.",
