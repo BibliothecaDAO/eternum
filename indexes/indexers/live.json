@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-30T04:17:14.590Z",
+  "updatedAt": "2026-03-30T04:27:28.477Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -677,6 +677,19 @@
         "describedAt": "2026-03-30T04:17:14.590Z"
       },
       "updatedAt": "2026-03-30T04:17:14.590Z"
+    },
+    "bltz-cred-test-2": {
+      "gameName": "bltz-cred-test-2",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-cred-test-2/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-03-30T04:27:28.477Z"
+      },
+      "updatedAt": "2026-03-30T04:27:28.477Z"
     }
   }
 }
