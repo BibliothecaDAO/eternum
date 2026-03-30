@@ -45,7 +45,7 @@ const ETERNUM_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([
   ResourcesIds.AncientFragment,
 ]);
 const FRAGMENT_MINE_TRANSFER_MESSAGE_BY_MODE: Record<GameModeId, string> = {
-  blitz: "Essence rifts can only transfer Donkeys and Essence.",
+  blitz: "For non-military transfers, Essence rifts can only transfer Donkeys and Essence.",
   eternum: "Fragment mines can only transfer Donkeys and Ancient Fragments.",
 };
 

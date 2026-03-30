@@ -1,10 +1,11 @@
 import { Button } from "@/ui/design-system/atoms";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { useAmm } from "@/hooks/use-amm";
-import { computeSpotPrice, type Pool } from "@/services/amm";
 import { useAmmStore } from "@/hooks/store/use-amm-store";
-import { AmmPoolRow } from "./amm-pool-row";
+import { computeSpotPrice, type Pool } from "@/services/amm";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { AmmPoolRow } from "./amm-pool-row";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { formatAmmCompactAmount, formatAmmSpotPrice } from "./amm-format";
@@ -183,20 +184,25 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
 
       <div className="mb-3">
         <div className="mb-1 px-1 text-[10px] uppercase tracking-[0.16em] text-gold/35">Order</div>
-        <select
-          value={poolOrder}
-          onChange={(event) => setPoolOrder(event.target.value as AmmPoolOrder)}
-          className="w-full rounded-xl border border-gold/10 bg-black/20 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gold outline-none focus:border-gold/25"
-        >
-          {POOL_ORDER_OPTIONS.map((option) => (
-            <option key={option.orderBy} value={option.orderBy}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <Select value={poolOrder} onValueChange={(value) => setPoolOrder(value as AmmPoolOrder)}>
+          <SelectTrigger className="w-full rounded-xl border border-gold/15 bg-black/40 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-gold shadow-[0_14px_40px_-28px_rgba(0,0,0,0.95)] hover:bg-gold/8 focus:border-gold/30">
+            <SelectValue placeholder="Sort pools" />
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl border border-gold/20 bg-[#120d08]/95 p-1 text-gold shadow-[0_24px_60px_-28px_rgba(0,0,0,0.98)] backdrop-blur-[18px]">
+            {POOL_ORDER_OPTIONS.map((option) => (
+              <SelectItem
+                key={option.orderBy}
+                value={option.orderBy}
+                className="rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-gold/75 focus:bg-gold/12 focus:text-gold"
+              >
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
         <div className="space-y-2">
           {filteredPools.length === 0 ? (
             <div className="py-4 text-center text-xs text-gold/35">No pools match</div>
@@ -212,7 +218,6 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
                   key={pool.tokenAddress}
                   iconResource={asset.iconResource}
                   marketCap={marketCap}
-                  pairLabel="vs LORDS"
                   spotPrice={spotPrice}
                   tokenName={asset.displayName}
                   tvl={tvl}

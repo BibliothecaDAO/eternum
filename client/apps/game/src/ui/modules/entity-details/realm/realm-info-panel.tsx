@@ -1,5 +1,4 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -16,13 +15,12 @@ import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/uti
 import { inferRealmPreset } from "@/utils/automation-presets";
 import { getRealmStatusColor, getRealmStatusLabel, getFailureSeverity, timeAgo } from "@/utils/automation-status";
 import {
-  Position,
   formatTime,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure, useQuery } from "@bibliothecadao/react";
+import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import {
   ClientComponents,
   ContractAddress,
@@ -178,8 +176,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   );
   const { setup, account, network } = useDojo();
   const components = setup.components as ClientComponents;
-  const { isMapView } = useQuery();
-  const goToStructure = useGoToStructure(setup);
 
   const structure = useComponentValue(
     components.Structure,
@@ -208,15 +204,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     return Number.isFinite(numericId) ? numericId : null;
   }, [structureEntityId]);
 
-  const structurePosition = useMemo(() => {
-    const x = structure?.base?.coord_x;
-    const y = structure?.base?.coord_y;
-    if (x === undefined || y === undefined) return null;
-    const numericX = Number(x);
-    const numericY = Number(y);
-    return Number.isFinite(numericX) && Number.isFinite(numericY) ? { x: numericX, y: numericY } : null;
-  }, [structure]);
-
   const automationConfig = useMemo(() => {
     if (!realmId) return null;
     return automationRealms[String(realmId)];
@@ -224,11 +211,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const statusLabel = resolveAutomationStatusLabel(automationConfig);
 
   const handleModifyClick = useCallback(() => {
-    if (!realmId || !structurePosition) return;
-    const position = new Position({ x: structurePosition.x, y: structurePosition.y });
-    void goToStructure(realmId, position, isMapView);
-    toggleModal(<ProductionModal />);
-  }, [realmId, structurePosition, goToStructure, isMapView, toggleModal]);
+    if (!realmId) return;
+    toggleModal(<ProductionModal preSelectedRealmId={realmId} />);
+  }, [realmId, toggleModal]);
 
   const handleOpenTransfer = useCallback(() => {
     if (!structureEntityId) return;
@@ -369,7 +354,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
             </div>
             <div className="flex items-center gap-2">
               <ProductionStatusPill statusLabel={statusLabel} />
-              <ProductionModifyButton onClick={handleModifyClick} disabled={!realmId || !structurePosition} />
+              <ProductionModifyButton onClick={handleModifyClick} disabled={!realmId} />
             </div>
           </div>
           <div className="mt-2">

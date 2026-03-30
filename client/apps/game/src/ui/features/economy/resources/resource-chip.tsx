@@ -64,7 +64,6 @@ export const ResourceChip = ({
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const {
     setup: { components },
   } = useDojo();
@@ -262,9 +261,13 @@ export const ResourceChip = ({
     }
 
     if (!resourceManager?.entityId) return;
-    setStructureEntityId(resourceManager.entityId);
-    toggleModal(<ProductionModal preSelectedResource={resourceId as ResourcesIds} />);
-  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, setStructureEntityId, toggleModal]);
+    toggleModal(
+      <ProductionModal
+        preSelectedRealmId={resourceManager.entityId}
+        preSelectedResource={resourceId as ResourcesIds}
+      />,
+    );
+  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, toggleModal]);
 
   // Check if this resource is a relic
   const isRelic = useMemo(() => {

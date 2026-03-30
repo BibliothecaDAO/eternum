@@ -99,7 +99,7 @@ describe("buildConfig", () => {
     const customDurationConfig = await buildConfig({ chain: "slot", gameType: "blitz", durationMinutes: 45 });
 
     expect(sixtyMinuteConfig.season.durationSeconds).toBe(3_600);
-    expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(5);
+    expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(3);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(2);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Labor]).toBe(2);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Essence]).toBe(20);

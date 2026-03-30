@@ -1,13 +1,11 @@
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { ModalContainer } from "@/ui/shared";
-import { Position } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ProductionPopupShell } from "./production-popup-shell";
+import { resolveInitialSelectedRealm, resolveSelectedRealm } from "./production-selection";
 
 const ProductionSidebar = lazy(() =>
   import("./production-sidebar").then((module) => ({ default: module.ProductionSidebar })),
@@ -17,64 +15,75 @@ const ProductionBody = lazy(() => import("./production-body").then((module) => (
 
 const ProductionContainer = ({
   playerStructures,
+  preSelectedRealmId,
   preSelectedResource,
 }: {
   playerStructures: RealmInfo[];
+  preSelectedRealmId?: ID;
   preSelectedResource?: ResourcesIds;
 }) => {
-  const { setup } = useDojo();
   const initialRealm = useMemo(() => {
-    const structureEntityId = useUIStore.getState().structureEntityId;
-    const selectedRealm = playerStructures.find((structure) => structure.entityId === structureEntityId);
-    return selectedRealm;
-  }, [playerStructures]);
+    return resolveInitialSelectedRealm({
+      realms: playerStructures,
+      preSelectedRealmId,
+      currentStructureEntityId: useUIStore.getState().structureEntityId,
+    });
+  }, [playerStructures, preSelectedRealmId]);
 
   const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerStructures[0]);
   const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource ?? null);
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const goToStructure = useGoToStructure(setup);
-  const { isMapView } = useQuery();
+  const previousPreSelectedRealmId = useRef<ID | undefined>(preSelectedRealmId);
+
+  useEffect(() => {
+    const selectedRealmMissing = !selectedRealm;
+    const selectedRealmRemoved =
+      selectedRealm !== undefined &&
+      !playerStructures.some((structure) => structure.entityId === selectedRealm.entityId);
+    const preSelectedRealmChanged = previousPreSelectedRealmId.current !== preSelectedRealmId;
+
+    previousPreSelectedRealmId.current = preSelectedRealmId;
+
+    if (selectedRealmMissing || selectedRealmRemoved || preSelectedRealmChanged) {
+      setSelectedRealm(initialRealm || playerStructures[0]);
+    }
+  }, [initialRealm, playerStructures, preSelectedRealmId, selectedRealm]);
 
   useEffect(() => {
     if (preSelectedResource === undefined) return;
     setSelectedResource(preSelectedResource ?? null);
   }, [preSelectedResource]);
 
-  const focusRealm = useCallback(
-    (realm: RealmInfo | undefined) => {
-      if (!realm) return;
-      setStructureEntityId(realm.entityId);
-      const position = new Position({ x: realm.position.x, y: realm.position.y });
-      void goToStructure(realm.entityId, position, isMapView);
-    },
-    [goToStructure, isMapView, setStructureEntityId],
-  );
-
   const handleSelectRealm = useCallback(
     (id: ID) => {
-      const realm = playerStructures.find((structure) => structure.entityId === id);
+      const realm = resolveSelectedRealm({
+        realms: playerStructures,
+        realmId: id,
+      });
       setSelectedRealm(realm);
       setSelectedResource(null);
-      focusRealm(realm);
     },
-    [playerStructures, focusRealm],
+    [playerStructures],
   );
 
   const handleManageResource = useCallback(
     (realmId: ID, resource: ResourcesIds) => {
-      const realm = playerStructures.find((structure) => structure.entityId === realmId) || selectedRealm;
+      const realm = resolveSelectedRealm({
+        realms: playerStructures,
+        realmId,
+        fallbackRealm: selectedRealm,
+      });
+
       if (realm) {
         setSelectedRealm(realm);
         setSelectedResource(resource);
-        focusRealm(realm);
       }
     },
-    [playerStructures, selectedRealm, focusRealm],
+    [playerStructures, selectedRealm],
   );
 
   return (
-    <div className="production-modal-selector container mx-auto grid h-full grid-cols-1 gap-4 rounded-2xl bg-dark-wood lg:grid-cols-12 lg:gap-0">
-      <div className="order-1 col-span-1 overflow-y-auto border-b border-gold/20 p-4 pb-8 panel-wood-right lg:order-1 lg:col-span-4 lg:border-b-0 lg:border-r lg:border-gold/20 lg:pb-36">
+    <div className="production-modal-selector grid h-full min-h-0 grid-cols-1 gap-4 overflow-hidden rounded-2xl bg-dark-wood lg:grid-cols-12 lg:gap-0">
+      <div className="order-1 col-span-1 min-h-0 overflow-y-auto border-b border-gold/20 p-4 pb-4 panel-wood-right lg:order-1 lg:col-span-4 lg:border-b-0 lg:border-r lg:border-gold/20">
         <Suspense fallback={<LoadingAnimation />}>
           {playerStructures.length > 0 && (
             <ProductionSidebar
@@ -86,7 +95,7 @@ const ProductionContainer = ({
           )}
         </Suspense>
       </div>
-      <div className="order-2 col-span-1 h-full overflow-y-auto p-4 pb-12 lg:order-2 lg:col-span-8 lg:p-8 lg:pb-36">
+      <div className="order-2 col-span-1 min-h-0 overflow-y-auto p-4 lg:order-2 lg:col-span-8 lg:p-6">
         <Suspense fallback={<LoadingAnimation />}>
           {selectedRealm && (
             <ProductionBody
@@ -101,7 +110,13 @@ const ProductionContainer = ({
   );
 };
 
-export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?: ResourcesIds }) => {
+export const ProductionModal = ({
+  preSelectedRealmId,
+  preSelectedResource,
+}: {
+  preSelectedRealmId?: ID;
+  preSelectedResource?: ResourcesIds;
+}) => {
   const playerStructures = useOwnedProductionStructureInfos();
   const mode = useGameModeConfig();
 
@@ -112,8 +127,12 @@ export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?:
   }, [mode, playerStructures]);
 
   return (
-    <ModalContainer size="full">
-      <ProductionContainer playerStructures={managedStructures} preSelectedResource={preSelectedResource} />
-    </ModalContainer>
+    <ProductionPopupShell>
+      <ProductionContainer
+        playerStructures={managedStructures}
+        preSelectedRealmId={preSelectedRealmId}
+        preSelectedResource={preSelectedResource}
+      />
+    </ProductionPopupShell>
   );
 };
