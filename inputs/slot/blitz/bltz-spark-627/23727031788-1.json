@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "slot.blitz:bltz-spark-627",
+  "launchRequestId": "23727031788-1",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-spark-627",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-03-30T03:48:10.089Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23727031788,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23727031788",
+    "ref": "next",
+    "sha": "fc4d9b0f74fcb0f407a7aa701cd7e2a6ea1214ea"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "slot.blitz",
+    "gameName": "bltz-spark-627",
+    "startTime": "2026-03-30T03:55:00.000Z",
+    "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+    "factoryAddress": "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 3600,
+    "mapConfigOverrides": {
+      "campFindProbability": 45875,
+      "campFindFailProbability": 19660
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 300
+  }
+}
