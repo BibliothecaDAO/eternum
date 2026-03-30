@@ -12,7 +12,7 @@ export const latestFeatures: LatestFeature[] = [
     date: "2026-03-30",
     title: "Blitz Army Structure Lock",
     description:
-      "Army transfer windows now immediately explain when Blitz does not allow returning troops into camps, rifts, or hyperstructures, so blocked moves are clear before you try to confirm them.",
+      "Army transfer windows now immediately explain when Blitz blocks returns into camps, rifts, or hyperstructures, and when army-to-army swaps cross realm boundaries, so invalid troop moves are clear before you try to confirm them.",
     type: "fix",
   },
   {

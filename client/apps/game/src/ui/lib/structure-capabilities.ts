@@ -13,6 +13,7 @@ type StructureBaseLike = {
 };
 
 type StructureMetadataLike = {
+  realm_id?: ID | bigint | number;
   village_realm?: ID | bigint | number;
 };
 
@@ -80,6 +81,25 @@ const getStructureCategory = (structure: StructureCapabilityTarget): StructureTy
 
 const getStructureEntityId = (structure: StructureCapabilityTarget): number | null =>
   normalizeEntityId(structure?.entity_id);
+
+const getStructureRealmId = (structure: StructureCapabilityTarget): number | null => {
+  const explicitRealmId = normalizeEntityId(structure?.metadata?.realm_id);
+  if (explicitRealmId !== null && explicitRealmId > 0) {
+    return explicitRealmId;
+  }
+
+  const villageRealmId = normalizeEntityId(structure?.metadata?.village_realm);
+  if (villageRealmId !== null && villageRealmId > 0) {
+    return villageRealmId;
+  }
+
+  const category = getStructureCategory(structure);
+  if (category === StructureType.Realm) {
+    return getStructureEntityId(structure);
+  }
+
+  return null;
+};
 
 const isInventoryStructureCategory = (category: StructureType | null) =>
   category !== null && INVENTORY_STRUCTURE_CATEGORIES.has(category);
@@ -176,6 +196,32 @@ export const resolveArmyToStructureTransferRestriction = ({
   }
 
   return "cannot transfer army to structure";
+};
+
+export const resolveArmyToArmyTransferRestriction = ({
+  modeId,
+  source,
+  destination,
+}: {
+  modeId: GameModeId;
+  source: StructureCapabilityTarget;
+  destination: StructureCapabilityTarget;
+}) => {
+  if (modeId !== "blitz") {
+    return null;
+  }
+
+  const sourceRealmId = getStructureRealmId(source);
+  const destinationRealmId = getStructureRealmId(destination);
+  if (sourceRealmId === null || destinationRealmId === null) {
+    return null;
+  }
+
+  if (sourceRealmId === destinationRealmId) {
+    return null;
+  }
+
+  return "you can only transfer between armies from the same realm";
 };
 
 const getStructureByEntityId = (

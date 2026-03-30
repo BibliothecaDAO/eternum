@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import {
+  resolveArmyToArmyTransferRestriction,
   canTransferMilitaryInventoryBetweenStructures,
   canTransferMilitaryInventoryFromStructure,
   isVillageLikeStructureCategory,
@@ -15,12 +16,14 @@ const createStructure = ({
   fieldArmySlots = 0,
   guardArmySlots = 0,
   villageRealm,
+  realmId,
 }: {
   category: StructureType;
   entityId: number;
   fieldArmySlots?: number;
   guardArmySlots?: number;
   villageRealm?: number;
+  realmId?: number;
 }): StructureCapabilityTarget => ({
   category,
   entity_id: entityId,
@@ -29,7 +32,10 @@ const createStructure = ({
     troop_max_explorer_count: fieldArmySlots,
     troop_max_guard_count: guardArmySlots,
   },
-  metadata: villageRealm ? { village_realm: villageRealm } : {},
+  metadata: {
+    ...(villageRealm ? { village_realm: villageRealm } : {}),
+    ...(realmId ? { realm_id: realmId } : {}),
+  },
 });
 
 describe("resolveStructureUiCapabilities", () => {
@@ -143,6 +149,51 @@ describe("Blitz military transfer rules", () => {
       "cannot transfer army to structure",
     );
     expect(resolveArmyToStructureTransferRestriction({ modeId: "eternum", destination: camp })).toBeNull();
+  });
+
+  it("blocks explorer to explorer troop transfers across different realms", () => {
+    const sameRealmCamp = createStructure({
+      category: StructureType.Camp,
+      entityId: 31,
+      fieldArmySlots: 1,
+      guardArmySlots: 1,
+      realmId: 30,
+    });
+    const sameRealmHyperstructure = createStructure({
+      category: StructureType.Hyperstructure,
+      entityId: 32,
+      guardArmySlots: 4,
+      realmId: 30,
+    });
+    const otherRealmCamp = createStructure({
+      category: StructureType.Camp,
+      entityId: 41,
+      fieldArmySlots: 1,
+      guardArmySlots: 1,
+      realmId: 40,
+    });
+
+    expect(
+      resolveArmyToArmyTransferRestriction({
+        modeId: "blitz",
+        source: sameRealmCamp,
+        destination: sameRealmHyperstructure,
+      }),
+    ).toBeNull();
+    expect(
+      resolveArmyToArmyTransferRestriction({
+        modeId: "blitz",
+        source: sameRealmCamp,
+        destination: otherRealmCamp,
+      }),
+    ).toBe("you can only transfer between armies from the same realm");
+    expect(
+      resolveArmyToArmyTransferRestriction({
+        modeId: "eternum",
+        source: sameRealmCamp,
+        destination: otherRealmCamp,
+      }),
+    ).toBeNull();
   });
 });
 
