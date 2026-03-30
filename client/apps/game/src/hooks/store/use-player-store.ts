@@ -137,7 +137,7 @@ export const usePlayerStore = create<PlayerStore>()(
     /**
      * Get and cache current player data
      * This updates the currentPlayerData state for easy access
-     * @param playerAddress - The current player's wallet address
+     * @param playerAddress - The current player's wallet address.
      */
     getCurrentPlayerData: async (playerAddress: string) => {
       const { playerDataStore } = get();
