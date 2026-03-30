@@ -5600,7 +5600,7 @@
     },
     {
       "address": "0x48a0a698bae6d801751a536416243f482c46a8aa162a76985f8206a4de10d6e",
-      "class_hash": "0x5e73c8b2f5987e8d97632003a5dd230560ba050a32d83b76b618cb7464e8c51",
+      "class_hash": "0x1f7fe2024eb257ff076b81d074a14de8a2199a8eb16be877efb3930de9152c",
       "init_calldata": [],
       "tag": "s1_eternum-liquidity_systems",
       "selector": "0xf480ba1a0c3e5b85a74ba14244a1653f886654d67c71b4dd0804d9eecf1cd9",
@@ -8818,7 +8818,7 @@
     },
     {
       "address": "0x694d537aa6e54eb1136b9b5aab6e62038484181eac2c450fd232b83c6905b60",
-      "class_hash": "0x382d97eaa4ae67e95126511f5dec858e7ed045bceb8e6cc1c07ebe02325c325",
+      "class_hash": "0x26d08aebf70cf02c171ba60b59def807fe478a17d35764a6e02de611e5013d7",
       "init_calldata": [],
       "tag": "s1_eternum-resource_bridge_systems",
       "selector": "0x4f94ba58902810acb653eeeb2a36e5f8f5a7096ceac7a2705c52732281e3cd2",
@@ -9106,7 +9106,7 @@
     },
     {
       "address": "0x6d54e2f947c1605125bdedd56637bafdd89ffa43d52d35e4841ec39e35c0d3b",
-      "class_hash": "0x67c7d356387772b37ee095e3d4bd3741b8d3c43bec5ad4ab926969721f27626",
+      "class_hash": "0x287f7fcad2ab01dc3d7f051e220da3cdd7159161b8a49690ad625ecbd179a39",
       "init_calldata": [],
       "tag": "s1_eternum-resource_systems",
       "selector": "0x626970a749fd6b8230875061236c1a9446ae65287beb6107d5b88e5ca078019",
@@ -9907,7 +9907,7 @@
     },
     {
       "address": "0x112c7513a7be3f12bf9f5d507aacad45a97066bbbd2d37ea7d2a9b4f0cf529d",
-      "class_hash": "0x71fd68a89c7898e24fa77ab4a8bb15d90e5c5119aab35919d95d37a4657b420",
+      "class_hash": "0x225248216c2099de1e8abcd58e9bcde5295c319e709155747df02b4828917b4",
       "init_calldata": [],
       "tag": "s1_eternum-swap_systems",
       "selector": "0x187f170f62cb2f89334e291ddc0d0f388a855abcdd2b911425fed8304d3fdc3",
