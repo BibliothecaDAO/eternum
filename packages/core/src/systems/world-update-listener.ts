@@ -147,6 +147,40 @@ export class WorldUpdateListener {
     );
   }
 
+  private shouldResolveOwnerNameFromAddress(
+    ownerAddress: bigint | undefined,
+    ownerName: string | undefined,
+  ): ownerAddress is bigint {
+    if (ownerAddress === undefined || ownerAddress === 0n) {
+      return false;
+    }
+
+    const trimmedOwnerName = ownerName?.trim() ?? "";
+    return trimmedOwnerName.length === 0 || trimmedOwnerName === BANDITS_NAME;
+  }
+
+  private resolveOwnerNameFromAddress(ownerAddress: bigint | undefined, fallbackOwnerName: string | undefined): string {
+    let resolvedOwnerName = fallbackOwnerName?.trim() ?? "";
+
+    if (this.shouldResolveOwnerNameFromAddress(ownerAddress, resolvedOwnerName) && this.setup.components.AddressName) {
+      try {
+        const addressName = getComponentValue(this.setup.components.AddressName, getEntityIdFromKeys([ownerAddress]));
+
+        if (addressName?.name) {
+          resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
+        }
+      } catch (error) {
+        console.warn(`Failed to decode address name for owner ${ownerAddress}:`, error);
+      }
+    }
+
+    if ((ownerAddress === undefined || ownerAddress === 0n) && resolvedOwnerName.length === 0) {
+      return BANDITS_NAME;
+    }
+
+    return resolvedOwnerName;
+  }
+
   private setupSystem<T>(
     component: Component,
     callback: (value: T) => void,
@@ -464,28 +498,8 @@ export class WorldUpdateListener {
                   this.mapDataStore.updateStructureGuards(rawOccupierId, guardArmies, battleCooldownEnd);
                 }
 
-                let ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
-                let ownerName = enhancedData.owner.ownerName;
-
-                if ((!ownerName || ownerName.length === 0) && ownerAddress && ownerAddress !== 0n) {
-                  try {
-                    const addressName = getComponentValue(
-                      this.setup.components.AddressName,
-                      getEntityIdFromKeys([ownerAddress]),
-                    );
-
-                    if (addressName?.name) {
-                      ownerName = shortString.decodeShortString(addressName.name.toString());
-                    }
-                  } catch (error) {
-                    console.warn(`Failed to decode address name for owner ${ownerAddress}:`, error);
-                  }
-                }
-
-                ownerName = ownerName || "";
-                if (ownerAddress === 0n && ownerName.length === 0) {
-                  ownerName = BANDITS_NAME;
-                }
+                const ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
+                const ownerName = this.resolveOwnerNameFromAddress(ownerAddress, enhancedData.owner.ownerName);
 
                 this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
 
@@ -559,11 +573,6 @@ export class WorldUpdateListener {
                   ? ownerValue.toString()
                   : (ownerValue ?? "0");
 
-              let playerName = await this.dataEnhancer.getPlayerName(ownerString);
-              if (ownerValue === 0n && (!playerName || playerName.length === 0)) {
-                playerName = BANDITS_NAME;
-              }
-
               const entityId = this.resolveEntityId(currentState.entity_id as ID | undefined, update.entity, () => {
                 const componentState = getComponentValue(this.setup.components.Structure, update.entity) as
                   | { entity_id?: ID }
@@ -576,38 +585,47 @@ export class WorldUpdateListener {
                 return;
               }
 
-              this.dataEnhancer.updateStructureOwner(entityId, ownerValue, playerName);
+              return (
+                (await this.processSequentialUpdate(entityId, async () => {
+                  const playerName = this.resolveOwnerNameFromAddress(
+                    ownerValue,
+                    await this.dataEnhancer.getPlayerName(ownerString),
+                  );
 
-              const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
-              let col = baseCoords.coord_x ?? 0;
-              let row = baseCoords.coord_y ?? 0;
+                  this.dataEnhancer.updateStructureOwner(entityId, ownerValue, playerName);
 
-              // Fall back to mapDataStore if coords are 0,0 (partial update, e.g. ownership change)
-              if (col === 0 && row === 0) {
-                const existing = this.mapDataStore.getStructureById(entityId);
-                if (existing) {
-                  col = existing.coordX;
-                  row = existing.coordY;
-                }
-              }
+                  const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
+                  let col = baseCoords.coord_x ?? 0;
+                  let row = baseCoords.coord_y ?? 0;
 
-              const battleCooldownEnd = this.getBattleCooldownEnd(troopGuards);
+                  // Fall back to mapDataStore if coords are 0,0 (partial update, e.g. ownership change)
+                  if (col === 0 && row === 0) {
+                    const existing = this.mapDataStore.getStructureById(entityId);
+                    if (existing) {
+                      col = existing.coordX;
+                      row = existing.coordY;
+                    }
+                  }
 
-              this.mapDataStore.updateStructureGuards(entityId, guardArmies, battleCooldownEnd);
+                  const battleCooldownEnd = this.getBattleCooldownEnd(troopGuards);
 
-              const structureSystemUpdate: StructureSystemUpdate = {
-                entityId,
-                guardArmies,
-                owner: {
-                  address: currentState.owner,
-                  ownerName: playerName,
-                  guildName: "",
-                },
-                hexCoords: { col, row },
-                battleCooldownEnd,
-              };
+                  this.mapDataStore.updateStructureGuards(entityId, guardArmies, battleCooldownEnd);
 
-              return structureSystemUpdate;
+                  const structureSystemUpdate: StructureSystemUpdate = {
+                    entityId,
+                    guardArmies,
+                    owner: {
+                      address: currentState.owner,
+                      ownerName: playerName,
+                      guildName: "",
+                    },
+                    hexCoords: { col, row },
+                    battleCooldownEnd,
+                  };
+
+                  return structureSystemUpdate;
+                })) ?? undefined
+              );
             }
           },
           false,
