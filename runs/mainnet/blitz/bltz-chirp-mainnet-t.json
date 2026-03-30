@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "23732129599-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-30T06:59:58.772Z",
-  "updatedAt": "2026-03-30T07:05:04.278Z",
+  "updatedAt": "2026-03-30T07:05:07.883Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-03-30T07:05:07.883Z"
     },
     {
       "id": "configure-world",
@@ -75,5 +76,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-chirp-mainnet-t.json",
     "worldAddress": "0x06abe7dfeebe06ef596880e99206f1c89cf09507350d2893337cc5ae1b99c267",
     "createGameTxHash": "0x7a6b43f92119a5c6111b691eb4f051b72db4a722c989ed6f2fe4201ebcd5160"
+  },
+  "activeLease": {
+    "launchRequestId": "23732129599-1",
+    "workflowRunId": 23732129599,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-30T07:05:07.883Z",
+    "expiresAt": "2026-03-30T07:50:07.883Z"
   }
 }
