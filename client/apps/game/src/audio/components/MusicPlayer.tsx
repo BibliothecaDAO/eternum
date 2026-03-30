@@ -1,15 +1,31 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useEffect, useRef } from "react";
 import { useBackgroundMusic } from "../providers/music-router-provider";
+import { formatTrackDisplayName } from "../shared/track-display";
 
 export const useMusicPlayer = () => {
-  const { trackName, skip, isPlaying, isReady } = useBackgroundMusic();
-
-  return {
+  const {
+    currentTrackId,
     trackName,
-    next: skip,
+    playlist,
+    skip,
     isPlaying,
     isReady,
+    requiresInteraction,
+    setCustomTrack,
+    requestStart,
+  } = useBackgroundMusic();
+
+  return {
+    currentTrackId,
+    trackName,
+    playlist,
+    next: skip,
+    selectTrack: setCustomTrack,
+    isPlaying,
+    isReady,
+    requiresInteraction,
+    requestStart,
   };
 };
 
