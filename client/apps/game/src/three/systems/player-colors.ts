@@ -371,7 +371,7 @@ class PlayerColorManager {
    * Get or create a color profile for an enemy player by address
    *
    * @param playerAddress - The player's wallet address as a string
-   * @returns A unique color profile for this enemy
+   * @returns A unique color profile for this enemy.
    */
   getEnemyProfile(playerAddress: string): PlayerColorProfile {
     // Check cache first
