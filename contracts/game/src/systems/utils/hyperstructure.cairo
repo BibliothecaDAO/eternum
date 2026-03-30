@@ -160,7 +160,9 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 #[generate_trait]
 pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
     fn count_surrounding_realms(
-        ref world: WorldStorage, hyperstructure_coord: Coord, settlement_config: BlitzSettlementConfig,
+        ref world: WorldStorage,
+        hyperstructure_coord: Coord,
+        settlement_config: BlitzSettlementConfig,
         reward_profile_id: u8,
     ) -> u8 {
         if settlement_config.two_player_mode {

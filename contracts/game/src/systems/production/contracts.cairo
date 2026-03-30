@@ -77,8 +77,7 @@ mod production_systems {
             // ensure structure is either a structure or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(
-                InternalImpl::is_production_structure(structure_base.category),
-                "structure cannot create buildings",
+                InternalImpl::is_production_structure(structure_base.category), "structure cannot create buildings",
             );
 
             // ensure buildings can't be made outside
@@ -144,8 +143,7 @@ mod production_systems {
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(
-                InternalImpl::is_production_structure(structure_base.category),
-                "structure does not support production",
+                InternalImpl::is_production_structure(structure_base.category), "structure does not support production",
             );
 
             // ensure caller owns the structure
@@ -165,8 +163,7 @@ mod production_systems {
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(
-                InternalImpl::is_production_structure(structure_base.category),
-                "structure does not support production",
+                InternalImpl::is_production_structure(structure_base.category), "structure does not support production",
             );
 
             // ensure caller owns the structure
@@ -186,8 +183,7 @@ mod production_systems {
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(
-                InternalImpl::is_production_structure(structure_base.category),
-                "structure does not support production",
+                InternalImpl::is_production_structure(structure_base.category), "structure does not support production",
             );
 
             // ensure caller owns the structure
@@ -210,8 +206,7 @@ mod production_systems {
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(
-                InternalImpl::is_production_structure(structure_base.category),
-                "structure does not support production",
+                InternalImpl::is_production_structure(structure_base.category), "structure does not support production",
             );
 
             // ensure caller owns the structure
@@ -243,8 +238,7 @@ mod production_systems {
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
             assert!(
-                InternalImpl::is_production_structure(structure_base.category),
-                "structure does not support production",
+                InternalImpl::is_production_structure(structure_base.category), "structure does not support production",
             );
 
             // ensure caller owns the structure
@@ -278,8 +272,7 @@ mod production_systems {
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
             assert!(
-                InternalImpl::is_production_structure(structure_base.category),
-                "structure does not support production",
+                InternalImpl::is_production_structure(structure_base.category), "structure does not support production",
             );
 
             // ensure caller owns the structure

@@ -153,8 +153,8 @@ pub mod hyperstructure_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::config::{
-        BlitzExplorationConfig, BlitzSettlementConfig, HyperstructureConfig, HyperstructureCostConfig,
-        SeasonConfigImpl, VictoryPointsGrantConfig, WorldConfigUtilImpl,
+        BlitzExplorationConfig, BlitzSettlementConfig, HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl,
+        VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
     use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
     use crate::models::guild::GuildMember;
@@ -447,10 +447,7 @@ pub mod hyperstructure_systems {
                         world, selector!("blitz_exploration_config"),
                     );
                     let surrounding_realms_count: u8 = iHyperstructureBlitzImpl::count_surrounding_realms(
-                        ref world,
-                        structure_coord,
-                        blitz_settlement_config,
-                        blitz_exploration_config.reward_profile_id,
+                        ref world, structure_coord, blitz_settlement_config, blitz_exploration_config.reward_profile_id,
                     );
                     hyperstructure.points_multiplier = surrounding_realms_count;
                     world.write_model(@hyperstructure);

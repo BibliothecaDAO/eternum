@@ -555,12 +555,11 @@ pub impl BlitzMapDistanceProfileImpl of BlitzMapDistanceProfileTrait {
     }
 
     fn hyperstructure_realm_scan_distance(self: BlitzMapDistanceProfile, single_realm_mode: bool) -> u32 {
-        let center_offset =
-            if single_realm_mode {
-                self.center_tile_radius
-            } else {
-                0
-            };
+        let center_offset = if single_realm_mode {
+            self.center_tile_radius
+        } else {
+            0
+        };
         self.base_distance + center_offset
     }
 }

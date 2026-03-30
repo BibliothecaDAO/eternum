@@ -459,9 +459,7 @@ pub mod troop_management_systems {
             let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
 
             // ensure troops belong to same structure
-            assert!(
-                from_explorer.owner == to_explorer.owner, "both explorers must belong to the same structure",
-            );
+            assert!(from_explorer.owner == to_explorer.owner, "both explorers must belong to the same structure");
             StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner();
 
             // ensure explorers are adjacent to one another
@@ -620,11 +618,9 @@ pub mod troop_management_systems {
             assert!(
                 from_explorer.coord.is_adjacent(to_structure_base.coord()), "explorer is not adjacent to structure",
             );
-            
+
             // ensure troops belong to owner structure
-            assert!(
-                from_explorer.owner == to_structure_id, "explorer must belong to the same structure",
-            );
+            assert!(from_explorer.owner == to_structure_id, "explorer must belong to the same structure");
 
             // if target is a village, ensure explorer belongs to same village or master realm
             // if to_structure_base.category == StructureCategory::Village.into() {
@@ -807,9 +803,7 @@ pub mod troop_management_systems {
             );
 
             // ensure troops belong to owner structure
-            assert!(
-                to_explorer.owner == from_structure_id, "explorer must belong to the same structure",
-            );
+            assert!(to_explorer.owner == from_structure_id, "explorer must belong to the same structure");
 
             // ensure count is less than or equal to structure guard count
             let mut from_structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(

@@ -1453,8 +1453,7 @@ mod tests {
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher
-            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Assert 1: Verify initial states
@@ -1519,8 +1518,7 @@ mod tests {
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher
-            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Assert 1: Verify initial states
@@ -1681,8 +1679,7 @@ mod tests {
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher
-            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap from a different caller
@@ -1769,8 +1766,7 @@ mod tests {
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher
-            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap between non-adjacent explorers (expect panic)
@@ -1810,8 +1806,7 @@ mod tests {
         start_cheat_caller_address(system_addr, realm_owner);
         let from_explorer_id = dispatcher
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
-        let to_explorer_id = dispatcher
-            .explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
+        let to_explorer_id = dispatcher.explorer_create(realm_id, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
         // Act 2: Attempt the swap with insufficient troops (expect panic)
@@ -1891,9 +1886,10 @@ mod tests {
         start_cheat_caller_address(system_addr, realm_owner);
         let explorer_id = dispatcher.explorer_create(realm_id, category, tier, 3 * RESOURCE_PRECISION, Direction::East);
         dispatcher.guard_add(other_realm_id, GuardSlot::Delta, category, tier, 2 * RESOURCE_PRECISION);
-        dispatcher.explorer_guard_swap(
-            explorer_id, other_realm_id, Direction::East, GuardSlot::Delta, 1 * RESOURCE_PRECISION,
-        );
+        dispatcher
+            .explorer_guard_swap(
+                explorer_id, other_realm_id, Direction::East, GuardSlot::Delta, 1 * RESOURCE_PRECISION,
+            );
         stop_cheat_caller_address(system_addr);
     }
 
@@ -1923,9 +1919,8 @@ mod tests {
         dispatcher.guard_add(realm_id, GuardSlot::Delta, category, tier, 2 * RESOURCE_PRECISION);
         let explorer_id = dispatcher
             .explorer_create(other_realm_id, category, tier, 3 * RESOURCE_PRECISION, Direction::West);
-        dispatcher.guard_explorer_swap(
-            realm_id, GuardSlot::Delta, explorer_id, Direction::East, 1 * RESOURCE_PRECISION,
-        );
+        dispatcher
+            .guard_explorer_swap(realm_id, GuardSlot::Delta, explorer_id, Direction::East, 1 * RESOURCE_PRECISION);
         stop_cheat_caller_address(system_addr);
     }
 }

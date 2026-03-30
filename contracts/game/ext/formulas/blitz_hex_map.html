@@ -189,7 +189,10 @@
         padding: 12px 14px;
         font: inherit;
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-        transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+        transition:
+          border-color 160ms ease,
+          box-shadow 160ms ease,
+          transform 160ms ease;
       }
 
       .control-group input[type="range"] {
@@ -269,7 +272,10 @@
         font: inherit;
         font-weight: 600;
         box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
-        transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+        transition:
+          transform 140ms ease,
+          box-shadow 140ms ease,
+          opacity 140ms ease;
       }
 
       button:hover {
@@ -536,7 +542,9 @@
             </div>
 
             <div class="control-group">
-              <label for="mirrorFirstDistance">Mirror First Distance: <span id="mirrorFirstDistanceValue">11</span></label>
+              <label for="mirrorFirstDistance"
+                >Mirror First Distance: <span id="mirrorFirstDistanceValue">11</span></label
+              >
               <input type="range" id="mirrorFirstDistance" value="11" min="5" max="30" step="1" />
             </div>
 
@@ -561,10 +569,11 @@
             </div>
 
             <div class="control-group">
-              <label for="hyperstructureRings">Hyperstructure Rings: <span id="hyperstructureRingsValue">4</span></label>
+              <label for="hyperstructureRings"
+                >Hyperstructure Rings: <span id="hyperstructureRingsValue">4</span></label
+              >
               <input type="range" id="hyperstructureRings" value="4" min="0" max="12" step="1" />
             </div>
-
           </div>
         </section>
 
@@ -633,9 +642,7 @@
         <canvas id="hexCanvas" width="1200" height="800"></canvas>
         <div id="mapDiagnostics" class="map-diagnostics">
           <strong>Realm Check Distance</strong>
-          <div id="mapDiagnosticsContent">
-            Generate settlements to inspect the derived realm-check distances.
-          </div>
+          <div id="mapDiagnosticsContent">Generate settlements to inspect the derived realm-check distances.</div>
         </div>
       </div>
 
@@ -720,8 +727,12 @@
         <section class="surface-card">
           <h3>Notes</h3>
           <div class="note-list">
-            <div class="note-item">Official presets update layout geometry only. Realm-check source stays explicit.</div>
-            <div class="note-item">Formula mode derives the distance from settlement geometry instead of a stale constant.</div>
+            <div class="note-item">
+              Official presets update layout geometry only. Realm-check source stays explicit.
+            </div>
+            <div class="note-item">
+              Formula mode derives the distance from settlement geometry instead of a stale constant.
+            </div>
             <div class="note-item">Two-player mode bypasses the distance lookup and uses the fixed Cairo branch.</div>
           </div>
           <div id="currentConfig" class="status-copy">Ready to render.</div>
@@ -1682,8 +1693,7 @@
                 this.ctx.fillStyle = "#ffffff";
                 this.ctx.strokeStyle = "#000000";
                 this.ctx.lineWidth = 3;
-                this.ctx.font =
-                  `650 ${Math.max(12, this.hexSize * 0.8)}px "SF Pro Display", "Helvetica Neue", sans-serif`;
+                this.ctx.font = `650 ${Math.max(12, this.hexSize * 0.8)}px "SF Pro Display", "Helvetica Neue", sans-serif`;
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "middle";
 
@@ -1848,12 +1858,7 @@
         );
       }
 
-      function buildHyperstructurePointsCheck(
-        hyperstructures,
-        settlements,
-        realmCheckDistance,
-        twoPlayerMode,
-      ) {
+      function buildHyperstructurePointsCheck(hyperstructures, settlements, realmCheckDistance, twoPlayerMode) {
         if (twoPlayerMode) {
           return [];
         }
@@ -1971,7 +1976,9 @@
         const activeDistance = realmCheckConfig.activeDistance;
         const singleRealmPreview = realmCheckConfig.singleRealmPreview;
         const fullCoverageCount = pointsCheck.filter((check) => check.hasFullCoverage).length;
-        const partialCoverageCount = pointsCheck.filter((check) => check.hasAnyCoverage && !check.hasFullCoverage).length;
+        const partialCoverageCount = pointsCheck.filter(
+          (check) => check.hasAnyCoverage && !check.hasFullCoverage,
+        ).length;
         const noCoverageCount = pointsCheck.filter((check) => !check.hasAnyCoverage).length;
         const partialCoverageExamples = pointsCheck
           .filter((check) => check.hasAnyCoverage && !check.hasFullCoverage)

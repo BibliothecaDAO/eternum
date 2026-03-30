@@ -286,14 +286,16 @@ pub mod prize_distribution_systems {
 
                 // transfer 1 Game Chest to players above 500 points
                 let mut player_points: PlayerRegisteredPoints = world.read_model(player);
-                if lootchest_erc721_dispatcher.contract_address.is_non_zero() && player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD {
+                if lootchest_erc721_dispatcher.contract_address.is_non_zero()
+                    && player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD {
                     // game_chest_reward.distributed_chests += 1;
                     lootchest_erc721_dispatcher
                         .mint(player, blitz_registration_config.collectibles_lootchest_attrs_raw());
                 }
 
                 // transfer ERC721 Chest prize to player
-                if lootchest_erc721_dispatcher.contract_address.is_non_zero() && game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
+                if lootchest_erc721_dispatcher.contract_address.is_non_zero()
+                    && game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
                     let mut received_num_chests: u128 = (game_chest_reward.allocated_chests.into()
                         * player_points.registered_points)
                         / season_prize.total_registered_points;
