@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "23727031788-1",
   "currentStepId": null,
   "createdAt": "2026-03-30T03:48:10.089Z",
-  "updatedAt": "2026-03-30T05:35:30.412Z",
+  "updatedAt": "2026-03-30T05:36:58.961Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x66ce4f47aa9d78dc321ea887a205846726d16033b5a76149e55488828ad9419",
     "lootChestRoleTxHash": "0xa8d8b012658a85e25807aa35e274fec07b144209ab00168c2b4cec9743472d",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-spark-627/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-03-30T03:57:12.423Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-03-30T05:35:29.138Z"
+    "lastIndexerDescribeAt": "2026-03-30T05:36:58.961Z"
   },
   "completedAt": "2026-03-30T03:50:37.832Z"
 }
