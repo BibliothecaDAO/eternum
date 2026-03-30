@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-30T03:50:11.370Z",
+  "updatedAt": "2026-03-30T03:50:20.114Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -116,12 +116,13 @@
       "path": "runs/slot/blitz/bltz-spark-627.json",
       "inputPath": "inputs/slot/blitz/bltz-spark-627/23727031788-1.json",
       "status": "running",
-      "updatedAt": "2026-03-30T03:50:11.370Z",
+      "updatedAt": "2026-03-30T03:50:20.114Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-03-30T04:35:20.114Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-indexer",
+      "recoverablePendingStepId": null,
       "startTime": 1774842900,
       "durationSeconds": 3600,
       "artifacts": {}
