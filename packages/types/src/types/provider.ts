@@ -630,6 +630,7 @@ export interface SetMercenariesNameConfigProps extends SystemSigner {
 }
 export interface SetDonkeySpeedConfigProps extends SystemSigner {
   sec_per_km: BigNumberish;
+  sec_per_km_troops: BigNumberish;
 }
 
 export interface SetSeasonConfigProps extends SystemSigner {

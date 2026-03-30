@@ -109,7 +109,7 @@ describe("AMM feature wiring", () => {
 
     expect(dashboardSource).toContain('label: "MCap"');
     expect(dashboardSource).toContain("statsQuery.data?.marketCapLords");
-    expect(dashboardSource).toContain("xl:grid-cols-4");
+    expect(dashboardSource).toContain('label: "LORDS in Pool"');
   });
 
   it("offers pool ordering controls for market cap, resource ids, and tvl", () => {
@@ -119,5 +119,49 @@ describe("AMM feature wiring", () => {
     expect(poolListSource).toContain('label: "Resource IDs"');
     expect(poolListSource).toContain('label: "TVL"');
     expect(poolListSource).toContain('orderBy: "mcap"');
+  });
+
+  it("defaults the pool rail to the new editorial order and uses a dropdown sorter", () => {
+    const poolListSource = readSource("src/ui/features/amm/amm-pool-list.tsx");
+
+    expect(poolListSource).toContain('label: "Default"');
+    expect(poolListSource).toContain('useState<AmmPoolOrder>("default")');
+    expect(poolListSource).toContain("<select");
+  });
+
+  it("shows spot price, market cap, and tvl in each pool row", () => {
+    const poolListSource = readSource("src/ui/features/amm/amm-pool-list.tsx");
+    const poolRowSource = readSource("src/ui/features/amm/amm-pool-row.tsx");
+
+    expect(poolListSource).toContain("marketCapByTokenAddress");
+    expect(poolRowSource).toContain("spotPrice");
+    expect(poolRowSource).toContain("marketCap");
+    expect(poolRowSource).toContain("TVL");
+    expect(poolRowSource).toContain("Spot Price");
+  });
+
+  it("adds reserve cards and a voyager fee link to the selected pool summary", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(dashboardSource).toContain("label: `${asset.displayName} in Pool`");
+    expect(dashboardSource).toContain('label: "LORDS in Pool"');
+    expect(dashboardSource).toContain("href={feeToHref}");
+  });
+
+  it("shows total swap fees only and caps minimum received precision", () => {
+    const swapSource = readSource("src/ui/features/amm/amm-swap.tsx");
+
+    expect(swapSource).toContain('label: "Total Fees"');
+    expect(swapSource).not.toContain('label: "LP Fee"');
+    expect(swapSource).not.toContain('label: "Protocol Fee"');
+    expect(swapSource).not.toContain('label: "Fee To"');
+    expect(swapSource).toContain("formatAmmMinimumReceived");
+  });
+
+  it("shows live pool balances in the liquidity tab", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(dashboardSource).toContain("Pool Balances");
+    expect(dashboardSource).toContain("in pool");
   });
 });

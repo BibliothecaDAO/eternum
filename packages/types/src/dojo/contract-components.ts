@@ -1536,6 +1536,7 @@ export function defineContractComponents(world: World) {
           },
           speed_config: {
             donkey_sec_per_km: RecsType.Number,
+            donkey_sec_per_km_troops: RecsType.Number,
           },
           map_config: {
             reward_resource_amount: RecsType.Number,
@@ -1593,6 +1594,9 @@ export function defineContractComponents(world: World) {
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
             assigned_positions_count: RecsType.Number,
+          },
+          blitz_exploration_config: {
+            reward_profile_id: RecsType.Number,
           },
           tick_config: {
             armies_tick_in_seconds: RecsType.Number,
@@ -1768,6 +1772,7 @@ export function defineContractComponents(world: World) {
               "u128", // HyperstructureConfig initialize_shards_amount
               "Span<u8>", // HyperstructureCostConfig construction_resources_ids
               "u16", // SpeedConfig donkey_sec_per_km
+              "u16", // SpeedConfig donkey_sec_per_km_troops
               "u16", // MapConfig reward_resource_amount
               "u16", // MapConfig shards_mines_win_probability
               "u16", // MapConfig shards_mines_fail_probability
@@ -1817,6 +1822,7 @@ export function defineContractComponents(world: World) {
               "u16", // BlitzRegistrationConfig registration_count_max
               "u32", // BlitzRegistrationConfig registration_start_at
               "u16", // BlitzRegistrationConfig assigned_positions_count
+              "u8", // BlitzExplorationConfig reward_profile_id
               "u64", // TickConfig armies_tick_in_seconds
               "u64", // TickConfig delivery_tick_in_seconds
               "u32", // BankConfig lp_fee_num

@@ -10,6 +10,27 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-30",
+    title: "Agora Pool Review Pass",
+    description:
+      "The Agora pool rail now defaults to a curated resource order, shows spot price, market cap, and TVL more clearly, and keeps pool browsing scrollable without losing the active trading panels.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-30",
+    title: "World Map First Entry",
+    description:
+      "Entering a game now opens on the world map centered on your realm instead of dropping straight into local realm view, so first load starts with broader context.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Dashboard Music Picker",
+    description:
+      "The landing dashboard now includes a compact music player with per-route song picks, quick mute and skip controls, and a smoother handoff into game playlists when you enter a match.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-30",
     title: "Torii Stream Timeout Recovery",
     description:
       "World map chunk streaming now times out and cleans up stuck Torii subscription handoffs, so chunk traversal can recover from a bad stream swap instead of locking the map in place.",

@@ -49,9 +49,9 @@ export const official90BlitzProfile: BlitzBalanceProfile = {
   },
   resources: {
     productionByComplexRecipe: buildOfficialBlitzComplexRecipes(1),
-    productionByComplexRecipeOutputs: buildOfficialBlitzResourceOutputs(1, 3),
+    productionByComplexRecipeOutputs: buildOfficialBlitzResourceOutputs(1),
     productionBySimpleRecipe: buildOfficialBlitzSimpleRecipes(1),
-    productionBySimpleRecipeOutputs: buildOfficialBlitzResourceOutputs(1, 3),
+    productionBySimpleRecipeOutputs: buildOfficialBlitzResourceOutputs(1),
     laborOutputPerResource: buildOfficialBlitzLaborOutputs(1),
   },
   buildings: {

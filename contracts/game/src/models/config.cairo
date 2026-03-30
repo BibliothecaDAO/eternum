@@ -7,6 +7,7 @@ use crate::alias::ID;
 use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
 use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::models::resource::resource::TroopResourceImpl;
 use crate::systems::utils::blitz_profile::{
     OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
 };
@@ -297,13 +298,18 @@ pub struct StructureCapacityConfig {
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct SpeedConfig {
     pub donkey_sec_per_km: u16,
+    pub donkey_sec_per_km_troops: u16,
 }
 
 #[generate_trait]
 pub impl SpeedImpl of SpeedTrait {
-    fn for_donkey(ref world: WorldStorage) -> u16 {
+    fn for_donkey(ref world: WorldStorage, resources: Span<(u8, u128)>) -> u16 {
         let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, selector!("speed_config"));
-        speed_config.donkey_sec_per_km
+        if TroopResourceImpl::contains_troops(resources) {
+            speed_config.donkey_sec_per_km_troops
+        } else {
+            speed_config.donkey_sec_per_km
+        }
     }
 }
 
@@ -513,7 +519,7 @@ pub struct BlitzMapDistanceProfile {
 
 #[generate_trait]
 pub impl BlitzMapDistanceProfileImpl of BlitzMapDistanceProfileTrait {
-    fn resolve_by_reward_profile_id(reward_profile_id: u8) -> BlitzMapDistanceProfile {
+    fn resolve_by_blitz_profile_id(reward_profile_id: u8) -> BlitzMapDistanceProfile {
         let resolved_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(reward_profile_id);
 
         if resolved_reward_profile_id == OFFICIAL_60_BLITZ_PROFILE_ID {
@@ -547,6 +553,15 @@ pub impl BlitzMapDistanceProfileImpl of BlitzMapDistanceProfileTrait {
             center_tile_radius: 2,
         }
     }
+
+    fn hyperstructure_realm_scan_distance(self: BlitzMapDistanceProfile, single_realm_mode: bool) -> u32 {
+        let center_offset = if single_realm_mode {
+            self.center_tile_radius
+        } else {
+            0
+        };
+        self.base_distance + center_offset
+    }
 }
 
 #[generate_trait]
@@ -571,7 +586,7 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
         if self.two_player_mode {
             return Blitz2PlayerSettlementConfigImpl::generate_coords(self, map_center);
         } else {
-            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id);
+            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id);
             return BlitzMultplePlayerSettlementConfigImpl::generate_coords(self, map_center, distance_profile);
         }
     }
@@ -737,7 +752,7 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
         if two_player_mode {
             return Blitz2PlayerHypersSettlementConfigImpl::next_coord(self, map_center);
         } else {
-            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id);
+            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id);
             return BlitzMultiplePlayerHypersSettlementConfigImpl::next_coord(self, map_center, distance_profile);
         }
     }

@@ -18,9 +18,10 @@ interface AmmPoolListProps {
 }
 
 const POOL_ORDER_OPTIONS: Array<{ orderBy: AmmPoolOrder; label: string }> = [
+  { orderBy: "default", label: "Default" },
   { orderBy: "mcap", label: "MCap" },
-  { orderBy: "resourceIds", label: "Resource IDs" },
   { orderBy: "tvl", label: "TVL" },
+  { orderBy: "resourceIds", label: "Resource IDs" },
 ];
 
 const LoadingSkeleton = () => (
@@ -43,7 +44,7 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
   const { client, config, isConfigured } = useAmm();
   const selectedPool = useAmmStore((s) => s.selectedPool);
   const setSelectedPool = useAmmStore((s) => s.setSelectedPool);
-  const [poolOrder, setPoolOrder] = useState<AmmPoolOrder>("resourceIds");
+  const [poolOrder, setPoolOrder] = useState<AmmPoolOrder>("default");
 
   const {
     data: pools,
@@ -159,7 +160,12 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
   }
 
   return (
-    <div className={cn("rounded-2xl border border-gold/10 bg-black/25 p-3 backdrop-blur-[10px]", className)}>
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col rounded-2xl border border-gold/10 bg-black/25 p-3 backdrop-blur-[10px]",
+        className,
+      )}
+    >
       {showHeader && (
         <div className="mb-3 flex items-center justify-between px-1">
           <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-gold/55">Pools</h2>
@@ -177,52 +183,54 @@ export const AmmPoolList = ({ className, onPoolSelect, showHeader = true }: AmmP
 
       <div className="mb-3">
         <div className="mb-1 px-1 text-[10px] uppercase tracking-[0.16em] text-gold/35">Order</div>
-        <div className="grid grid-cols-3 gap-1">
+        <select
+          value={poolOrder}
+          onChange={(event) => setPoolOrder(event.target.value as AmmPoolOrder)}
+          className="w-full rounded-xl border border-gold/10 bg-black/20 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-gold outline-none focus:border-gold/25"
+        >
           {POOL_ORDER_OPTIONS.map((option) => (
-            <button
-              key={option.orderBy}
-              type="button"
-              className={cn(
-                "rounded-xl border px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors",
-                poolOrder === option.orderBy
-                  ? "border-gold/25 bg-gold/15 text-gold"
-                  : "border-gold/10 bg-black/20 text-gold/55 hover:border-gold/20 hover:text-gold",
-              )}
-              onClick={() => setPoolOrder(option.orderBy)}
-            >
+            <option key={option.orderBy} value={option.orderBy}>
               {option.label}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
-      <div className="space-y-2">
-        {filteredPools.length === 0 ? (
-          <div className="py-4 text-center text-xs text-gold/35">No pools match</div>
-        ) : (
-          filteredPools.map((pool) => {
-            const spotPrice = computeSpotPrice(pool.lordsReserve, pool.tokenReserve);
-            const tvl = formatAmmCompactAmount(pool.lordsReserve * 2n);
-            const asset = resolveAmmAssetPresentation(pool.tokenAddress, config.lordsAddress);
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="space-y-2">
+          {filteredPools.length === 0 ? (
+            <div className="py-4 text-center text-xs text-gold/35">No pools match</div>
+          ) : (
+            filteredPools.map((pool) => {
+              const spotPrice = formatAmmSpotPrice(computeSpotPrice(pool.lordsReserve, pool.tokenReserve));
+              const tvl = formatAmmCompactAmount(pool.lordsReserve * 2n);
+              const marketCap = formatPoolMarketCap(marketCapByTokenAddress?.get(pool.tokenAddress) ?? null);
+              const asset = resolveAmmAssetPresentation(pool.tokenAddress, config.lordsAddress);
 
-            return (
-              <AmmPoolRow
-                key={pool.tokenAddress}
-                iconResource={asset.iconResource}
-                pairLabel="vs LORDS"
-                tokenName={asset.displayName}
-                price={formatAmmSpotPrice(spotPrice)}
-                tvl={tvl}
-                isSelected={selectedPool === pool.tokenAddress}
-                onClick={() => {
-                  setSelectedPool(pool.tokenAddress);
-                  onPoolSelect?.(pool.tokenAddress);
-                }}
-              />
-            );
-          })
-        )}
+              return (
+                <AmmPoolRow
+                  key={pool.tokenAddress}
+                  iconResource={asset.iconResource}
+                  marketCap={marketCap}
+                  pairLabel="vs LORDS"
+                  spotPrice={spotPrice}
+                  tokenName={asset.displayName}
+                  tvl={tvl}
+                  isSelected={selectedPool === pool.tokenAddress}
+                  onClick={() => {
+                    setSelectedPool(pool.tokenAddress);
+                    onPoolSelect?.(pool.tokenAddress);
+                  }}
+                />
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );
 };
+
+function formatPoolMarketCap(marketCap: bigint | null): string {
+  return marketCap == null ? "--" : formatAmmCompactAmount(marketCap);
+}

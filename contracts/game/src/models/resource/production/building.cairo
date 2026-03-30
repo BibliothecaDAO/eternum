@@ -381,7 +381,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
         self.produced_resource().is_non_zero()
     }
 
-    fn allowed_for_all_realms_and_villages(self: Building) -> bool {
+    fn allowed_for_all_producing_structures(self: Building) -> bool {
         let category: BuildingCategory = self.category.into();
         match category {
             BuildingCategory::None => false,
