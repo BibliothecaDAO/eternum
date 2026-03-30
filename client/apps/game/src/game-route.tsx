@@ -47,7 +47,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   );
 };
 
-export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
+const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   useEffect(() => {
     if (!env.VITE_TRACING_ENABLED) {
       return;
@@ -103,3 +103,5 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
 
   return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
 };
+
+export default GameRoute;
