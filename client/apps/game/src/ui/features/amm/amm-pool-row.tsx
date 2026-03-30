@@ -4,16 +4,17 @@ import { memo } from "react";
 
 interface AmmPoolRowProps {
   iconResource: string | null;
+  marketCap: string;
   pairLabel: string;
+  spotPrice: string;
   tokenName: string;
-  price: string;
   tvl: string;
   isSelected: boolean;
   onClick: () => void;
 }
 
 export const AmmPoolRow = memo(
-  ({ iconResource, pairLabel, tokenName, price, tvl, isSelected, onClick }: AmmPoolRowProps) => {
+  ({ iconResource, marketCap, pairLabel, spotPrice, tokenName, tvl, isSelected, onClick }: AmmPoolRowProps) => {
     return (
       <button
         type="button"
@@ -38,11 +39,18 @@ export const AmmPoolRow = memo(
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
             <span className="truncate text-sm font-semibold text-gold">{tokenName}</span>
-            <span className="text-xs font-medium uppercase tracking-[0.12em] text-gold/70">{tvl}</span>
+            <span className="shrink-0 text-right text-[10px] uppercase tracking-[0.12em] text-gold/55">
+              <span className="block text-gold/35">Spot Price</span>
+              <span className="text-xs font-medium text-gold">{spotPrice} LORDS</span>
+            </span>
           </div>
           <div className="mt-0.5 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.12em]">
             <span className="truncate text-gold/40">{pairLabel}</span>
-            <span className="text-gold/60">{price} LORDS</span>
+            <span className="min-w-0 text-right text-gold/60">
+              <span className="whitespace-nowrap">MCap {marketCap}</span>
+              <span className="mx-1 text-gold/25">•</span>
+              <span className="whitespace-nowrap">TVL {tvl} LORDS</span>
+            </span>
           </div>
         </div>
       </button>

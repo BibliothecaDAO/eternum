@@ -1,27 +1,22 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { MatchedRoutePlaylist, matchRoutePlaylist, PlaylistMode } from "../config/route-tracks";
+import { MatchedRoutePlaylist, matchRoutePlaylist } from "../config/route-tracks";
 import { useAudio } from "../hooks/useAudio";
+import { formatTrackDisplayName } from "../shared/track-display";
+import {
+  advancePlaylistTrack,
+  applyMatchedPlaylist,
+  createInitialMusicRouterState,
+  markMusicPlaybackError,
+  MusicRouterState,
+  selectCustomPlaylistTrack,
+  syncPlayingTrack,
+} from "./music-router-state";
 
-type MusicStatus = "idle" | "loading" | "playing" | "error";
-
-interface MusicRouterState {
-  playlistKey: string | null;
-  playlist: string[];
-  playlistMode: PlaylistMode;
-  currentIndex: number;
-  currentTrackId: string | null;
-  pendingTrackId: string | null;
-  status: MusicStatus;
-  error?: string | null;
-  requiresInteraction: boolean;
-  playRequestId: number;
-  customTrackId: string | null;
-}
+type MusicStatus = MusicRouterState["status"];
 
 type MusicRouterAction =
   | { type: "SET_PLAYLIST"; payload: MatchedRoutePlaylist }
-  | { type: "REQUEST_TRACK"; trackId: string | null; index?: number }
   | { type: "PLAYING"; trackId: string }
   | { type: "ADVANCE" }
   | { type: "ERROR"; message?: string }
@@ -45,173 +40,26 @@ interface BackgroundMusicContextValue {
 
 const BackgroundMusicContext = createContext<BackgroundMusicContextValue | undefined>(undefined);
 
-const initialState: MusicRouterState = {
-  playlistKey: null,
-  playlist: [],
-  playlistMode: "sequence",
-  currentIndex: -1,
-  currentTrackId: null,
-  pendingTrackId: null,
-  status: "idle",
-  error: null,
-  requiresInteraction: false,
-  playRequestId: 0,
-  customTrackId: null,
-};
-
-const arraysEqual = (a: string[], b: string[]) =>
-  a.length === b.length && a.every((value, index) => value === b[index]);
-
-const pickInitialIndex = (tracks: string[], mode: PlaylistMode) => {
-  if (!tracks.length) return -1;
-  if (mode === "shuffle") {
-    return Math.floor(Math.random() * tracks.length);
-  }
-  return 0;
-};
-
-const pickNextIndex = (state: MusicRouterState) => {
-  if (!state.playlist.length) return -1;
-  if (state.playlistMode === "shuffle") {
-    if (state.playlist.length === 1) return 0;
-    let next = Math.floor(Math.random() * state.playlist.length);
-    if (next === state.currentIndex) {
-      next = (next + 1) % state.playlist.length;
-    }
-    return next;
-  }
-  return (state.currentIndex + 1) % state.playlist.length;
-};
-
 const musicRouterReducer = (state: MusicRouterState, action: MusicRouterAction): MusicRouterState => {
   switch (action.type) {
-    case "SET_PLAYLIST": {
-      const { key, tracks, mode } = action.payload;
-
-      if (!tracks.length) {
-        return {
-          ...state,
-          playlistKey: key,
-          playlist: [],
-          playlistMode: mode,
-          currentIndex: -1,
-          pendingTrackId: null,
-        };
-      }
-
-      const samePlaylist =
-        state.playlistKey === key && state.playlistMode === mode && arraysEqual(state.playlist, tracks);
-
-      if (samePlaylist) {
-        return state;
-      }
-
-      if (state.currentTrackId && tracks.includes(state.currentTrackId)) {
-        return {
-          ...state,
-          playlistKey: key,
-          playlist: tracks,
-          playlistMode: mode,
-          currentIndex: tracks.indexOf(state.currentTrackId),
-        };
-      }
-
-      const initialIndex = pickInitialIndex(tracks, mode);
-      const nextTrack = state.customTrackId ?? tracks[initialIndex] ?? null;
-
-      return {
-        ...state,
-        playlistKey: key,
-        playlist: tracks,
-        playlistMode: mode,
-        currentIndex: initialIndex,
-        pendingTrackId: nextTrack,
-        status: nextTrack ? "loading" : "idle",
-        playRequestId: nextTrack ? state.playRequestId + 1 : state.playRequestId,
-        error: null,
-      };
-    }
-    case "REQUEST_TRACK":
-      return {
-        ...state,
-        currentIndex: action.index ?? state.currentIndex,
-        pendingTrackId: action.trackId,
-        status: action.trackId ? "loading" : "idle",
-        playRequestId: action.trackId ? state.playRequestId + 1 : state.playRequestId,
-        error: null,
-      };
+    case "SET_PLAYLIST":
+      return applyMatchedPlaylist(state, action.payload);
     case "PLAYING":
-      return {
-        ...state,
-        currentTrackId: action.trackId,
-        pendingTrackId: null,
-        status: "playing",
-        error: null,
-      };
-    case "ADVANCE": {
-      const nextIndex = pickNextIndex(state);
-      if (nextIndex === -1) {
-        return {
-          ...state,
-          pendingTrackId: null,
-          status: "idle",
-          customTrackId: null,
-        };
-      }
-
-      const nextTrack = state.playlist[nextIndex] ?? null;
-
-      return {
-        ...state,
-        currentIndex: nextIndex,
-        pendingTrackId: nextTrack,
-        status: nextTrack ? "loading" : "idle",
-        playRequestId: nextTrack ? state.playRequestId + 1 : state.playRequestId,
-        customTrackId: null,
-        error: null,
-      };
-    }
+      return syncPlayingTrack(state, action.trackId);
+    case "ADVANCE":
+      return advancePlaylistTrack(state);
     case "ERROR":
-      return {
-        ...state,
-        status: "error",
-        error: action.message ?? "Failed to play music",
-      };
+      return markMusicPlaybackError(state, action.message);
     case "SET_REQUIRES_INTERACTION":
       return {
         ...state,
         requiresInteraction: action.value,
       };
-    case "SET_CUSTOM_TRACK": {
-      const trackId = action.trackId;
-      if (!trackId) {
-        return {
-          ...state,
-          customTrackId: null,
-        };
-      }
-
-      return {
-        ...state,
-        customTrackId: trackId,
-        pendingTrackId: trackId,
-        status: "loading",
-        playRequestId: state.playRequestId + 1,
-        error: null,
-      };
-    }
+    case "SET_CUSTOM_TRACK":
+      return selectCustomPlaylistTrack(state, action.trackId);
     default:
       return state;
   }
-};
-
-const formatTrackDisplayName = (trackId: string | null) => {
-  if (!trackId) return "Silence";
-  return trackId
-    .replace("music.", "")
-    .split("_")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
 };
 
 const MUSIC_FADE_DURATION_MS = 800;
@@ -219,7 +67,7 @@ const MUSIC_FADE_DURATION_MS = 800;
 export const MusicRouterProvider = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const { ensureReady, play, audioState, isReady, fadeOutAndStopMusic } = useAudio();
-  const [state, dispatch] = useReducer(musicRouterReducer, initialState);
+  const [state, dispatch] = useReducer(musicRouterReducer, createInitialMusicRouterState());
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const requestIdRef = useRef(0);
 

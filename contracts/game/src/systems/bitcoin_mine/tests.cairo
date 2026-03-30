@@ -103,7 +103,7 @@ mod tests {
                 TestResource::Event("StoryEvent"), // Contract
                 TestResource::Contract("bitcoin_mine_systems"),
                 // Libraries
-                TestResource::Library(("rng_library", "0_1_14")),
+                TestResource::Library(("rng_library", "0_1_15")),
             ]
                 .span(),
         }

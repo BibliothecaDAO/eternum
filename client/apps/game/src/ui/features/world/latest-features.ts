@@ -9,6 +9,76 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-30",
+    title: "Blitz Army Structure Lock",
+    description:
+      "Army transfer windows now immediately explain when Blitz blocks returns into camps, rifts, or hyperstructures, and when army-to-army swaps cross realm boundaries, so invalid troop moves are clear before you try to confirm them.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Agora Pool Review Pass",
+    description:
+      "The Agora pool rail now defaults to a curated resource order, shows spot price, market cap, and TVL more clearly, and keeps pool browsing scrollable without losing the active trading panels.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-30",
+    title: "World Map First Entry",
+    description:
+      "Entering a game now opens on the world map centered on your realm instead of dropping straight into local realm view, so first load starts with broader context.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Dashboard Music Picker",
+    description:
+      "The landing dashboard now includes a compact music player with per-route song picks, quick mute and skip controls, and a smoother handoff into game playlists when you enter a match.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-30",
+    title: "Torii Stream Timeout Recovery",
+    description:
+      "World map chunk streaming now times out and cleans up stuck Torii subscription handoffs, so chunk traversal can recover from a bad stream swap instead of locking the map in place.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Chunk Swap Stall Fix",
+    description:
+      "World map chunk swaps no longer wait on unrelated live tile and structure stream traffic, so traversal keeps moving even when the destination area is busy.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-29",
+    title: "Biome Bonus Card Refresh",
+    description:
+      "Biome tile panels now show army bonuses as clearer side-by-side combat cards, making troop advantages, penalties, and neutral terrain much faster to scan before a battle.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-28",
+    title: "Blitz Breakdown Precision",
+    description:
+      "Finalized Blitz leaderboard rows now keep decimal precision in each activity column, so the category point values line up visually with the final total instead of rounding whole columns up to the nearest thousand.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-28",
+    title: "Finalized Blitz Point Columns",
+    description:
+      "The in-game Blitz Players table now removes live hyperstructure share points from the held-points column after final rankings lock, so the per-row breakdown matches the finalized prize standings.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-28",
+    title: "Blitz Leaderboard Alignment",
+    description:
+      "The in-game Blitz Players leaderboard now follows the same finalized rank and score order as the prize panel once rankings are locked, so both panels show the same standings.",
+    type: "fix",
+  },
+  {
     date: "2026-03-27",
     title: "AMM Market Cap Summary",
     description:

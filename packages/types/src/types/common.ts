@@ -513,8 +513,8 @@ export interface Config {
   };
   carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
-    donkey: number;
-    army: number;
+    donkey_for_resources: number;
+    donkey_for_troops: number;
   };
   battle: {
     regularImmunityTicks: number;

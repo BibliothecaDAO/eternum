@@ -1390,16 +1390,19 @@ export const setSpeedConfig = async (config: Config) => {
   ════════════════════════════`),
   );
 
-  const donkeySpeed = config.config.speed.donkey;
+  const donkeySpeed = config.config.speed.donkey_for_resources;
+  const troopDonkeySpeed = config.config.speed.donkey_for_troops;
   const donkeyCalldata = {
     signer: config.account,
     sec_per_km: donkeySpeed,
+    sec_per_km_troops: troopDonkeySpeed,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Donkey Travel Speed")}
     │  ${chalk.gray("Speed:")} ${chalk.white(donkeySpeed.toString())} ${chalk.gray("seconds/km")}
+    │  ${chalk.gray("Troops:")} ${chalk.white(troopDonkeySpeed.toString())} ${chalk.gray("seconds/km")}
     └────────────────────────────────`),
   );
 

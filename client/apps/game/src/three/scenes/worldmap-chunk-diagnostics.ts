@@ -18,6 +18,7 @@ export type WorldmapChunkDiagnosticsEvent =
   | "bounds_switch_stale_dropped"
   | "bounds_switch_skipped_stale_token"
   | "bounds_switch_failed"
+  | "bounds_switch_subscription_timeout"
   | "refresh_requested"
   | "refresh_executed"
   | "refresh_superseded"
@@ -64,6 +65,7 @@ export interface WorldmapChunkDiagnostics {
   boundsSwitchStaleDropped: number;
   boundsSwitchSkippedStaleToken: number;
   boundsSwitchFailed: number;
+  boundsSwitchSubscriptionTimeout: number;
   refreshRequested: number;
   refreshExecuted: number;
   refreshSuperseded: number;
@@ -131,6 +133,7 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     boundsSwitchStaleDropped: 0,
     boundsSwitchSkippedStaleToken: 0,
     boundsSwitchFailed: 0,
+    boundsSwitchSubscriptionTimeout: 0,
     refreshRequested: 0,
     refreshExecuted: 0,
     refreshSuperseded: 0,
@@ -244,6 +247,9 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "bounds_switch_failed":
       diagnostics.boundsSwitchFailed += 1;
+      break;
+    case "bounds_switch_subscription_timeout":
+      diagnostics.boundsSwitchSubscriptionTimeout += 1;
       break;
     case "refresh_requested":
       diagnostics.refreshRequested += 1;

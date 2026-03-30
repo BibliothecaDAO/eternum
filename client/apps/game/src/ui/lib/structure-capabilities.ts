@@ -13,6 +13,7 @@ type StructureBaseLike = {
 };
 
 type StructureMetadataLike = {
+  realm_id?: ID | bigint | number;
   village_realm?: ID | bigint | number;
 };
 
@@ -34,6 +35,11 @@ const CONSTRUCTION_STRUCTURE_CATEGORIES = new Set<StructureType>([
 const INVENTORY_STRUCTURE_CATEGORIES = new Set<StructureType>([
   StructureType.Realm,
   StructureType.Village,
+  StructureType.Camp,
+  StructureType.FragmentMine,
+  StructureType.Hyperstructure,
+]);
+const BLITZ_ARMY_TO_STRUCTURE_BLOCKED_CATEGORIES = new Set<StructureType>([
   StructureType.Camp,
   StructureType.FragmentMine,
   StructureType.Hyperstructure,
@@ -75,6 +81,25 @@ const getStructureCategory = (structure: StructureCapabilityTarget): StructureTy
 
 const getStructureEntityId = (structure: StructureCapabilityTarget): number | null =>
   normalizeEntityId(structure?.entity_id);
+
+const getStructureRealmId = (structure: StructureCapabilityTarget): number | null => {
+  const explicitRealmId = normalizeEntityId(structure?.metadata?.realm_id);
+  if (explicitRealmId !== null && explicitRealmId > 0) {
+    return explicitRealmId;
+  }
+
+  const villageRealmId = normalizeEntityId(structure?.metadata?.village_realm);
+  if (villageRealmId !== null && villageRealmId > 0) {
+    return villageRealmId;
+  }
+
+  const category = getStructureCategory(structure);
+  if (category === StructureType.Realm) {
+    return getStructureEntityId(structure);
+  }
+
+  return null;
+};
 
 const isInventoryStructureCategory = (category: StructureType | null) =>
   category !== null && INVENTORY_STRUCTURE_CATEGORIES.has(category);
@@ -148,6 +173,55 @@ export const canTransferMilitaryInventoryBetweenStructures = ({
   }
 
   return canTransferMilitaryInventoryInEternum(source, destination);
+};
+
+export const resolveArmyToStructureTransferRestriction = ({
+  modeId,
+  destination,
+}: {
+  modeId: GameModeId;
+  destination: StructureCapabilityTarget;
+}) => {
+  if (modeId !== "blitz") {
+    return null;
+  }
+
+  const destinationCategory = getStructureCategory(destination);
+  if (destinationCategory === null) {
+    return null;
+  }
+
+  if (!BLITZ_ARMY_TO_STRUCTURE_BLOCKED_CATEGORIES.has(destinationCategory)) {
+    return null;
+  }
+
+  return "cannot transfer army to structure";
+};
+
+export const resolveArmyToArmyTransferRestriction = ({
+  modeId,
+  source,
+  destination,
+}: {
+  modeId: GameModeId;
+  source: StructureCapabilityTarget;
+  destination: StructureCapabilityTarget;
+}) => {
+  if (modeId !== "blitz") {
+    return null;
+  }
+
+  const sourceRealmId = getStructureRealmId(source);
+  const destinationRealmId = getStructureRealmId(destination);
+  if (sourceRealmId === null || destinationRealmId === null) {
+    return null;
+  }
+
+  if (sourceRealmId === destinationRealmId) {
+    return null;
+  }
+
+  return "you can only transfer between armies from the same realm";
 };
 
 const getStructureByEntityId = (

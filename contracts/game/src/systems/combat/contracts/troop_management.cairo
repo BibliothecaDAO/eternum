@@ -458,12 +458,8 @@ pub mod troop_management_systems {
             let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
             let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
 
-            // ensure caller owns both explorers
-            let from_structure_owner = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
-            let to_structure_owner = StructureOwnerStoreImpl::retrieve(ref world, to_explorer.owner);
-            from_structure_owner.assert_caller_owner();
-            to_structure_owner.assert_caller_owner();
-
+            // ensure troops belong to same structure
+            assert!(from_explorer.owner == to_explorer.owner, "both explorers must belong to the same structure");
             StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner();
 
             // ensure explorers are adjacent to one another
@@ -623,13 +619,16 @@ pub mod troop_management_systems {
                 from_explorer.coord.is_adjacent(to_structure_base.coord()), "explorer is not adjacent to structure",
             );
 
+            // ensure troops belong to owner structure
+            assert!(from_explorer.owner == to_structure_id, "explorer must belong to the same structure");
+
             // if target is a village, ensure explorer belongs to same village or master realm
-            if to_structure_base.category == StructureCategory::Village.into() {
-                if from_explorer.owner != to_structure_id {
-                    let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
-                    iVillageImpl::ensure_associated_with_village(ref world, village_metadata, from_explorer.owner);
-                }
-            }
+            // if to_structure_base.category == StructureCategory::Village.into() {
+            //     if from_explorer.owner != to_structure_id {
+            //         let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
+            //         iVillageImpl::ensure_associated_with_village(ref world, village_metadata, from_explorer.owner);
+            //     }
+            // }
 
             // ensure count is valid
             assert!(count <= from_explorer.troops.count, "insufficient troops in explorer");
@@ -802,6 +801,9 @@ pub mod troop_management_systems {
             assert!(
                 from_structure_base.coord().is_adjacent(to_explorer.coord), "structure is not adjacent to explorer",
             );
+
+            // ensure troops belong to owner structure
+            assert!(to_explorer.owner == from_structure_id, "explorer must belong to the same structure");
 
             // ensure count is less than or equal to structure guard count
             let mut from_structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(

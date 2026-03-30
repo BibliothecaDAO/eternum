@@ -1,5 +1,5 @@
 import type { Pool } from "@/services/amm";
-import { findResourceIdByTrait } from "@bibliothecadao/types";
+import { resources } from "@bibliothecadao/types";
 
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import type { TokenOption } from "./amm-token-input";
@@ -30,10 +30,52 @@ interface OrderAmmPoolsOptions {
   marketCapByTokenAddress: Map<string, bigint | null>;
 }
 
-export type AmmPoolOrder = "mcap" | "resourceIds" | "tvl";
+export type AmmPoolOrder = "default" | "mcap" | "resourceIds" | "tvl";
 
 const LP_FEE_SHARE = 2 / 3;
 const PROTOCOL_FEE_SHARE = 1 / 3;
+const UNKNOWN_AMM_POOL_ORDER = Number.MAX_SAFE_INTEGER;
+const DEFAULT_AMM_POOL_SEQUENCE = [
+  "Wood",
+  "Stone",
+  "Coal",
+  "Copper",
+  "Obsidian",
+  "Silver",
+  "Ironwood",
+  "Cold Iron",
+  "Gold",
+  "Hartwood",
+  "Diamonds",
+  "Sapphire",
+  "Ruby",
+  "Deep Crystal",
+  "Ignium",
+  "Ethereal Silica",
+  "True Ice",
+  "Twilight Quartz",
+  "Alchemical Silver",
+  "Adamantine",
+  "Mithral",
+  "Dragonhide",
+  "Ancient Fragment",
+  "Donkey",
+  "Wheat",
+  "Fish",
+  "Knight",
+  "KnightT2",
+  "KnightT3",
+  "Crossbowman",
+  "CrossbowmanT2",
+  "CrossbowmanT3",
+  "Paladin",
+  "PaladinT2",
+  "PaladinT3",
+] as const;
+const DEFAULT_AMM_POOL_INDEX_BY_NAME = new Map<string, number>(
+  DEFAULT_AMM_POOL_SEQUENCE.map((name, index) => [name, index]),
+);
+const RESOURCE_ID_BY_TRAIT = new Map<string, number>(resources.map((resource) => [resource.trait, resource.id]));
 
 export function buildAmmTokenOptions(pools: Pool[], lordsAddress: string): TokenOption[] {
   return [
@@ -119,6 +161,14 @@ function buildAmmTokenOption(pool: Pool, lordsAddress: string): TokenOption {
 }
 
 function compareAmmPools(leftPool: Pool, rightPool: Pool, options: OrderAmmPoolsOptions): number {
+  if (options.orderBy === "default") {
+    return (
+      compareDefaultAmmPoolOrder(leftPool, rightPool, options.lordsAddress) ||
+      compareBigIntDescending(resolvePoolTvl(leftPool), resolvePoolTvl(rightPool)) ||
+      compareTokenAddressAscending(leftPool, rightPool)
+    );
+  }
+
   if (options.orderBy === "mcap") {
     return (
       compareBigIntDescending(
@@ -155,9 +205,27 @@ function compareResourceIdAscending(leftPool: Pool, rightPool: Pool, lordsAddres
 
 function resolveAmmPoolResourceId(tokenAddress: string, lordsAddress: string): number {
   const assetPresentation = resolveAmmAssetPresentation(tokenAddress, lordsAddress);
-  return assetPresentation.isLords
-    ? Number.MAX_SAFE_INTEGER
-    : (findResourceIdByTrait(assetPresentation.displayName) ?? Number.MAX_SAFE_INTEGER);
+  if (assetPresentation.isLords) {
+    return UNKNOWN_AMM_POOL_ORDER;
+  }
+
+  return RESOURCE_ID_BY_TRAIT.get(assetPresentation.displayName) ?? UNKNOWN_AMM_POOL_ORDER;
+}
+
+function compareDefaultAmmPoolOrder(leftPool: Pool, rightPool: Pool, lordsAddress: string): number {
+  return (
+    resolveDefaultAmmPoolIndex(leftPool.tokenAddress, lordsAddress) -
+    resolveDefaultAmmPoolIndex(rightPool.tokenAddress, lordsAddress)
+  );
+}
+
+function resolveDefaultAmmPoolIndex(tokenAddress: string, lordsAddress: string): number {
+  const assetPresentation = resolveAmmAssetPresentation(tokenAddress, lordsAddress);
+  if (assetPresentation.isLords) {
+    return UNKNOWN_AMM_POOL_ORDER;
+  }
+
+  return DEFAULT_AMM_POOL_INDEX_BY_NAME.get(assetPresentation.displayName) ?? UNKNOWN_AMM_POOL_ORDER;
 }
 
 function resolvePoolTvl(pool: Pick<Pool, "lordsReserve">): bigint {

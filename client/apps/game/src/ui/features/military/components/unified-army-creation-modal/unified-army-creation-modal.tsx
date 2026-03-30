@@ -716,6 +716,8 @@ export const UnifiedArmyCreationModal = ({
                 troopCount={projectedTroopCountForSummary}
                 maxTroopSize={troopCapacityLimit}
                 capacityRemaining={capacityRemainingForSelector}
+                collapsible
+                defaultExpanded={false}
               />
             </div>
 

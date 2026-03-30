@@ -447,6 +447,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         assert!(from_id != 0, "from entity does not exist");
         assert!(to_id != 0, "to_structure does not exist");
         assert!(to_id != from_id, "from_structure and to_structure are the same");
+        Self::assert_blitz_delayed_transfer_allowed(ref world, from_owner, to_owner);
 
         let from_coord = from_structure_base.coord();
         let to_coord = to_structure_base.coord();
@@ -454,7 +455,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         assert!(to_coord.is_non_zero(), "to_entity is not stationary");
         assert!(from_coord != to_coord, "from_entity and to_entity are in the same location");
 
-        let donkey_speed = SpeedImpl::for_donkey(ref world);
+        let donkey_speed = SpeedImpl::for_donkey(ref world, resources);
         let travel_time = iDistanceKmImpl::time_required(ref world, from_coord, to_coord, donkey_speed, pickup);
         let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
@@ -714,6 +715,13 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                 panic!("only troop resources can be raided during village raid immunity");
             }
         }
+    }
+
+    fn assert_blitz_delayed_transfer_allowed(
+        ref world: WorldStorage, from_owner: starknet::ContractAddress, to_owner: starknet::ContractAddress,
+    ) {
+        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+        assert!(!blitz_mode_on || from_owner == to_owner, "Eternum: blitz delayed transfers require the same owner");
     }
 
     fn _emit_event(

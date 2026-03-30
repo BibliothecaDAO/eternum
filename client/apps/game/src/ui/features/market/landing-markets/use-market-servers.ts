@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getFactorySqlBaseUrl } from "@/runtime/world";
-import { isToriiAvailable } from "@/runtime/world/factory-resolver";
+import { fetchBulkAvailability, isToriiAvailable } from "@/runtime/world/factory-resolver";
 
 import { env } from "../../../../../env";
 import { decodePaddedFeltAscii, normalizeHex, parseMaybeHexToNumber } from "./market-utils";
@@ -124,24 +124,38 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
         .map((felt: string) => decodePaddedFeltAscii(String(felt)))
         .filter((name: string, idx: number, arr: string[]) => Boolean(name) && arr.indexOf(name) === idx);
 
+      // Fetch bulk availability from realtime server first
+      const bulkAvailability = await fetchBulkAvailability(env.VITE_PUBLIC_REALTIME_URL);
+      const hasBulkData = Object.keys(bulkAvailability).length > 0;
+
+      // Filter to alive worlds using bulk data, or fall back to individual probes
+      const aliveNames = hasBulkData
+        ? names.filter((name) => bulkAvailability[name] === true)
+        : await (async () => {
+            const alive: string[] = [];
+            const limit = 6;
+            let index = 0;
+            const worker = async () => {
+              while (index < names.length) {
+                const i = index++;
+                const name = names[i];
+                try {
+                  if (await isToriiAvailable(buildToriiBaseUrl(name))) alive.push(name);
+                } catch {
+                  /* skip */
+                }
+              }
+            };
+            await Promise.all(Array.from({ length: limit }, () => worker()));
+            return alive;
+          })();
+
       const nextServers: MarketServer[] = [];
-      const limit = 6;
-      let index = 0;
 
-      const worker = async () => {
-        while (index < names.length) {
-          const i = index++;
-          const name = names[i];
+      // Fetch metadata for alive worlds in parallel
+      await Promise.all(
+        aliveNames.map(async (name) => {
           const toriiBaseUrl = buildToriiBaseUrl(name);
-
-          let online = false;
-          try {
-            online = await isToriiAvailable(toriiBaseUrl);
-          } catch {
-            online = false;
-          }
-          if (!online) continue;
-
           const meta = await fetchWorldConfigMeta(toriiBaseUrl);
           nextServers.push({
             name,
@@ -154,11 +168,8 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
             loadingPlayers: false,
             playerError: null,
           });
-        }
-      };
-
-      const workers = Array.from({ length: limit }, () => worker());
-      await Promise.all(workers);
+        }),
+      );
 
       const sortedServers = nextServers.toSorted((a, b) => {
         const aStart = a.startAt ?? Infinity;

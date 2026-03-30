@@ -31,6 +31,7 @@ import { UnifiedGameGrid, type GameData, type WorldSelection } from "../componen
 import { GameEntryModal } from "../components/game-entry-modal";
 import { GameReviewModal } from "../components/game-review-modal";
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
+import { useLandingContext } from "../context/landing-context";
 
 interface PlayViewProps {
   className?: string;
@@ -351,11 +352,6 @@ const FactoryVersionChooser = ({
   </div>
 );
 
-const MODE_FILTER_OPTIONS: Array<{ id: LandingModeFilter; label: string }> = [
-  { id: "season", label: "Eternum Seasons" },
-  { id: "blitz", label: "Blitz" },
-];
-
 const MODE_VISUALS: Record<
   LandingModeFilter,
   {
@@ -372,7 +368,7 @@ const MODE_VISUALS: Record<
 > = {
   season: {
     title: "Eternum Seasons",
-    subtitle: "Rolling fields, growing strongholds, and long-form conquest.",
+    subtitle: "Build your empire across seasons. Forge alliances, claim territory, and wage war on your own terms.",
     chip: "Campaign",
     videoSrc: "/videos/menu.mp4",
     posterSrc: "/images/covers/blitz/07.png",
@@ -383,7 +379,7 @@ const MODE_VISUALS: Record<
   },
   blitz: {
     title: "Blitz",
-    subtitle: "Stormfront warfare, lightning pressure, and rapid outcomes.",
+    subtitle: "Fast, brutal matches. Drop in, fight for dominance, and prove yourself before the clock runs out.",
     chip: "Match",
     videoSrc: "/videos/01.mp4",
     posterSrc: "/images/covers/blitz/02.png",
@@ -402,103 +398,134 @@ const ModeCoexistenceHero = ({
   onModeFilterChange: (mode: LandingModeFilter) => void;
 }) => {
   const [hoveredMode, setHoveredMode] = useState<LandingModeFilter | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const { setBackgroundId } = useLandingContext();
+
+  useEffect(() => {
+    // Small delay to ensure DOM is ready for CSS transitions
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Change page background when mode selection changes
+  useEffect(() => {
+    const bgMap: Record<LandingModeFilter, string> = {
+      season: "07",
+      blitz: "02",
+    };
+    setBackgroundId(bgMap[modeFilter]);
+  }, [modeFilter, setBackgroundId]);
 
   return (
-    <div className="rounded-3xl border border-gold/20 bg-black/60 p-4 md:p-6 backdrop-blur-xl overflow-hidden">
-      <div className="flex flex-col gap-2 mb-4">
-        <div className="text-[10px] uppercase tracking-[0.26em] text-gold/60">realms.world</div>
-        <h1 className="font-cinzel text-2xl md:text-3xl text-gold">Choose Your War</h1>
-        <p className="text-sm text-gold/70">
-          Campaign strategy or lightning matchmaking. Both live under one landing page.
-        </p>
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {(Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).map((mode, index) => {
+        const config = MODE_VISUALS[mode];
+        const Icon = config.icon;
+        const isEmphasized = hoveredMode ? hoveredMode === mode : modeFilter === mode;
 
-      <div className="flex flex-wrap gap-2 mb-5">
-        {MODE_FILTER_OPTIONS.map((option) => (
+        return (
           <button
-            key={option.id}
+            key={mode}
             type="button"
-            onClick={() => onModeFilterChange(option.id)}
+            onMouseEnter={() => setHoveredMode(mode)}
+            onMouseLeave={() => setHoveredMode(null)}
+            onFocus={() => setHoveredMode(mode)}
+            onBlur={() => setHoveredMode(null)}
+            onClick={() => onModeFilterChange(mode)}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-xs transition-all",
-              modeFilter === option.id
-                ? "border-gold/60 bg-gold/20 text-gold"
-                : "border-gold/20 bg-black/30 text-gold/70 hover:border-gold/40 hover:text-gold",
+              "group relative overflow-hidden rounded-2xl border text-left transition-all duration-500 ease-out",
+              "min-h-[280px] md:min-h-[360px]",
+              config.panelBorder,
+              isEmphasized
+                ? cn("opacity-100 scale-[1.02]", config.panelGlow, "ring-2 ring-gold/50")
+                : "opacity-60 scale-[0.98] grayscale-[30%]",
+              // Entrance animation
+              mounted ? "translate-y-0 opacity-inherit" : "translate-y-5 !opacity-0",
             )}
+            style={{
+              transitionDelay: mounted ? "0ms" : `${index * 150}ms`,
+            }}
           >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {(Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).map((mode) => {
-          const config = MODE_VISUALS[mode];
-          const Icon = config.icon;
-          const isEmphasized = hoveredMode ? hoveredMode === mode : modeFilter === mode;
-
-          return (
-            <button
-              key={mode}
-              type="button"
-              onMouseEnter={() => setHoveredMode(mode)}
-              onMouseLeave={() => setHoveredMode(null)}
-              onFocus={() => setHoveredMode(mode)}
-              onBlur={() => setHoveredMode(null)}
-              onClick={() => onModeFilterChange(mode)}
+            <img
+              src={config.posterSrc}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover scale-105"
+            />
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              poster={config.posterSrc}
               className={cn(
-                "group relative overflow-hidden rounded-2xl border text-left transition-all duration-300",
-                "min-h-[220px] md:min-h-[260px]",
-                config.panelBorder,
-                config.panelGlow,
-                isEmphasized ? "opacity-100 scale-[1.005]" : "opacity-75",
+                "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
+                hoveredMode === mode ? "opacity-100" : "opacity-75",
               )}
             >
-              <img
-                src={config.posterSrc}
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 h-full w-full object-cover scale-105"
-              />
-              <video
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                poster={config.posterSrc}
-                className={cn(
-                  "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
-                  hoveredMode === mode ? "opacity-100" : "opacity-75",
-                )}
-              >
-                <source src={config.videoSrc} type="video/mp4" />
-              </video>
+              <source src={config.videoSrc} type="video/mp4" />
+            </video>
 
-              <div className={cn("absolute inset-0 bg-gradient-to-br", config.tone)} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+            <div className={cn("absolute inset-0 bg-gradient-to-br", config.tone)} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
 
-              <div className="relative z-10 h-full p-4 md:p-5 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center rounded-full border border-white/30 bg-black/35 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white/80">
-                    {config.chip}
-                  </span>
-                  <Icon className="h-5 w-5 text-white/85" />
-                </div>
+            <div className="relative z-10 h-full p-4 md:p-6 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full border bg-black/35 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] transition-all duration-500",
+                    isEmphasized ? "border-gold/50 text-gold" : "border-white/20 text-white/50",
+                  )}
+                >
+                  {config.chip}
+                </span>
+                <Icon
+                  className={cn(
+                    "h-5 w-5 transition-all duration-500",
+                    isEmphasized ? "text-gold/90 scale-110" : "text-white/40 scale-100",
+                  )}
+                />
+              </div>
 
-                <div>
-                  <h3 className="font-cinzel text-xl md:text-2xl text-white">{config.title}</h3>
-                  <p className="text-sm text-white/80 mt-1">{config.subtitle}</p>
-                  <div className="inline-flex items-center gap-1 mt-3 text-xs text-white/90">
-                    {mode === "season" ? "Enter Campaigns" : "Enter Blitz"}
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </div>
+              <div className="overflow-hidden">
+                <h3
+                  className={cn(
+                    "font-cinzel text-2xl md:text-3xl transition-all duration-500 ease-out",
+                    isEmphasized ? "text-gold translate-y-0" : "text-white/70 translate-y-1",
+                  )}
+                >
+                  {config.title}
+                </h3>
+                <p
+                  className={cn(
+                    "text-sm mt-1.5 transition-all duration-500 ease-out delay-75",
+                    isEmphasized
+                      ? "text-gold/70 translate-y-0 opacity-100 max-h-20"
+                      : "text-white/40 translate-y-2 opacity-0 max-h-0",
+                  )}
+                >
+                  {config.subtitle}
+                </p>
+                <div
+                  className={cn(
+                    "inline-flex items-center gap-1.5 mt-3 text-xs font-medium transition-all duration-500 ease-out delay-150",
+                    isEmphasized ? "text-gold translate-y-0 opacity-100" : "text-white/40 translate-y-3 opacity-0",
+                  )}
+                >
+                  {mode === "season" ? "Enter Campaigns" : "Enter Blitz"}
+                  <ChevronRight
+                    className={cn(
+                      "h-3.5 w-3.5 transition-transform duration-300",
+                      isEmphasized ? "translate-x-0.5" : "translate-x-0",
+                    )}
+                  />
                 </div>
               </div>
-            </button>
-          );
-        })}
-      </div>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 };
@@ -543,8 +570,6 @@ const PlayTabContent = ({
       {modeFilter === "season" && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">Eternum Live Data</div>
-
             {/* Three columns: Live | Upcoming | Ended */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
               {/* Live Games Column */}
@@ -653,8 +678,6 @@ const PlayTabContent = ({
 
       {modeFilter === "blitz" && (
         <div className="flex flex-col gap-2">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/80">Blitz Live Data</div>
-
           {/* Three columns: Live | Upcoming | Ended */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
             {/* Live Games Column */}

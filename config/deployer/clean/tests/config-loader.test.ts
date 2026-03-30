@@ -35,7 +35,18 @@ describe("applyDeploymentConfigOverrides", () => {
     });
 
     expect(result.season.durationSeconds).toBe(3_600);
+    expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(5);
     expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(2);
+    expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Essence]).toBe(20);
+    expect(result.troop.stamina.staminaInitial).toBe(30);
+    expect(result.troop.stamina.staminaGainPerTick).toBe(30);
+    expect(result.victoryPoints.pointsForTileExploration).toBe(5_000_000n);
+    expect(result.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits).toBe(250_000_000n);
+    expect(result.victoryPoints.pointsForRelicDiscovery).toBe(250_000_000n);
+    expect(result.victoryPoints.pointsForHyperstructureClaimAgainstBandits).toBe(1_000_000_000n);
+    expect(result.victoryPoints.hyperstructurePointsPerCycle).toBe(
+      baseConfig.victoryPoints.hyperstructurePointsPerCycle,
+    );
     expect(result.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
     expect(result.realmUpgradeCosts[RealmLevels.Kingdom]?.[0]?.amount).toBe(720);
     expect(result.startingResources.find((resource) => resource.resource === ResourcesIds.Knight)?.amount).toBe(3_500);

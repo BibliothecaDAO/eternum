@@ -103,7 +103,7 @@ pub trait IStaminaConfig<T> {
 
 #[starknet::interface]
 pub trait ITransportConfig<T> {
-    fn set_donkey_speed_config(ref self: T, sec_per_km: u16);
+    fn set_donkey_speed_config(ref self: T, sec_per_km: u16, sec_per_km_troops: u16);
 }
 
 #[starknet::interface]
@@ -302,7 +302,7 @@ pub mod config_systems {
     // Constuctor
 
     fn resolve_blitz_base_distance(reward_profile_id: u8) -> u32 {
-        BlitzMapDistanceProfileImpl::resolve_by_reward_profile_id(reward_profile_id).base_distance
+        BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id).base_distance
     }
 
     fn dojo_init(self: @ContractState) {
@@ -622,11 +622,13 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl TransportConfigImpl of super::ITransportConfig<ContractState> {
-        fn set_donkey_speed_config(ref self: ContractState, sec_per_km: u16) {
+        fn set_donkey_speed_config(ref self: ContractState, sec_per_km: u16, sec_per_km_troops: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let mut speed_config: SpeedConfig = SpeedConfig { donkey_sec_per_km: sec_per_km };
+            let mut speed_config: SpeedConfig = SpeedConfig {
+                donkey_sec_per_km: sec_per_km, donkey_sec_per_km_troops: sec_per_km_troops,
+            };
             WorldConfigUtilImpl::set_member(ref world, selector!("speed_config"), speed_config);
         }
     }

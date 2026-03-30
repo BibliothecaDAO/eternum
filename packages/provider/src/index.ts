@@ -3549,12 +3549,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_donkey_speed_config(props: SystemProps.SetDonkeySpeedConfigProps) {
-    const { sec_per_km, signer } = props;
+    const { sec_per_km, sec_per_km_troops, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_donkey_speed_config",
-      calldata: [sec_per_km],
+      calldata: [sec_per_km, sec_per_km_troops],
     });
   }
 
