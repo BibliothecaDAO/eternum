@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-30",
+    title: "Agora Pool Review Pass",
+    description:
+      "The Agora pool rail now defaults to a curated resource order, shows spot price, market cap, and TVL more clearly, and keeps pool browsing scrollable without losing the active trading panels.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-30",
     title: "World Map First Entry",
     description:
       "Entering a game now opens on the world map centered on your realm instead of dropping straight into local realm view, so first load starts with broader context.",

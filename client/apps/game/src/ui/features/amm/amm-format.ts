@@ -1,5 +1,7 @@
 const AMM_AMOUNT_DECIMALS = 18;
 const AMM_AMOUNT_DIVISOR = 10n ** BigInt(AMM_AMOUNT_DECIMALS);
+const MINIMUM_RECEIVED_DECIMALS = 8;
+const MINIMUM_RECEIVED_DIVISOR = 10n ** BigInt(AMM_AMOUNT_DECIMALS - MINIMUM_RECEIVED_DECIMALS);
 
 function trimFixedNumber(value: number, fractionDigits: number): string {
   const fixedValue = value.toFixed(fractionDigits);
@@ -95,6 +97,15 @@ export function formatAmmPercent(value: number): string {
   return `${value.toFixed(2)}%`;
 }
 
+export function formatAmmMinimumReceived(value: bigint): string {
+  const whole = value / AMM_AMOUNT_DIVISOR;
+  const truncatedFraction = (value % AMM_AMOUNT_DIVISOR) / MINIMUM_RECEIVED_DIVISOR;
+  const paddedFraction = truncatedFraction.toString().padStart(MINIMUM_RECEIVED_DECIMALS, "0");
+  const trimmedFraction = paddedFraction.replace(/0+$/, "");
+
+  return trimmedFraction.length > 0 ? `${whole.toString()}.${trimmedFraction}` : whole.toString();
+}
+
 export function formatAmmFeeTo(address: string): string {
   const normalizedAddress = address.trim().toLowerCase();
 
@@ -107,4 +118,22 @@ export function formatAmmFeeTo(address: string): string {
   }
 
   return `${normalizedAddress.slice(0, 6)}...${normalizedAddress.slice(-4)}`;
+}
+
+export function resolveAmmFeeToHref(address: string, chainOrExplorerBaseUrl: string): string | null {
+  const normalizedAddress = address.trim().toLowerCase();
+  if (!normalizedAddress || normalizedAddress === "0x0") {
+    return null;
+  }
+
+  const explorerBaseUrl = resolveAmmExplorerBaseUrl(chainOrExplorerBaseUrl);
+  return `${explorerBaseUrl}/contract/${normalizedAddress}`;
+}
+
+function resolveAmmExplorerBaseUrl(chainOrExplorerBaseUrl: string): string {
+  if (chainOrExplorerBaseUrl.startsWith("http://") || chainOrExplorerBaseUrl.startsWith("https://")) {
+    return chainOrExplorerBaseUrl;
+  }
+
+  return chainOrExplorerBaseUrl === "mainnet" ? "https://voyager.online" : "https://sepolia.voyager.online";
 }

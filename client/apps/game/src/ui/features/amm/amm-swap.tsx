@@ -15,7 +15,7 @@ import {
   resolveAmmTokenName,
   resolveSelectedAmmPool,
 } from "./amm-model";
-import { formatAmmFeeTo, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
+import { formatAmmMinimumReceived, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { AMM_READ_QUERY_OPTIONS, invalidateAmmReadQueries } from "./amm-queries";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -334,14 +334,12 @@ export const AmmSwap = () => {
               value: formatAmmPercent(swapQuote.priceImpact),
               tone: swapQuote.priceImpact > 5 ? "text-danger" : "text-gold",
             },
-            { label: "Minimum Received", value: formatTokenAmount(swapQuote.minimumReceived) },
-            { label: "LP Fee", value: formatAmmPercent(feeBreakdown.lpFeePercent) },
-            { label: "Protocol Fee", value: formatAmmPercent(feeBreakdown.protocolFeePercent) },
-            { label: "Fee To", value: activePoolForFees ? formatAmmFeeTo(activePoolForFees.feeTo) : "--" },
+            { label: "Minimum Received", value: formatAmmMinimumReceived(swapQuote.minimumReceived) },
+            { label: "Total Fees", value: formatAmmPercent(feeBreakdown.totalFeePercent) },
           ].map((metric) => (
-            <div key={metric.label} className="rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
+            <div key={metric.label} className="min-w-0 rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
               <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">{metric.label}</div>
-              <div className={cn("mt-1 text-sm font-semibold text-gold", metric.tone)}>{metric.value}</div>
+              <div className={cn("mt-1 break-all text-sm font-semibold text-gold", metric.tone)}>{metric.value}</div>
             </div>
           ))}
         </div>

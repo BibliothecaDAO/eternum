@@ -5,6 +5,8 @@ import { env } from "../../env";
 import { GameAmmClient } from "@/services/amm";
 
 interface AmmRuntimeConfig {
+  chain: string;
+  explorerBaseUrl: string;
   indexerUrl: string;
   isConfigured: boolean;
   lordsAddress: string;
@@ -12,11 +14,17 @@ interface AmmRuntimeConfig {
 }
 
 function resolveAmmRuntimeConfig(): AmmRuntimeConfig {
+  const chain = env.VITE_PUBLIC_CHAIN ?? "sepolia";
   const routerAddress = env.VITE_PUBLIC_AMM_ROUTER_ADDRESS;
   const lordsAddress = env.VITE_PUBLIC_AMM_LORDS_ADDRESS;
   const indexerUrl = env.VITE_PUBLIC_AMM_INDEXER_URL;
 
   return {
+    chain,
+    explorerBaseUrl:
+      chain === "mainnet"
+        ? (env.VITE_PUBLIC_EXPLORER_MAINNET ?? "https://voyager.online")
+        : (env.VITE_PUBLIC_EXPLORER_SEPOLIA ?? "https://sepolia.voyager.online"),
     routerAddress,
     lordsAddress,
     indexerUrl,
