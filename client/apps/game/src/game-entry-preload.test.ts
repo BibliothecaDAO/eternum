@@ -1,0 +1,37 @@
+// @vitest-environment node
+
+import { describe, expect, it, vi } from "vitest";
+
+import { createPlayEntryAssetPrimer, createPlayEntryRoutePrimer } from "./game-entry-preload";
+
+describe("createPlayEntryRoutePrimer", () => {
+  it("schedules the game route preload without touching play assets", async () => {
+    vi.useFakeTimers();
+    const preloadGameRouteModule = vi.fn(() => Promise.resolve());
+    const prefetchPlayAssets = vi.fn();
+
+    createPlayEntryRoutePrimer({
+      preloadGameRouteModule,
+    })();
+
+    expect(preloadGameRouteModule).not.toHaveBeenCalled();
+    await vi.runAllTimersAsync();
+    expect(preloadGameRouteModule).toHaveBeenCalledTimes(1);
+    expect(prefetchPlayAssets).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+});
+
+describe("createPlayEntryAssetPrimer", () => {
+  it("starts the play asset prefetch independently of route preloading", () => {
+    const preloadGameRouteModule = vi.fn(() => Promise.resolve());
+    const prefetchPlayAssets = vi.fn();
+
+    createPlayEntryAssetPrimer({
+      prefetchPlayAssets,
+    })();
+
+    expect(prefetchPlayAssets).toHaveBeenCalledTimes(1);
+    expect(preloadGameRouteModule).not.toHaveBeenCalled();
+  });
+});

@@ -49,6 +49,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
+import { prefetchPlayAssets } from "@/ui/utils/prefetch-play-assets";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -4081,6 +4082,7 @@ export const GameEntryModal = ({
         await applyWorldSelection({ name: worldName, chain }, chain);
         updateTask("world", "complete");
         debugLog(worldName, "World selection complete");
+        prefetchPlayAssets();
 
         // Start bootstrap
         debugLog(worldName, "Starting game bootstrap...");
@@ -4411,24 +4413,31 @@ export const GameEntryModal = ({
     const uiStore = useUIStore.getState();
     uiStore.setShowBlankOverlay(true);
 
-    const directEntryTarget = resolveGameEntryTarget({
-      structureEntityId: uiStore.structureEntityId,
-      worldMapReturnPosition: uiStore.worldMapReturnPosition,
-      isSpectateMode,
-    });
-
-    if (directEntryTarget) {
-      uiStore.setStructureEntityId(directEntryTarget.structureEntityId, {
-        spectator: directEntryTarget.spectator,
-        worldMapPosition: directEntryTarget.worldMapPosition,
+    if (isSpectateMode) {
+      const directEntryTarget = resolveGameEntryTarget({
+        structureEntityId: uiStore.structureEntityId,
+        worldMapReturnPosition: uiStore.worldMapReturnPosition,
+        isSpectateMode: true,
       });
 
-      navigate(directEntryTarget.url);
-      window.dispatchEvent(new Event("urlChanged"));
-      return;
+      if (directEntryTarget) {
+        uiStore.setStructureEntityId(directEntryTarget.structureEntityId, {
+          spectator: directEntryTarget.spectator,
+          worldMapPosition: directEntryTarget.worldMapPosition,
+        });
+
+        navigate(directEntryTarget.url);
+        window.dispatchEvent(new Event("urlChanged"));
+        return;
+      }
     }
 
-    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/map?col=0&row=0`;
+    const setStructureEntityId = uiStore.setStructureEntityId;
+    setStructureEntityId(0, {
+      spectator: isSpectateMode,
+    });
+
+    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
   }, [navigate, isSpectateMode]);

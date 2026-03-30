@@ -14,5 +14,7 @@ describe("Game entry modal flow", () => {
     expect(source).toContain("resolveGameEntryTarget");
     expect(source).not.toContain("const timer = setTimeout(() => {");
     expect(source).not.toContain("}, 500);");
+    expect(source).not.toContain("worldMapPosition: { col: 0, row: 0 }");
+    expect(source).toContain("/play/hex?col=0&row=0");
   });
 });

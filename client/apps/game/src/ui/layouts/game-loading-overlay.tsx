@@ -5,18 +5,17 @@ import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
-import {
-  getSceneWarmupProgress,
-  resolveEntryOverlayPhase,
-  waitForHexceptionGridReady,
-} from "./game-loading-overlay.utils";
+import { getSceneWarmupProgress, resolveEntryOverlayPhase } from "./game-loading-overlay.utils";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const SAFETY_TIMEOUT_MS = 15_000;
 const SLOW_THRESHOLD_MS = 8_000;
 const TICK_INTERVAL_MS = 250;
 const HANDOFF_PROGRESS = 76;
-const GRID_READY_TIMEOUT_MS = 1_200;
+// Time to wait after tile data loads before dismissing.
+// The bounds subscription still needs to stream structures and the
+// world update listener needs to process them into visible state.
+const POST_WORLD_MAP_LOAD_DELAY_MS = 3_000;
 
 type WorldMapPosition = {
   col: number;
@@ -57,8 +56,6 @@ export const GameLoadingOverlay = () => {
   const playerStructures = usePlayerStructures();
   const hasDismissed = useRef(false);
   const hasSeenMapLoading = useRef(false);
-  const hasSeenGridReady = useRef(false);
-  const isWaitingForGridReady = useRef(false);
   const startedAt = useRef(0);
   const hasStartedPlayerFlow = useRef(false);
   const hasStartedSpectatorFlow = useRef(false);
@@ -71,7 +68,7 @@ export const GameLoadingOverlay = () => {
 
   const isOnWorldMapRoute = location.pathname.startsWith("/play/map");
   const targetWorldMapPosition = useMemo<WorldMapPosition | null>(() => {
-    if (isFiniteWorldMapPosition(worldMapReturnPosition)) {
+    if (isSpectating && isFiniteWorldMapPosition(worldMapReturnPosition)) {
       return worldMapReturnPosition;
     }
 
@@ -82,7 +79,7 @@ export const GameLoadingOverlay = () => {
     const first = playerStructures[0];
     const normalized = new Position({ x: first.position.x, y: first.position.y }).getNormalized();
     return { col: normalized.x, row: normalized.y };
-  }, [playerStructures, worldMapReturnPosition]);
+  }, [isSpectating, playerStructures, worldMapReturnPosition]);
 
   const dismiss = useCallback(
     (delayMs: number) => {
@@ -93,18 +90,21 @@ export const GameLoadingOverlay = () => {
     [setShowBlankOverlay],
   );
 
-  const markWorldMapReady = useCallback(() => {
-    if (hasQueuedWorldMapReady.current) {
-      return;
-    }
+  const markWorldMapReady = useCallback(
+    (delayMs: number) => {
+      if (hasQueuedWorldMapReady.current) {
+        return;
+      }
 
-    hasQueuedWorldMapReady.current = true;
-    worldMapReadyTimeoutId.current = window.setTimeout(() => {
-      worldMapReadyTimeoutId.current = null;
-      setIsReady(true);
-    }, 0);
-    dismiss(0);
-  }, [dismiss]);
+      hasQueuedWorldMapReady.current = true;
+      worldMapReadyTimeoutId.current = window.setTimeout(() => {
+        worldMapReadyTimeoutId.current = null;
+        setIsReady(true);
+      }, 0);
+      dismiss(delayMs);
+    },
+    [dismiss],
+  );
 
   useEffect(() => {
     startedAt.current = Date.now();
@@ -142,40 +142,6 @@ export const GameLoadingOverlay = () => {
     window.dispatchEvent(new Event("urlChanged"));
   }, [playerStructures, isOnWorldMapRoute, isSpectating, navigate, targetWorldMapPosition]);
 
-  useEffect(() => {
-    if (hasDismissed.current) return;
-
-    const hasStartedWorldMapFlow = isSpectating ? hasStartedSpectatorFlow.current : hasStartedPlayerFlow.current;
-    if (!hasStartedWorldMapFlow || targetWorldMapPosition == null) {
-      return;
-    }
-
-    if (hasSeenGridReady.current || isWaitingForGridReady.current) {
-      return;
-    }
-
-    isWaitingForGridReady.current = true;
-    let cancelled = false;
-
-    void waitForHexceptionGridReady(targetWorldMapPosition, GRID_READY_TIMEOUT_MS).then(() => {
-      isWaitingForGridReady.current = false;
-      if (cancelled) {
-        return;
-      }
-
-      hasSeenGridReady.current = true;
-
-      if (hasSeenMapLoading.current && !mapLoading) {
-        markWorldMapReady();
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      isWaitingForGridReady.current = false;
-    };
-  }, [isSpectating, mapLoading, markWorldMapReady, targetWorldMapPosition]);
-
   // --- World-map path: dismiss once the initial map fetch completes ---
   useEffect(() => {
     if (hasDismissed.current) return;
@@ -193,8 +159,11 @@ export const GameLoadingOverlay = () => {
       hasSeenMapLoading.current = true;
     }
 
-    if (hasSeenMapLoading.current && !mapLoading && hasSeenGridReady.current) {
-      markWorldMapReady();
+    // Map loading went true → false: initial tile fetch complete.
+    // Wait additional time for the bounds subscription to stream
+    // Structure entities and for the map to render them.
+    if (hasSeenMapLoading.current && !mapLoading) {
+      markWorldMapReady(POST_WORLD_MAP_LOAD_DELAY_MS);
     }
   }, [isSpectating, mapLoading, markWorldMapReady]);
 

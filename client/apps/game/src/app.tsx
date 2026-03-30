@@ -8,6 +8,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
+import { preloadGameRouteModule } from "./game-entry-preload";
 import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView } from "./ui/features/landing";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
@@ -15,7 +16,7 @@ import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 
 // Lazy load the entire game route to avoid loading heavy deps (World, Dojo, Three.js, etc.) on landing
-const LazyGameRoute = lazy(() => import("./game-route").then((module) => ({ default: module.GameRoute })));
+const LazyGameRoute = lazy(() => preloadGameRouteModule().then((module) => ({ default: module.default })));
 
 const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
 const FactoryV2Page = lazy(() =>
@@ -72,7 +73,7 @@ function App() {
             <Route
               path="/play/*"
               element={
-                <Suspense fallback={<LoadingScreen prefetchPlayAssets />}>
+                <Suspense fallback={<LoadingScreen />}>
                   <LazyGameRoute backgroundImage={backgroundImage} />
                 </Suspense>
               }
