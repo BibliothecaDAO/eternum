@@ -62,7 +62,7 @@ function useAmmSelectionState() {
 
 const AmmDesktopPoolRail = () => {
   return (
-    <aside className="hidden min-h-0 lg:block lg:h-full lg:w-[300px]">
+    <aside className="hidden min-h-0 lg:block lg:h-full lg:w-[375px]">
       <AmmPoolList className="h-full" />
     </aside>
   );
@@ -314,8 +314,6 @@ const AmmActionCard = ({
   selectedTab: number;
   onTabChange: (index: number) => void;
 }) => {
-  const { config } = useAmm();
-  const activeAsset = activePool ? resolveAmmAssetPresentation(activePool.tokenAddress, config.lordsAddress) : null;
   const tabs: Array<{ key: AmmTabKey; label: string; component: React.ReactNode }> = [
     { key: "swap", label: "Swap", component: <AmmSwap /> },
     { key: "liquidity", label: "Liquidity", component: <AmmLiquidityCard activePool={activePool} /> },
@@ -326,9 +324,7 @@ const AmmActionCard = ({
     <section className="rounded-[28px] border border-gold/10 bg-black/30 p-4 shadow-[0_22px_60px_-38px_rgba(0,0,0,0.98)] backdrop-blur-[12px]">
       <div className="mb-4">
         <div className="text-[11px] uppercase tracking-[0.18em] text-gold/40">Agora Actions</div>
-        <div className="mt-1 text-sm text-gold/65">
-          {activeAsset ? `${activeAsset.displayName} / LORDS` : "Select a pool to begin"}
-        </div>
+        {!activePool ? <div className="mt-1 text-sm text-gold/65">Select a pool to begin</div> : null}
       </div>
 
       <Tabs
@@ -362,7 +358,7 @@ const AmmDashboardContent = () => {
     <div className="space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <AmmMobilePoolPicker open={mobilePickerOpen} onClose={() => setMobilePickerOpen(false)} />
 
-      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[300px_minmax(0,1fr)] lg:overflow-hidden">
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[375px_minmax(0,1fr)] lg:overflow-hidden">
         <AmmDesktopPoolRail />
 
         <div className="min-w-0 space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1 lg:scrollbar-thin lg:scrollbar-thumb-gold/20 lg:scrollbar-track-transparent">

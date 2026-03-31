@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-03-31",
+    title: "Agora Layout Tightening",
+    description:
+      "The Agora now gives pool names more room, aligns the pool rail with the main trading panels, and stretches the swap stats cards across the action panel so the page reads more cleanly while you browse and trade.",
+    type: "fix",
+  },
+  {
     date: "2026-03-30",
     title: "Agora Pool Rail Polish",
     description:
