@@ -57,6 +57,14 @@ describe("matchRoutePlaylist", () => {
     mockedGetGameModeId.mockReturnValue("blitz");
     const match = matchRoutePlaylist("/play");
     expect(match.key).toBe("play:blitz");
+    expect(match.mode).toBe("shuffle");
+    expect(match.tracks).toEqual([
+      "music.monophonic_mixtape_09",
+      "music.monophonic_mixtape_10",
+      "music.monophonic_mixtape_11",
+      "music.monophonic_mixtape_12",
+      "music.monophonic_mixtape_13",
+    ]);
   });
 
   it("falls back to main play playlist when not in blitz", () => {
