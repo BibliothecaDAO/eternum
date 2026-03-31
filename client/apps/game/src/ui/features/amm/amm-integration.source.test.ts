@@ -156,6 +156,33 @@ describe("AMM feature wiring", () => {
     expect(dashboardSource).toContain("lg:overflow-hidden");
   });
 
+  it("widens the desktop pool rail and keeps its column aligned with the action stack", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(dashboardSource).toContain("lg:w-[375px]");
+    expect(dashboardSource).toContain("lg:grid-cols-[375px_minmax(0,1fr)]");
+  });
+
+  it("gives pool names the full headline row and moves LORDS spot price underneath", () => {
+    const poolRowSource = readSource("src/ui/features/amm/amm-pool-row.tsx");
+
+    expect(poolRowSource).not.toContain("Resource Pool");
+    expect(poolRowSource).toContain("flex min-w-0 flex-col");
+    expect(poolRowSource).toContain("truncate text-xs font-semibold uppercase tracking-[0.14em] text-gold");
+    expect(poolRowSource).toContain("text-xs font-semibold uppercase tracking-[0.14em] text-gold/80");
+    expect(poolRowSource).toContain("text-right text-[10px] uppercase tracking-[0.14em] text-gold/55");
+  });
+
+  it("removes redundant swap panel copy and lets the metric cards fill the row", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+    const swapSource = readSource("src/ui/features/amm/amm-swap.tsx");
+
+    expect(dashboardSource).not.toContain("activeAsset ? `${activeAsset.displayName} / LORDS`");
+    expect(swapSource).not.toContain(">Route<");
+    expect(swapSource).toContain("lg:grid-cols-4");
+    expect(swapSource).not.toContain("xl:grid-cols-5");
+  });
+
   it("adds reserve cards and a voyager fee link to the selected pool summary", () => {
     const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
 
