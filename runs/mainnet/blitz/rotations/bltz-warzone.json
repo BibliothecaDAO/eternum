@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23787028030-1.json",
   "latestLaunchRequestId": "23787028030-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-31T08:07:55.127Z",
+  "updatedAt": "2026-03-31T08:08:01.105Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-31T08:22:46.247Z",
-    "lastEvaluatedAt": "2026-03-31T08:07:46.247Z"
+    "nextEvaluationAt": "2026-03-31T08:23:01.105Z",
+    "lastEvaluatedAt": "2026-03-31T08:08:01.105Z"
   },
   "steps": [
     {
@@ -83,10 +83,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-03-31T08:07:55.127Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-03-31T08:07:55.127Z",
+      "finishedAt": "2026-03-31T08:08:01.105Z"
     },
     {
       "id": "sync-paymaster",
@@ -7200,13 +7201,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23787028030-1",
-    "workflowRunId": 23787028030,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-03-31T08:07:55.127Z",
-    "expiresAt": "2026-03-31T08:52:55.127Z"
   }
 }
