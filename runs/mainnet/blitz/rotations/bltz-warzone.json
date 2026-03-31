@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23800629708-1",
   "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-31T14:30:26.243Z",
+  "updatedAt": "2026-03-31T14:32:21.550Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -6414,7 +6414,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 34,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer tier updated basic -> legendary for bltz-warzone-34",
         "status": "succeeded",
         "configSteps": [
           {
@@ -6584,11 +6584,11 @@
           "worldConfigTxHash": "0x3eb709510889912b67f798aa5dabb76d3ee3cd501193fe28ea85490b62db44a",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "legendary",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-34/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-30T14:15:14.881Z",
+          "lastIndexerDescribeAt": "2026-03-31T14:32:21.550Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -6598,9 +6598,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-03-31T14:30:24.506Z"
+          "paymasterSynced": true
         }
       },
       {
