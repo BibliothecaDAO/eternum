@@ -1,11 +1,16 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { BootLoaderShell, useBootDocumentState } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
-import { getSceneWarmupProgress, resolveEntryOverlayPhase, waitForWorldmapSceneReady } from "./game-loading-overlay.utils";
+import {
+  getSceneWarmupProgress,
+  resolveEntryOverlayPhase,
+  waitForWorldmapSceneReady,
+} from "./game-loading-overlay.utils";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const SAFETY_TIMEOUT_MS = 15_000;
@@ -45,6 +50,10 @@ const isFiniteWorldMapPosition = (
  */
 export const GameLoadingOverlay = () => {
   useBootDocumentState("app-loading");
+
+  useEffect(() => {
+    markGameEntryMilestone("overlay-mounted");
+  }, []);
 
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const isSpectating = useUIStore((state) => state.isSpectating);
@@ -96,6 +105,7 @@ export const GameLoadingOverlay = () => {
       }
 
       hasQueuedWorldMapReady.current = true;
+      markGameEntryMilestone("overlay-ready");
       worldMapReadyTimeoutId.current = window.setTimeout(() => {
         worldMapReadyTimeoutId.current = null;
         setIsReady(true);
@@ -128,6 +138,7 @@ export const GameLoadingOverlay = () => {
     if (playerStructures.length === 0) return;
 
     hasStartedPlayerFlow.current = true;
+    markGameEntryMilestone("player-structures-synced");
 
     const first = playerStructures[0];
     const setStructureEntityId = useUIStore.getState().setStructureEntityId;
@@ -137,6 +148,7 @@ export const GameLoadingOverlay = () => {
     });
 
     const url = `/play/map?col=${targetWorldMapPosition.col}&row=${targetWorldMapPosition.row}`;
+    markGameEntryMilestone("worldmap-navigation-started");
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
   }, [playerStructures, isOnWorldMapRoute, isSpectating, navigate, targetWorldMapPosition]);
@@ -163,6 +175,7 @@ export const GameLoadingOverlay = () => {
       }
 
       hasSeenWorldmapReady.current = true;
+      markGameEntryMilestone("worldmap-scene-ready");
 
       if (hasSeenMapLoading.current && !mapLoading) {
         markWorldMapReady(0);
@@ -193,6 +206,7 @@ export const GameLoadingOverlay = () => {
     }
 
     if (hasSeenMapLoading.current && !mapLoading && hasSeenWorldmapReady.current) {
+      markGameEntryMilestone("worldmap-fetch-completed");
       markWorldMapReady(0);
     }
   }, [isSpectating, mapLoading, markWorldMapReady]);

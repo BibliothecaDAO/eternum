@@ -27,6 +27,7 @@ import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { NoAccountModal } from "../ui/layouts/no-account-modal";
+import { markGameEntryMilestone, recordGameEntryDuration } from "../ui/layouts/game-entry-timeline";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { initializeGameRenderer } from "./game-renderer";
 
@@ -174,6 +175,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   const toriiUrl = chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
   setSqlApiBaseUrl(`${toriiUrl}/sql`);
 
+  markGameEntryMilestone("setup-started");
   const setupResult = await setup(
     { ...dojoConfig },
     {
@@ -195,9 +197,14 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
       },
     },
   );
+  markGameEntryMilestone("setup-completed");
   console.log("[DOJO SETUP COMPLETED]");
 
+  const initialSyncStartedAt = performance.now();
+  markGameEntryMilestone("initial-sync-started");
   await initialSync(setupResult, uiStore, syncingStore.setInitialSyncProgress);
+  markGameEntryMilestone("initial-sync-completed");
+  recordGameEntryDuration("initial-sync", performance.now() - initialSyncStartedAt);
 
   console.log("[INITIAL SYNC COMPLETED]");
 

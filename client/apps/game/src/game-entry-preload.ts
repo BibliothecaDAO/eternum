@@ -29,7 +29,22 @@ export const createPlayEntryRoutePrimer = ({
 
 export const createPlayEntryAssetPrimer = ({ prefetchPlayAssets }: { prefetchPlayAssets: () => void }) => {
   return () => {
-    prefetchPlayAssets();
+    const idleCallback = (
+      globalThis as typeof globalThis & {
+        requestIdleCallback?: (fn: () => void) => number;
+      }
+    ).requestIdleCallback;
+
+    if (typeof idleCallback === "function") {
+      idleCallback(() => {
+        prefetchPlayAssets();
+      });
+      return;
+    }
+
+    globalThis.setTimeout(() => {
+      prefetchPlayAssets();
+    }, 0);
   };
 };
 
@@ -45,4 +60,8 @@ export const preloadGameRouteModule = (): Promise<GameRouteModule> => {
 
 export const primePlayEntryRoute = createPlayEntryRoutePrimer({
   preloadGameRouteModule,
+});
+
+export const primePlayEntryAssets = createPlayEntryAssetPrimer({
+  prefetchPlayAssets,
 });

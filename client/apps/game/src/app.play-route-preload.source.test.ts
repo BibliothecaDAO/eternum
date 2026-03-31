@@ -12,7 +12,7 @@ describe("App play route preload wiring", () => {
     const source = readSource("src/app.tsx");
 
     expect(source).toContain("preloadGameRouteModule");
-    expect(source).toContain("lazy(() => preloadGameRouteModule().then");
+    expect(source).toContain("lazy(preloadGameRouteModule)");
     expect(source).not.toContain("<LoadingScreen prefetchPlayAssets />");
   });
 });

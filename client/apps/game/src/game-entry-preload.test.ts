@@ -23,15 +23,17 @@ describe("createPlayEntryRoutePrimer", () => {
 });
 
 describe("createPlayEntryAssetPrimer", () => {
-  it("starts the play asset prefetch independently of route preloading", () => {
-    const preloadGameRouteModule = vi.fn(() => Promise.resolve());
+  it("schedules the play asset prefetch independently of route preloading", async () => {
+    vi.useFakeTimers();
     const prefetchPlayAssets = vi.fn();
 
     createPlayEntryAssetPrimer({
       prefetchPlayAssets,
     })();
 
+    expect(prefetchPlayAssets).not.toHaveBeenCalled();
+    await vi.runAllTimersAsync();
     expect(prefetchPlayAssets).toHaveBeenCalledTimes(1);
-    expect(preloadGameRouteModule).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

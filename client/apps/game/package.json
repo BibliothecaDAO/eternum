@@ -26,11 +26,6 @@
     "test:ui": "vitest --ui",
     "test:watch": "vitest"
   },
-  "knip": {
-    "ignoreFiles": [
-      "src/game-route.tsx"
-    ]
-  },
   "dependencies": {
     "@bibliothecadao/ammv2-sdk": "workspace:*",
     "@bibliothecadao/dojo": "workspace:*",

@@ -16,7 +16,7 @@ import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 
 // Lazy load the entire game route to avoid loading heavy deps (World, Dojo, Three.js, etc.) on landing
-const LazyGameRoute = lazy(() => preloadGameRouteModule().then((module) => ({ default: module.default })));
+const LazyGameRoute = lazy(preloadGameRouteModule);
 
 const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
 const FactoryV2Page = lazy(() =>

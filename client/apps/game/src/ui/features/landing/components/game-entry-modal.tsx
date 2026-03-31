@@ -49,7 +49,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
-import { prefetchPlayAssets } from "@/ui/utils/prefetch-play-assets";
+import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -69,6 +69,7 @@ import {
   SettlementResourceBadges,
   resolvePlannerResourceLabel as resolveResourceLabel,
 } from "./settlement-resource-badges";
+import { primePlayEntryAssets } from "@/game-entry-preload";
 import {
   buildPlannerRealmSelectionDetails,
   resolvePlannerOwnerLabel,
@@ -4078,16 +4079,21 @@ export const GameEntryModal = ({
 
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
+        markGameEntryMilestone("world-selection-started");
         updateTask("world", "running");
         await applyWorldSelection({ name: worldName, chain }, chain);
         updateTask("world", "complete");
+        markGameEntryMilestone("world-selection-completed");
         debugLog(worldName, "World selection complete");
-        prefetchPlayAssets();
 
         // Start bootstrap
         debugLog(worldName, "Starting game bootstrap...");
         updateTask("manifest", "running");
+        markGameEntryMilestone("bootstrap-started");
+        markGameEntryMilestone("asset-prefetch-scheduled");
+        primePlayEntryAssets();
         const result = await bootstrapGame();
+        markGameEntryMilestone("bootstrap-completed");
         debugLog(worldName, "Bootstrap complete, got setupResult:", !!result);
 
         // After bootstrap patches the manifest with the selected world's
@@ -4096,16 +4102,21 @@ export const GameEntryModal = ({
         // policies and re-probes to restore the user's account.
         const connector = useAccountStore.getState().connector;
         if (connector) {
+          markGameEntryMilestone("session-policies-refresh-started");
           const updated = await refreshSessionPolicies(connector);
+          markGameEntryMilestone("session-policies-refresh-completed");
           if (updated) {
             debugLog(worldName, "Session policies refreshed for new world");
           }
+        } else {
+          markGameEntryMilestone("session-policies-refresh-skipped");
         }
 
         // Mark all tasks complete
         setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));
         setSetupResult(result);
         setBootstrapStatus("ready");
+        markGameEntryMilestone("entry-ready");
         debugLog(worldName, "Bootstrap status set to ready");
       } catch (error) {
         debugLog(worldName, "Bootstrap failed:", error);
@@ -4412,6 +4423,7 @@ export const GameEntryModal = ({
   const handleEnterGame = useCallback(() => {
     const uiStore = useUIStore.getState();
     uiStore.setShowBlankOverlay(true);
+    markGameEntryMilestone("enter-game-started");
 
     if (isSpectateMode) {
       const directEntryTarget = resolveGameEntryTarget({

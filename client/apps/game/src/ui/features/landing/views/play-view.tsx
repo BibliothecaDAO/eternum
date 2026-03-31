@@ -28,6 +28,7 @@ import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { primePlayEntryRoute } from "@/game-entry-preload";
+import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
 import { GameReviewModal } from "../components/game-review-modal";
@@ -819,6 +820,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const setModal = useUIStore((state) => state.setModal);
 
   const openGameEntryModal = useCallback((selection: WorldSelection, intent: "play" | "settle") => {
+    startGameEntryTimeline();
     primePlayEntryRoute();
     setSelectedWorld(selection);
     setIsSpectateMode(false);
@@ -860,6 +862,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   const handleSpectate = useCallback((selection: WorldSelection) => {
     // Open game entry modal in spectate mode (no account required)
+    startGameEntryTimeline();
     primePlayEntryRoute();
     setSelectedWorld(selection);
     setIsSpectateMode(true);
@@ -879,6 +882,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
       }
 
       // Open game entry modal in forge mode
+      startGameEntryTimeline();
       primePlayEntryRoute();
       setSelectedWorld(selection);
       setIsSpectateMode(false);

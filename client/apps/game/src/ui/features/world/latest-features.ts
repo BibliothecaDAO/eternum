@@ -10,6 +10,20 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-31",
+    title: "Faster World Selection",
+    description:
+      "Game entry now resolves factory world metadata and Torii profile details in parallel, reducing the time spent waiting on world selection before the world loader can continue.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-31",
+    title: "Game Entry Load Trim",
+    description:
+      "Entering a game now records each load milestone in the browser and defers non-critical world asset prefetch until bootstrap has already started, so the initial handoff spends less time competing with early preload work.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-31",
     title: "Dashboard Settings Crash Fix",
     description:
       "Opening dashboard settings no longer crashes outside the game world, so landing-page audio, graphics, and fullscreen controls now open safely without needing an in-game Dojo context.",

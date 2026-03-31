@@ -104,4 +104,5 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
 };
 
+/** @public Lazy route entry consumed by app-level dynamic imports. */
 export default GameRoute;
