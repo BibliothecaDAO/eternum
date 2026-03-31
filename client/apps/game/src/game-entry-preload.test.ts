@@ -7,7 +7,9 @@ import { createPlayEntryAssetPrimer, createPlayEntryRoutePrimer } from "./game-e
 describe("createPlayEntryRoutePrimer", () => {
   it("schedules the game route preload without touching play assets", async () => {
     vi.useFakeTimers();
-    const preloadGameRouteModule = vi.fn(() => Promise.resolve());
+    const preloadGameRouteModule = vi.fn<() => Promise<typeof import("./game-route")>>(
+      async () => (await import("./game-route")) as typeof import("./game-route"),
+    );
     const prefetchPlayAssets = vi.fn();
 
     createPlayEntryRoutePrimer({
