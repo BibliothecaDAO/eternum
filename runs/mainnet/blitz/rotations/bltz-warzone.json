@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23776364078-1.json",
   "latestLaunchRequestId": "23776364078-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-31T01:42:09.554Z",
+  "updatedAt": "2026-03-31T01:42:10.745Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-31T01:56:54.106Z",
-    "lastEvaluatedAt": "2026-03-31T01:41:54.106Z"
+    "nextEvaluationAt": "2026-03-31T01:57:10.745Z",
+    "lastEvaluatedAt": "2026-03-31T01:42:10.745Z"
   },
   "steps": [
     {
@@ -47,10 +47,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-31T01:41:58.428Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-03-31T01:41:58.428Z",
+      "finishedAt": "2026-03-31T01:42:10.745Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -5833,7 +5834,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 31,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated legendary -> pro for bltz-warzone-31",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -6003,11 +6004,11 @@
           "worldConfigTxHash": "0x5cd8e4713fc20d89dc0d7a5aff75f04aff4cb4a7f74323372636acdef21970e",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "pro",
+          "indexerTier": "legendary",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-31/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-31T01:42:09.554Z",
+          "lastIndexerDescribeAt": "2026-03-30T23:52:04.142Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -6017,7 +6018,9 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true
+          "paymasterSynced": true,
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-03-31T01:40:31.244Z"
         }
       },
       {
@@ -6998,13 +7001,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23776364078-1",
-    "workflowRunId": 23776364078,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-31T01:41:58.428Z",
-    "expiresAt": "2026-03-31T02:26:58.428Z"
   }
 }
