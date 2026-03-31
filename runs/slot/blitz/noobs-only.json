@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "23822234797-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-03-31T22:24:44.872Z",
-  "updatedAt": "2026-03-31T22:25:49.518Z",
+  "updatedAt": "2026-03-31T22:25:58.465Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-03-31T22:25:58.465Z"
     },
     {
       "id": "configure-world",
@@ -68,5 +69,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-noobs-only.json",
     "worldAddress": "0x07f0a0058dc9eda23f0ae79b404835d0d76f51f5ea3165eedf71129ace0185a7",
     "createGameTxHash": "0x2627654e694837a8ba2a31fcaa4f4345af4932f5b26bd4bbb6291c9a5f58fe2"
+  },
+  "activeLease": {
+    "launchRequestId": "23822234797-1",
+    "workflowRunId": 23822234797,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-03-31T22:25:58.465Z",
+    "expiresAt": "2026-03-31T23:10:58.465Z"
   }
 }
