@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "slot.blitz:bltz-snap-420",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-snap-420",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/slot/blitz/bltz-snap-420/23824783702-1.json",
+  "latestLaunchRequestId": "23824783702-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-03-31T23:49:43.867Z",
+  "updatedAt": "2026-03-31T23:49:43.867Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23824783702,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23824783702",
+    "ref": "next",
+    "sha": "77441e6c8f3bd6afc757ec94831622430bc08eab"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {
+    "scheduledStartTime": "2026-04-01T00:00:00.000Z",
+    "durationSeconds": 3600
+  }
+}
