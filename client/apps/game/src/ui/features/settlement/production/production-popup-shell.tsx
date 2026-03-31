@@ -1,6 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 
+const PRODUCTION_POPUP_WIDTH = "min(1320px, calc(100vw - 48px))";
+const PRODUCTION_POPUP_HEIGHT = "calc(100vh - 48px)";
+
 interface ProductionPopupShellProps {
   children: React.ReactNode;
   onClose?: () => void;
@@ -13,13 +16,13 @@ export const ProductionPopupShell = ({ children, onClose }: ProductionPopupShell
 
   return (
     <SecondaryPopup
-      width="min(1320px, calc(100vw - 48px))"
+      width={PRODUCTION_POPUP_WIDTH}
       name="production-modal"
       containerClassName="absolute left-0 top-0"
       className="pointer-events-auto"
     >
       <SecondaryPopup.Head onClose={handleClose}>Production</SecondaryPopup.Head>
-      <SecondaryPopup.Body width="100%" height="min(78vh, 820px)" className="p-4">
+      <SecondaryPopup.Body width="100%" height={PRODUCTION_POPUP_HEIGHT} className="p-4">
         {children}
       </SecondaryPopup.Body>
     </SecondaryPopup>
