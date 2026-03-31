@@ -42,6 +42,7 @@ describe("updateWorldmapZoomBandState", () => {
 
     expect(state.resolvedBand).toBe(CameraView.Medium);
     expect(state.stableBand).toBe(CameraView.Medium);
+    expect(state.isSettled).toBe(false);
   });
 
   it("promotes the resolved band to the stable band only after settle frames", () => {
@@ -61,6 +62,7 @@ describe("updateWorldmapZoomBandState", () => {
       nowMs: 100,
     });
     expect(state.stableBand).toBe(CameraView.Medium);
+    expect(state.isSettled).toBe(false);
 
     state = updateWorldmapZoomBandState(state, {
       actualDistance: 40,
@@ -69,5 +71,21 @@ describe("updateWorldmapZoomBandState", () => {
       nowMs: 116,
     });
     expect(state.stableBand).toBe(CameraView.Far);
+    expect(state.isSettled).toBe(true);
+  });
+
+  it("keeps the band unsettled when idle distance has not met the settle threshold yet", () => {
+    let state = createWorldmapZoomBandState(CameraView.Medium);
+
+    state = updateWorldmapZoomBandState(state, {
+      actualDistance: 33,
+      targetDistance: 40,
+      status: "idle",
+      nowMs: 40,
+    });
+
+    expect(state.resolvedBand).toBe(CameraView.Far);
+    expect(state.stableBand).toBe(CameraView.Medium);
+    expect(state.isSettled).toBe(false);
   });
 });

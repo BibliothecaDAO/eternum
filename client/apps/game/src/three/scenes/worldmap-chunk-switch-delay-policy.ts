@@ -23,6 +23,7 @@ interface WorldmapChunkRefreshScheduleInput {
   existingDeadlineAtMs: number | null;
   nowMs: number;
   requestedDelayMs: number;
+  scheduleMode: WorldmapChunkRefreshScheduleMode;
 }
 
 interface WorldmapChunkRefreshScheduleDecision {
@@ -30,6 +31,8 @@ interface WorldmapChunkRefreshScheduleDecision {
   delayMs: number;
   deadlineAtMs: number;
 }
+
+export type WorldmapChunkRefreshScheduleMode = "coalesce_earliest" | "debounce_trailing";
 
 const WORLDMAP_TRAVERSAL_REFRESH_DEBOUNCE_MS = 32;
 const WORLDMAP_FORCED_DEFAULT_REFRESH_DEBOUNCE_MS = 64;
@@ -70,6 +73,14 @@ export function resolveWorldmapChunkRefreshSchedule(
   const nowMs = Number.isFinite(input.nowMs) ? input.nowMs : 0;
   const requestedDelayMs = Number.isFinite(input.requestedDelayMs) ? Math.max(0, input.requestedDelayMs) : 0;
   const requestedDeadlineAtMs = nowMs + requestedDelayMs;
+
+  if (input.scheduleMode === "debounce_trailing") {
+    return {
+      shouldScheduleTimer: true,
+      delayMs: requestedDelayMs,
+      deadlineAtMs: requestedDeadlineAtMs,
+    };
+  }
 
   if (input.existingDeadlineAtMs !== null && input.existingDeadlineAtMs <= requestedDeadlineAtMs) {
     return {

@@ -39,6 +39,7 @@ export class WorldmapZoomCoordinator {
       minDistance: options.minDistance,
       maxDistance: options.maxDistance,
       status: "idle",
+      isSettled: true,
       activeGestureId: null,
       anchorMode: "screen_center",
       anchorWorldPoint: null,
@@ -74,7 +75,8 @@ export class WorldmapZoomCoordinator {
     this.bandState = {
       resolvedBand: nextBand,
       stableBand: nextBand,
-      settledFrameCount: 0,
+      isSettled: true,
+      settledFrameCount: 2,
       lastZoomMovementAtMs: nowMs,
     };
     this.state = {
@@ -82,6 +84,7 @@ export class WorldmapZoomCoordinator {
       actualDistance: nextDistance,
       targetDistance: nextDistance,
       status: "idle",
+      isSettled: true,
       activeGestureId: null,
       anchorMode: "screen_center",
       anchorWorldPoint: null,
@@ -124,6 +127,7 @@ export class WorldmapZoomCoordinator {
       ...this.state,
       actualDistance: nextDistance,
       status,
+      isSettled: this.bandState.isSettled,
       activeGestureId: status === "idle" ? null : this.state.activeGestureId,
       resolvedBand: this.bandState.resolvedBand,
       stableBand: this.bandState.stableBand,

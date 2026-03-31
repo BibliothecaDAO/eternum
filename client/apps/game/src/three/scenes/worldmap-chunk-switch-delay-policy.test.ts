@@ -73,11 +73,13 @@ describe("shouldDelayWorldmapChunkSwitch", () => {
       existingDeadlineAtMs: 140,
       nowMs: 100,
       requestedDelayMs: 60,
+      scheduleMode: "coalesce_earliest",
     });
     const bringForward = resolveWorldmapChunkRefreshSchedule({
       existingDeadlineAtMs: 180,
       nowMs: 100,
       requestedDelayMs: 20,
+      scheduleMode: "coalesce_earliest",
     });
 
     expect(keepExisting).toEqual({
@@ -89,6 +91,21 @@ describe("shouldDelayWorldmapChunkSwitch", () => {
       shouldScheduleTimer: true,
       delayMs: 20,
       deadlineAtMs: 120,
+    });
+  });
+
+  it("uses trailing-edge scheduling for settled zoom refreshes", () => {
+    const result = resolveWorldmapChunkRefreshSchedule({
+      existingDeadlineAtMs: 140,
+      nowMs: 100,
+      requestedDelayMs: 60,
+      scheduleMode: "debounce_trailing",
+    });
+
+    expect(result).toEqual({
+      shouldScheduleTimer: true,
+      delayMs: 60,
+      deadlineAtMs: 160,
     });
   });
 });

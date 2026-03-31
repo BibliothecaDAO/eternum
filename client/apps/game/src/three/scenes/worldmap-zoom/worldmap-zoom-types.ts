@@ -30,6 +30,7 @@ export interface WorldmapZoomState {
   minDistance: number;
   maxDistance: number;
   status: WorldmapZoomStatus;
+  isSettled: boolean;
   activeGestureId: number | null;
   anchorMode: WorldmapZoomAnchorMode;
   anchorWorldPoint: Vector3 | null;

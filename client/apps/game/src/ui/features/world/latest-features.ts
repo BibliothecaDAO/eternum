@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-03-31",
+    title: "Stable World Map Zoom",
+    description:
+      "World map zoom now waits for the camera to settle before running chunk refresh work, so rapid zooming feels smoother and no longer fights terrain streaming or recovery paths.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-31",
     title: "Agora Layout Tightening",
     description:
       "The Agora now gives pool names more room, aligns the pool rail with the main trading panels, and stretches the swap stats cards across the action panel so the page reads more cleanly while you browse and trade.",

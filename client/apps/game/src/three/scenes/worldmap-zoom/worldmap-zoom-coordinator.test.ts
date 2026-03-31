@@ -91,6 +91,7 @@ describe("WorldmapZoomCoordinator", () => {
     expect(coordinator.getSnapshot()).toMatchObject({
       actualDistance: 20,
       targetDistance: 20,
+      isSettled: true,
       resolvedBand: CameraView.Medium,
       stableBand: CameraView.Medium,
       status: "idle",

@@ -1,14 +1,13 @@
 import type { ZoomRefreshLevel } from "./worldmap-zoom-types";
 
-interface WorldmapZoomRefreshPlannerState {
+export interface WorldmapZoomRefreshPlannerState {
   pendingLevel: ZoomRefreshLevel;
 }
 
 interface PlanWorldmapZoomRefreshInput {
-  distanceChanged: boolean;
-  shouldForceRefresh: boolean;
-  status: "idle" | "zooming";
-  chunkChanged?: boolean;
+  zoomDistanceChanged: boolean;
+  zoomSettled: boolean;
+  stableBandChanged: boolean;
 }
 
 interface PlanWorldmapZoomRefreshResult {
@@ -26,22 +25,15 @@ export function planWorldmapZoomRefresh(
   state: WorldmapZoomRefreshPlannerState,
   input: PlanWorldmapZoomRefreshInput,
 ): PlanWorldmapZoomRefreshResult {
-  if (input.chunkChanged) {
+  if (!input.zoomDistanceChanged) {
     return {
-      immediateLevel: "forced",
-      nextState: createWorldmapZoomRefreshPlannerState(),
-    };
-  }
-
-  if (!input.distanceChanged) {
-    return {
-      immediateLevel: "debounced",
+      immediateLevel: "none",
       nextState: state,
     };
   }
 
-  const requestedLevel = input.shouldForceRefresh ? "forced" : "debounced";
-  if (input.status === "zooming") {
+  const requestedLevel = input.stableBandChanged ? "forced" : "debounced";
+  if (!input.zoomSettled) {
     return {
       immediateLevel: "none",
       nextState: {

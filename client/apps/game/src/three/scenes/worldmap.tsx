@@ -162,10 +162,10 @@ import {
   shouldRunManagerUpdate,
   resolveHydratedChunkRefreshFlushPlan,
   shouldScheduleHydratedChunkRefreshForFetch,
-  shouldForceChunkRefreshForZoomDistanceChange,
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
+import { resolveWorldmapControlsChangeRefreshDecision } from "./worldmap-controls-change-refresh-policy";
 import {
   createWorldmapZoomHardeningConfig,
   evaluateChunkVisibilityAnomaly,
@@ -174,16 +174,14 @@ import {
 } from "./worldmap-zoom-hardening";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
 import { WORLDMAP_STEP_WHEEL_DELTA, normalizeWorldmapWheelDelta } from "./worldmap-zoom/worldmap-zoom-input-normalizer";
-import {
-  createWorldmapZoomRefreshPlannerState,
-  planWorldmapZoomRefresh,
-} from "./worldmap-zoom/worldmap-zoom-refresh-planner";
+import { createWorldmapZoomRefreshPlannerState } from "./worldmap-zoom/worldmap-zoom-refresh-planner";
 import type { WorldmapCameraSnapshot, WorldmapZoomAnchor } from "./worldmap-zoom/worldmap-zoom-types";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import {
   WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS,
   resolveWorldmapChunkRefreshDebounceMs,
   resolveWorldmapChunkRefreshSchedule,
+  type WorldmapChunkRefreshScheduleMode,
   shouldDelayWorldmapChunkSwitch,
 } from "./worldmap-chunk-switch-delay-policy";
 import { classifyWorldmapUploadWork, resolveWorldmapPostCommitWorkAction } from "./worldmap-upload-budget-policy";
@@ -448,6 +446,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly worldmapCameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private readonly worldmapCameraTransitionListeners: Set<(status: WorldmapCameraTransitionStatus) => void> = new Set();
   private lastPublishedStableCameraView = this.zoomCoordinator.getSnapshot().stableBand;
+  private lastZoomRefreshStableBand = this.zoomCoordinator.getSnapshot().stableBand;
   private lastPublishedZoomStatus: WorldmapCameraTransitionStatus = "idle";
   private readonly zoomGroundPlane = new Plane(new Vector3(0, 1, 0), 0);
   private renderChunkSize = this.chunkGeometry.renderSize;
@@ -466,7 +465,6 @@ export default class WorldmapScene extends WarpTravel {
   private chunkRefreshRerunRequested = false;
   private isShortcutArmySelectionInFlight = false;
   private lastControlsCameraDistance: number | null = null;
-  private readonly zoomForceRefreshDistanceThreshold = 0.75;
   private zeroTerrainFrames = 0;
   private lowTerrainFrames = 0;
   private offscreenChunkFrames = 0;
@@ -583,22 +581,19 @@ export default class WorldmapScene extends WarpTravel {
     this.updateCameraTargetHexThrottled?.();
 
     const nextCameraDistance = this.getCurrentCameraDistance();
-    const refreshPlan = planWorldmapZoomRefresh(this.zoomRefreshPlannerState, {
-      distanceChanged:
-        this.lastControlsCameraDistance === null ||
-        Math.abs(this.lastControlsCameraDistance - nextCameraDistance) > 0.01,
-      shouldForceRefresh: shouldForceChunkRefreshForZoomDistanceChange({
-        previousDistance: this.lastControlsCameraDistance,
-        nextDistance: nextCameraDistance,
-        threshold: this.zoomForceRefreshDistanceThreshold,
-      }),
-      status: this.zoomCoordinator.getSnapshot().status,
+    const refreshDecision = resolveWorldmapControlsChangeRefreshDecision({
+      previousCameraDistance: this.lastControlsCameraDistance,
+      nextCameraDistance,
+      zoomSnapshot: this.zoomCoordinator.getSnapshot(),
+      lastZoomRefreshStableBand: this.lastZoomRefreshStableBand,
+      zoomRefreshPlannerState: this.zoomRefreshPlannerState,
     });
-    this.zoomRefreshPlannerState = refreshPlan.nextState;
+    this.zoomRefreshPlannerState = refreshDecision.nextZoomRefreshPlannerState;
+    this.lastZoomRefreshStableBand = refreshDecision.nextLastZoomRefreshStableBand;
     this.lastControlsCameraDistance = nextCameraDistance;
 
-    if (refreshPlan.immediateLevel !== "none") {
-      this.requestChunkRefresh(refreshPlan.immediateLevel === "forced");
+    if (refreshDecision.shouldRequestRefresh) {
+      this.requestChunkRefresh(refreshDecision.refreshLevel === "forced", "default", refreshDecision.scheduleMode);
     }
   };
   private isUrlChangedListenerAttached = false;
@@ -1443,7 +1438,9 @@ export default class WorldmapScene extends WarpTravel {
     this.alignWorldmapCameraToBand(CameraView.Medium);
     this.zoomCoordinator.syncToBand(CameraView.Medium, performance.now());
     this.lastControlsCameraDistance = this.getCurrentCameraDistance();
-    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+    const zoomSnapshot = this.zoomCoordinator.getSnapshot();
+    this.lastZoomRefreshStableBand = zoomSnapshot.stableBand;
+    this.publishWorldmapZoomSnapshot(zoomSnapshot);
   }
 
   private alignWorldmapCameraToBand(view: CameraView): void {
@@ -3020,6 +3017,7 @@ export default class WorldmapScene extends WarpTravel {
     this.offscreenChunkFrames = 0;
     this.zoomRefreshPlannerState = createWorldmapZoomRefreshPlannerState();
     this.lastPublishedStableCameraView = this.zoomCoordinator.getSnapshot().stableBand;
+    this.lastZoomRefreshStableBand = this.zoomCoordinator.getSnapshot().stableBand;
     this.lastPublishedZoomStatus = "idle";
     this.terrainReferenceInstances = 0;
     this.terrainReferenceChunkKey = null;
@@ -5911,7 +5909,11 @@ export default class WorldmapScene extends WarpTravel {
     return this.cameraGroundIntersectionScratch;
   }
 
-  public requestChunkRefresh(force: boolean = false, reason: WorldmapForceRefreshReason = "default"): number {
+  public requestChunkRefresh(
+    force: boolean = false,
+    reason: WorldmapForceRefreshReason = "default",
+    scheduleMode: WorldmapChunkRefreshScheduleMode = "coalesce_earliest",
+  ): number {
     if (this.isSwitchedOff) {
       return this.chunkRefreshRequestToken;
     }
@@ -5939,12 +5941,12 @@ export default class WorldmapScene extends WarpTravel {
 
     if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
       const debounceMs = resolveWorldmapChunkRefreshDebounceMs({ force, reason });
-      this.scheduleLegacyChunkRefresh(debounceMs);
+      this.scheduleLegacyChunkRefresh(debounceMs, scheduleMode);
       return this.chunkRefreshRequestToken;
     }
 
     const debounceMs = resolveWorldmapChunkRefreshDebounceMs({ force, reason });
-    this.scheduleChunkRefreshExecution(debounceMs);
+    this.scheduleChunkRefreshExecution(debounceMs, scheduleMode);
     return this.chunkRefreshRequestToken;
   }
 
@@ -5974,11 +5976,15 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private scheduleLegacyChunkRefresh(requestedDelayMs: number): void {
+  private scheduleLegacyChunkRefresh(
+    requestedDelayMs: number,
+    scheduleMode: WorldmapChunkRefreshScheduleMode = "coalesce_earliest",
+  ): void {
     const scheduleDecision = resolveWorldmapChunkRefreshSchedule({
       existingDeadlineAtMs: this.chunkRefreshDeadlineAtMs,
       nowMs: performance.now(),
       requestedDelayMs,
+      scheduleMode,
     });
     if (!scheduleDecision.shouldScheduleTimer) {
       return;
@@ -6003,11 +6009,15 @@ export default class WorldmapScene extends WarpTravel {
     }, scheduleDecision.delayMs);
   }
 
-  private scheduleChunkRefreshExecution(requestedDelayMs: number): void {
+  private scheduleChunkRefreshExecution(
+    requestedDelayMs: number,
+    scheduleMode: WorldmapChunkRefreshScheduleMode = "coalesce_earliest",
+  ): void {
     const scheduleDecision = resolveWorldmapChunkRefreshSchedule({
       existingDeadlineAtMs: this.chunkRefreshDeadlineAtMs,
       nowMs: performance.now(),
       requestedDelayMs,
+      scheduleMode,
     });
     if (!scheduleDecision.shouldScheduleTimer) {
       return;
@@ -6644,7 +6654,7 @@ export default class WorldmapScene extends WarpTravel {
     this.chestManager.update(deltaTime);
     this.updateCameraTargetHexThrottled?.();
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
-    if (WORLDMAP_ZOOM_HARDENING.terrainSelfHeal) {
+    if (WORLDMAP_ZOOM_HARDENING.terrainSelfHeal && this.zoomCoordinator.getSnapshot().isSettled) {
       this.monitorTerrainVisibilityHealth();
     } else {
       this.zeroTerrainFrames = 0;

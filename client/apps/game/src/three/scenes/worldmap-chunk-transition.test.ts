@@ -28,8 +28,6 @@ import {
   waitForChunkTransitionToSettle,
   resolveHydratedChunkRefreshFlushPlan,
   shouldScheduleHydratedChunkRefreshForFetch,
-  shouldForceChunkRefreshForZoomDistanceChange,
-  resolveControlsChangeChunkRefreshPlan,
   resolveEntityActionPathLookup,
 } from "./worldmap-chunk-transition";
 
@@ -1477,79 +1475,6 @@ describe("resolveHydratedChunkRefreshFlushPlan", () => {
       shouldDefer: false,
       shouldForceRefreshCurrentChunk: false,
       remainingQueuedChunkKeys: ["48,0"],
-    });
-  });
-});
-
-describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
-  it("forces refresh when zoom distance delta reaches the threshold", () => {
-    expect(
-      shouldForceChunkRefreshForZoomDistanceChange({
-        previousDistance: 20,
-        nextDistance: 20.75,
-        threshold: 0.75,
-      }),
-    ).toBe(true);
-  });
-
-  it("does not force refresh for small zoom drift below threshold", () => {
-    expect(
-      shouldForceChunkRefreshForZoomDistanceChange({
-        previousDistance: 20,
-        nextDistance: 20.4,
-        threshold: 0.75,
-      }),
-    ).toBe(false);
-  });
-
-  it("does not force refresh when previous distance is unavailable", () => {
-    expect(
-      shouldForceChunkRefreshForZoomDistanceChange({
-        previousDistance: null,
-        nextDistance: 40,
-        threshold: 0.75,
-      }),
-    ).toBe(false);
-  });
-});
-
-describe("resolveControlsChangeChunkRefreshPlan", () => {
-  it("requests a debounced refresh on camera movement even without large zoom delta", () => {
-    expect(
-      resolveControlsChangeChunkRefreshPlan({
-        previousDistance: 20,
-        nextDistance: 20.2,
-        threshold: 0.75,
-      }),
-    ).toEqual({
-      shouldRequestRefresh: true,
-      shouldForceRefresh: false,
-    });
-  });
-
-  it("requests a forced refresh when zoom delta crosses threshold", () => {
-    expect(
-      resolveControlsChangeChunkRefreshPlan({
-        previousDistance: 20,
-        nextDistance: 21,
-        threshold: 0.75,
-      }),
-    ).toEqual({
-      shouldRequestRefresh: true,
-      shouldForceRefresh: true,
-    });
-  });
-
-  it("skips refresh when distance sample is invalid", () => {
-    expect(
-      resolveControlsChangeChunkRefreshPlan({
-        previousDistance: 20,
-        nextDistance: Number.NaN,
-        threshold: 0.75,
-      }),
-    ).toEqual({
-      shouldRequestRefresh: false,
-      shouldForceRefresh: false,
     });
   });
 });

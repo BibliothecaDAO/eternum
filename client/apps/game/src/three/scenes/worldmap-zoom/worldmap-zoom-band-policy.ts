@@ -4,6 +4,7 @@ import type { WorldmapZoomBand, WorldmapZoomStatus } from "./worldmap-zoom-types
 export interface WorldmapZoomBandState {
   resolvedBand: WorldmapZoomBand;
   stableBand: WorldmapZoomBand;
+  isSettled: boolean;
   settledFrameCount: number;
   lastZoomMovementAtMs: number;
 }
@@ -25,7 +26,8 @@ export function createWorldmapZoomBandState(initialBand: WorldmapZoomBand = Came
   return {
     resolvedBand: initialBand,
     stableBand: initialBand,
-    settledFrameCount: 0,
+    isSettled: true,
+    settledFrameCount: 2,
     lastZoomMovementAtMs: 0,
   };
 }
@@ -51,6 +53,7 @@ export function updateWorldmapZoomBandState(
     return {
       resolvedBand,
       stableBand: state.stableBand,
+      isSettled: false,
       settledFrameCount: 0,
       lastZoomMovementAtMs: input.nowMs,
     };
@@ -58,10 +61,12 @@ export function updateWorldmapZoomBandState(
 
   const hasSettledByTimeout = input.nowMs - state.lastZoomMovementAtMs >= settleTimeoutMs;
   const settledFrameCount = isDistanceSettled || hasSettledByTimeout ? state.settledFrameCount + 1 : 0;
+  const isSettled = settledFrameCount >= settleFrameRequirement;
 
   return {
     resolvedBand,
-    stableBand: settledFrameCount >= settleFrameRequirement ? resolvedBand : state.stableBand,
+    stableBand: isSettled ? resolvedBand : state.stableBand,
+    isSettled,
     settledFrameCount,
     lastZoomMovementAtMs: state.lastZoomMovementAtMs,
   };

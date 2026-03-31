@@ -27,4 +27,21 @@ describe("worldmap refresh scheduler wiring", () => {
     expect(directForceRefreshCalls).toHaveLength(1);
     expect(source).toMatch(/await this\.updateVisibleChunks\(true,\s*\{ reason: "shortcut" \}\)/);
   });
+
+  it("routes controls-change zoom refreshes through the settled refresh decision helper", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(/resolveWorldmapControlsChangeRefreshDecision\(/);
+    expect(source).toMatch(
+      /this\.requestChunkRefresh\(refreshDecision\.refreshLevel === "forced",\s*"default",\s*refreshDecision\.scheduleMode\)/,
+    );
+  });
+
+  it("suppresses terrain self-heal checks until zoom has settled", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(
+      /if \(WORLDMAP_ZOOM_HARDENING\.terrainSelfHeal && this\.zoomCoordinator\.getSnapshot\(\)\.isSettled\)/,
+    );
+  });
 });
