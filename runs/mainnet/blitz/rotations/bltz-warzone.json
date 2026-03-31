@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23789390705-1",
   "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-31T09:08:04.128Z",
+  "updatedAt": "2026-03-31T09:25:10.461Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-31T09:23:04.128Z",
-    "lastEvaluatedAt": "2026-03-31T09:08:04.128Z"
+    "nextEvaluationAt": "2026-03-31T09:40:10.461Z",
+    "lastEvaluatedAt": "2026-03-31T09:25:10.461Z"
   },
   "steps": [
     {
