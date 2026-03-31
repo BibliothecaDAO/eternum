@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23814278042-1.json",
-  "latestLaunchRequestId": "23814278042-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23815041042-1.json",
+  "latestLaunchRequestId": "23815041042-1",
   "currentStepId": null,
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-31T19:15:19.307Z",
+  "updatedAt": "2026-03-31T19:16:55.239Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23814278042,
+    "workflowRunId": 23815041042,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23814278042",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23815041042",
     "ref": "next",
     "sha": "2bd09908adfb9032b771950d4066f854154f971f"
   },
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-31T19:30:19.307Z",
-    "lastEvaluatedAt": "2026-03-31T19:15:19.307Z"
+    "nextEvaluationAt": "2026-03-31T19:31:55.239Z",
+    "lastEvaluatedAt": "2026-03-31T19:16:55.239Z"
   },
   "steps": [
     {
