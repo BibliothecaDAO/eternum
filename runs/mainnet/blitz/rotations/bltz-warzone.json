@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23817411363-1.json",
   "latestLaunchRequestId": "23817411363-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-03-31T20:17:44.033Z",
+  "updatedAt": "2026-03-31T20:20:11.633Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-03-31T20:32:38.544Z",
-    "lastEvaluatedAt": "2026-03-31T20:17:38.544Z"
+    "nextEvaluationAt": "2026-03-31T20:35:11.633Z",
+    "lastEvaluatedAt": "2026-03-31T20:20:11.633Z"
   },
   "steps": [
     {
@@ -47,10 +47,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-03-31T20:17:44.033Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-03-31T20:17:44.033Z",
+      "finishedAt": "2026-03-31T20:20:11.633Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -7579,8 +7580,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 40,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -7590,8 +7591,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-03-31T20:19:46.255Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -7619,7 +7621,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x0609468e1046f572191ae598704e1005b3a3554134854bd09f8719aed6e3ce54",
+          "createGameTxHash": "0x29787e6eb9f41781e66799a0a688cdb22395072ea1710e456f64fbbb5cb83ab"
+        }
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
@@ -7629,13 +7634,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23817411363-1",
-    "workflowRunId": 23817411363,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-03-31T20:17:44.033Z",
-    "expiresAt": "2026-03-31T21:02:44.033Z"
   }
 }
