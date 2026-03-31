@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "23824783702-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-31T23:49:43.867Z",
-  "updatedAt": "2026-03-31T23:51:05.106Z",
+  "updatedAt": "2026-03-31T23:51:08.862Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-03-31T23:51:08.862Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,5 +71,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-snap-420.json",
     "worldAddress": "0x0253869f9388c9ea675076cfda6a3b193ba41402884f6c360c6cb61649187e12",
     "createGameTxHash": "0x17903244c33569776ae9243a0e876673f18436763f30416236678e1dd110709"
+  },
+  "activeLease": {
+    "launchRequestId": "23824783702-1",
+    "workflowRunId": 23824783702,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-03-31T23:51:08.862Z",
+    "expiresAt": "2026-04-01T00:36:08.862Z"
   }
 }
