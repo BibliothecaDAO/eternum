@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "noobs-only",
-    "launchRequestId": "23822234797-1",
+    "gameName": "bltz-snap-420",
+    "launchRequestId": "23824783702-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23822234797,
+    "workflowRunId": 23824783702,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "537af1a9-a525-4ef8-80da-727537c0a3ae"
+    "stepId": "create-world",
+    "leaseId": "f4dec101-87c0-4a93-93b2-7fe6ce8a2823"
   },
-  "acquiredAt": "2026-03-31T22:26:40.182Z",
-  "heartbeatAt": "2026-03-31T22:26:56.280Z",
-  "expiresAt": "2026-03-31T22:26:56.280Z",
-  "releasedAt": "2026-03-31T22:26:56.280Z"
+  "acquiredAt": "2026-03-31T23:49:52.719Z",
+  "heartbeatAt": "2026-03-31T23:49:52.719Z",
+  "expiresAt": "2026-03-31T23:59:52.719Z"
 }
