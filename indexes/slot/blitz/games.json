@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-03-30T06:17:04.551Z",
+  "updatedAt": "2026-03-31T22:24:44.872Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -171,6 +171,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-03-30T06:17:04.551Z"
       }
+    },
+    "noobs-only": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "noobs-only",
+      "path": "runs/slot/blitz/noobs-only.json",
+      "inputPath": "inputs/slot/blitz/noobs-only/23822234797-1.json",
+      "status": "running",
+      "updatedAt": "2026-03-31T22:24:44.872Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-03-31T22:43:00.000Z",
+      "durationSeconds": 432000,
+      "artifacts": {}
     }
   }
 }
