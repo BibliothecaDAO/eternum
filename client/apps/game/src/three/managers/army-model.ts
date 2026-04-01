@@ -29,7 +29,14 @@ import {
   MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
 } from "../constants";
-import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData, SplineMovementData } from "../types/army";
+import {
+  AnimatedInstancedMesh,
+  ArmyInstanceData,
+  ModelData,
+  ModelType,
+  MovementData,
+  SplineMovementData,
+} from "../types/army";
 import type { AnimationVisibilityContext } from "../types/animation";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
@@ -1520,7 +1527,14 @@ export class ArmyModel {
       if (!isBoat) {
         this.tempVector2.y += splineData.floatingHeight;
       }
-      this.updateInstance(entityId, splineData.matrixIndex, this.tempVector2, instanceData.scale, this.dummyObject.rotation, instanceData.color);
+      this.updateInstance(
+        entityId,
+        splineData.matrixIndex,
+        this.tempVector2,
+        instanceData.scale,
+        this.dummyObject.rotation,
+        instanceData.color,
+      );
       this.updateLabelPosition(entityId, this.tempVector2);
       return;
     }
@@ -1529,7 +1543,9 @@ export class ArmyModel {
     const { col, row } = getHexForWorldPosition(instanceData.position);
     const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
     const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
-    splineData.currentSpeedMultiplier += (targetMultiplier - splineData.currentSpeedMultiplier) * Math.min(1, ArmyModel.SPEED_MULTIPLIER_LERP_RATE * deltaTime);
+    splineData.currentSpeedMultiplier +=
+      (targetMultiplier - splineData.currentSpeedMultiplier) *
+      Math.min(1, ArmyModel.SPEED_MULTIPLIER_LERP_RATE * deltaTime);
 
     // Advance journey progress with terrain-adjusted speed
     const progressResult = resolveJourneyProgressUpdate({
@@ -1556,7 +1572,11 @@ export class ArmyModel {
     if (splineData.isSettling) {
       splineData.settlementTimer += deltaTime;
       if (splineData.finalTangent) {
-        const offset = resolveSettlementOffset(splineData.settlementTimer, ArmyModel.SETTLEMENT_DURATION, ArmyModel.OVERSHOOT_DISTANCE);
+        const offset = resolveSettlementOffset(
+          splineData.settlementTimer,
+          ArmyModel.SETTLEMENT_DURATION,
+          ArmyModel.OVERSHOOT_DISTANCE,
+        );
         const endPoint = resolveSplinePosition(splineData.spline, 1, EasingType.Linear);
         instanceData.position.copy(endPoint);
         instanceData.position.x += splineData.finalTangent.x * offset;
@@ -1577,7 +1597,14 @@ export class ArmyModel {
       if (!isBoat) {
         this.tempVector2.y += splineData.floatingHeight;
       }
-      this.updateInstance(entityId, splineData.matrixIndex, this.tempVector2, instanceData.scale, this.dummyObject.rotation, instanceData.color);
+      this.updateInstance(
+        entityId,
+        splineData.matrixIndex,
+        this.tempVector2,
+        instanceData.scale,
+        this.dummyObject.rotation,
+        instanceData.color,
+      );
       this.updateLabelPosition(entityId, this.tempVector2);
       return;
     }

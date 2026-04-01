@@ -53,7 +53,7 @@ export function updateTrailParticle(particle: TrailParticle, deltaTime: number):
 // Full emitter class
 const MAX_PARTICLES = 200;
 
-export class MovementTrailEmitter {
+class MovementTrailEmitter {
   private particles: TrailParticle[] = [];
   private positions: Float32Array;
   private opacities: Float32Array;
