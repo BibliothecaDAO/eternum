@@ -18,29 +18,33 @@ export function buildMovementSpline(waypoints: Vector3[], tension: number = 0.5)
 /**
  * Sample position on spline with whole-journey easing applied.
  * Uses arc-length parameterized getPointAt for uniform speed.
+ * Pass optionalTarget to avoid allocations in hot loops.
  */
 export function resolveSplinePosition(
   spline: CatmullRomCurve3,
   journeyProgress: number,
   easingType: EasingType,
+  optionalTarget?: Vector3,
 ): Vector3 {
   const clamped = Math.max(0, Math.min(1, journeyProgress));
   const easedProgress = applyEasing(clamped, easingType);
-  return spline.getPointAt(easedProgress);
+  return spline.getPointAt(easedProgress, optionalTarget);
 }
 
 /**
  * Get tangent direction at point with easing applied.
  * Uses arc-length parameterized getTangentAt.
+ * Pass optionalTarget to avoid allocations in hot loops.
  */
 export function resolveSplineTangent(
   spline: CatmullRomCurve3,
   journeyProgress: number,
   easingType: EasingType,
+  optionalTarget?: Vector3,
 ): Vector3 {
   const clamped = Math.max(0, Math.min(1, journeyProgress));
   const easedProgress = applyEasing(clamped, easingType);
-  return spline.getTangentAt(easedProgress);
+  return spline.getTangentAt(easedProgress, optionalTarget);
 }
 
 /**
@@ -94,6 +98,13 @@ export function resolveSettlementOffset(timer: number, duration: number, oversho
   return overshootDistance * curve;
 }
 
+// Pre-allocated vectors to avoid GC pressure in per-frame functions
+const _tangent0 = new Vector3();
+const _tangent1 = new Vector3();
+const _cross = new Vector3();
+const _splinePoint = new Vector3();
+const _splineTangent = new Vector3();
+
 /**
  * Compute z-axis bank angle from path curvature at parameter t.
  * Cross product of tangent samples around t determines turn direction;
@@ -101,30 +112,27 @@ export function resolveSettlementOffset(timer: number, duration: number, oversho
  * Result is clamped to [-maxBankRadians, maxBankRadians].
  */
 export function resolvePathBankAngle(spline: CatmullRomCurve3, t: number, maxBankRadians: number): number {
-  const epsilon = 0.01;
+  const epsilon = 0.02;
   const t0 = Math.max(0, t - epsilon);
   const t1 = Math.min(1, t + epsilon);
 
-  const tangent0 = spline.getTangentAt(t0);
-  const tangent1 = spline.getTangentAt(t1);
+  spline.getTangentAt(t0, _tangent0);
+  spline.getTangentAt(t1, _tangent1);
 
-  // Cross product to find turn direction (y component indicates left/right)
-  const cross = new Vector3().crossVectors(tangent0, tangent1);
+  _cross.crossVectors(_tangent0, _tangent1);
 
-  // Magnitude of cross product indicates curvature strength
-  const curvature = cross.length() / (2 * epsilon);
+  const curvature = _cross.length() / (2 * epsilon);
+  const sign = _cross.y >= 0 ? 1 : -1;
 
-  // Sign from y component (positive = banking left, negative = banking right)
-  const sign = cross.y >= 0 ? 1 : -1;
-
-  // Map curvature to bank angle, clamped
-  const bankAngle = sign * Math.min(curvature * 0.5, maxBankRadians);
+  // Softer mapping (0.3 instead of 0.5) to reduce jitter
+  const bankAngle = sign * Math.min(curvature * 0.3, maxBankRadians);
   return Math.max(-maxBankRadians, Math.min(maxBankRadians, bankAngle));
 }
 
 /**
  * Vertical sine wave bob + forward pitch lean during movement.
- * Frequency scales with speed for faster bounce at higher speeds.
+ * Frequency scales gently with speed. Bob is subtle marching rhythm (~1.8 Hz base).
+ * Pitch lean is proportional to speed — no lean when stationary.
  */
 export function resolveRhythmicBob(input: {
   elapsedTime: number;
@@ -132,10 +140,13 @@ export function resolveRhythmicBob(input: {
   amplitude: number;
   baseFrequency: number;
 }): { yOffset: number; pitchAngle: number } {
-  const freq = input.baseFrequency * Math.max(0.5, input.speed);
+  // Gentler frequency scaling: sqrt keeps it from getting frantic at high speeds
+  const freq = input.baseFrequency * Math.sqrt(Math.max(0.25, input.speed));
   const phase = input.elapsedTime * freq * Math.PI * 2;
   const yOffset = Math.sin(phase) * input.amplitude;
-  const pitchAngle = -0.087 + Math.cos(phase) * 0.015;
+  // Forward lean proportional to speed (0 lean at speed=0, ~5° at speed=1.25)
+  const leanBase = -0.07 * Math.min(1, input.speed / 1.25);
+  const pitchAngle = leanBase + Math.cos(phase) * 0.01;
   return { yOffset, pitchAngle };
 }
 

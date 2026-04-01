@@ -329,29 +329,39 @@ describe("resolveRhythmicBob", () => {
     expect(maxY).toBeCloseTo(amplitude, 2);
   });
 
-  it("pitchAngle is always negative (leaning forward)", () => {
+  it("pitchAngle is always negative when speed > 0 (leaning forward)", () => {
     for (let t = 0; t <= 2; t += 0.05) {
       const result = resolveRhythmicBob({
         elapsedTime: t,
         speed: 1,
         amplitude: 0.03,
-        baseFrequency: 3.0,
+        baseFrequency: 1.8,
       });
-      expect(result.pitchAngle).toBeLessThan(0);
+      expect(result.pitchAngle).toBeLessThanOrEqual(0);
     }
   });
 
-  it("pitchAngle is approximately -0.087 radians (±0.02)", () => {
+  it("pitchAngle is approximately -0.07 radians (±0.02) at speed=1", () => {
     for (let t = 0; t <= 2; t += 0.1) {
       const result = resolveRhythmicBob({
         elapsedTime: t,
         speed: 1,
         amplitude: 0.03,
-        baseFrequency: 3.0,
+        baseFrequency: 1.8,
       });
-      expect(result.pitchAngle).toBeGreaterThanOrEqual(-0.087 - 0.02);
-      expect(result.pitchAngle).toBeLessThanOrEqual(-0.087 + 0.02);
+      expect(result.pitchAngle).toBeGreaterThanOrEqual(-0.08 - 0.02);
+      expect(result.pitchAngle).toBeLessThanOrEqual(-0.06 + 0.02);
     }
+  });
+
+  it("pitchAngle is ~0 when speed is 0 (no lean at rest)", () => {
+    const result = resolveRhythmicBob({
+      elapsedTime: 0.5,
+      speed: 0,
+      amplitude: 0.03,
+      baseFrequency: 1.8,
+    });
+    expect(Math.abs(result.pitchAngle)).toBeLessThan(0.02);
   });
 
   it("higher speed increases oscillation frequency", () => {

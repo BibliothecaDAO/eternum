@@ -1496,8 +1496,12 @@ export class ArmyModel {
   private static readonly MAX_BANK_RADIANS = 0.15;
   private static readonly SPEED_MULTIPLIER_LERP_RATE = 5.0;
   private static readonly BOB_AMPLITUDE = 0.03;
-  private static readonly BOB_FREQUENCY = 3.0;
+  private static readonly BOB_FREQUENCY = 1.8;
   private static readonly ARRIVAL_SLAM_DURATION = 0.2;
+  // Pre-allocated vectors for spline sampling (avoid GC pressure)
+  private readonly splinePositionTarget: Vector3 = new Vector3();
+  private readonly splineTangentTarget: Vector3 = new Vector3();
+  private readonly splineEndpointCache: Vector3 = new Vector3();
 
   private updateSplineMovement(
     splineData: SplineMovementData,
@@ -1576,10 +1580,15 @@ export class ArmyModel {
         splineData.settlementTimer = 0;
         splineData.isArrivalSlamming = true;
         splineData.arrivalSlamTimer = 0;
-        splineData.finalTangent = resolveSplineTangent(splineData.spline, 1, EasingType.Linear).normalize();
-        // Snap to endpoint as base
-        const endPoint = resolveSplinePosition(splineData.spline, 1, EasingType.Linear);
-        instanceData.position.copy(endPoint);
+        splineData.finalTangent = resolveSplineTangent(
+          splineData.spline,
+          1,
+          EasingType.Linear,
+          this.splineTangentTarget,
+        ).clone().normalize();
+        // Cache endpoint once for the entire settlement phase
+        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, this.splineEndpointCache);
+        instanceData.position.copy(this.splineEndpointCache);
       }
     }
 
@@ -1604,16 +1613,14 @@ export class ArmyModel {
           ArmyModel.SETTLEMENT_DURATION,
           ArmyModel.OVERSHOOT_DISTANCE,
         );
-        const endPoint = resolveSplinePosition(splineData.spline, 1, EasingType.Linear);
-        instanceData.position.copy(endPoint);
+        // Use cached endpoint — no recomputation
+        instanceData.position.copy(this.splineEndpointCache);
         instanceData.position.x += splineData.finalTangent.x * offset;
         instanceData.position.z += splineData.finalTangent.z * offset;
       }
 
       if (splineData.settlementTimer >= ArmyModel.SETTLEMENT_DURATION) {
-        // Settle to exact endpoint
-        const endPoint = resolveSplinePosition(splineData.spline, 1, EasingType.Linear);
-        instanceData.position.copy(endPoint);
+        instanceData.position.copy(this.splineEndpointCache);
         instanceData.scale.copy(this.normalScale);
         this.splineMovingInstances.delete(entityId);
         this.stopMovement(entityId);
@@ -1637,13 +1644,23 @@ export class ArmyModel {
       return;
     }
 
-    // Sample position from spline with easing
-    const position = resolveSplinePosition(splineData.spline, splineData.journeyProgress, splineData.easingType);
-    instanceData.position.copy(position);
+    // Sample position from spline with easing (pre-allocated target avoids GC)
+    resolveSplinePosition(
+      splineData.spline,
+      splineData.journeyProgress,
+      splineData.easingType,
+      this.splinePositionTarget,
+    );
+    instanceData.position.copy(this.splinePositionTarget);
 
-    // Derive rotation from tangent
-    const tangent = resolveSplineTangent(splineData.spline, splineData.journeyProgress, splineData.easingType);
-    const targetRotation = Math.atan2(tangent.x, tangent.z);
+    // Derive rotation from tangent (pre-allocated target avoids GC)
+    resolveSplineTangent(
+      splineData.spline,
+      splineData.journeyProgress,
+      splineData.easingType,
+      this.splineTangentTarget,
+    );
+    const targetRotation = Math.atan2(this.splineTangentTarget.x, this.splineTangentTarget.z);
 
     // Smooth rotation using existing system
     splineData.currentRotation = resolveRotationUpdate({
