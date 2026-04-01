@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useId } from "react";
 
 const CONTOUR_PATHS = [
   "M-120 88C34 26 138 34 248 82s212 78 347 43 258-118 389-121 245 73 391 70 259-88 419-110 300 30 433 84",
@@ -13,11 +14,13 @@ type ContourMapAnimationProps = {
 };
 
 export const ContourMapAnimation = ({ className }: ContourMapAnimationProps) => {
+  const vignetteId = `${useId()}-boot-loader-vignette`;
+
   return (
     <div className={clsx("boot-loader-contours absolute inset-0 overflow-hidden", className)} aria-hidden="true">
       <svg className="h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
         <defs>
-          <radialGradient id="boot-loader-vignette" cx="50%" cy="48%" r="70%">
+          <radialGradient id={vignetteId} cx="50%" cy="48%" r="70%">
             <stop offset="0%" stopColor="rgba(0,0,0,0)" />
             <stop offset="100%" stopColor="rgba(0,0,0,0.72)" />
           </radialGradient>
@@ -56,7 +59,7 @@ export const ContourMapAnimation = ({ className }: ContourMapAnimationProps) => 
           );
         })}
 
-        <rect x="0" y="0" width="1440" height="900" fill="url(#boot-loader-vignette)" />
+        <rect x="0" y="0" width="1440" height="900" fill={`url(#${vignetteId})`} />
       </svg>
       <div className="boot-loader-grid absolute inset-0" />
     </div>

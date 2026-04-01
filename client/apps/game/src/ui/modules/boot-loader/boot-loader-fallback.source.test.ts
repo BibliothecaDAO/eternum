@@ -15,4 +15,12 @@ describe("Boot loader crash fallback wiring", () => {
     expect(fallbackSource).toContain('useBootDocumentState("app-ready")');
     expect(mainSource).toContain("<BootLoaderCrashFallback />");
   });
+
+  it("wraps the non-Sentry render path with the crash fallback", () => {
+    const mainSource = readSource("src/main.tsx");
+
+    expect(mainSource).toMatch(
+      /:\s*\(\s*<Sentry\.ErrorBoundary fallback={<BootLoaderCrashFallback \/>}>\s*<App \/>\s*<\/Sentry\.ErrorBoundary>\s*\)/s,
+    );
+  });
 });

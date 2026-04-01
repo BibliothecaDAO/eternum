@@ -60,7 +60,9 @@ root.render(
         <App />
       </Sentry.ErrorBoundary>
     ) : (
-      <App />
+      <Sentry.ErrorBoundary fallback={<BootLoaderCrashFallback />}>
+        <App />
+      </Sentry.ErrorBoundary>
     )}
   </React.StrictMode>,
 );
