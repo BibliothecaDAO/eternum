@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-worlds",
-  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23865274423-1.json",
-  "latestLaunchRequestId": "23865274423-1",
-  "currentStepId": "create-worlds",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23865275865-1.json",
+  "latestLaunchRequestId": "23865275865-1",
+  "currentStepId": "configure-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-04-01T18:52:04.994Z",
+  "updatedAt": "2026-04-01T18:52:09.080Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23865274423,
+    "workflowRunId": 23865275865,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23865274423",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23865275865",
     "ref": "next",
     "sha": "77441e6c8f3bd6afc757ec94831622430bc08eab"
   },
@@ -59,9 +59,10 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-01T18:52:09.080Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -7827,5 +7828,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23865275865-1",
+    "workflowRunId": 23865275865,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-worlds",
+    "acquiredAt": "2026-04-01T18:52:09.080Z",
+    "expiresAt": "2026-04-01T19:37:09.080Z"
   }
 }
