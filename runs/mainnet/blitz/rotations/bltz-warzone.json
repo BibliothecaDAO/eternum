@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23817411363-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-04-01T12:40:23.312Z",
+  "updatedAt": "2026-04-01T12:41:54.757Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -7194,7 +7194,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 38,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated legendary -> pro for bltz-warzone-38",
         "status": "succeeded",
         "configSteps": [
           {
@@ -7364,11 +7364,11 @@
           "worldConfigTxHash": "0x299824a25896de9e91efb053dcf1860e1af2963bd203f5a8efd9b718c16bc8d",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "legendary",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-38/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-04-01T10:32:04.948Z",
+          "lastIndexerDescribeAt": "2026-04-01T12:41:54.757Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -7378,9 +7378,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-04-01T12:40:21.759Z"
+          "paymasterSynced": true
         }
       },
       {
