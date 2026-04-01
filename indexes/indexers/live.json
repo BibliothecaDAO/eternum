@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-01T01:42:06.719Z",
+  "updatedAt": "2026-04-01T01:56:52.742Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -839,13 +839,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-quick-708/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-04-01T00:02:34.826Z"
+        "describedAt": "2026-04-01T01:56:52.742Z"
       },
-      "updatedAt": "2026-04-01T00:02:34.827Z"
+      "updatedAt": "2026-04-01T01:56:52.742Z"
     },
     "bltz-warzone-36": {
       "gameName": "bltz-warzone-36",
