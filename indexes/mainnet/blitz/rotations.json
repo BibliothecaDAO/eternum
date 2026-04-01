@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-04-01T21:56:14.882Z",
+  "updatedAt": "2026-04-01T21:56:20.446Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -11,10 +11,11 @@
       "path": "runs/mainnet/blitz/rotations/bltz-warzone.json",
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23865432477-2.json",
       "status": "running",
-      "updatedAt": "2026-04-01T21:56:14.882Z",
+      "updatedAt": "2026-04-01T21:56:20.446Z",
       "workflowRef": "next",
-      "currentStepId": "create-series",
-      "hasRunningStep": false,
+      "currentStepId": "create-worlds",
+      "activeLeaseExpiresAt": "2026-04-01T22:41:20.446Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-series",
       "autoRetry": {
