@@ -12,9 +12,9 @@
   "requestedLaunchStep": "configure-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23865275865-1.json",
   "latestLaunchRequestId": "23865275865-1",
-  "currentStepId": "configure-worlds",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-04-01T18:52:09.080Z",
+  "updatedAt": "2026-04-01T18:52:29.094Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-01T19:07:04.994Z",
-    "lastEvaluatedAt": "2026-04-01T18:52:04.994Z"
+    "nextEvaluationAt": "2026-04-01T19:07:29.094Z",
+    "lastEvaluatedAt": "2026-04-01T18:52:29.094Z"
   },
   "steps": [
     {
@@ -59,9 +59,9 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
+      "latestEvent": "Waiting to run",
       "startedAt": "2026-04-01T18:52:09.080Z"
     },
     {
@@ -7577,9 +7577,126 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 40,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "village-spawn-resources",
+            "description": "Set discoverable village spawn resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -7600,8 +7717,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-04-01T18:52:24.410Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -7621,7 +7739,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x0609468e1046f572191ae598704e1005b3a3554134854bd09f8719aed6e3ce54",
-          "createGameTxHash": "0x29787e6eb9f41781e66799a0a688cdb22395072ea1710e456f64fbbb5cb83ab"
+          "createGameTxHash": "0x29787e6eb9f41781e66799a0a688cdb22395072ea1710e456f64fbbb5cb83ab",
+          "configureTxHash": "0x55d7f416bba3eb87967fd8dae72e90144a4e4c80e511e8b72f40c8a71c3135f",
+          "worldConfigTxHash": "0x55d7f416bba3eb87967fd8dae72e90144a4e4c80e511e8b72f40c8a71c3135f"
         }
       },
       {
@@ -7828,13 +7948,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-warzone.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-03-24T15:43:47.901Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23865275865-1",
-    "workflowRunId": 23865275865,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-worlds",
-    "acquiredAt": "2026-04-01T18:52:09.080Z",
-    "expiresAt": "2026-04-01T19:37:09.080Z"
   }
 }
