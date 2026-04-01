@@ -2,21 +2,21 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-04-01T17:41:57.079Z",
+  "updatedAt": "2026-04-01T18:52:03.609Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
       "environment": "mainnet.blitz",
       "rotationName": "bltz-warzone",
       "path": "runs/mainnet/blitz/rotations/bltz-warzone.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23817411363-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23865275865-1.json",
       "status": "running",
-      "updatedAt": "2026-04-01T17:41:57.079Z",
+      "updatedAt": "2026-04-01T18:52:03.609Z",
       "workflowRef": "next",
-      "currentStepId": "configure-worlds",
+      "currentStepId": "create-worlds",
       "hasRunningStep": false,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "configure-worlds",
+      "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 5,
@@ -24,8 +24,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-03-31T20:35:27.323Z",
-        "lastEvaluatedAt": "2026-03-31T20:20:27.323Z"
+        "nextEvaluationAt": "2026-04-01T19:07:03.609Z",
+        "lastEvaluatedAt": "2026-04-01T18:52:03.609Z"
       },
       "games": [
         {
@@ -423,6 +423,30 @@
         {
           "gameName": "bltz-warzone-40",
           "startTime": 1775077200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-warzone-41",
+          "startTime": 1775095200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-warzone-42",
+          "startTime": 1775113200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-warzone-43",
+          "startTime": 1775131200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-warzone-44",
+          "startTime": 1775149200,
           "durationSeconds": 3600,
           "artifacts": {}
         }
