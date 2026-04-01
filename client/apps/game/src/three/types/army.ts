@@ -32,14 +32,18 @@ export interface SplineMovementData {
   floatingHeight: number;
   currentRotation: number;
   easingType: EasingType;
-  // Phase 2: Anticipation + Overshoot
+  // Anticipation + Overshoot
   anticipationTimer: number;
   settlementTimer: number;
   isAnticipating: boolean;
   isSettling: boolean;
   finalTangent: Vector3 | null;
-  // Phase 5: Terrain speed
+  // Terrain speed
   currentSpeedMultiplier: number;
+  // Rhythmic bob + arrival slam
+  elapsedTime: number;
+  arrivalSlamTimer: number;
+  isArrivalSlamming: boolean;
 }
 
 export interface ArmyInstanceData {

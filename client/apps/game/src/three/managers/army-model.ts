@@ -61,6 +61,8 @@ import {
   resolveSettlementOffset,
   resolvePathBankAngle,
   resolveTerrainSpeedMultiplier,
+  resolveRhythmicBob,
+  resolveArrivalSlamScale,
 } from "../utils/spline-path";
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
@@ -1320,6 +1322,9 @@ export class ArmyModel {
         isSettling: false,
         finalTangent: null,
         currentSpeedMultiplier: 1.0,
+        elapsedTime: 0,
+        arrivalSlamTimer: 0,
+        isArrivalSlamming: false,
       });
     }
   }
@@ -1490,6 +1495,9 @@ export class ArmyModel {
   private static readonly OVERSHOOT_DISTANCE = 0.05;
   private static readonly MAX_BANK_RADIANS = 0.15;
   private static readonly SPEED_MULTIPLIER_LERP_RATE = 5.0;
+  private static readonly BOB_AMPLITUDE = 0.03;
+  private static readonly BOB_FREQUENCY = 3.0;
+  private static readonly ARRIVAL_SLAM_DURATION = 0.2;
 
   private updateSplineMovement(
     splineData: SplineMovementData,
@@ -1501,6 +1509,9 @@ export class ArmyModel {
     const modelType = this.entityModelMap.get(entityId);
     const isBoat = modelType === ModelType.Boat;
 
+    // Track elapsed time for rhythmic bob
+    splineData.elapsedTime += deltaTime;
+
     // Float up (same as existing)
     if (!isBoat) {
       splineData.floatingHeight = Math.min(
@@ -1511,7 +1522,7 @@ export class ArmyModel {
       movement.floatingHeight = splineData.floatingHeight;
     }
 
-    // Phase 2: Anticipation — squash before launch
+    // Anticipation — squash before launch
     if (splineData.isAnticipating) {
       splineData.anticipationTimer += deltaTime;
       const scale = resolveAnticipationScale(splineData.anticipationTimer, ArmyModel.ANTICIPATION_DURATION);
@@ -1539,7 +1550,7 @@ export class ArmyModel {
       return;
     }
 
-    // Phase 5: Terrain speed variation — sample biome and lerp multiplier
+    // Terrain speed variation — sample biome and lerp multiplier
     const { col, row } = getHexForWorldPosition(instanceData.position);
     const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
     const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
@@ -1547,20 +1558,24 @@ export class ArmyModel {
       (targetMultiplier - splineData.currentSpeedMultiplier) *
       Math.min(1, ArmyModel.SPEED_MULTIPLIER_LERP_RATE * deltaTime);
 
+    const currentSpeed = this.MOVEMENT_SPEED * splineData.currentSpeedMultiplier;
+
     // Advance journey progress with terrain-adjusted speed
     const progressResult = resolveJourneyProgressUpdate({
       currentProgress: splineData.journeyProgress,
       totalLength: splineData.totalLength,
-      speed: this.MOVEMENT_SPEED * splineData.currentSpeedMultiplier,
+      speed: currentSpeed,
       deltaTime,
     });
     splineData.journeyProgress = progressResult.nextProgress;
 
     if (progressResult.isComplete) {
-      // Phase 2: Begin settlement overshoot instead of stopping immediately
+      // Begin settlement overshoot + arrival slam instead of stopping immediately
       if (!splineData.isSettling) {
         splineData.isSettling = true;
         splineData.settlementTimer = 0;
+        splineData.isArrivalSlamming = true;
+        splineData.arrivalSlamTimer = 0;
         splineData.finalTangent = resolveSplineTangent(splineData.spline, 1, EasingType.Linear).normalize();
         // Snap to endpoint as base
         const endPoint = resolveSplinePosition(splineData.spline, 1, EasingType.Linear);
@@ -1568,9 +1583,21 @@ export class ArmyModel {
       }
     }
 
-    // Phase 2: Settlement overshoot animation
+    // Settlement overshoot + arrival slam animation
     if (splineData.isSettling) {
       splineData.settlementTimer += deltaTime;
+
+      // Arrival slam scale punch
+      if (splineData.isArrivalSlamming) {
+        splineData.arrivalSlamTimer += deltaTime;
+        const slamScale = resolveArrivalSlamScale(splineData.arrivalSlamTimer, ArmyModel.ARRIVAL_SLAM_DURATION);
+        instanceData.scale.set(slamScale.x, slamScale.y, slamScale.z);
+        if (splineData.arrivalSlamTimer >= ArmyModel.ARRIVAL_SLAM_DURATION) {
+          splineData.isArrivalSlamming = false;
+          instanceData.scale.copy(this.normalScale);
+        }
+      }
+
       if (splineData.finalTangent) {
         const offset = resolveSettlementOffset(
           splineData.settlementTimer,
@@ -1587,6 +1614,7 @@ export class ArmyModel {
         // Settle to exact endpoint
         const endPoint = resolveSplinePosition(splineData.spline, 1, EasingType.Linear);
         instanceData.position.copy(endPoint);
+        instanceData.scale.copy(this.normalScale);
         this.splineMovingInstances.delete(entityId);
         this.stopMovement(entityId);
         return;
@@ -1625,23 +1653,37 @@ export class ArmyModel {
       deltaTime,
     });
 
-    // Phase 3: Banking into turns
+    // Banking into turns
     const bankAngle = resolvePathBankAngle(
       splineData.spline,
       Math.max(0, Math.min(1, splineData.journeyProgress)),
       ArmyModel.MAX_BANK_RADIANS,
     );
-    this.dummyObject.rotation.set(0, splineData.currentRotation, bankAngle);
+
+    // Rhythmic bob + forward lean (not for boats)
+    let bobYOffset = 0;
+    let pitchAngle = 0;
+    if (!isBoat) {
+      const bob = resolveRhythmicBob({
+        elapsedTime: splineData.elapsedTime,
+        speed: currentSpeed,
+        amplitude: ArmyModel.BOB_AMPLITUDE,
+        baseFrequency: ArmyModel.BOB_FREQUENCY,
+      });
+      bobYOffset = bob.yOffset;
+      pitchAngle = bob.pitchAngle;
+    }
+    this.dummyObject.rotation.set(pitchAngle, splineData.currentRotation, bankAngle);
 
     // Update model type based on current position (biome switching)
     if (instanceData.category && instanceData.tier) {
       this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
     }
 
-    // Apply floating height
+    // Apply floating height + rhythmic bob
     this.tempVector2.copy(instanceData.position);
     if (!isBoat) {
-      this.tempVector2.y += splineData.floatingHeight;
+      this.tempVector2.y += splineData.floatingHeight + bobYOffset;
     }
 
     this.updateInstance(

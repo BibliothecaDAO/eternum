@@ -9,6 +9,9 @@ import {
   resolveSettlementOffset,
   resolvePathBankAngle,
   resolveTerrainSpeedMultiplier,
+  resolveRhythmicBob,
+  resolveArrivalSlamScale,
+  resolveAfterimagePositions,
 } from "./spline-path";
 import { EasingType } from "./easing";
 
@@ -294,5 +297,214 @@ describe("resolveTerrainSpeedMultiplier", () => {
   it("returns 1.0x for generic biomes", () => {
     expect(resolveTerrainSpeedMultiplier("TemperateDeciduousForest")).toBeCloseTo(1.0);
     expect(resolveTerrainSpeedMultiplier("Beach")).toBeCloseTo(1.0);
+  });
+});
+
+describe("resolveRhythmicBob", () => {
+  it("returns yOffset=0 at elapsedTime=0", () => {
+    const result = resolveRhythmicBob({
+      elapsedTime: 0,
+      speed: 1,
+      amplitude: 0.03,
+      baseFrequency: 3.0,
+    });
+    expect(result.yOffset).toBeCloseTo(0);
+  });
+
+  it("yOffset oscillates between -amplitude and +amplitude", () => {
+    const amplitude = 0.03;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let t = 0; t <= 2; t += 0.001) {
+      const result = resolveRhythmicBob({
+        elapsedTime: t,
+        speed: 1,
+        amplitude,
+        baseFrequency: 3.0,
+      });
+      minY = Math.min(minY, result.yOffset);
+      maxY = Math.max(maxY, result.yOffset);
+    }
+    expect(minY).toBeCloseTo(-amplitude, 2);
+    expect(maxY).toBeCloseTo(amplitude, 2);
+  });
+
+  it("pitchAngle is always negative (leaning forward)", () => {
+    for (let t = 0; t <= 2; t += 0.05) {
+      const result = resolveRhythmicBob({
+        elapsedTime: t,
+        speed: 1,
+        amplitude: 0.03,
+        baseFrequency: 3.0,
+      });
+      expect(result.pitchAngle).toBeLessThan(0);
+    }
+  });
+
+  it("pitchAngle is approximately -0.087 radians (±0.02)", () => {
+    for (let t = 0; t <= 2; t += 0.1) {
+      const result = resolveRhythmicBob({
+        elapsedTime: t,
+        speed: 1,
+        amplitude: 0.03,
+        baseFrequency: 3.0,
+      });
+      expect(result.pitchAngle).toBeGreaterThanOrEqual(-0.087 - 0.02);
+      expect(result.pitchAngle).toBeLessThanOrEqual(-0.087 + 0.02);
+    }
+  });
+
+  it("higher speed increases oscillation frequency", () => {
+    const elapsed = 0.1;
+    const slow = resolveRhythmicBob({
+      elapsedTime: elapsed,
+      speed: 1,
+      amplitude: 0.03,
+      baseFrequency: 3.0,
+    });
+    const fast = resolveRhythmicBob({
+      elapsedTime: elapsed,
+      speed: 3,
+      amplitude: 0.03,
+      baseFrequency: 3.0,
+    });
+    // Different speeds produce different yOffset at same time (different frequency)
+    expect(slow.yOffset).not.toBeCloseTo(fast.yOffset, 3);
+  });
+});
+
+describe("resolveArrivalSlamScale", () => {
+  it("at timer=0, scale is approximately 1.0", () => {
+    const scale = resolveArrivalSlamScale(0, 0.3);
+    expect(scale.x).toBeCloseTo(1.0, 1);
+    expect(scale.y).toBeCloseTo(1.0, 1);
+    expect(scale.z).toBeCloseTo(1.0, 1);
+  });
+
+  it("at timer=duration, scale is approximately 1.0", () => {
+    const scale = resolveArrivalSlamScale(0.3, 0.3);
+    expect(scale.x).toBeCloseTo(1.0, 1);
+    expect(scale.y).toBeCloseTo(1.0, 1);
+    expect(scale.z).toBeCloseTo(1.0, 1);
+  });
+
+  it("peak scale exceeds 1.05 somewhere in the middle", () => {
+    let maxScale = 0;
+    for (let t = 0; t <= 0.3; t += 0.001) {
+      const scale = resolveArrivalSlamScale(t, 0.3);
+      maxScale = Math.max(maxScale, scale.x);
+    }
+    expect(maxScale).toBeGreaterThan(1.05);
+  });
+
+  it("scale never exceeds 1.2", () => {
+    for (let t = 0; t <= 0.3; t += 0.001) {
+      const scale = resolveArrivalSlamScale(t, 0.3);
+      expect(scale.x).toBeLessThanOrEqual(1.2);
+    }
+  });
+
+  it("all three axes are always equal", () => {
+    for (let t = 0; t <= 0.3; t += 0.01) {
+      const scale = resolveArrivalSlamScale(t, 0.3);
+      expect(scale.x).toBe(scale.y);
+      expect(scale.y).toBe(scale.z);
+    }
+  });
+});
+
+describe("resolveAfterimagePositions", () => {
+  const waypoints = [
+    new Vector3(0, 0, 0),
+    new Vector3(5, 0, 3),
+    new Vector3(10, 0, 0),
+  ];
+
+  it("returns array with same length as trailOffsets", () => {
+    const spline = buildMovementSpline(waypoints);
+    const result = resolveAfterimagePositions({
+      spline,
+      currentProgress: 0.5,
+      easingType: EasingType.Linear,
+      trailOffsets: [0.02, 0.04, 0.06],
+    });
+    expect(result).toHaveLength(3);
+  });
+
+  it("each position is a valid Vector3", () => {
+    const spline = buildMovementSpline(waypoints);
+    const result = resolveAfterimagePositions({
+      spline,
+      currentProgress: 0.5,
+      easingType: EasingType.Linear,
+      trailOffsets: [0.02, 0.04, 0.06],
+    });
+    for (const ghost of result) {
+      expect(ghost.position).toBeInstanceOf(Vector3);
+      expect(Number.isFinite(ghost.position.x)).toBe(true);
+      expect(Number.isFinite(ghost.position.y)).toBe(true);
+      expect(Number.isFinite(ghost.position.z)).toBe(true);
+    }
+  });
+
+  it("opacity decreases for later indices", () => {
+    const spline = buildMovementSpline(waypoints);
+    const result = resolveAfterimagePositions({
+      spline,
+      currentProgress: 0.5,
+      easingType: EasingType.Linear,
+      trailOffsets: [0.02, 0.04, 0.06],
+    });
+    expect(result[0].opacity).toBeGreaterThan(result[1].opacity);
+    expect(result[1].opacity).toBeGreaterThan(result[2].opacity);
+  });
+
+  it("computes correct opacity values for 3 offsets", () => {
+    const spline = buildMovementSpline(waypoints);
+    const result = resolveAfterimagePositions({
+      spline,
+      currentProgress: 0.5,
+      easingType: EasingType.Linear,
+      trailOffsets: [0.02, 0.04, 0.06],
+    });
+    expect(result[0].opacity).toBeCloseTo(0.4 * (1 - 0 / 3), 5);
+    expect(result[1].opacity).toBeCloseTo(0.4 * (1 - 1 / 3), 5);
+    expect(result[2].opacity).toBeCloseTo(0.4 * (1 - 2 / 3), 5);
+  });
+
+  it("at currentProgress=0, all positions are at the start of the spline", () => {
+    const spline = buildMovementSpline(waypoints);
+    const result = resolveAfterimagePositions({
+      spline,
+      currentProgress: 0,
+      easingType: EasingType.Linear,
+      trailOffsets: [0.02, 0.04, 0.06],
+    });
+    const startPos = spline.getPointAt(0);
+    for (const ghost of result) {
+      expect(ghost.position.x).toBeCloseTo(startPos.x, 2);
+      expect(ghost.position.y).toBeCloseTo(startPos.y, 2);
+      expect(ghost.position.z).toBeCloseTo(startPos.z, 2);
+    }
+  });
+
+  it("positions trail behind (each is closer to spline start)", () => {
+    const spline = buildMovementSpline(waypoints);
+    const currentProgress = 0.5;
+    const result = resolveAfterimagePositions({
+      spline,
+      currentProgress,
+      easingType: EasingType.Linear,
+      trailOffsets: [0.02, 0.04, 0.06],
+    });
+    const currentPos = resolveSplinePosition(spline, currentProgress, EasingType.Linear);
+    const startPos = spline.getPointAt(0);
+
+    // Each ghost should be farther from current position and closer to start
+    for (let i = 0; i < result.length - 1; i++) {
+      const distFromCurrentI = result[i].position.distanceTo(currentPos);
+      const distFromCurrentNext = result[i + 1].position.distanceTo(currentPos);
+      expect(distFromCurrentNext).toBeGreaterThanOrEqual(distFromCurrentI - 0.001);
+    }
   });
 });

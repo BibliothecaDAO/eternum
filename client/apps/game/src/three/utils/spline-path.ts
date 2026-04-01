@@ -73,10 +73,7 @@ export function resolveJourneyProgressUpdate(input: {
  * At timer=0 the model is squashed wide/short; at timer=duration it's normal (1,1,1).
  * Uses smoothstep interpolation for organic feel.
  */
-export function resolveAnticipationScale(
-  timer: number,
-  duration: number,
-): { x: number; y: number; z: number } {
+export function resolveAnticipationScale(timer: number, duration: number): { x: number; y: number; z: number } {
   const t = Math.max(0, Math.min(1, timer / duration));
   // smoothstep: t * t * (3 - 2 * t)
   const eased = t * t * (3 - 2 * t);
@@ -90,11 +87,7 @@ export function resolveAnticipationScale(
  * At timer=0 offset is 0, peaks in the middle, returns to 0 at timer=duration.
  * Uses sin curve modulated by (1-t) for a natural settle.
  */
-export function resolveSettlementOffset(
-  timer: number,
-  duration: number,
-  overshootDistance: number,
-): number {
+export function resolveSettlementOffset(timer: number, duration: number, overshootDistance: number): number {
   const t = Math.max(0, Math.min(1, timer / duration));
   // Overshoot then settle: sin(pi*t) peaks at t=0.5, (1-t) damps it
   const curve = Math.sin(t * Math.PI) * (1 - t);
@@ -107,11 +100,7 @@ export function resolveSettlementOffset(
  * y-component sign gives left/right, magnitude gives curvature strength.
  * Result is clamped to [-maxBankRadians, maxBankRadians].
  */
-export function resolvePathBankAngle(
-  spline: CatmullRomCurve3,
-  t: number,
-  maxBankRadians: number,
-): number {
+export function resolvePathBankAngle(spline: CatmullRomCurve3, t: number, maxBankRadians: number): number {
   const epsilon = 0.01;
   const t0 = Math.max(0, t - epsilon);
   const t1 = Math.min(1, t + epsilon);
@@ -131,6 +120,52 @@ export function resolvePathBankAngle(
   // Map curvature to bank angle, clamped
   const bankAngle = sign * Math.min(curvature * 0.5, maxBankRadians);
   return Math.max(-maxBankRadians, Math.min(maxBankRadians, bankAngle));
+}
+
+/**
+ * Vertical sine wave bob + forward pitch lean during movement.
+ * Frequency scales with speed for faster bounce at higher speeds.
+ */
+export function resolveRhythmicBob(input: {
+  elapsedTime: number;
+  speed: number;
+  amplitude: number;
+  baseFrequency: number;
+}): { yOffset: number; pitchAngle: number } {
+  const freq = input.baseFrequency * Math.max(0.5, input.speed);
+  const phase = input.elapsedTime * freq * Math.PI * 2;
+  const yOffset = Math.sin(phase) * input.amplitude;
+  const pitchAngle = -0.087 + Math.cos(phase) * 0.015;
+  return { yOffset, pitchAngle };
+}
+
+/**
+ * Scale punch on arrival: 1.0 -> 1.15 -> 1.0 over duration.
+ * Uses sin * exponential decay for fast rise, slow settle.
+ */
+export function resolveArrivalSlamScale(timer: number, duration: number): { x: number; y: number; z: number } {
+  const t = Math.max(0, Math.min(1, timer / duration));
+  const punch = Math.sin(t * Math.PI) * Math.exp(-t * 2);
+  const scale = 1.0 + 0.15 * punch;
+  return { x: scale, y: scale, z: scale };
+}
+
+/**
+ * Given a spline, current progress, and easing type, returns trailing ghost
+ * positions at staggered intervals behind the current position.
+ */
+export function resolveAfterimagePositions(input: {
+  spline: CatmullRomCurve3;
+  currentProgress: number;
+  easingType: EasingType;
+  trailOffsets: number[];
+}): { position: Vector3; opacity: number }[] {
+  return input.trailOffsets.map((offset, index) => {
+    const trailT = Math.max(0, input.currentProgress - offset);
+    const position = resolveSplinePosition(input.spline, trailT, input.easingType);
+    const opacity = 0.4 * (1 - index / input.trailOffsets.length);
+    return { position, opacity };
+  });
 }
 
 /**
