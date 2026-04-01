@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23817411363-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-04-01T05:30:20.780Z",
+  "updatedAt": "2026-04-01T05:32:16.091Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -7000,7 +7000,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 37,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer tier updated basic -> legendary for bltz-warzone-37",
         "status": "succeeded",
         "configSteps": [
           {
@@ -7170,11 +7170,11 @@
           "worldConfigTxHash": "0x4e7b56da7ed86ec4425b37e1c7fc8be26d252c511b6b485281c9dfe3d53921f",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "legendary",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-37/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-03-31T05:05:10.259Z",
+          "lastIndexerDescribeAt": "2026-04-01T05:32:16.091Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -7184,9 +7184,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-04-01T05:30:19.278Z"
+          "paymasterSynced": true
         }
       },
       {
