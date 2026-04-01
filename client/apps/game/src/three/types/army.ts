@@ -3,6 +3,7 @@ import {
   Vector3,
   Euler,
   Color,
+  CatmullRomCurve3,
   InstancedMesh,
   Group,
   Mesh,
@@ -10,6 +11,7 @@ import {
   AnimationClip,
   AnimationAction,
 } from "three";
+import { EasingType } from "../utils/easing";
 
 export interface MovementData {
   startPos: Vector3;
@@ -20,6 +22,24 @@ export interface MovementData {
   floatingHeight: number;
   currentRotation: number;
   targetRotation: number;
+}
+
+export interface SplineMovementData {
+  spline: CatmullRomCurve3;
+  totalLength: number;
+  journeyProgress: number;
+  matrixIndex: number;
+  floatingHeight: number;
+  currentRotation: number;
+  easingType: EasingType;
+  // Phase 2: Anticipation + Overshoot
+  anticipationTimer: number;
+  settlementTimer: number;
+  isAnticipating: boolean;
+  isSettling: boolean;
+  finalTangent: Vector3 | null;
+  // Phase 5: Terrain speed
+  currentSpeedMultiplier: number;
 }
 
 export interface ArmyInstanceData {
