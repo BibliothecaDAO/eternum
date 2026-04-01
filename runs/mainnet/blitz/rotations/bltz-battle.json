@@ -1,0 +1,359 @@
+{
+  "version": 1,
+  "kind": "rotation",
+  "runId": "mainnet.blitz:rotation:bltz-battle",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "rotationName": "bltz-battle",
+  "seriesName": "bltz-battle",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23873085575-1.json",
+  "latestLaunchRequestId": "23873085575-1",
+  "currentStepId": "create-series",
+  "createdAt": "2026-04-01T22:05:08.335Z",
+  "updatedAt": "2026-04-01T22:05:08.335Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 23873085575,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23873085575",
+    "ref": "next",
+    "sha": "77441e6c8f3bd6afc757ec94831622430bc08eab"
+  },
+  "autoRetry": {
+    "enabled": true,
+    "intervalMinutes": 15
+  },
+  "evaluation": {
+    "intervalMinutes": 15,
+    "nextEvaluationAt": "2026-04-01T22:20:08.335Z",
+    "lastEvaluatedAt": "2026-04-01T22:05:08.335Z"
+  },
+  "steps": [
+    {
+      "id": "create-series",
+      "title": "Creating series",
+      "status": "pending",
+      "workflowStepName": "Creating series",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-worlds",
+      "title": "Creating games",
+      "status": "pending",
+      "workflowStepName": "Creating games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-indexes",
+      "title": "Waiting for games",
+      "status": "pending",
+      "workflowStepName": "Waiting for games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-worlds",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-roles",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexers",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "sync-paymaster",
+      "title": "Setting up gas coverage",
+      "status": "pending",
+      "workflowStepName": "Setting up gas coverage",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "summary": {
+    "environment": "mainnet.blitz",
+    "chain": "mainnet",
+    "gameType": "blitz",
+    "rotationName": "bltz-battle",
+    "seriesName": "bltz-battle",
+    "firstGameStartTime": 1775098800,
+    "firstGameStartTimeIso": "2026-04-02T03:00:00.000Z",
+    "gameIntervalMinutes": 300,
+    "maxGames": 50,
+    "advanceWindowGames": 5,
+    "evaluationIntervalMinutes": 15,
+    "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+    "factoryAddress": "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
+    "autoRetryEnabled": true,
+    "autoRetryIntervalMinutes": 15,
+    "dryRun": false,
+    "configMode": "batched",
+    "seriesCreated": false,
+    "games": [
+      {
+        "gameName": "bltz-battle-01",
+        "startTime": 1775098800,
+        "startTimeIso": "2026-04-02T03:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 1,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-battle-02",
+        "startTime": 1775116800,
+        "startTimeIso": "2026-04-02T08:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 2,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-battle-03",
+        "startTime": 1775134800,
+        "startTimeIso": "2026-04-02T13:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 3,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-battle-04",
+        "startTime": 1775152800,
+        "startTimeIso": "2026-04-02T18:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 4,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "bltz-battle-05",
+        "startTime": 1775170800,
+        "startTimeIso": "2026-04-02T23:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 5,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      }
+    ],
+    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json"
+  },
+  "artifacts": {
+    "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
+    "seriesCreated": false
+  }
+}
