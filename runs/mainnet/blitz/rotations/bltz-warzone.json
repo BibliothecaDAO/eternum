@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23817411363-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-03-24T15:43:27.776Z",
-  "updatedAt": "2026-04-01T00:32:09.674Z",
+  "updatedAt": "2026-04-01T02:40:20.449Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -6806,7 +6806,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 36,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-warzone-36",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -6990,7 +6990,9 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true
+          "paymasterSynced": true,
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-04-01T02:40:18.848Z"
         }
       },
       {
