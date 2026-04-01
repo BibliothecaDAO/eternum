@@ -122,15 +122,7 @@ describe("pm-sql-api status filter query generation", () => {
       statusText: "Bad Gateway",
       clone() {
         return {
-          headers: {
-            get: () => "application/json; charset=utf-8",
-          },
-          json: async () => ({
-            error: {
-              message: "can't reach deployment: blitz-slot-global-1",
-            },
-          }),
-          text: async () => "",
+          text: async () => JSON.stringify({ error: { message: "can't reach deployment: blitz-slot-global-1" } }),
         };
       },
       headers: {

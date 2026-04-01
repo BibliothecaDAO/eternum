@@ -87,25 +87,26 @@ type JsonRpcErrorResponse = {
 };
 
 async function extractHttpErrorDetails(response: Response): Promise<string | null> {
-  const clonedResponse = response.clone();
-  const contentType = clonedResponse.headers.get("content-type") ?? "";
-
+  let text: string;
   try {
-    if (contentType.includes("application/json")) {
-      const payload = (await clonedResponse.json()) as JsonRpcErrorResponse;
-      const message = payload.error?.message?.trim();
-      if (message) return message;
-    }
-  } catch {
-    // Fall through to text extraction below.
-  }
-
-  try {
-    const text = (await clonedResponse.text()).trim();
-    return text.length > 0 ? text : null;
+    text = (await response.clone().text()).trim();
   } catch {
     return null;
   }
+  if (!text) return null;
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    try {
+      const payload = JSON.parse(text) as JsonRpcErrorResponse;
+      const message = payload.error?.message?.trim();
+      if (message) return message;
+    } catch {
+      // Not valid JSON — fall through to raw text.
+    }
+  }
+
+  return text;
 }
 
 async function fetchWithErrorHandling<T>(url: string, errorMessage: string): Promise<T[]> {
