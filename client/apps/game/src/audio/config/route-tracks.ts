@@ -96,7 +96,13 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     key: "play:blitz",
     priority: 90,
     mode: "shuffle",
-    tracks: ["music.blitz", "music.order_of_anger", "music.order_of_rage", "music.light_through_darkness"],
+    tracks: [
+      "music.monophonic_mixtape_09",
+      "music.monophonic_mixtape_10",
+      "music.monophonic_mixtape_11",
+      "music.monophonic_mixtape_12",
+      "music.monophonic_mixtape_13",
+    ],
     match: (context) => context.modeId === "blitz" && createStartsWithMatcher("/play")(context),
   },
   {

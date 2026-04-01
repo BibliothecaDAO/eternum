@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-01",
+    title: "Production Modal Height Restore",
+    description:
+      "The Production window now grows back to the full game viewport height, so resource controls and per-realm panels stay fully visible instead of being trapped in a cramped scroller.",
+    type: "fix",
+  },
+  {
     date: "2026-03-31",
     title: "Faster World Selection",
     description:
@@ -27,6 +34,13 @@ export const latestFeatures: LatestFeature[] = [
     title: "Dashboard Settings Crash Fix",
     description:
       "Opening dashboard settings no longer crashes outside the game world, so landing-page audio, graphics, and fullscreen controls now open safely without needing an in-game Dojo context.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-31",
+    title: "Agora Layout Tightening",
+    description:
+      "The Agora now gives pool names more room, aligns the pool rail with the main trading panels, and stretches the swap stats cards across the action panel so the page reads more cleanly while you browse and trade.",
     type: "fix",
   },
   {
