@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-04-01T21:57:51.982Z",
+  "updatedAt": "2026-04-01T22:05:08.335Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -54,6 +54,61 @@
         {
           "gameName": "bltz-warzone-05",
           "startTime": 1775167200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        }
+      ]
+    },
+    "bltz-battle": {
+      "kind": "rotation",
+      "environment": "mainnet.blitz",
+      "rotationName": "bltz-battle",
+      "path": "runs/mainnet/blitz/rotations/bltz-battle.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23873085575-1.json",
+      "status": "running",
+      "updatedAt": "2026-04-01T22:05:08.335Z",
+      "workflowRef": "next",
+      "currentStepId": "create-series",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-series",
+      "autoRetry": {
+        "enabled": true,
+        "intervalMinutes": 15
+      },
+      "evaluation": {
+        "intervalMinutes": 15,
+        "nextEvaluationAt": "2026-04-01T22:20:08.335Z",
+        "lastEvaluatedAt": "2026-04-01T22:05:08.335Z"
+      },
+      "games": [
+        {
+          "gameName": "bltz-battle-01",
+          "startTime": 1775098800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-battle-02",
+          "startTime": 1775116800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-battle-03",
+          "startTime": 1775134800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-battle-04",
+          "startTime": 1775152800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-battle-05",
+          "startTime": 1775170800,
           "durationSeconds": 3600,
           "artifacts": {}
         }
