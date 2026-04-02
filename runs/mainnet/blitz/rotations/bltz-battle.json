@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23882362667-1.json",
   "latestLaunchRequestId": "23882362667-1",
-  "currentStepId": null,
+  "currentStepId": "create-indexers",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-02T03:33:07.070Z",
+  "updatedAt": "2026-04-02T03:33:15.987Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -83,9 +83,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-04-02T03:33:15.987Z"
     },
     {
       "id": "sync-paymaster",
@@ -936,5 +937,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23882362667-1",
+    "workflowRunId": 23882362667,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-04-02T03:33:15.987Z",
+    "expiresAt": "2026-04-02T04:18:15.987Z"
   }
 }
