@@ -123,7 +123,7 @@ export class ArmyModel {
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
-  private readonly MOVEMENT_SPEED = 1.25;
+  private readonly MOVEMENT_SPEED = 3.75;
   private readonly FLOAT_HEIGHT = 0.5;
   private readonly FLOAT_TRANSITION_SPEED = 3.0;
   private readonly ROTATION_SPEED = 5.0;
