@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23865432477-2",
   "currentStepId": "create-series",
   "createdAt": "2026-04-01T21:56:14.882Z",
-  "updatedAt": "2026-04-01T21:57:51.982Z",
+  "updatedAt": "2026-04-02T01:30:39.454Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -117,7 +117,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -157,7 +157,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-04-02T01:30:37.405Z"
+        }
       },
       {
         "gameName": "bltz-warzone-02",
