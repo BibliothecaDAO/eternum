@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-02",
+    title: "Unit Command Audio",
+    description:
+      "Army commands now acknowledge what you actually ordered, with distinct cues for selection, movement, attacks, and exploration instead of relying on one generic unit response.",
+    type: "improvement",
+  },
+  {
     date: "2026-04-01",
     title: "Production Modal Height Restore",
     description:
