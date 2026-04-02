@@ -11,7 +11,7 @@ import {
 import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
-import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
+import { findMarketByPrizeAddressAcrossChains, getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { useConfig } from "@/pm/providers";
 import type { WorldSelectionInput } from "@/runtime/world";
 import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
@@ -1117,32 +1117,28 @@ export const UnifiedGameGrid = ({
         retry: 1,
         queryFn: async (): Promise<GameMarketSnapshot | null> => {
           if (!showPredictionMarket || !paddedPrizeAddress) return null;
-          const chainsToCheck: MarketDataChain[] =
-            preferredChain === "mainnet" ? ["mainnet", "slot"] : ["slot", "mainnet"];
+          const result = await findMarketByPrizeAddressAcrossChains({
+            preferredChain,
+            prizeAddress: paddedPrizeAddress,
+          });
+          if (!result.marketRow || !result.chain) return null;
 
-          for (const chain of chainsToCheck) {
-            const api = getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]);
-            const row = await api.fetchMarketByPrizeAddress(paddedPrizeAddress);
-            if (!row) continue;
+          const api = getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[result.chain]);
+          const numerators = await api.fetchVaultNumeratorsByMarkets([result.marketRow.market_id]);
+          const market = transformMarketRowToClass(result.marketRow, numerators, getRegisteredToken);
+          if (!market) return null;
 
-            const numerators = await api.fetchVaultNumeratorsByMarkets([row.market_id]);
-            const market = transformMarketRowToClass(row, numerators, getRegisteredToken);
-            if (!market) continue;
+          const nowSec = Math.floor(Date.now() / 1000);
+          const { topOutcomes, hiddenOutcomeCount } = getTopOutcomes(market);
+          const isLive = !market.isResolved() && nowSec >= market.start_at && nowSec < market.end_at;
 
-            const nowSec = Math.floor(Date.now() / 1000);
-            const { topOutcomes, hiddenOutcomeCount } = getTopOutcomes(market);
-            const isLive = !market.isResolved() && nowSec >= market.start_at && nowSec < market.end_at;
-
-            return {
-              market,
-              chain,
-              topOutcomes,
-              hiddenOutcomeCount,
-              isLive,
-            };
-          }
-
-          return null;
+          return {
+            market,
+            chain: result.chain,
+            topOutcomes,
+            hiddenOutcomeCount,
+            isLive,
+          };
         },
       };
     }),

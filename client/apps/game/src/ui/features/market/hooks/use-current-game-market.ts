@@ -2,13 +2,16 @@ import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
-import { getPmSqlApiForUrl, pmQueryKeys } from "@/pm/hooks/queries";
+import {
+  findMarketByPrizeAddressAcrossChains,
+  getPmSqlApiForUrl,
+  pmQueryKeys,
+  type MarketDataChain,
+} from "@/pm/hooks/queries";
 import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { useConfig } from "@/pm/providers";
 import { dojoConfig } from "../../../../../dojo-config";
 import { normalizeHexAddress, transformMarketRowToClass } from "./transform-market-row";
-
-type MarketDataChain = "slot" | "mainnet";
 
 /**
  * Hook that finds the prediction market associated with the current game.
@@ -19,10 +22,6 @@ export const useCurrentGameMarket = () => {
   const { registeredTokens, getRegisteredToken } = useConfig();
   const queryClient = useQueryClient();
   const preferredChain = getPredictionMarketChain();
-  const chainsToCheck = useMemo<MarketDataChain[]>(
-    () => (preferredChain === "mainnet" ? ["mainnet", "slot"] : ["slot", "mainnet"]),
-    [preferredChain],
-  );
 
   // Get current game's prize distribution contract address from manifest
   const currentPrizeAddress = useMemo(() => {
@@ -38,13 +37,13 @@ export const useCurrentGameMarket = () => {
     queryKey: pmQueryKeys.marketByPrizeAddress(currentPrizeAddress ?? "", preferredChain),
     queryFn: async () => {
       if (!currentPrizeAddress) return { marketRow: null, chain: null as MarketDataChain | null };
-      for (const chain of chainsToCheck) {
-        const api = getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]);
-        const result = await api.fetchMarketByPrizeAddress(currentPrizeAddress);
-        if (result) {
-          return { marketRow: result, chain };
-        }
-      }
+
+      const result = await findMarketByPrizeAddressAcrossChains({
+        preferredChain,
+        prizeAddress: currentPrizeAddress,
+      });
+      if (result.marketRow) return result;
+
       console.debug("[useCurrentGameMarket] No market found for prize address:", currentPrizeAddress);
       return { marketRow: null, chain: null as MarketDataChain | null };
     },

@@ -14,6 +14,7 @@ import type { SetupResult } from "./init/bootstrap";
 import { NewsHeadlineBridge } from "./ui/features/news-headlines";
 import { StoryEventToastBridge } from "./ui/features/story-events";
 import { LoadingScreen } from "./ui/modules/loading-screen";
+import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
 
@@ -29,6 +30,8 @@ const TransactionListenerBridge = () => {
 };
 
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
+  useBootDocumentState("app-ready", "boot_world_visible");
+
   return (
     <DojoProvider value={setupResult} account={account}>
       <ErrorBoundary>
@@ -44,7 +47,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   );
 };
 
-export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
+const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   useEffect(() => {
     if (!env.VITE_TRACING_ENABLED) {
       return;
@@ -73,7 +76,7 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }, []);
 
   const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, setupResult, account } = state;
+  const { phase, bootstrap, setupResult, account } = state;
   const routeView = resolveGameRouteView({
     phase,
     hasSetupResult: setupResult !== null,
@@ -85,12 +88,21 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }
 
   if (routeView === "loading") {
-    return <LoadingScreen />;
+    return (
+      <LoadingScreen
+        progress={bootstrap.status === "loading" ? bootstrap.progress : undefined}
+        title="Charting the World"
+        subtitle="Following contour lines while world state comes online."
+      />
+    );
   }
 
   if (!setupResult || !account) {
-    return <LoadingScreen />;
+    return <LoadingScreen title="Charting the World" subtitle="Resolving the last world details." />;
   }
 
   return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
 };
+
+/** @public Lazy route entry consumed by app-level dynamic imports. */
+export default GameRoute;
