@@ -15,6 +15,9 @@ export type WorldmapRenderDurationMetric =
   | "structureAssetPrewarmMs"
   | "presentationCommittedMs"
   | "presentationSkewMs"
+  | "tileAuthoritativeWaitMs"
+  | "structureAuthoritativeWaitMs"
+  | "assetPrewarmDeferredMs"
   | "workerFindPath"
   | "createPath";
 
@@ -106,6 +109,9 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     structureAssetPrewarmMs: createDurationStats(),
     presentationCommittedMs: createDurationStats(),
     presentationSkewMs: createDurationStats(),
+    tileAuthoritativeWaitMs: createDurationStats(),
+    structureAuthoritativeWaitMs: createDurationStats(),
+    assetPrewarmDeferredMs: createDurationStats(),
     workerFindPath: createDurationStats(),
     createPath: createDurationStats(),
   },

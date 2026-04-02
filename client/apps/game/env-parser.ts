@@ -204,7 +204,7 @@ export function parseGameEnv(
   importEnv: Record<string, string | undefined>,
   options?: {
     rawEnv?: Record<string, string | undefined>;
-    selectedChain?: string | null;
+    selectedChain?: "slot" | "sepolia" | "mainnet" | "slottest" | "local" | null;
   },
 ): z.infer<typeof envSchema> {
   const rawEnv = options?.rawEnv ?? importEnv;

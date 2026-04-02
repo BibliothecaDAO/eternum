@@ -55,10 +55,9 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
       startCol: 24,
       renderSize: { height: 80, width: 90 },
       tileFetchPromise: Promise.resolve(false),
-      tileHydrationReadyPromise: Promise.resolve(),
+      tileHydrationReadyPromise: Promise.resolve({ status: "ready" as const, label: "tile", durationMs: 0 }),
       boundsReadyPromise: Promise.resolve(),
-      structureReadyPromise: Promise.resolve(),
-      assetPrewarmPromise: Promise.resolve(),
+      structureReadyPromise: Promise.resolve({ status: "ready" as const, label: "structure", durationMs: 0 }),
       prepareTerrainChunk,
     });
 
@@ -80,6 +79,7 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
       preparePresentation: async () => ({
         tileFetchSucceeded: false,
         preparedTerrain: null,
+        presentationStatus: "fetch_failed" as const,
       }),
       cachePreparedTerrain,
     });
@@ -103,6 +103,7 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
       preparePresentation: async () => ({
         tileFetchSucceeded: true,
         preparedTerrain: terrainData,
+        presentationStatus: "ready" as const,
       }),
       cachePreparedTerrain,
     });

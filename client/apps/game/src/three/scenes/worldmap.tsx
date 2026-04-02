@@ -3609,7 +3609,7 @@ export default class WorldmapScene extends WarpTravel {
         }
       }
 
-      return;
+      return null;
     }
 
     // Check if there's a compass effect for this hex and end it

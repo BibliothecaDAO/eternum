@@ -44,6 +44,7 @@ describe("prewarmWorldmapChunkPresentation", () => {
       preparePresentation: async () => ({
         tileFetchSucceeded: true,
         preparedTerrain,
+        presentationStatus: "ready" as const,
       }),
       cachePreparedTerrain,
     });
@@ -66,6 +67,7 @@ describe("prewarmWorldmapChunkPresentation", () => {
       preparePresentation: async () => ({
         tileFetchSucceeded: true,
         preparedTerrain: { chunkKey: "24,24" },
+        presentationStatus: "ready" as const,
       }),
       cachePreparedTerrain,
     });
