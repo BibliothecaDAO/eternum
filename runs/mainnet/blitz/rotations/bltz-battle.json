@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23914566856-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-02T18:01:58.180Z",
+  "updatedAt": "2026-04-02T18:02:02.386Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -47,9 +47,10 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Creating games",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Creating games started",
+      "startedAt": "2026-04-02T18:02:02.386Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -1365,5 +1366,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23914566856-1",
+    "workflowRunId": 23914566856,
+    "workflowRunAttempt": 1,
+    "stepId": "create-worlds",
+    "acquiredAt": "2026-04-02T18:02:02.386Z",
+    "expiresAt": "2026-04-02T18:47:02.386Z"
   }
 }
