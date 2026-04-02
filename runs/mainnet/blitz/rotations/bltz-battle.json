@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23914566856-1",
   "currentStepId": "grant-lootchest-roles",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-02T18:04:25.688Z",
+  "updatedAt": "2026-04-02T18:04:34.764Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -74,9 +74,10 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Setting up loot chests started",
+      "startedAt": "2026-04-02T18:04:34.764Z"
     },
     {
       "id": "create-indexers",
@@ -1496,5 +1497,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
+  },
+  "activeLease": {
+    "launchRequestId": "23914566856-1",
+    "workflowRunId": 23914566856,
+    "workflowRunAttempt": 1,
+    "stepId": "grant-lootchest-roles",
+    "acquiredAt": "2026-04-02T18:04:34.764Z",
+    "expiresAt": "2026-04-02T18:49:34.764Z"
   }
 }
