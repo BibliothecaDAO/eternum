@@ -76,6 +76,12 @@ describe("WorldDeploymentService", () => {
     const first = await service.getWorldDeployment("mainnet", "bltz-warzone-31");
     const second = await service.getWorldDeployment("mainnet", "bltz-warzone-31");
 
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    if (!first || !second) {
+      throw new Error("expected cached deployment results");
+    }
+
     expect(first.cacheStatus).toBe("miss");
     expect(second.cacheStatus).toBe("hit");
     expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -96,6 +102,11 @@ describe("WorldDeploymentService", () => {
     await vi.advanceTimersByTimeAsync(1_100);
 
     const result = await service.getWorldDeployment("mainnet", "bltz-warzone-31");
+
+    expect(result).not.toBeNull();
+    if (!result) {
+      throw new Error("expected a stale deployment result");
+    }
 
     expect(result.cacheStatus).toBe("stale");
     expect(result.worldAddress).toBe("0x1234");

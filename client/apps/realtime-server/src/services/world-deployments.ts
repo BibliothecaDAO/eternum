@@ -1,4 +1,4 @@
-import { fetchFactoryRows, getFactorySqlBaseUrl } from "../../../../../common/factory/endpoints";
+import { fetchFactoryRows, getFactorySqlBaseUrl } from "./factory-sql";
 
 type SupportedChain = "mainnet" | "sepolia" | "slot" | "slottest" | "local";
 type CacheStatus = "hit" | "miss" | "stale";
@@ -218,7 +218,7 @@ export class WorldDeploymentService {
     }
 
     const query = buildWorldDeploymentQuery(worldName);
-    const rows = await fetchFactoryRows(baseUrl, query, { timeoutMs: this.timeoutMs });
+    const rows = await fetchFactoryRows(baseUrl, query, this.timeoutMs);
     if (rows.length === 0) {
       return null;
     }
