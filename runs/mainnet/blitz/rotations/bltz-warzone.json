@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23865432477-2",
   "currentStepId": "create-series",
   "createdAt": "2026-04-01T21:56:14.882Z",
-  "updatedAt": "2026-04-02T03:42:02.173Z",
+  "updatedAt": "2026-04-02T06:30:29.488Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -173,7 +173,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -213,7 +213,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-04-02T06:30:28.322Z"
+        }
       },
       {
         "gameName": "bltz-warzone-03",
