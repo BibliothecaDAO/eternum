@@ -5,6 +5,7 @@ export const GAME_ENTRY_TIMELINE_EVENT_NAME = GAME_ENTRY_TIMELINE_EVENT;
 
 type GameEntryMilestone =
   | "modal-opened"
+  | "dashboard-intent-resumed"
   | "world-selection-started"
   | "world-selection-completed"
   | "world-profile-build-started"
@@ -21,6 +22,8 @@ type GameEntryMilestone =
   | "session-policies-refresh-completed"
   | "session-policies-refresh-skipped"
   | "entry-ready"
+  | "direct-map-entry-resolved"
+  | "direct-map-entry-fallback"
   | "enter-game-started"
   | "overlay-mounted"
   | "player-structures-synced"

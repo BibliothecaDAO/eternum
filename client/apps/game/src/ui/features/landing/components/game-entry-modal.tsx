@@ -34,7 +34,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/use-season-pass-inventory";
 import { useUsername } from "@/hooks/use-username";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
-import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
+import { getWorldKey, useWorldPlayerState, useWorldsCoreAvailability } from "@/hooks/use-world-availability";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame } from "@/init/bootstrap";
 import { captureClientEvent } from "@/posthog";
@@ -64,7 +64,7 @@ import {
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
 import { SeasonPassOptionCard } from "./season-pass-option-card";
 import { SettlementPlannerMap } from "./settlement-planner-map";
-import { resolveGameEntryTarget } from "./game-entry-navigation";
+import { resolveKnownEntryTarget } from "../lib/game-entry-target";
 import {
   SettlementResourceBadges,
   resolvePlannerResourceLabel as resolveResourceLabel,
@@ -2929,14 +2929,31 @@ export const GameEntryModal = ({
   }, [account?.address]);
 
   const worldAvailabilityInputs = useMemo(() => [{ name: worldName, chain }], [worldName, chain]);
-  const { results: worldAvailabilityResults, isAnyLoading: isCheckingWorldAvailability } = useWorldsAvailability(
+  const { results: worldAvailabilityResults, isAnyLoading: isCheckingWorldAvailabilityCore } = useWorldsCoreAvailability(
     worldAvailabilityInputs,
     isOpen && Boolean(worldName),
-    playerFeltAddress,
   );
   const worldAvailability = worldAvailabilityResults.get(getWorldKey({ name: worldName, chain }));
-  const worldMeta = worldAvailability?.meta ?? null;
-  const worldMode = worldMeta?.mode ?? "unknown";
+  const coreWorldMeta = worldAvailability?.meta ?? null;
+  const worldPlayerState = useWorldPlayerState({
+    worldName,
+    chain,
+    mode: coreWorldMeta?.mode ?? "unknown",
+    playerAddress: playerFeltAddress,
+    enabled: isOpen && Boolean(worldName) && Boolean(playerFeltAddress),
+  });
+  const worldMeta = useMemo(
+    () =>
+      coreWorldMeta != null
+        ? {
+            ...coreWorldMeta,
+            ...(worldPlayerState.data ?? {}),
+          }
+        : null,
+    [coreWorldMeta, worldPlayerState.data],
+  );
+  const isCheckingWorldAvailability = isCheckingWorldAvailabilityCore || worldPlayerState.isLoading;
+  const worldMode = worldMeta?.mode ?? coreWorldMeta?.mode ?? "unknown";
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
   const unifiedSettlementPlannerEnabled = env.VITE_PUBLIC_ETERNUM_UNIFIED_SETTLEMENT_PLANNER;
@@ -3048,7 +3065,7 @@ export const GameEntryModal = ({
     refetch: refetchOwnedStructures,
   } = useQuery({
     queryKey: ["eternumOwnedStructures", chain, worldName, account?.address],
-    enabled: isOpen && isEternumMode && bootstrapStatus === "ready" && Boolean(account?.address),
+    enabled: isOpen && bootstrapStatus === "ready" && Boolean(account?.address) && !isSpectateMode && !isForgeMode,
     queryFn: async () => {
       if (!account?.address) return [];
       return await sqlApi.fetchPlayerStructures(account.address);
@@ -3438,6 +3455,32 @@ export const GameEntryModal = ({
     settlementPlannerTarget?.type === "realm_slot" ? settlementPlannerTarget.slot : null;
   const settlementPlannerVillageTarget =
     settlementPlannerTarget?.type === "village_slot" ? settlementPlannerTarget.slot : null;
+  const firstOwnedStructure = useMemo(() => {
+    const firstStructure = (ownedStructures as PlayerStructure[])[0];
+    if (!firstStructure) {
+      return null;
+    }
+
+    return {
+      entityId: firstStructure.entity_id,
+      col: firstStructure.coord_x,
+      row: firstStructure.coord_y,
+    };
+  }, [ownedStructures]);
+  const firstOwnedRealmStructure = useMemo(() => {
+    const firstRealm = ownedRealms[0];
+    if (!firstRealm) {
+      return null;
+    }
+
+    return {
+      entityId: firstRealm.entityId,
+      col: firstRealm.coordX,
+      row: firstRealm.coordY,
+    };
+  }, [ownedRealms]);
+  const isLoadingDirectEntryStructure =
+    !isSpectateMode && !isForgeMode && Boolean(account?.address) && isLoadingOwnedStructures;
 
   useEffect(() => {
     if (!isEternumMode) {
@@ -3488,7 +3531,7 @@ export const GameEntryModal = ({
       } else {
         result = hasSeasonPass ? "season-placement" : "season-pass-required";
       }
-    } else if (!checksComplete) {
+    } else if (!checksComplete || (isBlitzMode && isLoadingDirectEntryStructure)) {
       // Still checking settlement/hyperstructure status - stay in loading
       result = "loading";
     } else if (needsHyperstructureInit) {
@@ -3552,6 +3595,7 @@ export const GameEntryModal = ({
     isBlitzMode,
     isSpectateMode,
     checksComplete,
+    isLoadingDirectEntryStructure,
     settlementCheckComplete,
     hyperstructureCheckComplete,
     needsHyperstructureInit,
@@ -4425,23 +4469,24 @@ export const GameEntryModal = ({
     uiStore.setShowBlankOverlay(true);
     markGameEntryMilestone("enter-game-started");
 
-    if (isSpectateMode) {
-      const directEntryTarget = resolveGameEntryTarget({
-        structureEntityId: uiStore.structureEntityId,
-        worldMapReturnPosition: uiStore.worldMapReturnPosition,
-        isSpectateMode: true,
+    const directEntryTarget = resolveKnownEntryTarget({
+      isSpectateMode,
+      uiStructureEntityId: uiStore.structureEntityId,
+      worldMapReturnPosition: uiStore.worldMapReturnPosition,
+      blitzPlayerStructure: isEternumMode ? null : firstOwnedStructure,
+      eternumOwnedStructure: isEternumMode ? firstOwnedRealmStructure : null,
+    });
+
+    if (directEntryTarget) {
+      markGameEntryMilestone("direct-map-entry-resolved");
+      uiStore.setStructureEntityId(directEntryTarget.structureEntityId, {
+        spectator: directEntryTarget.spectator,
+        worldMapPosition: directEntryTarget.worldMapPosition,
       });
 
-      if (directEntryTarget) {
-        uiStore.setStructureEntityId(directEntryTarget.structureEntityId, {
-          spectator: directEntryTarget.spectator,
-          worldMapPosition: directEntryTarget.worldMapPosition,
-        });
-
-        navigate(directEntryTarget.url);
-        window.dispatchEvent(new Event("urlChanged"));
-        return;
-      }
+      navigate(directEntryTarget.url);
+      window.dispatchEvent(new Event("urlChanged"));
+      return;
     }
 
     const setStructureEntityId = uiStore.setStructureEntityId;
@@ -4449,10 +4494,11 @@ export const GameEntryModal = ({
       spectator: isSpectateMode,
     });
 
+    markGameEntryMilestone("direct-map-entry-fallback");
     const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [navigate, isSpectateMode]);
+  }, [firstOwnedRealmStructure, firstOwnedStructure, isEternumMode, isSpectateMode, navigate]);
 
   const handleSeasonSettle = useCallback(async () => {
     if (!account?.address) return;

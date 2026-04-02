@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-03",
+    title: "Resumable Dashboard Entry",
+    description:
+      "Dashboard game entry now keeps your chosen world through wallet sign-in, resumes after a successful network switch, and prefers direct world-map handoff when the target location is already known.",
+    type: "improvement",
+  },
+  {
     date: "2026-04-02",
     title: "Unit Command Audio",
     description:
