@@ -608,16 +608,22 @@ export class ArmyManager {
 
     // Calculate battle timer left
     const battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
+    const hasAttackerPosition = typeof latestAttackerCoordX === "number" && typeof latestAttackerCoordY === "number";
+    const hasDefenderPosition = typeof latestDefenderCoordX === "number" && typeof latestDefenderCoordY === "number";
+    const attackerPosition =
+      hasAttackerPosition
+        ? { x: latestAttackerCoordX, y: latestAttackerCoordY }
+        : undefined;
+    const defenderPosition =
+      hasDefenderPosition
+        ? { x: latestDefenderCoordX, y: latestDefenderCoordY }
+        : undefined;
     const { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
       { col: hexCoords.col, row: hexCoords.row },
       latestAttackerId ?? undefined,
-      latestAttackerCoordX !== null && latestAttackerCoordY !== null
-        ? { x: latestAttackerCoordX, y: latestAttackerCoordY }
-        : undefined,
+      attackerPosition,
       latestDefenderId ?? undefined,
-      latestDefenderCoordX !== null && latestDefenderCoordY !== null
-        ? { x: latestDefenderCoordX, y: latestDefenderCoordY }
-        : undefined,
+      defenderPosition,
     );
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
