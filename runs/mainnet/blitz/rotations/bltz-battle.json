@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23905119546-1.json",
-  "latestLaunchRequestId": "23905119546-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23905122148-1.json",
+  "latestLaunchRequestId": "23905122148-1",
   "currentStepId": null,
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-02T14:21:49.935Z",
+  "updatedAt": "2026-04-02T14:21:53.083Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23905119546,
+    "workflowRunId": 23905122148,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23905119546",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23905122148",
     "ref": "next",
     "sha": "e9b1d70cfdaba6eb3f8b14c6df86bd3455cdc6b9"
   },
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-02T14:36:49.935Z",
-    "lastEvaluatedAt": "2026-04-02T14:21:49.935Z"
+    "nextEvaluationAt": "2026-04-02T14:36:53.083Z",
+    "lastEvaluatedAt": "2026-04-02T14:21:53.083Z"
   },
   "steps": [
     {
@@ -40,9 +40,7 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-04-02T14:21:43.859Z",
-      "finishedAt": "2026-04-02T14:21:49.935Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
