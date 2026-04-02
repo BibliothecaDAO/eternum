@@ -11,6 +11,13 @@ interface WorldmapControlsChangeRefreshSnapshot {
   isSettled: boolean;
 }
 
+interface WorldmapZoomTickControlsNotificationInput {
+  didMove: boolean;
+  previousZoomSnapshot: WorldmapControlsChangeRefreshSnapshot;
+  nextZoomSnapshot: WorldmapControlsChangeRefreshSnapshot;
+  zoomRefreshPlannerState: WorldmapZoomRefreshPlannerState;
+}
+
 interface ResolveWorldmapControlsChangeRefreshDecisionInput {
   previousCameraDistance: number | null;
   nextCameraDistance: number;
@@ -36,21 +43,22 @@ export function resolveWorldmapControlsChangeRefreshDecision(
     input.previousCameraDistance === null ||
     Math.abs(input.previousCameraDistance - input.nextCameraDistance) > cameraDistanceEpsilon;
   const hasPendingZoomRefresh = input.zoomRefreshPlannerState.pendingLevel !== "none";
-  const shouldRouteThroughZoomPlanner = zoomDistanceChanged || hasPendingZoomRefresh;
 
-  if (!shouldRouteThroughZoomPlanner) {
-    return {
-      shouldRequestRefresh: true,
-      refreshLevel: "debounced",
-      scheduleMode: "coalesce_earliest",
-      nextZoomRefreshPlannerState: input.zoomRefreshPlannerState,
-      nextLastZoomRefreshStableBand: input.lastZoomRefreshStableBand,
-    };
+  if (!zoomDistanceChanged) {
+    if (!hasPendingZoomRefresh || !input.zoomSnapshot.isSettled) {
+      return {
+        shouldRequestRefresh: true,
+        refreshLevel: "debounced",
+        scheduleMode: "coalesce_earliest",
+        nextZoomRefreshPlannerState: input.zoomRefreshPlannerState,
+        nextLastZoomRefreshStableBand: input.lastZoomRefreshStableBand,
+      };
+    }
   }
 
   const refreshPlan = planWorldmapZoomRefresh(input.zoomRefreshPlannerState, {
-    zoomDistanceChanged: shouldRouteThroughZoomPlanner,
-    zoomSettled: input.zoomSnapshot.isSettled,
+    zoomDistanceChanged: true,
+    zoomSettled: zoomDistanceChanged ? input.zoomSnapshot.isSettled : true,
     stableBandChanged: input.zoomSnapshot.stableBand !== input.lastZoomRefreshStableBand,
   });
   const shouldRequestRefresh = refreshPlan.immediateLevel !== "none";
@@ -64,4 +72,22 @@ export function resolveWorldmapControlsChangeRefreshDecision(
       ? input.zoomSnapshot.stableBand
       : input.lastZoomRefreshStableBand,
   };
+}
+
+export function shouldNotifyWorldmapControlsChangeAfterZoomTick(
+  input: WorldmapZoomTickControlsNotificationInput,
+): boolean {
+  if (input.didMove) {
+    return true;
+  }
+
+  if (input.zoomRefreshPlannerState.pendingLevel === "none") {
+    return false;
+  }
+
+  return (
+    input.nextZoomSnapshot.isSettled &&
+    (!input.previousZoomSnapshot.isSettled ||
+      input.previousZoomSnapshot.stableBand !== input.nextZoomSnapshot.stableBand)
+  );
 }

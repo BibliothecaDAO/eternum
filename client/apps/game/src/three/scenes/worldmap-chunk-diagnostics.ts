@@ -43,7 +43,15 @@ export type WorldmapChunkDiagnosticsEvent =
   | "stale_terrain_refresh_dropped"
   | "terrain_bounds_recovery"
   | "tile_hydration_drain_completed"
-  | "cache_reject_fingerprint";
+  | "cache_reject_fingerprint"
+  | "tile_authoritative_timeout"
+  | "structure_authoritative_timeout"
+  | "chunk_presentation_aborted"
+  | "chunk_presentation_retry_scheduled"
+  | "chunk_presentation_retry_suppressed"
+  | "asset_prewarm_deferred"
+  | "asset_prewarm_completed"
+  | "asset_prewarm_failed";
 
 export interface WorldmapChunkDiagnostics {
   transitionStarted: number;
@@ -83,6 +91,14 @@ export interface WorldmapChunkDiagnostics {
   terrainBoundsRecovery: number;
   tileHydrationDrainCompleted: number;
   cacheRejectFingerprint: number;
+  tileAuthoritativeTimeout: number;
+  structureAuthoritativeTimeout: number;
+  chunkPresentationAborted: number;
+  chunkPresentationRetryScheduled: number;
+  chunkPresentationRetrySuppressed: number;
+  assetPrewarmDeferred: number;
+  assetPrewarmCompleted: number;
+  assetPrewarmFailed: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
   switchDurationMsSamples: number[];
@@ -151,6 +167,14 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     terrainBoundsRecovery: 0,
     tileHydrationDrainCompleted: 0,
     cacheRejectFingerprint: 0,
+    tileAuthoritativeTimeout: 0,
+    structureAuthoritativeTimeout: 0,
+    chunkPresentationAborted: 0,
+    chunkPresentationRetryScheduled: 0,
+    chunkPresentationRetrySuppressed: 0,
+    assetPrewarmDeferred: 0,
+    assetPrewarmCompleted: 0,
+    assetPrewarmFailed: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
     switchDurationMsSamples: [],
@@ -307,6 +331,30 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "cache_reject_fingerprint":
       diagnostics.cacheRejectFingerprint += 1;
+      break;
+    case "tile_authoritative_timeout":
+      diagnostics.tileAuthoritativeTimeout += 1;
+      break;
+    case "structure_authoritative_timeout":
+      diagnostics.structureAuthoritativeTimeout += 1;
+      break;
+    case "chunk_presentation_aborted":
+      diagnostics.chunkPresentationAborted += 1;
+      break;
+    case "chunk_presentation_retry_scheduled":
+      diagnostics.chunkPresentationRetryScheduled += 1;
+      break;
+    case "chunk_presentation_retry_suppressed":
+      diagnostics.chunkPresentationRetrySuppressed += 1;
+      break;
+    case "asset_prewarm_deferred":
+      diagnostics.assetPrewarmDeferred += 1;
+      break;
+    case "asset_prewarm_completed":
+      diagnostics.assetPrewarmCompleted += 1;
+      break;
+    case "asset_prewarm_failed":
+      diagnostics.assetPrewarmFailed += 1;
       break;
     case "switch_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;

@@ -148,6 +148,7 @@ import {
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
+  resolveChunkPresentationRetryDecision,
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   resolveEntityActionPathsTransitionTokenSync,
@@ -157,6 +158,7 @@ import {
   shouldHoldShortcutArmySelectionProtection,
   shouldClearEntitySelectionForEntityActionTransition,
   shouldClearEntitySelectionForMissingActionPathOwnership,
+  shouldClearChunkPresentationRetrySchedule,
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
@@ -165,7 +167,10 @@ import {
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
-import { resolveWorldmapControlsChangeRefreshDecision } from "./worldmap-controls-change-refresh-policy";
+import {
+  resolveWorldmapControlsChangeRefreshDecision,
+  shouldNotifyWorldmapControlsChangeAfterZoomTick,
+} from "./worldmap-controls-change-refresh-policy";
 import {
   createWorldmapZoomHardeningConfig,
   evaluateChunkVisibilityAnomaly,
@@ -253,6 +258,7 @@ import { enqueueWarpTravelPrefetch } from "./warp-travel-prefetch-enqueue";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
+import { waitForWorldmapAuthoritativeBarrier, type WorldmapBarrierResult } from "./worldmap-authoritative-barrier";
 import {
   deferWarpTravelManagerFanout,
   drainMultiBudgetedDeferredManagerCatchUpQueue,
@@ -478,9 +484,14 @@ export default class WorldmapScene extends WarpTravel {
   private readonly minRetainedTerrainFraction = 0.45;
   private readonly minReferenceTerrainInstances = 100;
   private readonly terrainRecoveryCooldownMs = 1500;
+  private readonly tileAuthoritativeDrainTimeoutMs = 500;
+  private readonly structureAuthoritativeDrainTimeoutMs = 1000;
+  private readonly chunkPresentationRetryDelayMs = 250;
+  private readonly chunkPresentationRetrySuppressionWindowMs = 5000;
   private readonly minCachedTerrainCoverageFraction = 0.08;
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
+  private readonly chunkPresentationRetryScheduledAt = new Map<string, number>();
   private toriiLoadingCounter = 0;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
@@ -3019,6 +3030,7 @@ export default class WorldmapScene extends WarpTravel {
     this.lastPublishedStableCameraView = this.zoomCoordinator.getSnapshot().stableBand;
     this.lastZoomRefreshStableBand = this.zoomCoordinator.getSnapshot().stableBand;
     this.lastPublishedZoomStatus = "idle";
+    this.chunkPresentationRetryScheduledAt.clear();
     this.terrainReferenceInstances = 0;
     this.terrainReferenceChunkKey = null;
     this.lastChunkSwitchMovement = null;
@@ -3501,6 +3513,27 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
+    const authoritativeResult = this.applyExploredTileUpdateToAuthoritativeState(update);
+    if (!authoritativeResult) {
+      return;
+    }
+
+    void this.reconcileVisibleExploredTile(authoritativeResult);
+  }
+
+  private applyExploredTileUpdateToAuthoritativeState(update: TileSystemUpdate): {
+    targetChunk: string;
+    renderedChunkStartRow: number;
+    renderedChunkStartCol: number;
+    chunkCenterRow: number;
+    chunkCenterCol: number;
+    chunkWidth: number;
+    chunkHeight: number;
+    col: number;
+    row: number;
+    biome: BiomeType;
+    shouldHideTile: boolean;
+  } | null {
     const { hexCoords, removeExplored, biome } = update;
 
     const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
@@ -3594,7 +3627,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       this.requestChunkRefresh(true);
-      return;
+      return null;
     }
 
     // At this point, we know the tile is new (early check at top of function ensures this)
@@ -3619,76 +3652,125 @@ export default class WorldmapScene extends WarpTravel {
 
     this.invalidateAllChunkCachesContainingHex(col, row);
 
-    // if the hex is within the chunk, add it to the interactive hex manager and to the biome
-    if (this.isColRowInVisibleChunk(col, row)) {
-      await this.updateHexagonGridPromise;
-      const chunkWidth = this.renderChunkSize.width;
-      const chunkHeight = this.renderChunkSize.height;
-      if (shouldHideTile) {
-        await this.updateHexagonGrid(renderedChunkStartRow, renderedChunkStartCol, chunkHeight, chunkWidth);
-        return;
-      }
-
-      const hexKey = `${col},${row}`;
-      const biomeVariant = getBiomeVariant(biome, col, row);
-      const visibleTerrainReconcileMode = resolveVisibleTerrainReconcileMode({
-        isVisibleInCurrentChunk: true,
-        currentOwner: this.visibleTerrainMembership.get(hexKey) ?? null,
-        nextBiomeKey: biomeVariant,
-        canDirectReplace: false,
-      });
-
-      if (visibleTerrainReconcileMode === "none") {
-        return;
-      }
-
-      if (visibleTerrainReconcileMode === "atomic_chunk_refresh") {
-        incrementWorldmapRenderCounter("terrainVisibleOverlapRepairCount");
-        incrementWorldmapRenderCounter("terrainVisibleRebuildCount");
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_tile_overlap_repair");
-        this.requestChunkRefresh(true, "tile_overlap_repair");
-        return;
-      }
-
-      if (this.isChunkTransitioning) {
-        this.requestChunkRefresh(true, "deferred_transition_tile");
-        return;
-      }
-
-      // Add hex to all interactive hexes
-      this.interactiveHexManager.addHex({ col, row });
-
-      // Update which hexes are visible in the current chunk
-      this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, chunkWidth, chunkHeight);
-
-      await Promise.all(this.modelLoadPromises);
-      dummy.position.copy(pos);
-      dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-
-      const exploredHexTransform = resolveExploredHexTransform({ isFlatMode: IS_FLAT_MODE });
-      dummy.rotation.y = exploredHexTransform.rotationY;
-      dummy.position.y += exploredHexTransform.yOffset;
-
-      dummy.updateMatrix();
-
-      const hexMesh = this.biomeModels.get(biomeVariant as BiomeType)!;
-      const currentCount = hexMesh.getCount();
-      hexMesh.setMatrixAt(currentCount, dummy.matrix);
-      hexMesh.setCount(currentCount + 1);
-      this.visibleTerrainMembership.set(hexKey, {
-        biomeKey: biomeVariant,
-        chunkKey: this.currentChunk,
-        instanceIndex: currentCount,
-      });
-      incrementWorldmapRenderCounter("terrainVisibleAppendCount");
-
-      // Cache the updated matrices for the chunk
-      const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(
-        renderedChunkStartRow,
-        renderedChunkStartCol,
-      );
-      this.cacheMatricesForChunk(renderedChunkStartRow, renderedChunkStartCol, expectedExploredTerrainInstances);
+    if (!this.isColRowInVisibleChunk(col, row)) {
+      return null;
     }
+
+    return {
+      targetChunk: this.currentChunk,
+      renderedChunkStartRow,
+      renderedChunkStartCol,
+      chunkCenterRow,
+      chunkCenterCol,
+      chunkWidth: this.renderChunkSize.width,
+      chunkHeight: this.renderChunkSize.height,
+      col,
+      row,
+      biome,
+      shouldHideTile,
+    };
+  }
+
+  private async reconcileVisibleExploredTile(input: {
+    targetChunk: string;
+    renderedChunkStartRow: number;
+    renderedChunkStartCol: number;
+    chunkCenterRow: number;
+    chunkCenterCol: number;
+    chunkWidth: number;
+    chunkHeight: number;
+    col: number;
+    row: number;
+    biome: BiomeType;
+    shouldHideTile: boolean;
+  }): Promise<void> {
+    if (input.targetChunk !== this.currentChunk) {
+      return;
+    }
+
+    await this.updateHexagonGridPromise;
+    if (input.targetChunk !== this.currentChunk) {
+      return;
+    }
+
+    if (input.shouldHideTile) {
+      await this.updateHexagonGrid(
+        input.renderedChunkStartRow,
+        input.renderedChunkStartCol,
+        input.chunkHeight,
+        input.chunkWidth,
+      );
+      return;
+    }
+
+    const hexKey = `${input.col},${input.row}`;
+    const biomeVariant = getBiomeVariant(input.biome, input.col, input.row);
+    const visibleTerrainReconcileMode = resolveVisibleTerrainReconcileMode({
+      isVisibleInCurrentChunk: true,
+      currentOwner: this.visibleTerrainMembership.get(hexKey) ?? null,
+      nextBiomeKey: biomeVariant,
+      canDirectReplace: false,
+    });
+
+    if (visibleTerrainReconcileMode === "none") {
+      return;
+    }
+
+    if (visibleTerrainReconcileMode === "atomic_chunk_refresh") {
+      incrementWorldmapRenderCounter("terrainVisibleOverlapRepairCount");
+      incrementWorldmapRenderCounter("terrainVisibleRebuildCount");
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_tile_overlap_repair");
+      this.requestChunkRefresh(true, "tile_overlap_repair");
+      return;
+    }
+
+    if (this.isChunkTransitioning) {
+      this.requestChunkRefresh(true, "deferred_transition_tile");
+      return;
+    }
+
+    this.interactiveHexManager.addHex({ col: input.col, row: input.row });
+    this.interactiveHexManager.updateVisibleHexes(
+      input.chunkCenterRow,
+      input.chunkCenterCol,
+      input.chunkWidth,
+      input.chunkHeight,
+    );
+
+    await Promise.all(this.modelLoadPromises);
+    if (input.targetChunk !== this.currentChunk) {
+      return;
+    }
+
+    const pos = getWorldPositionForHex({ row: input.row, col: input.col });
+    dummy.position.copy(pos);
+    dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+
+    const exploredHexTransform = resolveExploredHexTransform({ isFlatMode: IS_FLAT_MODE });
+    dummy.rotation.y = exploredHexTransform.rotationY;
+    dummy.position.y += exploredHexTransform.yOffset;
+    dummy.updateMatrix();
+
+    const hexMesh = this.biomeModels.get(biomeVariant as BiomeType)!;
+    const currentCount = hexMesh.getCount();
+    hexMesh.setMatrixAt(currentCount, dummy.matrix);
+    hexMesh.setCount(currentCount + 1);
+    this.visibleTerrainMembership.set(hexKey, {
+      biomeKey: biomeVariant,
+      chunkKey: this.currentChunk,
+      instanceIndex: currentCount,
+    });
+    incrementWorldmapRenderCounter("terrainVisibleAppendCount");
+
+    const expectedExploredTerrainInstances = this.getExpectedExploredTerrainInstances(
+      input.renderedChunkStartRow,
+      input.renderedChunkStartCol,
+    );
+    this.cacheMatricesForChunk(
+      input.renderedChunkStartRow,
+      input.renderedChunkStartCol,
+      expectedExploredTerrainInstances,
+    );
   }
 
   isColRowInVisibleChunk(col: number, row: number) {
@@ -4016,6 +4098,9 @@ export default class WorldmapScene extends WarpTravel {
     this.activeDirectionalPresentationPrewarms.add(chunkKey);
     try {
       const prewarmToken = this.chunkTransitionToken;
+      void this.structureManager.prewarmChunkAssets(chunkKey).catch((error) => {
+        console.warn("[WorldMap] Directional presentation asset prewarm failed", error);
+      });
       await prewarmWorldmapChunkPresentation({
         chunkKey,
         prewarmToken,
@@ -4031,10 +4116,21 @@ export default class WorldmapScene extends WarpTravel {
             startCol,
             renderSize: this.renderChunkSize,
             tileFetchPromise: this.computeTileEntities(chunkKey),
-            tileHydrationReadyPromise: this.waitForTileHydrationIdle(chunkKey),
+            tileHydrationReadyPromise: waitForWorldmapAuthoritativeBarrier({
+              label: "tile_authoritative",
+              promise: this.waitForTileHydrationIdle(chunkKey),
+              timeoutMs: this.tileAuthoritativeDrainTimeoutMs,
+              isSwitchedOff: () => this.isSwitchedOff,
+              isCurrentTransition: () => prewarmToken === this.chunkTransitionToken,
+            }),
             boundsReadyPromise: Promise.resolve(),
-            structureReadyPromise: this.waitForStructureHydrationIdle(chunkKey),
-            assetPrewarmPromise: this.structureManager.prewarmChunkAssets(chunkKey),
+            structureReadyPromise: waitForWorldmapAuthoritativeBarrier({
+              label: "structure_authoritative",
+              promise: this.waitForStructureHydrationIdle(chunkKey),
+              timeoutMs: this.structureAuthoritativeDrainTimeoutMs,
+              isSwitchedOff: () => this.isSwitchedOff,
+              isCurrentTransition: () => prewarmToken === this.chunkTransitionToken,
+            }),
             prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
               this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
           }),
@@ -5302,6 +5398,90 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private waitForTileAuthoritativeDrain(chunkKey: string, transitionToken: number): Promise<WorldmapBarrierResult> {
+    return waitForWorldmapAuthoritativeBarrier({
+      label: "tile_authoritative",
+      promise: this.waitForTileHydrationIdle(chunkKey),
+      timeoutMs: this.tileAuthoritativeDrainTimeoutMs,
+      isSwitchedOff: () => this.isSwitchedOff,
+      isCurrentTransition: () => transitionToken === this.chunkTransitionToken,
+    });
+  }
+
+  private waitForStructureAuthoritativeDrain(
+    chunkKey: string,
+    transitionToken: number,
+  ): Promise<WorldmapBarrierResult> {
+    return waitForWorldmapAuthoritativeBarrier({
+      label: "structure_authoritative",
+      promise: this.waitForStructureHydrationIdle(chunkKey),
+      timeoutMs: this.structureAuthoritativeDrainTimeoutMs,
+      isSwitchedOff: () => this.isSwitchedOff,
+      isCurrentTransition: () => transitionToken === this.chunkTransitionToken,
+    });
+  }
+
+  private recordAuthoritativeBarrierResult(result: WorldmapBarrierResult): void {
+    if (result.label === "tile_authoritative") {
+      recordWorldmapRenderDuration("tileAuthoritativeWaitMs", result.durationMs);
+      if (result.status === "timed_out") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_authoritative_timeout");
+      } else if (result.status === "aborted") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "chunk_presentation_aborted");
+      }
+      return;
+    }
+
+    if (result.label === "structure_authoritative") {
+      recordWorldmapRenderDuration("structureAuthoritativeWaitMs", result.durationMs);
+      if (result.status === "timed_out") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "structure_authoritative_timeout");
+      } else if (result.status === "aborted") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "chunk_presentation_aborted");
+      }
+    }
+  }
+
+  private scheduleChunkPresentationRetry(targetChunk: string, transitionToken: number): void {
+    const retryDecision = resolveChunkPresentationRetryDecision({
+      isSwitchedOff: this.isSwitchedOff,
+      transitionToken,
+      currentTransitionToken: this.chunkTransitionToken,
+      currentChunk: this.currentChunk,
+      targetChunk,
+      nowMs: performance.now(),
+      lastScheduledAtMs: this.chunkPresentationRetryScheduledAt.get(targetChunk),
+      suppressionWindowMs: this.chunkPresentationRetrySuppressionWindowMs,
+    });
+
+    if (retryDecision.shouldRecordSuppressed) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "chunk_presentation_retry_suppressed");
+    }
+
+    if (!retryDecision.shouldScheduleRetry) {
+      return;
+    }
+
+    this.chunkPresentationRetryScheduledAt.set(targetChunk, retryDecision.nextScheduledAtMs ?? performance.now());
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "chunk_presentation_retry_scheduled");
+
+    window.setTimeout(() => {
+      if (
+        shouldClearChunkPresentationRetrySchedule({
+          targetChunk,
+          outcome: "retry_timer_fired",
+        })
+      ) {
+        this.chunkPresentationRetryScheduledAt.delete(targetChunk);
+      }
+
+      if (this.isSwitchedOff || transitionToken !== this.chunkTransitionToken || this.currentChunk === targetChunk) {
+        return;
+      }
+      this.requestChunkRefresh(true);
+    }, this.chunkPresentationRetryDelayMs);
+  }
+
   private trackStructureHydrationUpdate(update: { hexCoords: HexPosition }, work: Promise<void>): Promise<void> {
     const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
     const matchedFetchKeys: string[] = [];
@@ -6282,7 +6462,7 @@ export default class WorldmapScene extends WarpTravel {
         this.removeCachedMatricesForChunk(startRow, startCol);
       }
 
-      const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
+      const { tileFetchSucceeded, preparedTerrain, presentationStatus } = await hydrateWarpTravelChunk({
         chunkKey,
         startRow,
         startCol,
@@ -6294,26 +6474,40 @@ export default class WorldmapScene extends WarpTravel {
         updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
           this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
         waitForTileHydrationIdle: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.waitForTileHydrationIdle(targetChunkKey);
-          presentationPhaseDurations.tileHydrationDrainMs = performance.now() - startedAt;
+          const result = await this.waitForTileAuthoritativeDrain(targetChunkKey, transitionToken);
+          this.recordAuthoritativeBarrierResult(result);
+          presentationPhaseDurations.tileHydrationDrainMs = result.durationMs;
           recordWorldmapRenderDuration("tileHydrationDrainMs", presentationPhaseDurations.tileHydrationDrainMs);
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+          if (result.status === "ready") {
+            recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+          }
+          return result;
         },
         waitForStructureHydrationIdle: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.waitForStructureHydrationIdle(targetChunkKey);
-          presentationPhaseDurations.structureHydrationDrainMs = performance.now() - startedAt;
+          const result = await this.waitForStructureAuthoritativeDrain(targetChunkKey, transitionToken);
+          this.recordAuthoritativeBarrierResult(result);
+          presentationPhaseDurations.structureHydrationDrainMs = result.durationMs;
           recordWorldmapRenderDuration(
             "structureHydrationDrainMs",
             presentationPhaseDurations.structureHydrationDrainMs,
           );
+          return result;
         },
         prewarmChunkAssets: async (targetChunkKey) => {
           const startedAt = performance.now();
-          await this.structureManager.prewarmChunkAssets(targetChunkKey);
-          presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "asset_prewarm_deferred");
+          try {
+            await this.structureManager.prewarmChunkAssets(targetChunkKey);
+            presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
+            recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+            recordWorldmapRenderDuration("assetPrewarmDeferredMs", presentationPhaseDurations.structureAssetPrewarmMs);
+            recordChunkDiagnosticsEvent(this.chunkDiagnostics, "asset_prewarm_completed");
+          } catch (error) {
+            presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
+            recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+            recordChunkDiagnosticsEvent(this.chunkDiagnostics, "asset_prewarm_failed");
+            console.warn("[WorldMap] Deferred structure asset prewarm failed", error);
+          }
         },
         prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
           const startedAt = performance.now();
@@ -6327,7 +6521,54 @@ export default class WorldmapScene extends WarpTravel {
         },
       });
 
-      if (tileFetchSucceeded && preparedTerrain) {
+      if (presentationStatus === "timed_out" || presentationStatus === "aborted") {
+        const finalizeResult = await finalizeWarpTravelChunkSwitch({
+          fetchSucceeded: false,
+          isCurrentTransition: transitionToken === this.chunkTransitionToken,
+          targetChunk: chunkKey,
+          previousChunk: oldChunk,
+          currentChunk: this.currentChunk,
+          previousPinnedChunks,
+          hasFiniteOldChunkCoordinates,
+          oldChunkCoordinates:
+            hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
+              ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
+              : null,
+          startRow,
+          startCol,
+          force: effectiveForce,
+          transitionToken,
+          preparedTerrain: null,
+          applyPreparedTerrain: () => undefined,
+          setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
+          updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+          unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
+          restorePreviousChunkVisuals: (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) =>
+            this.restorePreviousChunkVisualsAfterRollback(
+              oldStartRow,
+              oldStartCol,
+              previousChunk,
+              previousTransitionToken,
+            ),
+          clearSceneChunkBounds: () => this.clearSceneChunkBounds(),
+          forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
+          updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
+            this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
+          scheduleManagerCatchUp: () => undefined,
+          unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
+        });
+        if (presentationStatus === "timed_out") {
+          this.scheduleChunkPresentationRetry(chunkKey, transitionToken);
+        }
+        if (finalizeResult.status === "rolled_back") {
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
+          return;
+        }
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
+        return;
+      }
+
+      if (tileFetchSucceeded && preparedTerrain && presentationStatus === "ready") {
         const terrainReadyDurationMs = performance.now() - chunkSwitchStartedAt;
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_ready_duration_recorded", {
           durationMs: terrainReadyDurationMs,
@@ -6412,6 +6653,16 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
+      if (
+        shouldClearChunkPresentationRetrySchedule({
+          targetChunk: chunkKey,
+          currentChunk: this.currentChunk,
+          outcome: "presentation_committed",
+        })
+      ) {
+        this.chunkPresentationRetryScheduledAt.delete(chunkKey);
+      }
+
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
 
       if (managerCatchUpPromise) {
@@ -6456,7 +6707,7 @@ export default class WorldmapScene extends WarpTravel {
 
     try {
       const refreshStartedAt = performance.now();
-      const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
+      const { tileFetchSucceeded, preparedTerrain, presentationStatus } = await hydrateWarpTravelChunk({
         chunkKey,
         startRow,
         startCol,
@@ -6468,26 +6719,40 @@ export default class WorldmapScene extends WarpTravel {
         updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
           this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
         waitForTileHydrationIdle: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.waitForTileHydrationIdle(targetChunkKey);
-          presentationPhaseDurations.tileHydrationDrainMs = performance.now() - startedAt;
+          const result = await this.waitForTileAuthoritativeDrain(targetChunkKey, transitionToken);
+          this.recordAuthoritativeBarrierResult(result);
+          presentationPhaseDurations.tileHydrationDrainMs = result.durationMs;
           recordWorldmapRenderDuration("tileHydrationDrainMs", presentationPhaseDurations.tileHydrationDrainMs);
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+          if (result.status === "ready") {
+            recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+          }
+          return result;
         },
         waitForStructureHydrationIdle: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.waitForStructureHydrationIdle(targetChunkKey);
-          presentationPhaseDurations.structureHydrationDrainMs = performance.now() - startedAt;
+          const result = await this.waitForStructureAuthoritativeDrain(targetChunkKey, transitionToken);
+          this.recordAuthoritativeBarrierResult(result);
+          presentationPhaseDurations.structureHydrationDrainMs = result.durationMs;
           recordWorldmapRenderDuration(
             "structureHydrationDrainMs",
             presentationPhaseDurations.structureHydrationDrainMs,
           );
+          return result;
         },
         prewarmChunkAssets: async (targetChunkKey) => {
           const startedAt = performance.now();
-          await this.structureManager.prewarmChunkAssets(targetChunkKey);
-          presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "asset_prewarm_deferred");
+          try {
+            await this.structureManager.prewarmChunkAssets(targetChunkKey);
+            presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
+            recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+            recordWorldmapRenderDuration("assetPrewarmDeferredMs", presentationPhaseDurations.structureAssetPrewarmMs);
+            recordChunkDiagnosticsEvent(this.chunkDiagnostics, "asset_prewarm_completed");
+          } catch (error) {
+            presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
+            recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
+            recordChunkDiagnosticsEvent(this.chunkDiagnostics, "asset_prewarm_failed");
+            console.warn("[WorldMap] Deferred structure asset prewarm failed", error);
+          }
         },
         prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
           const startedAt = performance.now();
@@ -6500,7 +6765,7 @@ export default class WorldmapScene extends WarpTravel {
           this.hydratedChunkRefreshes.delete(hydratedChunkKey);
         },
       });
-      if (!tileFetchSucceeded) {
+      if (presentationStatus !== "ready" || !tileFetchSucceeded) {
         return;
       }
 
@@ -6664,6 +6929,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private updateWorldmapZoom(deltaTime: number): void {
+    const previousZoomSnapshot = this.zoomCoordinator.getSnapshot();
     const zoomFrame = this.zoomCoordinator.tick({
       cameraPosition: this.controls.object.position,
       target: this.controls.target,
@@ -6672,6 +6938,16 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     if (!zoomFrame.didMove) {
+      if (
+        shouldNotifyWorldmapControlsChangeAfterZoomTick({
+          didMove: zoomFrame.didMove,
+          previousZoomSnapshot,
+          nextZoomSnapshot: zoomFrame.snapshot,
+          zoomRefreshPlannerState: this.zoomRefreshPlannerState,
+        })
+      ) {
+        this.notifyControlsChanged();
+      }
       this.publishWorldmapZoomSnapshot(zoomFrame.snapshot);
       return;
     }

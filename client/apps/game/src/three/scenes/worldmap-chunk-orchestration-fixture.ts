@@ -1,5 +1,6 @@
 import { resolveChunkSwitchActions } from "./worldmap-chunk-transition";
 import { createControlledAsyncCall } from "./worldmap-test-harness";
+import type { WorldmapBarrierResult } from "./worldmap-authoritative-barrier";
 
 interface RunChunkSwitchInput {
   chunkKey: string;
@@ -14,6 +15,7 @@ interface RunChunkSwitchInput {
 
 interface RunChunkSwitchResult {
   tileFetchSucceeded: boolean;
+  presentationStatus: "ready" | "fetch_failed" | "timed_out" | "aborted";
   committedManagers: boolean;
   rolledBack: boolean;
   unregisteredPreviousChunk: boolean;
@@ -22,8 +24,9 @@ interface RunChunkSwitchResult {
 
 export function createWorldmapChunkOrchestrationFixture() {
   const tileFetch = createControlledAsyncCall<[string], boolean>();
+  const tileHydration = createControlledAsyncCall<[string], WorldmapBarrierResult>();
   const boundsSwitch = createControlledAsyncCall<[string, number | undefined], void>();
-  const structureHydration = createControlledAsyncCall<[string], void>();
+  const structureHydration = createControlledAsyncCall<[string], WorldmapBarrierResult>();
   const assetPrewarm = createControlledAsyncCall<[string], void>();
   const terrainPreparation = createControlledAsyncCall<[number, number], { chunkKey: string }>();
   const managerUpdate = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
@@ -31,6 +34,7 @@ export function createWorldmapChunkOrchestrationFixture() {
 
   return {
     tileFetch,
+    tileHydration,
     boundsSwitch,
     structureHydration,
     assetPrewarm,
@@ -46,22 +50,32 @@ export function createWorldmapChunkOrchestrationFixture() {
       const previousChunk = input.previousChunk ?? currentChunk;
       const oldChunk = currentChunk;
       const tileFetchPromise = tileFetch.fn(input.chunkKey);
+      const tileHydrationPromise = tileHydration.fn(input.chunkKey);
       const boundsSwitchPromise = boundsSwitch.fn(input.chunkKey, input.transitionToken);
       const structureHydrationPromise = structureHydration.fn(input.chunkKey);
       const assetPrewarmPromise = assetPrewarm.fn(input.chunkKey);
 
-      const [tileFetchSucceeded] = await Promise.all([
+      void assetPrewarmPromise.catch(() => undefined);
+
+      const [tileFetchSucceeded, tileHydrationResult, _boundsReady, structureHydrationResult] = await Promise.all([
         tileFetchPromise,
+        tileHydrationPromise,
         boundsSwitchPromise,
         structureHydrationPromise,
-        assetPrewarmPromise,
       ]);
-      if (tileFetchSucceeded) {
+
+      const presentationStatus = resolvePresentationStatus({
+        tileFetchSucceeded,
+        tileHydrationResult,
+        structureHydrationResult,
+      });
+
+      if (presentationStatus === "ready") {
         await terrainPreparation.fn(input.startRow, input.startCol);
       }
 
       const actions = resolveChunkSwitchActions({
-        fetchSucceeded: tileFetchSucceeded,
+        fetchSucceeded: presentationStatus === "ready" && tileFetchSucceeded,
         isCurrentTransition: input.isCurrentTransition,
         targetChunk: input.chunkKey,
         previousChunk,
@@ -71,6 +85,7 @@ export function createWorldmapChunkOrchestrationFixture() {
         currentChunk = oldChunk;
         return {
           tileFetchSucceeded,
+          presentationStatus,
           committedManagers: false,
           rolledBack: true,
           unregisteredPreviousChunk: false,
@@ -81,6 +96,7 @@ export function createWorldmapChunkOrchestrationFixture() {
       if (!actions.shouldCommitManagers) {
         return {
           tileFetchSucceeded,
+          presentationStatus,
           committedManagers: false,
           rolledBack: false,
           unregisteredPreviousChunk: false,
@@ -97,6 +113,7 @@ export function createWorldmapChunkOrchestrationFixture() {
 
       return {
         tileFetchSucceeded,
+        presentationStatus,
         committedManagers: actions.shouldCommitManagers,
         rolledBack: actions.shouldRollback,
         unregisteredPreviousChunk: actions.shouldUnregisterPreviousChunk,
@@ -104,4 +121,24 @@ export function createWorldmapChunkOrchestrationFixture() {
       };
     },
   };
+}
+
+function resolvePresentationStatus(input: {
+  tileFetchSucceeded: boolean;
+  tileHydrationResult: WorldmapBarrierResult;
+  structureHydrationResult: WorldmapBarrierResult;
+}): "ready" | "fetch_failed" | "timed_out" | "aborted" {
+  if (!input.tileFetchSucceeded) {
+    return "fetch_failed";
+  }
+
+  if (input.tileHydrationResult.status !== "ready") {
+    return input.tileHydrationResult.status;
+  }
+
+  if (input.structureHydrationResult.status !== "ready") {
+    return input.structureHydrationResult.status;
+  }
+
+  return "ready";
 }

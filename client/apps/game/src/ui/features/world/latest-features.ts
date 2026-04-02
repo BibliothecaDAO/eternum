@@ -9,7 +9,7 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
-    date: "2026-03-31",
+    date: "2026-04-02",
     title: "Stable World Map Zoom",
     description:
       "World map zoom now waits for the camera to settle before running chunk refresh work, so rapid zooming feels smoother and no longer fights terrain streaming or recovery paths.",

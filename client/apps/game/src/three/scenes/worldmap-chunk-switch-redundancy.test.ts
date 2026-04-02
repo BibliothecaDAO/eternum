@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { createControlledAsyncCall, flushMicrotasks } from "./worldmap-test-harness";
+import type { WorldmapBarrierResult } from "./worldmap-authoritative-barrier";
+
+function readyBarrier(label: string): WorldmapBarrierResult {
+  return { status: "ready", label, durationMs: 0 };
+}
 
 /**
  * Stage 1: Chunk Switch Critical Path — Remove Serialized Redundancy
@@ -27,7 +32,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
 
     const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
-    const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
+    const waitForTileHydrationIdle = createControlledAsyncCall<[string], WorldmapBarrierResult>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
     // We use real async functions for structure drain and prewarm to test
@@ -49,6 +54,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
       waitForStructureHydrationIdle: async (_chunkKey) => {
         await structureDrainDeferred.promise;
         structureDrainCompleted = true;
+        return readyBarrier("structure_authoritative");
       },
       prewarmChunkAssets: async (_chunkKey) => {
         // If the prewarm callback redundantly awaits structure hydration,
@@ -74,7 +80,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     prewarmWorkDeferred.resolve();
     computeTileEntities.resolveNext(true);
     updateBoundsSubscription.resolveNext();
-    waitForTileHydrationIdle.resolveNext();
+    waitForTileHydrationIdle.resolveNext(readyBarrier("tile_authoritative"));
     await flushMicrotasks(2);
 
     expect(structureDrainCompleted).toBe(true);
@@ -94,7 +100,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
 
     const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
-    const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
+    const waitForTileHydrationIdle = createControlledAsyncCall<[string], WorldmapBarrierResult>();
     const prewarmChunkAssets = createControlledAsyncCall<[string], void>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
@@ -111,6 +117,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
       waitForTileHydrationIdle: waitForTileHydrationIdle.fn,
       waitForStructureHydrationIdle: async (chunkKey) => {
         structureDrainCalls.push(chunkKey);
+        return readyBarrier("structure_authoritative");
       },
       prewarmChunkAssets: prewarmChunkAssets.fn,
       prepareTerrainChunk: prepareTerrainChunk.fn,
@@ -135,7 +142,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
 
     const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
-    const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
+    const waitForTileHydrationIdle = createControlledAsyncCall<[string], WorldmapBarrierResult>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
     const structureDrainDeferred = createDeferred<void>();
@@ -153,6 +160,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
       waitForTileHydrationIdle: waitForTileHydrationIdle.fn,
       waitForStructureHydrationIdle: async (_chunkKey) => {
         await structureDrainDeferred.promise;
+        return readyBarrier("structure_authoritative");
       },
       // Simulate the BUGGY callback: prewarm internally awaits the same drain
       prewarmChunkAssets: async (_chunkKey) => {
@@ -173,18 +181,18 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     structureDrainDeferred.resolve();
     computeTileEntities.resolveNext(true);
     updateBoundsSubscription.resolveNext();
-    waitForTileHydrationIdle.resolveNext();
+    waitForTileHydrationIdle.resolveNext(readyBarrier("tile_authoritative"));
     await flushMicrotasks(2);
     prepareTerrainChunk.resolveNext({ chunkKey: "24,24" });
     await flushMicrotasks(2);
   });
 
-  it("overall chunk switch still waits for both structure drain and prewarm to complete", async () => {
+  it("overall chunk switch does not wait for prewarm to complete before terrain preparation", async () => {
     const completionOrder: string[] = [];
 
     const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
-    const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
+    const waitForTileHydrationIdle = createControlledAsyncCall<[string], WorldmapBarrierResult>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
     const structureDrainDeferred = createDeferred<void>();
@@ -204,6 +212,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
       waitForStructureHydrationIdle: async (_chunkKey) => {
         await structureDrainDeferred.promise;
         completionOrder.push("structureDrain");
+        return readyBarrier("structure_authoritative");
       },
       prewarmChunkAssets: async (_chunkKey) => {
         await prewarmDeferred.promise;
@@ -218,7 +227,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     // Resolve tile fetch and other prerequisites
     computeTileEntities.resolveNext(true);
     updateBoundsSubscription.resolveNext();
-    waitForTileHydrationIdle.resolveNext();
+    waitForTileHydrationIdle.resolveNext(readyBarrier("tile_authoritative"));
     await flushMicrotasks(2);
 
     // Terrain preparation should NOT have started — structure drain and prewarm are still pending
@@ -228,19 +237,16 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     structureDrainDeferred.resolve();
     await flushMicrotasks(2);
 
-    // Still waiting for prewarm
-    expect(prepareTerrainChunk.calls).toEqual([]);
-
-    // Resolve prewarm
-    prewarmDeferred.resolve();
-    await flushMicrotasks(2);
-
-    // Now terrain preparation should proceed
+    // Terrain preparation should proceed without waiting for prewarm
     expect(prepareTerrainChunk.calls).toEqual([[24, 24, 80, 90]]);
     prepareTerrainChunk.resolveNext({ chunkKey: "24,24" });
 
+    // Prewarm can resolve later without blocking the chunk switch result
+    prewarmDeferred.resolve();
+
     const result = await hydrationPromise;
     expect(result.tileFetchSucceeded).toBe(true);
+    expect(result.presentationStatus).toBe("ready");
     expect(completionOrder).toEqual(["structureDrain", "prewarm"]);
   });
 });

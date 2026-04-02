@@ -44,4 +44,21 @@ describe("worldmap refresh scheduler wiring", () => {
       /if \(WORLDMAP_ZOOM_HARDENING\.terrainSelfHeal && this\.zoomCoordinator\.getSnapshot\(\)\.isSettled\)/,
     );
   });
+
+  it("rolls back timed-out chunk presentations and retries only the timed-out case", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(
+      /if \(presentationStatus === "timed_out" \|\| presentationStatus === "aborted"\) \{[\s\S]*?finalizeWarpTravelChunkSwitch\(/,
+    );
+    expect(source).toMatch(
+      /if \(presentationStatus === "timed_out"\) \{\s*this\.scheduleChunkPresentationRetry\(chunkKey, transitionToken\);/,
+    );
+  });
+
+  it("drops same-chunk refresh commits when authoritative presentation did not finish cleanly", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toMatch(/if \(presentationStatus !== "ready" \|\| !tileFetchSucceeded\) \{\s*return;\s*\}/);
+  });
 });

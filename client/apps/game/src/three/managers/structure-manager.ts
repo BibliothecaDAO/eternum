@@ -115,6 +115,13 @@ interface PendingLabelUpdate {
   battleTimerLeft?: number;
 }
 
+interface StructureHydrationResult {
+  existingStructure?: StructureInfo;
+  structureRecord?: StructureInfo;
+  visibleUpdateMode: "none" | "patch" | "rebuild";
+  shouldRebuildVisibleStructures: boolean;
+}
+
 interface StructureInstanceBinding {
   modelIndex: number;
   instanceIndex: number;
@@ -793,7 +800,6 @@ export class StructureManager {
       console.warn("[StructureManager] Received tile update without a valid entity id", update);
       return;
     }
-    await this.ensureStructureModels(structureType);
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     const position = getWorldPositionForHex(normalizedCoord);
     position.y += 0.05;
@@ -1030,14 +1036,24 @@ export class StructureManager {
       isVisible: isCurrentlyVisible,
     };
     const visibleUpdateMode = resolveVisibleStructureUpdateMode(visibleUpdateInput);
+    const hydrationResult: StructureHydrationResult = {
+      existingStructure: existingStructure ?? undefined,
+      structureRecord: structureRecord ?? undefined,
+      visibleUpdateMode,
+      shouldRebuildVisibleStructures: shouldRebuildVisibleStructuresForStructureUpdate(visibleUpdateInput),
+    };
 
-    if (visibleUpdateMode === "patch" && existingStructure && structureRecord) {
-      this.patchVisibleStructure(existingStructure, structureRecord);
+    void this.reconcileVisibleStructureHydration(hydrationResult);
+  }
+
+  private async reconcileVisibleStructureHydration(result: StructureHydrationResult): Promise<void> {
+    if (result.visibleUpdateMode === "patch" && result.existingStructure && result.structureRecord) {
+      this.patchVisibleStructure(result.existingStructure, result.structureRecord);
       return;
     }
 
-    if (visibleUpdateMode === "rebuild" || shouldRebuildVisibleStructuresForStructureUpdate(visibleUpdateInput)) {
-      this.updateVisibleStructures();
+    if (result.visibleUpdateMode === "rebuild" || result.shouldRebuildVisibleStructures) {
+      await this.updateVisibleStructures();
     }
   }
 

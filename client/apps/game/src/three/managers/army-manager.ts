@@ -610,13 +610,13 @@ export class ArmyManager {
     const battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
     const hasAttackerPosition = typeof latestAttackerCoordX === "number" && typeof latestAttackerCoordY === "number";
     const hasDefenderPosition = typeof latestDefenderCoordX === "number" && typeof latestDefenderCoordY === "number";
-    const attackerPosition =
+    const attackerPosition: { x: number; y: number } | undefined =
       hasAttackerPosition
-        ? { x: latestAttackerCoordX, y: latestAttackerCoordY }
+        ? { x: latestAttackerCoordX!, y: latestAttackerCoordY! }
         : undefined;
-    const defenderPosition =
+    const defenderPosition: { x: number; y: number } | undefined =
       hasDefenderPosition
-        ? { x: latestDefenderCoordX, y: latestDefenderCoordY }
+        ? { x: latestDefenderCoordX!, y: latestDefenderCoordY! }
         : undefined;
     const { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
       { col: hexCoords.col, row: hexCoords.row },

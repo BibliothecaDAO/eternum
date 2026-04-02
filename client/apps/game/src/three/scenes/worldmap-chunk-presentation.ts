@@ -1,3 +1,5 @@
+import type { WorldmapBarrierResult } from "./worldmap-authoritative-barrier";
+
 interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
   chunkKey: string;
   startRow: number;
@@ -7,10 +9,9 @@ interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
     width: number;
   };
   tileFetchPromise: Promise<boolean>;
-  tileHydrationReadyPromise: Promise<void>;
+  tileHydrationReadyPromise: Promise<WorldmapBarrierResult>;
   boundsReadyPromise: Promise<void>;
-  structureReadyPromise: Promise<void>;
-  assetPrewarmPromise: Promise<void>;
+  structureReadyPromise: Promise<WorldmapBarrierResult>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   onChunkReady?: (chunkKey: string) => void;
 }
@@ -18,6 +19,18 @@ interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
 interface PreparedWorldmapChunkPresentation<TPreparedTerrain> {
   tileFetchSucceeded: boolean;
   preparedTerrain: TPreparedTerrain | null;
+  presentationStatus: "ready" | "fetch_failed" | "timed_out" | "aborted";
+}
+
+interface PresentationGateResult {
+  status: "ready" | "timed_out" | "aborted";
+  tileFetchSucceeded: boolean;
+}
+
+interface SettledPresentationTask<TValue> {
+  ok: boolean;
+  value?: TValue;
+  error?: unknown;
 }
 
 interface PrewarmWorldmapChunkPresentationInput<TPreparedTerrain> {
@@ -37,19 +50,39 @@ interface PrewarmedWorldmapChunkPresentation<TPreparedTerrain> {
 export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
   input: PrepareWorldmapChunkPresentationInput<TPreparedTerrain>,
 ): Promise<PreparedWorldmapChunkPresentation<TPreparedTerrain>> {
-  const [tileFetchSucceeded] = await Promise.all([
-    input.tileFetchPromise,
-    input.tileHydrationReadyPromise,
-    input.boundsReadyPromise,
-    input.structureReadyPromise,
-    input.assetPrewarmPromise,
-  ]);
+  const tileFetchTask = settlePresentationTask(input.tileFetchPromise);
+  const boundsReadyTask = settlePresentationTask(input.boundsReadyPromise);
+  const presentationGate = await resolvePresentationGate({
+    tileHydrationReadyPromise: input.tileHydrationReadyPromise,
+    structureReadyPromise: input.structureReadyPromise,
+  });
+
+  if (presentationGate.status !== "ready") {
+    input.onChunkReady?.(input.chunkKey);
+    return {
+      tileFetchSucceeded: presentationGate.tileFetchSucceeded,
+      preparedTerrain: null,
+      presentationStatus: presentationGate.status,
+    };
+  }
+
+  const [tileFetchResult, boundsReadyResult] = await Promise.all([tileFetchTask, boundsReadyTask]);
+  if (!tileFetchResult.ok) {
+    throw tileFetchResult.error;
+  }
+
+  if (!boundsReadyResult.ok) {
+    throw boundsReadyResult.error;
+  }
+
+  const tileFetchSucceeded = tileFetchResult.value ?? false;
 
   if (!tileFetchSucceeded) {
     input.onChunkReady?.(input.chunkKey);
     return {
       tileFetchSucceeded: false,
       preparedTerrain: null,
+      presentationStatus: "fetch_failed",
     };
   }
 
@@ -64,6 +97,7 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
   return {
     tileFetchSucceeded: true,
     preparedTerrain,
+    presentationStatus: "ready",
   };
 }
 
@@ -78,7 +112,7 @@ export async function prewarmWorldmapChunkPresentation<TPreparedTerrain>(
   }
 
   const preparedPresentation = await input.preparePresentation();
-  if (!preparedPresentation.tileFetchSucceeded || preparedPresentation.preparedTerrain === null) {
+  if (preparedPresentation.presentationStatus !== "ready" || preparedPresentation.preparedTerrain === null) {
     return {
       status: "fetch_failed",
       preparedTerrain: null,
@@ -104,4 +138,46 @@ export async function prewarmWorldmapChunkPresentation<TPreparedTerrain>(
     status: "prepared",
     preparedTerrain: preparedPresentation.preparedTerrain,
   };
+}
+
+async function resolvePresentationGate(input: {
+  tileHydrationReadyPromise: Promise<WorldmapBarrierResult>;
+  structureReadyPromise: Promise<WorldmapBarrierResult>;
+}): Promise<PresentationGateResult> {
+  const [tileBarrierResult, structureBarrierResult] = await Promise.all([
+    input.tileHydrationReadyPromise,
+    input.structureReadyPromise,
+  ]);
+
+  if (tileBarrierResult.status !== "ready") {
+    return {
+      status: tileBarrierResult.status,
+      tileFetchSucceeded: false,
+    };
+  }
+
+  if (structureBarrierResult.status !== "ready") {
+    return {
+      status: structureBarrierResult.status,
+      tileFetchSucceeded: false,
+    };
+  }
+
+  return {
+    status: "ready",
+    tileFetchSucceeded: false,
+  };
+}
+
+function settlePresentationTask<TValue>(promise: Promise<TValue>): Promise<SettledPresentationTask<TValue>> {
+  return promise.then(
+    (value) => ({
+      ok: true,
+      value,
+    }),
+    (error) => ({
+      ok: false,
+      error,
+    }),
+  );
 }

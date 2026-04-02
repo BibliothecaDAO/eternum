@@ -14,6 +14,29 @@ interface ChunkSwitchActions {
   shouldRestorePreviousState: boolean;
 }
 
+interface ChunkPresentationRetryDecisionInput {
+  isSwitchedOff: boolean;
+  transitionToken: number;
+  currentTransitionToken: number;
+  currentChunk: string;
+  targetChunk: string;
+  nowMs: number;
+  lastScheduledAtMs?: number;
+  suppressionWindowMs: number;
+}
+
+interface ChunkPresentationRetryDecision {
+  shouldScheduleRetry: boolean;
+  shouldRecordSuppressed: boolean;
+  nextScheduledAtMs: number | null;
+}
+
+interface ChunkPresentationRetryScheduleClearInput {
+  targetChunk: string;
+  currentChunk?: string;
+  outcome: "retry_timer_fired" | "presentation_committed";
+}
+
 interface ManagerUpdateDecisionInput {
   transitionToken?: number;
   expectedTransitionToken: number;
@@ -180,6 +203,44 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
     shouldUnregisterPreviousChunk,
     shouldRestorePreviousState: false,
   };
+}
+
+export function resolveChunkPresentationRetryDecision(
+  input: ChunkPresentationRetryDecisionInput,
+): ChunkPresentationRetryDecision {
+  if (
+    input.isSwitchedOff ||
+    input.transitionToken !== input.currentTransitionToken ||
+    input.currentChunk === input.targetChunk
+  ) {
+    return {
+      shouldScheduleRetry: false,
+      shouldRecordSuppressed: false,
+      nextScheduledAtMs: null,
+    };
+  }
+
+  if (input.lastScheduledAtMs !== undefined && input.nowMs - input.lastScheduledAtMs < input.suppressionWindowMs) {
+    return {
+      shouldScheduleRetry: false,
+      shouldRecordSuppressed: true,
+      nextScheduledAtMs: null,
+    };
+  }
+
+  return {
+    shouldScheduleRetry: true,
+    shouldRecordSuppressed: false,
+    nextScheduledAtMs: input.nowMs,
+  };
+}
+
+export function shouldClearChunkPresentationRetrySchedule(input: ChunkPresentationRetryScheduleClearInput): boolean {
+  if (input.outcome === "retry_timer_fired") {
+    return false;
+  }
+
+  return input.currentChunk === input.targetChunk;
 }
 
 /**

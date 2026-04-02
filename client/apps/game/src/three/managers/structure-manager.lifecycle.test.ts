@@ -38,7 +38,26 @@ vi.mock("@/three/utils/utils", () => ({
 
 vi.mock("@/ui/config", () => ({
   FELT_CENTER: () => 0,
+  IS_FLAT_MODE: false,
 }));
+
+vi.mock("@bibliothecadao/eternum", () => {
+  const enumProxy = new Proxy(
+    {},
+    {
+      get: (_, key) => key,
+    },
+  );
+  return new Proxy(
+    {
+      StructureTileSystemUpdate: class MockStructureTileSystemUpdate {},
+    } as Record<string, unknown>,
+    {
+      get: (target, prop) => (prop in target ? target[prop as string] : enumProxy),
+      has: () => true,
+    },
+  );
+});
 
 vi.mock("@bibliothecadao/types", () => {
   const enumProxy = new Proxy(
@@ -84,8 +103,11 @@ vi.mock("../cosmetics", () => ({
     hydrateFromBlitzComponent: vi.fn(),
   },
   resolveStructureCosmetic: vi.fn(() => ({
-    cosmeticId: "default",
-    registryEntry: undefined,
+    skin: {
+      cosmeticId: "default",
+      assetPaths: [],
+      isFallback: true,
+    },
     attachments: [],
   })),
   resolveStructureMountTransforms: vi.fn(() => []),
@@ -139,6 +161,17 @@ vi.mock("./points-label-renderer", () => ({
 
 const { StructureManager } = await import("./structure-manager");
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, resolve, reject };
+}
+
 function createStructureManagerSubject() {
   const subject = Object.create(StructureManager.prototype) as any;
 
@@ -168,7 +201,7 @@ function createStructureManagerSubject() {
   subject.unsubscribeVisibility = unsubscribeVisibility;
   subject.hexagonScene = { removeCameraViewListener };
   subject.handleCameraViewChange = vi.fn();
-  subject.battleTimerInterval = setInterval(() => {}, 60_000);
+  subject.timedLabelInterval = setInterval(() => {}, 60_000);
   subject.pendingLabelUpdates = new Map([[1, { pending: true }]]);
   subject.entityIdLabels = new Map([
     [1, labelA],
@@ -221,6 +254,7 @@ function createStructureManagerSubject() {
   subject.structureHexCoords = new Map([[1, new Set([1])]]);
   subject.chunkToStructures = new Map([["0,0", new Set([1])]]);
   subject.structuresWithActiveBattleTimer = new Set([1]);
+  subject.structuresWithActiveTimedLabels = new Set([1]);
   subject.previousVisibleIds = new Set([1]);
   subject.pointsRenderers = {
     a: { dispose: disposePointsA },
@@ -262,6 +296,7 @@ function createOnUpdateSubject() {
   subject.components = undefined;
   subject.entityIdLabels = new Map();
   subject.updateBattleTimerTracking = vi.fn();
+  subject.structuresWithActiveTimedLabels = new Set();
   subject.isInCurrentChunk = vi.fn(() => false);
   subject.updateVisibleStructures = vi.fn();
   subject.structures = {
@@ -344,7 +379,7 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.unsubscribeVisibility).toHaveBeenCalledTimes(1);
     expect(fixture.removeCameraViewListener).toHaveBeenCalledTimes(1);
     expect(fixture.clearIntervalSpy).toHaveBeenCalledTimes(1);
-    expect(fixture.subject.battleTimerInterval).toBeNull();
+    expect(fixture.subject.timedLabelInterval).toBeNull();
     expect(fixture.subject.pendingLabelUpdates.size).toBe(0);
     expect(fixture.removeLabelFromGroup).toHaveBeenCalledTimes(2);
     expect(fixture.releaseLabel).toHaveBeenCalledTimes(2);
@@ -364,7 +399,7 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.subject.wonderEntityIdMaps.size).toBe(0);
     expect(fixture.subject.structureHexCoords.size).toBe(0);
     expect(fixture.subject.chunkToStructures.size).toBe(0);
-    expect(fixture.subject.structuresWithActiveBattleTimer.size).toBe(0);
+    expect(fixture.subject.structuresWithActiveTimedLabels.size).toBe(0);
     expect(fixture.subject.previousVisibleIds.size).toBe(0);
   });
 
@@ -502,6 +537,36 @@ describe("StructureManager destroy lifecycle", () => {
     expect(subject.updateVisibleStructures).toHaveBeenCalledTimes(1);
   });
 
+  it("updates authoritative structure state before structure model loading resolves", async () => {
+    const { subject, structuresById } = createOnUpdateSubject();
+    const ensureStructureModelsDeferred = createDeferred<unknown[]>();
+    let settled = false;
+    subject.ensureStructureModels = vi.fn(() => ensureStructureModelsDeferred.promise);
+    subject.isInCurrentChunk = vi.fn(() => true);
+
+    const onUpdatePromise = subject.onUpdate({
+      ...BASE_STRUCTURE_UPDATE,
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+    });
+    onUpdatePromise.then(() => {
+      settled = true;
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(settled).toBe(true);
+    expect(structuresById.get(7)).toMatchObject({
+      entityId: 7,
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+    });
+    expect(subject.updateSpatialIndex).toHaveBeenCalledTimes(1);
+    expect(subject.updateVisibleStructures).toHaveBeenCalledTimes(1);
+
+    ensureStructureModelsDeferred.resolve([]);
+    await onUpdatePromise;
+  });
+
   it("skips full visible rebuilds for metadata-only updates to already-visible structures", async () => {
     const { subject, structuresById } = createOnUpdateSubject();
     subject.isInCurrentChunk = vi.fn(() => true);
@@ -533,5 +598,22 @@ describe("StructureManager destroy lifecycle", () => {
     });
 
     expect(subject.updateVisibleStructures).not.toHaveBeenCalled();
+  });
+
+  it("schedules visible reconcile after authoritative mutation even when the initial model lookup is cold", async () => {
+    const { subject } = createOnUpdateSubject();
+    const ensureStructureModelsDeferred = createDeferred<unknown[]>();
+    subject.ensureStructureModels = vi.fn(() => ensureStructureModelsDeferred.promise);
+    subject.isInCurrentChunk = vi.fn(() => true);
+
+    await subject.onUpdate({
+      ...BASE_STRUCTURE_UPDATE,
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+    });
+
+    expect(subject.updateVisibleStructures).toHaveBeenCalledTimes(1);
+
+    ensureStructureModelsDeferred.resolve([]);
+    await Promise.resolve();
   });
 });

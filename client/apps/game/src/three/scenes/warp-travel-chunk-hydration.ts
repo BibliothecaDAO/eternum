@@ -1,4 +1,5 @@
 import { prepareWorldmapChunkPresentation } from "./worldmap-chunk-presentation";
+import type { WorldmapBarrierResult } from "./worldmap-authoritative-barrier";
 
 export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
   chunkKey: string;
@@ -13,8 +14,8 @@ export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
   computeTileEntities: (chunkKey: string) => Promise<boolean>;
   updatePinnedChunks: (chunkKeys: string[]) => void;
   updateBoundsSubscription: (chunkKey: string, transitionToken: number) => Promise<void>;
-  waitForTileHydrationIdle: (chunkKey: string) => Promise<void>;
-  waitForStructureHydrationIdle: (chunkKey: string) => Promise<void>;
+  waitForTileHydrationIdle: (chunkKey: string) => Promise<WorldmapBarrierResult>;
+  waitForStructureHydrationIdle: (chunkKey: string) => Promise<WorldmapBarrierResult>;
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   onChunkHydrated: (chunkKey: string) => void;
@@ -22,10 +23,15 @@ export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
 
 export async function hydrateWarpTravelChunk<TPreparedTerrain>(
   input: WarpTravelChunkHydrationInput<TPreparedTerrain>,
-): Promise<{ tileFetchSucceeded: boolean; preparedTerrain: TPreparedTerrain | null }> {
+): Promise<{
+  tileFetchSucceeded: boolean;
+  preparedTerrain: TPreparedTerrain | null;
+  presentationStatus: "ready" | "fetch_failed" | "timed_out" | "aborted";
+  deferredVisualCatchUpPromise: Promise<void>;
+}> {
   const tileFetchPromise = input.computeTileEntities(input.chunkKey);
   const structureReadyPromise = input.waitForStructureHydrationIdle(input.chunkKey);
-  const assetPrewarmPromise = input.prewarmChunkAssets(input.chunkKey);
+  const deferredVisualCatchUpPromise = input.prewarmChunkAssets(input.chunkKey);
 
   input.updatePinnedChunks(input.surroundingChunks);
   const boundsSwitchPromise = input.updateBoundsSubscription(input.chunkKey, input.transitionToken);
@@ -33,7 +39,7 @@ export async function hydrateWarpTravelChunk<TPreparedTerrain>(
     void input.computeTileEntities(chunkKey);
   });
 
-  return prepareWorldmapChunkPresentation({
+  const presentationResult = await prepareWorldmapChunkPresentation({
     chunkKey: input.chunkKey,
     startRow: input.startRow,
     startCol: input.startCol,
@@ -42,8 +48,12 @@ export async function hydrateWarpTravelChunk<TPreparedTerrain>(
     tileHydrationReadyPromise: input.waitForTileHydrationIdle(input.chunkKey),
     boundsReadyPromise: boundsSwitchPromise,
     structureReadyPromise,
-    assetPrewarmPromise,
     prepareTerrainChunk: input.prepareTerrainChunk,
     onChunkReady: input.onChunkHydrated,
   });
+
+  return {
+    ...presentationResult,
+    deferredVisualCatchUpPromise,
+  };
 }
