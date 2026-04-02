@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23919581894-1.json",
   "latestLaunchRequestId": "23919581894-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": null,
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-02T20:07:04.900Z",
+  "updatedAt": "2026-04-02T20:07:17.746Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-02T20:22:00.210Z",
-    "lastEvaluatedAt": "2026-04-02T20:07:00.210Z"
+    "nextEvaluationAt": "2026-04-02T20:22:17.746Z",
+    "lastEvaluatedAt": "2026-04-02T20:07:17.746Z"
   },
   "steps": [
     {
@@ -47,10 +47,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-04-02T20:07:04.900Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-04-02T20:07:04.900Z",
+      "finishedAt": "2026-04-02T20:07:17.746Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -1511,13 +1512,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23919581894-1",
-    "workflowRunId": 23919581894,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-04-02T20:07:04.900Z",
-    "expiresAt": "2026-04-02T20:52:04.900Z"
   }
 }
