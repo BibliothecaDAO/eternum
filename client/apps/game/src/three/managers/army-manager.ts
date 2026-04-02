@@ -57,6 +57,11 @@ import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
+import {
+  buildTrackedArmyTileSync,
+  shouldAcceptTrackedArmyStaminaSnapshot,
+  type TrackedArmyStaminaSnapshot,
+} from "./army-stamina-sync-policy";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
@@ -603,11 +608,28 @@ export class ArmyManager {
 
     // Calculate battle timer left
     const battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
+    const { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
+      { col: hexCoords.col, row: hexCoords.row },
+      latestAttackerId ?? undefined,
+      latestAttackerCoordX !== null && latestAttackerCoordY !== null
+        ? { x: latestAttackerCoordX, y: latestAttackerCoordY }
+        : undefined,
+      latestDefenderId ?? undefined,
+      latestDefenderCoordX !== null && latestDefenderCoordY !== null
+        ? { x: latestDefenderCoordX, y: latestDefenderCoordY }
+        : undefined,
+    );
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
       await this.moveArmy(entityId, newPosition);
+      this.syncTrackedArmyStateFromTileUpdate(update, {
+        battleCooldownEnd,
+        battleTimerLeft,
+        attackedFromDegrees: attackedFromDegrees ?? undefined,
+        attackedTowardDegrees: attackTowardDegrees ?? undefined,
+      });
       this.syncTrackedArmyOwnerState({
         entityId: update.entityId,
         ownerAddress,
@@ -643,6 +665,104 @@ export class ArmyManager {
       });
     }
     return false;
+  }
+
+  private syncTrackedArmyStateFromTileUpdate(
+    update: ExplorerTroopsTileSystemUpdate,
+    battleState: {
+      battleCooldownEnd?: number;
+      battleTimerLeft?: number;
+      attackedFromDegrees?: number;
+      attackedTowardDegrees?: number;
+    },
+  ): boolean {
+    const army = this.armies.get(update.entityId);
+    if (!army) {
+      return false;
+    }
+
+    const nextState = buildTrackedArmyTileSync({
+      existing: this.toTrackedArmyStaminaSnapshot(army),
+      incoming: {
+        troopCount: update.troopCount,
+        currentStamina: update.currentStamina,
+        maxStamina: update.maxStamina,
+        onChainStamina: update.onChainStamina,
+        battleState,
+        owningStructureId: update.ownerStructureId,
+      },
+      currentArmiesTick: getBlockTimestamp().currentArmiesTick,
+      recomputeCurrentStamina: ({ troopCount, onChainStamina, currentArmiesTick }) =>
+        this.computeTrackedArmyCurrentStamina(army, troopCount, onChainStamina, currentArmiesTick),
+    });
+
+    army.troopCount = nextState.troopCount;
+    army.currentStamina = nextState.currentStamina;
+    army.maxStamina = nextState.maxStamina;
+    army.onChainStamina = nextState.onChainStamina;
+    army.battleCooldownEnd = nextState.battleCooldownEnd;
+    army.battleTimerLeft = nextState.battleTimerLeft;
+    army.attackedFromDegrees = nextState.attackedFromDegrees;
+    army.attackedTowardDegrees = nextState.attackedTowardDegrees;
+
+    if (nextState.owningStructureId !== undefined) {
+      army.owningStructureId = nextState.owningStructureId;
+    }
+
+    this.armies.set(update.entityId, army);
+
+    const label = this.entityIdLabels.get(update.entityId);
+    if (label) {
+      this.updateArmyLabelData(update.entityId, army, label);
+    }
+
+    return true;
+  }
+
+  private toTrackedArmyStaminaSnapshot(army: ArmyData): TrackedArmyStaminaSnapshot {
+    return {
+      troopCount: army.troopCount,
+      currentStamina: army.currentStamina,
+      maxStamina: army.maxStamina,
+      onChainStamina: army.onChainStamina,
+      battleCooldownEnd: army.battleCooldownEnd,
+      battleTimerLeft: army.battleTimerLeft,
+      attackedFromDegrees: army.attackedFromDegrees,
+      attackedTowardDegrees: army.attackedTowardDegrees,
+    };
+  }
+
+  private computeTrackedArmyCurrentStamina(
+    army: ArmyData,
+    troopCount: number,
+    onChainStamina: { amount: bigint; updatedTick: number },
+    currentArmiesTick: number,
+  ): number {
+    return Number(
+      StaminaManager.getStamina(
+        {
+          category: army.category,
+          tier: army.tier,
+          count: BigInt(troopCount),
+          stamina: {
+            amount: BigInt(onChainStamina.amount),
+            updated_tick: BigInt(onChainStamina.updatedTick),
+          },
+          boosts: {
+            incr_stamina_regen_percent_num: 0,
+            incr_stamina_regen_tick_count: 0,
+            incr_explore_reward_percent_num: 0,
+            incr_explore_reward_end_tick: 0,
+            incr_damage_dealt_percent_num: 0,
+            incr_damage_dealt_end_tick: 0,
+            decr_damage_gotten_percent_num: 0,
+            decr_damage_gotten_end_tick: 0,
+          },
+          battle_cooldown_end: 0,
+        },
+        currentArmiesTick,
+      ).amount,
+    );
   }
 
   private resolveOwnerName(address: bigint, preferredName?: string, fallbackName?: string): string {
@@ -2930,10 +3050,36 @@ ${
       return;
     }
 
-    // Log troop count diff and play visual FX for battle damage/healing
+    const { currentArmiesTick } = getBlockTimestamp();
+    const nextBattleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
+    const nextSnapshot: TrackedArmyStaminaSnapshot = {
+      troopCount: update.troopCount,
+      currentStamina: this.computeTrackedArmyCurrentStamina(
+        army,
+        update.troopCount,
+        update.onChainStamina,
+        currentArmiesTick,
+      ),
+      maxStamina: army.maxStamina,
+      onChainStamina: update.onChainStamina,
+      battleCooldownEnd: update.battleCooldownEnd,
+      battleTimerLeft: nextBattleTimerLeft,
+      attackedFromDegrees: army.attackedFromDegrees,
+      attackedTowardDegrees: army.attackedTowardDegrees,
+    };
+
+    const shouldAcceptSnapshot = shouldAcceptTrackedArmyStaminaSnapshot({
+      existing: this.toTrackedArmyStaminaSnapshot(army),
+      incoming: nextSnapshot,
+    });
+
+    if (!shouldAcceptSnapshot) {
+      return;
+    }
+
     const previousCount = army.troopCount;
     const newCount = update.troopCount;
-    if (previousCount !== newCount) {
+    if (previousCount !== update.troopCount) {
       const diff = newCount - previousCount;
       const diffSign = diff > 0 ? "+" : "";
       console.log(
@@ -2946,38 +3092,11 @@ ${
       this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);
     }
 
-    // Update cached army data
-    army.troopCount = update.troopCount;
-
-    // Calculate current stamina using StaminaManager
-    const { currentArmiesTick } = getBlockTimestamp();
-    army.currentStamina = Number(
-      StaminaManager.getStamina(
-        {
-          category: army.category,
-          tier: army.tier,
-          count: BigInt(update.troopCount),
-          stamina: {
-            amount: BigInt(update.onChainStamina.amount),
-            updated_tick: BigInt(update.onChainStamina.updatedTick),
-          },
-          boosts: {
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-          },
-          battle_cooldown_end: 0,
-        },
-        currentArmiesTick,
-      ).amount,
-    );
-
-    army.troopCount = update.troopCount;
+    army.troopCount = nextSnapshot.troopCount;
+    army.currentStamina = nextSnapshot.currentStamina;
+    army.onChainStamina = nextSnapshot.onChainStamina;
+    army.battleCooldownEnd = nextSnapshot.battleCooldownEnd;
+    army.battleTimerLeft = nextSnapshot.battleTimerLeft;
 
     let resolvedOwnerAddress =
       typeof update.ownerAddress === "bigint" ? update.ownerAddress : BigInt(update.ownerAddress ?? 0);
@@ -3032,10 +3151,6 @@ ${
       guildName: army.owner.guildName,
       ownerStructureId,
     });
-
-    army.onChainStamina = update.onChainStamina;
-    army.battleCooldownEnd = update.battleCooldownEnd;
-    army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
