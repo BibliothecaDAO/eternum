@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-04-02T06:30:23.010Z",
+  "updatedAt": "2026-04-02T06:30:29.488Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -11,7 +11,7 @@
       "path": "runs/mainnet/blitz/rotations/bltz-warzone.json",
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-warzone/23865432477-2.json",
       "status": "running",
-      "updatedAt": "2026-04-02T03:42:02.173Z",
+      "updatedAt": "2026-04-02T06:30:29.488Z",
       "workflowRef": "next",
       "currentStepId": "create-series",
       "hasRunningStep": false,
@@ -41,7 +41,10 @@
           "gameName": "bltz-warzone-02",
           "startTime": 1775113200,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-04-02T06:30:28.322Z"
+          }
         },
         {
           "gameName": "bltz-warzone-03",
