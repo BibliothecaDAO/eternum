@@ -37,8 +37,361 @@
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://dev.blitz.realms.world/images/covers/og-image.png" />
+    <style>
+      html[data-boot-state="booting"] body,
+      html[data-boot-state="react-mounted"] body {
+        background: #050709;
+      }
+
+      #boot-shell {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at center, rgba(182, 150, 86, 0.08), transparent 42%),
+          linear-gradient(180deg, #040607 0%, #070b0d 54%, #050709 100%);
+        color: rgba(240, 224, 189, 0.92);
+        transition:
+          opacity 360ms ease,
+          visibility 360ms ease;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      html[data-boot-state="app-loading"] #boot-shell,
+      html[data-boot-state="app-ready"] #boot-shell {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .boot-shell-grid,
+      .boot-shell-contours,
+      .boot-shell-vignette,
+      .boot-shell-content {
+        position: absolute;
+        inset: 0;
+      }
+
+      .boot-shell-grid {
+        background-image:
+          linear-gradient(rgba(201, 169, 96, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(201, 169, 96, 0.06) 1px, transparent 1px);
+        background-position: center center;
+        background-size: 96px 96px;
+        mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.45) 24%, transparent 82%);
+        opacity: 0.28;
+      }
+
+      .boot-shell-vignette {
+        background:
+          radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0) 36%, rgba(0, 0, 0, 0.72) 100%),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.22), transparent 35%, transparent 65%, rgba(0, 0, 0, 0.22));
+      }
+
+      .boot-shell-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+
+      .boot-shell-panel {
+        position: relative;
+        z-index: 1;
+        width: min(34rem, 100%);
+        border: 1px solid rgba(201, 169, 96, 0.16);
+        border-radius: 28px;
+        background: rgba(7, 10, 12, 0.68);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(18px);
+        padding: 2.25rem 2rem;
+        text-align: center;
+      }
+
+      .boot-shell-caption {
+        margin-bottom: 0.75rem;
+        color: rgba(201, 169, 96, 0.54);
+        font-size: 0.68rem;
+        letter-spacing: 0.42em;
+        text-transform: uppercase;
+      }
+
+      .boot-shell-title {
+        margin: 0;
+        color: rgba(240, 224, 189, 0.94);
+        font-size: clamp(1.2rem, 2vw, 1.45rem);
+        font-weight: 600;
+        letter-spacing: 0.08em;
+      }
+
+      .boot-shell-subtitle {
+        margin: 0.9rem auto 0;
+        max-width: 26rem;
+        color: rgba(236, 224, 194, 0.72);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .boot-shell-brackets {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        margin-top: 1.65rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      .boot-shell-bracket-symbol {
+        color: rgba(201, 169, 96, 0.7);
+        font-size: 1.24rem;
+        line-height: 1;
+      }
+
+      .boot-shell-segments {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .boot-shell-segment {
+        width: 0.95rem;
+        height: 0.95rem;
+        border: 1px solid rgba(201, 169, 96, 0.35);
+        border-radius: 2px;
+        background: rgba(11, 14, 18, 0.08);
+        box-shadow: inset 0 0 0 1px rgba(8, 10, 12, 0.2);
+        animation: boot-shell-segment-sweep 1.6s ease-in-out infinite;
+      }
+
+      .boot-shell-segment:nth-child(1) {
+        animation-delay: 0ms;
+      }
+      .boot-shell-segment:nth-child(2) {
+        animation-delay: 140ms;
+      }
+      .boot-shell-segment:nth-child(3) {
+        animation-delay: 280ms;
+      }
+      .boot-shell-segment:nth-child(4) {
+        animation-delay: 420ms;
+      }
+      .boot-shell-segment:nth-child(5) {
+        animation-delay: 560ms;
+      }
+      .boot-shell-segment:nth-child(6) {
+        animation-delay: 700ms;
+      }
+      .boot-shell-segment:nth-child(7) {
+        animation-delay: 840ms;
+      }
+      .boot-shell-segment:nth-child(8) {
+        animation-delay: 980ms;
+      }
+
+      .boot-shell-contours svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .boot-shell-group-a {
+        animation: boot-shell-drift-a 26s ease-in-out infinite alternate;
+      }
+      .boot-shell-group-b {
+        animation: boot-shell-drift-b 32s ease-in-out infinite alternate;
+      }
+      .boot-shell-group-c {
+        animation: boot-shell-drift-c 38s ease-in-out infinite alternate;
+      }
+
+      .boot-shell-contour-path {
+        fill: none;
+        stroke: rgba(201, 169, 96, 0.82);
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 12 18 88 24;
+        animation: boot-shell-contour-flow 24s linear infinite;
+      }
+
+      .boot-shell-contour-path.echo {
+        stroke-width: 1.1;
+      }
+
+      @keyframes boot-shell-contour-flow {
+        from {
+          stroke-dashoffset: 0;
+        }
+        to {
+          stroke-dashoffset: -142;
+        }
+      }
+
+      @keyframes boot-shell-drift-a {
+        from {
+          transform: translate3d(-1.5%, -0.8%, 0) scale(1.02);
+        }
+        to {
+          transform: translate3d(1.8%, 1.4%, 0) scale(1.06);
+        }
+      }
+
+      @keyframes boot-shell-drift-b {
+        from {
+          transform: translate3d(1.6%, -1.2%, 0) scale(1.04);
+        }
+        to {
+          transform: translate3d(-1.4%, 1.1%, 0) scale(1.02);
+        }
+      }
+
+      @keyframes boot-shell-drift-c {
+        from {
+          transform: translate3d(-0.8%, 1.2%, 0) scale(1.03);
+        }
+        to {
+          transform: translate3d(1.3%, -1.1%, 0) scale(1.05);
+        }
+      }
+
+      @keyframes boot-shell-segment-sweep {
+        0%,
+        100% {
+          background: rgba(11, 14, 18, 0.08);
+          border-color: rgba(201, 169, 96, 0.3);
+          box-shadow: none;
+          transform: translateY(0);
+        }
+        35%,
+        55% {
+          background: linear-gradient(180deg, rgba(246, 220, 147, 0.86) 0%, rgba(199, 157, 69, 0.92) 100%);
+          border-color: rgba(236, 204, 131, 0.92);
+          box-shadow:
+            0 0 16px rgba(201, 169, 96, 0.24),
+            inset 0 0 0 1px rgba(255, 247, 224, 0.16);
+          transform: translateY(-1px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .boot-shell-group-a,
+        .boot-shell-group-b,
+        .boot-shell-group-c,
+        .boot-shell-contour-path,
+        .boot-shell-segment {
+          animation: none !important;
+        }
+      }
+    </style>
   </head>
   <body>
+    <script>
+      document.documentElement.dataset.bootState = "booting";
+      if (window.performance && typeof window.performance.mark === "function") {
+        try {
+          window.performance.mark("boot_html_visible");
+        } catch {}
+      }
+    </script>
+    <div id="boot-shell" aria-hidden="true">
+      <div class="boot-shell-contours">
+        <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
+          <g class="boot-shell-group-a">
+            <path
+              class="boot-shell-contour-path"
+              d="M-120 88C34 26 138 34 248 82s212 78 347 43 258-118 389-121 245 73 391 70 259-88 419-110 300 30 433 84"
+            />
+            <path
+              class="boot-shell-contour-path echo"
+              d="M-120 88C34 26 138 34 248 82s212 78 347 43 258-118 389-121 245 73 391 70 259-88 419-110 300 30 433 84"
+              transform="translate(0 24)"
+              opacity="0.2"
+            />
+          </g>
+          <g class="boot-shell-group-b">
+            <path
+              class="boot-shell-contour-path"
+              d="M-120 182c108-61 235-78 360-44s208 108 334 107 186-79 318-114 258 0 389 46 224 69 339 34 196-123 327-141 258 27 415 96"
+              opacity="0.34"
+            />
+            <path
+              class="boot-shell-contour-path echo"
+              d="M-120 182c108-61 235-78 360-44s208 108 334 107 186-79 318-114 258 0 389 46 224 69 339 34 196-123 327-141 258 27 415 96"
+              transform="translate(0 28)"
+              opacity="0.22"
+            />
+          </g>
+          <g class="boot-shell-group-c">
+            <path
+              class="boot-shell-contour-path"
+              d="M-120 298c127-43 251-32 384 8s221 83 334 59 181-116 305-159 272-19 412 24 231 88 348 72 201-109 341-152 281-19 426 32"
+              opacity="0.42"
+            />
+            <path
+              class="boot-shell-contour-path echo"
+              d="M-120 298c127-43 251-32 384 8s221 83 334 59 181-116 305-159 272-19 412 24 231 88 348 72 201-109 341-152 281-19 426 32"
+              transform="translate(0 34)"
+              opacity="0.24"
+            />
+          </g>
+          <g class="boot-shell-group-a">
+            <path
+              class="boot-shell-contour-path"
+              d="M-120 432c134-65 261-74 390-36s221 130 337 135 193-76 322-115 273-8 412 42 234 77 352 40 199-141 325-191 264-23 414 41"
+              opacity="0.5"
+            />
+            <path
+              class="boot-shell-contour-path echo"
+              d="M-120 432c134-65 261-74 390-36s221 130 337 135 193-76 322-115 273-8 412 42 234 77 352 40 199-141 325-191 264-23 414 41"
+              transform="translate(0 42)"
+              opacity="0.24"
+            />
+          </g>
+          <g class="boot-shell-group-b">
+            <path
+              class="boot-shell-contour-path"
+              d="M-120 566c119-31 233-7 366 34s241 83 365 58 209-118 336-168 273-35 418 8 257 111 385 109 202-92 320-141 260-35 426 37"
+              opacity="0.56"
+            />
+            <path
+              class="boot-shell-contour-path echo"
+              d="M-120 566c119-31 233-7 366 34s241 83 365 58 209-118 336-168 273-35 418 8 257 111 385 109 202-92 320-141 260-35 426 37"
+              transform="translate(0 48)"
+              opacity="0.28"
+            />
+          </g>
+        </svg>
+      </div>
+      <div class="boot-shell-grid"></div>
+      <div class="boot-shell-vignette"></div>
+      <div class="boot-shell-content">
+        <div class="boot-shell-panel">
+          <div class="boot-shell-caption">Boot Sequence</div>
+          <h1 class="boot-shell-title">Charting the World</h1>
+          <p class="boot-shell-subtitle">Following contour lines while the map shell comes online.</p>
+          <div class="boot-shell-brackets">
+            <span class="boot-shell-bracket-symbol">[</span>
+            <div class="boot-shell-segments">
+              <span class="boot-shell-segment"></span>
+              <span class="boot-shell-segment"></span>
+              <span class="boot-shell-segment"></span>
+              <span class="boot-shell-segment"></span>
+              <span class="boot-shell-segment"></span>
+              <span class="boot-shell-segment"></span>
+              <span class="boot-shell-segment"></span>
+              <span class="boot-shell-segment"></span>
+            </div>
+            <span class="boot-shell-bracket-symbol">]</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

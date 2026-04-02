@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -327,6 +328,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         const guardSlot = structureGuards[0]?.slot;
         if (direction === null || guardSlot === undefined) return;
 
+        playUnitCommandSound("attack");
         await attack_guard_vs_explorer({
           signer: account,
           structure_id: attacker.id,
@@ -338,6 +340,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
         if (direction === null) return;
 
+        playUnitCommandSound("attack");
         await attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attacker.id,
@@ -349,6 +352,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
         if (direction === null) return;
 
+        playUnitCommandSound("attack");
         await attack_explorer_vs_guard({
           signer: account,
           explorer_id: attacker.id,

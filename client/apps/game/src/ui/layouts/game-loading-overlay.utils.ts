@@ -1,4 +1,5 @@
 export const HEXCEPTION_GRID_READY_EVENT = "hexception:grid-ready";
+export const WORLDMAP_SCENE_READY_EVENT = "worldmap:scene-ready";
 
 type GridCoordinates = {
   col: number;
@@ -61,5 +62,31 @@ export const waitForHexceptionGridReady = (expected: GridCoordinates, timeoutMs:
     const timeoutId = window.setTimeout(complete, timeoutMs);
 
     window.addEventListener(HEXCEPTION_GRID_READY_EVENT, onReady as EventListener);
+  });
+};
+
+export const waitForWorldmapSceneReady = (timeoutMs: number): Promise<void> => {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const complete = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      window.removeEventListener(WORLDMAP_SCENE_READY_EVENT, onReady as EventListener);
+      resolve();
+    };
+
+    const onReady = () => {
+      complete();
+    };
+
+    const timeoutId = window.setTimeout(complete, timeoutMs);
+
+    window.addEventListener(WORLDMAP_SCENE_READY_EVENT, onReady as EventListener);
   });
 };

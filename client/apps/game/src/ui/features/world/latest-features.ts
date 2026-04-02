@@ -9,11 +9,53 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-02",
+    title: "Unit Command Audio",
+    description:
+      "Army commands now acknowledge what you actually ordered, with distinct cues for selection, movement, attacks, and exploration instead of relying on one generic unit response.",
+    type: "improvement",
+  },
+  {
+    date: "2026-04-01",
+    title: "Production Modal Height Restore",
+    description:
+      "The Production window now grows back to the full game viewport height, so resource controls and per-realm panels stay fully visible instead of being trapped in a cramped scroller.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-31",
+    title: "Faster World Selection",
+    description:
+      "Game entry now resolves factory world metadata and Torii profile details in parallel, reducing the time spent waiting on world selection before the world loader can continue.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-31",
+    title: "Game Entry Load Trim",
+    description:
+      "Entering a game now records each load milestone in the browser and defers non-critical world asset prefetch until bootstrap has already started, so the initial handoff spends less time competing with early preload work.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-31",
+    title: "Dashboard Settings Crash Fix",
+    description:
+      "Opening dashboard settings no longer crashes outside the game world, so landing-page audio, graphics, and fullscreen controls now open safely without needing an in-game Dojo context.",
+    type: "fix",
+  },
+  {
     date: "2026-03-31",
     title: "Agora Layout Tightening",
     description:
       "The Agora now gives pool names more room, aligns the pool rail with the main trading panels, and stretches the swap stats cards across the action panel so the page reads more cleanly while you browse and trade.",
     type: "fix",
+  },
+  {
+    date: "2026-03-31",
+    title: "Instant Contour Boot Loader",
+    description:
+      "First load now opens on an instant contour-map splash with a segmented progress bar, so the game no longer flashes a blank white screen while the shell and world loader hand off.",
+    type: "improvement",
   },
   {
     date: "2026-03-30",

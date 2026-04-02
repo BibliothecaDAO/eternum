@@ -1,4 +1,4 @@
-import { AudioManager } from "@/audio/core/AudioManager";
+import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { toast } from "sonner";
 
 import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
@@ -42,6 +42,7 @@ import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
+import { WORLDMAP_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -1967,8 +1968,7 @@ export default class WorldmapScene extends WarpTravel {
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
-      // AudioManager handles muted state internally - no need to check isSoundOn
-      AudioManager.getInstance().play("unit.march");
+      playUnitCommandSoundForWorldmapAction(actionType);
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
@@ -2577,7 +2577,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
-    AudioManager.getInstance().play("unit.selected");
+    playUnitCommandSound("select");
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
@@ -2867,13 +2867,25 @@ export default class WorldmapScene extends WarpTravel {
       registerStoreSubscriptions: () => this.registerStoreSubscriptions(),
       setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
       refreshScene: () => this.refreshWarpTravelScene(),
-      onInitialSetupComplete: () => this.preloadWorldmapCosmeticAssets(),
+      onInitialSetupComplete: () => {
+        this.announceWorldmapSceneReady();
+        this.preloadWorldmapCosmeticAssets();
+      },
+      onResumeComplete: () => this.announceWorldmapSceneReady(),
       reportSetupError: (error, phase) => this.reportWarpTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeStoreSubscriptions(),
       onAfterDisposeSubscriptions: () => this.disposeWorldUpdateSubscriptions(),
       detachLabelGroupsFromScene: () => this.detachWorldmapLabelGroupsFromScene(),
       detachManagerLabels: () => this.detachWorldmapManagerLabels(),
     };
+  }
+
+  private announceWorldmapSceneReady(): void {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT));
   }
 
   private prepareWarpTravelInitialSetup(): void {

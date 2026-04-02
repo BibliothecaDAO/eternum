@@ -49,6 +49,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
+import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -63,10 +64,12 @@ import {
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
 import { SeasonPassOptionCard } from "./season-pass-option-card";
 import { SettlementPlannerMap } from "./settlement-planner-map";
+import { resolveGameEntryTarget } from "./game-entry-navigation";
 import {
   SettlementResourceBadges,
   resolvePlannerResourceLabel as resolveResourceLabel,
 } from "./settlement-resource-badges";
+import { primePlayEntryAssets } from "@/game-entry-preload";
 import {
   buildPlannerRealmSelectionDetails,
   resolvePlannerOwnerLabel,
@@ -4076,15 +4079,21 @@ export const GameEntryModal = ({
 
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
+        markGameEntryMilestone("world-selection-started");
         updateTask("world", "running");
         await applyWorldSelection({ name: worldName, chain }, chain);
         updateTask("world", "complete");
+        markGameEntryMilestone("world-selection-completed");
         debugLog(worldName, "World selection complete");
 
         // Start bootstrap
         debugLog(worldName, "Starting game bootstrap...");
         updateTask("manifest", "running");
+        markGameEntryMilestone("bootstrap-started");
+        markGameEntryMilestone("asset-prefetch-scheduled");
+        primePlayEntryAssets();
         const result = await bootstrapGame();
+        markGameEntryMilestone("bootstrap-completed");
         debugLog(worldName, "Bootstrap complete, got setupResult:", !!result);
 
         // After bootstrap patches the manifest with the selected world's
@@ -4093,16 +4102,21 @@ export const GameEntryModal = ({
         // policies and re-probes to restore the user's account.
         const connector = useAccountStore.getState().connector;
         if (connector) {
+          markGameEntryMilestone("session-policies-refresh-started");
           const updated = await refreshSessionPolicies(connector);
+          markGameEntryMilestone("session-policies-refresh-completed");
           if (updated) {
             debugLog(worldName, "Session policies refreshed for new world");
           }
+        } else {
+          markGameEntryMilestone("session-policies-refresh-skipped");
         }
 
         // Mark all tasks complete
         setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));
         setSetupResult(result);
         setBootstrapStatus("ready");
+        markGameEntryMilestone("entry-ready");
         debugLog(worldName, "Bootstrap status set to ready");
       } catch (error) {
         debugLog(worldName, "Bootstrap failed:", error);
@@ -4406,22 +4420,35 @@ export const GameEntryModal = ({
   ]);
 
   // Enter game handler - navigates to the game.
-  // Does NOT prefetch structures from SQL — the GameLoadingOverlay will wait for
-  // usePlayerStructureSync to populate RECS, then navigate to the player's realm.
   const handleEnterGame = useCallback(() => {
-    // Ensure the loading overlay is visible (it may have been dismissed from a previous game)
-    useUIStore.getState().setShowBlankOverlay(true);
+    const uiStore = useUIStore.getState();
+    uiStore.setShowBlankOverlay(true);
+    markGameEntryMilestone("enter-game-started");
 
-    // Set initial state — structureEntityId=0 means "not yet known".
-    // GameLoadingOverlay will update this once structures are synced into RECS.
-    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
+    if (isSpectateMode) {
+      const directEntryTarget = resolveGameEntryTarget({
+        structureEntityId: uiStore.structureEntityId,
+        worldMapReturnPosition: uiStore.worldMapReturnPosition,
+        isSpectateMode: true,
+      });
+
+      if (directEntryTarget) {
+        uiStore.setStructureEntityId(directEntryTarget.structureEntityId, {
+          spectator: directEntryTarget.spectator,
+          worldMapPosition: directEntryTarget.worldMapPosition,
+        });
+
+        navigate(directEntryTarget.url);
+        window.dispatchEvent(new Event("urlChanged"));
+        return;
+      }
+    }
+
+    const setStructureEntityId = uiStore.setStructureEntityId;
     setStructureEntityId(0, {
       spectator: isSpectateMode,
-      worldMapPosition: { col: 0, row: 0 },
     });
 
-    // Navigate with placeholder coords (0,0). The loading overlay will
-    // re-navigate to the player's realm once structures are available.
     const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
@@ -5056,10 +5083,7 @@ export const GameEntryModal = ({
     const shouldAutoEnter = phase === "ready" && (!isEternumMode || eternumEntryIntent === "play");
     if (shouldAutoEnter) {
       debugLog(worldName, "Auto-entering game...");
-      const timer = setTimeout(() => {
-        handleEnterGame();
-      }, 500);
-      return () => clearTimeout(timer);
+      handleEnterGame();
     }
   }, [phase, handleEnterGame, worldName, isSpectateMode, isEternumMode, eternumEntryIntent]);
 
