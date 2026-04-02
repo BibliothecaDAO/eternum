@@ -174,7 +174,11 @@ import {
   resetWorldmapZoomHardeningRuntimeState,
 } from "./worldmap-zoom-hardening";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
-import { WORLDMAP_STEP_WHEEL_DELTA, normalizeWorldmapWheelDelta } from "./worldmap-zoom/worldmap-zoom-input-normalizer";
+import {
+  WORLDMAP_STEP_WHEEL_DELTA,
+  normalizeWorldmapWheelDelta,
+  resolveWorldmapWheelPixelDelta,
+} from "./worldmap-zoom/worldmap-zoom-input-normalizer";
 import {
   createWorldmapZoomRefreshPlannerState,
   planWorldmapZoomRefresh,
@@ -440,6 +444,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly worldmapMinZoomDistance = 10;
   private readonly worldmapMaxZoomDistance = 60;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
+  private wheelEventTarget: HTMLElement | null = null;
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
     minDistance: this.worldmapMinZoomDistance,
@@ -494,6 +499,9 @@ export default class WorldmapScene extends WarpTravel {
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
   private cameraGroundIntersectionScratch: Vector3 = new Vector3();
+  private wheelPointerScratch: Vector2 = new Vector2();
+  private wheelRaycasterScratch: Raycaster = new Raycaster();
+  private wheelGroundIntersectionScratch: Vector3 = new Vector3();
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager: ArmyManager;
@@ -1276,13 +1284,21 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private setupCameraZoomHandler() {
+    this.detachWorldmapWheelHandler();
     this.wheelHandler = (event: WheelEvent) => {
       const normalizedWheelDelta = normalizeWorldmapWheelDelta({
-        deltaY: event.deltaY,
+        delta: event.deltaY,
         deltaMode: event.deltaMode,
         viewportHeight: window.innerHeight,
       });
-      const mostlyVertical = Math.abs(normalizedWheelDelta.normalizedDelta) >= Math.abs(event.deltaX);
+      const normalizedHorizontalDelta = Math.abs(
+        resolveWorldmapWheelPixelDelta({
+          delta: event.deltaX,
+          deltaMode: event.deltaMode,
+          viewportHeight: window.innerHeight,
+        }),
+      );
+      const mostlyVertical = Math.abs(normalizedWheelDelta.normalizedDelta) >= normalizedHorizontalDelta;
 
       if (!normalizedWheelDelta.direction || !mostlyVertical) {
         return;
@@ -1299,10 +1315,29 @@ export default class WorldmapScene extends WarpTravel {
       this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
     };
 
-    const canvas = document.getElementById("main-canvas");
-    if (canvas) {
-      canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
+    this.attachWorldmapWheelHandler();
+  }
+
+  private attachWorldmapWheelHandler(): void {
+    if (!this.wheelHandler) {
+      return;
     }
+
+    const canvas = this.controls.domElement;
+    if (!(canvas instanceof HTMLElement)) {
+      return;
+    }
+
+    canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
+    this.wheelEventTarget = canvas;
+  }
+
+  private detachWorldmapWheelHandler(): void {
+    if (this.wheelEventTarget && this.wheelHandler) {
+      this.wheelEventTarget.removeEventListener("wheel", this.wheelHandler);
+    }
+
+    this.wheelEventTarget = null;
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
@@ -1401,17 +1436,18 @@ export default class WorldmapScene extends WarpTravel {
       return null;
     }
 
-    const pointer = new Vector2(
+    this.wheelPointerScratch.set(
       ((clientX - bounds.left) / bounds.width) * 2 - 1,
       -((clientY - bounds.top) / bounds.height) * 2 + 1,
     );
-    const raycaster = new Raycaster();
-    raycaster.setFromCamera(pointer, this.camera);
+    this.wheelRaycasterScratch.setFromCamera(this.wheelPointerScratch, this.camera);
 
-    const intersection = new Vector3();
-    const didIntersect = raycaster.ray.intersectPlane(this.zoomGroundPlane, intersection);
+    const didIntersect = this.wheelRaycasterScratch.ray.intersectPlane(
+      this.zoomGroundPlane,
+      this.wheelGroundIntersectionScratch,
+    );
 
-    return didIntersect ? intersection.clone() : null;
+    return didIntersect ? this.wheelGroundIntersectionScratch : null;
   }
 
   private publishWorldmapZoomSnapshot(snapshot: WorldmapCameraSnapshot): void {
@@ -3072,14 +3108,8 @@ export default class WorldmapScene extends WarpTravel {
     this.clearAllPendingActionFx();
     this.runWarpTravelSwitchOffLifecycle();
 
-    // Clean up wheel event listener
-    if (this.wheelHandler) {
-      const canvas = document.getElementById("main-canvas");
-      if (canvas) {
-        canvas.removeEventListener("wheel", this.wheelHandler);
-      }
-      this.wheelHandler = null;
-    }
+    this.detachWorldmapWheelHandler();
+    this.wheelHandler = null;
 
     this.unregisterTrackedVisibilityChunks();
     this.resetZoomHardeningRuntimeState();
@@ -5971,6 +6001,11 @@ export default class WorldmapScene extends WarpTravel {
 
     return new Promise((resolve) => {
       const poll = () => {
+        if (this.isSwitchedOff) {
+          resolve();
+          return;
+        }
+
         if (
           this.chunkRefreshAppliedToken >= requestToken &&
           !this.chunkRefreshRunning &&
