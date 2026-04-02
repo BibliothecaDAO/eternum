@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23905119546-1",
   "currentStepId": null,
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-02T14:40:22.513Z",
+  "updatedAt": "2026-04-02T14:40:29.730Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -395,7 +395,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-battle-03",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -462,7 +462,9 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true
+          "paymasterSynced": true,
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-04-02T14:40:28.284Z"
         }
       },
       {
