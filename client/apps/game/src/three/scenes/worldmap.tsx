@@ -1,4 +1,4 @@
-import { AudioManager } from "@/audio/core/AudioManager";
+import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { toast } from "sonner";
 
 import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
@@ -1967,8 +1967,7 @@ export default class WorldmapScene extends WarpTravel {
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
-      // AudioManager handles muted state internally - no need to check isSoundOn
-      AudioManager.getInstance().play("unit.march");
+      playUnitCommandSoundForWorldmapAction(actionType);
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
@@ -2577,7 +2576,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
-    AudioManager.getInstance().play("unit.selected");
+    playUnitCommandSound("select");
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 

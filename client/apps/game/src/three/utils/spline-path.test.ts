@@ -34,12 +34,7 @@ describe("buildMovementSpline", () => {
   });
 
   it("3+ point path passes near all waypoints (within 0.5 tolerance)", () => {
-    const waypoints = [
-      new Vector3(0, 0, 0),
-      new Vector3(5, 0, 3),
-      new Vector3(10, 0, -2),
-      new Vector3(15, 0, 1),
-    ];
+    const waypoints = [new Vector3(0, 0, 0), new Vector3(5, 0, 3), new Vector3(10, 0, -2), new Vector3(15, 0, 1)];
     const spline = buildMovementSpline(waypoints);
 
     // The spline should pass near each waypoint
@@ -94,12 +89,7 @@ describe("resolveSplinePosition", () => {
 });
 
 describe("resolveSplineTangent", () => {
-  const waypoints = [
-    new Vector3(0, 0, 0),
-    new Vector3(5, 0, 3),
-    new Vector3(10, 0, -2),
-    new Vector3(15, 0, 1),
-  ];
+  const waypoints = [new Vector3(0, 0, 0), new Vector3(5, 0, 3), new Vector3(10, 0, -2), new Vector3(15, 0, 1)];
 
   it("tangent is non-zero at all sample points", () => {
     const spline = buildMovementSpline(waypoints);
@@ -227,24 +217,14 @@ describe("resolvePathBankAngle", () => {
   });
 
   it("returns non-zero bank for a curved path", () => {
-    const points = [
-      new Vector3(0, 0, 0),
-      new Vector3(2, 0, 0),
-      new Vector3(3, 0, 2),
-      new Vector3(3, 0, 5),
-    ];
+    const points = [new Vector3(0, 0, 0), new Vector3(2, 0, 0), new Vector3(3, 0, 2), new Vector3(3, 0, 5)];
     const spline = buildMovementSpline(points);
     const bank = resolvePathBankAngle(spline, 0.5, 0.15);
     expect(Math.abs(bank)).toBeGreaterThan(0.001);
   });
 
   it("never exceeds maxBankRadians", () => {
-    const points = [
-      new Vector3(0, 0, 0),
-      new Vector3(1, 0, 0),
-      new Vector3(1, 0, 1),
-      new Vector3(0, 0, 1),
-    ];
+    const points = [new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 0, 1), new Vector3(0, 0, 1)];
     const spline = buildMovementSpline(points);
     for (let t = 0.05; t <= 0.95; t += 0.05) {
       const bank = resolvePathBankAngle(spline, t, 0.15);
@@ -253,16 +233,8 @@ describe("resolvePathBankAngle", () => {
   });
 
   it("produces opposite bank for mirrored curves", () => {
-    const leftCurve = [
-      new Vector3(0, 0, 0),
-      new Vector3(2, 0, 0),
-      new Vector3(3, 0, 2),
-    ];
-    const rightCurve = [
-      new Vector3(0, 0, 0),
-      new Vector3(2, 0, 0),
-      new Vector3(3, 0, -2),
-    ];
+    const leftCurve = [new Vector3(0, 0, 0), new Vector3(2, 0, 0), new Vector3(3, 0, 2)];
+    const rightCurve = [new Vector3(0, 0, 0), new Vector3(2, 0, 0), new Vector3(3, 0, -2)];
     const leftSpline = buildMovementSpline(leftCurve);
     const rightSpline = buildMovementSpline(rightCurve);
     const leftBank = resolvePathBankAngle(leftSpline, 0.5, 0.15);
@@ -424,11 +396,7 @@ describe("resolveArrivalSlamScale", () => {
 });
 
 describe("resolveAfterimagePositions", () => {
-  const waypoints = [
-    new Vector3(0, 0, 0),
-    new Vector3(5, 0, 3),
-    new Vector3(10, 0, 0),
-  ];
+  const waypoints = [new Vector3(0, 0, 0), new Vector3(5, 0, 3), new Vector3(10, 0, 0)];
 
   it("returns array with same length as trailOffsets", () => {
     const spline = buildMovementSpline(waypoints);

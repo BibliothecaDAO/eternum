@@ -1,4 +1,5 @@
 import { env } from "@/../env";
+import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -442,10 +443,13 @@ export const CombatContainer = ({
       });
 
       if (attackerType === AttackerType.Structure) {
+        playUnitCommandSound("attack");
         await onGuardVsExplorerAttack();
       } else if (target?.targetType === TargetType.Army) {
+        playUnitCommandSound("attack");
         await onExplorerVsExplorerAttack();
       } else {
+        playUnitCommandSound("attack");
         await onExplorerVsGuardAttack();
       }
 

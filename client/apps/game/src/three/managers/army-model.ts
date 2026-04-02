@@ -1585,7 +1585,9 @@ export class ArmyModel {
           1,
           EasingType.Linear,
           this.splineTangentTarget,
-        ).clone().normalize();
+        )
+          .clone()
+          .normalize();
         // Cache endpoint once for the entire settlement phase
         resolveSplinePosition(splineData.spline, 1, EasingType.Linear, this.splineEndpointCache);
         instanceData.position.copy(this.splineEndpointCache);
