@@ -29,7 +29,14 @@ import {
   MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
 } from "../constants";
-import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
+import {
+  AnimatedInstancedMesh,
+  ArmyInstanceData,
+  ModelData,
+  ModelType,
+  MovementData,
+  SplineMovementData,
+} from "../types/army";
 import type { AnimationVisibilityContext } from "../types/animation";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
@@ -45,6 +52,18 @@ import {
   resolveRotationUpdate,
   shouldSwitchModelForPosition,
 } from "./army-model-behavior-policy";
+import {
+  buildMovementSpline,
+  resolveSplinePosition,
+  resolveSplineTangent,
+  resolveJourneyProgressUpdate,
+  resolveAnticipationScale,
+  resolveSettlementOffset,
+  resolvePathBankAngle,
+  resolveTerrainSpeedMultiplier,
+  resolveRhythmicBob,
+  resolveArrivalSlamScale,
+} from "../utils/spline-path";
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
 
@@ -104,7 +123,7 @@ export class ArmyModel {
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
-  private readonly MOVEMENT_SPEED = 1.25;
+  private readonly MOVEMENT_SPEED = 3.75;
   private readonly FLOAT_HEIGHT = 0.5;
   private readonly FLOAT_TRANSITION_SPEED = 3.0;
   private readonly ROTATION_SPEED = 5.0;
@@ -115,6 +134,10 @@ export class ArmyModel {
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
   private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
   private readonly INITIAL_INSTANCE_CAPACITY = 64;
+
+  // Spline-based movement
+  private readonly USE_SPLINE_MOVEMENT = true;
+  private readonly splineMovingInstances: Map<number, SplineMovementData> = new Map();
 
   // agent
   private isAgent: boolean = false;
@@ -1272,6 +1295,38 @@ export class ArmyModel {
     this.initializeMovement(entityId, currentPos, nextPos, path, matrixIndex, category, tier);
     this.setAnimationState(matrixIndex, true);
     this.updateInstanceDirection(entityId, currentPos, nextPos);
+
+    // Build spline for smooth whole-path movement
+    if (this.USE_SPLINE_MOVEMENT && path.length >= 2) {
+      const spline = buildMovementSpline(path);
+      const totalLength = spline.getLength();
+
+      // Get current rotation from the movement data we just created
+      const movement = this.movingInstances.get(entityId);
+      const currentRotation = movement?.currentRotation ?? 0;
+
+      // Determine easing type based on tier
+      const easingType = this.getSplineEasingType(tier);
+
+      this.splineMovingInstances.set(entityId, {
+        spline,
+        totalLength,
+        journeyProgress: 0,
+        matrixIndex,
+        floatingHeight: 0,
+        currentRotation,
+        easingType,
+        anticipationTimer: 0,
+        settlementTimer: 0,
+        isAnticipating: true,
+        isSettling: false,
+        finalTangent: null,
+        currentSpeedMultiplier: 1.0,
+        elapsedTime: 0,
+        arrivalSlamTimer: 0,
+        isArrivalSlamming: false,
+      });
+    }
   }
 
   private initializeMovement(
@@ -1339,6 +1394,13 @@ export class ArmyModel {
 
       if (movement.currentPathIndex === -1) {
         this.handleDescent(movement, entityId, instanceData, deltaTime);
+        return;
+      }
+
+      // Use spline movement if available
+      const splineData = this.splineMovingInstances.get(entityId);
+      if (splineData) {
+        this.updateSplineMovement(splineData, movement, entityId, instanceData, deltaTime);
         return;
       }
 
@@ -1414,6 +1476,238 @@ export class ArmyModel {
     this.updateInstance(
       entityId,
       movement.matrixIndex,
+      this.tempVector2,
+      instanceData.scale,
+      this.dummyObject.rotation,
+      instanceData.color,
+    );
+
+    this.updateLabelPosition(entityId, this.tempVector2);
+  }
+
+  private getSplineEasingType(_tier: TroopTier): EasingType {
+    // All tiers use journey easing for smooth whole-path movement
+    return EasingType.EaseJourney;
+  }
+
+  private static readonly ANTICIPATION_DURATION = 0.15;
+  private static readonly SETTLEMENT_DURATION = 0.25;
+  private static readonly OVERSHOOT_DISTANCE = 0.05;
+  private static readonly MAX_BANK_RADIANS = 0.15;
+  private static readonly SPEED_MULTIPLIER_LERP_RATE = 5.0;
+  private static readonly BOB_AMPLITUDE = 0.03;
+  private static readonly BOB_FREQUENCY = 1.8;
+  private static readonly ARRIVAL_SLAM_DURATION = 0.2;
+  // Pre-allocated vectors for spline sampling (avoid GC pressure)
+  private readonly splinePositionTarget: Vector3 = new Vector3();
+  private readonly splineTangentTarget: Vector3 = new Vector3();
+  private readonly splineEndpointCache: Vector3 = new Vector3();
+
+  private updateSplineMovement(
+    splineData: SplineMovementData,
+    movement: MovementData,
+    entityId: number,
+    instanceData: ArmyInstanceData,
+    deltaTime: number,
+  ): void {
+    const modelType = this.entityModelMap.get(entityId);
+    const isBoat = modelType === ModelType.Boat;
+
+    // Track elapsed time for rhythmic bob
+    splineData.elapsedTime += deltaTime;
+
+    // Float up (same as existing)
+    if (!isBoat) {
+      splineData.floatingHeight = Math.min(
+        this.FLOAT_HEIGHT,
+        splineData.floatingHeight + deltaTime * this.FLOAT_TRANSITION_SPEED,
+      );
+      // Sync to legacy movement data for descent phase
+      movement.floatingHeight = splineData.floatingHeight;
+    }
+
+    // Anticipation — squash before launch
+    if (splineData.isAnticipating) {
+      splineData.anticipationTimer += deltaTime;
+      const scale = resolveAnticipationScale(splineData.anticipationTimer, ArmyModel.ANTICIPATION_DURATION);
+      instanceData.scale.set(scale.x, scale.y, scale.z);
+
+      if (splineData.anticipationTimer >= ArmyModel.ANTICIPATION_DURATION) {
+        splineData.isAnticipating = false;
+        instanceData.scale.copy(this.normalScale);
+      }
+
+      // During anticipation, don't advance progress — just render squash
+      this.tempVector2.copy(instanceData.position);
+      if (!isBoat) {
+        this.tempVector2.y += splineData.floatingHeight;
+      }
+      this.updateInstance(
+        entityId,
+        splineData.matrixIndex,
+        this.tempVector2,
+        instanceData.scale,
+        this.dummyObject.rotation,
+        instanceData.color,
+      );
+      this.updateLabelPosition(entityId, this.tempVector2);
+      return;
+    }
+
+    // Terrain speed variation — sample biome and lerp multiplier
+    const { col, row } = getHexForWorldPosition(instanceData.position);
+    const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
+    splineData.currentSpeedMultiplier +=
+      (targetMultiplier - splineData.currentSpeedMultiplier) *
+      Math.min(1, ArmyModel.SPEED_MULTIPLIER_LERP_RATE * deltaTime);
+
+    const currentSpeed = this.MOVEMENT_SPEED * splineData.currentSpeedMultiplier;
+
+    // Advance journey progress with terrain-adjusted speed
+    const progressResult = resolveJourneyProgressUpdate({
+      currentProgress: splineData.journeyProgress,
+      totalLength: splineData.totalLength,
+      speed: currentSpeed,
+      deltaTime,
+    });
+    splineData.journeyProgress = progressResult.nextProgress;
+
+    if (progressResult.isComplete) {
+      // Begin settlement overshoot + arrival slam instead of stopping immediately
+      if (!splineData.isSettling) {
+        splineData.isSettling = true;
+        splineData.settlementTimer = 0;
+        splineData.isArrivalSlamming = true;
+        splineData.arrivalSlamTimer = 0;
+        splineData.finalTangent = resolveSplineTangent(
+          splineData.spline,
+          1,
+          EasingType.Linear,
+          this.splineTangentTarget,
+        )
+          .clone()
+          .normalize();
+        // Cache endpoint once for the entire settlement phase
+        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, this.splineEndpointCache);
+        instanceData.position.copy(this.splineEndpointCache);
+      }
+    }
+
+    // Settlement overshoot + arrival slam animation
+    if (splineData.isSettling) {
+      splineData.settlementTimer += deltaTime;
+
+      // Arrival slam scale punch
+      if (splineData.isArrivalSlamming) {
+        splineData.arrivalSlamTimer += deltaTime;
+        const slamScale = resolveArrivalSlamScale(splineData.arrivalSlamTimer, ArmyModel.ARRIVAL_SLAM_DURATION);
+        instanceData.scale.set(slamScale.x, slamScale.y, slamScale.z);
+        if (splineData.arrivalSlamTimer >= ArmyModel.ARRIVAL_SLAM_DURATION) {
+          splineData.isArrivalSlamming = false;
+          instanceData.scale.copy(this.normalScale);
+        }
+      }
+
+      if (splineData.finalTangent) {
+        const offset = resolveSettlementOffset(
+          splineData.settlementTimer,
+          ArmyModel.SETTLEMENT_DURATION,
+          ArmyModel.OVERSHOOT_DISTANCE,
+        );
+        // Use cached endpoint — no recomputation
+        instanceData.position.copy(this.splineEndpointCache);
+        instanceData.position.x += splineData.finalTangent.x * offset;
+        instanceData.position.z += splineData.finalTangent.z * offset;
+      }
+
+      if (splineData.settlementTimer >= ArmyModel.SETTLEMENT_DURATION) {
+        instanceData.position.copy(this.splineEndpointCache);
+        instanceData.scale.copy(this.normalScale);
+        this.splineMovingInstances.delete(entityId);
+        this.stopMovement(entityId);
+        return;
+      }
+
+      // Render during settlement
+      this.tempVector2.copy(instanceData.position);
+      if (!isBoat) {
+        this.tempVector2.y += splineData.floatingHeight;
+      }
+      this.updateInstance(
+        entityId,
+        splineData.matrixIndex,
+        this.tempVector2,
+        instanceData.scale,
+        this.dummyObject.rotation,
+        instanceData.color,
+      );
+      this.updateLabelPosition(entityId, this.tempVector2);
+      return;
+    }
+
+    // Sample position from spline with easing (pre-allocated target avoids GC)
+    resolveSplinePosition(
+      splineData.spline,
+      splineData.journeyProgress,
+      splineData.easingType,
+      this.splinePositionTarget,
+    );
+    instanceData.position.copy(this.splinePositionTarget);
+
+    // Derive rotation from tangent (pre-allocated target avoids GC)
+    resolveSplineTangent(
+      splineData.spline,
+      splineData.journeyProgress,
+      splineData.easingType,
+      this.splineTangentTarget,
+    );
+    const targetRotation = Math.atan2(this.splineTangentTarget.x, this.splineTangentTarget.z);
+
+    // Smooth rotation using existing system
+    splineData.currentRotation = resolveRotationUpdate({
+      currentRotation: splineData.currentRotation,
+      targetRotation,
+      rotationSpeed: this.ROTATION_SPEED,
+      deltaTime,
+    });
+
+    // Banking into turns
+    const bankAngle = resolvePathBankAngle(
+      splineData.spline,
+      Math.max(0, Math.min(1, splineData.journeyProgress)),
+      ArmyModel.MAX_BANK_RADIANS,
+    );
+
+    // Rhythmic bob + forward lean (not for boats)
+    let bobYOffset = 0;
+    let pitchAngle = 0;
+    if (!isBoat) {
+      const bob = resolveRhythmicBob({
+        elapsedTime: splineData.elapsedTime,
+        speed: currentSpeed,
+        amplitude: ArmyModel.BOB_AMPLITUDE,
+        baseFrequency: ArmyModel.BOB_FREQUENCY,
+      });
+      bobYOffset = bob.yOffset;
+      pitchAngle = bob.pitchAngle;
+    }
+    this.dummyObject.rotation.set(pitchAngle, splineData.currentRotation, bankAngle);
+
+    // Update model type based on current position (biome switching)
+    if (instanceData.category && instanceData.tier) {
+      this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
+    }
+
+    // Apply floating height + rhythmic bob
+    this.tempVector2.copy(instanceData.position);
+    if (!isBoat) {
+      this.tempVector2.y += splineData.floatingHeight + bobYOffset;
+    }
+
+    this.updateInstance(
+      entityId,
+      splineData.matrixIndex,
       this.tempVector2,
       instanceData.scale,
       this.dummyObject.rotation,
@@ -1561,6 +1855,8 @@ export class ArmyModel {
   }
 
   private stopMovement(entityId: number): void {
+    this.splineMovingInstances.delete(entityId);
+
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 

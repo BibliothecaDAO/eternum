@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame, getCachedSetupResult } from "@/init/bootstrap";
 import { getActiveWorld } from "@/runtime/world";
+import { markBootMilestone } from "@/ui/modules/boot-loader";
 import { useSyncStore } from "../store/use-sync-store";
 
 export type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
@@ -152,6 +153,16 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
       updateTask("renderer", "running");
     }
   }, [syncProgress, status, updateTask]);
+
+  useEffect(() => {
+    if (status === "loading") {
+      markBootMilestone("boot_bootstrap_started");
+    }
+
+    if (status === "ready") {
+      markBootMilestone("boot_bootstrap_ready");
+    }
+  }, [status]);
 
   // Note: World change detection is handled by bootstrap.tsx which triggers a page reload
   // This avoids complex state cleanup and ensures a clean re-bootstrap

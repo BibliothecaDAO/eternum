@@ -1,17 +1,36 @@
-import { prefetchPlayAssets } from "@/ui/utils/prefetch-play-assets";
 import { useEffect } from "react";
-import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
+import { prefetchPlayAssets } from "@/ui/utils/prefetch-play-assets";
+import { BootLoaderShell, markBootMilestone, setBootDocumentState } from "@/ui/modules/boot-loader";
 
 interface LoadingScreenProps {
   prefetchPlayAssets?: boolean;
+  progress?: number;
+  title?: string;
+  subtitle?: string;
 }
 
-export const LoadingScreen = ({ prefetchPlayAssets: shouldPrefetch }: LoadingScreenProps) => {
+export const LoadingScreen = ({
+  prefetchPlayAssets: shouldPrefetch,
+  progress,
+  title = "Charting the World",
+  subtitle = "Tracing the next route across the map.",
+}: LoadingScreenProps) => {
   useEffect(() => {
+    setBootDocumentState("app-loading");
+    markBootMilestone("boot_react_loader_visible");
+
     if (shouldPrefetch) {
       prefetchPlayAssets();
     }
   }, [shouldPrefetch]);
 
-  return <LoadingOroborus loading />;
+  return (
+    <BootLoaderShell
+      mode={typeof progress === "number" && progress > 0 ? "determinate" : "indeterminate"}
+      progress={progress}
+      title={title}
+      subtitle={subtitle}
+      caption="Boot Sequence"
+    />
+  );
 };

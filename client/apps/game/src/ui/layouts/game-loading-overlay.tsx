@@ -1,21 +1,40 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
+import { BootLoaderShell, useBootDocumentState } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
-import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
-import { getSceneWarmupProgress, resolveEntryOverlayPhase } from "./game-loading-overlay.utils";
-import { useNavigate } from "react-router-dom";
+import {
+  getSceneWarmupProgress,
+  resolveEntryOverlayPhase,
+  waitForWorldmapSceneReady,
+} from "./game-loading-overlay.utils";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SAFETY_TIMEOUT_MS = 15_000;
 const SLOW_THRESHOLD_MS = 8_000;
 const TICK_INTERVAL_MS = 250;
 const HANDOFF_PROGRESS = 76;
-// Time to wait after tile data loads before dismissing.
-// The bounds subscription still needs to stream structures and the
-// world update listener needs to process them into visible state.
-const POST_WORLD_MAP_LOAD_DELAY_MS = 3_000;
+const WORLDMAP_READY_TIMEOUT_MS = 1_200;
+
+type WorldMapPosition = {
+  col: number;
+  row: number;
+};
+
+const isFiniteWorldMapPosition = (
+  position: { col?: number | null; row?: number | null } | null | undefined,
+): position is WorldMapPosition => {
+  return (
+    position != null &&
+    typeof position.col === "number" &&
+    Number.isFinite(position.col) &&
+    typeof position.row === "number" &&
+    Number.isFinite(position.row)
+  );
+};
 
 /**
  * Loading overlay shown while game data syncs after <World> mounts.
@@ -30,12 +49,21 @@ const POST_WORLD_MAP_LOAD_DELAY_MS = 3_000;
  * Falls back to a safety timeout if neither signal fires.
  */
 export const GameLoadingOverlay = () => {
+  useBootDocumentState("app-loading");
+
+  useEffect(() => {
+    markGameEntryMilestone("overlay-mounted");
+  }, []);
+
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const isSpectating = useUIStore((state) => state.isSpectating);
+  const worldMapReturnPosition = useUIStore((state) => state.worldMapReturnPosition);
   const mapLoading = useUIStore((state) => state.loadingStates[LoadingStateKey.Map]);
   const playerStructures = usePlayerStructures();
   const hasDismissed = useRef(false);
   const hasSeenMapLoading = useRef(false);
+  const hasSeenWorldmapReady = useRef(false);
+  const isWaitingForWorldmapReady = useRef(false);
   const startedAt = useRef(0);
   const hasStartedPlayerFlow = useRef(false);
   const hasStartedSpectatorFlow = useRef(false);
@@ -44,6 +72,22 @@ export const GameLoadingOverlay = () => {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isOnWorldMapRoute = location.pathname.startsWith("/play/map");
+  const targetWorldMapPosition = useMemo<WorldMapPosition | null>(() => {
+    if (isSpectating && isFiniteWorldMapPosition(worldMapReturnPosition)) {
+      return worldMapReturnPosition;
+    }
+
+    if (playerStructures.length === 0) {
+      return null;
+    }
+
+    const first = playerStructures[0];
+    const normalized = new Position({ x: first.position.x, y: first.position.y }).getNormalized();
+    return { col: normalized.x, row: normalized.y };
+  }, [isSpectating, playerStructures, worldMapReturnPosition]);
 
   const dismiss = useCallback(
     (delayMs: number) => {
@@ -52,6 +96,23 @@ export const GameLoadingOverlay = () => {
       setTimeout(() => setShowBlankOverlay(false), delayMs);
     },
     [setShowBlankOverlay],
+  );
+
+  const markWorldMapReady = useCallback(
+    (delayMs: number) => {
+      if (hasQueuedWorldMapReady.current) {
+        return;
+      }
+
+      hasQueuedWorldMapReady.current = true;
+      markGameEntryMilestone("overlay-ready");
+      worldMapReadyTimeoutId.current = window.setTimeout(() => {
+        worldMapReadyTimeoutId.current = null;
+        setIsReady(true);
+      }, 0);
+      dismiss(delayMs);
+    },
+    [dismiss],
   );
 
   useEffect(() => {
@@ -67,23 +128,65 @@ export const GameLoadingOverlay = () => {
   // --- Player path: navigate to the world map centered on the first synced structure ---
   useEffect(() => {
     if (hasDismissed.current || isSpectating || hasStartedPlayerFlow.current) return;
+    if (targetWorldMapPosition == null) return;
+
+    if (isOnWorldMapRoute) {
+      hasStartedPlayerFlow.current = true;
+      return;
+    }
+
     if (playerStructures.length === 0) return;
 
     hasStartedPlayerFlow.current = true;
+    markGameEntryMilestone("player-structures-synced");
 
     const first = playerStructures[0];
-    const normalized = new Position({ x: first.position.x, y: first.position.y }).getNormalized();
-
     const setStructureEntityId = useUIStore.getState().setStructureEntityId;
     setStructureEntityId(first.entityId, {
       spectator: false,
-      worldMapPosition: { col: normalized.x, row: normalized.y },
+      worldMapPosition: targetWorldMapPosition,
     });
 
-    const url = `/play/map?col=${normalized.x}&row=${normalized.y}`;
+    const url = `/play/map?col=${targetWorldMapPosition.col}&row=${targetWorldMapPosition.row}`;
+    markGameEntryMilestone("worldmap-navigation-started");
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [playerStructures, isSpectating, navigate, dismiss]);
+  }, [playerStructures, isOnWorldMapRoute, isSpectating, navigate, targetWorldMapPosition]);
+
+  useEffect(() => {
+    if (hasDismissed.current) return;
+
+    const hasStartedWorldMapFlow = isSpectating ? hasStartedSpectatorFlow.current : hasStartedPlayerFlow.current;
+    if (!hasStartedWorldMapFlow) {
+      return;
+    }
+
+    if (hasSeenWorldmapReady.current || isWaitingForWorldmapReady.current) {
+      return;
+    }
+
+    isWaitingForWorldmapReady.current = true;
+    let cancelled = false;
+
+    void waitForWorldmapSceneReady(WORLDMAP_READY_TIMEOUT_MS).then(() => {
+      isWaitingForWorldmapReady.current = false;
+      if (cancelled) {
+        return;
+      }
+
+      hasSeenWorldmapReady.current = true;
+      markGameEntryMilestone("worldmap-scene-ready");
+
+      if (hasSeenMapLoading.current && !mapLoading) {
+        markWorldMapReady(0);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      isWaitingForWorldmapReady.current = false;
+    };
+  }, [isSpectating, mapLoading, markWorldMapReady]);
 
   // --- World-map path: dismiss once the initial map fetch completes ---
   useEffect(() => {
@@ -102,18 +205,11 @@ export const GameLoadingOverlay = () => {
       hasSeenMapLoading.current = true;
     }
 
-    // Map loading went true → false: initial tile fetch complete.
-    // Wait additional time for the bounds subscription to stream
-    // Structure entities and for the map to render them.
-    if (hasSeenMapLoading.current && !mapLoading && !hasQueuedWorldMapReady.current) {
-      hasQueuedWorldMapReady.current = true;
-      worldMapReadyTimeoutId.current = window.setTimeout(() => {
-        worldMapReadyTimeoutId.current = null;
-        setIsReady(true);
-      }, 0);
-      dismiss(POST_WORLD_MAP_LOAD_DELAY_MS);
+    if (hasSeenMapLoading.current && !mapLoading && hasSeenWorldmapReady.current) {
+      markGameEntryMilestone("worldmap-fetch-completed");
+      markWorldMapReady(0);
     }
-  }, [mapLoading, isSpectating, dismiss]);
+  }, [isSpectating, mapLoading, markWorldMapReady]);
 
   useEffect(() => {
     return () => {
@@ -135,7 +231,9 @@ export const GameLoadingOverlay = () => {
   }, [setShowBlankOverlay]);
 
   const isSlow = !isReady && elapsedMs >= SLOW_THRESHOLD_MS;
-  const hasNavigatedToTarget = isSpectating ? elapsedMs >= TICK_INTERVAL_MS : playerStructures.length > 0;
+  const hasNavigatedToTarget = isSpectating
+    ? elapsedMs >= TICK_INTERVAL_MS
+    : isOnWorldMapRoute || playerStructures.length > 0;
   const phase = resolveEntryOverlayPhase({
     isReady,
     hasNavigated: hasNavigatedToTarget,
@@ -188,22 +286,51 @@ export const GameLoadingOverlay = () => {
   }, [phase]);
 
   const overlayTitle = "Entering World View";
+  const activeStatement = statements[0] ?? "Rendering the world map...";
 
   return (
-    <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-sm">
-      <div className="bg-black/20 border-r border-[0.5px] border-gradient text-gold relative backdrop-filter backdrop-blur-[32px] panel-wood panel-wood-corners w-full max-w-[456px] p-4 sm:p-5">
-        <div className="text-center mb-3">
-          <div className="text-[10px] sm:text-xs uppercase tracking-widest text-gold/60">Step 2 of 2</div>
-          <h3 className="text-base sm:text-lg font-semibold text-gold mt-1">{overlayTitle}</h3>
+    <BootLoaderShell
+      className="absolute inset-0 z-[110]"
+      panelClassName="max-w-[32rem] px-5 py-6 sm:px-6 sm:py-7"
+      mode="determinate"
+      progress={progress}
+      title={overlayTitle}
+      subtitle={activeStatement}
+      caption="Step 2 of 2"
+      detail={
+        <div className="space-y-4">
+          <div className="flex items-center justify-between font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-xs uppercase tracking-[0.28em] text-gold/45">
+            <span>World handoff</span>
+            <span>{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
+          </div>
+          <div className="space-y-3">
+            {tasks.map((task) => {
+              const statusTone =
+                task.status === "complete"
+                  ? "border-gold/40 bg-gold/15 text-gold"
+                  : task.status === "running"
+                    ? "border-gold/35 bg-gold/10 text-gold/90"
+                    : "border-white/10 bg-white/5 text-[rgba(236,224,194,0.45)]";
+
+              return (
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-white/8 bg-black/25 px-4 py-3"
+                >
+                  <span className="font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-sm text-[rgba(236,224,194,0.84)]">
+                    {task.label}
+                  </span>
+                  <span
+                    className={`rounded-full border px-2.5 py-1 font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-[0.62rem] uppercase tracking-[0.22em] ${statusTone}`}
+                  >
+                    {task.status}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <BootstrapLoadingPanel
-          tasks={tasks}
-          progress={progress}
-          error={null}
-          onRetry={() => {}}
-          statements={statements}
-        />
-      </div>
-    </div>
+      }
+    />
   );
 };

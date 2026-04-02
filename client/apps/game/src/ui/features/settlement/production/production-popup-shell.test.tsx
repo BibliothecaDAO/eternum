@@ -7,6 +7,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   toggleModal: vi.fn(),
   headOnClose: null as null | (() => void),
+  bodyHeight: null as null | string,
+  bodyWidth: null as null | string,
+  bodyClassName: null as null | string,
 }));
 
 vi.mock("@/hooks/store/use-ui-store", () => ({
@@ -43,7 +46,22 @@ vi.mock("@/ui/design-system/molecules/secondary-popup", () => {
     return <button onClick={onClose}>{children}</button>;
   };
 
-  SecondaryPopup.Body = ({ children }: { children: ReactNode }) => <div>{children}</div>;
+  SecondaryPopup.Body = ({
+    children,
+    height,
+    width,
+    className,
+  }: {
+    children: ReactNode;
+    height?: string;
+    width?: string;
+    className?: string;
+  }) => {
+    mocks.bodyHeight = height ?? null;
+    mocks.bodyWidth = width ?? null;
+    mocks.bodyClassName = className ?? null;
+    return <div>{children}</div>;
+  };
 
   return { SecondaryPopup };
 });
@@ -54,6 +72,9 @@ describe("ProductionPopupShell", () => {
   afterEach(() => {
     mocks.toggleModal.mockReset();
     mocks.headOnClose = null;
+    mocks.bodyHeight = null;
+    mocks.bodyWidth = null;
+    mocks.bodyClassName = null;
     vi.clearAllMocks();
   });
 
@@ -67,6 +88,9 @@ describe("ProductionPopupShell", () => {
     expect(html).toContain('data-width="min(1320px, calc(100vw - 48px))"');
     expect(html).toContain("Production");
     expect(html).toContain("Production body content");
+    expect(mocks.bodyWidth).toBe("100%");
+    expect(mocks.bodyHeight).toBe("calc(100vh - 48px)");
+    expect(mocks.bodyClassName).toBe("p-4");
   });
 
   it("invokes onClose from the header close button", () => {

@@ -1,10 +1,16 @@
 import { normalizeSelector, nameToPaddedFelt } from "./normalize";
 import { FACTORY_QUERIES, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 import type { FactoryContractRow } from "./types";
+import { env } from "../../../env";
 
 interface WorldDeployment {
   worldAddress: string | null;
   rpcUrl: string | null;
+}
+
+interface RealtimeWorldDeploymentResponse {
+  worldAddress?: string | null;
+  rpcUrl?: string | null;
 }
 
 // Use shared SQL utils from @bibliothecadao/torii
@@ -136,11 +142,45 @@ const extractWorldAddressFromRow = (row: Record<string, unknown>): string | null
   );
 };
 
+const resolveWorldDeploymentFromRealtime = async (worldName: string): Promise<WorldDeployment | null> => {
+  const realtimeBaseUrl = env.VITE_PUBLIC_REALTIME_URL;
+  if (!realtimeBaseUrl) {
+    return null;
+  }
+
+  try {
+    const chain = env.VITE_PUBLIC_CHAIN;
+    const response = await fetch(`${realtimeBaseUrl}/api/world-deployments/${chain}/${encodeURIComponent(worldName)}`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as RealtimeWorldDeploymentResponse;
+    const worldAddress = normalizeAddress(payload.worldAddress);
+    const rpcUrl = normalizeString(payload.rpcUrl);
+
+    if (!worldAddress && !rpcUrl) {
+      return null;
+    }
+
+    return { worldAddress, rpcUrl };
+  } catch {
+    return null;
+  }
+};
+
 export const resolveWorldDeploymentFromFactory = async (
   factorySqlBaseUrl: string,
   worldName: string,
 ): Promise<WorldDeployment | null> => {
   if (!factorySqlBaseUrl) return null;
+
+  const realtimeDeployment = await resolveWorldDeploymentFromRealtime(worldName);
+  if (realtimeDeployment) {
+    return realtimeDeployment;
+  }
 
   const paddedName = nameToPaddedFelt(worldName);
   const query = FACTORY_QUERIES.WORLD_DEPLOYED_BY_PADDED_NAME(paddedName);
