@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23865432477-2",
   "currentStepId": "create-series",
   "createdAt": "2026-04-01T21:56:14.882Z",
-  "updatedAt": "2026-04-02T03:40:34.335Z",
+  "updatedAt": "2026-04-02T03:42:02.173Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -117,7 +117,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated legendary -> pro for bltz-warzone-01",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -159,13 +159,11 @@
         ],
         "artifacts": {
           "indexerCreated": true,
-          "indexerTier": "legendary",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-warzone-01/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-04-02T01:32:16.952Z",
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-04-02T03:40:32.632Z"
+          "lastIndexerDescribeAt": "2026-04-02T03:42:02.173Z"
         }
       },
       {
