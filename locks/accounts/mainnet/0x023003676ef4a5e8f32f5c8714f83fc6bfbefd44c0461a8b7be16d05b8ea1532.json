@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "bltz-battle",
-    "launchRequestId": "23906052246-1",
+    "launchRequestId": "23906970729-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23906052246,
+    "workflowRunId": 23906970729,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "b6cfc155-b699-4f10-ab87-92221129404b"
+    "stepId": "create-world",
+    "leaseId": "252c76f2-ead3-4108-b1f5-0c5cf894689a"
   },
-  "acquiredAt": "2026-04-02T14:42:53.388Z",
-  "heartbeatAt": "2026-04-02T14:42:58.335Z",
-  "expiresAt": "2026-04-02T14:42:58.335Z",
-  "releasedAt": "2026-04-02T14:42:58.335Z"
+  "acquiredAt": "2026-04-02T15:02:11.590Z",
+  "heartbeatAt": "2026-04-02T15:02:11.590Z",
+  "expiresAt": "2026-04-02T15:12:11.590Z"
 }
