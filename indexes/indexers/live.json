@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-03T08:32:21.142Z",
+  "updatedAt": "2026-04-03T10:42:08.413Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -982,13 +982,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-battle-07/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-04-03T08:32:21.141Z"
+        "describedAt": "2026-04-03T10:42:08.413Z"
       },
-      "updatedAt": "2026-04-03T08:32:21.142Z"
+      "updatedAt": "2026-04-03T10:42:08.413Z"
     }
   }
 }
