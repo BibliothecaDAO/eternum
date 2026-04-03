@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23948411546-1.json",
   "latestLaunchRequestId": "23948411546-1",
-  "currentStepId": "create-series",
+  "currentStepId": "create-indexers",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-03T13:48:43.796Z",
+  "updatedAt": "2026-04-03T13:48:49.737Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,22 +27,24 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-04-03T14:03:49.737Z",
     "lastRetryAt": "2026-04-03T13:45:56.219Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-03T14:03:38.633Z",
-    "lastEvaluatedAt": "2026-04-03T13:48:38.633Z",
+    "nextEvaluationAt": "2026-04-03T14:03:49.737Z",
+    "lastEvaluatedAt": "2026-04-03T13:48:49.737Z",
     "lastNudgedAt": "2026-04-03T13:47:18.636Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series started",
-      "startedAt": "2026-04-03T13:48:43.796Z"
+      "latestEvent": "Series is ready to accept rotation games",
+      "startedAt": "2026-04-03T13:48:43.796Z",
+      "finishedAt": "2026-04-03T13:48:49.737Z"
     },
     {
       "id": "create-worlds",
@@ -1785,13 +1787,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23948411546-1",
-    "workflowRunId": 23948411546,
-    "workflowRunAttempt": 1,
-    "stepId": "create-series",
-    "acquiredAt": "2026-04-03T13:48:43.796Z",
-    "expiresAt": "2026-04-03T14:33:43.796Z"
   }
 }
