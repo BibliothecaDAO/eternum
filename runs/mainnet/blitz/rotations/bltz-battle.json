@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23948411546-1.json",
   "latestLaunchRequestId": "23948411546-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "create-indexers",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-03T13:48:53.673Z",
+  "updatedAt": "2026-04-03T13:52:10.474Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-04-03T14:07:10.474Z",
     "lastRetryAt": "2026-04-03T13:45:56.219Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-03T14:03:49.737Z",
-    "lastEvaluatedAt": "2026-04-03T13:48:49.737Z",
+    "nextEvaluationAt": "2026-04-03T14:07:10.474Z",
+    "lastEvaluatedAt": "2026-04-03T13:52:10.474Z",
     "lastNudgedAt": "2026-04-03T13:47:18.636Z"
   },
   "steps": [
@@ -48,10 +49,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-04-03T13:48:53.673Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-04-03T13:48:53.673Z",
+      "finishedAt": "2026-04-03T13:52:10.474Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -1688,8 +1690,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 11,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1699,8 +1701,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-03T13:50:33.291Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -1728,7 +1731,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x03d551199e4cf8a1bc92af6f38c8e6253c76165f1eb714dfaa06da430a6cc1da",
+          "createGameTxHash": "0x4a84ac4b08a44a759597c21a94e57da09e97ba144877fa6728d77cba601b672"
+        }
       },
       {
         "gameName": "bltz-battle-12",
@@ -1737,8 +1743,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 12,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1748,8 +1754,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-03T13:52:05.961Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -1777,7 +1784,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x050d9f8afbe94d03b428c34b3991a5e6bf21cb8e921e40eca6c8f74dc15adc55",
+          "createGameTxHash": "0x7a022834cef9931c862ced8295ddc294cd7b4e6ccc054d182452bd9474a2277"
+        }
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
@@ -1787,13 +1797,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23948411546-1",
-    "workflowRunId": 23948411546,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-04-03T13:48:53.673Z",
-    "expiresAt": "2026-04-03T14:33:53.673Z"
   }
 }
