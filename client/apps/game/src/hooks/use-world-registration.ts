@@ -78,11 +78,22 @@ const createMasterAccount = (rpcProvider: RpcProvider): Account | null => {
 export type RegistrationStage =
   | "idle"
   | "preparing"
-  | "obtaining-token"
-  | "waiting-for-token"
-  | "registering"
+  | "submitting-obtain-token"
+  | "confirming-entry-token"
+  | "submitting-registration"
+  | "confirming-registration"
   | "done"
   | "error";
+
+export type RegistrationAvailabilityState =
+  | "ready"
+  | "loading-prereqs"
+  | "already-registered"
+  | "window-closed"
+  | "registration-full"
+  | "insufficient-fee"
+  | "missing-username"
+  | "wallet-unavailable";
 
 interface UseWorldRegistrationProps {
   worldName: string;
@@ -107,6 +118,8 @@ interface UseWorldRegistrationReturn {
   feeAmount: bigint;
   /** Whether registration is currently possible */
   canRegister: boolean;
+  /** Human-meaningful availability state for card rendering */
+  availabilityState: RegistrationAvailabilityState;
   /** Whether registration capacity has been reached */
   isRegistrationFull: boolean;
   /** Whether fee balance is being checked */
@@ -161,6 +174,51 @@ const fetchAvailableEntryTokenId = async (
   }
 };
 
+const extractTransactionHash = (value: unknown): string | null => {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { transaction_hash?: unknown; transactionHash?: unknown };
+  if (typeof candidate.transaction_hash === "string" && candidate.transaction_hash.length > 0) {
+    return candidate.transaction_hash;
+  }
+  if (typeof candidate.transactionHash === "string" && candidate.transactionHash.length > 0) {
+    return candidate.transactionHash;
+  }
+
+  return null;
+};
+
+const waitForTransactionIfAvailable = async (account: Account, result: unknown): Promise<void> => {
+  const txHash = extractTransactionHash(result);
+  if (!txHash) {
+    return;
+  }
+
+  const waitableAccount = account as Account & {
+    waitForTransaction?: (txHash: string) => Promise<unknown>;
+  };
+
+  if (typeof waitableAccount.waitForTransaction === "function") {
+    await waitableAccount.waitForTransaction(txHash);
+  }
+};
+
+const mapRegistrationError = (stage: RegistrationStage, error: unknown): string => {
+  const baseMessage = error instanceof Error ? error.message : "Registration failed";
+  const stageLabel = {
+    idle: "before registration started",
+    preparing: "while preparing registration",
+    "submitting-obtain-token": "while submitting entry-token minting",
+    "confirming-entry-token": "while confirming the entry token",
+    "submitting-registration": "while submitting registration",
+    "confirming-registration": "while confirming registration",
+    done: "after registration",
+    error: "while handling registration",
+  } satisfies Record<RegistrationStage, string>;
+
+  return `${baseMessage} (${stageLabel[stage]}).`;
+};
+
 export const useWorldRegistration = ({
   worldName,
   chain,
@@ -178,6 +236,7 @@ export const useWorldRegistration = ({
 
   // Cache resolved contracts
   const contractsCacheRef = useRef<Record<string, string> | null>(null);
+  const registrationStageRef = useRef<RegistrationStage>("idle");
 
   const requiresEntryToken = Boolean(config?.entryTokenAddress && config.feeAmount > 0n);
   const feeAmount = config?.feeAmount ?? 0n;
@@ -201,20 +260,40 @@ export const useWorldRegistration = ({
   // In dev mode, allow registration even after the window closes (during ongoing game)
   const isRegistrationOpen = isInRegistrationWindow || (devModeOn && now >= registrationStartAt);
 
-  const canRegister =
-    enabled &&
-    !isRegistered &&
-    isRegistrationOpen &&
-    !!account &&
-    !!address &&
-    !usernameLoading &&
-    !!usernameFelt &&
-    !isCheckingFeeBalance &&
-    hasSufficientFeeBalance &&
-    !isRegistrationFull &&
-    registrationStage === "idle";
+  const availabilityState: RegistrationAvailabilityState = (() => {
+    if (!account || !address) {
+      return "wallet-unavailable";
+    }
+    if (isRegistered) {
+      return "already-registered";
+    }
+    if (usernameLoading || isCheckingFeeBalance) {
+      return "loading-prereqs";
+    }
+    if (!usernameFelt) {
+      return "missing-username";
+    }
+    if (!isRegistrationOpen || !enabled) {
+      return "window-closed";
+    }
+    if (isRegistrationFull) {
+      return "registration-full";
+    }
+    if (!hasSufficientFeeBalance) {
+      return "insufficient-fee";
+    }
+
+    return "ready";
+  })();
+
+  const canRegister = availabilityState === "ready" && registrationStage === "idle";
 
   const isRegistering = registrationStage !== "idle" && registrationStage !== "done" && registrationStage !== "error";
+
+  const setRegistrationStageWithTracking = useCallback((stage: RegistrationStage) => {
+    registrationStageRef.current = stage;
+    setRegistrationStage(stage);
+  }, []);
 
   // Pre-check fee token balance so "Register" is disabled when the wallet can't pay.
   useEffect(() => {
@@ -367,8 +446,8 @@ export const useWorldRegistration = ({
         return null;
       }
 
-      const maxAttempts = 30;
-      const pollInterval = 2000;
+      const maxAttempts = 20;
+      const pollInterval = 500;
 
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         console.log(`waitForEntryToken [${attempt + 1}/${maxAttempts}]: Checking for entry token via RPC`, {
@@ -398,7 +477,7 @@ export const useWorldRegistration = ({
       if (!canRegister || !account) return;
 
       setError(null);
-      setRegistrationStage("preparing");
+      setRegistrationStageWithTracking("preparing");
 
       try {
         // Resolve contracts
@@ -418,13 +497,15 @@ export const useWorldRegistration = ({
           const layer = params?.layer ?? 1;
           const point = params?.point ?? 0;
 
-          setRegistrationStage("registering");
-          await starknetAccount.execute({
+          setRegistrationStageWithTracking("submitting-registration");
+          const settlementResult = await starknetAccount.execute({
             contractAddress: realmSystemsAddress,
             entrypoint: "create",
             calldata: CallData.compile([owner, realmId, frontend, side, layer, point]),
           });
-          setRegistrationStage("done");
+          setRegistrationStageWithTracking("confirming-registration");
+          await waitForTransactionIfAvailable(starknetAccount, settlementResult);
+          setRegistrationStageWithTracking("done");
           return;
         }
 
@@ -468,12 +549,13 @@ export const useWorldRegistration = ({
             }
 
             // Step 1: Obtain entry token
-            setRegistrationStage("obtaining-token");
+            setRegistrationStageWithTracking("submitting-obtain-token");
             const obtainCalls = buildObtainTokenCalls(blitzSystemsAddress);
-            await starknetAccount.execute(obtainCalls);
+            const obtainResult = await starknetAccount.execute(obtainCalls);
 
             // Step 2: Wait for token
-            setRegistrationStage("waiting-for-token");
+            setRegistrationStageWithTracking("confirming-entry-token");
+            await waitForTransactionIfAvailable(starknetAccount, obtainResult);
             tokenId = await waitForEntryToken(rpcProvider);
             console.log({ tokenId });
             if (!tokenId) {
@@ -482,21 +564,30 @@ export const useWorldRegistration = ({
           }
 
           // Step 3: Register with token
-          setRegistrationStage("registering");
+          setRegistrationStageWithTracking("submitting-registration");
           const registerCalls = buildRegisterCalls(blitzSystemsAddress, tokenId);
-          await starknetAccount.execute(registerCalls);
+          const registerResult = await starknetAccount.execute(registerCalls);
+          setRegistrationStageWithTracking("confirming-registration");
+          await waitForTransactionIfAvailable(starknetAccount, registerResult);
         } else {
           // No entry token required - direct registration
-          setRegistrationStage("registering");
+          setRegistrationStageWithTracking("submitting-registration");
           const registerCalls = buildRegisterCalls(blitzSystemsAddress, 0n);
-          await starknetAccount.execute(registerCalls);
+          const registerResult = await starknetAccount.execute(registerCalls);
+          setRegistrationStageWithTracking("confirming-registration");
+          await waitForTransactionIfAvailable(starknetAccount, registerResult);
         }
 
-        setRegistrationStage("done");
+        setRegistrationStageWithTracking("done");
       } catch (err) {
         console.error("Registration failed:", err);
-        setError(err instanceof Error ? err.message : "Registration failed");
-        setRegistrationStage("error");
+        setError(
+          mapRegistrationError(
+            registrationStageRef.current === "idle" ? "preparing" : registrationStageRef.current,
+            err,
+          ),
+        );
+        setRegistrationStageWithTracking("error");
       }
     },
     [
@@ -513,6 +604,7 @@ export const useWorldRegistration = ({
       getRealmSystemsAddress,
       buildObtainTokenCalls,
       buildRegisterCalls,
+      setRegistrationStageWithTracking,
       waitForEntryToken,
     ],
   );
@@ -525,6 +617,7 @@ export const useWorldRegistration = ({
     requiresEntryToken,
     feeAmount,
     canRegister,
+    availabilityState,
     isRegistrationFull,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,

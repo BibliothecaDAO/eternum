@@ -28,7 +28,9 @@ import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { primePlayEntryRoute } from "@/game-entry-preload";
-import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
+import { markGameEntryMilestone, startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
+import { useDashboardEntryIntentStore } from "@/hooks/store/use-dashboard-entry-intent-store";
+import { buildDashboardIntent, canResumeDashboardIntent } from "../lib/dashboard-entry-resume";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
 import { GameReviewModal } from "../components/game-review-modal";
@@ -818,16 +820,40 @@ export const PlayView = ({ className }: PlayViewProps) => {
   const account = useAccountStore((state) => state.account);
   const { isConnected } = useAccount();
   const setModal = useUIStore((state) => state.setModal);
+  const pendingIntent = useDashboardEntryIntentStore((state) => state.intent);
 
-  const openGameEntryModal = useCallback((selection: WorldSelection, intent: "play" | "settle") => {
-    startGameEntryTimeline();
-    primePlayEntryRoute();
-    setSelectedWorld(selection);
-    setIsSpectateMode(false);
-    setIsForgeMode(false);
-    setEternumEntryIntent(intent);
-    setEntryModalOpen(true);
-  }, []);
+  const openGameEntryModal = useCallback(
+    (selection: WorldSelection, intent: "play" | "settle", options?: { resumedFromDashboardIntent?: boolean }) => {
+      startGameEntryTimeline();
+      if (options?.resumedFromDashboardIntent) {
+        markGameEntryMilestone("dashboard-intent-resumed");
+      }
+      primePlayEntryRoute();
+      setSelectedWorld(selection);
+      setIsSpectateMode(false);
+      setIsForgeMode(false);
+      setEternumEntryIntent(intent);
+      setEntryModalOpen(true);
+    },
+    [],
+  );
+
+  const openForgeEntryModal = useCallback(
+    (selection: WorldSelection, numLeft: number, options?: { resumedFromDashboardIntent?: boolean }) => {
+      startGameEntryTimeline();
+      if (options?.resumedFromDashboardIntent) {
+        markGameEntryMilestone("dashboard-intent-resumed");
+      }
+      primePlayEntryRoute();
+      setSelectedWorld(selection);
+      setIsSpectateMode(false);
+      setIsForgeMode(true);
+      setEternumEntryIntent("play");
+      setNumHyperstructuresLeft(numLeft);
+      setEntryModalOpen(true);
+    },
+    [],
+  );
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
@@ -835,6 +861,13 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
+        useDashboardEntryIntentStore.getState().queueIntent(
+          buildDashboardIntent({
+            action: "settle",
+            world: selection,
+            eternumEntryIntent: "settle",
+          }),
+        );
         setModal(<SignInPromptModal />, true);
         return;
       }
@@ -850,6 +883,13 @@ export const PlayView = ({ className }: PlayViewProps) => {
       const hasAccount = Boolean(account) || isConnected;
 
       if (!hasAccount) {
+        useDashboardEntryIntentStore.getState().queueIntent(
+          buildDashboardIntent({
+            action: "play",
+            world: selection,
+            eternumEntryIntent: "play",
+          }),
+        );
         setModal(<SignInPromptModal />, true);
         return;
       }
@@ -877,21 +917,20 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
+        useDashboardEntryIntentStore.getState().queueIntent(
+          buildDashboardIntent({
+            action: "forge",
+            world: selection,
+            numHyperstructuresLeft: numLeft,
+          }),
+        );
         setModal(<SignInPromptModal />, true);
         return;
       }
 
-      // Open game entry modal in forge mode
-      startGameEntryTimeline();
-      primePlayEntryRoute();
-      setSelectedWorld(selection);
-      setIsSpectateMode(false);
-      setIsForgeMode(true);
-      setEternumEntryIntent("play");
-      setNumHyperstructuresLeft(numLeft);
-      setEntryModalOpen(true);
+      openForgeEntryModal(selection, numLeft);
     },
-    [account, isConnected, setModal],
+    [account, isConnected, openForgeEntryModal, setModal],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -961,6 +1000,59 @@ export const PlayView = ({ className }: PlayViewProps) => {
     setReviewInitialStep(undefined);
     setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
   }, [activeTab, endedGames, entryModalOpen, reviewWorld]);
+
+  useEffect(() => {
+    const hasAccount = Boolean(account) || isConnected;
+    const resumeIntent = useDashboardEntryIntentStore.getState().peekIntent();
+    if (!canResumeDashboardIntent({ intent: resumeIntent, hasAccount })) {
+      return;
+    }
+
+    if (!resumeIntent) {
+      return;
+    }
+
+    if (resumeIntent.action === "register") {
+      return;
+    }
+
+    const consumedIntent = useDashboardEntryIntentStore.getState().consumeIntent(resumeIntent.id);
+    if (!consumedIntent) {
+      return;
+    }
+
+    const selection: WorldSelection = {
+      name: consumedIntent.world.name,
+      chain: consumedIntent.world.chain,
+      worldAddress: consumedIntent.world.worldAddress,
+    };
+
+    switch (consumedIntent.action) {
+      case "settle":
+        openGameEntryModal(selection, "settle", { resumedFromDashboardIntent: true });
+        break;
+      case "play":
+        openGameEntryModal(selection, "play", { resumedFromDashboardIntent: true });
+        break;
+      case "forge":
+        openForgeEntryModal(selection, consumedIntent.numHyperstructuresLeft ?? 0, {
+          resumedFromDashboardIntent: true,
+        });
+        break;
+      case "spectate":
+        startGameEntryTimeline();
+        markGameEntryMilestone("dashboard-intent-resumed");
+        primePlayEntryRoute();
+        setSelectedWorld(selection);
+        setIsSpectateMode(true);
+        setIsForgeMode(false);
+        setEternumEntryIntent("play");
+        setEntryModalOpen(true);
+        break;
+      default:
+        break;
+    }
+  }, [account, entryModalOpen, isConnected, openForgeEntryModal, openGameEntryModal, pendingIntent, reviewWorld]);
 
   const renderContent = () => {
     switch (activeTab) {

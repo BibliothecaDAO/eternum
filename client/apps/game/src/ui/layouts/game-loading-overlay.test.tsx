@@ -6,6 +6,7 @@ const navigateMock = vi.fn();
 const setShowBlankOverlayMock = vi.fn();
 const setStructureEntityIdMock = vi.fn();
 const usePlayerStructuresMock = vi.fn();
+const useLocationMock = vi.fn(() => ({ pathname: "/play/hex" }));
 
 const uiStoreState = {
   isSpectating: false,
@@ -48,6 +49,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
+  useLocation: () => useLocationMock(),
 }));
 
 const { GameLoadingOverlay } = await import("./game-loading-overlay");
@@ -65,6 +67,8 @@ describe("GameLoadingOverlay", () => {
     setShowBlankOverlayMock.mockReset();
     setStructureEntityIdMock.mockReset();
     usePlayerStructuresMock.mockReset();
+    useLocationMock.mockReset();
+    useLocationMock.mockReturnValue({ pathname: "/play/hex" });
     uiStoreState.isSpectating = false;
     uiStoreState.loadingStates = {};
   });
@@ -96,5 +100,22 @@ describe("GameLoadingOverlay", () => {
     expect(navigateMock).toHaveBeenCalledWith("/play/map?col=4&row=9");
     expect(container.textContent).toContain("Entering World View");
     expect(container.textContent).toContain("Transitioning to the world map");
+  });
+
+  it("does not re-navigate when the player already entered on the world map route", async () => {
+    useLocationMock.mockReturnValue({ pathname: "/play/map" });
+    usePlayerStructuresMock.mockReturnValue([
+      {
+        entityId: 77,
+        position: { x: 4, y: 9 },
+      },
+    ]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+
+    expect(setStructureEntityIdMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 });

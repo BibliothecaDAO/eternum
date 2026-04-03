@@ -1,10 +1,13 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useDashboardEntryIntentStore } from "@/hooks/store/use-dashboard-entry-intent-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
 import {
   getAvailabilityStatus,
   getWorldKey,
+  useWorldEconomics,
+  useWorldPlayerState,
   useWorldsAvailability,
   type WorldConfigMeta,
 } from "@/hooks/use-world-availability";
@@ -20,6 +23,7 @@ import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { MarketDetailsModal } from "@/ui/features/landing/views/market-details-modal";
+import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { normalizeHexAddress, transformMarketRowToClass } from "@/ui/features/market/hooks/transform-market-row";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
@@ -35,6 +39,7 @@ import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { buildDashboardIntent, matchesDashboardIntent } from "../../lib/dashboard-entry-resume";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
@@ -96,12 +101,14 @@ const getStageLabel = (stage: RegistrationStage): string => {
   switch (stage) {
     case "preparing":
       return "Preparing...";
-    case "obtaining-token":
-      return "Obtaining token...";
-    case "waiting-for-token":
+    case "submitting-obtain-token":
+      return "Minting entry...";
+    case "confirming-entry-token":
+      return "Confirming token...";
+    case "submitting-registration":
+      return "Submitting...";
+    case "confirming-registration":
       return "Confirming...";
-    case "registering":
-      return "Registering...";
     case "done":
       return "Registered!";
     case "error":
@@ -246,6 +253,16 @@ interface GameCardProps {
   marketState?: GameMarketState;
 }
 
+type PendingGuardedAction =
+  | { kind: "register"; targetChain: Chain }
+  | { kind: "play"; targetChain: Chain }
+  | { kind: "settle"; targetChain: Chain }
+  | { kind: "spectate"; targetChain: Chain }
+  | { kind: "review"; targetChain: Chain }
+  | { kind: "claim-rewards"; targetChain: Chain }
+  | { kind: "forge"; targetChain: Chain }
+  | { kind: "market-open"; targetChain: Chain; initialOutcomeIndex?: number };
+
 /**
  * Single game card component with inline registration
  */
@@ -264,10 +281,12 @@ const GameCard = ({
   marketState,
 }: GameCardProps) => {
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const setModal = useUIStore((state) => state.setModal);
   const { chainId, connector, address } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
   const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
   const hasConnectedWallet = Boolean(address);
+  const pendingDashboardIntent = useDashboardEntryIntentStore((state) => state.intent);
   const canInteractOnChain = useCallback(
     (targetChain: Chain) => !hasConnectedWallet || (connectedTxChain !== null && connectedTxChain === targetChain),
     [connectedTxChain, hasConnectedWallet],
@@ -279,9 +298,18 @@ const GameCard = ({
   const isEternumMode = game.config?.mode === "eternum";
   const isBlitzMode = game.config?.mode === "blitz";
   const isUnknownMode = game.config?.mode === "unknown" || !game.config?.mode;
-  const hasSettledEternumRealm = isEternumMode && game.config?.hasPlayerSettledRealm === true;
+  const playerStateQuery = useWorldPlayerState({
+    worldName: game.name,
+    chain: game.chain,
+    mode: game.config?.mode ?? "unknown",
+    playerAddress: playerAddress ? toPaddedFeltAddress(playerAddress) : null,
+    enabled: Boolean(playerAddress) && (game.isRegistered === null || (isEternumMode && game.config?.hasPlayerSettledRealm == null)),
+  });
+  const effectiveIsRegistered = game.isRegistered ?? playerStateQuery.data?.isPlayerRegistered ?? null;
+  const hasSettledEternumRealm =
+    isEternumMode && (game.config?.hasPlayerSettledRealm ?? playerStateQuery.data?.hasPlayerSettledRealm) === true;
   const devModeOn = game.config?.devModeOn ?? false;
-  const canPlayBlitz = isBlitzMode && isOngoing && game.isRegistered;
+  const canPlayBlitz = isBlitzMode && isOngoing && effectiveIsRegistered === true;
   const canOpenEternumEntry = isEternumMode && !isEnded;
   const canPlay = !isUnknownMode && (canPlayBlitz || canOpenEternumEntry);
   const canPlayEternumDirect = canOpenEternumEntry && hasSettledEternumRealm;
@@ -297,10 +325,20 @@ const GameCard = ({
   const showForgeButton = isBlitzMode && game.config?.numHyperstructuresLeft !== null && playerAddress;
   const lordsFeeAmount = game.config?.feeAmount ?? 0n;
   const hasLordsFee = lordsFeeAmount > 0n;
-  const winnerJackpotAmount = game.config?.winnerJackpotAmount ?? 0n;
   const isMainnetGame = game.chain === "mainnet";
+  const economicsQuery = useWorldEconomics({
+    worldName: game.name,
+    chain: game.chain,
+    feeTokenAddress: game.config?.feeTokenAddress ?? null,
+    enabled:
+      isMainnetGame &&
+      Boolean(game.config?.feeTokenAddress) &&
+      (!game.config?.prizeDistributionAddress || (game.config?.winnerJackpotAmount ?? 0n) === 0n),
+  });
+  const winnerJackpotAmount = economicsQuery.data?.winnerJackpotAmount ?? game.config?.winnerJackpotAmount ?? 0n;
   const marketSnapshot = marketState?.data ?? null;
-  const hasPrizeAddress = Boolean(game.config?.prizeDistributionAddress);
+  const effectivePrizeDistributionAddress = economicsQuery.data?.prizeDistributionAddress ?? game.config?.prizeDistributionAddress ?? null;
+  const hasPrizeAddress = Boolean(effectivePrizeDistributionAddress);
   const showPredictionMarket = hasPrizeAddress && !devModeOn;
   const marketChain = marketSnapshot?.chain;
   const marketCanTrade = marketChain ? canInteractOnChain(marketChain) : true;
@@ -315,19 +353,8 @@ const GameCard = ({
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
   const [switchTargetChain, setSwitchTargetChain] = useState<Chain | null>(null);
   const [switchPromptContext, setSwitchPromptContext] = useState<"game" | "market">("game");
+  const [pendingGuardedAction, setPendingGuardedAction] = useState<PendingGuardedAction | null>(null);
   const targetChainLabel = getChainLabel(switchTargetChain ?? game.chain);
-
-  const runWithNetworkGuard = useCallback(
-    (action: () => void, targetChain: Chain = game.chain, context: "game" | "market" = "game") => {
-      if (!canInteractOnChain(targetChain)) {
-        setSwitchPromptContext(context);
-        setSwitchTargetChain(targetChain);
-        return;
-      }
-      action();
-    },
-    [canInteractOnChain, game.chain],
-  );
 
   // Inline registration hook
   const {
@@ -343,34 +370,113 @@ const GameCard = ({
     worldName: game.name,
     chain: game.chain,
     config: game.config,
-    isRegistered: game.isRegistered === true,
+    isRegistered: effectiveIsRegistered === true,
     enabled: isBlitzMode && game.status === "ok" && canRegisterPeriod,
   });
 
+  const performRegisterAction = useCallback(() => {
+    void register().catch((err) => {
+      console.error("Registration failed:", err);
+    });
+  }, [register]);
+
+  const performForgeAction = useCallback(() => {
+    if (!onForgeHyperstructures || numHyperstructuresLeft <= 0 || isForgeButtonPending) return;
+    setIsForgeButtonPending(true);
+
+    void Promise.resolve(onForgeHyperstructures())
+      .catch((err) => {
+        console.error("Forge action failed:", err);
+      })
+      .finally(() => {
+        setIsForgeButtonPending(false);
+      });
+  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending]);
+
+  const performMarketOpen = useCallback(
+    (initialOutcomeIndex?: number) => {
+      if (!marketSnapshot) return;
+      toggleModal(
+        <MarketDetailsModal
+          market={marketSnapshot.market}
+          chain={marketSnapshot.chain}
+          initialOutcomeIndex={initialOutcomeIndex}
+          onClose={() => toggleModal(null)}
+        />,
+      );
+    },
+    [marketSnapshot, toggleModal],
+  );
+
+  const replayPendingGuardedAction = useCallback(
+    (pendingAction: PendingGuardedAction) => {
+      switch (pendingAction.kind) {
+        case "register":
+          performRegisterAction();
+          break;
+        case "play":
+          onPlay();
+          break;
+        case "settle":
+          (onSettle ?? onPlay)();
+          break;
+        case "spectate":
+          onSpectate();
+          break;
+        case "review":
+          onSeeScore?.();
+          break;
+        case "claim-rewards":
+          onClaimRewards?.();
+          break;
+        case "forge":
+          performForgeAction();
+          break;
+        case "market-open":
+          performMarketOpen(pendingAction.initialOutcomeIndex);
+          break;
+        default:
+          break;
+      }
+    },
+    [
+      onClaimRewards,
+      onPlay,
+      onSeeScore,
+      onSettle,
+      onSpectate,
+      performForgeAction,
+      performMarketOpen,
+      performRegisterAction,
+    ],
+  );
+
+  const runWithNetworkGuard = useCallback(
+    (
+      action: () => void,
+      pendingAction: PendingGuardedAction,
+      targetChain: Chain = game.chain,
+      context: "game" | "market" = "game",
+    ) => {
+      if (!canInteractOnChain(targetChain)) {
+        setPendingGuardedAction(pendingAction);
+        setSwitchPromptContext(context);
+        setSwitchTargetChain(targetChain);
+        return;
+      }
+      action();
+    },
+    [canInteractOnChain, game.chain],
+  );
+
   // Handle registration with toast notification
   const handleRegister = useCallback(() => {
-    runWithNetworkGuard(() => {
-      void register().catch((err) => {
-        console.error("Registration failed:", err);
-      });
-    });
-  }, [register, runWithNetworkGuard]);
+    runWithNetworkGuard(performRegisterAction, { kind: "register", targetChain: game.chain });
+  }, [game.chain, performRegisterAction, runWithNetworkGuard]);
 
   const handleForgeClick = useCallback(() => {
-    if (!onForgeHyperstructures || numHyperstructuresLeft <= 0 || isForgeButtonPending) return;
-
-    runWithNetworkGuard(() => {
-      setIsForgeButtonPending(true);
-
-      void Promise.resolve(onForgeHyperstructures())
-        .catch((err) => {
-          console.error("Forge action failed:", err);
-        })
-        .finally(() => {
-          setIsForgeButtonPending(false);
-        });
-    });
-  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending, runWithNetworkGuard]);
+    runWithNetworkGuard(performForgeAction, { kind: "forge", targetChain: game.chain });
+  }, [game.chain, performForgeAction, runWithNetworkGuard]);
 
   const handleSwitchNetwork = useCallback(async () => {
     if (!switchTargetChain) return;
@@ -378,30 +484,32 @@ const GameCard = ({
       controller,
       targetChain: switchTargetChain,
     });
-    if (switched) {
+    const resolvedChainAfterSwitch = resolveConnectedTxChainFromRuntime({ chainId, controller });
+    if (switched && resolvedChainAfterSwitch === switchTargetChain) {
+      const actionToReplay = pendingGuardedAction;
       setSwitchTargetChain(null);
+      setPendingGuardedAction(null);
+      if (actionToReplay) {
+        replayPendingGuardedAction(actionToReplay);
+      }
     }
-  }, [controller, switchTargetChain]);
+  }, [chainId, controller, pendingGuardedAction, replayPendingGuardedAction, switchTargetChain]);
 
   const handleOpenMarket = useCallback(
     (initialOutcomeIndex?: number) => {
       if (!marketSnapshot) return;
       runWithNetworkGuard(
-        () => {
-          toggleModal(
-            <MarketDetailsModal
-              market={marketSnapshot.market}
-              chain={marketSnapshot.chain}
-              initialOutcomeIndex={initialOutcomeIndex}
-              onClose={() => toggleModal(null)}
-            />,
-          );
+        () => performMarketOpen(initialOutcomeIndex),
+        {
+          kind: "market-open",
+          targetChain: marketSnapshot.chain,
+          initialOutcomeIndex,
         },
         marketSnapshot.chain,
         "market",
       );
     },
-    [marketSnapshot, runWithNetworkGuard, toggleModal],
+    [marketSnapshot, performMarketOpen, runWithNetworkGuard],
   );
 
   // Show success toast when registration completes
@@ -413,6 +521,38 @@ const GameCard = ({
       onRegistrationComplete?.(game.worldKey);
     }
   }, [registrationStage, game.name, game.worldKey, onRegistrationComplete]);
+
+  useEffect(() => {
+    if (!hasConnectedWallet || isRegistering) {
+      return;
+    }
+
+    const resumeIntent = useDashboardEntryIntentStore.getState().peekIntent();
+    if (!matchesDashboardIntent(resumeIntent, { action: "register", worldKey: game.worldKey })) {
+      return;
+    }
+
+    const consumedIntent = useDashboardEntryIntentStore.getState().consumeIntent(resumeIntent.id);
+    if (!consumedIntent) {
+      return;
+    }
+
+    handleRegister();
+  }, [game.worldKey, handleRegister, hasConnectedWallet, isRegistering, pendingDashboardIntent]);
+
+  const handleRegisterSignIn = useCallback(() => {
+    useDashboardEntryIntentStore.getState().queueIntent(
+      buildDashboardIntent({
+        action: "register",
+        world: {
+          name: game.name,
+          chain: game.chain,
+          worldAddress: game.worldAddress ?? undefined,
+        },
+      }),
+    );
+    setModal(<SignInPromptModal />, true);
+  }, [game.chain, game.name, game.worldAddress, setModal]);
 
   // Status colors - enhanced yellow for upcoming
   const statusColors = {
@@ -429,7 +569,7 @@ const GameCard = ({
     unknown: "bg-gray-500/20 text-gray-500 border-gray-500/30",
   };
 
-  const showRegistered = game.isRegistered || registrationStage === "done";
+  const showRegistered = effectiveIsRegistered === true || registrationStage === "done";
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
   const registrationCount = game.registrationCount ?? 0;
   const registrationCountMax = resolveEffectiveRegistrationCountMax(game.config);
@@ -602,44 +742,53 @@ const GameCard = ({
         <div className="flex gap-1.5">
           {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
           {isEnded && !showRegistered ? null : canPlay ? (
-            <button
-              onClick={() =>
-                runWithNetworkGuard(() => {
-                  if (canOpenEternumEntry) {
-                    if (canPlayEternumDirect) {
-                      onPlay();
-                    } else if (onSettle) {
-                      onSettle();
-                    } else {
-                      onPlay();
-                    }
-                    return;
+            (() => {
+              const primaryActionKind = canOpenEternumEntry && !canPlayEternumDirect && onSettle ? "settle" : "play";
+
+              return (
+                <button
+                  onClick={() =>
+                    runWithNetworkGuard(
+                      () => {
+                        if (canOpenEternumEntry) {
+                          if (canPlayEternumDirect) {
+                            onPlay();
+                          } else if (onSettle) {
+                            onSettle();
+                          } else {
+                            onPlay();
+                          }
+                          return;
+                        }
+                        onPlay();
+                      },
+                      { kind: primaryActionKind, targetChain: game.chain },
+                    )
                   }
-                  onPlay();
-                })
-              }
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
-                canOpenEternumEntry
-                  ? canPlayEternumDirect
-                    ? "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors"
-                    : "bg-amber-500 text-white hover:bg-amber-400 transition-colors"
-                  : "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
-              )}
-            >
-              <Play className="w-3 h-3" />
-              {canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
-            </button>
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
+                    canOpenEternumEntry
+                      ? canPlayEternumDirect
+                        ? "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors"
+                        : "bg-amber-500 text-white hover:bg-amber-400 transition-colors"
+                      : "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
+                  )}
+                >
+                  <Play className="w-3 h-3" />
+                  {canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
+                </button>
+              );
+            })()
           ) : isUnknownMode ? (
             <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
               Detecting mode...
             </div>
-          ) : isBlitzMode && game.isRegistered === null && playerAddress ? (
+          ) : isBlitzMode && effectiveIsRegistered === null && playerAddress ? (
             // Loading state while checking registration status
             <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
               <Loader2 className="w-3 h-3 animate-spin" />
             </div>
-          ) : isBlitzMode && game.isRegistered === false && canRegisterPeriod && playerAddress ? (
+          ) : isBlitzMode && effectiveIsRegistered === false && canRegisterPeriod && playerAddress ? (
             <>
               {isRegistering ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
@@ -680,12 +829,22 @@ const GameCard = ({
               ) : null}
             </>
           ) : isBlitzMode && !playerAddress && !showRegistered && canRegisterPeriod ? (
-            <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
+            <button
+              onClick={handleRegisterSignIn}
+              className="flex-1 rounded border border-white/10 bg-white/5 px-2 py-1.5 text-center text-[10px] text-white/60 transition-colors hover:bg-white/10"
+            >
+              Connect wallet
+            </button>
           ) : null}
 
           {showEternumSettleShortcut && (
             <button
-              onClick={() => runWithNetworkGuard(onSettle ?? onPlay)}
+              onClick={() =>
+                runWithNetworkGuard(onSettle ?? onPlay, {
+                  kind: "settle",
+                  targetChain: game.chain,
+                })
+              }
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-amber-500/20 text-amber-200 border border-amber-500/40 hover:bg-amber-500/30 transition-colors",
@@ -699,7 +858,12 @@ const GameCard = ({
           {/* See Score button for ended games where player participated */}
           {isEnded && showRegistered && onSeeScore && (
             <button
-              onClick={() => runWithNetworkGuard(onSeeScore)}
+              onClick={() =>
+                runWithNetworkGuard(onSeeScore, {
+                  kind: "review",
+                  targetChain: game.chain,
+                })
+              }
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-gold/20 text-gold border border-gold/30 hover:bg-gold/30 transition-colors",
@@ -712,7 +876,12 @@ const GameCard = ({
 
           {canClaimRewards && onClaimRewards && (
             <button
-              onClick={() => runWithNetworkGuard(onClaimRewards)}
+              onClick={() =>
+                runWithNetworkGuard(onClaimRewards, {
+                  kind: "claim-rewards",
+                  targetChain: game.chain,
+                })
+              }
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
@@ -752,7 +921,12 @@ const GameCard = ({
           {/* Right slot: Spectate (always in same position) */}
           {canSpectate && (
             <button
-              onClick={() => runWithNetworkGuard(onSpectate)}
+              onClick={() =>
+                runWithNetworkGuard(onSpectate, {
+                  kind: "spectate",
+                  targetChain: game.chain,
+                })
+              }
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium",
                 "bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/10",
@@ -824,7 +998,7 @@ const GameCard = ({
             ? `Prediction market actions for ${game.name} are on another chain.`
             : `You're trying to interact with ${game.name} while your wallet is on another chain.`
         }
-        hint={`Switch your wallet to ${targetChainLabel} to continue.`}
+        hint={`Switch your wallet and we'll continue automatically. Move to ${targetChainLabel} to continue.`}
         switchLabel={`Switch To ${targetChainLabel}`}
         onClose={() => setSwitchTargetChain(null)}
         onSwitch={handleSwitchNetwork}

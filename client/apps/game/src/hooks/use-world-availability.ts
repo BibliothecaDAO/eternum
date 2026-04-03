@@ -279,16 +279,9 @@ const fetchWinnerJackpotAmount = async (
 };
 
 /**
- * Fetch world config metadata from Torii SQL endpoint.
- * Optionally fetches player registration status if playerAddress is provided.
- * Cached by React Query.
+ * Fetch core world config metadata from Torii SQL endpoint.
  */
-const fetchWorldConfigMeta = async (
-  toriiBaseUrl: string,
-  worldName: string,
-  chain?: Chain,
-  playerAddress?: string | null,
-): Promise<WorldConfigMeta> => {
+const fetchWorldConfigMeta = async (toriiBaseUrl: string): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
     mode: "unknown",
     startSettlingAt: null,
@@ -434,52 +427,68 @@ const fetchWorldConfigMeta = async (
         }
       }
     }
-
-    // Run optional side fetches in parallel.
-    const sideFetches: Promise<void>[] = [];
-    if (playerAddress && meta.mode === "blitz") {
-      sideFetches.push(
-        fetchPlayerRegistration(toriiBaseUrl, playerAddress).then((isRegistered) => {
-          meta.isPlayerRegistered = isRegistered;
-        }),
-      );
-    }
-    if (playerAddress && meta.mode === "eternum") {
-      sideFetches.push(
-        fetchPlayerHasSettledRealm(toriiBaseUrl, playerAddress).then((hasSettledRealm) => {
-          meta.hasPlayerSettledRealm = hasSettledRealm;
-        }),
-      );
-    }
-    if (chain && meta.feeTokenAddress) {
-      sideFetches.push(
-        fetchWinnerJackpotAmount(worldName, chain, meta.feeTokenAddress).then(
-          ({ prizeDistributionAddress, winnerJackpotAmount }) => {
-            meta.prizeDistributionAddress = prizeDistributionAddress;
-            meta.winnerJackpotAmount = winnerJackpotAmount;
-          },
-        ),
-      );
-    }
-
-    if (sideFetches.length > 0) {
-      await Promise.all(sideFetches);
-    }
   } catch {
     // Silently fail - metadata fetch is best-effort
   }
   return meta;
 };
 
+const fetchWorldPlayerState = async ({
+  chain,
+  mode,
+  playerAddress,
+  toriiBaseUrl,
+}: {
+  chain?: Chain;
+  mode: ResolvedGameMode;
+  playerAddress?: string | null;
+  toriiBaseUrl: string;
+}): Promise<Pick<WorldConfigMeta, "hasPlayerSettledRealm" | "isPlayerRegistered">> => {
+  const playerState: Pick<WorldConfigMeta, "hasPlayerSettledRealm" | "isPlayerRegistered"> = {
+    isPlayerRegistered: null,
+    hasPlayerSettledRealm: null,
+  };
+
+  if (!playerAddress) {
+    return playerState;
+  }
+
+  if (mode === "blitz") {
+    playerState.isPlayerRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress);
+  }
+
+  if (mode === "eternum") {
+    playerState.hasPlayerSettledRealm = await fetchPlayerHasSettledRealm(toriiBaseUrl, playerAddress);
+  }
+
+  return playerState;
+};
+
+const fetchWorldEconomics = async ({
+  worldName,
+  chain,
+  feeTokenAddress,
+}: {
+  worldName: string;
+  chain?: Chain;
+  feeTokenAddress: string | null;
+}): Promise<Pick<WorldConfigMeta, "prizeDistributionAddress" | "winnerJackpotAmount">> => {
+  if (!chain || !feeTokenAddress) {
+    return {
+      prizeDistributionAddress: null,
+      winnerJackpotAmount: 0n,
+    };
+  }
+
+  return await fetchWinnerJackpotAmount(worldName, chain, feeTokenAddress);
+};
+
 /**
- * Check world availability and fetch metadata in one query.
- * Optionally fetches player registration status if playerAddress is provided.
- * Results are cached for 5 minutes to avoid repeated checks.
+ * Check world availability and fetch core metadata in one query.
  */
 const checkWorldAvailability = async (
   worldName: string,
   chain?: Chain,
-  playerAddress?: string | null,
   bulkAvailability?: Record<string, boolean>,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
   const toriiBaseUrl = buildToriiBaseUrl(worldName);
@@ -494,7 +503,7 @@ const checkWorldAvailability = async (
     return { isAvailable: false, meta: null };
   }
 
-  const meta = await fetchWorldConfigMeta(toriiBaseUrl, worldName, chain, playerAddress);
+  const meta = await fetchWorldConfigMeta(toriiBaseUrl);
   return { isAvailable: true, meta };
 };
 
@@ -518,14 +527,13 @@ const useBulkAvailability = (enabled: boolean) => {
  * @param enabled - Whether to enable the queries
  * @param playerAddress - Optional player address (padded felt) to check registration status
  */
-export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, playerAddress?: string | null) => {
+export const useWorldsCoreAvailability = (worlds: WorldRef[], enabled = true) => {
   const { data: bulkAvailability, isPending: isBulkAvailabilityPending } = useBulkAvailability(enabled);
 
   const queries = useQueries({
     queries: worlds.map((world) => ({
-      // Include playerAddress in query key so it refetches when user connects
-      queryKey: ["worldAvailability", getWorldKey(world), playerAddress ?? "anonymous"],
-      queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress, bulkAvailability),
+      queryKey: ["worldCoreAvailability", getWorldKey(world)],
+      queryFn: () => checkWorldAvailability(world.name, world.chain, bulkAvailability),
       enabled: enabled && !!world.name && !isBulkAvailabilityPending,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes
@@ -559,6 +567,165 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
     isAnyLoading,
     allSettled,
     refetchAll: () => Promise.all(queries.map((q) => q.refetch())),
+  };
+};
+
+export const useWorldPlayerState = ({
+  worldName,
+  chain,
+  mode,
+  playerAddress,
+  enabled = true,
+}: {
+  worldName: string;
+  chain?: Chain;
+  mode: ResolvedGameMode;
+  playerAddress?: string | null;
+  enabled?: boolean;
+}) => {
+  const toriiBaseUrl = buildToriiBaseUrl(worldName);
+
+  return useQuery({
+    queryKey: ["worldPlayerState", chain ?? "unknown", worldName, mode, playerAddress ?? "anonymous"],
+    queryFn: () => fetchWorldPlayerState({ chain, mode, playerAddress, toriiBaseUrl }),
+    enabled: enabled && Boolean(worldName) && Boolean(playerAddress) && mode !== "unknown",
+    staleTime: 30_000,
+    gcTime: 10 * 60_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    retry: 1,
+  });
+};
+
+export const useWorldEconomics = ({
+  worldName,
+  chain,
+  feeTokenAddress,
+  enabled = true,
+}: {
+  worldName: string;
+  chain?: Chain;
+  feeTokenAddress: string | null;
+  enabled?: boolean;
+}) => {
+  return useQuery({
+    queryKey: ["worldEconomics", chain ?? "unknown", worldName, feeTokenAddress ?? "none"],
+    queryFn: () => fetchWorldEconomics({ worldName, chain, feeTokenAddress }),
+    enabled: enabled && Boolean(worldName) && Boolean(chain) && Boolean(feeTokenAddress),
+    staleTime: 30_000,
+    gcTime: 10 * 60_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    retry: 1,
+  });
+};
+
+export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, playerAddress?: string | null) => {
+  const {
+    results: coreResults,
+    isAnyLoading: isCoreLoading,
+    allSettled,
+    refetchAll: refetchCore,
+  } = useWorldsCoreAvailability(worlds, enabled);
+
+  const playerQueries = useQueries({
+    queries: worlds.map((world) => {
+      const worldKey = getWorldKey(world);
+      const coreAvailability = coreResults.get(worldKey);
+      const mode = coreAvailability?.meta?.mode ?? "unknown";
+
+      return {
+        queryKey: ["worldPlayerState", worldKey, playerAddress ?? "anonymous", mode],
+        queryFn: async () =>
+          await fetchWorldPlayerState({
+            chain: world.chain,
+            mode,
+            playerAddress,
+            toriiBaseUrl: buildToriiBaseUrl(world.name),
+          }),
+        enabled: enabled && Boolean(playerAddress) && mode !== "unknown",
+        staleTime: 30_000,
+        gcTime: 10 * 60_000,
+        refetchInterval: 30_000,
+        refetchIntervalInBackground: false,
+        retry: 1,
+      };
+    }),
+  });
+
+  const economicsQueries = useQueries({
+    queries: worlds.map((world) => {
+      const worldKey = getWorldKey(world);
+      const coreAvailability = coreResults.get(worldKey);
+      const feeTokenAddress = coreAvailability?.meta?.feeTokenAddress ?? null;
+
+      return {
+        queryKey: ["worldEconomics", worldKey, feeTokenAddress ?? "none"],
+        queryFn: async () =>
+          await fetchWorldEconomics({
+            worldName: world.name,
+            chain: world.chain,
+            feeTokenAddress,
+          }),
+        enabled: enabled && Boolean(world.chain) && Boolean(feeTokenAddress),
+        staleTime: 30_000,
+        gcTime: 10 * 60_000,
+        refetchInterval: 30_000,
+        refetchIntervalInBackground: false,
+        retry: 1,
+      };
+    }),
+  });
+
+  const results: Map<string, WorldAvailability> = new Map();
+
+  worlds.forEach((world, index) => {
+    const worldKey = getWorldKey(world);
+    const coreAvailability = coreResults.get(worldKey);
+    const playerState = playerQueries[index]?.data;
+    const economicsState = economicsQueries[index]?.data;
+
+    results.set(worldKey, {
+      worldKey,
+      worldName: world.name,
+      chain: world.chain,
+      isAvailable: coreAvailability?.isAvailable ?? false,
+      meta:
+        coreAvailability?.meta != null
+          ? {
+              ...coreAvailability.meta,
+              ...playerState,
+              ...economicsState,
+            }
+          : null,
+      isLoading:
+        (coreAvailability?.isLoading ?? false) ||
+        playerQueries[index]?.isLoading === true ||
+        economicsQueries[index]?.isLoading === true,
+      error:
+        coreAvailability?.error ??
+        (playerQueries[index]?.error as Error | null) ??
+        (economicsQueries[index]?.error as Error | null) ??
+        null,
+    });
+  });
+
+  return {
+    results,
+    isAnyLoading:
+      isCoreLoading ||
+      playerQueries.some((query) => query.isLoading) ||
+      economicsQueries.some((query) => query.isLoading),
+    allSettled:
+      allSettled &&
+      playerQueries.every((query) => !query.isLoading) &&
+      economicsQueries.every((query) => !query.isLoading),
+    refetchAll: () =>
+      Promise.all([
+        refetchCore(),
+        ...playerQueries.map((q) => q.refetch()),
+        ...economicsQueries.map((q) => q.refetch()),
+      ]),
   };
 };
 

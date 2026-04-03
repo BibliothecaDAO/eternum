@@ -11,10 +11,12 @@ describe("Game entry modal flow", () => {
   it("uses direct entry target resolution and removes the fixed auto-enter delay", () => {
     const source = readSource("src/ui/features/landing/components/game-entry-modal.tsx");
 
-    expect(source).toContain("resolveGameEntryTarget");
+    expect(source).toContain("resolveKnownEntryTarget");
     expect(source).not.toContain("const timer = setTimeout(() => {");
     expect(source).not.toContain("}, 500);");
     expect(source).not.toContain("worldMapPosition: { col: 0, row: 0 }");
     expect(source).toContain("/play/hex?col=0&row=0");
+    expect(source).toContain('markGameEntryMilestone("direct-map-entry-resolved")');
+    expect(source).toContain('markGameEntryMilestone("direct-map-entry-fallback")');
   });
 });
