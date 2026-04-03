@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-04-03T00:27:10.628Z",
+  "updatedAt": "2026-04-03T00:40:31.438Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,7 +86,7 @@
       "path": "runs/mainnet/blitz/rotations/bltz-battle.json",
       "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23928213587-1.json",
       "status": "attention",
-      "updatedAt": "2026-04-03T00:27:10.628Z",
+      "updatedAt": "2026-04-03T00:40:31.438Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
@@ -151,7 +151,9 @@
           "artifacts": {
             "indexerCreated": true,
             "indexerTier": "legendary",
-            "lastIndexerDescribeAt": "2026-04-02T22:32:16.340Z"
+            "lastIndexerDescribeAt": "2026-04-02T22:32:16.340Z",
+            "pendingIndexerTierTarget": "pro",
+            "pendingIndexerTierRequestedAt": "2026-04-03T00:40:28.709Z"
           }
         },
         {
