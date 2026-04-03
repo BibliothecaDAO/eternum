@@ -18,3 +18,4 @@ client/apps/game/minimap
 .claude/tsc-cache/
 **/.claude/tsc-cache/
 thoughts/
+.playwright-cli/
