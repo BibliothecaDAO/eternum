@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "bltz-battle",
   "seriesName": "bltz-battle",
-  "status": "running",
+  "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23948370828-1.json",
   "latestLaunchRequestId": "23948370828-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-03T13:48:14.760Z",
+  "updatedAt": "2026-04-03T13:48:26.966Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-04-03T14:03:26.966Z",
     "lastRetryAt": "2026-04-03T13:45:56.219Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-03T14:03:05.669Z",
-    "lastEvaluatedAt": "2026-04-03T13:48:05.669Z",
+    "nextEvaluationAt": "2026-04-03T14:03:26.966Z",
+    "lastEvaluatedAt": "2026-04-03T13:48:26.966Z",
     "lastNudgedAt": "2026-04-03T13:47:18.636Z"
   },
   "steps": [
@@ -76,10 +77,12 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-04-03T13:48:14.760Z"
+      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-battle-10\" on mainnet.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+22ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-battle-10\"\n\u001b[2m[+196ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-battle-10\" in 174ms (0x04e37e75...7ff3ae)\n\u001b[2m[+205ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x04e37e75...7ff3ae\n\u001b[2m[+371ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for bltz-battle-10 as missing via slot d describe\n\u001b[2m[+5.9s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 5.7s: Failed to create Torii deployment \"bltz-battle-10\": Error: rpc error: code = Internal desc = applying manifests: slot dm do: slot dm creating deployment RPC: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.104.185.48:8005: i/o timeout\"\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-battle-10/torii ...\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-04-03T13:48:14.760Z",
+      "finishedAt": "2026-04-03T13:48:26.966Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-battle-10\" on mainnet.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+22ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-battle-10\"\n\u001b[2m[+196ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-battle-10\" in 174ms (0x04e37e75...7ff3ae)\n\u001b[2m[+205ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x04e37e75...7ff3ae\n\u001b[2m[+371ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for bltz-battle-10 as missing via slot d describe\n\u001b[2m[+5.9s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 5.7s: Failed to create Torii deployment \"bltz-battle-10\": Error: rpc error: code = Internal desc = applying manifests: slot dm do: slot dm creating deployment RPC: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.104.185.48:8005: i/o timeout\"\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-battle-10/torii ...\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "sync-paymaster",
@@ -1510,9 +1513,9 @@
         "startTimeIso": "2026-04-04T00:00:00.000Z",
         "durationSeconds": 3600,
         "seriesGameNumber": 10,
-        "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
-        "status": "succeeded",
+        "currentStepId": "create-indexers",
+        "latestEvent": "Failed to create Torii deployment \"bltz-battle-10\": Error: rpc error: code = Internal desc = applying manifests: slot dm do: slot dm creating deployment RPC: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.104.185.48:8005: i/o timeout\"\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-battle-10/torii ...",
+        "status": "failed",
         "configSteps": [
           {
             "id": "world-admin",
@@ -1663,8 +1666,10 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "failed",
+            "latestEvent": "Failed to create Torii deployment \"bltz-battle-10\": Error: rpc error: code = Internal desc = applying manifests: slot dm do: slot dm creating deployment RPC: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.104.185.48:8005: i/o timeout\"\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-battle-10/torii ...",
+            "updatedAt": "2026-04-03T13:48:25.129Z",
+            "errorMessage": "Failed to create Torii deployment \"bltz-battle-10\": Error: rpc error: code = Internal desc = applying manifests: slot dm do: slot dm creating deployment RPC: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.104.185.48:8005: i/o timeout\"\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-battle-10/torii ..."
           },
           {
             "id": "sync-paymaster",
@@ -1785,13 +1790,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23948370828-1",
-    "workflowRunId": 23948370828,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-04-03T13:48:14.760Z",
-    "expiresAt": "2026-04-03T14:33:14.760Z"
   }
 }
