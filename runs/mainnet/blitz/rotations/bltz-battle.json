@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23949138944-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-03T18:30:59.286Z",
+  "updatedAt": "2026-04-03T18:32:44.373Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -1318,7 +1318,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 9,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer tier updated basic -> legendary for bltz-battle-09",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1488,11 +1488,11 @@
           "worldConfigTxHash": "0x5f275f62c5b39fc78d85afa5f79bb4bca2e8af2db86e554c1ed0eb37f17dc31",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "legendary",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-battle-09/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-04-02T18:05:17.609Z",
+          "lastIndexerDescribeAt": "2026-04-03T18:32:44.373Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -1502,9 +1502,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-04-03T18:30:57.513Z"
+          "paymasterSynced": true
         }
       },
       {
