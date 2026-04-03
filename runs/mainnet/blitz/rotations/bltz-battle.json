@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23947202180-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-03T13:07:26.517Z",
+  "updatedAt": "2026-04-03T13:25:52.654Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,8 +27,8 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-04-03T13:22:26.517Z",
-    "lastRetryAt": "2026-04-03T13:05:52.463Z"
+    "nextRetryAt": "2026-04-03T13:40:52.654Z",
+    "lastRetryAt": "2026-04-03T13:25:52.654Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
