@@ -12,9 +12,9 @@
   "requestedLaunchStep": "configure-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23949138944-1.json",
   "latestLaunchRequestId": "23949138944-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-03T14:13:00.318Z",
+  "updatedAt": "2026-04-03T14:13:31.179Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-03T14:27:51.831Z",
-    "lastEvaluatedAt": "2026-04-03T14:12:51.831Z",
+    "nextEvaluationAt": "2026-04-03T14:28:31.179Z",
+    "lastEvaluatedAt": "2026-04-03T14:13:31.179Z",
     "lastNudgedAt": "2026-04-03T13:47:18.636Z"
   },
   "steps": [
@@ -76,9 +76,9 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Waiting to run",
       "startedAt": "2026-04-03T14:13:00.318Z"
     },
     {
@@ -1510,127 +1510,10 @@
         "startTimeIso": "2026-04-04T00:00:00.000Z",
         "durationSeconds": 3600,
         "seriesGameNumber": 10,
-        "currentStepId": "create-indexers",
-        "latestEvent": "Failed to create Torii deployment \"bltz-battle-10\": Error: rpc error: code = Internal desc = applying manifests: slot dm do: slot dm creating deployment RPC: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.104.185.48:8005: i/o timeout\"\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-battle-10/torii ...",
-        "status": "failed",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "currentStepId": null,
+        "latestEvent": "Completed create-indexers",
+        "status": "succeeded",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -1663,10 +1546,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "failed",
-            "latestEvent": "Failed to create Torii deployment \"bltz-battle-10\": Error: rpc error: code = Internal desc = applying manifests: slot dm do: slot dm creating deployment RPC: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.104.185.48:8005: i/o timeout\"\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-battle-10/torii ...",
-            "updatedAt": "2026-04-03T13:48:25.129Z",
-            "errorMessage": "Failed to create Torii deployment \"bltz-battle-10\": Error: rpc error: code = Internal desc = applying manifests: slot dm do: slot dm creating deployment RPC: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.104.185.48:8005: i/o timeout\"\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-battle-10/torii ..."
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-04-03T14:13:04.181Z"
           },
           {
             "id": "sync-paymaster",
@@ -1678,7 +1560,23 @@
           "worldAddress": "0x04e37e75c4bf0b64f9713fae1413e45f69e395b9e4cc02129466d1f0ad7ff3ae",
           "createGameTxHash": "0x4fdc084aaf06710af7bb3ba05130ccc1d0321ba17e7f9476f2b1a7b07188295",
           "configureTxHash": "0x4dd663ab355d1c4f495ebdce37c65a38d1f1798bf7ccce6931bff44b62080a1",
-          "worldConfigTxHash": "0x4dd663ab355d1c4f495ebdce37c65a38d1f1798bf7ccce6931bff44b62080a1"
+          "worldConfigTxHash": "0x4dd663ab355d1c4f495ebdce37c65a38d1f1798bf7ccce6931bff44b62080a1",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-battle-10/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-04-03T14:13:04.180Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-battle-10",
+            "worldAddress": "0x04e37e75c4bf0b64f9713fae1413e45f69e395b9e4cc02129466d1f0ad7ff3ae",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -1688,126 +1586,9 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 11,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "village-spawn-resources",
-            "description": "Set discoverable village spawn resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -1840,8 +1621,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-04-03T14:13:16.688Z"
           },
           {
             "id": "sync-paymaster",
@@ -1853,7 +1635,23 @@
           "worldAddress": "0x03d551199e4cf8a1bc92af6f38c8e6253c76165f1eb714dfaa06da430a6cc1da",
           "createGameTxHash": "0x4a84ac4b08a44a759597c21a94e57da09e97ba144877fa6728d77cba601b672",
           "configureTxHash": "0x2e83c98b0fcc8eb7d2ade51e0cdb7c0e2e1d1ec894f05d2619da1bc6bc358c",
-          "worldConfigTxHash": "0x2e83c98b0fcc8eb7d2ade51e0cdb7c0e2e1d1ec894f05d2619da1bc6bc358c"
+          "worldConfigTxHash": "0x2e83c98b0fcc8eb7d2ade51e0cdb7c0e2e1d1ec894f05d2619da1bc6bc358c",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-battle-11/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-04-03T14:13:16.688Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-battle-11",
+            "worldAddress": "0x03d551199e4cf8a1bc92af6f38c8e6253c76165f1eb714dfaa06da430a6cc1da",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -1863,7 +1661,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 12,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2015,8 +1813,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-04-03T14:13:29.346Z"
           },
           {
             "id": "sync-paymaster",
@@ -2028,7 +1827,23 @@
           "worldAddress": "0x050d9f8afbe94d03b428c34b3991a5e6bf21cb8e921e40eca6c8f74dc15adc55",
           "createGameTxHash": "0x7a022834cef9931c862ced8295ddc294cd7b4e6ccc054d182452bd9474a2277",
           "configureTxHash": "0x1cec18d2d0a24ffc7ce83ac63548e2ee969c57308355829a1874361f401da29",
-          "worldConfigTxHash": "0x1cec18d2d0a24ffc7ce83ac63548e2ee969c57308355829a1874361f401da29"
+          "worldConfigTxHash": "0x1cec18d2d0a24ffc7ce83ac63548e2ee969c57308355829a1874361f401da29",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-battle-12/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-04-03T14:13:29.345Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-battle-12",
+            "worldAddress": "0x050d9f8afbe94d03b428c34b3991a5e6bf21cb8e921e40eca6c8f74dc15adc55",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -2088,13 +1903,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23949138944-1",
-    "workflowRunId": 23949138944,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-04-03T14:13:00.318Z",
-    "expiresAt": "2026-04-03T14:58:00.318Z"
   }
 }
