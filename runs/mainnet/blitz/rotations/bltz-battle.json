@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23983102157-1.json",
   "latestLaunchRequestId": "23983102157-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-04T16:41:51.093Z",
+  "updatedAt": "2026-04-04T16:50:47.539Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-04T16:56:47.698Z",
-    "lastEvaluatedAt": "2026-04-04T16:41:47.698Z",
+    "nextEvaluationAt": "2026-04-04T17:05:47.539Z",
+    "lastEvaluatedAt": "2026-04-04T16:50:47.539Z",
     "lastNudgedAt": "2026-04-03T13:47:18.636Z"
   },
   "steps": [
@@ -48,10 +48,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-04-04T16:41:51.093Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-04-04T16:41:51.093Z",
+      "finishedAt": "2026-04-04T16:50:47.539Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -1859,8 +1860,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 13,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-battle-13: Torii deployment \"bltz-battle-13\" does not exist",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1870,8 +1871,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-04T16:43:20.712Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -1905,7 +1907,9 @@
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
           "lastIndexerTierDispatchFailedAt": "2026-04-04T16:41:49.286Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-battle-13\" does not exist"
+          "lastIndexerTierDispatchError": "Torii deployment \"bltz-battle-13\" does not exist",
+          "worldAddress": "0x025a46098a16262165b20b65fa77b9f95b4effeef25170b1f603b0863c5957d8",
+          "createGameTxHash": "0x5498a66b6fd166204222db0dff0c25b8be607e42b5a48dab35d6fab859ff277"
         }
       },
       {
@@ -1915,8 +1919,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 14,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1926,8 +1930,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-04T16:44:44.997Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -1955,7 +1960,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x01456702534c59d5a8ce2572b45452f7012550abbae6bfaac21a5874b9dcb3d3",
+          "createGameTxHash": "0x60b8c216c0b91b8638a65ae4df56334f4077e06e3c0232fdfffc28d442e461"
+        }
       },
       {
         "gameName": "bltz-battle-15",
@@ -1964,8 +1972,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 15,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1975,8 +1983,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-04T16:46:19.373Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -2004,7 +2013,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x03877e29d94bdfc9442a831a36c65341b2ef65e7c38c2b3374aaf56eef4df45b",
+          "createGameTxHash": "0x444284e68d02c7ccf0db75af6a858964f4249b9199729e181d697629bf40891"
+        }
       },
       {
         "gameName": "bltz-battle-16",
@@ -2013,8 +2025,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 16,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -2024,8 +2036,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-04T16:47:44.140Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -2053,7 +2066,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x01e4eff6d4fde711fda944cd812e95053b1eb4cfc936d646e64a62c347e87c1b",
+          "createGameTxHash": "0x60d2c84b1f01d616977dd653e8f5e87b68cdb50d99212d3569293447b4b1116"
+        }
       },
       {
         "gameName": "bltz-battle-17",
@@ -2062,8 +2078,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 17,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -2073,8 +2089,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-04T16:49:08.780Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -2102,7 +2119,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x01e9579d90b2f2af3dab27b6da435b6dd0b26b8d15f76df53e3e30b4570bbc89",
+          "createGameTxHash": "0x5b31063ffd4b23a2a854c6f8f0d9dcd24d77f03e10f7eacd74c5d8861c72b9e"
+        }
       },
       {
         "gameName": "bltz-battle-18",
@@ -2111,8 +2131,8 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 18,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -2122,8 +2142,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-04T16:50:42.927Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -2151,7 +2172,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x05ef32ccb11aa7d707efdcab53aeabdfbdd8e66fe2a4014493f004961a34b7e6",
+          "createGameTxHash": "0x2f36b68a76d40aeae1f2e09f20a8c52eb9c798624dd39fda5fd992e8ebeea63"
+        }
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
@@ -2161,13 +2185,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23983102157-1",
-    "workflowRunId": 23983102157,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-04-04T16:41:51.093Z",
-    "expiresAt": "2026-04-04T17:26:51.093Z"
   }
 }
