@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-04-04T16:40:26.248Z",
+  "updatedAt": "2026-04-04T16:41:38.327Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,9 +84,9 @@
       "environment": "mainnet.blitz",
       "rotationName": "bltz-battle",
       "path": "runs/mainnet/blitz/rotations/bltz-battle.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23949138944-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23983102157-1.json",
       "status": "running",
-      "updatedAt": "2026-04-04T16:40:26.248Z",
+      "updatedAt": "2026-04-04T16:41:38.327Z",
       "workflowRef": "next",
       "currentStepId": "create-worlds",
       "hasRunningStep": false,
@@ -99,8 +99,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-04-04T16:55:26.248Z",
-        "lastEvaluatedAt": "2026-04-04T16:40:26.248Z",
+        "nextEvaluationAt": "2026-04-04T16:56:38.327Z",
+        "lastEvaluatedAt": "2026-04-04T16:41:38.327Z",
         "lastNudgedAt": "2026-04-03T13:47:18.636Z"
       },
       "games": [
@@ -233,6 +233,36 @@
             "pendingIndexerTierTarget": "pro",
             "pendingIndexerTierRequestedAt": "2026-04-04T16:40:17.558Z"
           }
+        },
+        {
+          "gameName": "bltz-battle-14",
+          "startTime": 1775332800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-battle-15",
+          "startTime": 1775350800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-battle-16",
+          "startTime": 1775368800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-battle-17",
+          "startTime": 1775386800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-battle-18",
+          "startTime": 1775404800,
+          "durationSeconds": 3600,
+          "artifacts": {}
         }
       ]
     }
