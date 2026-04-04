@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "23949138944-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-04T16:31:43.659Z",
+  "updatedAt": "2026-04-04T16:40:18.812Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -1860,7 +1860,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 13,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for bltz-battle-13: Torii deployment \"bltz-battle-13\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -1901,12 +1901,9 @@
           }
         ],
         "artifacts": {
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-04-04T16:31:43.659Z",
-          "indexerCreated": false,
-          "lastIndexerTierDispatchTarget": "legendary",
-          "lastIndexerTierDispatchFailedAt": "2026-04-04T16:31:43.659Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"bltz-battle-13\" does not exist"
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-04-04T16:40:17.558Z",
+          "indexerCreated": false
         }
       }
     ],
