@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-04T02:02:10.870Z",
+  "updatedAt": "2026-04-04T04:32:07.441Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1028,6 +1028,19 @@
         "describedAt": "2026-04-04T02:02:10.870Z"
       },
       "updatedAt": "2026-04-04T02:02:10.870Z"
+    },
+    "bltz-battle-11": {
+      "gameName": "bltz-battle-11",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-battle-11/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-04T04:32:07.441Z"
+      },
+      "updatedAt": "2026-04-04T04:32:07.441Z"
     }
   }
 }
