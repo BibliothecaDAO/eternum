@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "23722227798-1",
   "currentStepId": null,
   "createdAt": "2026-03-30T00:02:27.186Z",
-  "updatedAt": "2026-04-04T01:40:26.710Z",
+  "updatedAt": "2026-04-04T01:42:05.098Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x3160b5c74229b439b15e69f8ee071359e3806ea3f1a028c0f8dd587131db883",
     "lootChestRoleTxHash": "0x12fe33cd5b1b8433b2fef138959ba003b52c07c95c8addf2a1bccd085915419",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-boost-218/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-03-30T00:32:25.870Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-04-04T01:40:25.591Z"
+    "lastIndexerDescribeAt": "2026-04-04T01:42:05.098Z"
   },
   "completedAt": "2026-03-30T00:05:20.902Z"
 }
