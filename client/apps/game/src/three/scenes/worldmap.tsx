@@ -84,6 +84,7 @@ import {
   Group,
   InstancedBufferAttribute,
   Matrix4,
+  MeshStandardMaterial,
   Object3D,
   Plane,
   Raycaster,
@@ -115,6 +116,11 @@ import {
 } from "../utils/navigation";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import {
+  applyStrategicMapScaleDelta,
+  resolveMatchedStrategicMapScale,
+  resolveStrategicMapFallbackScale,
+} from "@/ui/features/world/components/strategic-map/strategic-map-viewport";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
 import { shouldTrackHydrationUpdateForFetch } from "./worldmap-hydration-tracking";
 import {
@@ -124,6 +130,29 @@ import {
   releaseWorldmapInteractionOwner,
 } from "./worldmap-interaction-owner";
 import { getLiveWorldmapEntityActions, resetWorldmapEntityActions } from "./worldmap-interaction-state";
+import {
+  WORLD_NAVIGATION_EXIT_2D_TO_HEX_EVENT,
+  WORLD_NAVIGATION_PAN_TO_HEX_EVENT,
+  WORLD_NAVIGATION_SELECT_HEX_EVENT,
+  WORLD_NAVIGATION_ZOOM_DELTA_EVENT,
+  type WorldNavigationExit2DToHexDetail,
+  type WorldNavigationPanToHexDetail,
+  type WorldNavigationSelectHexDetail,
+  type WorldNavigationZoomDeltaDetail,
+  type WorldNavigationZoomSource,
+} from "./worldmap-navigation/world-navigation-bridge";
+import {
+  WORLDMAP_STRATEGIC_CAMERA_DISTANCE,
+  WORLDMAP_STRATEGIC_EXIT_SCALE,
+  WORLDMAP_TRANSITION_START_DISTANCE,
+  createWorldNavigationModeMachineState,
+  updateWorldNavigationModeMachine,
+} from "./worldmap-navigation/world-navigation-mode-machine";
+import { resolveWorldmapStrategicTransitionPose } from "./worldmap-navigation/worldmap-strategic-transition";
+import {
+  resolveWorldmapStrategicVisualPolicy,
+  type WorldmapStrategicVisualPolicy,
+} from "./worldmap-navigation/worldmap-strategic-visual-policy";
 import { resolveWorldmapHexClickPlan } from "./worldmap-selection-routing";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
@@ -445,6 +474,8 @@ export default class WorldmapScene extends WarpTravel {
     minDistance: this.worldmapMinZoomDistance,
     maxDistance: this.worldmapMaxZoomDistance,
   });
+  private worldNavigationModeState = createWorldNavigationModeMachineState();
+  private pendingStrategicModeExitHex: HexPosition | null = null;
   private zoomRefreshPlannerState = createWorldmapZoomRefreshPlannerState();
   private readonly worldmapCameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private readonly worldmapCameraTransitionListeners: Set<(status: WorldmapCameraTransitionStatus) => void> = new Set();
@@ -548,25 +579,33 @@ export default class WorldmapScene extends WarpTravel {
     if (distanceChanged) nextState.cameraDistance = nextCameraDistance;
     useUIStore.setState(nextState);
   };
-  private minimapCameraMoveTarget: { col: number; row: number } | null = null;
-  private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
-  private minimapCameraMoveHandler = (event: Event) => {
+  private worldNavigationPanTarget: HexPosition | null = null;
+  private worldNavigationPanThrottled?: ReturnType<typeof throttle>;
+  private worldNavigationPanToHexHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const detail = (event as CustomEvent<{ col: number; row: number }>).detail;
-    if (!detail) return;
-    this.minimapCameraMoveTarget = detail;
-    this.minimapCameraMoveThrottled?.();
+    const detail = (event as CustomEvent<WorldNavigationPanToHexDetail>).detail;
+    if (!detail?.hex) return;
+    this.worldNavigationPanTarget = detail.hex;
+    useUIStore.setState({ strategicMapCenterHex: detail.hex });
+    this.worldNavigationPanThrottled?.();
   };
-  private minimapZoomHandler = (event: Event) => {
+  private worldNavigationZoomDeltaHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const detail = (event as CustomEvent<{ zoomOut: boolean }>).detail;
+    const detail = (event as CustomEvent<WorldNavigationZoomDeltaDetail>).detail;
     if (!detail) return;
-    this.zoomCoordinator.applyIntent({
-      type: "continuous_delta",
-      delta: detail.zoomOut ? WORLDMAP_STEP_WHEEL_DELTA : -WORLDMAP_STEP_WHEEL_DELTA,
-      anchor: this.resolveWorldmapMinimapZoomAnchor(),
-    });
-    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+    this.applyWorldNavigationZoomDelta(detail.delta, detail.source);
+  };
+  private worldNavigationSelectHexHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const detail = (event as CustomEvent<WorldNavigationSelectHexDetail>).detail;
+    if (!detail?.hex) return;
+    this.selectWorldmapHex(this.resolveNormalizedHex(detail.hex));
+  };
+  private worldNavigationExit2DToHexHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const detail = (event as CustomEvent<WorldNavigationExit2DToHexDetail>).detail;
+    if (!detail?.hex) return;
+    this.startStrategicModeExit(detail.hex);
   };
   private pendingWorldmapFxStartHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -1172,20 +1211,26 @@ export default class WorldmapScene extends WarpTravel {
     this.interactiveHexManager.setSurfaceVisibility(false);
     this.interactiveHexManager.setHoverVisualMode("outline");
 
-    // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
-    // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
+    // World navigation UI now routes both the minimap and the strategic overlay
+    // through one typed bridge so camera ownership stays in this scene.
     this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, 33);
-    this.minimapCameraMoveThrottled = throttle(() => {
-      const target = this.minimapCameraMoveTarget;
+    this.worldNavigationPanThrottled = throttle(() => {
+      const target = this.worldNavigationPanTarget;
       if (!target) return;
-      this.moveCameraToColRow(target.col, target.row, 0.25);
+      this.moveCameraToWorldNavigationHex(target, this.isStrategicNavigationModeActive() ? 0 : 0.25);
     }, 16);
-    window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
-    window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.addEventListener(WORLD_NAVIGATION_PAN_TO_HEX_EVENT, this.worldNavigationPanToHexHandler as EventListener);
+    window.addEventListener(WORLD_NAVIGATION_ZOOM_DELTA_EVENT, this.worldNavigationZoomDeltaHandler as EventListener);
+    window.addEventListener(WORLD_NAVIGATION_SELECT_HEX_EVENT, this.worldNavigationSelectHexHandler as EventListener);
+    window.addEventListener(
+      WORLD_NAVIGATION_EXIT_2D_TO_HEX_EVENT,
+      this.worldNavigationExit2DToHexHandler as EventListener,
+    );
     window.addEventListener(WORLDMAP_PENDING_FX_START_EVENT, this.pendingWorldmapFxStartHandler as EventListener);
     window.addEventListener(WORLDMAP_PENDING_FX_STOP_EVENT, this.pendingWorldmapFxStopHandler as EventListener);
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     this.updateCameraTargetHexThrottled();
+    this.syncWorldNavigationStore(this.zoomCoordinator.getSnapshot());
 
     // Initialize SceneShortcutManager for WorldMap shortcuts
     this.shortcutManager = new SceneShortcutManager("worldmap", this.sceneManager);
@@ -1277,6 +1322,12 @@ export default class WorldmapScene extends WarpTravel {
 
   private setupCameraZoomHandler() {
     this.wheelHandler = (event: WheelEvent) => {
+      if (this.isStrategicNavigationModeActive()) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
       const normalizedWheelDelta = normalizeWorldmapWheelDelta({
         deltaY: event.deltaY,
         deltaMode: event.deltaMode,
@@ -1288,15 +1339,11 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
-
-      this.zoomCoordinator.applyIntent({
-        type: "continuous_delta",
-        delta: normalizedWheelDelta.normalizedDelta,
-        anchor: this.resolveWorldmapWheelAnchor(event),
-      });
-      this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+      this.applyThreeDimensionalZoomDelta(
+        normalizedWheelDelta.normalizedDelta,
+        this.resolveWorldmapWheelAnchor(event),
+        event,
+      );
     };
 
     const canvas = document.getElementById("main-canvas");
@@ -1306,12 +1353,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
-    this.zoomCoordinator.applyIntent({
-      type: "continuous_delta",
-      delta: zoomOut ? WORLDMAP_STEP_WHEEL_DELTA : -WORLDMAP_STEP_WHEEL_DELTA,
-      anchor: this.resolveWorldmapMinimapZoomAnchor(),
-    });
-    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+    this.applyWorldNavigationZoomDelta(zoomOut ? WORLDMAP_STEP_WHEEL_DELTA : -WORLDMAP_STEP_WHEEL_DELTA, "minimap");
   }
 
   public override changeCameraView(position: CameraView) {
@@ -1349,10 +1391,13 @@ export default class WorldmapScene extends WarpTravel {
     if (!this.mainDirectionalLight) {
       return;
     }
-    this.mainDirectionalLight.castShadow = shouldCastWorldmapDirectionalShadow(
-      this.getShadowsEnabledByQuality(),
-      this.getCurrentCameraView() === CameraView.Far,
-    );
+    const visualPolicy = this.resolveWorldNavigationVisualPolicy();
+    this.mainDirectionalLight.castShadow =
+      !visualPolicy.disableDirectionalShadows &&
+      shouldCastWorldmapDirectionalShadow(
+        this.getShadowsEnabledByQuality(),
+        this.getCurrentCameraView() === CameraView.Far,
+      );
     this.mainDirectionalLight.shadow.mapSize.set(1024, 1024);
     this.mainDirectionalLight.shadow.camera.left = -60;
     this.mainDirectionalLight.shadow.camera.right = 60;
@@ -1362,6 +1407,11 @@ export default class WorldmapScene extends WarpTravel {
     this.mainDirectionalLight.shadow.camera.near = 8;
     this.mainDirectionalLight.shadow.bias = -0.02;
     this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
+  }
+
+  protected override updateOutlineOpacityForDistance(distance: number): void {
+    super.updateOutlineOpacityForDistance(distance);
+    this.applyWorldNavigationOutlineOpacity(distance, this.resolveWorldNavigationVisualPolicy());
   }
 
   private getCurrentCameraDistance(): number {
@@ -1442,9 +1492,10 @@ export default class WorldmapScene extends WarpTravel {
 
   private alignInitialWorldmapCameraView(): void {
     this.alignWorldmapCameraToBand(CameraView.Medium);
-    this.zoomCoordinator.syncToBand(CameraView.Medium, performance.now());
+    const snapshot = this.zoomCoordinator.syncToBand(CameraView.Medium, performance.now());
     this.lastControlsCameraDistance = this.getCurrentCameraDistance();
-    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+    this.publishWorldmapZoomSnapshot(snapshot);
+    this.syncWorldNavigationStore(snapshot);
   }
 
   private alignWorldmapCameraToBand(view: CameraView): void {
@@ -1695,16 +1746,13 @@ export default class WorldmapScene extends WarpTravel {
 
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
+    if (this.resolveWorldNavigationVisualPolicy().suppressWorldHover) {
+      this.clearWorldmapHoverState();
+      return;
+    }
+
     if (hex === null) {
-      this.state.updateEntityActionHoveredHex(null);
-      this.state.setHoveredHex(null);
-      this.applyContextualHoverPalette(null);
-
-      // Reset cursor when leaving hex
-      document.body.style.cursor = "default";
-
-      // Handle label collapse on hex leave
-      this.hoverLabelManager.onHexLeave();
+      this.clearWorldmapHoverState();
       return;
     }
     const { hexCoords } = hex;
@@ -1727,6 +1775,10 @@ export default class WorldmapScene extends WarpTravel {
 
   // double-click to enter hex view; spectate when the structure is not yours
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
+    if (this.resolveWorldNavigationVisualPolicy().suppressWorldInteractions) {
+      return;
+    }
+
     const { structure } = this.getHexagonEntity(hexCoords);
     if (!structure) {
       return;
@@ -1787,6 +1839,14 @@ export default class WorldmapScene extends WarpTravel {
 
   // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    if (this.resolveWorldNavigationVisualPolicy().suppressWorldInteractions) {
+      return;
+    }
+
+    this.selectWorldmapHex(hexCoords);
+  }
+
+  private selectWorldmapHex(hexCoords: HexPosition | null) {
     const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");
     const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
@@ -1854,6 +1914,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
+    if (this.resolveWorldNavigationVisualPolicy().suppressWorldInteractions) {
+      return;
+    }
+
     const overlay = document.querySelector(".shepherd-modal-overlay-container");
     const overlayClick = document.querySelector(".allow-modal-click");
     if (overlay && !overlayClick) {
@@ -3048,6 +3112,15 @@ export default class WorldmapScene extends WarpTravel {
     if (nextSceneName !== SceneName.WorldMap) {
       this.camera.fov = CAMERA_CONFIG.fov;
       this.camera.updateProjectionMatrix();
+      this.worldNavigationModeState = createWorldNavigationModeMachineState();
+      this.pendingStrategicModeExitHex = null;
+      this.restoreWorldNavigationVisualPresentation();
+      useUIStore.setState({
+        worldNavigationMode: "three_d",
+        worldNavigationZoomLevel: 0,
+        worldNavigationTransitionProgress: 0,
+        strategicMapScale: resolveStrategicMapFallbackScale(),
+      });
     }
     this.isSwitchedOff = true;
     const switchOffTransitionState = invalidateWorldmapSwitchOffTransitionState({
@@ -6666,23 +6739,336 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private updateWorldmapZoom(deltaTime: number): void {
-    const zoomFrame = this.zoomCoordinator.tick({
+    const nowMs = performance.now();
+    let zoomFrame = this.zoomCoordinator.tick({
       cameraPosition: this.controls.object.position,
       target: this.controls.target,
       deltaMs: deltaTime * 1000,
-      nowMs: performance.now(),
+      nowMs,
+    });
+    let zoomSnapshot = zoomFrame.snapshot;
+    const previousMode = this.worldNavigationModeState.mode;
+    let nextModeState = updateWorldNavigationModeMachine(this.worldNavigationModeState, {
+      actualDistance: zoomSnapshot.actualDistance,
+      status: zoomSnapshot.status,
+      nowMs,
+      exitStrategicMode: this.pendingStrategicModeExitHex !== null,
+      minZoomDistance: this.worldmapMinZoomDistance,
+      maxZoomDistance: WORLDMAP_STRATEGIC_CAMERA_DISTANCE,
     });
 
-    if (!zoomFrame.didMove) {
-      this.publishWorldmapZoomSnapshot(zoomFrame.snapshot);
+    const isEnteringStrategicMode = previousMode !== "strategic_2d" && nextModeState.mode === "strategic_2d";
+    if (isEnteringStrategicMode) {
+      zoomSnapshot = this.zoomCoordinator.syncToDistance(WORLDMAP_STRATEGIC_CAMERA_DISTANCE, nowMs);
+      zoomFrame = {
+        ...zoomFrame,
+        snapshot: zoomSnapshot,
+      };
+      nextModeState = {
+        ...nextModeState,
+        transitionProgress: 1,
+        zoomLevel: 1,
+      };
+    }
+
+    this.worldNavigationModeState = nextModeState;
+    this.applyWorldNavigationInteractionPolicy();
+    this.applyWorldNavigationCameraPose({
+      target: zoomFrame.target,
+      cameraPosition: zoomFrame.cameraPosition,
+      actualDistance: zoomSnapshot.actualDistance,
+      transitionProgress: nextModeState.transitionProgress,
+    });
+    if (this.worldNavigationModeState.mode !== "strategic_2d") {
+      this.syncWorldNavigationOverlayScale();
+    }
+    this.publishWorldmapZoomSnapshot(zoomSnapshot);
+    this.syncWorldNavigationStore(zoomSnapshot);
+
+    if (this.pendingStrategicModeExitHex && nextModeState.mode !== "strategic_2d") {
+      this.pendingStrategicModeExitHex = null;
+    }
+  }
+
+  private applyWorldNavigationCameraPose(input: {
+    target: Vector3;
+    cameraPosition: Vector3;
+    actualDistance: number;
+    transitionProgress: number;
+  }): void {
+    if (this.worldNavigationModeState.mode === "strategic_2d") {
+      const strategicPose = resolveWorldmapStrategicTransitionPose({
+        target: input.target,
+        actualDistance: input.actualDistance,
+        transitionProgress: 1,
+        lockStrategicDistance: true,
+      });
+      this.applyWorldmapCameraPose(strategicPose.cameraPosition, strategicPose.target, strategicPose.fovDegrees);
       return;
     }
 
-    this.controls.object.position.copy(zoomFrame.cameraPosition);
-    this.controls.target.copy(zoomFrame.target);
+    if (this.worldNavigationModeState.mode === "transition") {
+      const transitionPose = resolveWorldmapStrategicTransitionPose({
+        target: input.target,
+        actualDistance: input.actualDistance,
+        transitionProgress: input.transitionProgress,
+      });
+      this.applyWorldmapCameraPose(transitionPose.cameraPosition, transitionPose.target, transitionPose.fovDegrees);
+      return;
+    }
+
+    this.applyWorldmapCameraPose(input.cameraPosition, input.target, resolveWorldmapCameraFieldOfViewDegrees());
+  }
+
+  private applyWorldmapCameraPose(cameraPosition: Vector3, target: Vector3, fovDegrees: number): void {
+    const positionChanged = this.controls.object.position.distanceToSquared(cameraPosition) > 0.0001;
+    const targetChanged = this.controls.target.distanceToSquared(target) > 0.0001;
+    const fovChanged = Math.abs(this.camera.fov - fovDegrees) > 0.01;
+
+    if (!positionChanged && !targetChanged && !fovChanged) {
+      return;
+    }
+
+    this.controls.object.position.copy(cameraPosition);
+    this.controls.target.copy(target);
+    if (fovChanged) {
+      this.camera.fov = fovDegrees;
+      this.camera.updateProjectionMatrix();
+    }
     this.notifyControlsChanged();
     this.frustumManager?.forceUpdate();
-    this.publishWorldmapZoomSnapshot(zoomFrame.snapshot);
+  }
+
+  private applyWorldNavigationZoomDelta(delta: number, source: WorldNavigationZoomSource): void {
+    if (this.isStrategicNavigationModeActive()) {
+      const state = useUIStore.getState();
+      const nextScale = applyStrategicMapScaleDelta({
+        currentScale: state.strategicMapScale || resolveStrategicMapFallbackScale(),
+        normalizedDelta: delta,
+      });
+
+      if (delta < 0 && nextScale >= WORLDMAP_STRATEGIC_EXIT_SCALE) {
+        const exitTargetHex = state.selectedHex ?? state.strategicMapCenterHex ?? state.cameraTargetHex;
+        this.startStrategicModeExit(exitTargetHex ?? this.resolveContractHexFromCameraTarget());
+        return;
+      }
+
+      useUIStore.setState({ strategicMapScale: nextScale });
+      return;
+    }
+
+    this.applyThreeDimensionalZoomDelta(delta, this.resolveWorldNavigationZoomAnchor(source));
+  }
+
+  private applyThreeDimensionalZoomDelta(
+    normalizedDelta: number,
+    anchor: WorldmapZoomAnchor,
+    event?: Pick<WheelEvent, "preventDefault" | "stopPropagation">,
+  ): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    this.zoomCoordinator.applyIntent({
+      type: "continuous_delta",
+      delta: normalizedDelta,
+      anchor,
+    });
+    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+  }
+
+  private resolveWorldNavigationZoomAnchor(source: WorldNavigationZoomSource): WorldmapZoomAnchor {
+    switch (source) {
+      case "minimap":
+      case "strategic_map":
+      default:
+        return this.resolveWorldmapMinimapZoomAnchor();
+    }
+  }
+
+  private startStrategicModeExit(targetHex: HexPosition): void {
+    this.pendingStrategicModeExitHex = targetHex;
+    this.moveCameraToWorldNavigationHex(targetHex, 0);
+    this.zoomCoordinator.syncToDistance(WORLDMAP_STRATEGIC_CAMERA_DISTANCE, performance.now());
+    this.zoomCoordinator.applyIntent({
+      type: "snap_to_distance",
+      distance: WORLDMAP_TRANSITION_START_DISTANCE,
+      anchor: this.resolveWorldmapMinimapZoomAnchor(),
+    });
+    useUIStore.setState({
+      strategicMapCenterHex: targetHex,
+    });
+    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+  }
+
+  private moveCameraToWorldNavigationHex(hex: HexPosition, duration: number): void {
+    const normalizedHex = this.resolveNormalizedHex(hex);
+    this.moveCameraToColRow(normalizedHex.col, normalizedHex.row, duration);
+  }
+
+  private resolveNormalizedHex(hex: HexPosition): HexPosition {
+    const normalized = new Position({ x: hex.col, y: hex.row }).getNormalized();
+    return { col: normalized.x, row: normalized.y };
+  }
+
+  private resolveContractHexFromCameraTarget(): HexPosition {
+    const normalizedHex = this.getCameraTargetHex();
+    const contractHex = new Position({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
+    return { col: Number(contractHex.x), row: Number(contractHex.y) };
+  }
+
+  private resolveWorldNavigationVisualPolicy() {
+    return resolveWorldmapStrategicVisualPolicy({
+      mode: this.worldNavigationModeState.mode,
+      transitionProgress: this.worldNavigationModeState.transitionProgress,
+      zoomLevel: this.worldNavigationModeState.zoomLevel,
+    });
+  }
+
+  private applyWorldNavigationInteractionPolicy(): void {
+    const visualPolicy = this.resolveWorldNavigationVisualPolicy();
+    this.controls.enablePan = !visualPolicy.strategicLayerPointerEvents;
+    if (visualPolicy.suppressWorldHover) {
+      this.clearWorldmapHoverState();
+    }
+    this.applyWorldNavigationCanvasGrading(visualPolicy);
+    this.applyWorldNavigationLabelVisibility(visualPolicy);
+    this.configureWorldmapShadows();
+  }
+
+  private applyWorldNavigationCanvasGrading(visualPolicy: WorldmapStrategicVisualPolicy): void {
+    const canvas = this.controls.domElement;
+    if (!canvas) {
+      return;
+    }
+
+    const brightness = mixWorldNavigationValue(0.84, 1, visualPolicy.worldEntityOpacity);
+    const opacity = mixWorldNavigationValue(0.78, 1, visualPolicy.worldEntityOpacity);
+    canvas.style.willChange = "filter, opacity";
+    canvas.style.filter = [
+      `saturate(${visualPolicy.worldTerrainSaturation.toFixed(3)})`,
+      `contrast(${visualPolicy.worldTerrainContrast.toFixed(3)})`,
+      `brightness(${brightness.toFixed(3)})`,
+    ].join(" ");
+    canvas.style.opacity = opacity.toFixed(3);
+  }
+
+  private applyWorldNavigationLabelVisibility(visualPolicy: WorldmapStrategicVisualPolicy): void {
+    const showSceneLabels = visualPolicy.worldEntityOpacity >= 0.66;
+    this.armyLabelsGroup.visible = showSceneLabels;
+    this.structureLabelsGroup.visible = showSceneLabels;
+    this.chestLabelsGroup.visible = showSceneLabels;
+
+    if (!showSceneLabels) {
+      this.hoverLabelManager.onHexLeave();
+    }
+  }
+
+  private applyWorldNavigationOutlineOpacity(distance: number, visualPolicy: WorldmapStrategicVisualPolicy): void {
+    const outlineKey = "Outline" as unknown as BiomeType;
+    const outlineModel = this.biomeModels.get(outlineKey);
+    if (!outlineModel) {
+      return;
+    }
+
+    const baseOpacity = resolveBaseWorldmapOutlineOpacity(distance);
+    const resolvedOpacity = Math.min(baseOpacity, visualPolicy.worldGridOpacity);
+
+    outlineModel.instancedMeshes.forEach((mesh) => {
+      const material = mesh.material as MeshStandardMaterial;
+      material.transparent = true;
+      material.opacity = resolvedOpacity;
+    });
+  }
+
+  private restoreWorldNavigationVisualPresentation(): void {
+    const canvas = this.controls.domElement;
+    if (canvas) {
+      canvas.style.filter = "";
+      canvas.style.opacity = "";
+      canvas.style.willChange = "";
+    }
+
+    this.armyLabelsGroup.visible = true;
+    this.structureLabelsGroup.visible = true;
+    this.chestLabelsGroup.visible = true;
+  }
+
+  private syncWorldNavigationOverlayScale(): void {
+    const viewport = this.resolveWorldNavigationViewport();
+    if (!viewport) {
+      return;
+    }
+
+    const state = useUIStore.getState();
+    const matchedScale = resolveMatchedStrategicMapScale({
+      camera: this.camera,
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
+      anchorHex: state.cameraTargetHex ?? this.resolveContractHexFromCameraTarget(),
+      fallbackScale: state.strategicMapScale || resolveStrategicMapFallbackScale(),
+    });
+
+    if (Math.abs(state.strategicMapScale - matchedScale) <= 0.001) {
+      return;
+    }
+
+    useUIStore.setState({ strategicMapScale: matchedScale });
+  }
+
+  private resolveWorldNavigationViewport(): { width: number; height: number } | null {
+    const canvas = this.controls.domElement;
+    if (!canvas) {
+      return null;
+    }
+
+    const bounds = canvas.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) {
+      return null;
+    }
+
+    return {
+      width: bounds.width,
+      height: bounds.height,
+    };
+  }
+
+  private clearWorldmapHoverState(): void {
+    this.previouslyHoveredHex = null;
+    this.state.updateEntityActionHoveredHex(null);
+    this.state.setHoveredHex(null);
+    this.applyContextualHoverPalette(null);
+    document.body.style.cursor = "default";
+    this.hoverLabelManager.onHexLeave();
+  }
+
+  private syncWorldNavigationStore(_snapshot: WorldmapCameraSnapshot): void {
+    const state = useUIStore.getState();
+    const cameraTargetHex = this.resolveContractHexFromCameraTarget();
+    const nextState: Partial<ReturnType<typeof useUIStore.getState>> = {};
+
+    if (state.worldNavigationMode !== this.worldNavigationModeState.mode) {
+      nextState.worldNavigationMode = this.worldNavigationModeState.mode;
+    }
+    if (Math.abs(state.worldNavigationZoomLevel - this.worldNavigationModeState.zoomLevel) > 0.001) {
+      nextState.worldNavigationZoomLevel = this.worldNavigationModeState.zoomLevel;
+    }
+    if (Math.abs(state.worldNavigationTransitionProgress - this.worldNavigationModeState.transitionProgress) > 0.001) {
+      nextState.worldNavigationTransitionProgress = this.worldNavigationModeState.transitionProgress;
+    }
+    if (
+      !state.strategicMapCenterHex ||
+      state.strategicMapCenterHex.col !== cameraTargetHex.col ||
+      state.strategicMapCenterHex.row !== cameraTargetHex.row
+    ) {
+      nextState.strategicMapCenterHex = cameraTargetHex;
+    }
+
+    if (Object.keys(nextState).length > 0) {
+      useUIStore.setState(nextState);
+    }
+  }
+
+  private isStrategicNavigationModeActive(): boolean {
+    return this.worldNavigationModeState.mode === "strategic_2d";
   }
 
   private emitZoomHardeningTelemetry(event: string, payload: Record<string, unknown>): void {
@@ -7098,10 +7484,21 @@ export default class WorldmapScene extends WarpTravel {
       resourceFXManager: this.resourceFXManager,
     });
     this.updateCameraTargetHexThrottled?.cancel();
-    this.minimapCameraMoveThrottled?.cancel();
+    this.worldNavigationPanThrottled?.cancel();
     this.controls.removeEventListener("change", this.handleWorldmapControlsChange);
-    window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
-    window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.removeEventListener(WORLD_NAVIGATION_PAN_TO_HEX_EVENT, this.worldNavigationPanToHexHandler as EventListener);
+    window.removeEventListener(
+      WORLD_NAVIGATION_ZOOM_DELTA_EVENT,
+      this.worldNavigationZoomDeltaHandler as EventListener,
+    );
+    window.removeEventListener(
+      WORLD_NAVIGATION_SELECT_HEX_EVENT,
+      this.worldNavigationSelectHexHandler as EventListener,
+    );
+    window.removeEventListener(
+      WORLD_NAVIGATION_EXIT_2D_TO_HEX_EVENT,
+      this.worldNavigationExit2DToHexHandler as EventListener,
+    );
     window.removeEventListener(WORLDMAP_PENDING_FX_START_EVENT, this.pendingWorldmapFxStartHandler as EventListener);
     window.removeEventListener(WORLDMAP_PENDING_FX_STOP_EVENT, this.pendingWorldmapFxStopHandler as EventListener);
     this.clearCache();
@@ -7720,4 +8117,16 @@ export default class WorldmapScene extends WarpTravel {
     // Remove from battle direction relationships
     this.battleDirectionManager.removeEntityFromTracking(entityId);
   }
+}
+
+function resolveBaseWorldmapOutlineOpacity(distance: number): number {
+  const minDistance = 10;
+  const maxDistance = 60;
+  const progress = Math.min(1, Math.max(0, (distance - minDistance) / (maxDistance - minDistance)));
+  return 0.04 + progress * 0.06;
+}
+
+function mixWorldNavigationValue(start: number, end: number, amount: number): number {
+  const clampedAmount = Math.min(1, Math.max(0, amount));
+  return start + (end - start) * clampedAmount;
 }

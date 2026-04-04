@@ -1,6 +1,11 @@
 import { ActionPath } from "@bibliothecadao/eternum";
 import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/types";
 
+import {
+  WORLDMAP_STRATEGIC_ENTRY_SCALE,
+  type WorldNavigationMode,
+} from "@/three/scenes/worldmap-navigation/world-navigation-mode-machine";
+
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
   setNavigationTarget: (hex: HexPosition | null) => void;
@@ -8,6 +13,18 @@ export interface ThreeStore {
   setCameraTargetHex: (hex: HexPosition | null) => void;
   cameraDistance: number | null;
   setCameraDistance: (distance: number | null) => void;
+  worldNavigationMode: WorldNavigationMode;
+  setWorldNavigationMode: (mode: WorldNavigationMode) => void;
+  worldNavigationZoomLevel: number;
+  setWorldNavigationZoomLevel: (zoomLevel: number) => void;
+  worldNavigationTransitionProgress: number;
+  setWorldNavigationTransitionProgress: (progress: number) => void;
+  // In 3D/transition this tracks the live projection-matched overlay scale.
+  // In strategic mode it becomes the user-controlled zoom scale.
+  strategicMapScale: number;
+  setStrategicMapScale: (scale: number) => void;
+  strategicMapCenterHex: HexPosition | null;
+  setStrategicMapCenterHex: (hex: HexPosition | null) => void;
   hoveredHex: HexPosition | null;
   setHoveredHex: (hex: HexPosition | null) => void;
   entityActions: EntityActions;
@@ -48,6 +65,17 @@ export const createThreeStoreSlice = (set: any, _get: any) => ({
   setCameraTargetHex: (hex: HexPosition | null) => set({ cameraTargetHex: hex }),
   cameraDistance: null,
   setCameraDistance: (distance: number | null) => set({ cameraDistance: distance }),
+  worldNavigationMode: "three_d" as WorldNavigationMode,
+  setWorldNavigationMode: (worldNavigationMode: WorldNavigationMode) => set({ worldNavigationMode }),
+  worldNavigationZoomLevel: 0,
+  setWorldNavigationZoomLevel: (worldNavigationZoomLevel: number) => set({ worldNavigationZoomLevel }),
+  worldNavigationTransitionProgress: 0,
+  setWorldNavigationTransitionProgress: (worldNavigationTransitionProgress: number) =>
+    set({ worldNavigationTransitionProgress }),
+  strategicMapScale: WORLDMAP_STRATEGIC_ENTRY_SCALE,
+  setStrategicMapScale: (strategicMapScale: number) => set({ strategicMapScale }),
+  strategicMapCenterHex: null,
+  setStrategicMapCenterHex: (strategicMapCenterHex: HexPosition | null) => set({ strategicMapCenterHex }),
   hoveredHex: null,
   setHoveredHex: (hoveredHex: HexPosition | null) => set({ hoveredHex }),
   entityActions: {
