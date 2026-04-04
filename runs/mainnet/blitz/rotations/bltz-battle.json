@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/bltz-battle/23983102157-1.json",
   "latestLaunchRequestId": "23983102157-1",
-  "currentStepId": "wait-for-factory-indexes",
+  "currentStepId": "configure-worlds",
   "createdAt": "2026-04-01T22:05:08.335Z",
-  "updatedAt": "2026-04-04T16:50:56.080Z",
+  "updatedAt": "2026-04-04T16:51:09.166Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-04T17:05:47.539Z",
-    "lastEvaluatedAt": "2026-04-04T16:50:47.539Z",
+    "nextEvaluationAt": "2026-04-04T17:06:09.166Z",
+    "lastEvaluatedAt": "2026-04-04T16:51:09.166Z",
     "lastNudgedAt": "2026-04-03T13:47:18.636Z"
   },
   "steps": [
@@ -57,10 +57,11 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games started",
-      "startedAt": "2026-04-04T16:50:56.080Z"
+      "latestEvent": "Waiting for games is complete",
+      "startedAt": "2026-04-04T16:50:56.080Z",
+      "finishedAt": "2026-04-04T16:51:09.166Z"
     },
     {
       "id": "configure-worlds",
@@ -1861,7 +1862,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 13,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -1878,8 +1879,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-04-04T16:50:59.680Z"
           },
           {
             "id": "configure-worlds",
@@ -1920,7 +1922,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 14,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -1937,8 +1939,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-04-04T16:51:01.220Z"
           },
           {
             "id": "configure-worlds",
@@ -1973,7 +1976,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 15,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -1990,8 +1993,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-04-04T16:51:02.749Z"
           },
           {
             "id": "configure-worlds",
@@ -2026,7 +2030,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 16,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -2043,8 +2047,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-04-04T16:51:04.278Z"
           },
           {
             "id": "configure-worlds",
@@ -2079,7 +2084,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 17,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -2096,8 +2101,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-04-04T16:51:05.809Z"
           },
           {
             "id": "configure-worlds",
@@ -2132,7 +2138,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 18,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -2149,8 +2155,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-04-04T16:51:07.338Z"
           },
           {
             "id": "configure-worlds",
@@ -2186,13 +2193,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-bltz-battle.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-01T22:05:27.419Z"
-  },
-  "activeLease": {
-    "launchRequestId": "23983102157-1",
-    "workflowRunId": 23983102157,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-indexes",
-    "acquiredAt": "2026-04-04T16:50:56.080Z",
-    "expiresAt": "2026-04-04T17:35:56.080Z"
   }
 }
