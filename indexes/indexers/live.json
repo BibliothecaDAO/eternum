@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-04T16:11:55.553Z",
+  "updatedAt": "2026-04-04T16:31:45.344Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1062,7 +1062,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-battle-13 not found"
       },
-      "updatedAt": "2026-04-04T16:11:55.553Z"
+      "updatedAt": "2026-04-04T16:31:45.344Z"
     }
   }
 }
