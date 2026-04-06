@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-06",
+    title: "Worldmap Refresh Recovery",
+    description:
+      "World map same-chunk refreshes now avoid late tile-append corruption and recover more cleanly from stalled chunk work, so traversal and terrain updates stay stable during heavy map streaming.",
+    type: "fix",
+  },
+  {
     date: "2026-04-02",
     title: "Unit Command Audio",
     description:

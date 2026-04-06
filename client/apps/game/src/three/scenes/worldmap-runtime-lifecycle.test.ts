@@ -4,6 +4,7 @@ import {
   finalizePendingChunkFetchOwnership,
   invalidateWorldmapSwitchOffTransitionState,
   invalidateWorldmapPendingFetchGeneration,
+  resolvePendingWorldmapChunkFetchPromise,
   shouldApplyWorldmapFetchResult,
 } from "./worldmap-runtime-lifecycle";
 import { SceneName } from "../types";
@@ -147,7 +148,9 @@ describe("worldmap runtime lifecycle", () => {
     const fetchKey = "12,12:render";
     const staleOwner = Promise.resolve(true);
     const currentOwner = Promise.resolve(true);
-    const pendingChunks = new Map<string, Promise<boolean>>([[fetchKey, currentOwner]]);
+    const pendingChunks = new Map<string, { fetchGeneration: number; promise: Promise<boolean> }>([
+      [fetchKey, { fetchGeneration: 2, promise: currentOwner }],
+    ]);
 
     const staleDeleteResult = finalizePendingChunkFetchOwnership({
       pendingChunks,
@@ -155,7 +158,7 @@ describe("worldmap runtime lifecycle", () => {
       fetchPromise: staleOwner,
     });
     expect(staleDeleteResult).toBe(false);
-    expect(pendingChunks.get(fetchKey)).toBe(currentOwner);
+    expect(pendingChunks.get(fetchKey)?.promise).toBe(currentOwner);
 
     const currentDeleteResult = finalizePendingChunkFetchOwnership({
       pendingChunks,
@@ -164,6 +167,36 @@ describe("worldmap runtime lifecycle", () => {
     });
     expect(currentDeleteResult).toBe(true);
     expect(pendingChunks.size).toBe(0);
+  });
+
+  it("reuses only the pending fetch owner for the active fetch generation", () => {
+    const fetchKey = "12,12:render";
+    const staleOwner = Promise.resolve(true);
+    const currentOwner = Promise.resolve(true);
+    const pendingChunks = new Map<string, { fetchGeneration: number; promise: Promise<boolean> }>([
+      [fetchKey, { fetchGeneration: 7, promise: staleOwner }],
+    ]);
+
+    expect(
+      resolvePendingWorldmapChunkFetchPromise({
+        pendingChunks,
+        fetchKey,
+        activeFetchGeneration: 8,
+      }),
+    ).toBeNull();
+
+    pendingChunks.set(fetchKey, {
+      fetchGeneration: 8,
+      promise: currentOwner,
+    });
+
+    expect(
+      resolvePendingWorldmapChunkFetchPromise({
+        pendingChunks,
+        fetchKey,
+        activeFetchGeneration: 8,
+      }),
+    ).toBe(currentOwner);
   });
 
   it("clears hydrated refresh queues and sheds cache when switching to fast travel", () => {

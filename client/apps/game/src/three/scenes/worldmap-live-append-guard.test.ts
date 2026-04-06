@@ -15,19 +15,19 @@ function extractUpdateExploredHexMethod(source: string): string {
 }
 
 describe("worldmap live append transition guard", () => {
-  it("marks same-chunk refreshes as chunk transitions while refreshCurrentChunk is in flight", () => {
+  it("routes same-chunk refreshes through the background lane instead of blocking switch authority", () => {
     const source = readWorldmapSource();
 
     expect(source).toMatch(
-      /if \(chunkDecision\.action === "refresh_current_chunk"\) \{[\s\S]*?this\.isChunkTransitioning = true;[\s\S]*?this\.globalChunkSwitchPromise = this\.refreshCurrentChunk\(chunkKey, startCol, startRow, transitionToken\);[\s\S]*?this\.globalChunkSwitchPromise = null;[\s\S]*?this\.isChunkTransitioning = false;/s,
+      /if \(chunkDecision\.action === "refresh_current_chunk"\) \{[\s\S]*?this\.startBackgroundCurrentChunkRefresh\(/s,
     );
   });
 
-  it("skips live biome mesh appends while a chunk transition is in flight", () => {
+  it("skips live biome mesh appends while background refresh or blocking chunk work is in flight", () => {
     const methodSource = extractUpdateExploredHexMethod(readWorldmapSource());
 
     expect(methodSource).toMatch(
-      /if \(visibleTerrainReconcileMode === "atomic_chunk_refresh"\) \{[\s\S]*?this\.requestChunkRefresh\(true, "tile_overlap_repair"\);[\s\S]*?return;[\s\S]*?if \(this\.isChunkTransitioning\) \{[\s\S]*?this\.requestChunkRefresh\(true, "deferred_transition_tile"\);[\s\S]*?return;[\s\S]*?this\.interactiveHexManager\.addHex/s,
+      /hasBackgroundRefresh: this\.hasBackgroundChunkRefreshInFlight\(\)[\s\S]*?if \(visibleTerrainReconcileMode === "atomic_chunk_refresh"\) \{[\s\S]*?this\.requestChunkRefresh\(true, "tile_overlap_repair"\);[\s\S]*?return;[\s\S]*?if \(shouldDeferVisibleTerrainMutation\) \{[\s\S]*?this\.requestChunkRefresh\(true, "deferred_transition_tile"\);[\s\S]*?return;[\s\S]*?this\.interactiveHexManager\.addHex/s,
     );
   });
 

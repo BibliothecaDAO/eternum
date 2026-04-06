@@ -203,4 +203,24 @@ describe("worldmap-render-diagnostics", () => {
 
     expect(snapshot.counters).toHaveProperty("duplicateTileAuthoritativeUpdates", 1);
   });
+
+  it("tracks background refresh and timeout counters separately", () => {
+    incrementWorldmapRenderCounter("backgroundRefreshStarted" as any);
+    incrementWorldmapRenderCounter("backgroundRefreshCompleted" as any, 2);
+    incrementWorldmapRenderCounter("backgroundRefreshTimedOut" as any, 3);
+    incrementWorldmapRenderCounter("backgroundRefreshPreempted" as any, 4);
+    incrementWorldmapRenderCounter("blockingSwitchTimedOut" as any, 5);
+    incrementWorldmapRenderCounter("tileFetchTimeout" as any, 6);
+    incrementWorldmapRenderCounter("currentAreaFetchInvalidatedForRecovery" as any, 7);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.counters).toHaveProperty("backgroundRefreshStarted", 1);
+    expect(snapshot.counters).toHaveProperty("backgroundRefreshCompleted", 2);
+    expect(snapshot.counters).toHaveProperty("backgroundRefreshTimedOut", 3);
+    expect(snapshot.counters).toHaveProperty("backgroundRefreshPreempted", 4);
+    expect(snapshot.counters).toHaveProperty("blockingSwitchTimedOut", 5);
+    expect(snapshot.counters).toHaveProperty("tileFetchTimeout", 6);
+    expect(snapshot.counters).toHaveProperty("currentAreaFetchInvalidatedForRecovery", 7);
+  });
 });

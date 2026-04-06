@@ -58,6 +58,25 @@ describe("waitForVisualSettle", () => {
     await waitForVisualSettle(null, setTimeoutScheduler);
     expect(setTimeoutScheduler).toHaveBeenCalledTimes(1);
   });
+
+  it("uses timeout fallback when the animation frame scheduler stalls", async () => {
+    vi.useFakeTimers();
+    try {
+      const rafScheduler = vi.fn<(callback: FrameRequestCallback) => number>((_callback) => 1);
+      const setTimeoutScheduler = vi.fn<(callback: () => void) => number>((callback) => {
+        return globalThis.setTimeout(callback, 32) as unknown as number;
+      });
+
+      const settlePromise = waitForVisualSettle(rafScheduler, setTimeoutScheduler);
+      await vi.advanceTimersByTimeAsync(32);
+
+      await expect(settlePromise).resolves.toBeUndefined();
+      expect(rafScheduler).toHaveBeenCalledTimes(1);
+      expect(setTimeoutScheduler).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("isCommittedManagerChunk", () => {

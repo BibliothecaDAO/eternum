@@ -94,14 +94,25 @@ export function waitForVisualSettle(
 ): Promise<void> {
   const rafScheduler =
     requestAnimationFrameScheduler === undefined ? globalThis.requestAnimationFrame : requestAnimationFrameScheduler;
-  if (typeof rafScheduler === "function") {
+  const fallbackScheduler = timeoutScheduler ?? ((callback: () => void) => globalThis.setTimeout(callback, 32));
+
+  if (typeof rafScheduler !== "function") {
     return new Promise((resolve) => {
-      rafScheduler(() => resolve());
+      fallbackScheduler(() => resolve());
     });
   }
 
-  const fallbackScheduler = timeoutScheduler ?? ((callback: () => void) => globalThis.setTimeout(callback, 0));
   return new Promise((resolve) => {
-    fallbackScheduler(() => resolve());
+    let settled = false;
+    const settle = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve();
+    };
+
+    rafScheduler(() => settle());
+    fallbackScheduler(() => settle());
   });
 }

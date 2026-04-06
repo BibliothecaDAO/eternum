@@ -43,7 +43,14 @@ export type WorldmapChunkDiagnosticsEvent =
   | "stale_terrain_refresh_dropped"
   | "terrain_bounds_recovery"
   | "tile_hydration_drain_completed"
-  | "cache_reject_fingerprint";
+  | "cache_reject_fingerprint"
+  | "background_refresh_started"
+  | "background_refresh_completed"
+  | "background_refresh_timed_out"
+  | "background_refresh_preempted"
+  | "blocking_switch_timed_out"
+  | "tile_fetch_timeout"
+  | "current_area_fetch_invalidated_for_recovery";
 
 export interface WorldmapChunkDiagnostics {
   transitionStarted: number;
@@ -83,6 +90,13 @@ export interface WorldmapChunkDiagnostics {
   terrainBoundsRecovery: number;
   tileHydrationDrainCompleted: number;
   cacheRejectFingerprint: number;
+  backgroundRefreshStarted: number;
+  backgroundRefreshCompleted: number;
+  backgroundRefreshTimedOut: number;
+  backgroundRefreshPreempted: number;
+  blockingSwitchTimedOut: number;
+  tileFetchTimeout: number;
+  currentAreaFetchInvalidatedForRecovery: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
   switchDurationMsSamples: number[];
@@ -151,6 +165,13 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     terrainBoundsRecovery: 0,
     tileHydrationDrainCompleted: 0,
     cacheRejectFingerprint: 0,
+    backgroundRefreshStarted: 0,
+    backgroundRefreshCompleted: 0,
+    backgroundRefreshTimedOut: 0,
+    backgroundRefreshPreempted: 0,
+    blockingSwitchTimedOut: 0,
+    tileFetchTimeout: 0,
+    currentAreaFetchInvalidatedForRecovery: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
     switchDurationMsSamples: [],
@@ -307,6 +328,27 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "cache_reject_fingerprint":
       diagnostics.cacheRejectFingerprint += 1;
+      break;
+    case "background_refresh_started":
+      diagnostics.backgroundRefreshStarted += 1;
+      break;
+    case "background_refresh_completed":
+      diagnostics.backgroundRefreshCompleted += 1;
+      break;
+    case "background_refresh_timed_out":
+      diagnostics.backgroundRefreshTimedOut += 1;
+      break;
+    case "background_refresh_preempted":
+      diagnostics.backgroundRefreshPreempted += 1;
+      break;
+    case "blocking_switch_timed_out":
+      diagnostics.blockingSwitchTimedOut += 1;
+      break;
+    case "tile_fetch_timeout":
+      diagnostics.tileFetchTimeout += 1;
+      break;
+    case "current_area_fetch_invalidated_for_recovery":
+      diagnostics.currentAreaFetchInvalidatedForRecovery += 1;
       break;
     case "switch_duration_recorded": {
       const durationMs = options?.durationMs ?? 0;

@@ -47,7 +47,13 @@ interface WorldmapSwitchOffTransitionStateResult {
 interface FinalizePendingChunkFetchOwnershipInput<TPendingChunk> {
   pendingChunks: Map<string, TPendingChunk>;
   fetchKey: string;
-  fetchPromise: TPendingChunk;
+  fetchPromise: unknown;
+}
+
+interface ResolvePendingWorldmapChunkFetchPromiseInput<TPendingChunkPromise> {
+  pendingChunks: Map<string, WorldmapPendingChunkFetch<TPendingChunkPromise>>;
+  fetchKey: string;
+  activeFetchGeneration: number;
 }
 
 interface ShouldApplyWorldmapFetchResultInput {
@@ -55,6 +61,11 @@ interface ShouldApplyWorldmapFetchResultInput {
   activeFetchGeneration: number;
   fetchKey: string;
   pinnedRenderAreas: Set<string>;
+}
+
+export interface WorldmapPendingChunkFetch<TPendingChunkPromise> {
+  fetchGeneration: number;
+  promise: TPendingChunkPromise;
 }
 
 export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPendingChunk>({
@@ -137,12 +148,26 @@ export const finalizePendingChunkFetchOwnership = <TPendingChunk>({
   fetchKey,
   fetchPromise,
 }: FinalizePendingChunkFetchOwnershipInput<TPendingChunk>): boolean => {
-  if (pendingChunks.get(fetchKey) !== fetchPromise) {
+  const currentOwner = pendingChunks.get(fetchKey);
+  if (!currentOwner || currentOwner.promise !== fetchPromise) {
     return false;
   }
 
   pendingChunks.delete(fetchKey);
   return true;
+};
+
+export const resolvePendingWorldmapChunkFetchPromise = <TPendingChunkPromise>({
+  pendingChunks,
+  fetchKey,
+  activeFetchGeneration,
+}: ResolvePendingWorldmapChunkFetchPromiseInput<TPendingChunkPromise>): TPendingChunkPromise | null => {
+  const currentOwner = pendingChunks.get(fetchKey);
+  if (!currentOwner) {
+    return null;
+  }
+
+  return currentOwner.fetchGeneration === activeFetchGeneration ? currentOwner.promise : null;
 };
 
 export const invalidateWorldmapPendingFetchGeneration = (currentGeneration: number): number => currentGeneration + 1;

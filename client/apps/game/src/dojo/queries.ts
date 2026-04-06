@@ -13,6 +13,7 @@ import {
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
+export { ToriiQueryTimeoutError, createToriiTimedQuery } from "./torii-query-timeout";
 
 const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isFinite(id);
 const hasValidPosition = (position: HexPosition | undefined): position is HexPosition =>

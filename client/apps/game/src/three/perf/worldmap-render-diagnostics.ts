@@ -41,7 +41,14 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
   | "postCommitManagerCatchUpImmediate"
-  | "postCommitManagerCatchUpDeferred";
+  | "postCommitManagerCatchUpDeferred"
+  | "backgroundRefreshStarted"
+  | "backgroundRefreshCompleted"
+  | "backgroundRefreshTimedOut"
+  | "backgroundRefreshPreempted"
+  | "blockingSwitchTimedOut"
+  | "tileFetchTimeout"
+  | "currentAreaFetchInvalidatedForRecovery";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -139,6 +146,13 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmMisses: 0,
     postCommitManagerCatchUpImmediate: 0,
     postCommitManagerCatchUpDeferred: 0,
+    backgroundRefreshStarted: 0,
+    backgroundRefreshCompleted: 0,
+    backgroundRefreshTimedOut: 0,
+    backgroundRefreshPreempted: 0,
+    blockingSwitchTimedOut: 0,
+    tileFetchTimeout: 0,
+    currentAreaFetchInvalidatedForRecovery: 0,
   },
   forceRefreshReasons: {
     default: 0,
