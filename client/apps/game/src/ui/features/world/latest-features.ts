@@ -9,6 +9,20 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-06",
+    title: "Smoother Market Boot",
+    description:
+      "Game entry and landing now avoid kicking off heavyweight prediction-market sync work until those panels actually need it, so world load spends less time competing with failing background market requests.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-06",
+    title: "Dashboard Network Switch",
+    description:
+      "The dashboard header now includes a compact network switcher, so you can swap the preferred game chain and prompt a wallet network switch from one cleaner control.",
+    type: "improvement",
+  },
+  {
     date: "2026-04-02",
     title: "Unit Command Audio",
     description:

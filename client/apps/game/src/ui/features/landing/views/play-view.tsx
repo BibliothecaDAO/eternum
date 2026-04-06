@@ -1000,12 +1000,16 @@ export const PlayView = ({ className }: PlayViewProps) => {
     }
   };
 
+  const shouldMountMarketsProviders = activeTab === "play";
+  const content = (
+    <div className={cn("flex flex-col gap-6", activeTab === "factory" && FACTORY_TAB_BLEED_CLASS_NAME, className)}>
+      {renderContent()}
+    </div>
+  );
+
   return (
-    <MarketsProviders>
-      <div className={cn("flex flex-col gap-6", activeTab === "factory" && FACTORY_TAB_BLEED_CLASS_NAME, className)}>
-        {/* Tab content */}
-        {renderContent()}
-      </div>
+    <>
+      {shouldMountMarketsProviders ? <MarketsProviders>{content}</MarketsProviders> : content}
 
       {/* Game Entry Modal - Loading + Settlement + Forge */}
       {selectedWorld && selectedWorld.chain && (
@@ -1033,6 +1037,6 @@ export const PlayView = ({ className }: PlayViewProps) => {
           onRequireSignIn={handleRequireSignIn}
         />
       )}
-    </MarketsProviders>
+    </>
   );
 };

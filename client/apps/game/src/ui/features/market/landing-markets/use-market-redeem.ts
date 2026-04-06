@@ -4,7 +4,7 @@ import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
-import { useUser } from "@/pm/hooks/dojo/user";
+import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import { useClaimablePayout } from "@/pm/hooks/markets/use-claimable-payout";
 import { useProtocolFees } from "@/pm/hooks/markets/use-protocol-fees";
 import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
@@ -71,7 +71,54 @@ const toUint256 = (val: bigint) => {
   return { low: asUint.low, high: asUint.high };
 };
 
-export const useMarketRedeem = (market?: MarketClass, chainOverride?: MarketDataChain) => {
+type UseMarketRedeemOptions = {
+  enabled?: boolean;
+};
+
+const coerceBigIntValue = (value: unknown): bigint | null => {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? BigInt(Math.trunc(value)) : null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+      return BigInt(trimmed);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof value === "boolean") return value ? 1n : 0n;
+  return null;
+};
+
+const toNonZeroBigIntString = (value: unknown): string | null => {
+  const parsed = coerceBigIntValue(value);
+  return parsed != null && parsed > 0n ? parsed.toString() : null;
+};
+
+const buildAccountAddressFilters = (accountAddress?: string | null) => {
+  if (!accountAddress) return undefined;
+
+  const variants = new Set<string>();
+  variants.add(accountAddress);
+  try {
+    variants.add(`0x${BigInt(accountAddress).toString(16)}`);
+  } catch {
+    // Ignore invalid variant derivation and keep the original address.
+  }
+  try {
+    variants.add(addAddressPadding(accountAddress.toLowerCase()));
+  } catch {
+    // Ignore invalid padding conversion and keep available variants.
+  }
+  return Array.from(variants);
+};
+
+export const useMarketRedeem = (
+  market?: MarketClass,
+  chainOverride?: MarketDataChain,
+  options: UseMarketRedeemOptions = {},
+) => {
   const storeAccount = useAccountStore((state) => state.account);
   const { account: connectedAccount, address: connectedAddress } = useAccount();
   const account = storeAccount ?? connectedAccount ?? null;
@@ -81,56 +128,57 @@ export const useMarketRedeem = (market?: MarketClass, chainOverride?: MarketData
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [suppressClaimUi, setSuppressClaimUi] = useState(false);
   const queryClient = useQueryClient();
+  const claimsEnabled = options.enabled ?? true;
+  const hasResolvedMarket = Boolean(market?.isResolved());
+  const validMarketId = useMemo(() => toNonZeroBigIntString(market?.market_id), [market?.market_id]);
+  const normalizedAccountAddress = useMemo(() => {
+    if (!accountAddress) return null;
+    try {
+      const parsed = BigInt(accountAddress);
+      if (parsed <= 0n) return null;
+      return addAddressPadding(`0x${parsed.toString(16)}`).toLowerCase();
+    } catch {
+      return null;
+    }
+  }, [accountAddress]);
+  const accountAddressFilters = useMemo(() => {
+    if (!(claimsEnabled && hasResolvedMarket)) return undefined;
+    return buildAccountAddressFilters(accountAddress);
+  }, [accountAddress, claimsEnabled, hasResolvedMarket]);
 
-  const { claimableAmount, hasRedeemablePositions } = useClaimablePayout(market, accountAddress, chainOverride);
+  const { claimableAmount, hasRedeemablePositions } = useClaimablePayout(market, accountAddress, chainOverride, {
+    enabled: claimsEnabled && hasResolvedMarket,
+  });
 
   // Vault fees calculation
   const vaultFeesAddress = useMemo(
     () => getContractByName(config.manifest, "pm", "VaultFees")?.address,
     [config.manifest],
   );
+  const { balances: vaultFeeBalances } = useTokens(
+    {
+      accountAddresses: accountAddressFilters,
+      contractAddresses: vaultFeesAddress ? [vaultFeesAddress] : [],
+    },
+    true,
+  );
 
-  const {
-    tokens: { getBalances, balances: allBalances },
-  } = useUser();
-
-  const vaultFeeBalances = useMemo(() => {
-    if (!vaultFeesAddress) return [];
-    return getBalances([vaultFeesAddress]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allBalances, getBalances, vaultFeesAddress]);
-
-  const marketIdForProtocolFees = useMemo(() => {
-    if (market?.market_id == null) return 0n;
-    try {
-      return BigInt(market.market_id);
-    } catch {
-      return 0n;
-    }
-  }, [market?.market_id]);
-
-  const { fees: vaultFees } = useProtocolFees(marketIdForProtocolFees.toString());
+  const { fees: vaultFees } = useProtocolFees(validMarketId, claimsEnabled && hasResolvedMarket);
 
   const { data: addressProtocolFees } = useQuery({
     queryKey: ["pm", "protocol-fees", "address", chain, accountAddress],
-    enabled: Boolean(accountAddress),
+    enabled: claimsEnabled && hasResolvedMarket && Boolean(accountAddress),
     queryFn: async () => {
-      if (!accountAddress) return null;
-
-      let normalizedAddress = accountAddress.toLowerCase();
-      try {
-        normalizedAddress = addAddressPadding(`0x${BigInt(accountAddress).toString(16)}`).toLowerCase();
-      } catch {
-        // Keep lowercase fallback when address normalization fails.
-      }
-
-      return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchProtocolFeesById(normalizedAddress);
+      if (!normalizedAccountAddress) return null;
+      return getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[chain]).fetchProtocolFeesById(normalizedAccountAddress);
     },
     staleTime: 30 * 1000,
   });
 
   const { claimableMarketFeeShare, claimableAddressFee } = useMemo(() => {
-    if (!market) return { claimableMarketFeeShare: 0n, claimableAddressFee: 0n };
+    if (!(claimsEnabled && hasResolvedMarket) || !market || !validMarketId) {
+      return { claimableMarketFeeShare: 0n, claimableAddressFee: 0n };
+    }
 
     const userAccumulated = BigInt(addressProtocolFees?.accumulated_fee || 0);
     const userClaimed = BigInt(addressProtocolFees?.claimed_fee || 0);
@@ -148,7 +196,7 @@ export const useMarketRedeem = (market?: MarketClass, chainOverride?: MarketData
     const claimableMarketFeeShare = (share * fees) / 10_000n;
 
     return { claimableMarketFeeShare, claimableAddressFee };
-  }, [market, vaultFeeBalances, vaultFees, addressProtocolFees]);
+  }, [addressProtocolFees, claimsEnabled, hasResolvedMarket, market, validMarketId, vaultFeeBalances, vaultFees]);
 
   // Combined claimable amount (position payout + vault fees)
   const totalClaimableAmount = useMemo(() => {
@@ -163,7 +211,7 @@ export const useMarketRedeem = (market?: MarketClass, chainOverride?: MarketData
 
   const hasClaimableVaultFees = claimableMarketFeeShare > 0n;
   const hasClaimableAddressFees = claimableAddressFee > 0n;
-  const canAttemptPositionRedeem = Boolean(market?.isResolved() && accountAddress);
+  const canAttemptPositionRedeem = Boolean(claimsEnabled && hasResolvedMarket && accountAddress);
 
   const redeem = async () => {
     if (!market) return;
