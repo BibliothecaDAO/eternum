@@ -44,8 +44,8 @@ interface WorldmapSwitchOffTransitionStateResult {
   globalChunkSwitchPromise: null;
 }
 
-interface FinalizePendingChunkFetchOwnershipInput<TPendingChunk> {
-  pendingChunks: Map<string, TPendingChunk>;
+interface FinalizePendingChunkFetchOwnershipInput<TPendingChunkPromise> {
+  pendingChunks: Map<string, WorldmapPendingChunkFetch<TPendingChunkPromise>>;
   fetchKey: string;
   fetchPromise: unknown;
 }
@@ -143,11 +143,11 @@ export const invalidateWorldmapSwitchOffTransitionState = <TChunkSwitchPromise>(
 /**
  * Finalize pending fetch ownership only if the settling promise still owns the key.
  */
-export const finalizePendingChunkFetchOwnership = <TPendingChunk>({
+export const finalizePendingChunkFetchOwnership = <TPendingChunkPromise>({
   pendingChunks,
   fetchKey,
   fetchPromise,
-}: FinalizePendingChunkFetchOwnershipInput<TPendingChunk>): boolean => {
+}: FinalizePendingChunkFetchOwnershipInput<TPendingChunkPromise>): boolean => {
   const currentOwner = pendingChunks.get(fetchKey);
   if (!currentOwner || currentOwner.promise !== fetchPromise) {
     return false;

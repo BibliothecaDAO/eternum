@@ -8,7 +8,7 @@ describe("createToriiTimedQuery", () => {
   it("times out the observed query result without treating the underlying work as settled", async () => {
     vi.useFakeTimers();
     try {
-      let resolveWork: ((value: string) => void) | null = null;
+      let resolveWork!: (value: string) => void;
       const work = new Promise<string>((resolve) => {
         resolveWork = resolve;
       });
@@ -23,7 +23,7 @@ describe("createToriiTimedQuery", () => {
       await expect(timedError).resolves.toBeInstanceOf(ToriiQueryTimeoutError);
       expect(completionSpy).not.toHaveBeenCalled();
 
-      resolveWork?.("done");
+      resolveWork("done");
       await Promise.resolve();
 
       await expect(timedQuery.completion).resolves.toBeUndefined();
