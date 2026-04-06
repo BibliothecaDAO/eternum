@@ -5,11 +5,20 @@ import { ProtocolFees } from "../../bindings";
 import { deepEqual } from "../../utils";
 import { useDojoSdk } from "../dojo/use-dojo-sdk";
 
-export const useProtocolFees = (address: string) => {
+export const useProtocolFees = (address: string | null, enabled = true) => {
   const { sdk } = useDojoSdk();
   const [protocolFees, setProtocolFees] = useState<ProtocolFees[]>([]);
 
-  const address_u256 = useMemo(() => uint256.bnToUint256(address), [address]);
+  const normalizedAddress = useMemo(() => {
+    try {
+      const parsed = BigInt(address);
+      return parsed > 0n ? parsed.toString() : null;
+    } catch {
+      return null;
+    }
+  }, [address]);
+
+  const address_u256 = useMemo(() => uint256.bnToUint256(normalizedAddress ?? "0"), [normalizedAddress]);
 
   const protocolFeesQuery = useMemo(() => {
     return new ToriiQueryBuilder()
@@ -31,6 +40,13 @@ export const useProtocolFees = (address: string) => {
     let cancelled = false;
 
     const fetchProtocolFees = async () => {
+      if (!enabled || !normalizedAddress) {
+        if (!cancelled) {
+          setProtocolFees([]);
+        }
+        return;
+      }
+
       try {
         const entitiesResponse = await sdk.getEntities({ query: protocolFeesQuery });
         const entities: StandardizedQueryResult<SchemaType> = entitiesResponse.getItems();
@@ -53,7 +69,7 @@ export const useProtocolFees = (address: string) => {
     return () => {
       cancelled = true;
     };
-  }, [sdk, protocolFeesQuery]);
+  }, [enabled, normalizedAddress, protocolFeesQuery, sdk]);
 
   return {
     fees: protocolFees,
