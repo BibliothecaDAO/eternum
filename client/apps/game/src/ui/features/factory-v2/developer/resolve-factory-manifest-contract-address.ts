@@ -251,7 +251,7 @@ export async function resolveFactoryManifestContractAddress(
 
     const [contractsBySelector, deployment] = await Promise.all([
       resolveWorldContracts(factorySqlBaseUrl, requestedWorld.name),
-      resolveWorldDeploymentFromFactory(factorySqlBaseUrl, requestedWorld.name),
+      resolveWorldDeploymentFromFactory(request.chain, factorySqlBaseUrl, requestedWorld.name),
     ]);
 
     const worldAddress = resolveLookupWorldAddress(requestedWorld, deployment);

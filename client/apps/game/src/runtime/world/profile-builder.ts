@@ -30,6 +30,7 @@ const normalizeAddress = (addr: unknown): string | null => {
 };
 
 const resolveFactoryWorldData = async (
+  chain: Chain,
   factorySqlBaseUrl: string,
   name: string,
 ): Promise<{
@@ -41,7 +42,7 @@ const resolveFactoryWorldData = async (
       resolveWorldContracts(factorySqlBaseUrl, name),
     ),
     measureAsyncDuration("world-profile-deployment-resolution", async () =>
-      resolveWorldDeploymentFromFactory(factorySqlBaseUrl, name),
+      resolveWorldDeploymentFromFactory(chain, factorySqlBaseUrl, name),
     ),
   ]);
 
@@ -95,7 +96,7 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
   const toriiBaseUrl = toriiBaseUrlFromName(name);
 
   // 1) Resolve selectors -> addresses and deployment metadata from the factory.
-  const { contractsBySelector, deployment } = await resolveFactoryWorldData(factorySqlBaseUrl, name);
+  const { contractsBySelector, deployment } = await resolveFactoryWorldData(chain, factorySqlBaseUrl, name);
 
   // 2) Resolve world address from the selected world's Torii
   const [{ entryTokenAddress, feeTokenAddress }, worldAddressFromTorii] = await Promise.all([

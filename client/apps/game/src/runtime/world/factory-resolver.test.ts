@@ -57,7 +57,7 @@ describe("resolveWorldDeploymentFromFactory", () => {
       ),
     );
 
-    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "bltz-warzone-31");
+    const result = await resolveWorldDeploymentFromFactory("mainnet", "https://factory.example/sql", "bltz-warzone-31");
 
     expect(result).toEqual({
       rpcUrl: "https://rpc.example",
@@ -83,7 +83,7 @@ describe("resolveWorldDeploymentFromFactory", () => {
       },
     ]);
 
-    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "bltz-warzone-31");
+    const result = await resolveWorldDeploymentFromFactory("mainnet", "https://factory.example/sql", "bltz-warzone-31");
 
     expect(result).toEqual({
       rpcUrl: "https://rpc.example",
@@ -108,12 +108,39 @@ describe("resolveWorldDeploymentFromFactory", () => {
       },
     ]);
 
-    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "bltz-warzone-31");
+    const result = await resolveWorldDeploymentFromFactory("mainnet", "https://factory.example/sql", "bltz-warzone-31");
 
     expect(result).toEqual({
       rpcUrl: "https://rpc.example",
       worldAddress: "0x1234",
     });
     expect(mocks.fetchWithErrorHandling).toHaveBeenCalledTimes(1);
+  });
+
+  it("queries realtime deployment metadata with the selected world chain", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          cacheStatus: "hit",
+          chain: "slot",
+          fetchedAt: 123,
+          rpcUrl: "https://rpc.slot.example",
+          worldAddress: "0xslot",
+          worldName: "bltz-whiz-736",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const result = await resolveWorldDeploymentFromFactory("slot", "https://factory.example/sql", "bltz-whiz-736");
+
+    expect(result).toEqual({
+      rpcUrl: "https://rpc.slot.example",
+      worldAddress: "0xslot",
+    });
+    expect(mockFetch).toHaveBeenCalledWith("https://realtime.example/api/world-deployments/slot/bltz-whiz-736", {
+      signal: expect.any(AbortSignal),
+    });
+    expect(mocks.fetchWithErrorHandling).not.toHaveBeenCalled();
   });
 });
