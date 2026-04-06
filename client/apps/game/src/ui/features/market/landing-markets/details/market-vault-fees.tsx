@@ -1,6 +1,6 @@
 import { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
-import { useUser } from "@/pm/hooks/dojo/user";
+import { useTokens } from "@/pm/hooks/dojo/use-tokens";
 import { useProtocolFees } from "@/pm/hooks/markets/use-protocol-fees";
 import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { HStack, VStack } from "@/pm/ui";
@@ -38,13 +38,29 @@ export function MarketVaultFees({
   const marketAddress = getContractByName(manifest, "pm", "Markets")!.address;
   const vaultFeesAdress = getContractByName(manifest, "pm", "VaultFees").address;
 
-  const {
-    tokens: { getBalances },
-  } = useUser();
-
-  const balances = useMemo(() => {
-    return getBalances([vaultFeesAdress]);
-  }, [getBalances, vaultFeesAdress]);
+  const accountAddressFilters = useMemo(() => {
+    if (!address) return undefined;
+    const variants = new Set<string>();
+    variants.add(address);
+    try {
+      variants.add(`0x${BigInt(address).toString(16)}`);
+    } catch {
+      // Ignore invalid variant derivation and keep the original address.
+    }
+    try {
+      variants.add(addAddressPadding(address.toLowerCase()));
+    } catch {
+      // Ignore invalid padding conversion and keep available variants.
+    }
+    return Array.from(variants);
+  }, [address]);
+  const { balances } = useTokens(
+    {
+      accountAddresses: accountAddressFilters,
+      contractAddresses: [vaultFeesAdress],
+    },
+    true,
+  );
 
   // todo : implement this
   const { fees: vaultFees } = useProtocolFees(market.market_id);
