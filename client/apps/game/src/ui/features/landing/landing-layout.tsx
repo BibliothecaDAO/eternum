@@ -2,11 +2,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Controller } from "@/ui/modules/controller/controller";
-import { GameNetworkSwitchButton } from "@/ui/shared/components/game-network-switch-button";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { DynamicBackground } from "./components/background/dynamic-background";
+import { DashboardNetworkSwitch } from "./components/dashboard-network-switch";
 import { LandingHeader } from "./components/landing-header";
 import { LandingMusicPlayer } from "./components/landing-music-player";
 import { LandingSettings } from "./components/landing-settings";
@@ -79,7 +79,7 @@ const LandingLayoutContent = () => {
       <LandingHeader
         walletButton={
           <>
-            <GameNetworkSwitchButton className="hidden md:flex" />
+            <DashboardNetworkSwitch className="hidden md:flex" />
             <Controller />
           </>
         }

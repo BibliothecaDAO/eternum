@@ -12,7 +12,7 @@ export const latestFeatures: LatestFeature[] = [
     date: "2026-04-06",
     title: "Dashboard Network Switch",
     description:
-      "The dashboard now keeps the active game network visible in the top-right corner, with a direct wallet switch action whenever your wallet is on the wrong chain.",
+      "The dashboard header now includes a compact network switcher, so you can swap the preferred game chain and prompt a wallet network switch from one cleaner control.",
     type: "improvement",
   },
   {
