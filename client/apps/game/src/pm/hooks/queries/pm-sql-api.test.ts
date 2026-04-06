@@ -114,4 +114,27 @@ describe("pm-sql-api status filter query generation", () => {
     expect(query).toContain("market_id = '0xabc'");
     expect(total).toBe(12);
   });
+
+  it("surfaces Torii deployment error details from JSON responses", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      statusText: "Bad Gateway",
+      clone() {
+        return {
+          text: async () => JSON.stringify({ error: { message: "can't reach deployment: blitz-slot-global-1" } }),
+        };
+      },
+      headers: {
+        get: () => "application/json; charset=utf-8",
+      },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const api = getPmSqlApiForUrl(TEST_TORII_URL);
+
+    await expect(api.fetchMarketBuyUniqueAccountsCountByMarket("0xabc")).rejects.toThrowError(
+      "Failed to fetch market buy unique account count: HTTP 502 Bad Gateway. can't reach deployment: blitz-slot-global-1",
+    );
+  });
 });

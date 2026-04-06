@@ -15,6 +15,7 @@ export enum EasingType {
   EaseOutCubic = "easeOutCubic",
   EaseOutQuart = "easeOutQuart",
   EaseOutBack = "easeOutBack",
+  EaseJourney = "easeJourney",
 }
 
 /**
@@ -76,6 +77,34 @@ function easeOutBack(t: number): number {
 }
 
 /**
+ * Journey easing — three-phase curve optimized for travel:
+ * - t < 0.15: cubic ease-in (slow departure)
+ * - 0.15 <= t <= 0.85: linear cruise
+ * - t > 0.85: cubic ease-out (slow arrival)
+ * Continuous: easeJourney(0)=0, easeJourney(1)=1
+ */
+function easeJourney(t: number): number {
+  const easeInEnd = 0.15;
+  const easeOutStart = 0.85;
+
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+
+  if (t < easeInEnd) {
+    // Cubic ease-in: remap [0, 0.15] -> [0, 1], apply cubic, remap to [0, 0.15]
+    const local = t / easeInEnd; // 0..1
+    return easeInEnd * (local * local * local);
+  } else if (t <= easeOutStart) {
+    // Linear cruise: remap [0.15, 0.85] -> [0.15, 0.85]
+    return t;
+  } else {
+    // Cubic ease-out: remap [0.85, 1.0] -> [0, 1], apply cubic ease-out, remap to [0.85, 1.0]
+    const local = (t - easeOutStart) / (1 - easeOutStart); // 0..1
+    return easeOutStart + (1 - easeOutStart) * (1 - Math.pow(1 - local, 3));
+  }
+}
+
+/**
  * Main easing function dispatcher
  * Apply the specified easing curve to linear progress
  */
@@ -98,6 +127,8 @@ export function applyEasing(progress: number, easingType: EasingType = EasingTyp
       return easeOutQuart(clampedProgress);
     case EasingType.EaseOutBack:
       return easeOutBack(clampedProgress);
+    case EasingType.EaseJourney:
+      return easeJourney(clampedProgress);
     default:
       return easeOut(clampedProgress); // Default to recommended easing
   }
@@ -115,6 +146,7 @@ function getEasingDescription(easingType: EasingType): string {
     [EasingType.EaseOutCubic]: "Dramatic slow-down (heavy units)",
     [EasingType.EaseOutQuart]: "Very dramatic slow-down (large armies)",
     [EasingType.EaseOutBack]: "Slight overshoot + settle (extra juicy)",
+    [EasingType.EaseJourney]: "Ease-in cruise ease-out (journey travel)",
   };
 
   return descriptions[easingType] || "Unknown easing type";

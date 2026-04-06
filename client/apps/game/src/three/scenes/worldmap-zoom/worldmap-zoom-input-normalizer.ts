@@ -1,9 +1,12 @@
 export const WORLDMAP_STEP_WHEEL_DELTA = 120;
 
-interface NormalizeWorldmapWheelDeltaInput {
-  deltaY: number;
+interface ResolveWorldmapWheelPixelDeltaInput {
+  delta: number;
   deltaMode: number;
   viewportHeight: number;
+}
+
+interface NormalizeWorldmapWheelDeltaInput extends ResolveWorldmapWheelPixelDeltaInput {
   maxPixelDelta?: number;
 }
 
@@ -22,7 +25,7 @@ interface NormalizedWorldmapWheelDelta {
 }
 
 export function normalizeWorldmapWheelDelta(input: NormalizeWorldmapWheelDeltaInput): NormalizedWorldmapWheelDelta {
-  const pixelDelta = resolveWheelPixelDelta(input.deltaY, input.deltaMode, input.viewportHeight);
+  const pixelDelta = resolveWorldmapWheelPixelDelta(input);
   const clampedDelta = clamp(pixelDelta, -(input.maxPixelDelta ?? 480), input.maxPixelDelta ?? 480);
   const direction = Math.sign(clampedDelta) as -1 | 0 | 1;
 
@@ -41,16 +44,16 @@ export function applyContinuousWorldmapZoomDelta(input: ApplyContinuousWorldmapZ
   return clamp(unclampedDistance, input.minDistance, input.maxDistance);
 }
 
-function resolveWheelPixelDelta(deltaY: number, deltaMode: number, viewportHeight: number): number {
-  if (deltaMode === 1) {
-    return deltaY * 16;
+export function resolveWorldmapWheelPixelDelta(input: ResolveWorldmapWheelPixelDeltaInput): number {
+  if (input.deltaMode === 1) {
+    return input.delta * 16;
   }
 
-  if (deltaMode === 2) {
-    return deltaY * viewportHeight;
+  if (input.deltaMode === 2) {
+    return input.delta * input.viewportHeight;
   }
 
-  return deltaY;
+  return input.delta;
 }
 
 function clamp(value: number, min: number, max: number): number {

@@ -51,11 +51,15 @@ export class WorldmapZoomCoordinator {
     const nextTargetDistance = resolveTargetDistanceFromIntent(intent, this.state, this.minDistance, this.maxDistance);
     const hasTargetChanged = Math.abs(nextTargetDistance - this.state.targetDistance) > 0.001;
 
+    if (!hasTargetChanged) {
+      return this.getSnapshot();
+    }
+
     this.state = {
       ...this.state,
       targetDistance: nextTargetDistance,
-      status: hasTargetChanged ? "zooming" : this.state.status,
-      activeGestureId: hasTargetChanged ? this.nextGestureId++ : this.state.activeGestureId,
+      status: "zooming",
+      activeGestureId: this.nextGestureId++,
       anchorMode: intent.anchor.mode,
       anchorWorldPoint: intent.anchor.worldPoint?.clone() ?? null,
     };

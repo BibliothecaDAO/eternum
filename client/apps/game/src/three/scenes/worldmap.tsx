@@ -1,4 +1,4 @@
-import { AudioManager } from "@/audio/core/AudioManager";
+import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { toast } from "sonner";
 
 import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
@@ -42,6 +42,7 @@ import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
+import { WORLDMAP_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -173,7 +174,11 @@ import {
   resetWorldmapZoomHardeningRuntimeState,
 } from "./worldmap-zoom-hardening";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
-import { WORLDMAP_STEP_WHEEL_DELTA, normalizeWorldmapWheelDelta } from "./worldmap-zoom/worldmap-zoom-input-normalizer";
+import {
+  WORLDMAP_STEP_WHEEL_DELTA,
+  normalizeWorldmapWheelDelta,
+  resolveWorldmapWheelPixelDelta,
+} from "./worldmap-zoom/worldmap-zoom-input-normalizer";
 import {
   createWorldmapZoomRefreshPlannerState,
   planWorldmapZoomRefresh,
@@ -439,6 +444,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly worldmapMinZoomDistance = 10;
   private readonly worldmapMaxZoomDistance = 60;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
+  private wheelEventTarget: HTMLElement | null = null;
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
     minDistance: this.worldmapMinZoomDistance,
@@ -493,6 +499,9 @@ export default class WorldmapScene extends WarpTravel {
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
   private cameraGroundIntersectionScratch: Vector3 = new Vector3();
+  private wheelPointerScratch: Vector2 = new Vector2();
+  private wheelRaycasterScratch: Raycaster = new Raycaster();
+  private wheelGroundIntersectionScratch: Vector3 = new Vector3();
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager: ArmyManager;
@@ -1275,13 +1284,21 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private setupCameraZoomHandler() {
+    this.detachWorldmapWheelHandler();
     this.wheelHandler = (event: WheelEvent) => {
       const normalizedWheelDelta = normalizeWorldmapWheelDelta({
-        deltaY: event.deltaY,
+        delta: event.deltaY,
         deltaMode: event.deltaMode,
         viewportHeight: window.innerHeight,
       });
-      const mostlyVertical = Math.abs(normalizedWheelDelta.normalizedDelta) >= Math.abs(event.deltaX);
+      const normalizedHorizontalDelta = Math.abs(
+        resolveWorldmapWheelPixelDelta({
+          delta: event.deltaX,
+          deltaMode: event.deltaMode,
+          viewportHeight: window.innerHeight,
+        }),
+      );
+      const mostlyVertical = Math.abs(normalizedWheelDelta.normalizedDelta) >= normalizedHorizontalDelta;
 
       if (!normalizedWheelDelta.direction || !mostlyVertical) {
         return;
@@ -1298,10 +1315,29 @@ export default class WorldmapScene extends WarpTravel {
       this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
     };
 
-    const canvas = document.getElementById("main-canvas");
-    if (canvas) {
-      canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
+    this.attachWorldmapWheelHandler();
+  }
+
+  private attachWorldmapWheelHandler(): void {
+    if (!this.wheelHandler) {
+      return;
     }
+
+    const canvas = this.controls.domElement;
+    if (!(canvas instanceof HTMLElement)) {
+      return;
+    }
+
+    canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
+    this.wheelEventTarget = canvas;
+  }
+
+  private detachWorldmapWheelHandler(): void {
+    if (this.wheelEventTarget && this.wheelHandler) {
+      this.wheelEventTarget.removeEventListener("wheel", this.wheelHandler);
+    }
+
+    this.wheelEventTarget = null;
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
@@ -1400,17 +1436,18 @@ export default class WorldmapScene extends WarpTravel {
       return null;
     }
 
-    const pointer = new Vector2(
+    this.wheelPointerScratch.set(
       ((clientX - bounds.left) / bounds.width) * 2 - 1,
       -((clientY - bounds.top) / bounds.height) * 2 + 1,
     );
-    const raycaster = new Raycaster();
-    raycaster.setFromCamera(pointer, this.camera);
+    this.wheelRaycasterScratch.setFromCamera(this.wheelPointerScratch, this.camera);
 
-    const intersection = new Vector3();
-    const didIntersect = raycaster.ray.intersectPlane(this.zoomGroundPlane, intersection);
+    const didIntersect = this.wheelRaycasterScratch.ray.intersectPlane(
+      this.zoomGroundPlane,
+      this.wheelGroundIntersectionScratch,
+    );
 
-    return didIntersect ? intersection.clone() : null;
+    return didIntersect ? this.wheelGroundIntersectionScratch : null;
   }
 
   private publishWorldmapZoomSnapshot(snapshot: WorldmapCameraSnapshot): void {
@@ -1967,8 +2004,7 @@ export default class WorldmapScene extends WarpTravel {
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
-      // AudioManager handles muted state internally - no need to check isSoundOn
-      AudioManager.getInstance().play("unit.march");
+      playUnitCommandSoundForWorldmapAction(actionType);
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
@@ -2577,7 +2613,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
-    AudioManager.getInstance().play("unit.selected");
+    playUnitCommandSound("select");
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
@@ -2867,13 +2903,25 @@ export default class WorldmapScene extends WarpTravel {
       registerStoreSubscriptions: () => this.registerStoreSubscriptions(),
       setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
       refreshScene: () => this.refreshWarpTravelScene(),
-      onInitialSetupComplete: () => this.preloadWorldmapCosmeticAssets(),
+      onInitialSetupComplete: () => {
+        this.announceWorldmapSceneReady();
+        this.preloadWorldmapCosmeticAssets();
+      },
+      onResumeComplete: () => this.announceWorldmapSceneReady(),
       reportSetupError: (error, phase) => this.reportWarpTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeStoreSubscriptions(),
       onAfterDisposeSubscriptions: () => this.disposeWorldUpdateSubscriptions(),
       detachLabelGroupsFromScene: () => this.detachWorldmapLabelGroupsFromScene(),
       detachManagerLabels: () => this.detachWorldmapManagerLabels(),
     };
+  }
+
+  private announceWorldmapSceneReady(): void {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT));
   }
 
   private prepareWarpTravelInitialSetup(): void {
@@ -3060,14 +3108,8 @@ export default class WorldmapScene extends WarpTravel {
     this.clearAllPendingActionFx();
     this.runWarpTravelSwitchOffLifecycle();
 
-    // Clean up wheel event listener
-    if (this.wheelHandler) {
-      const canvas = document.getElementById("main-canvas");
-      if (canvas) {
-        canvas.removeEventListener("wheel", this.wheelHandler);
-      }
-      this.wheelHandler = null;
-    }
+    this.detachWorldmapWheelHandler();
+    this.wheelHandler = null;
 
     this.unregisterTrackedVisibilityChunks();
     this.resetZoomHardeningRuntimeState();
@@ -5959,6 +6001,11 @@ export default class WorldmapScene extends WarpTravel {
 
     return new Promise((resolve) => {
       const poll = () => {
+        if (this.isSwitchedOff) {
+          resolve();
+          return;
+        }
+
         if (
           this.chunkRefreshAppliedToken >= requestToken &&
           !this.chunkRefreshRunning &&

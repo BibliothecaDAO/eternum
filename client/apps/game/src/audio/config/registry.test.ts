@@ -14,4 +14,13 @@ describe("audio registry", () => {
     expect(assetIds.has("music.monophonic_mixtape_12")).toBe(true);
     expect(assetIds.has("music.monophonic_mixtape_13")).toBe(true);
   });
+
+  it("registers dedicated unit command cue ids", () => {
+    const assetIds = new Set(getAllAssets().map((asset) => asset.id));
+
+    expect(assetIds.has("unit.command.select")).toBe(true);
+    expect(assetIds.has("unit.command.move")).toBe(true);
+    expect(assetIds.has("unit.command.attack")).toBe(true);
+    expect(assetIds.has("unit.command.explore")).toBe(true);
+  });
 });

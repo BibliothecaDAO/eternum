@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Controller } from "@/ui/modules/controller/controller";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
@@ -46,6 +47,8 @@ export const LandingLayout = () => {
  * Inner layout content that can access the landing context.
  */
 const LandingLayoutContent = () => {
+  useBootDocumentState("app-ready");
+
   const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { backgroundId, resetBackground } = useLandingContext();
