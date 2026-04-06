@@ -6,6 +6,7 @@ import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-cont
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { DynamicBackground } from "./components/background/dynamic-background";
+import { DashboardNetworkSwitch } from "./components/dashboard-network-switch";
 import { LandingHeader } from "./components/landing-header";
 import { LandingMusicPlayer } from "./components/landing-music-player";
 import { LandingSettings } from "./components/landing-settings";
@@ -75,7 +76,15 @@ const LandingLayoutContent = () => {
       <LandingSidebar onSettingsClick={handleSettingsClick} />
 
       {/* Top header with wallet */}
-      <LandingHeader walletButton={<Controller />} onSettingsClick={handleSettingsClick} />
+      <LandingHeader
+        walletButton={
+          <>
+            <DashboardNetworkSwitch className="hidden md:flex" />
+            <Controller />
+          </>
+        }
+        onSettingsClick={handleSettingsClick}
+      />
 
       {/* Main content area */}
       <main

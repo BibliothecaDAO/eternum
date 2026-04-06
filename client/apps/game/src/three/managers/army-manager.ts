@@ -156,6 +156,9 @@ export class ArmyManager {
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
   private labelVisibilityIntervalMs = 66;
+  // Keep moving-army culling bounds fresh without paying a full recompute every frame.
+  private lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
+  private readonly movingBoundsRefreshIntervalMs = 1000 / 20;
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
@@ -957,6 +960,7 @@ export class ArmyManager {
 
   private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {
     const numericId = this.toNumericId(army.entityId);
+    const isSuppressed = this.suppressedArmies.has(army.entityId);
     const path = this.armyPaths.get(army.entityId);
 
     let sourceHex = army.hexCoords;
@@ -1034,6 +1038,15 @@ export class ArmyManager {
       new Color(army.color),
     );
 
+    const updatedArmy = { ...army, matrixIndex: slot };
+    this.armies.set(army.entityId, updatedArmy);
+    this.armyModel.rebindMovementMatrixIndex(numericId, slot);
+
+    if (isSuppressed) {
+      this.hideSuppressedArmyAuxiliaryVisuals(army.entityId);
+      return;
+    }
+
     // Update player indicator dot above unit
     const indicatorYOffset = getIndicatorYOffset(modelType);
     this.indicatorMetadataCache.set(army.entityId, indicatorYOffset); // Cache for movement updates
@@ -1049,10 +1062,6 @@ export class ArmyManager {
     }
 
     this.updateArmyPointIcon(army, position);
-
-    const updatedArmy = { ...army, matrixIndex: slot };
-    this.armies.set(army.entityId, updatedArmy);
-    this.armyModel.rebindMovementMatrixIndex(numericId, slot);
   }
 
   private removeVisibleArmy(entityId: ID): number | null {
@@ -1603,7 +1612,7 @@ export class ArmyManager {
     await this.armyModel.preloadModels([modelType]);
 
     const latestArmy = this.armies.get(entityId);
-    if (!latestArmy || !this.isArmyVisibleInCurrentChunk(latestArmy)) {
+    if (this.suppressedArmies.has(entityId) || !latestArmy || !this.isArmyVisibleInCurrentChunk(latestArmy)) {
       return false;
     }
 
@@ -1615,8 +1624,14 @@ export class ArmyManager {
     }
 
     this.refreshVisibleArmyCollection();
+    this.syncVisibleArmyAttachments(this.visibleArmies);
+    this.updateArmyAttachmentTransforms();
     this.updateVisibleArmyBuffers();
     return true;
+  }
+
+  public restoreArmyVisualIfVisible(entityId: ID): Promise<boolean> {
+    return this.renderArmyIntoCurrentChunkIfVisible(entityId);
   }
 
   public async addArmy(params: AddArmyParams) {
@@ -1911,6 +1926,7 @@ export class ArmyManager {
       // Clean up source bucket tracking since movement won't actually happen
       this.cleanupMovementSourceBucket(entityId);
       this.runMovementCompleteListeners(numericEntityId);
+      await this.renderArmyIntoCurrentChunkIfVisible(entityId);
       return;
     }
 
@@ -1951,11 +1967,16 @@ export class ArmyManager {
     if (slot !== undefined) {
       this.armyModel.hideInstanceSlot(slot);
     }
+    this.hideSuppressedArmyAuxiliaryVisuals(entityId);
     this.cleanupMovementSourceBucket(entityId);
   }
 
   public unsuppressArmy(entityId: ID): void {
     this.suppressedArmies.delete(entityId);
+    const slot = this.visibleArmyIndices.get(entityId);
+    if (slot !== undefined) {
+      this.armyModel.restoreHiddenSlot(slot);
+    }
   }
 
   public getSuppressedArmiesRef(): Set<ID> {
@@ -2233,6 +2254,7 @@ export class ArmyManager {
     // Batch update: single pass over visible armies for all per-frame operations
     // This consolidates point icons, attachment transforms, and indicators
     this.updateVisibleArmiesBatched();
+    this.refreshMovingArmyBoundsIfNeeded();
 
     if (this.frustumVisibilityDirty) {
       const now = performance.now();
@@ -2245,6 +2267,22 @@ export class ArmyManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+  }
+
+  private refreshMovingArmyBoundsIfNeeded() {
+    if (!this.hasMovingArmies()) {
+      return;
+    }
+
+    const now = performance.now();
+    if (now - this.lastMovingBoundsRefreshAt < this.movingBoundsRefreshIntervalMs) {
+      return;
+    }
+
+    this.lastMovingBoundsRefreshAt = now;
+    this.armyModel.requestBoundsUpdate();
+    this.armyModel.applyPendingBounds();
+    this.playerIndicatorManager.computeBoundingSphere();
   }
 
   /**
@@ -2277,6 +2315,9 @@ export class ArmyManager {
     // Single pass over visible armies
     for (let i = 0; i < this.visibleArmies.length; i++) {
       const army = this.visibleArmies[i];
+      if (this.suppressedArmies.has(army.entityId)) {
+        continue;
+      }
       const numericEntityId = this.toNumericId(army.entityId);
       const instanceData = this.armyModel.getInstanceData(numericEntityId);
 
@@ -2344,6 +2385,26 @@ export class ArmyManager {
       this.pointsRenderers.enemy.endBatch();
       this.pointsRenderers.ally.endBatch();
       this.pointsRenderers.agent.endBatch();
+    }
+  }
+
+  private hideSuppressedArmyAuxiliaryVisuals(entityId: ID): void {
+    this.playerIndicatorManager.removeIndicator(entityId);
+    this.removeArmyPointIcon(entityId);
+
+    const label = this.entityIdLabels.get(entityId);
+    if (label) {
+      label.visible = false;
+      label.userData.isVisible = false;
+      label.element.style.display = "none";
+      this.frustumVisibilityDirty = true;
+    }
+
+    const numericEntityId = this.toNumericId(entityId);
+    if (this.activeArmyAttachmentEntities.has(numericEntityId)) {
+      this.attachmentManager.removeAttachments(numericEntityId);
+      this.activeArmyAttachmentEntities.delete(numericEntityId);
+      this.armyAttachmentSignatures.delete(numericEntityId);
     }
   }
 
