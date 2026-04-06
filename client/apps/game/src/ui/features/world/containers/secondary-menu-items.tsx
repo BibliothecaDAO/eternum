@@ -13,6 +13,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
+import { GameNetworkSwitchButton } from "./game-network-switch-button";
 
 export const SecondaryMenuItems = () => {
   const {
@@ -108,6 +109,7 @@ export const SecondaryMenuItems = () => {
   return (
     <div className="flex h-full ml-auto">
       <div className="top-right-navigation-selector self-center flex space-x-2 mr-1">
+        <GameNetworkSwitchButton />
         {/* Leaderboard/Rewards */}
         {leaderboardButtons.map((a, index) => (
           <div key={index}>{a.button}</div>

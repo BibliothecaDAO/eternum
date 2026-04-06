@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-06",
+    title: "In-Game Network Switch",
+    description:
+      "The world HUD now keeps the active game network visible in the top-right corner and gives you a direct wallet switch action when your wallet is connected to the wrong chain.",
+    type: "improvement",
+  },
+  {
     date: "2026-04-02",
     title: "Unit Command Audio",
     description:
