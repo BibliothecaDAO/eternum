@@ -30,6 +30,24 @@ The investigation found two plausible mechanisms that can produce the same sympt
 
 This change fixes both seams so the worldmap no longer depends on zoom churn to recover army visibility.
 
+## Follow-up Regression
+
+The first recovery patch fixed the broad ghosting symptom, but two narrower races remained:
+
+1. `cancelPendingArmyRemoval()` tried to redraw immediately, before the fresh tile or troop update had applied the
+   latest army state.
+2. `renderArmyIntoCurrentChunkIfVisible()` could cross an async preload boundary and still redraw after the army had
+   been suppressed again for a real removal.
+
+That left one bad edge case on each side of the seam:
+
+1. a real army could stay hidden because recovery used stale `hexCoords` and happened before
+   `ArmyManager.onTileUpdate()`
+2. a dead army could briefly flash back because an in-flight recovery finished after zero-count suppression reapplied
+
+The follow-up fix moves recovery to the point where world state has already caught up and makes the restore path prove
+that suppression is still cleared before it redraws.
+
 ## Current-State Diagnosis
 
 ### Moving army meshes
@@ -120,7 +138,8 @@ Make pending-removal cancellation read as a recovery flow:
 1. resolve whether the entity has any tracked pending-removal state
 2. clear timeout and tracked metadata if present
 3. clear suppression
-4. attempt immediate visual recovery through the army manager
+4. return a recovery signal to the update listener that already owns the fresh state mutation
+5. attempt visual recovery only after the latest tile or troop update has applied
 
 That avoids the current bug where deferred-removal state can survive because the timeout already moved into a different
 tracking map.
@@ -134,16 +153,22 @@ tracking map.
    batched visible-army updates.
 3. Add a `Worldmap` suppression test that fails until `cancelPendingArmyRemoval()` handles deferred removals and tries
    immediate army-visual recovery.
-4. Run the targeted tests and confirm they fail for those exact missing seams.
+4. Add a regression test that fails until recovery happens after `ArmyManager.onTileUpdate()` and
+   `updateArmyFromExplorerTroopsUpdate()`.
+5. Add a regression test that fails until `renderArmyIntoCurrentChunkIfVisible()` rechecks suppression after model
+   preload resolves.
+6. Run the targeted tests and confirm they fail for those exact missing seams.
 
 ## Green
 
 1. Mark indicator bounds dirty on indicator translation updates.
 2. Add a movement-bounds refresh helper to `ArmyManager.update()` and wire it through the existing deferred-bounds path.
 3. Add a public army-manager recovery seam that can re-render a visible army after suppression is cleared.
-4. Update `cancelPendingArmyRemoval()` to clear deferred removal state and call immediate recovery.
-5. Update deferred-removal retry flow to use the same recovery seam instead of waiting on incidental refresh churn.
-6. Add a latest-features entry describing the worldmap army visibility fix.
+4. Update `cancelPendingArmyRemoval()` to clear deferred removal state and return whether recovery still needs to run.
+5. Restore visuals from the tile and troop listeners only after fresh state has been applied.
+6. Recheck suppression after async model preload so a real removal cannot redraw a dead army.
+7. Resync visible attachments during immediate recovery so cosmetics do not wait for a later chunk refresh.
+8. Add a latest-features entry describing the worldmap army visibility fix.
 
 ## Refactor
 
@@ -166,8 +191,15 @@ tracking map.
 
 ## Verification Notes
 
-1. `npx -y node@20.19.0 $(which pnpm) --dir client/apps/game test -- src/three/managers/player-indicator-manager.test.ts src/three/managers/army-manager.moving-bounds-refresh.test.ts src/three/managers/army-model.deferred-bounds.test.ts src/three/managers/army-manager.suppression.test.ts src/three/managers/army-manager.chunk-eviction-ghost.test.ts src/three/scenes/worldmap-army-suppression.test.ts src/three/scenes/worldmap-army-removal.visual-hide.test.ts`
+1. Red phase:
+   `npx -y node@20.19.0 $(which pnpm) --dir client/apps/game test -- src/three/managers/army-manager.suppression.test.ts src/three/scenes/worldmap-army-suppression.test.ts`
+   failed on the missing post-preload suppression check and the missing post-update recovery wiring.
+2. Green phase:
+   `npx -y node@20.19.0 $(which pnpm) --dir client/apps/game test -- src/three/managers/army-manager.suppression.test.ts src/three/scenes/worldmap-army-suppression.test.ts`
    passed.
-2. `npx -y node@20.19.0 $(which pnpm) run format` passed.
-3. `npx -y node@20.19.0 $(which pnpm) run knip` passed.
-4. Manual in-game verification was not run in this session.
+3. Regression sweep:
+   `npx -y node@20.19.0 $(which pnpm) --dir client/apps/game test -- src/three/managers/player-indicator-manager.test.ts src/three/managers/army-manager.moving-bounds-refresh.test.ts src/three/managers/army-model.deferred-bounds.test.ts src/three/managers/army-manager.suppression.test.ts src/three/managers/army-manager.chunk-eviction-ghost.test.ts src/three/scenes/worldmap-army-suppression.test.ts src/three/scenes/worldmap-army-removal.visual-hide.test.ts`
+   passed.
+4. `npx -y node@20.19.0 $(which pnpm) run format` passed.
+5. `npx -y node@20.19.0 $(which pnpm) run knip` passed.
+6. Manual in-game verification was not run in this session.

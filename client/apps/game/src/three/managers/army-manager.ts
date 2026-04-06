@@ -1606,7 +1606,7 @@ export class ArmyManager {
     await this.armyModel.preloadModels([modelType]);
 
     const latestArmy = this.armies.get(entityId);
-    if (!latestArmy || !this.isArmyVisibleInCurrentChunk(latestArmy)) {
+    if (this.suppressedArmies.has(entityId) || !latestArmy || !this.isArmyVisibleInCurrentChunk(latestArmy)) {
       return false;
     }
 
@@ -1618,6 +1618,8 @@ export class ArmyManager {
     }
 
     this.refreshVisibleArmyCollection();
+    this.syncVisibleArmyAttachments(this.visibleArmies);
+    this.updateArmyAttachmentTransforms();
     this.updateVisibleArmyBuffers();
     return true;
   }

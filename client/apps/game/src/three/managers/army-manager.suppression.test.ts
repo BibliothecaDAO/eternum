@@ -66,6 +66,20 @@ describe("army suppression gate", () => {
     expect(methodBody).toContain("this.suppressedArmies.has(entityId)");
   });
 
+  it("renderArmyIntoCurrentChunkIfVisible rechecks suppressedArmies after preload resolves", () => {
+    const src = readSource("army-manager.ts");
+
+    const methodStart = src.indexOf("private async renderArmyIntoCurrentChunkIfVisible(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodBody = src.slice(methodStart, methodStart + 1100);
+    const preloadPos = methodBody.indexOf("await this.armyModel.preloadModels([modelType])");
+    const postPreloadCheckPos = methodBody.lastIndexOf("this.suppressedArmies.has(entityId)");
+
+    expect(preloadPos).toBeGreaterThan(-1);
+    expect(postPreloadCheckPos).toBeGreaterThan(preloadPos);
+  });
+
   it("drainDeferredArmyQueue skips suppressed armies", () => {
     const src = readSource("army-manager.ts");
 

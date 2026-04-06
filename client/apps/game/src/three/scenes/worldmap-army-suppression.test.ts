@@ -29,13 +29,45 @@ describe("worldmap army suppression integration", () => {
     expect(methodBody).toContain("this.deferredChunkRemovals.has(entityId)");
   });
 
-  it("cancelPendingArmyRemoval attempts immediate army visual recovery", () => {
+  it("cancelPendingArmyRemoval does not restore visuals before state catches up", () => {
     const src = readSource("worldmap.tsx");
 
     const methodStart = src.indexOf("private cancelPendingArmyRemoval(");
     expect(methodStart).toBeGreaterThan(-1);
 
     const methodBody = src.slice(methodStart, methodStart + 900);
-    expect(methodBody).toContain("restoreArmyVisualIfVisible(entityId)");
+    expect(methodBody).not.toContain("restoreArmyVisualIfVisible(entityId)");
+  });
+
+  it("tile updates restore visuals after ArmyManager applies the move", () => {
+    const src = readSource("worldmap.tsx");
+
+    const listenerStart = src.indexOf(
+      "this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {",
+    );
+    expect(listenerStart).toBeGreaterThan(-1);
+
+    const listenerBody = src.slice(listenerStart, listenerStart + 3200);
+    const movePos = listenerBody.indexOf("await this.armyManager.onTileUpdate(update)");
+    const restorePos = listenerBody.indexOf("restoreArmyVisualIfVisible(update.entityId)");
+
+    expect(movePos).toBeGreaterThan(-1);
+    expect(restorePos).toBeGreaterThan(-1);
+    expect(restorePos).toBeGreaterThan(movePos);
+  });
+
+  it("troop updates restore visuals after positive troop state is applied", () => {
+    const src = readSource("worldmap.tsx");
+
+    const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {");
+    expect(listenerStart).toBeGreaterThan(-1);
+
+    const listenerBody = src.slice(listenerStart, listenerStart + 1200);
+    const applyPos = listenerBody.indexOf("this.armyManager.updateArmyFromExplorerTroopsUpdate(update)");
+    const restorePos = listenerBody.indexOf("restoreArmyVisualIfVisible(update.entityId)");
+
+    expect(applyPos).toBeGreaterThan(-1);
+    expect(restorePos).toBeGreaterThan(-1);
+    expect(restorePos).toBeGreaterThan(applyPos);
   });
 });

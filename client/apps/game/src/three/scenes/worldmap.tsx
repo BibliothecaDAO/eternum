@@ -935,7 +935,7 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
         this.incrementToriiBoundsCounter("explorerTiles");
-        this.cancelPendingArmyRemoval(update.entityId);
+        const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId);
         const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
 
         if (update.removed) {
@@ -981,6 +981,9 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         await this.armyManager.onTileUpdate(update);
+        if (recoveredPendingRemoval) {
+          void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
+        }
 
         this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
 
@@ -1003,7 +1006,7 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
         this.incrementToriiBoundsCounter("explorerTroops");
-        this.cancelPendingArmyRemoval(update.entityId);
+        const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId);
 
         if (update.troopCount <= 0) {
           this.scheduleArmyRemoval(update.entityId, "zero");
@@ -1012,6 +1015,9 @@ export default class WorldmapScene extends WarpTravel {
         this.updateArmyHexes(update);
         this.resolvePendingCreateArmyFxOnArmyUpdate(update);
         this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
+        if (recoveredPendingRemoval) {
+          void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
+        }
       }),
     );
 
@@ -3331,11 +3337,11 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private cancelPendingArmyRemoval(entityId: ID) {
+  private cancelPendingArmyRemoval(entityId: ID): boolean {
     const timeout = this.pendingArmyRemovals.get(entityId);
     const hasDeferredRemoval = this.deferredChunkRemovals.has(entityId);
     const hasRemovalMeta = this.pendingArmyRemovalMeta.has(entityId);
-    if (!timeout && !hasDeferredRemoval && !hasRemovalMeta) return;
+    if (!timeout && !hasDeferredRemoval && !hasRemovalMeta) return false;
 
     if (timeout) {
       clearTimeout(timeout);
@@ -3344,7 +3350,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyRemovalMeta.delete(entityId);
     this.deferredChunkRemovals.delete(entityId);
     this.armyManager.unsuppressArmy(entityId);
-    void this.armyManager.restoreArmyVisualIfVisible(entityId);
+    return true;
   }
 
   public deleteChest(entityId: ID) {

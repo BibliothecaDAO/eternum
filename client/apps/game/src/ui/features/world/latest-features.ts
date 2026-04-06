@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-04-06",
+    title: "Army Recovery Hardening",
+    description:
+      "Armies that recover from stale removal state now wait for fresh map data before redrawing, and real removals no longer risk flashing a dead unit back onto the world map while recovery work is still in flight.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-06",
     title: "Army Ghosting Recovery",
     description:
       "Moving armies now keep their on-map visuals and ownership dots in sync more reliably, and stale removal recovery no longer depends on zooming the camera to make a valid unit reappear.",
