@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24018213106-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-04-06T04:07:31.245Z",
-  "updatedAt": "2026-04-06T04:08:48.327Z",
+  "updatedAt": "2026-04-06T04:08:52.060Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-06T04:08:52.060Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,5 +71,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-whiz-736.json",
     "worldAddress": "0x065d8262c06deb4825ddc2f3123b7d6412b9590fd2ddeb257d28f5e55c60c708",
     "createGameTxHash": "0x1f16ce82f7bd3c4f1ad7a8d2452a12845f3ca2b187fa2dfb2e3ced0f864e91e"
+  },
+  "activeLease": {
+    "launchRequestId": "24018213106-1",
+    "workflowRunId": 24018213106,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-04-06T04:08:52.060Z",
+    "expiresAt": "2026-04-06T04:53:52.060Z"
   }
 }
