@@ -75,13 +75,25 @@ type UseMarketRedeemOptions = {
   enabled?: boolean;
 };
 
-const toNonZeroBigIntString = (value: unknown): string | null => {
-  try {
-    const parsed = BigInt(value ?? 0);
-    return parsed > 0n ? parsed.toString() : null;
-  } catch {
-    return null;
+const coerceBigIntValue = (value: unknown): bigint | null => {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? BigInt(Math.trunc(value)) : null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+      return BigInt(trimmed);
+    } catch {
+      return null;
+    }
   }
+  if (typeof value === "boolean") return value ? 1n : 0n;
+  return null;
+};
+
+const toNonZeroBigIntString = (value: unknown): string | null => {
+  const parsed = coerceBigIntValue(value);
+  return parsed != null && parsed > 0n ? parsed.toString() : null;
 };
 
 const buildAccountAddressFilters = (accountAddress?: string | null) => {

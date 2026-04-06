@@ -19,14 +19,26 @@ type UseClaimablePayoutOptions = {
   enabled?: boolean;
 };
 
-const toNonZeroPaddedHex = (value: unknown): string | null => {
-  try {
-    const parsed = BigInt(value ?? 0);
-    if (parsed <= 0n) return null;
-    return addAddressPadding(`0x${parsed.toString(16)}`).toLowerCase();
-  } catch {
-    return null;
+const coerceBigIntValue = (value: unknown): bigint | null => {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? BigInt(Math.trunc(value)) : null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+      return BigInt(trimmed);
+    } catch {
+      return null;
+    }
   }
+  if (typeof value === "boolean") return value ? 1n : 0n;
+  return null;
+};
+
+const toNonZeroPaddedHex = (value: unknown): string | null => {
+  const parsed = coerceBigIntValue(value);
+  if (parsed == null || parsed <= 0n) return null;
+  return addAddressPadding(`0x${parsed.toString(16)}`).toLowerCase();
 };
 
 export const useClaimablePayout = (
