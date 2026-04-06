@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-04-06",
+    title: "Army Ghosting Suppression",
+    description:
+      "Armies hidden during removal recovery now stay hidden until fresh tile state proves they should return, so stale bodies, ownership dots, and attached visuals stop flashing back onto the world map.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-06",
     title: "Smoother Market Boot",
     description:
       "Game entry and landing now avoid kicking off heavyweight prediction-market sync work until those panels actually need it, so world load spends less time competing with failing background market requests.",
@@ -21,6 +28,20 @@ export const latestFeatures: LatestFeature[] = [
     description:
       "The dashboard header now includes a compact network switcher, so you can swap the preferred game chain and prompt a wallet network switch from one cleaner control.",
     type: "improvement",
+  },
+  {
+    date: "2026-04-06",
+    title: "Army Recovery Hardening",
+    description:
+      "Armies that recover from stale removal state now wait for fresh map data before redrawing, and real removals no longer risk flashing a dead unit back onto the world map while recovery work is still in flight.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-06",
+    title: "Army Ghosting Recovery",
+    description:
+      "Moving armies now keep their on-map visuals and ownership dots in sync more reliably, and stale removal recovery no longer depends on zooming the camera to make a valid unit reappear.",
+    type: "fix",
   },
   {
     date: "2026-04-02",
