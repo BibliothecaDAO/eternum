@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-05T23:27:09.018Z",
+  "updatedAt": "2026-04-06T04:12:29.237Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1063,6 +1063,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment bltz-battle-13 not found"
       },
       "updatedAt": "2026-04-04T17:02:06.892Z"
+    },
+    "bltz-whiz-736": {
+      "gameName": "bltz-whiz-736",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-whiz-736/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-06T04:12:29.237Z"
+      },
+      "updatedAt": "2026-04-06T04:12:29.237Z"
     }
   }
 }
