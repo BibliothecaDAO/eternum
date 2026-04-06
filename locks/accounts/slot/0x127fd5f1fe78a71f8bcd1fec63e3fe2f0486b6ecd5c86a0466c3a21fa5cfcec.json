@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-quick-708",
-    "launchRequestId": "23824985496-1",
+    "gameName": "bltz-whiz-736",
+    "launchRequestId": "24018213106-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 23824985496,
+    "workflowRunId": 24018213106,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "27fa4e4a-8b5e-440f-b223-fedc65e5b63d"
+    "stepId": "create-world",
+    "leaseId": "e9bf444a-7b20-42ce-9261-488c11d548f0"
   },
-  "acquiredAt": "2026-03-31T23:58:59.055Z",
-  "heartbeatAt": "2026-03-31T23:59:14.879Z",
-  "expiresAt": "2026-03-31T23:59:14.879Z",
-  "releasedAt": "2026-03-31T23:59:14.879Z"
+  "acquiredAt": "2026-04-06T04:07:39.647Z",
+  "heartbeatAt": "2026-04-06T04:07:39.647Z",
+  "expiresAt": "2026-04-06T04:17:39.647Z"
 }
