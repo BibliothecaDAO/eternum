@@ -7,13 +7,13 @@ import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { latestFeatures, leaderboard, rewards, settings, shortcuts, transactions } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
+import { GameNetworkSwitchButton } from "@/ui/shared/components/game-network-switch-button";
 import { HomeButton } from "@/ui/shared/components/home-button";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
-import { GameNetworkSwitchButton } from "./game-network-switch-button";
 
 export const SecondaryMenuItems = () => {
   const {

@@ -2,6 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Controller } from "@/ui/modules/controller/controller";
+import { GameNetworkSwitchButton } from "@/ui/shared/components/game-network-switch-button";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
@@ -75,7 +76,15 @@ const LandingLayoutContent = () => {
       <LandingSidebar onSettingsClick={handleSettingsClick} />
 
       {/* Top header with wallet */}
-      <LandingHeader walletButton={<Controller />} onSettingsClick={handleSettingsClick} />
+      <LandingHeader
+        walletButton={
+          <>
+            <GameNetworkSwitchButton className="hidden md:flex" />
+            <Controller />
+          </>
+        }
+        onSettingsClick={handleSettingsClick}
+      />
 
       {/* Main content area */}
       <main

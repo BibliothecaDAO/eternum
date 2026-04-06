@@ -127,8 +127,8 @@ describe("SecondaryMenuItems network switch", () => {
       (selector: (state: { connector: { controller: typeof controller } }) => unknown) =>
         selector({ connector: { controller } }),
     );
-    mocks.useConnectionStore.mockImplementation(
-      (selector: (state: { status: "connected" }) => unknown) => selector({ status: "connected" }),
+    mocks.useConnectionStore.mockImplementation((selector: (state: { status: "connected" }) => unknown) =>
+      selector({ status: "connected" }),
     );
     mocks.useTransactionStore.mockImplementation(
       (selector: (state: { transactions: []; stuckThresholdMs: number }) => unknown) =>

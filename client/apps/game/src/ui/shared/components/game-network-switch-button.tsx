@@ -1,5 +1,6 @@
-import { env } from "../../../../../env";
+import { env } from "../../../../env";
 import { resolveChain } from "@/runtime/world";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo } from "react";
@@ -51,7 +52,7 @@ const resolveGameNetworkSwitchPresentation = ({
   };
 };
 
-export const GameNetworkSwitchButton = () => {
+export const GameNetworkSwitchButton = ({ className }: { className?: string }) => {
   const activeChain = resolveChain(env.VITE_PUBLIC_CHAIN as Chain);
   const { address, chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
@@ -86,7 +87,10 @@ export const GameNetworkSwitchButton = () => {
       type="button"
       onClick={handleSwitchNetwork}
       disabled={!canSwitchWalletNetwork}
-      className="group flex min-w-[132px] shrink-0 items-center gap-2 rounded-xl border border-gold/35 bg-dark-wood/95 px-3 py-2 text-left text-gold shadow-2xl transition-all duration-150 enabled:hover:border-gold enabled:hover:bg-gold/10 disabled:cursor-default disabled:opacity-95"
+      className={cn(
+        "group flex min-w-[132px] shrink-0 items-center gap-2 rounded-xl border border-gold/35 bg-dark-wood/95 px-3 py-2 text-left text-gold shadow-2xl transition-all duration-150 enabled:hover:border-gold enabled:hover:bg-gold/10 disabled:cursor-default disabled:opacity-95",
+        className,
+      )}
       title={
         canSwitchWalletNetwork
           ? `Switch wallet to ${getChainLabel(activeChain)}`
