@@ -156,6 +156,9 @@ export class ArmyManager {
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
   private labelVisibilityIntervalMs = 66;
+  // Keep moving-army culling bounds fresh without paying a full recompute every frame.
+  private lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
+  private readonly movingBoundsRefreshIntervalMs = 1000 / 20;
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
@@ -1619,6 +1622,10 @@ export class ArmyManager {
     return true;
   }
 
+  public restoreArmyVisualIfVisible(entityId: ID): Promise<boolean> {
+    return this.renderArmyIntoCurrentChunkIfVisible(entityId);
+  }
+
   public async addArmy(params: AddArmyParams) {
     if (this.armies.has(params.entityId)) return;
 
@@ -2233,6 +2240,7 @@ export class ArmyManager {
     // Batch update: single pass over visible armies for all per-frame operations
     // This consolidates point icons, attachment transforms, and indicators
     this.updateVisibleArmiesBatched();
+    this.refreshMovingArmyBoundsIfNeeded();
 
     if (this.frustumVisibilityDirty) {
       const now = performance.now();
@@ -2245,6 +2253,22 @@ export class ArmyManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+  }
+
+  private refreshMovingArmyBoundsIfNeeded() {
+    if (!this.hasMovingArmies()) {
+      return;
+    }
+
+    const now = performance.now();
+    if (now - this.lastMovingBoundsRefreshAt < this.movingBoundsRefreshIntervalMs) {
+      return;
+    }
+
+    this.lastMovingBoundsRefreshAt = now;
+    this.armyModel.requestBoundsUpdate();
+    this.armyModel.applyPendingBounds();
+    this.playerIndicatorManager.computeBoundingSphere();
   }
 
   /**

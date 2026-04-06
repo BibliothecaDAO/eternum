@@ -15,7 +15,27 @@ describe("worldmap army suppression integration", () => {
     const methodStart = src.indexOf("private cancelPendingArmyRemoval(");
     expect(methodStart).toBeGreaterThan(-1);
 
-    const methodBody = src.slice(methodStart, methodStart + 500);
+    const methodBody = src.slice(methodStart, methodStart + 900);
     expect(methodBody).toContain("unsuppressArmy(entityId)");
+  });
+
+  it("cancelPendingArmyRemoval handles deferred removals that no longer have a timeout handle", () => {
+    const src = readSource("worldmap.tsx");
+
+    const methodStart = src.indexOf("private cancelPendingArmyRemoval(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodBody = src.slice(methodStart, methodStart + 800);
+    expect(methodBody).toContain("this.deferredChunkRemovals.has(entityId)");
+  });
+
+  it("cancelPendingArmyRemoval attempts immediate army visual recovery", () => {
+    const src = readSource("worldmap.tsx");
+
+    const methodStart = src.indexOf("private cancelPendingArmyRemoval(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodBody = src.slice(methodStart, methodStart + 900);
+    expect(methodBody).toContain("restoreArmyVisualIfVisible(entityId)");
   });
 });

@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-06",
+    title: "Army Ghosting Recovery",
+    description:
+      "Moving armies now keep their on-map visuals and ownership dots in sync more reliably, and stale removal recovery no longer depends on zooming the camera to make a valid unit reappear.",
+    type: "fix",
+  },
+  {
     date: "2026-04-02",
     title: "Unit Command Audio",
     description:

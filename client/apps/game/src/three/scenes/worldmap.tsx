@@ -3319,32 +3319,32 @@ export default class WorldmapScene extends WarpTravel {
     const deferred = Array.from(this.deferredChunkRemovals.entries());
     this.deferredChunkRemovals.clear();
 
-    let anyUnsuppressed = false;
     deferred.forEach(([entityId, { reason, scheduledAt }]) => {
       const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
       if (lastUpdate > scheduledAt) {
         this.armyManager.unsuppressArmy(entityId);
-        anyUnsuppressed = true;
+        void this.armyManager.restoreArmyVisualIfVisible(entityId);
         return;
       }
 
       this.scheduleArmyRemoval(entityId, reason);
     });
-
-    if (anyUnsuppressed) {
-      this.requestChunkRefresh(true, "default");
-    }
   }
 
   private cancelPendingArmyRemoval(entityId: ID) {
     const timeout = this.pendingArmyRemovals.get(entityId);
-    if (!timeout) return;
+    const hasDeferredRemoval = this.deferredChunkRemovals.has(entityId);
+    const hasRemovalMeta = this.pendingArmyRemovalMeta.has(entityId);
+    if (!timeout && !hasDeferredRemoval && !hasRemovalMeta) return;
 
-    clearTimeout(timeout);
+    if (timeout) {
+      clearTimeout(timeout);
+    }
     this.pendingArmyRemovals.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
     this.deferredChunkRemovals.delete(entityId);
     this.armyManager.unsuppressArmy(entityId);
+    void this.armyManager.restoreArmyVisualIfVisible(entityId);
   }
 
   public deleteChest(entityId: ID) {

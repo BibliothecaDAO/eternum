@@ -111,6 +111,8 @@ export class PlayerIndicatorManager {
     this.tempPosition.set(position.x, position.y + yOffset, position.z);
     this.tempMatrix.makeTranslation(this.tempPosition.x, this.tempPosition.y, this.tempPosition.z);
     this.indicatorMesh.setMatrixAt(index, this.tempMatrix);
+    // Translation changes the visible bounds even when the slot count stays the same.
+    this.boundingSphereDirty = true;
 
     // Update color using setColorAt (same as army-model.ts does)
     this.indicatorMesh.setColorAt(index, color);
