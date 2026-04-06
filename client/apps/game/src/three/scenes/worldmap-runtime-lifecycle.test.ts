@@ -16,7 +16,7 @@ describe("worldmap runtime lifecycle", () => {
     ]);
     const pendingArmyRemovalMeta = new Map<number, { scheduledAt: number }>([[101, { scheduledAt: Date.now() }]]);
     const deferredChunkRemovals = new Map<number, { reason: string }>([[101, { reason: "tile" }]]);
-    const armyLastUpdateAt = new Map<number, number>([[101, Date.now()]]);
+    const armyLastTileSyncAt = new Map<number, number>([[101, Date.now()]]);
     const pendingArmyMovements = new Set<number>([101, 202]);
     const pendingArmyMovementStartedAt = new Map<number, number>([[101, Date.now()]]);
     const pendingArmyMovementFallbackTimeouts = new Map<number, string>([[101, "fallback-timeout"]]);
@@ -37,7 +37,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyRemovals,
       pendingArmyRemovalMeta,
       deferredChunkRemovals,
-      armyLastUpdateAt,
+      armyLastTileSyncAt,
       pendingArmyMovements,
       pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts,
@@ -69,7 +69,7 @@ describe("worldmap runtime lifecycle", () => {
     expect(pendingArmyRemovals.size).toBe(0);
     expect(pendingArmyRemovalMeta.size).toBe(0);
     expect(deferredChunkRemovals.size).toBe(0);
-    expect(armyLastUpdateAt.size).toBe(0);
+    expect(armyLastTileSyncAt.size).toBe(0);
     expect(pendingArmyMovements.size).toBe(0);
     expect(pendingArmyMovementStartedAt.size).toBe(0);
     expect(pendingArmyMovementFallbackTimeouts.size).toBe(0);
@@ -99,7 +99,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyRemovals: new Map(),
       pendingArmyRemovalMeta: new Map(),
       deferredChunkRemovals: new Map(),
-      armyLastUpdateAt: new Map(),
+      armyLastTileSyncAt: new Map(),
       pendingArmyMovements: new Set(),
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
@@ -176,7 +176,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyRemovals: new Map(),
       pendingArmyRemovalMeta: new Map(),
       deferredChunkRemovals: new Map(),
-      armyLastUpdateAt: new Map(),
+      armyLastTileSyncAt: new Map(),
       pendingArmyMovements: new Set(),
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
@@ -209,7 +209,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyRemovals: new Map(),
       pendingArmyRemovalMeta: new Map(),
       deferredChunkRemovals: new Map(),
-      armyLastUpdateAt: new Map(),
+      armyLastTileSyncAt: new Map(),
       pendingArmyMovements: new Set(),
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
