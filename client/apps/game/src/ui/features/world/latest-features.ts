@@ -10,6 +10,13 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-04-07",
+    title: "Stamina Sync Fixes",
+    description:
+      "Army and guard stamina now stays aligned with live tick updates more reliably, so combat previews and action gating stop freezing on stale values or jumping to misleading full stamina.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-07",
     title: "Chunk Stall Recovery",
     description:
       "World map chunk streaming now traces stalled Torii and hydration handoffs and automatically retries instead of leaving dead chunks stuck until you reload the game.",
