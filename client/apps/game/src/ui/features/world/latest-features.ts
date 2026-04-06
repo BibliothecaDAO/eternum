@@ -9,6 +9,13 @@ interface LatestFeature {
 
 export const latestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-07",
+    title: "Chunk Stall Recovery",
+    description:
+      "World map chunk streaming now traces stalled Torii and hydration handoffs and automatically retries instead of leaving dead chunks stuck until you reload the game.",
+    type: "fix",
+  },
+  {
     date: "2026-04-06",
     title: "Army Ghosting Suppression",
     description:

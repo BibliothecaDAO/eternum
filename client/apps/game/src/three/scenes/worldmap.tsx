@@ -267,7 +267,11 @@ import {
 } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
-import { prepareWorldmapChunkPresentation, prewarmWorldmapChunkPresentation } from "./worldmap-chunk-presentation";
+import {
+  prepareWorldmapChunkPresentation,
+  prewarmWorldmapChunkPresentation,
+  type WorldmapChunkPresentationTimeoutInfo,
+} from "./worldmap-chunk-presentation";
 import { resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
 import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
@@ -277,6 +281,13 @@ import {
   resolveWorldmapCameraFieldOfViewDegrees,
   resolveWorldmapCameraViewProfile,
 } from "./worldmap-camera-view-profile";
+import {
+  appendWorldmapChunkTrace,
+  createWorldmapChunkTraceBuffer,
+  snapshotWorldmapChunkTrace,
+  type WorldmapChunkTraceEntry,
+  type WorldmapChunkTraceEvent,
+} from "./worldmap-chunk-trace";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -362,6 +373,7 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   ) => WorldmapTileFetchVolumeRegressionDebugResult;
   getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
   resetWorldmapRenderDiagnostics?: () => void;
+  getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
 };
 
 const dummy = new Object3D();
@@ -371,6 +383,8 @@ const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
 const TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS = env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
+const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
+const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
@@ -686,6 +700,9 @@ export default class WorldmapScene extends WarpTravel {
   private isSceneExitInteractionResetInProgress = false;
   private chunkDiagnostics: WorldmapChunkDiagnostics = createWorldmapChunkDiagnostics();
   private chunkDiagnosticsBaselines: WorldmapChunkDiagnosticsBaselineEntry[] = [];
+  private readonly chunkTraceBuffer = createWorldmapChunkTraceBuffer();
+  private chunkRecoveryTimeout: number | null = null;
+  private lastChunkRecoveryAtMs = 0;
 
   // Label groups
   private armyLabelsGroup: Group;
@@ -753,6 +770,10 @@ export default class WorldmapScene extends WarpTravel {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.logInteractionDebug("scene_instance_created", {
+      sceneName: SceneName.WorldMap,
+      existingStoreSubscriptionCount: this.storeSubscriptions.length,
+    });
+    this.traceChunk("scene_created", {
       sceneName: SceneName.WorldMap,
       existingStoreSubscriptionCount: this.storeSubscriptions.length,
     });
@@ -1735,6 +1756,12 @@ export default class WorldmapScene extends WarpTravel {
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
     if (hex === null) {
+      if (this.previouslyHoveredHex) {
+        this.traceChunk("mouse_chunk_leave", {
+          previousHoveredHex: this.previouslyHoveredHex,
+          previousHoveredChunkKey: this.resolveChunkKeyForHexPosition(this.previouslyHoveredHex),
+        });
+      }
       this.state.updateEntityActionHoveredHex(null);
       this.state.setHoveredHex(null);
       this.applyContextualHoverPalette(null);
@@ -1747,6 +1774,13 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
     const { hexCoords } = hex;
+    const hoveredChunkKey = this.resolveChunkKeyForHexPosition(hexCoords);
+    if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
+      this.traceChunk("mouse_chunk_enter", {
+        hoveredHex: hexCoords,
+        hoveredChunkKey,
+      });
+    }
 
     // Handle label expansion on hover
     this.hoverLabelManager.onHexHover(hexCoords);
@@ -2960,10 +2994,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private commitCurrentChunkAuthority(chunkKey: string): void {
+    const previousChunk = this.currentChunk;
     this.currentChunk = chunkKey;
+    this.traceChunk("chunk_activated", {
+      previousChunk,
+      nextChunk: chunkKey,
+    });
   }
 
   private unregisterVisibilityChunk(chunkKey: string): void {
+    this.traceChunk("chunk_deactivated", {
+      chunkKey,
+    });
     this.visibilityManager?.unregisterChunk(chunkKey);
   }
 
@@ -3100,6 +3142,10 @@ export default class WorldmapScene extends WarpTravel {
     this.syncUrlChangedListenerLifecycle("switchOff");
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
+    if (this.chunkRecoveryTimeout !== null) {
+      clearTimeout(this.chunkRecoveryTimeout);
+      this.chunkRecoveryTimeout = null;
+    }
 
     // Clear map loading state so "Charting Territories" doesn't persist
     // when switching away while fetches are still in-flight
@@ -4083,6 +4129,8 @@ export default class WorldmapScene extends WarpTravel {
             assetPrewarmPromise: this.structureManager.prewarmChunkAssets(chunkKey),
             prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
               this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
+            phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
+            onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
           }),
         cachePreparedTerrain: (preparedTerrain) =>
           this.cachePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk),
@@ -4229,6 +4277,7 @@ export default class WorldmapScene extends WarpTravel {
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
     this.tileHydrationFetches.clear();
+    this.structureHydrationFetches.clear();
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
     this.pinnedChunkKeys.clear();
@@ -5034,9 +5083,113 @@ export default class WorldmapScene extends WarpTravel {
 
   private handleToriiSubscriptionSetupTimeout(info: BoundsSubscriptionSetupTimeoutInfo): void {
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_subscription_timeout");
+    this.traceChunk("torii_bounds_switch_timeout", {
+      requestId: info.requestId,
+      label: info.label,
+      timeoutMs: info.timeoutMs,
+    });
     console.warn("[WorldmapScene] Torii bounds subscription setup timed out", {
       requestId: info.requestId,
       label: info.label,
+      timeoutMs: info.timeoutMs,
+    });
+    this.toriiBoundsAreaKey = null;
+    this.requestToriiResubscribe("bounds_setup_timeout", this.currentChunk);
+    this.scheduleChunkRecovery("torii_bounds_timeout", this.currentChunk, {
+      requestId: info.requestId,
+      label: info.label,
+      timeoutMs: info.timeoutMs,
+    });
+  }
+
+  private clearStalledChunkAreaState(chunkKey: string): string | null {
+    if (!chunkKey || chunkKey === "null") {
+      return null;
+    }
+
+    const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+    this.pendingChunks.delete(areaKey);
+    this.fetchedChunks.delete(areaKey);
+    this.tileHydrationFetches.delete(areaKey);
+    this.structureHydrationFetches.delete(areaKey);
+    this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
+    this.hydratedChunkRefreshes.delete(chunkKey);
+    this.pendingChunkFetchGeneration = invalidateWorldmapPendingFetchGeneration(this.pendingChunkFetchGeneration);
+    return areaKey;
+  }
+
+  private requestToriiResubscribe(reason: string, chunkKey: string): void {
+    if (!this.toriiStreamManager) {
+      return;
+    }
+
+    this.traceChunk("torii_resubscribe_requested", {
+      reason,
+      chunkKey,
+    });
+    void this.toriiStreamManager
+      .resubscribe()
+      .then((result) => {
+        this.traceChunk("torii_resubscribe_completed", {
+          reason,
+          chunkKey,
+          outcome: result?.outcome ?? null,
+        });
+      })
+      .catch((error) => {
+        this.traceChunk("torii_resubscribe_failed", {
+          reason,
+          chunkKey,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+  }
+
+  private scheduleChunkRecovery(reason: string, chunkKey: string, details: Record<string, unknown> = {}): void {
+    if (this.isSwitchedOff || !chunkKey || chunkKey === "null") {
+      return;
+    }
+
+    const now = Date.now();
+    if (this.chunkRecoveryTimeout !== null || now - this.lastChunkRecoveryAtMs < WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS) {
+      return;
+    }
+
+    this.lastChunkRecoveryAtMs = now;
+    this.traceChunk("chunk_recovery_scheduled", {
+      reason,
+      chunkKey,
+      cooldownMs: WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS,
+      ...details,
+    });
+    this.chunkRecoveryTimeout = window.setTimeout(() => {
+      this.chunkRecoveryTimeout = null;
+      this.traceChunk("chunk_recovery_executed", {
+        reason,
+        chunkKey,
+        ...details,
+      });
+      this.requestChunkRefresh(true, "default");
+    }, 0);
+  }
+
+  private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
+    const areaKey = this.clearStalledChunkAreaState(info.chunkKey);
+    this.traceChunk("chunk_presentation_timeout", {
+      chunkKey: info.chunkKey,
+      areaKey,
+      phase: info.phase,
+      timeoutMs: info.timeoutMs,
+    });
+
+    if (info.phase === "bounds_ready" || info.phase === "tile_fetch") {
+      this.toriiBoundsAreaKey = null;
+      this.requestToriiResubscribe(`chunk_presentation_timeout:${info.phase}`, info.chunkKey);
+    }
+
+    this.scheduleChunkRecovery("chunk_presentation_timeout", info.chunkKey, {
+      areaKey,
+      phase: info.phase,
       timeoutMs: info.timeoutMs,
     });
   }
@@ -5063,6 +5216,11 @@ export default class WorldmapScene extends WarpTravel {
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_requested");
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+    this.traceChunk("torii_bounds_switch_requested", {
+      chunkKey,
+      areaKey,
+      transitionToken: transitionToken ?? null,
+    });
     if (areaKey === this.toriiBoundsAreaKey) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
       if (TORII_BOUNDS_DEBUG) {
@@ -5103,8 +5261,18 @@ export default class WorldmapScene extends WarpTravel {
       }
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
+      this.traceChunk("torii_bounds_switch_applied", {
+        chunkKey,
+        areaKey,
+        outcome: result.outcome,
+      });
     } catch (error) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_failed");
+      this.traceChunk("torii_bounds_switch_failed", {
+        chunkKey,
+        areaKey,
+        error: error instanceof Error ? error.message : String(error),
+      });
       console.warn("[WorldmapScene] Failed to switch Torii bounds subscription", error);
     }
   }
@@ -6163,6 +6331,14 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       if (chunkDecision.action === "noop" && !chunkDecision.shouldPrefetch) {
+        this.traceChunk("chunk_transition_noop", {
+          reason: options?.reason ?? "default",
+          focusPoint: {
+            x: focusPoint.x,
+            y: focusPoint.y,
+            z: focusPoint.z,
+          },
+        });
         return false;
       }
 
@@ -6364,6 +6540,8 @@ export default class WorldmapScene extends WarpTravel {
         onChunkHydrated: (hydratedChunkKey) => {
           this.hydratedChunkRefreshes.delete(hydratedChunkKey);
         },
+        phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
+        onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
       });
 
       if (tileFetchSucceeded && preparedTerrain) {
@@ -6538,6 +6716,8 @@ export default class WorldmapScene extends WarpTravel {
         onChunkHydrated: (hydratedChunkKey) => {
           this.hydratedChunkRefreshes.delete(hydratedChunkKey);
         },
+        phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
+        onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
       });
       if (!tileFetchSucceeded) {
         return;
@@ -6754,6 +6934,60 @@ export default class WorldmapScene extends WarpTravel {
     resetWorldmapRenderDiagnostics();
   }
 
+  private summarizeHydrationState<TState extends StructureHydrationFetchState>(fetches: Map<string, TState>) {
+    return Array.from(fetches.entries()).map(([fetchKey, state]) => ({
+      fetchKey,
+      fetchSettled: state.fetchSettled,
+      pendingCount: state.pendingCount,
+      fetchGeneration: state.fetchGeneration,
+    }));
+  }
+
+  private buildChunkTraceState(extra: Record<string, unknown> = {}): Record<string, unknown> {
+    const liveEntityActions = getLiveWorldmapEntityActions();
+    const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
+    const connectionState = useConnectionStore.getState();
+
+    return {
+      currentChunk: this.currentChunk,
+      currentAreaKey,
+      toriiBoundsAreaKey: this.toriiBoundsAreaKey,
+      isChunkTransitioning: this.isChunkTransitioning,
+      hasGlobalChunkSwitchPromise: this.globalChunkSwitchPromise !== null,
+      chunkTransitionToken: this.chunkTransitionToken,
+      chunkRefreshRequestToken: this.chunkRefreshRequestToken,
+      chunkRefreshAppliedToken: this.chunkRefreshAppliedToken,
+      chunkRefreshRunning: this.chunkRefreshRunning,
+      chunkRefreshRerunRequested: this.chunkRefreshRerunRequested,
+      pendingChunkFetchGeneration: this.pendingChunkFetchGeneration,
+      pendingChunkKeys: Array.from(this.pendingChunks.keys()),
+      fetchedChunkKeys: Array.from(this.fetchedChunks),
+      pinnedChunkKeys: Array.from(this.pinnedChunkKeys),
+      pinnedRenderAreas: Array.from(this.pinnedRenderAreas),
+      hydratedChunkRefreshes: Array.from(this.hydratedChunkRefreshes),
+      tileHydration: this.summarizeHydrationState(this.tileHydrationFetches),
+      structureHydration: this.summarizeHydrationState(this.structureHydrationFetches),
+      hoveredHex: liveEntityActions.hoveredHex,
+      selectedEntityId: liveEntityActions.selectedEntityId,
+      actionPathCount: liveEntityActions.actionPaths.size,
+      lastSpatialUpdateAgeMs: Math.max(0, Date.now() - connectionState.lastSpatialUpdate),
+      ...extra,
+    };
+  }
+
+  private traceChunk(event: WorldmapChunkTraceEvent, details: Record<string, unknown> = {}): void {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    const entry = appendWorldmapChunkTrace(this.chunkTraceBuffer, event, this.buildChunkTraceState(details));
+    console.debug("[WorldmapChunkTrace]", entry);
+  }
+
+  private getChunkTraceSnapshot(): WorldmapChunkTraceEntry[] {
+    return snapshotWorldmapChunkTrace(this.chunkTraceBuffer);
+  }
+
   private getChunkDiagnosticsSnapshot(): ReturnType<
     NonNullable<WorldmapChunkDiagnosticsDebugWindow["getWorldmapChunkDiagnostics"]>
   > {
@@ -6880,6 +7114,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
     debugWindow.getWorldmapChunkDiagnostics = () => this.getChunkDiagnosticsSnapshot();
+    debugWindow.getWorldmapChunkTrace = () => this.getChunkTraceSnapshot();
     debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
     debugWindow.getWorldmapRenderDiagnostics = () => snapshotWorldmapRenderDiagnostics();
     debugWindow.resetWorldmapRenderDiagnostics = () => resetWorldmapRenderDiagnostics();
@@ -6905,6 +7140,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
     debugWindow.getWorldmapChunkDiagnostics = undefined;
+    debugWindow.getWorldmapChunkTrace = undefined;
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
     debugWindow.getWorldmapRenderDiagnostics = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
@@ -6955,6 +7191,7 @@ export default class WorldmapScene extends WarpTravel {
         chunk: this.currentChunk,
         offscreenChunkFrames: this.offscreenChunkFrames,
       });
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_bounds_recovery");
       this.emitZoomHardeningTelemetry("self_heal_start", {
         chunk: this.currentChunk,
         reason: "offscreen",
@@ -7031,6 +7268,7 @@ export default class WorldmapScene extends WarpTravel {
       zeroTerrainFrames: this.zeroTerrainFrames,
       lowTerrainFrames: this.lowTerrainFrames,
     });
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_bounds_recovery");
     this.emitZoomHardeningTelemetry("self_heal_start", {
       chunk: this.currentChunk,
       reason: anomalyResult.recoveryReason,
@@ -7106,6 +7344,10 @@ export default class WorldmapScene extends WarpTravel {
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
     uninstallWorldmapDebugHooks(window);
+    if (this.chunkRecoveryTimeout !== null) {
+      clearTimeout(this.chunkRecoveryTimeout);
+      this.chunkRecoveryTimeout = null;
+    }
     if (this.hexGridFrameHandle !== null) {
       cancelAnimationFrame(this.hexGridFrameHandle);
       this.hexGridFrameHandle = null;

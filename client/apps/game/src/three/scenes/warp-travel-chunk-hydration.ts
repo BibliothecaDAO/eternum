@@ -1,4 +1,7 @@
-import { prepareWorldmapChunkPresentation } from "./worldmap-chunk-presentation";
+import {
+  prepareWorldmapChunkPresentation,
+  type WorldmapChunkPresentationTimeoutInfo,
+} from "./worldmap-chunk-presentation";
 
 export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
   chunkKey: string;
@@ -18,6 +21,8 @@ export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   onChunkHydrated: (chunkKey: string) => void;
+  phaseTimeoutMs?: number;
+  onPhaseTimeout?: (info: WorldmapChunkPresentationTimeoutInfo) => void;
 }
 
 export async function hydrateWarpTravelChunk<TPreparedTerrain>(
@@ -45,5 +50,7 @@ export async function hydrateWarpTravelChunk<TPreparedTerrain>(
     assetPrewarmPromise,
     prepareTerrainChunk: input.prepareTerrainChunk,
     onChunkReady: input.onChunkHydrated,
+    phaseTimeoutMs: input.phaseTimeoutMs,
+    onPhaseTimeout: input.onPhaseTimeout,
   });
 }
