@@ -1006,7 +1006,6 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
         this.incrementToriiBoundsCounter("explorerTroops");
-        const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId);
 
         if (update.troopCount <= 0) {
           this.scheduleArmyRemoval(update.entityId, "zero");
@@ -1015,9 +1014,6 @@ export default class WorldmapScene extends WarpTravel {
         this.updateArmyHexes(update);
         this.resolvePendingCreateArmyFxOnArmyUpdate(update);
         this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
-        if (recoveredPendingRemoval) {
-          void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
-        }
       }),
     );
 
