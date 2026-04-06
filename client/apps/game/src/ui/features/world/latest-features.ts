@@ -10,9 +10,9 @@ interface LatestFeature {
 export const latestFeatures: LatestFeature[] = [
   {
     date: "2026-04-06",
-    title: "In-Game Network Switch",
+    title: "Dashboard Network Switch",
     description:
-      "The game now keeps the active network visible in the top-right corner of both the world HUD and the dashboard, with a direct wallet switch action whenever your wallet is on the wrong chain.",
+      "The dashboard now keeps the active game network visible in the top-right corner, with a direct wallet switch action whenever your wallet is on the wrong chain.",
     type: "improvement",
   },
   {
