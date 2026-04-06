@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24018213106-1",
   "currentStepId": null,
   "createdAt": "2026-04-06T04:07:31.245Z",
-  "updatedAt": "2026-04-06T04:10:39.303Z",
+  "updatedAt": "2026-04-06T04:12:27.633Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x7b5edeb2013349c3e48ee689db9be995d9f0120bba4774691fc1a50c8ce756f",
     "lootChestRoleTxHash": "0xd46688c8ccbfbada0d5ffda7851ea417f4e10b042b3cfb0f822950eb5fafb5",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-whiz-736/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-06T04:10:06.191Z",
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-04-06T04:10:38.013Z"
+    "lastIndexerDescribeAt": "2026-04-06T04:12:27.632Z"
   },
   "completedAt": "2026-04-06T04:10:08.139Z"
 }
