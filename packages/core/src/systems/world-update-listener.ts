@@ -108,6 +108,33 @@ export class WorldUpdateListener {
     // console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
   }
 
+  private resolveLiveArmySnapshot(entityId: ID, currentArmiesTick: number) {
+    try {
+      const explorerTroops = getComponentValue(
+        this.setup.components.ExplorerTroops,
+        getEntityIdFromKeys([BigInt(entityId)]),
+      );
+      if (!explorerTroops?.troops) {
+        return undefined;
+      }
+
+      const ownerStructureId = explorerTroops.owner && explorerTroops.owner !== 0 ? explorerTroops.owner : undefined;
+
+      return {
+        troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
+        currentStamina: Number(StaminaManager.getStamina(explorerTroops.troops, currentArmiesTick).amount),
+        onChainStamina: {
+          amount: BigInt(explorerTroops.troops.stamina.amount),
+          updatedTick: Number(explorerTroops.troops.stamina.updated_tick),
+        },
+        ownerStructureId,
+      };
+    } catch (error) {
+      console.warn(`[DEBUG] Could not get live explorer stamina snapshot for army ${entityId}:`, error);
+      return undefined;
+    }
+  }
+
   private buildGuardArmies(troopGuards: any): GuardArmy[] {
     if (!troopGuards) {
       return [];
@@ -330,6 +357,7 @@ export class WorldUpdateListener {
                   currentArmiesTick,
                   normalizedStructureOwnerId,
                 );
+                const liveArmySnapshot = this.resolveLiveArmySnapshot(rawOccupierId, currentArmiesTick);
 
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
@@ -343,11 +371,15 @@ export class WorldUpdateListener {
                   troopType: explorer.troopType as TroopType,
                   troopTier: explorer.troopTier as TroopTier,
                   isDaydreamsAgent: explorer.isDaydreamsAgent,
-                  ownerStructureId: normalizedStructureOwnerId ?? enhancedData.ownerStructureId ?? null,
+                  ownerStructureId:
+                    liveArmySnapshot?.ownerStructureId ??
+                    normalizedStructureOwnerId ??
+                    enhancedData.ownerStructureId ??
+                    null,
                   // Enhanced data from DataEnhancer
-                  troopCount: enhancedData.troopCount,
-                  currentStamina: enhancedData.currentStamina,
-                  onChainStamina: enhancedData.onChainStamina,
+                  troopCount: liveArmySnapshot?.troopCount ?? enhancedData.troopCount,
+                  currentStamina: liveArmySnapshot?.currentStamina ?? enhancedData.currentStamina,
+                  onChainStamina: liveArmySnapshot?.onChainStamina ?? enhancedData.onChainStamina,
                   battleData: enhancedData.battleData,
                   maxStamina,
                 };
@@ -402,7 +434,7 @@ export class WorldUpdateListener {
               };
             }
           },
-          false,
+          true,
         );
       },
       onDeadArmy: (callback: (value: ID) => void) => {
