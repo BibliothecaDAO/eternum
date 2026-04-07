@@ -139,6 +139,10 @@ import {
   waitForWorldmapRequestedChunkRefresh,
 } from "./worldmap-chunk-refresh-runtime";
 import {
+  settleWorldmapShortcutSelectionProtection,
+  shouldResetWorldmapShortcutRefreshUiReason,
+} from "./worldmap-shortcut-selection-runtime";
+import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
@@ -164,7 +168,6 @@ import {
   resolvePendingChunkRefreshUiReason,
   shouldRequestTileRefreshForStructureBoundsChange,
   shouldClearEntitySelectionForChunkSwitch,
-  shouldHoldShortcutArmySelectionProtection,
   shouldClearEntitySelectionForEntityActionTransition,
   shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldForceShortcutNavigationRefresh,
@@ -7543,34 +7546,30 @@ export default class WorldmapScene extends WarpTravel {
       }
       // If all armies have pending movements, do nothing
     } finally {
-      const shouldHoldProtection = shouldHoldShortcutArmySelectionProtection({
+      await settleWorldmapShortcutSelectionProtection({
+        awaitActiveChunkSwitch: this.globalChunkSwitchPromise
+          ? async () => {
+              await this.globalChunkSwitchPromise;
+            }
+          : undefined,
+        awaitRequestedRefresh: (requestToken) => this.waitForRequestedChunkRefresh(requestToken),
+        currentRefreshToken: this.chunkRefreshRequestToken,
+        hasGlobalChunkSwitchPromise: this.globalChunkSwitchPromise !== null,
         hasPendingChunkRefreshTimer: this.chunkRefreshTimeout !== null,
         isChunkRefreshRunning: this.chunkRefreshRunning,
-        hasGlobalChunkSwitchPromise: this.globalChunkSwitchPromise !== null,
+        warn: (message, error) => {
+          console.warn(message, error);
+        },
       });
 
-      if (shouldHoldProtection) {
-        const pendingRefreshToken = this.chunkRefreshRequestToken;
-
-        if (this.globalChunkSwitchPromise) {
-          try {
-            await this.globalChunkSwitchPromise;
-          } catch (error) {
-            console.warn("[WorldMap] Shortcut selection wait failed for chunk switch settlement", error);
-          }
-        }
-
-        if (pendingRefreshToken > 0 && (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning)) {
-          try {
-            await this.waitForRequestedChunkRefresh(pendingRefreshToken);
-          } catch (error) {
-            console.warn("[WorldMap] Shortcut selection wait failed for refresh settlement", error);
-          }
-        }
-      }
-
       this.isShortcutArmySelectionInFlight = false;
-      if (this.chunkRefreshTimeout === null && !this.chunkRefreshRunning && this.globalChunkSwitchPromise === null) {
+      if (
+        shouldResetWorldmapShortcutRefreshUiReason({
+          hasGlobalChunkSwitchPromise: this.globalChunkSwitchPromise !== null,
+          hasPendingChunkRefreshTimer: this.chunkRefreshTimeout !== null,
+          isChunkRefreshRunning: this.chunkRefreshRunning,
+        })
+      ) {
         this.pendingChunkRefreshUiReason = "default";
       }
     }
