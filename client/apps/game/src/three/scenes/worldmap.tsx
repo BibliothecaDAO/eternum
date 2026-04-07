@@ -154,6 +154,10 @@ import {
   scheduleWorldmapPostCommitManagerCatchUpDrain,
 } from "./worldmap-post-commit-manager-catchup-runtime";
 import { createWorldmapChunkPresentationRuntime } from "./worldmap-chunk-presentation-runtime";
+import {
+  commitWorldmapPreparedTerrainPresentation,
+  recordWorldmapTerrainReadyDuration,
+} from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { retryDeferredWorldmapArmyRemovals } from "./worldmap-deferred-army-removal-runtime";
 import {
@@ -6552,11 +6556,13 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       if (tileFetchSucceeded && preparedTerrain) {
-        const terrainReadyDurationMs = performance.now() - chunkSwitchStartedAt;
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_ready_duration_recorded", {
-          durationMs: terrainReadyDurationMs,
+        recordWorldmapTerrainReadyDuration({
+          diagnostics: this.chunkDiagnostics,
+          nowMs: performance.now(),
+          recordChunkDiagnosticsEvent,
+          recordWorldmapRenderDuration,
+          startedAtMs: chunkSwitchStartedAt,
         });
-        recordWorldmapRenderDuration("chunkTerrainReadyMs", terrainReadyDurationMs);
       }
 
       let managerCatchUpPromise: Promise<void> | null = null;
@@ -6578,28 +6584,19 @@ export default class WorldmapScene extends WarpTravel {
         transitionToken,
         preparedTerrain,
         applyPreparedTerrain: (nextPreparedTerrain) => {
-          const terrainCommitStartedAt = performance.now();
-          this.applyPreparedTerrainChunk(nextPreparedTerrain as PreparedTerrainChunk);
-          const commitCompletedAt = performance.now();
-          const terrainCommitDurationMs = commitCompletedAt - terrainCommitStartedAt;
-          const firstVisibleCommitDurationMs = commitCompletedAt - chunkSwitchStartedAt;
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_commit_duration_recorded", {
-            durationMs: terrainCommitDurationMs,
+          commitWorldmapPreparedTerrainPresentation({
+            applyPreparedTerrain: (preparedTerrain) => {
+              this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
+            },
+            diagnostics: this.chunkDiagnostics,
+            now: () => performance.now(),
+            phaseDurations: presentationRuntime.phaseDurations,
+            preparedTerrain: nextPreparedTerrain,
+            presentationStartedAtMs: chunkSwitchStartedAt,
+            recordChunkDiagnosticsEvent,
+            recordWorldmapRenderDuration,
+            incrementWorldmapRenderCounter,
           });
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "first_visible_commit_duration_recorded", {
-            durationMs: firstVisibleCommitDurationMs,
-          });
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_visible_commit");
-          recordWorldmapRenderDuration("chunkTerrainCommitMs", terrainCommitDurationMs);
-          recordWorldmapRenderDuration("presentationCommittedMs", firstVisibleCommitDurationMs);
-          incrementWorldmapRenderCounter("terrainVisibleCommits");
-          const readinessDurations = Object.values(presentationRuntime.phaseDurations).filter((value) => value > 0);
-          if (readinessDurations.length > 0) {
-            recordWorldmapRenderDuration(
-              "presentationSkewMs",
-              Math.max(...readinessDurations) - Math.min(...readinessDurations),
-            );
-          }
         },
         setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
@@ -6716,11 +6713,13 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (preparedTerrain) {
-        const terrainReadyDurationMs = performance.now() - refreshStartedAt;
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_ready_duration_recorded", {
-          durationMs: terrainReadyDurationMs,
+        recordWorldmapTerrainReadyDuration({
+          diagnostics: this.chunkDiagnostics,
+          nowMs: performance.now(),
+          recordChunkDiagnosticsEvent,
+          recordWorldmapRenderDuration,
+          startedAtMs: refreshStartedAt,
         });
-        recordWorldmapRenderDuration("chunkTerrainReadyMs", terrainReadyDurationMs);
       }
 
       // Verify the refresh is still valid before committing terrain
@@ -6738,29 +6737,22 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (commitDecision.shouldCommit && preparedTerrain) {
-        const terrainCommitStartedAt = performance.now();
-        this.applyPreparedTerrainChunk(preparedTerrain);
-        this.updateCurrentChunkBounds(startRow, startCol);
-        const commitCompletedAt = performance.now();
-        const terrainCommitDurationMs = commitCompletedAt - terrainCommitStartedAt;
-        const firstVisibleCommitDurationMs = commitCompletedAt - refreshStartedAt;
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_commit_duration_recorded", {
-          durationMs: terrainCommitDurationMs,
+        commitWorldmapPreparedTerrainPresentation({
+          applyPreparedTerrain: (nextPreparedTerrain) => {
+            this.applyPreparedTerrainChunk(nextPreparedTerrain);
+          },
+          diagnostics: this.chunkDiagnostics,
+          now: () => performance.now(),
+          onAfterApply: () => {
+            this.updateCurrentChunkBounds(startRow, startCol);
+          },
+          phaseDurations: presentationRuntime.phaseDurations,
+          preparedTerrain,
+          presentationStartedAtMs: refreshStartedAt,
+          recordChunkDiagnosticsEvent,
+          recordWorldmapRenderDuration,
+          incrementWorldmapRenderCounter,
         });
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "first_visible_commit_duration_recorded", {
-          durationMs: firstVisibleCommitDurationMs,
-        });
-        recordWorldmapRenderDuration("chunkTerrainCommitMs", terrainCommitDurationMs);
-        recordWorldmapRenderDuration("presentationCommittedMs", firstVisibleCommitDurationMs);
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_visible_commit");
-        incrementWorldmapRenderCounter("terrainVisibleCommits");
-        const readinessDurations = Object.values(presentationRuntime.phaseDurations).filter((value) => value > 0);
-        if (readinessDurations.length > 0) {
-          recordWorldmapRenderDuration(
-            "presentationSkewMs",
-            Math.max(...readinessDurations) - Math.min(...readinessDurations),
-          );
-        }
         if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
           this.deferManagerCatchUpForChunk(chunkKey, { force: true, transitionToken });
         } else {

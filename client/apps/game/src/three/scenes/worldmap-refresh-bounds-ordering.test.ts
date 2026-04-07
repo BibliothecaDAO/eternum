@@ -21,12 +21,12 @@ describe("worldmap refresh bounds ordering", () => {
     const hydrateIndex = methodSource.indexOf(
       "const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({",
     );
-    const applyPreparedTerrainIndex = methodSource.indexOf("this.applyPreparedTerrainChunk(preparedTerrain);");
+    const commitRuntimeIndex = methodSource.indexOf("commitWorldmapPreparedTerrainPresentation({");
     const updateBoundsIndex = methodSource.indexOf("this.updateCurrentChunkBounds(startRow, startCol);");
 
     expect(hydrateIndex).toBeGreaterThanOrEqual(0);
-    expect(applyPreparedTerrainIndex).toBeGreaterThanOrEqual(0);
-    expect(updateBoundsIndex).toBeGreaterThan(applyPreparedTerrainIndex);
+    expect(commitRuntimeIndex).toBeGreaterThanOrEqual(0);
+    expect(updateBoundsIndex).toBeGreaterThan(commitRuntimeIndex);
     expect(updateBoundsIndex).toBeGreaterThan(hydrateIndex);
   });
 
@@ -34,7 +34,7 @@ describe("worldmap refresh bounds ordering", () => {
     const methodSource = extractRefreshCurrentChunkMethod(readWorldmapSource());
 
     expect(methodSource).toMatch(
-      /if \(commitDecision\.shouldCommit && preparedTerrain\) \{[\s\S]*?this\.applyPreparedTerrainChunk\(preparedTerrain\);[\s\S]*?this\.updateCurrentChunkBounds\(startRow, startCol\);/s,
+      /if \(commitDecision\.shouldCommit && preparedTerrain\) \{[\s\S]*?commitWorldmapPreparedTerrainPresentation\(\{[\s\S]*?this\.applyPreparedTerrainChunk\(nextPreparedTerrain\);[\s\S]*?this\.updateCurrentChunkBounds\(startRow, startCol\);/s,
     );
   });
 });
