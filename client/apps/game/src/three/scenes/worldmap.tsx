@@ -147,6 +147,7 @@ import {
   shouldResetWorldmapShortcutRefreshUiReason,
 } from "./worldmap-shortcut-selection-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
+import { retryDeferredWorldmapArmyRemovals } from "./worldmap-deferred-army-removal-runtime";
 import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
@@ -3444,22 +3445,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private retryDeferredChunkRemovals() {
-    if (this.deferredChunkRemovals.size === 0) {
-      return;
-    }
-
-    const deferred = Array.from(this.deferredChunkRemovals.entries());
-    this.deferredChunkRemovals.clear();
-
-    deferred.forEach(([entityId, { reason, scheduledAt }]) => {
-      const lastUpdate = this.armyLastTileSyncAt.get(entityId) ?? 0;
-      if (lastUpdate > scheduledAt) {
+    retryDeferredWorldmapArmyRemovals({
+      deferredChunkRemovals: this.deferredChunkRemovals,
+      onRecoveredArmy: (entityId) => {
         this.armyManager.unsuppressArmy(entityId);
         void this.armyManager.restoreArmyVisualIfVisible(entityId);
-        return;
-      }
-
-      this.scheduleArmyRemoval(entityId, reason);
+      },
+      onRetryRemoval: (entityId, reason) => {
+        this.scheduleArmyRemoval(entityId, reason);
+      },
+      resolveLastTileSyncAt: (entityId) => this.armyLastTileSyncAt.get(entityId) ?? 0,
     });
   }
 
