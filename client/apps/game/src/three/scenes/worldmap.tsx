@@ -160,6 +160,7 @@ import {
   recordWorldmapChunkMemoryDelta,
   resolveWorldmapChunkSwitchAnchorState,
 } from "./worldmap-chunk-success-runtime";
+import { handleWorldmapRefreshCommitRuntime } from "./worldmap-refresh-commit-runtime";
 import {
   commitWorldmapPreparedTerrainPresentation,
   recordWorldmapTerrainReadyDuration,
@@ -6715,32 +6716,44 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       if (commitDecision.shouldDropAsStale) {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "stale_terrain_refresh_dropped");
         return;
       }
 
-      if (commitDecision.shouldCommit && preparedTerrain) {
-        commitWorldmapPreparedTerrainPresentation({
-          applyPreparedTerrain: (nextPreparedTerrain) => {
-            this.applyPreparedTerrainChunk(nextPreparedTerrain);
-          },
-          diagnostics: this.chunkDiagnostics,
-          now: () => performance.now(),
-          onAfterApply: () => {
-            this.updateCurrentChunkBounds(startRow, startCol);
-          },
-          phaseDurations: presentationRuntime.phaseDurations,
-          preparedTerrain,
-          presentationStartedAtMs: refreshStartedAt,
-          recordChunkDiagnosticsEvent,
-          recordWorldmapRenderDuration,
-          incrementWorldmapRenderCounter,
-        });
-        if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
-          this.deferManagerCatchUpForChunk(chunkKey, { force: true, transitionToken });
-        } else {
-          await this.updateManagersForChunk(chunkKey, { force: true, transitionToken });
-        }
+      const refreshCommitStatus = await handleWorldmapRefreshCommitRuntime({
+        chunkKey,
+        commitPreparedTerrain: (nextPreparedTerrain) => {
+          commitWorldmapPreparedTerrainPresentation({
+            applyPreparedTerrain: (preparedTerrain) => {
+              this.applyPreparedTerrainChunk(preparedTerrain);
+            },
+            diagnostics: this.chunkDiagnostics,
+            now: () => performance.now(),
+            onAfterApply: () => {
+              this.updateCurrentChunkBounds(startRow, startCol);
+            },
+            phaseDurations: presentationRuntime.phaseDurations,
+            preparedTerrain: nextPreparedTerrain,
+            presentationStartedAtMs: refreshStartedAt,
+            recordChunkDiagnosticsEvent,
+            recordWorldmapRenderDuration,
+            incrementWorldmapRenderCounter,
+          });
+        },
+        diagnostics: this.chunkDiagnostics,
+        force: true,
+        preparedTerrain,
+        recordChunkDiagnosticsEvent,
+        refreshDecision: commitDecision,
+        runImmediateManagerCatchUp: (targetChunkKey, options) => this.updateManagersForChunk(targetChunkKey, options),
+        scheduleDeferredManagerCatchUp: (targetChunkKey, options) =>
+          this.deferManagerCatchUpForChunk(targetChunkKey, options),
+        stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
+        tileFetchSucceeded,
+        transitionToken,
+      });
+
+      if (refreshCommitStatus === "stale_dropped") {
+        return;
       }
     } finally {
       this.hydratedRefreshSuppressionAreaKeys.delete(refreshAreaKey);

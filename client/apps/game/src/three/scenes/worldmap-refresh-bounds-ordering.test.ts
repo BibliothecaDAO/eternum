@@ -34,7 +34,7 @@ describe("worldmap refresh bounds ordering", () => {
     const methodSource = extractRefreshCurrentChunkMethod(readWorldmapSource());
 
     expect(methodSource).toMatch(
-      /if \(commitDecision\.shouldCommit && preparedTerrain\) \{[\s\S]*?commitWorldmapPreparedTerrainPresentation\(\{[\s\S]*?this\.applyPreparedTerrainChunk\(nextPreparedTerrain\);[\s\S]*?this\.updateCurrentChunkBounds\(startRow, startCol\);/s,
+      /handleWorldmapRefreshCommitRuntime\(\{[\s\S]*?commitPreparedTerrain: \(nextPreparedTerrain\) => \{[\s\S]*?commitWorldmapPreparedTerrainPresentation\(\{[\s\S]*?this\.applyPreparedTerrainChunk\(preparedTerrain\);[\s\S]*?this\.updateCurrentChunkBounds\(startRow, startCol\);/s,
     );
   });
 });
