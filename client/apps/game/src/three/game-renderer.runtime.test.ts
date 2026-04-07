@@ -79,6 +79,11 @@ Object.defineProperty(navigator, "getBattery", {
   value: vi.fn(async () => ({ charging: true })),
 });
 
+Object.defineProperty(URL, "createObjectURL", {
+  configurable: true,
+  value: vi.fn(() => "blob:mock"),
+});
+
 vi.stubGlobal("GPUShaderStage", {
   COMPUTE: 4,
   FRAGMENT: 2,

@@ -15,6 +15,7 @@ import { SceneName } from "./types";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
+import { runRendererAnimationTick } from "./renderer-animation-runtime";
 import { setupRendererDevGui } from "./renderer-dev-gui-runtime";
 import {
   resolveRendererPixelRatioCap,
@@ -407,67 +408,38 @@ export default class GameRenderer {
   }
 
   animate() {
-    // Stop animation if renderer has been destroyed
-    if (this.isDestroyed) {
-      console.log("GameRenderer destroyed, stopping animation loop");
-      return;
-    }
-
-    if (!this.labelRuntime?.isReady()) {
-      requestAnimationFrame(() => {
-        this.animate();
-      });
-      return;
-    }
-
-    const currentTime = performance.now();
-    if (this.lastTime === 0) {
-      this.lastTime = currentTime;
-    }
-
-    const targetFPS = this.getTargetFPS();
-    if (targetFPS) {
-      const frameTime = 1000 / targetFPS;
-      if (currentTime - this.lastTime < frameTime) {
-        requestAnimationFrame(() => this.animate());
-        return;
-      }
-    }
-
-    const deltaTime = (currentTime - this.lastTime) / 1000;
-    this.lastTime = currentTime;
-
-    this.monitoringRuntime?.updateStatsPanel();
-
-    if (this.controls) {
-      this.controls.update();
-    }
-    const cycleProgress = useUIStore.getState().cycleProgress || 0;
-    const didRenderFrame = runRendererFrame({
-      backend: this.backend,
-      camera: this.camera,
-      captureStatsSample: () => this.captureStatsSample(),
-      currentScene: this.sceneManager?.getCurrentScene(),
-      currentTime,
-      cycleProgress,
-      deltaTime,
-      fastTravelScene: this.fastTravelScene,
-      hexceptionScene: this.hexceptionScene,
-      hudScene: this.hudScene,
-      labelRuntime: this.labelRuntime,
-      updateWeatherPostProcessing: () => this.updateWeatherPostProcessing(),
-      worldmapScene: this.worldmapScene,
-    });
-
-    if (!didRenderFrame) {
-      requestAnimationFrame(() => {
-        this.animate();
-      });
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      this.animate();
+    this.lastTime = runRendererAnimationTick({
+      getCurrentTime: () => performance.now(),
+      getCycleProgress: () => useUIStore.getState().cycleProgress || 0,
+      isDestroyed: this.isDestroyed,
+      isLabelRuntimeReady: this.labelRuntime?.isReady() ?? false,
+      lastTime: this.lastTime,
+      logDestroyed: (message) => console.log(message),
+      renderFrame: ({ currentTime, cycleProgress, deltaTime }) =>
+        runRendererFrame({
+          backend: this.backend,
+          camera: this.camera,
+          captureStatsSample: () => this.captureStatsSample(),
+          currentScene: this.sceneManager?.getCurrentScene(),
+          currentTime,
+          cycleProgress,
+          deltaTime,
+          fastTravelScene: this.fastTravelScene,
+          hexceptionScene: this.hexceptionScene,
+          hudScene: this.hudScene,
+          labelRuntime: this.labelRuntime,
+          updateWeatherPostProcessing: () => this.updateWeatherPostProcessing(),
+          worldmapScene: this.worldmapScene,
+        }),
+      requestNextFrame: () =>
+        requestAnimationFrame(() => {
+          this.animate();
+        }),
+      targetFPS: this.getTargetFPS(),
+      updateControls: () => {
+        this.controls?.update();
+      },
+      updateStatsPanel: () => this.monitoringRuntime?.updateStatsPanel(),
     });
   }
 
