@@ -40,6 +40,7 @@ import {
   useMultiChainMarkets,
   type EnrichedMarket,
   type MarketChainFilter,
+  type MarketSortKey,
   type MarketStatusKey,
 } from "@/ui/features/market/landing-markets/use-multi-chain-markets";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
@@ -187,17 +188,29 @@ const CHAIN_OPTIONS: Array<{ key: MarketChainFilter; label: string }> = [
   { key: "mainnet", label: "Mainnet" },
 ];
 
+const SORT_OPTIONS: Array<{ key: MarketSortKey; label: string }> = [
+  { key: "creation-date", label: "Creation Date" },
+  { key: "end-time", label: "End Time" },
+  { key: "volume", label: "Volume" },
+  { key: "pool-size", label: "Pool Size" },
+];
+
 const getStatusFromParam = (value: string | null): MarketStatusKey => {
   if (value === "live" || value === "awaiting" || value === "resolved") {
     return value;
   }
 
-  return "all";
+  return "live";
 };
 
 const getChainFromParam = (value: string | null): MarketChainFilter => {
   if (value === "slot" || value === "mainnet") return value;
   return "all";
+};
+
+const getSortFromParam = (value: string | null): MarketSortKey => {
+  if (value === "end-time" || value === "volume" || value === "pool-size") return value;
+  return "creation-date";
 };
 
 const PAGE_SIZE = 9;
@@ -353,6 +366,9 @@ const MarketTerminalCard = ({
   const { data: mmrByAddress = {} } = usePlayersMmrSnapshots(playerAddresses);
   const chainLabel = marketChainLabels[item.chain];
   const endLabel = formatTimeLeft(item.market.end_at ?? null);
+  const isLiveMarket = !item.market.isResolved() && !item.market.isEnded();
+  const primaryStatLabel = isLiveMarket ? "Current TVL" : "All-time Volume";
+  const primaryStatValue = isLiveMarket ? item.tvlDisplay : item.volumeDisplay;
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-gold/15 bg-black/40 p-4 shadow-[0_16px_36px_-24px_rgba(0,0,0,0.95)] backdrop-blur-[2px] transition-all duration-200 hover:border-gold/45 hover:bg-black/50 hover:shadow-[0_18px_42px_-22px_rgba(223,170,84,0.22)]">
@@ -467,10 +483,10 @@ const MarketTerminalCard = ({
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded-lg border border-gold/25 bg-gold/10 p-2">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-gold/75">All-time Volume</p>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-gold/75">{primaryStatLabel}</p>
           <p className="mt-1 inline-flex items-center gap-1 text-base font-semibold text-gold">
             <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
-            <span>{item.volumeDisplay}</span>
+            <span>{primaryStatValue}</span>
           </p>
         </div>
         <div className="rounded-lg border border-gold/20 bg-black/40 p-2">
@@ -478,6 +494,12 @@ const MarketTerminalCard = ({
           <p className="mt-1 text-sm font-semibold text-gold/85">{endLabel}</p>
         </div>
       </div>
+
+      {isLiveMarket ? (
+        <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-gold/45">
+          All-time Volume {item.volumeDisplay}
+        </p>
+      ) : null}
 
       <button
         type="button"
@@ -548,10 +570,12 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const activeTradingChain: MarketDataChain =
     connectedTxChain === "mainnet" || connectedTxChain === "slot" ? connectedTxChain : runtimeChain;
   const [switchTargetChain, setSwitchTargetChain] = useState<MarketDataChain | null>(null);
+  const [isExplainerOpen, setIsExplainerOpen] = useState(true);
 
   const selectedStatus = getStatusFromParam(searchParams.get("status"));
   const selectedChain = getChainFromParam(searchParams.get("chain"));
-  const filterKey = `${selectedStatus}|${selectedChain}`;
+  const selectedSort = getSortFromParam(searchParams.get("sort"));
+  const filterKey = `${selectedStatus}|${selectedChain}|${selectedSort}`;
 
   const [pagesByFilter, setPagesByFilter] = useState<Record<string, number>>({});
   const currentPage = pagesByFilter[filterKey] ?? 1;
@@ -578,6 +602,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
 
   const { markets, totalCount, isLoading, isFetching, isError, sourceStatus, refresh } = useMultiChainMarkets({
     status: selectedStatus,
+    sort: selectedSort,
     chainFilter: selectedChain,
     limit: PAGE_SIZE,
     offset,
@@ -611,13 +636,13 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     (nextStatus: MarketStatusKey) => {
       setSearchParams((previous) => {
         const next = new URLSearchParams(previous);
-        if (nextStatus === "all") next.delete("status");
+        if (nextStatus === "live") next.delete("status");
         else next.set("status", nextStatus);
         return next;
       });
-      setPagesByFilter((previous) => ({ ...previous, [`${nextStatus}|${selectedChain}`]: 1 }));
+      setPagesByFilter((previous) => ({ ...previous, [`${nextStatus}|${selectedChain}|${selectedSort}`]: 1 }));
     },
-    [selectedChain, setSearchParams],
+    [selectedChain, selectedSort, setSearchParams],
   );
 
   const handleChainChange = useCallback(
@@ -628,9 +653,22 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
         else next.set("chain", nextChain);
         return next;
       });
-      setPagesByFilter((previous) => ({ ...previous, [`${selectedStatus}|${nextChain}`]: 1 }));
+      setPagesByFilter((previous) => ({ ...previous, [`${selectedStatus}|${nextChain}|${selectedSort}`]: 1 }));
     },
-    [selectedStatus, setSearchParams],
+    [selectedSort, selectedStatus, setSearchParams],
+  );
+
+  const handleSortChange = useCallback(
+    (nextSort: MarketSortKey) => {
+      setSearchParams((previous) => {
+        const next = new URLSearchParams(previous);
+        if (nextSort === "creation-date") next.delete("sort");
+        else next.set("sort", nextSort);
+        return next;
+      });
+      setPagesByFilter((previous) => ({ ...previous, [`${selectedStatus}|${selectedChain}|${nextSort}`]: 1 }));
+    },
+    [selectedChain, selectedStatus, setSearchParams],
   );
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -686,7 +724,40 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     <div className={cn("flex h-full flex-col gap-5", className)}>
       <div className="space-y-3">
         <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">Prediction Markets</h2>
-        <p className="text-sm text-gold/70">Track live odds and all-time volume across Slot and Mainnet markets.</p>
+        <p className="text-sm text-gold/70">Track live odds, liquidity, and market activity across Slot and Mainnet.</p>
+      </div>
+
+      <div className={cn(PM_SURFACE_CLASS, "border-gold/15 bg-black/30 p-4")}>
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-3xl space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brilliance/90">
+              What are prediction markets?
+            </p>
+            {isExplainerOpen ? (
+              <>
+                <p className="text-sm leading-relaxed text-gold/75">
+                  Prediction markets let players take positions on how live Blitz matches will resolve before the game
+                  settles.
+                </p>
+                <p className="text-sm leading-relaxed text-gold/65">
+                  Start with Live markets for actionable pools, then sort by end time, volume, or pool size depending on
+                  whether you care most about urgency or liquidity.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm leading-relaxed text-gold/65">
+                Live markets surface the pools players can act on right now.
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsExplainerOpen((open) => !open)}
+            className="rounded-full border border-gold/25 bg-black/35 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-gold/75 transition-colors hover:border-gold/45 hover:bg-gold/10 hover:text-gold"
+          >
+            {isExplainerOpen ? "Hide Explainer" : "Show Explainer"}
+          </button>
+        </div>
       </div>
 
       <div
@@ -754,10 +825,30 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
           "flex flex-wrap items-center justify-between gap-3 border-gold/15 bg-black/30 px-4 py-3 text-xs uppercase tracking-[0.12em] text-gold/70",
         )}
       >
-        <span>{totalCount > 0 ? `Showing ${startIndex}-${endIndex} of ${totalCount}` : "No markets found"}</span>
-        <div className="flex items-center gap-3">
-          <span>Sort: Live First • Newest</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span>{totalCount > 0 ? `Showing ${startIndex}-${endIndex} of ${totalCount}` : "No markets found"}</span>
           {isFetching ? <span className="text-gold/45">Refreshing…</span> : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gold/45">Sort</span>
+          {SORT_OPTIONS.map((option) => {
+            const isActive = selectedSort === option.key;
+            return (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => handleSortChange(option.key)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
+                  isActive
+                    ? "border-gold/70 bg-gold/15 text-gold"
+                    : "border-gold/20 bg-black/35 text-gold/70 hover:border-gold/45 hover:bg-gold/10",
+                )}
+              >
+                {option.label}
+              </button>
+            );
+          })}
           <RefreshButton aria-label="Refresh markets" isLoading={isFetching || isLoading} onClick={refresh} />
         </div>
       </div>

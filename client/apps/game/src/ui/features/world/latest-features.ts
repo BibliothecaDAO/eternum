@@ -5,9 +5,31 @@ interface LatestFeature {
   title: string;
   description: string;
   type: FeatureType;
+  gameSlug?: string;
+  readMore?: string;
 }
 
-export const latestFeatures: LatestFeature[] = [
+const MAX_LATEST_FEATURES = 10;
+
+const compareLatestFeatureDatesDescending = (left: LatestFeature, right: LatestFeature) => {
+  const timestampDifference = new Date(right.date).getTime() - new Date(left.date).getTime();
+  if (timestampDifference !== 0) return timestampDifference;
+  return left.title.localeCompare(right.title);
+};
+
+const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
+  features.toSorted(compareLatestFeatureDatesDescending).slice(0, MAX_LATEST_FEATURES);
+
+const allLatestFeatures: LatestFeature[] = [
+  {
+    date: "2026-04-07",
+    title: "Landing Hub Refresh",
+    description:
+      "The dashboard News, Learn, and Markets tabs now surface fresher updates, clearer onboarding, and more actionable market stats so you can find the right information faster.",
+    type: "improvement",
+    gameSlug: "landing",
+    readMore: "https://github.com/BibliothecaDAO/eternum/issues/4375",
+  },
   {
     date: "2026-04-07",
     title: "Stamina Sync Fixes",
@@ -765,3 +787,5 @@ export const latestFeatures: LatestFeature[] = [
     type: "balance",
   },
 ];
+
+export const latestFeatures = buildLatestFeaturesFeed(allLatestFeatures);

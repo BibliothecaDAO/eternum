@@ -7,6 +7,7 @@ import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Zap from "lucide-react/dist/esm/icons/zap";
 import Scale from "lucide-react/dist/esm/icons/scale";
 import Wrench from "lucide-react/dist/esm/icons/wrench";
+import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 import { useEffect } from "react";
 
 const typeConfig: Record<FeatureType, { icon: typeof Sparkles; label: string; color: string; bg: string }> = {
@@ -45,8 +46,15 @@ const isRecentByDays = (dateStr: string, days: number = 3): boolean => {
 
 const formatDate = (dateStr: string): string => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
+
+const formatGameSlug = (gameSlug: string): string =>
+  gameSlug
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 export const LatestFeaturesWindow = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -96,17 +104,38 @@ export const LatestFeaturesWindow = () => {
                       </div>
 
                       <div className="flex-1 min-w-0">
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${config.bg} ${config.color}`}
+                          >
+                            {config.label}
+                          </span>
+                          {feature.gameSlug ? (
+                            <span className="rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-gold/75">
+                              {formatGameSlug(feature.gameSlug)}
+                            </span>
+                          ) : null}
+                          <span className="text-gold/40 text-[10px] uppercase tracking-[0.12em]">
+                            {formatDate(feature.date)}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-gold text-sm font-semibold leading-tight">{feature.title}</span>
                         </div>
 
                         <p className="text-gold/70 text-xs leading-relaxed">{feature.description}</p>
 
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className={`text-[10px] font-medium ${config.color}`}>{config.label}</span>
-                          <span className="text-gold/30 text-[10px]">&bull;</span>
-                          <span className="text-gold/40 text-[10px]">{formatDate(feature.date)}</span>
-                        </div>
+                        {feature.readMore ? (
+                          <a
+                            href={feature.readMore}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-gold/75 transition-colors hover:text-gold"
+                          >
+                            <span>Read more</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : null}
                       </div>
                     </div>
                   </div>
