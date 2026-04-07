@@ -1,11 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getGameModeId } from "@/config/game-modes";
-import { TransitionManager } from "@/three/managers/transition-manager";
-import { SceneManager } from "@/three/scene-manager";
-import FastTravelScene from "@/three/scenes/fast-travel";
-import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
-import WorldmapScene from "@/three/scenes/worldmap";
 import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -36,11 +31,16 @@ import { createRendererInteractionRuntime, type RendererInteractionRuntime } fro
 import { createRendererLabelRuntime, type RendererLabelRuntime } from "./renderer-label-runtime";
 import { createRendererMonitoringRuntime, type RendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import { createRendererRouteRuntime, type RendererRouteRuntime } from "./renderer-route-runtime";
-import { bootstrapRendererSceneRuntime, createRendererSceneRegistry } from "./renderer-scene-bootstrap";
+import { bootstrapRendererSceneRuntime, createGameRendererSceneRegistry } from "./renderer-scene-bootstrap";
 import { destroyRendererRuntime } from "./renderer-destroy-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import type { RendererBackendV2 } from "./renderer-backend-v2";
 import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
+import type { SceneManager } from "@/three/scene-manager";
+import type FastTravelScene from "@/three/scenes/fast-travel";
+import type HexceptionScene from "@/three/scenes/hexception";
+import type WorldmapScene from "@/three/scenes/worldmap";
+import type { TransitionManager } from "@/three/managers/transition-manager";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
@@ -288,16 +288,8 @@ export default class GameRenderer {
 
   async prepareScenes() {
     this.assignRendererSceneRegistry(
-      createRendererSceneRegistry({
+      createGameRendererSceneRegistry({
         controls: this.controls,
-        createFastTravelScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
-          new FastTravelScene(dojo, raycaster, controls, mouse, sceneManager),
-        createHexceptionScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
-          new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager),
-        createSceneManager: (transitionManager) => new SceneManager(transitionManager),
-        createTransitionManager: () => new TransitionManager(),
-        createWorldmapScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
-          new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager),
         dojo: this.dojo,
         fastTravelEnabled: this.isFastTravelEnabled(),
         inputSurface: this.renderer.domElement,

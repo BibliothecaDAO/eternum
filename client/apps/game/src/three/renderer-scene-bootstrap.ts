@@ -1,3 +1,11 @@
+import { TransitionManager } from "@/three/managers/transition-manager";
+import { SceneManager } from "@/three/scene-manager";
+import FastTravelScene from "@/three/scenes/fast-travel";
+import HexceptionScene from "@/three/scenes/hexception";
+import WorldmapScene from "@/three/scenes/worldmap";
+import type { SetupResult } from "@bibliothecadao/dojo";
+import type { Raycaster, Vector2 } from "three";
+import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "./types";
 
 interface SceneInputSurfaceOwner {
@@ -154,6 +162,32 @@ export function createRendererSceneRegistry<
     transitionManager,
     worldmapScene,
   };
+}
+
+export function createGameRendererSceneRegistry(input: {
+  controls: MapControls;
+  dojo: SetupResult;
+  fastTravelEnabled: boolean;
+  inputSurface: HTMLElement;
+  mouse: Vector2;
+  raycaster: Raycaster;
+}): RendererSceneRegistry<TransitionManager, SceneManager, HexceptionScene, WorldmapScene, FastTravelScene> {
+  return createRendererSceneRegistry({
+    controls: input.controls,
+    createFastTravelScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
+      new FastTravelScene(dojo, raycaster, controls, mouse, sceneManager),
+    createHexceptionScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
+      new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager),
+    createSceneManager: (transitionManager) => new SceneManager(transitionManager),
+    createTransitionManager: () => new TransitionManager(),
+    createWorldmapScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
+      new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager),
+    dojo: input.dojo,
+    fastTravelEnabled: input.fastTravelEnabled,
+    inputSurface: input.inputSurface,
+    mouse: input.mouse,
+    raycaster: input.raycaster,
+  });
 }
 
 export function bootstrapRendererSceneRuntime<

@@ -1,34 +1,41 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/three/managers/transition-manager", () => ({
-  TransitionManager: class MockTransitionManager {},
-}));
-
-vi.mock("@/three/scene-manager", () => ({
-  SceneManager: class MockSceneManager {},
-}));
-
-vi.mock("@/three/scenes/fast-travel", () => ({
-  default: class MockFastTravelScene {},
-}));
-
-vi.mock("@/three/scenes/hexception", () => ({
-  default: class MockHexceptionScene {},
-}));
-
-vi.mock("@/three/scenes/worldmap", () => ({
-  default: class MockWorldmapScene {},
-}));
-
-const { bootstrapRendererSceneRuntime, createRendererSceneRegistry } = await import("./renderer-scene-bootstrap");
-
 function createScene(name: string) {
   return {
     name,
     setInputSurface: vi.fn(),
   };
 }
+
+const transitionManagerInstance = { id: "transition" };
+const sceneManagerInstance = { addScene: vi.fn(), moveCameraForScene: vi.fn() };
+const fastTravelSceneInstance = createScene("travel");
+const hexceptionSceneInstance = createScene("hex");
+const worldmapSceneInstance = createScene("map");
+
+vi.mock("@/three/managers/transition-manager", () => ({
+  TransitionManager: vi.fn(() => transitionManagerInstance),
+}));
+
+vi.mock("@/three/scene-manager", () => ({
+  SceneManager: vi.fn(() => sceneManagerInstance),
+}));
+
+vi.mock("@/three/scenes/fast-travel", () => ({
+  default: vi.fn(() => fastTravelSceneInstance),
+}));
+
+vi.mock("@/three/scenes/hexception", () => ({
+  default: vi.fn(() => hexceptionSceneInstance),
+}));
+
+vi.mock("@/three/scenes/worldmap", () => ({
+  default: vi.fn(() => worldmapSceneInstance),
+}));
+
+const { bootstrapRendererSceneRuntime, createGameRendererSceneRegistry, createRendererSceneRegistry } =
+  await import("./renderer-scene-bootstrap");
 
 describe("createRendererSceneRegistry", () => {
   it("creates and registers the mandatory scenes plus fast travel when enabled", () => {
@@ -85,6 +92,34 @@ describe("createRendererSceneRegistry", () => {
 
     expect(registry.fastTravelScene).toBeUndefined();
     expect(sceneManager.addScene).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("createGameRendererSceneRegistry", () => {
+  it("assembles the concrete game scenes through the shared registry helper", () => {
+    sceneManagerInstance.addScene.mockClear();
+    hexceptionSceneInstance.setInputSurface.mockClear();
+    worldmapSceneInstance.setInputSurface.mockClear();
+    fastTravelSceneInstance.setInputSurface.mockClear();
+
+    const registry = createGameRendererSceneRegistry({
+      controls: { id: "controls" } as never,
+      dojo: { id: "dojo" } as never,
+      fastTravelEnabled: true,
+      inputSurface: document.createElement("canvas"),
+      mouse: { id: "mouse" } as never,
+      raycaster: { id: "raycaster" } as never,
+    });
+
+    expect(registry.transitionManager).toBe(transitionManagerInstance);
+    expect(registry.sceneManager).toBe(sceneManagerInstance);
+    expect(registry.hexceptionScene).toBe(hexceptionSceneInstance);
+    expect(registry.worldmapScene).toBe(worldmapSceneInstance);
+    expect(registry.fastTravelScene).toBe(fastTravelSceneInstance);
+    expect(sceneManagerInstance.addScene).toHaveBeenCalledTimes(3);
+    expect(hexceptionSceneInstance.setInputSurface).toHaveBeenCalledTimes(1);
+    expect(worldmapSceneInstance.setInputSurface).toHaveBeenCalledTimes(1);
+    expect(fastTravelSceneInstance.setInputSurface).toHaveBeenCalledTimes(1);
   });
 });
 
