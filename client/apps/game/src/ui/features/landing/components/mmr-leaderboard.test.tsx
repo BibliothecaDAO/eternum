@@ -187,7 +187,7 @@ describe("MMRLeaderboard", () => {
 
     await vi.waitFor(() => {
       expect(container.textContent).toContain("Tier");
-      expect(container.textContent).toContain("Iron");
+      expect(container.textContent).toContain("Scrapper");
     });
   });
 
