@@ -16,6 +16,10 @@ import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { runRendererAnimationTick } from "./renderer-animation-runtime";
+import {
+  createRendererEffectsBridgeRuntime,
+  type RendererEffectsBridgeRuntime,
+} from "./renderer-effects-bridge-runtime";
 import { setupRendererDevGui } from "./renderer-dev-gui-runtime";
 import {
   resolveRendererPixelRatioCap,
@@ -26,7 +30,7 @@ import {
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
-import { createRendererEffectsRuntime, type RendererEffectsRuntime } from "./renderer-effects-runtime";
+import { createRendererEffectsRuntime } from "./renderer-effects-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
 import { createRendererInteractionRuntime, type RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import { createRendererLabelRuntime, type RendererLabelRuntime } from "./renderer-label-runtime";
@@ -43,7 +47,7 @@ const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
 
 export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
-  private effectsRuntime?: RendererEffectsRuntime;
+  private effectsBridgeRuntime?: RendererEffectsBridgeRuntime;
   private routeRuntime?: RendererRouteRuntime;
   private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
   private renderer!: RendererSurfaceLike;
@@ -52,8 +56,6 @@ export default class GameRenderer {
   private raycaster!: RendererInteractionRuntime["raycaster"];
   private mouse!: RendererInteractionRuntime["pointer"];
   private controls!: NonNullable<RendererInteractionRuntime["controls"]>;
-
-  private unsubscribeQualityController?: () => void;
 
   // Components
   private transitionManager!: TransitionManager;
@@ -135,22 +137,28 @@ export default class GameRenderer {
     });
   }
 
-  private initializeEffectsRuntime() {
-    if (this.effectsRuntime) {
+  private initializeEffectsBridgeRuntime() {
+    if (this.effectsBridgeRuntime) {
       return;
     }
 
-    this.effectsRuntime = createRendererEffectsRuntime({
-      backend: this.backend,
-      createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
-      graphicsSetting: this.graphicsSetting,
-      isMobileDevice: this.isMobileDevice,
-      resolvePixelRatio: (pixelRatio) => this.resolvePixelRatio(pixelRatio),
-      scenes: {
-        fastTravelScene: this.fastTravelScene,
-        hexceptionScene: this.hexceptionScene,
-        worldmapScene: this.worldmapScene,
-      },
+    this.effectsBridgeRuntime = createRendererEffectsBridgeRuntime({
+      addQualityListener: (listener) => qualityController.addEventListener(listener),
+      createEffectsRuntime: () =>
+        createRendererEffectsRuntime({
+          backend: this.backend,
+          createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
+          graphicsSetting: this.graphicsSetting,
+          isMobileDevice: this.isMobileDevice,
+          resolvePixelRatio: (pixelRatio) => this.resolvePixelRatio(pixelRatio),
+          scenes: {
+            fastTravelScene: this.fastTravelScene,
+            hexceptionScene: this.hexceptionScene,
+            worldmapScene: this.worldmapScene,
+          },
+        }),
+      resolveQualityFeatures: () => qualityController.getFeatures(),
+      resolveWeatherState: () => this.hudScene?.getWeatherManager?.()?.getState(),
     });
   }
 
@@ -297,7 +305,7 @@ export default class GameRenderer {
         raycaster: this.raycaster,
       }),
     );
-    this.initializeEffectsRuntime();
+    this.initializeEffectsBridgeRuntime();
     bootstrapRendererSceneRuntime({
       applyEnvironment: () => this.applyEnvironment(),
       applyQualityFeatures: (features) => this.applyQualityFeatures(features),
@@ -329,13 +337,13 @@ export default class GameRenderer {
   }
 
   private setupPostProcessingEffects() {
-    this.initializeEffectsRuntime();
-    this.effectsRuntime?.setupPostProcessingEffects(qualityController.getFeatures());
+    this.initializeEffectsBridgeRuntime();
+    this.effectsBridgeRuntime?.setupPostProcessingEffects();
   }
 
   applyEnvironment() {
-    this.initializeEffectsRuntime();
-    void this.effectsRuntime?.applyEnvironment();
+    this.initializeEffectsBridgeRuntime();
+    this.effectsBridgeRuntime?.applyEnvironment();
   }
 
   private getTargetPixelRatio() {
@@ -401,10 +409,7 @@ export default class GameRenderer {
    * Storm: More desaturated, higher contrast, stronger vignette
    */
   private updateWeatherPostProcessing(): void {
-    const weatherManager = this.hudScene.getWeatherManager();
-    if (!weatherManager) return;
-
-    this.effectsRuntime?.updateWeatherPostProcessing(weatherManager.getState());
+    this.effectsBridgeRuntime?.updateWeatherPostProcessing();
   }
 
   animate() {
@@ -459,6 +464,7 @@ export default class GameRenderer {
         backend: this.backend,
         cleanupIntervals: this.cleanupIntervals,
         controls: this.controls,
+        effectsBridgeRuntime: this.effectsBridgeRuntime,
         guiFolders: this.guiFolders ?? [],
         handleWindowResize: this.handleWindowResize,
         interactionRuntime: this.interactionRuntime,
@@ -474,9 +480,7 @@ export default class GameRenderer {
           worldmapScene: this.worldmapScene,
         },
         transitionManager: this.transitionManager,
-        unsubscribeQualityController: this.unsubscribeQualityController,
       });
-      this.unsubscribeQualityController = undefined;
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");
     } catch (error) {
@@ -485,17 +489,13 @@ export default class GameRenderer {
   }
 
   private subscribeToQualityController(): void {
-    if (this.unsubscribeQualityController) {
-      return;
-    }
-    this.unsubscribeQualityController = qualityController.addEventListener((event) => {
-      this.applyQualityFeatures(event.currentFeatures);
-    });
+    this.initializeEffectsBridgeRuntime();
+    this.effectsBridgeRuntime?.subscribeToQualityController();
   }
 
   private applyQualityFeatures(features: QualityFeatures): void {
-    this.initializeEffectsRuntime();
-    this.effectsRuntime?.applyQualityFeatures(features);
+    this.initializeEffectsBridgeRuntime();
+    this.effectsBridgeRuntime?.applyQualityFeatures(features);
   }
 
   private async requestScenePrewarm(

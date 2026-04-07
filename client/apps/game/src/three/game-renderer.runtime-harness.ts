@@ -86,12 +86,12 @@ export function createGameRendererRuntimeHarness() {
         backend,
         renderer: backend.renderer,
         camera: { aspect: 1, updateProjectionMatrix: vi.fn() },
-        effectsRuntime: {
+        effectsBridgeRuntime: {
           applyEnvironment: vi.fn(),
           applyQualityFeatures: vi.fn(),
-          hasPostProcessing: vi.fn(() => false),
-          resolveRendererToneMappingMode: vi.fn(() => "linear"),
+          dispose: vi.fn(),
           setupPostProcessingEffects: vi.fn(),
+          subscribeToQualityController: vi.fn(),
           updateWeatherPostProcessing: vi.fn(),
         },
         labelRuntime: {

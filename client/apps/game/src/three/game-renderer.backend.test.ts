@@ -204,7 +204,7 @@ describe("GameRenderer backend seam", () => {
   it("delegates quality application through the backend", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const applyQualityFeatures = vi.fn();
-    subject.effectsRuntime = { applyQualityFeatures };
+    subject.effectsBridgeRuntime = { applyQualityFeatures };
 
     const qualityFeatures = {
       bloom: false,
@@ -224,7 +224,7 @@ describe("GameRenderer backend seam", () => {
   it("delegates quality-driven postprocess updates through the effects runtime", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const applyQualityFeatures = vi.fn();
-    subject.effectsRuntime = { applyQualityFeatures };
+    subject.effectsBridgeRuntime = { applyQualityFeatures };
 
     const qualityFeatures = {
       bloom: true,
@@ -313,14 +313,14 @@ describe("GameRenderer backend seam", () => {
   it("delegates environment application through the effects runtime", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const applyEnvironment = vi.fn();
-    subject.effectsRuntime = { applyEnvironment };
+    subject.effectsBridgeRuntime = { applyEnvironment };
 
     subject.applyEnvironment();
 
     expect(applyEnvironment).toHaveBeenCalledTimes(1);
   });
 
-  it("initializes the effects runtime on demand for environment application", () => {
+  it("initializes the effects bridge runtime on demand for environment application", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const applyEnvironment = vi.fn();
     subject.backend = createFakeBackend();
@@ -331,13 +331,13 @@ describe("GameRenderer backend seam", () => {
     subject.hexceptionScene = { applyQualityFeatures: vi.fn() };
     subject.fastTravelScene = { applyQualityFeatures: vi.fn() };
     subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    subject.initializeEffectsRuntime = vi.fn(() => {
-      subject.effectsRuntime = { applyEnvironment };
+    subject.initializeEffectsBridgeRuntime = vi.fn(() => {
+      subject.effectsBridgeRuntime = { applyEnvironment };
     });
 
     subject.applyEnvironment();
 
-    expect(subject.initializeEffectsRuntime).toHaveBeenCalledTimes(1);
+    expect(subject.initializeEffectsBridgeRuntime).toHaveBeenCalledTimes(1);
     expect(applyEnvironment).toHaveBeenCalledTimes(1);
   });
 });

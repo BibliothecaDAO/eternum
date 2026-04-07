@@ -24,11 +24,11 @@ describe("destroyRendererRuntime", () => {
   });
 
   it("cleans subscriptions, timers, scenes, listeners, and support runtimes", () => {
-    const unsubscribeQualityController = vi.fn();
     const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
     const removeWindowListener = vi.fn();
     const removeChild = vi.fn();
     const cleanupIntervals = [setInterval(() => {}, 60_000), setInterval(() => {}, 60_000)];
+    const effectsBridgeRuntime = { dispose: vi.fn() };
     const interactionRuntime = { dispose: vi.fn() };
     const labelRuntime = { dispose: vi.fn() };
     const monitoringRuntime = { dispose: vi.fn() };
@@ -42,6 +42,7 @@ describe("destroyRendererRuntime", () => {
     destroyRendererRuntime({
       backend: { dispose: vi.fn() } as never,
       cleanupIntervals,
+      effectsBridgeRuntime,
       guiFolders: [{} as never],
       handleWindowResize: vi.fn(),
       interactionRuntime: interactionRuntime as never,
@@ -63,10 +64,8 @@ describe("destroyRendererRuntime", () => {
         worldmapScene,
       },
       transitionManager,
-      unsubscribeQualityController,
     });
 
-    expect(unsubscribeQualityController).toHaveBeenCalledTimes(1);
     expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
     expect(cleanupIntervals).toEqual([]);
     expect(removeChild).toHaveBeenCalledTimes(1);
@@ -79,6 +78,7 @@ describe("destroyRendererRuntime", () => {
     expect(transitionManager.destroy).toHaveBeenCalledTimes(1);
     expect(destroyTrackedGuiFolders).toHaveBeenCalledWith([{}]);
     expect(removeWindowListener).toHaveBeenCalledWith("resize", expect.any(Function));
+    expect(effectsBridgeRuntime.dispose).toHaveBeenCalledTimes(1);
     expect(labelRuntime.dispose).toHaveBeenCalledTimes(1);
     expect(monitoringRuntime.dispose).toHaveBeenCalledTimes(1);
     expect(routeRuntime.dispose).toHaveBeenCalledTimes(1);

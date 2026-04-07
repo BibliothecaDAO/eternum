@@ -4,6 +4,7 @@ import type { RendererBackendV2 } from "./renderer-backend-v2";
 import type { RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import type { RendererLabelRuntime } from "./renderer-label-runtime";
 import type { RendererMonitoringRuntime } from "./renderer-monitoring-runtime";
+import type { RendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
 import type { RendererRouteRuntime } from "./renderer-route-runtime";
 import { disposeContactShadowResources } from "./utils/contact-shadow";
 import { destroyTrackedGuiFolders, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
@@ -16,6 +17,7 @@ interface DestroyRendererRuntimeInput {
   backend?: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
   cleanupIntervals: NodeJS.Timeout[];
   controls?: { dispose(): void };
+  effectsBridgeRuntime?: Pick<RendererEffectsBridgeRuntime, "dispose">;
   guiFolders: TrackableGuiFolder[];
   handleWindowResize: EventListenerOrEventListenerObject;
   interactionRuntime?: RendererInteractionRuntime;
@@ -31,11 +33,9 @@ interface DestroyRendererRuntimeInput {
     worldmapScene?: Destroyable;
   };
   transitionManager?: Destroyable;
-  unsubscribeQualityController?: () => void;
 }
 
 export function destroyRendererRuntime(input: DestroyRendererRuntimeInput): void {
-  disposeQualitySubscription(input.unsubscribeQualityController);
   clearRendererCleanupIntervals(input.cleanupIntervals);
   detachRendererSurface(input.renderer);
   disposeRendererResources(input.backend);
@@ -44,12 +44,8 @@ export function destroyRendererRuntime(input: DestroyRendererRuntimeInput): void
   destroyRendererTransitionManager(input.transitionManager);
   destroyTrackedGuiFolders(input.guiFolders);
   input.removeWindowListener("resize", input.handleWindowResize);
-  disposeSupportRuntimes(input.labelRuntime, input.monitoringRuntime, input.routeRuntime);
+  disposeSupportRuntimes(input.effectsBridgeRuntime, input.labelRuntime, input.monitoringRuntime, input.routeRuntime);
   disposeContactShadowResources();
-}
-
-function disposeQualitySubscription(unsubscribeQualityController?: () => void): void {
-  unsubscribeQualityController?.();
 }
 
 function clearRendererCleanupIntervals(cleanupIntervals: NodeJS.Timeout[]): void {
@@ -97,10 +93,12 @@ function destroyRendererTransitionManager(transitionManager?: Destroyable): void
 }
 
 function disposeSupportRuntimes(
+  effectsBridgeRuntime?: Pick<RendererEffectsBridgeRuntime, "dispose">,
   labelRuntime?: RendererLabelRuntime,
   monitoringRuntime?: RendererMonitoringRuntime,
   routeRuntime?: RendererRouteRuntime,
 ): void {
+  effectsBridgeRuntime?.dispose();
   labelRuntime?.dispose();
   monitoringRuntime?.dispose();
   routeRuntime?.dispose();

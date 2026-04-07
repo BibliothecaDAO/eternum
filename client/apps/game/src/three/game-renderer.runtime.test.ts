@@ -159,7 +159,7 @@ describe("GameRenderer runtime harness", () => {
     });
 
     expect(harness.backend.resize).toHaveBeenCalledWith(640, 360);
-    expect(subject.effectsRuntime.applyQualityFeatures).toHaveBeenCalledWith({
+    expect(subject.effectsBridgeRuntime.applyQualityFeatures).toHaveBeenCalledWith({
       bloom: false,
       bloomIntensity: 0,
       chromaticAberration: false,

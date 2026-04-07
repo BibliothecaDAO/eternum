@@ -273,7 +273,7 @@ function createGameRendererSubject() {
   canvasParent.appendChild(canvas);
   document.body.appendChild(canvasParent);
 
-  const unsubscribeQualityController = vi.fn();
+  const effectsBridgeRuntimeDispose = vi.fn();
   const worldmapDestroy = vi.fn();
   const hexceptionDestroy = vi.fn();
   const hudDestroy = vi.fn();
@@ -288,7 +288,7 @@ function createGameRendererSubject() {
   });
 
   subject.isDestroyed = false;
-  subject.unsubscribeQualityController = unsubscribeQualityController;
+  subject.effectsBridgeRuntime = { dispose: effectsBridgeRuntimeDispose };
   subject.cleanupIntervals = [setInterval(() => {}, 60_000), setInterval(() => {}, 60_000)];
   subject.renderer = { domElement: canvas, dispose: rendererDispose };
   subject.backend = { dispose: backendDispose };
@@ -306,7 +306,7 @@ function createGameRendererSubject() {
   return {
     subject,
     canvas,
-    unsubscribeQualityController,
+    effectsBridgeRuntimeDispose,
     worldmapDestroy,
     hexceptionDestroy,
     hudDestroy,
@@ -339,6 +339,7 @@ describe("GameRenderer destroy lifecycle", () => {
       expect.objectContaining({
         backend: fixture.subject.backend,
         cleanupIntervals: fixture.subject.cleanupIntervals,
+        effectsBridgeRuntime: fixture.subject.effectsBridgeRuntime,
         guiFolders: fixture.subject.guiFolders,
         handleWindowResize: fixture.subject.handleWindowResize,
         interactionRuntime: fixture.subject.interactionRuntime,
@@ -353,7 +354,6 @@ describe("GameRenderer destroy lifecycle", () => {
           worldmapScene: fixture.subject.worldmapScene,
         },
         transitionManager: fixture.subject.transitionManager,
-        unsubscribeQualityController: fixture.unsubscribeQualityController,
       }),
     );
   });
