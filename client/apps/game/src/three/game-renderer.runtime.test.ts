@@ -134,7 +134,7 @@ describe("GameRenderer runtime harness", () => {
     expect(harness.hexceptionScene.activateInputSurface).toHaveBeenCalledTimes(1);
   });
 
-  it("propagates resize and quality changes through the backend", () => {
+  it("propagates resize through the backend", () => {
     const harness = createGameRendererRuntimeHarness();
     const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
     const container = document.createElement("div");
@@ -148,26 +148,8 @@ describe("GameRenderer runtime harness", () => {
     subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
 
     subject.onWindowResize();
-    subject.applyQualityFeatures({
-      pixelRatio: 1.5,
-      shadows: true,
-      fxaa: false,
-      bloom: false,
-      bloomIntensity: 0,
-      vignette: false,
-      chromaticAberration: false,
-    });
 
     expect(harness.backend.resize).toHaveBeenCalledWith(640, 360);
-    expect(subject.supportRuntimeRegistry.getEffectsBridge().applyQualityFeatures).toHaveBeenCalledWith({
-      bloom: false,
-      bloomIntensity: 0,
-      chromaticAberration: false,
-      fxaa: false,
-      pixelRatio: 1.5,
-      shadows: true,
-      vignette: false,
-    });
   });
 
   it("destroys backend, transition manager, and scenes", () => {

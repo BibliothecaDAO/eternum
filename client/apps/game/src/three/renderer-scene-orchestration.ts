@@ -1,30 +1,30 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
 import type { Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import type { SceneManager } from "@/three/scene-manager";
+import type FastTravelScene from "@/three/scenes/fast-travel";
+import type HexceptionScene from "@/three/scenes/hexception";
+import type WorldmapScene from "@/three/scenes/worldmap";
+import type { TransitionManager } from "@/three/managers/transition-manager";
+import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
+import type { QualityFeatures } from "./utils/quality-controller";
 import {
   bootstrapRendererSceneRuntime,
   createGameRendererSceneRegistry,
   type RendererSceneRegistry,
 } from "./renderer-scene-bootstrap";
 
-interface PrepareGameRendererScenesInput<
-  TTransitionManager,
-  TSceneManager extends { moveCameraForScene(): void },
-  THexceptionScene,
-  TWorldmapScene,
-  TFastTravelScene,
-  TQualityFeatures,
-> {
-  applySceneRegistry: (
-    registry: RendererSceneRegistry<
-      TTransitionManager,
-      TSceneManager,
-      THexceptionScene,
-      TWorldmapScene,
-      TFastTravelScene
-    >,
-  ) => void;
+type GameRendererSceneRegistry = RendererSceneRegistry<
+  TransitionManager,
+  SceneManager,
+  HexceptionScene,
+  WorldmapScene,
+  FastTravelScene
+>;
+
+interface PrepareGameRendererScenesInput {
+  applySceneRegistry: (registry: GameRendererSceneRegistry) => void;
   controls: MapControls;
   dojo: SetupResult;
   effectsBridgeRuntime: Pick<
@@ -34,28 +34,13 @@ interface PrepareGameRendererScenesInput<
   fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
   mouse: Vector2;
-  qualityFeatures: TQualityFeatures;
+  qualityFeatures: QualityFeatures;
   raycaster: Raycaster;
-  requestScenePrewarm: (scene: unknown) => void;
+  renderer?: RendererSurfaceLike;
+  warn?: (message: string, error: unknown) => void;
 }
 
-export function prepareGameRendererScenes<
-  TTransitionManager,
-  TSceneManager extends { moveCameraForScene(): void },
-  THexceptionScene,
-  TWorldmapScene,
-  TFastTravelScene,
-  TQualityFeatures,
->(
-  input: PrepareGameRendererScenesInput<
-    TTransitionManager,
-    TSceneManager,
-    THexceptionScene,
-    TWorldmapScene,
-    TFastTravelScene,
-    TQualityFeatures
-  >,
-): void {
+export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput): void {
   const sceneRegistry = createGameRendererSceneRegistry({
     controls: input.controls,
     dojo: input.dojo,
@@ -63,7 +48,7 @@ export function prepareGameRendererScenes<
     inputSurface: input.inputSurface,
     mouse: input.mouse,
     raycaster: input.raycaster,
-  }) as RendererSceneRegistry<TTransitionManager, TSceneManager, THexceptionScene, TWorldmapScene, TFastTravelScene>;
+  });
 
   input.applySceneRegistry(sceneRegistry);
   bootstrapRendererSceneRuntime({
@@ -71,8 +56,9 @@ export function prepareGameRendererScenes<
     fastTravelScene: sceneRegistry.fastTravelScene,
     hexceptionScene: sceneRegistry.hexceptionScene,
     qualityFeatures: input.qualityFeatures,
-    requestScenePrewarm: input.requestScenePrewarm as never,
+    renderer: input.renderer,
     sceneManager: sceneRegistry.sceneManager,
+    warn: input.warn,
     worldmapScene: sceneRegistry.worldmapScene,
   });
 }

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { QualityFeatures } from "./utils/quality-controller";
 import { describe, expect, it, vi } from "vitest";
 
 const sceneBootstrapMocks = vi.hoisted(() => ({
@@ -27,13 +28,23 @@ describe("prepareGameRendererScenes", () => {
       subscribeToQualityController: vi.fn(),
     };
     const applySceneRegistry = vi.fn();
-    const requestScenePrewarm = vi.fn();
-    const qualityFeatures = {
+    const renderer = { id: "renderer" };
+    const warn = vi.fn();
+    const qualityFeatures: QualityFeatures = {
       bloom: true,
       bloomIntensity: 0.4,
+      chunkLoadRadius: 3,
       chromaticAberration: false,
+      animationCullDistance: 140,
+      animationFPS: 30,
       fxaa: true,
+      labelRenderDistance: 200,
+      maxVisibleArmies: 1000,
+      maxVisibleLabels: 500,
+      maxVisibleStructures: 500,
+      morphAnimations: true,
       pixelRatio: 1.5,
+      shadowMapSize: 2048,
       shadows: true,
       vignette: true,
     };
@@ -50,7 +61,8 @@ describe("prepareGameRendererScenes", () => {
       mouse: { id: "mouse" } as never,
       qualityFeatures,
       raycaster: { id: "raycaster" } as never,
-      requestScenePrewarm,
+      renderer: renderer as never,
+      warn,
     });
 
     expect(sceneBootstrapModule.createGameRendererSceneRegistry).toHaveBeenCalledTimes(1);
@@ -60,8 +72,9 @@ describe("prepareGameRendererScenes", () => {
       fastTravelScene: registry.fastTravelScene,
       hexceptionScene: registry.hexceptionScene,
       qualityFeatures,
-      requestScenePrewarm,
+      renderer,
       sceneManager: registry.sceneManager,
+      warn,
       worldmapScene: registry.worldmapScene,
     });
   });

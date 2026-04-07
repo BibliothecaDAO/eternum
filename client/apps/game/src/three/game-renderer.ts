@@ -1,43 +1,35 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getGameModeId } from "@/config/game-modes";
-import HUDScene from "@/three/scenes/hud-scene";
 import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
-import { type Camera, type Object3D, type Object3DEventMap } from "three";
 import { env } from "../../env";
 import { SceneName } from "./types";
 import { transitionDB } from "./utils/";
-import { getContactShadowResources } from "./utils/contact-shadow";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { runRendererAnimationTick } from "./renderer-animation-runtime";
-import { createRendererControlBridgeRuntime } from "./renderer-control-bridge-runtime";
-import { createRendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
 import {
   resolveRendererPixelRatioCap,
   resolveRendererTargetFps,
   resolveRendererTargetPixelRatio,
   resizeRendererDisplay,
 } from "./renderer-display-runtime";
-import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
-import { createRendererEffectsRuntime } from "./renderer-effects-runtime";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
 import type { RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import type { RendererLabelRuntime } from "./renderer-label-runtime";
-import { createRendererMonitoringRuntime } from "./renderer-monitoring-runtime";
-import { createRendererRouteRuntime } from "./renderer-route-runtime";
-import { createRendererRuntimeAssembly } from "./renderer-runtime-assembly";
+import { qualityController } from "./utils/quality-controller";
 import { prepareGameRendererScenes } from "./renderer-scene-orchestration";
 import { destroyRendererRuntime } from "./renderer-destroy-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
 import type { RendererBackendV2 } from "./renderer-backend-v2";
-import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
+import { createGameRendererRuntimeAssembly, type GameRendererRuntimeState } from "./game-renderer-runtime-assembly";
 import type { SceneManager } from "@/three/scene-manager";
+import type HUDScene from "@/three/scenes/hud-scene";
 import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
@@ -81,70 +73,39 @@ export default class GameRenderer {
     this.graphicsSetting = GRAPHICS_SETTING;
     this.dojo = dojoContext;
 
-    const runtimeAssembly = createRendererRuntimeAssembly({
+    const runtimeAssembly = createGameRendererRuntimeAssembly({
       addWindowListener: (type, listener) => window.addEventListener(type, listener),
-      createControlBridgeRuntime: () =>
-        createRendererControlBridgeRuntime({
-          changeCameraView: (view) => this.worldmapScene.changeCameraView(view),
-          createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
-          fastTravelEnabled: () => this.isFastTravelEnabled(),
-          getCurrentScene: () => this.sceneManager?.getCurrentScene(),
-          getRenderer: () => this.renderer,
-          markLabelsDirty: () => this.labelRuntime?.markDirty(),
-          moveCameraToColRow: (col, row, duration) => this.worldmapScene.moveCameraToColRow(col, row, duration),
-          moveCameraToXYZ: (x, y, z, duration) => this.worldmapScene.moveCameraToXYZ(x, y, z, duration),
-          requestFastTravelSceneRefresh: () => this.fastTravelScene?.requestSceneRefresh(),
-          switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
-          updateContactShadowOpacity: (opacity) => {
-            const { material } = getContactShadowResources();
-            material.opacity = opacity;
-          },
-        }),
-      createEffectsBridgeRuntime: () =>
-        createRendererEffectsBridgeRuntime({
-          addQualityListener: (listener) => qualityController.addEventListener(listener),
-          createEffectsRuntime: () =>
-            createRendererEffectsRuntime({
-              backend: this.backend,
-              createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
-              graphicsSetting: this.graphicsSetting,
-              isMobileDevice: this.isMobileDevice,
-              resolvePixelRatio: (pixelRatio) => this.resolvePixelRatio(pixelRatio),
-              scenes: {
-                fastTravelScene: this.fastTravelScene,
-                hexceptionScene: this.hexceptionScene,
-                worldmapScene: this.worldmapScene,
-              },
-            }),
-          resolveQualityFeatures: () => qualityController.getFeatures(),
-          resolveWeatherState: () => this.hudScene?.getWeatherManager?.()?.getState(),
-        }),
-      createMonitoringRuntime: () =>
-        createRendererMonitoringRuntime({
-          debugWindow: window,
-          getSceneName: () => this.sceneManager?.getCurrentScene() || "unknown",
-          isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,
-          isMemoryMonitoringEnabled: MEMORY_MONITORING_ENABLED,
-          renderer: this.renderer,
-          rendererOwner: this,
-        }),
-      createRouteRuntime: () =>
-        createRendererRouteRuntime({
-          fadeIn: () => this.transitionManager?.fadeIn(),
-          fastTravelEnabled: () => this.isFastTravelEnabled(),
-          getCurrentScene: () => this.sceneManager?.getCurrentScene(),
-          hasFastTravelScene: () => Boolean(this.fastTravelScene),
-          markLabelsDirty: () => this.supportRuntimeRegistry.getControlBridge().markLabelsDirty(),
-          moveCameraForScene: () => this.sceneManager.moveCameraForScene(),
-          switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
-        }),
-      createHudScene: () => new HUDScene(this.sceneManager, this.controls),
+      createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
+      fastTravelEnabled: () => this.isFastTravelEnabled(),
+      graphicsSetting: this.graphicsSetting,
+      isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,
+      isMemoryMonitoringEnabled: MEMORY_MONITORING_ENABLED,
+      isMobileDevice: this.isMobileDevice,
+      rendererOwner: this,
+      resolvePixelRatio: (pixelRatio) => this.resolvePixelRatio(pixelRatio),
+      resolveRuntimeState: () => this.resolveRuntimeState(),
+      windowObject: window,
       windowResizeListener: this.handleWindowResize,
     });
     this.supportRuntimeRegistry = runtimeAssembly.supportRuntimeRegistry;
     this.sessionRuntime = runtimeAssembly.sessionRuntime;
     this.backendInitializationPromise = this.initializeRendererBackend();
     this.initializeFoundationRuntime();
+  }
+
+  private resolveRuntimeState(): GameRendererRuntimeState {
+    return {
+      backend: this.backend,
+      controls: this.controls,
+      fastTravelScene: this.fastTravelScene,
+      hexceptionScene: this.hexceptionScene,
+      hudScene: this.hudScene,
+      labelRuntime: this.labelRuntime,
+      renderer: this.renderer,
+      sceneManager: this.sceneManager,
+      transitionManager: this.transitionManager,
+      worldmapScene: this.worldmapScene,
+    };
   }
 
   private initializeFoundationRuntime() {
@@ -214,9 +175,7 @@ export default class GameRenderer {
         this.hudScene = this.sessionRuntime.createHudScene();
       },
       isDestroyed: this.isDestroyed,
-      prepareScenes: () => {
-        void this.prepareScenes();
-      },
+      prepareScenes: () => this.prepareScenes(),
       registerCleanupInterval: (intervalId) => {
         this.cleanupIntervals = this.cleanupIntervals || [];
         this.cleanupIntervals.push(intervalId);
@@ -240,7 +199,7 @@ export default class GameRenderer {
     this.controls = this.interactionRuntime.controls;
   }
 
-  async prepareScenes() {
+  prepareScenes() {
     prepareGameRendererScenes({
       applySceneRegistry: (registry) => this.assignRendererSceneRegistry(registry),
       controls: this.controls,
@@ -251,9 +210,8 @@ export default class GameRenderer {
       mouse: this.mouse,
       qualityFeatures: qualityController.getFeatures(),
       raycaster: this.raycaster,
-      requestScenePrewarm: (scene) => {
-        void this.requestScenePrewarm(scene);
-      },
+      renderer: this.backend?.renderer,
+      warn: (message, error) => console.warn(message, error),
     });
   }
 
@@ -270,15 +228,6 @@ export default class GameRenderer {
     this.hexceptionScene = input.hexceptionScene;
     this.fastTravelScene = input.fastTravelScene;
   }
-
-  applyEnvironment() {
-    this.supportRuntimeRegistry.ensureEffectsBridge().applyEnvironment();
-  }
-
-  private applyQualityFeatures(features: QualityFeatures): void {
-    this.supportRuntimeRegistry.ensureEffectsBridge().applyQualityFeatures(features);
-  }
-
   private getTargetPixelRatio() {
     return resolveRendererTargetPixelRatio({
       devicePixelRatio: window.devicePixelRatio || 1,
@@ -406,25 +355,6 @@ export default class GameRenderer {
       console.log("GameRenderer: Destroyed and cleaned up successfully");
     } catch (error) {
       console.error("Error during GameRenderer cleanup:", error);
-    }
-  }
-
-  private async requestScenePrewarm(
-    scene:
-      | {
-          getCamera(): Camera;
-          getScene(): Object3D<Object3DEventMap>;
-        }
-      | undefined,
-  ): Promise<void> {
-    if (!scene || !this.backend?.renderer) {
-      return;
-    }
-
-    try {
-      await requestRendererScenePrewarm(this.backend.renderer, scene.getScene(), scene.getCamera());
-    } catch (error) {
-      console.warn("GameRenderer: Scene prewarm failed", error);
     }
   }
 }

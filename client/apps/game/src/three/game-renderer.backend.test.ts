@@ -204,50 +204,6 @@ describe("GameRenderer backend seam", () => {
     expect(subject.labelRuntime.resize).toHaveBeenCalledWith(320, 200);
   });
 
-  it("delegates quality application through the backend", () => {
-    const subject = Object.create(GameRenderer.prototype) as any;
-    const applyQualityFeatures = vi.fn();
-    subject.supportRuntimeRegistry = {
-      ensureEffectsBridge: vi.fn(() => ({ applyQualityFeatures })),
-    };
-
-    const qualityFeatures = {
-      bloom: false,
-      bloomIntensity: 0,
-      chromaticAberration: false,
-      fxaa: false,
-      pixelRatio: 1.5,
-      shadows: true,
-      vignette: false,
-    };
-
-    subject.applyQualityFeatures(qualityFeatures);
-
-    expect(applyQualityFeatures).toHaveBeenCalledWith(qualityFeatures);
-  });
-
-  it("delegates quality-driven postprocess updates through the effects runtime", () => {
-    const subject = Object.create(GameRenderer.prototype) as any;
-    const applyQualityFeatures = vi.fn();
-    subject.supportRuntimeRegistry = {
-      ensureEffectsBridge: vi.fn(() => ({ applyQualityFeatures })),
-    };
-
-    const qualityFeatures = {
-      bloom: true,
-      bloomIntensity: 0.25,
-      chromaticAberration: true,
-      fxaa: true,
-      pixelRatio: 1.5,
-      shadows: true,
-      vignette: true,
-    };
-
-    subject.applyQualityFeatures(qualityFeatures);
-
-    expect(applyQualityFeatures).toHaveBeenCalledWith(qualityFeatures);
-  });
-
   it("uses the backend-owned frame pipeline during animate", () => {
     const backend = createFakeBackend();
     const requestAnimationFrameSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
@@ -322,39 +278,5 @@ describe("GameRenderer backend seam", () => {
       sceneName: "map",
     });
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
-  });
-
-  it("delegates environment application through the effects runtime", () => {
-    const subject = Object.create(GameRenderer.prototype) as any;
-    const applyEnvironment = vi.fn();
-    subject.supportRuntimeRegistry = {
-      ensureEffectsBridge: vi.fn(() => ({ applyEnvironment })),
-    };
-
-    subject.applyEnvironment();
-
-    expect(applyEnvironment).toHaveBeenCalledTimes(1);
-  });
-
-  it("initializes the effects bridge runtime on demand for environment application", () => {
-    const subject = Object.create(GameRenderer.prototype) as any;
-    const applyEnvironment = vi.fn();
-    subject.backend = createFakeBackend();
-    subject.graphicsSetting = "MID";
-    subject.isMobileDevice = false;
-    subject.guiFolders = [];
-    subject.worldmapScene = { applyQualityFeatures: vi.fn() };
-    subject.hexceptionScene = { applyQualityFeatures: vi.fn() };
-    subject.fastTravelScene = { applyQualityFeatures: vi.fn() };
-    subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    const ensureEffectsBridge = vi.fn(() => ({ applyEnvironment }));
-    subject.supportRuntimeRegistry = {
-      ensureEffectsBridge,
-    };
-
-    subject.applyEnvironment();
-
-    expect(ensureEffectsBridge).toHaveBeenCalledTimes(1);
-    expect(applyEnvironment).toHaveBeenCalledTimes(1);
   });
 });

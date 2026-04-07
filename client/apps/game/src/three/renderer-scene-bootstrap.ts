@@ -4,9 +4,11 @@ import FastTravelScene from "@/three/scenes/fast-travel";
 import HexceptionScene from "@/three/scenes/hexception";
 import WorldmapScene from "@/three/scenes/worldmap";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import type { Raycaster, Vector2 } from "three";
+import type { Camera, Object3D, Object3DEventMap, Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import type { RendererSurfaceLike } from "./renderer-backend";
 import { SceneName } from "./types";
+import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
 
 interface SceneInputSurfaceOwner {
   setInputSurface(surface: HTMLElement): void;
@@ -18,8 +20,8 @@ interface SceneManagerLike<TScene> {
 }
 
 type PrewarmableScene = {
-  getCamera(): unknown;
-  getScene(): unknown;
+  getCamera(): Camera;
+  getScene(): Object3D<Object3DEventMap>;
 };
 
 export interface RendererSceneRegistry<
@@ -95,8 +97,9 @@ interface BootstrapRendererSceneRuntimeInput<
   fastTravelScene?: TFastTravelScene;
   hexceptionScene: THexceptionScene;
   qualityFeatures: TQualityFeatures;
-  requestScenePrewarm: (scene: PrewarmableScene | undefined) => void;
+  renderer?: RendererSurfaceLike;
   sceneManager: TSceneManager;
+  warn?: (message: string, error: unknown) => void;
   worldmapScene: TWorldmapScene;
 }
 
@@ -215,9 +218,13 @@ export function bootstrapRendererSceneRuntime<
     TQualityFeatures
   >,
 ): void {
-  input.requestScenePrewarm(input.worldmapScene);
-  input.requestScenePrewarm(input.hexceptionScene);
-  input.requestScenePrewarm(input.fastTravelScene);
+  prewarmRendererBootstrapScenes({
+    fastTravelScene: input.fastTravelScene,
+    hexceptionScene: input.hexceptionScene,
+    renderer: input.renderer,
+    warn: input.warn,
+    worldmapScene: input.worldmapScene,
+  });
   input.effectsBridgeRuntime.applyEnvironment();
   input.effectsBridgeRuntime.setupPostProcessingEffects();
   input.sceneManager.moveCameraForScene();
@@ -227,4 +234,44 @@ export function bootstrapRendererSceneRuntime<
 
 function attachRendererSceneToSurface(scene: SceneInputSurfaceOwner, inputSurface: HTMLElement): void {
   scene.setInputSurface(inputSurface);
+}
+
+function prewarmRendererBootstrapScenes(input: {
+  fastTravelScene?: PrewarmableScene;
+  hexceptionScene: PrewarmableScene;
+  renderer?: RendererSurfaceLike;
+  warn?: (message: string, error: unknown) => void;
+  worldmapScene: PrewarmableScene;
+}): void {
+  void prewarmRendererScene({
+    renderer: input.renderer,
+    scene: input.worldmapScene,
+    warn: input.warn,
+  });
+  void prewarmRendererScene({
+    renderer: input.renderer,
+    scene: input.hexceptionScene,
+    warn: input.warn,
+  });
+  void prewarmRendererScene({
+    renderer: input.renderer,
+    scene: input.fastTravelScene,
+    warn: input.warn,
+  });
+}
+
+async function prewarmRendererScene(input: {
+  renderer?: RendererSurfaceLike;
+  scene?: PrewarmableScene;
+  warn?: (message: string, error: unknown) => void;
+}): Promise<void> {
+  if (!input.scene) {
+    return;
+  }
+
+  try {
+    await requestRendererScenePrewarm(input.renderer, input.scene.getScene(), input.scene.getCamera());
+  } catch (error) {
+    input.warn?.("GameRenderer: Scene prewarm failed", error);
+  }
 }
