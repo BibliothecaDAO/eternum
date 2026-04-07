@@ -9,6 +9,7 @@ import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { applyWorldSelection } from "@/runtime/world";
 import { ToriiSetting } from "@/types";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
@@ -89,6 +90,7 @@ export const SettingsWindow = () => {
 
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
+  const mode = useGameModeConfig();
 
   const initialToriiSetting = (localStorage.getItem("TORII_SETTING") as ToriiSetting) || DEFAULT_TORII_SETTING;
   const [toriiSetting, setToriiSetting] = useState<ToriiSetting>(initialToriiSetting);
@@ -442,7 +444,7 @@ export const SettingsWindow = () => {
                   <Muted className="w-4 cursor-pointer fill-gold" />
                 </Button>
               )}
-              <ScrollingTrackName trackName={trackName || "Loading..."} />
+              <ScrollingTrackName trackName={trackName || "Loading..."} trackArtist={mode.audio.trackArtist} />
               <Button variant="outline" onClick={nextTrack}>
                 <Next className="w-2 cursor-pointer fill-gold" />
               </Button>
