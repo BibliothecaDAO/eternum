@@ -139,6 +139,10 @@ import {
   waitForWorldmapRequestedChunkRefresh,
 } from "./worldmap-chunk-refresh-runtime";
 import {
+  createWorldmapChunkTransitionRuntimeState,
+  runWorldmapChunkTransition,
+} from "./worldmap-chunk-transition-runtime";
+import {
   settleWorldmapShortcutSelectionProtection,
   shouldResetWorldmapShortcutRefreshUiReason,
 } from "./worldmap-shortcut-selection-runtime";
@@ -484,7 +488,7 @@ export default class WorldmapScene extends WarpTravel {
   private totalStructures: number = 0;
 
   private currentChunk: string = "null";
-  private isChunkTransitioning: boolean = false;
+  private chunkTransitionRuntimeState = createWorldmapChunkTransitionRuntimeState<Promise<void>>();
   private chunkRefreshRuntimeState = createWorldmapChunkRefreshRuntimeState();
   private pendingChunkRefreshForce = false;
   private pendingChunkRefreshUiReason: "default" | "shortcut" = "default";
@@ -589,6 +593,22 @@ export default class WorldmapScene extends WarpTravel {
 
   private set chunkRefreshRerunRequested(value: boolean) {
     this.chunkRefreshRuntimeState.rerunRequested = value;
+  }
+
+  private get globalChunkSwitchPromise(): Promise<void> | null {
+    return this.chunkTransitionRuntimeState.activePromise;
+  }
+
+  private set globalChunkSwitchPromise(value: Promise<void> | null) {
+    this.chunkTransitionRuntimeState.activePromise = value;
+  }
+
+  private get isChunkTransitioning(): boolean {
+    return this.chunkTransitionRuntimeState.isTransitioning;
+  }
+
+  private set isChunkTransitioning(value: boolean) {
+    this.chunkTransitionRuntimeState.isTransitioning = value;
   }
   private handleTransactionFailed?: (...args: any[]) => void;
   private readonly stalePendingArmyMovementMs = 10_000;
@@ -760,7 +780,6 @@ export default class WorldmapScene extends WarpTravel {
   private cancelHexGridComputation?: () => void;
 
   // Global chunk switching coordination
-  private globalChunkSwitchPromise: Promise<void> | null = null;
   private chunkTransitionToken = 0;
   private actionPathsTransitionToken: number | null = null;
   private isApplyingLocalActionPathUpdate = false;
@@ -6362,32 +6381,30 @@ export default class WorldmapScene extends WarpTravel {
         if (chunkKey === null || startCol === null || startRow === null) {
           return false;
         }
-        // Create and track the global chunk switch promise
         const transitionToken = ++this.chunkTransitionToken;
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
-        this.isChunkTransitioning = true;
-        this.globalChunkSwitchPromise = this.performChunkSwitch(
-          chunkKey,
-          startCol,
-          startRow,
-          force,
-          transitionToken,
-          options?.reason ?? "default",
-          focusPoint.clone(),
-        );
-
-        try {
-          await this.globalChunkSwitchPromise;
-          this.retryDeferredChunkRemovals();
-          return true;
-        } finally {
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
-            durationMs: performance.now() - switchStartedAt,
-          });
-          this.globalChunkSwitchPromise = null;
-          this.isChunkTransitioning = false;
-        }
+        return runWorldmapChunkTransition({
+          onFinally: () => {
+            recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
+              durationMs: performance.now() - switchStartedAt,
+            });
+          },
+          onResolved: () => {
+            this.retryDeferredChunkRemovals();
+            return true;
+          },
+          state: this.chunkTransitionRuntimeState,
+          transitionPromise: this.performChunkSwitch(
+            chunkKey,
+            startCol,
+            startRow,
+            force,
+            transitionToken,
+            options?.reason ?? "default",
+            focusPoint.clone(),
+          ),
+        });
       }
 
       if (chunkDecision.action === "refresh_current_chunk") {
@@ -6405,16 +6422,14 @@ export default class WorldmapScene extends WarpTravel {
           nextTransitionToken: transitionToken,
           previousTransitionToken: this.actionPathsTransitionToken,
         });
-        this.isChunkTransitioning = true;
-        this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken);
-        try {
-          await this.globalChunkSwitchPromise;
-          this.retryDeferredChunkRemovals();
-          return true;
-        } finally {
-          this.globalChunkSwitchPromise = null;
-          this.isChunkTransitioning = false;
-        }
+        return runWorldmapChunkTransition({
+          onResolved: () => {
+            this.retryDeferredChunkRemovals();
+            return true;
+          },
+          state: this.chunkTransitionRuntimeState,
+          transitionPromise: this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken),
+        });
       }
 
       return false;
