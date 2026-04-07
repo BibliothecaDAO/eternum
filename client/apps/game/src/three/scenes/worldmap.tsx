@@ -153,6 +153,7 @@ import {
   enqueueWorldmapPostCommitManagerCatchUpTask,
   scheduleWorldmapPostCommitManagerCatchUpDrain,
 } from "./worldmap-post-commit-manager-catchup-runtime";
+import { createWorldmapChunkPresentationRuntime } from "./worldmap-chunk-presentation-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { retryDeferredWorldmapArmyRemovals } from "./worldmap-deferred-army-removal-runtime";
 import {
@@ -6444,12 +6445,6 @@ export default class WorldmapScene extends WarpTravel {
     switchPosition?: Vector3,
   ) {
     const chunkSwitchStartedAt = performance.now();
-    const presentationPhaseDurations = {
-      terrainPreparedMs: 0,
-      tileHydrationDrainMs: 0,
-      structureHydrationDrainMs: 0,
-      structureAssetPrewarmMs: 0,
-    };
     // Track memory usage during chunk switch
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
@@ -6518,6 +6513,24 @@ export default class WorldmapScene extends WarpTravel {
         this.removeCachedMatricesForChunk(startRow, startCol);
       }
 
+      const presentationRuntime = createWorldmapChunkPresentationRuntime({
+        now: () => performance.now(),
+        onChunkHydrated: (hydratedChunkKey) => {
+          this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+        },
+        prewarmChunkAssets: (targetChunkKey) => this.structureManager.prewarmChunkAssets(targetChunkKey),
+        prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
+          this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
+        recordDuration: (metric, durationMs) => {
+          recordWorldmapRenderDuration(metric, durationMs);
+        },
+        recordTileHydrationDrainCompleted: () => {
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+        },
+        waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
+        waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
+      });
+
       const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
         chunkKey,
         startRow,
@@ -6529,38 +6542,11 @@ export default class WorldmapScene extends WarpTravel {
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
           this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-        waitForTileHydrationIdle: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.waitForTileHydrationIdle(targetChunkKey);
-          presentationPhaseDurations.tileHydrationDrainMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration("tileHydrationDrainMs", presentationPhaseDurations.tileHydrationDrainMs);
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
-        },
-        waitForStructureHydrationIdle: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.waitForStructureHydrationIdle(targetChunkKey);
-          presentationPhaseDurations.structureHydrationDrainMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration(
-            "structureHydrationDrainMs",
-            presentationPhaseDurations.structureHydrationDrainMs,
-          );
-        },
-        prewarmChunkAssets: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.structureManager.prewarmChunkAssets(targetChunkKey);
-          presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
-        },
-        prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
-          const startedAt = performance.now();
-          const preparedChunk = await this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width);
-          presentationPhaseDurations.terrainPreparedMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration("terrainPreparedMs", presentationPhaseDurations.terrainPreparedMs);
-          return preparedChunk;
-        },
-        onChunkHydrated: (hydratedChunkKey) => {
-          this.hydratedChunkRefreshes.delete(hydratedChunkKey);
-        },
+        waitForTileHydrationIdle: presentationRuntime.waitForTileHydrationIdle,
+        waitForStructureHydrationIdle: presentationRuntime.waitForStructureHydrationIdle,
+        prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
+        prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
+        onChunkHydrated: presentationRuntime.onChunkHydrated,
         phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
         onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
       });
@@ -6607,7 +6593,7 @@ export default class WorldmapScene extends WarpTravel {
           recordWorldmapRenderDuration("chunkTerrainCommitMs", terrainCommitDurationMs);
           recordWorldmapRenderDuration("presentationCommittedMs", firstVisibleCommitDurationMs);
           incrementWorldmapRenderCounter("terrainVisibleCommits");
-          const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
+          const readinessDurations = Object.values(presentationRuntime.phaseDurations).filter((value) => value > 0);
           if (readinessDurations.length > 0) {
             recordWorldmapRenderDuration(
               "presentationSkewMs",
@@ -6677,12 +6663,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number, transitionToken: number) {
-    const presentationPhaseDurations = {
-      terrainPreparedMs: 0,
-      tileHydrationDrainMs: 0,
-      structureHydrationDrainMs: 0,
-      structureAssetPrewarmMs: 0,
-    };
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
@@ -6694,6 +6674,24 @@ export default class WorldmapScene extends WarpTravel {
 
     try {
       const refreshStartedAt = performance.now();
+      const presentationRuntime = createWorldmapChunkPresentationRuntime({
+        now: () => performance.now(),
+        onChunkHydrated: (hydratedChunkKey) => {
+          this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+        },
+        prewarmChunkAssets: (targetChunkKey) => this.structureManager.prewarmChunkAssets(targetChunkKey),
+        prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
+          this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
+        recordDuration: (metric, durationMs) => {
+          recordWorldmapRenderDuration(metric, durationMs);
+        },
+        recordTileHydrationDrainCompleted: () => {
+          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
+        },
+        waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
+        waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
+      });
+
       const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
         chunkKey,
         startRow,
@@ -6705,38 +6703,11 @@ export default class WorldmapScene extends WarpTravel {
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
           this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-        waitForTileHydrationIdle: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.waitForTileHydrationIdle(targetChunkKey);
-          presentationPhaseDurations.tileHydrationDrainMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration("tileHydrationDrainMs", presentationPhaseDurations.tileHydrationDrainMs);
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
-        },
-        waitForStructureHydrationIdle: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.waitForStructureHydrationIdle(targetChunkKey);
-          presentationPhaseDurations.structureHydrationDrainMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration(
-            "structureHydrationDrainMs",
-            presentationPhaseDurations.structureHydrationDrainMs,
-          );
-        },
-        prewarmChunkAssets: async (targetChunkKey) => {
-          const startedAt = performance.now();
-          await this.structureManager.prewarmChunkAssets(targetChunkKey);
-          presentationPhaseDurations.structureAssetPrewarmMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration("structureAssetPrewarmMs", presentationPhaseDurations.structureAssetPrewarmMs);
-        },
-        prepareTerrainChunk: async (targetStartRow, targetStartCol, height, width) => {
-          const startedAt = performance.now();
-          const preparedChunk = await this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width);
-          presentationPhaseDurations.terrainPreparedMs = performance.now() - startedAt;
-          recordWorldmapRenderDuration("terrainPreparedMs", presentationPhaseDurations.terrainPreparedMs);
-          return preparedChunk;
-        },
-        onChunkHydrated: (hydratedChunkKey) => {
-          this.hydratedChunkRefreshes.delete(hydratedChunkKey);
-        },
+        waitForTileHydrationIdle: presentationRuntime.waitForTileHydrationIdle,
+        waitForStructureHydrationIdle: presentationRuntime.waitForStructureHydrationIdle,
+        prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
+        prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
+        onChunkHydrated: presentationRuntime.onChunkHydrated,
         phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
         onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
       });
@@ -6783,7 +6754,7 @@ export default class WorldmapScene extends WarpTravel {
         recordWorldmapRenderDuration("presentationCommittedMs", firstVisibleCommitDurationMs);
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_visible_commit");
         incrementWorldmapRenderCounter("terrainVisibleCommits");
-        const readinessDurations = Object.values(presentationPhaseDurations).filter((value) => value > 0);
+        const readinessDurations = Object.values(presentationRuntime.phaseDurations).filter((value) => value > 0);
         if (readinessDurations.length > 0) {
           recordWorldmapRenderDuration(
             "presentationSkewMs",
