@@ -40,6 +40,7 @@ import { createRendererLabelRuntime, type RendererLabelRuntime } from "./rendere
 import { createRendererMonitoringRuntime, type RendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import { createRendererRouteRuntime, type RendererRouteRuntime } from "./renderer-route-runtime";
 import { bootstrapRendererSceneRuntime, createRendererSceneRegistry } from "./renderer-scene-bootstrap";
+import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import type { RendererBackendV2 } from "./renderer-backend-v2";
 import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
@@ -349,38 +350,25 @@ export default class GameRenderer {
     }
     this.setupGUIControls();
     this.setupListeners();
-    this.mountRendererSurface();
-    this.startTransitionCleanupInterval();
-    this.attachInteractionRuntime();
-    this.initializeHudScene();
-
-    this.prepareScenes();
-    this.syncRouteFromLocation();
-    this.animate();
-  }
-
-  private mountRendererSurface() {
-    document.body.style.background = "black";
-    const existingCanvas = document.getElementById("main-canvas");
-    if (existingCanvas) {
-      console.warn("[GameRenderer] Found existing canvas, removing it to prevent memory leak");
-      existingCanvas.remove();
-    }
-
-    this.renderer.domElement.id = "main-canvas";
-    document.body.appendChild(this.renderer.domElement);
-  }
-
-  private startTransitionCleanupInterval() {
-    const dbCleanupInterval = setInterval(() => {
-      const cleanedCount = transitionDB.cleanupExpired(10000);
-      if (cleanedCount > 0) {
-        console.debug(`Cleaned up ${cleanedCount} expired transition records`);
-      }
-    }, 30 * 1000);
-
-    this.cleanupIntervals = this.cleanupIntervals || [];
-    this.cleanupIntervals.push(dbCleanupInterval);
+    bootstrapRendererStartupRuntime({
+      animate: () => this.animate(),
+      attachInteractionRuntime: () => this.attachInteractionRuntime(),
+      cleanupExpiredTransitions: (maxAgeMs) => transitionDB.cleanupExpired(maxAgeMs),
+      debug: (message) => console.debug(message),
+      document,
+      initializeHudScene: () => this.initializeHudScene(),
+      isDestroyed: this.isDestroyed,
+      prepareScenes: () => {
+        void this.prepareScenes();
+      },
+      registerCleanupInterval: (intervalId) => {
+        this.cleanupIntervals = this.cleanupIntervals || [];
+        this.cleanupIntervals.push(intervalId);
+      },
+      rendererDomElement: this.renderer.domElement,
+      syncRouteFromLocation: () => this.syncRouteFromLocation(),
+      warn: (message) => console.warn(message),
+    });
   }
 
   private attachInteractionRuntime() {
