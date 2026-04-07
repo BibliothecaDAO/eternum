@@ -82,23 +82,42 @@ export function createGameRendererRuntimeHarness() {
     worldmapScene,
     hexceptionScene,
     createSubject() {
+      const controlBridge = {
+        handleInteractionChange: vi.fn(),
+        markLabelsDirty: vi.fn(),
+        setupGuiControls: vi.fn(),
+      };
+      const effectsBridge = {
+        applyEnvironment: vi.fn(),
+        applyQualityFeatures: vi.fn(),
+        dispose: vi.fn(),
+        setupPostProcessingEffects: vi.fn(),
+        subscribeToQualityController: vi.fn(),
+        updateWeatherPostProcessing: vi.fn(),
+      };
+      const monitoringRuntime = {
+        initialize: vi.fn(),
+        updateStatsPanel: vi.fn(),
+        startStatsRecording: vi.fn(),
+        stopStatsRecording: vi.fn(() => []),
+        captureStatsSample: vi.fn(),
+        exportStatsRecording: vi.fn(),
+        dispose: vi.fn(),
+      };
+      const routeRuntime = {
+        start: vi.fn(),
+        syncFromLocation: vi.fn(),
+        dispose: vi.fn(),
+      };
+
       return {
         backend,
         renderer: backend.renderer,
         camera: { aspect: 1, updateProjectionMatrix: vi.fn() },
-        controlBridgeRuntime: {
-          handleInteractionChange: vi.fn(),
-          markLabelsDirty: vi.fn(),
-          setupGuiControls: vi.fn(),
-        },
-        effectsBridgeRuntime: {
-          applyEnvironment: vi.fn(),
-          applyQualityFeatures: vi.fn(),
-          dispose: vi.fn(),
-          setupPostProcessingEffects: vi.fn(),
-          subscribeToQualityController: vi.fn(),
-          updateWeatherPostProcessing: vi.fn(),
-        },
+        controlBridge,
+        effectsBridge,
+        monitoringRuntime,
+        routeRuntime,
         labelRuntime: {
           dispose: vi.fn(),
           isReady: vi.fn(() => true),
@@ -128,6 +147,15 @@ export function createGameRendererRuntimeHarness() {
         isDestroyed: false,
         cleanupIntervals: [],
         guiFolders: [],
+        supportRuntimeRegistry: {
+          ensureEffectsBridge: () => effectsBridge,
+          ensureMonitoring: () => monitoringRuntime,
+          ensureRoute: () => routeRuntime,
+          getControlBridge: () => controlBridge,
+          getEffectsBridge: () => effectsBridge,
+          getMonitoring: () => monitoringRuntime,
+          getRoute: () => routeRuntime,
+        },
         handleURLChange: vi.fn(),
         handleWindowResize: vi.fn(),
       } as any;

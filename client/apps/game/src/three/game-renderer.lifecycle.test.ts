@@ -273,13 +273,13 @@ function createGameRendererSubject() {
   canvasParent.appendChild(canvas);
   document.body.appendChild(canvasParent);
 
-  const effectsBridgeRuntimeDispose = vi.fn();
+  const effectsBridgeRuntime = { dispose: vi.fn() };
   const worldmapDestroy = vi.fn();
   const hexceptionDestroy = vi.fn();
   const hudDestroy = vi.fn();
   const interactionRuntimeDispose = vi.fn();
-  const monitoringRuntimeDispose = vi.fn();
-  const routeRuntimeDispose = vi.fn();
+  const monitoringRuntime = { dispose: vi.fn() };
+  const routeRuntime = { dispose: vi.fn() };
   const rendererDispose = vi.fn();
   const envDispose = vi.fn();
   const backendDispose = vi.fn(() => {
@@ -288,7 +288,11 @@ function createGameRendererSubject() {
   });
 
   subject.isDestroyed = false;
-  subject.effectsBridgeRuntime = { dispose: effectsBridgeRuntimeDispose };
+  subject.supportRuntimeRegistry = {
+    getEffectsBridge: vi.fn(() => effectsBridgeRuntime),
+    getMonitoring: vi.fn(() => monitoringRuntime),
+    getRoute: vi.fn(() => routeRuntime),
+  };
   subject.cleanupIntervals = [setInterval(() => {}, 60_000), setInterval(() => {}, 60_000)];
   subject.renderer = { domElement: canvas, dispose: rendererDispose };
   subject.backend = { dispose: backendDispose };
@@ -296,8 +300,6 @@ function createGameRendererSubject() {
   subject.hexceptionScene = { destroy: hexceptionDestroy };
   subject.hudScene = { destroy: hudDestroy };
   subject.interactionRuntime = { dispose: interactionRuntimeDispose };
-  subject.monitoringRuntime = { dispose: monitoringRuntimeDispose };
-  subject.routeRuntime = { dispose: routeRuntimeDispose };
   subject.environmentTarget = { dispose: envDispose };
   subject.guiFolders = [];
   subject.labelRuntime = { dispose: vi.fn() };
@@ -306,13 +308,13 @@ function createGameRendererSubject() {
   return {
     subject,
     canvas,
-    effectsBridgeRuntimeDispose,
+    effectsBridgeRuntime,
     worldmapDestroy,
     hexceptionDestroy,
     hudDestroy,
     interactionRuntimeDispose,
-    monitoringRuntimeDispose,
-    routeRuntimeDispose,
+    monitoringRuntime,
+    routeRuntime,
     rendererDispose,
     envDispose,
     backendDispose,
@@ -339,14 +341,14 @@ describe("GameRenderer destroy lifecycle", () => {
       expect.objectContaining({
         backend: fixture.subject.backend,
         cleanupIntervals: fixture.subject.cleanupIntervals,
-        effectsBridgeRuntime: fixture.subject.effectsBridgeRuntime,
+        effectsBridgeRuntime: fixture.effectsBridgeRuntime,
         guiFolders: fixture.subject.guiFolders,
         handleWindowResize: fixture.subject.handleWindowResize,
         interactionRuntime: fixture.subject.interactionRuntime,
         labelRuntime: fixture.subject.labelRuntime,
-        monitoringRuntime: fixture.subject.monitoringRuntime,
+        monitoringRuntime: fixture.monitoringRuntime,
         renderer: fixture.subject.renderer,
-        routeRuntime: fixture.subject.routeRuntime,
+        routeRuntime: fixture.routeRuntime,
         scenes: {
           fastTravelScene: fixture.subject.fastTravelScene,
           hexceptionScene: fixture.subject.hexceptionScene,
@@ -400,7 +402,9 @@ describe("initScene destruction guard", () => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.controlBridgeRuntime = { setupGuiControls: vi.fn() };
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => ({ setupGuiControls: vi.fn() }),
+    };
     subject.setupListeners = vi.fn();
 
     const initPromise = subject.initScene();
@@ -410,18 +414,20 @@ describe("initScene destruction guard", () => {
     resolveBackend();
     await initPromise;
 
-    expect(subject.controlBridgeRuntime.setupGuiControls).not.toHaveBeenCalled();
     expect(subject.setupListeners).not.toHaveBeenCalled();
   });
 
   it("does not append a canvas after destroy during backend wait", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     let resolveBackend!: () => void;
+    const controlBridge = { setupGuiControls: vi.fn() };
     subject.backendInitializationPromise = new Promise<void>((r) => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.controlBridgeRuntime = { setupGuiControls: vi.fn() };
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => controlBridge,
+    };
     subject.setupListeners = vi.fn();
     subject.renderer = { domElement: document.createElement("canvas") };
 
@@ -440,7 +446,9 @@ describe("initScene destruction guard", () => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.controlBridgeRuntime = { setupGuiControls: vi.fn() };
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => ({ setupGuiControls: vi.fn() }),
+    };
     subject.setupListeners = vi.fn();
     subject.cleanupIntervals = [];
 
@@ -454,9 +462,12 @@ describe("initScene destruction guard", () => {
 
   it("proceeds with normal setup when not destroyed", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
+    const controlBridge = { setupGuiControls: vi.fn() };
     subject.backendInitializationPromise = Promise.resolve();
     subject.isDestroyed = false;
-    subject.controlBridgeRuntime = { setupGuiControls: vi.fn() };
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => controlBridge,
+    };
     subject.setupListeners = vi.fn();
     subject.camera = {};
     subject.graphicsSetting = "HIGH";
@@ -476,7 +487,7 @@ describe("initScene destruction guard", () => {
       // Expected: will fail on MapControls or other deps, but setup fns should have been called
     }
 
-    expect(subject.controlBridgeRuntime.setupGuiControls).toHaveBeenCalledTimes(1);
+    expect(controlBridge.setupGuiControls).toHaveBeenCalledTimes(1);
     expect(subject.setupListeners).toHaveBeenCalledTimes(1);
   });
 });

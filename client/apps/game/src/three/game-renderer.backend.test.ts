@@ -191,9 +191,11 @@ describe("GameRenderer backend seam", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     subject.backend = backend;
     subject.camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
-    subject.controlBridgeRuntime = { markLabelsDirty: vi.fn() };
     subject.labelRuntime = { markDirty: vi.fn(), resize: vi.fn() };
     subject.hudScene = { onWindowResize: vi.fn() };
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => ({ markLabelsDirty: vi.fn() }),
+    };
 
     subject.onWindowResize();
 
@@ -205,7 +207,9 @@ describe("GameRenderer backend seam", () => {
   it("delegates quality application through the backend", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const applyQualityFeatures = vi.fn();
-    subject.effectsBridgeRuntime = { applyQualityFeatures };
+    subject.supportRuntimeRegistry = {
+      ensureEffectsBridge: vi.fn(() => ({ applyQualityFeatures })),
+    };
 
     const qualityFeatures = {
       bloom: false,
@@ -225,7 +229,9 @@ describe("GameRenderer backend seam", () => {
   it("delegates quality-driven postprocess updates through the effects runtime", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const applyQualityFeatures = vi.fn();
-    subject.effectsBridgeRuntime = { applyQualityFeatures };
+    subject.supportRuntimeRegistry = {
+      ensureEffectsBridge: vi.fn(() => ({ applyQualityFeatures })),
+    };
 
     const qualityFeatures = {
       bloom: true,
@@ -288,6 +294,9 @@ describe("GameRenderer backend seam", () => {
     subject.lastTime = performance.now() - 16;
     subject.getTargetFPS = vi.fn(() => null);
     subject.updateWeatherPostProcessing = vi.fn();
+    subject.supportRuntimeRegistry = {
+      getMonitoring: vi.fn(() => undefined),
+    };
 
     subject.animate();
 
@@ -314,7 +323,9 @@ describe("GameRenderer backend seam", () => {
   it("delegates environment application through the effects runtime", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const applyEnvironment = vi.fn();
-    subject.effectsBridgeRuntime = { applyEnvironment };
+    subject.supportRuntimeRegistry = {
+      ensureEffectsBridge: vi.fn(() => ({ applyEnvironment })),
+    };
 
     subject.applyEnvironment();
 
@@ -332,13 +343,14 @@ describe("GameRenderer backend seam", () => {
     subject.hexceptionScene = { applyQualityFeatures: vi.fn() };
     subject.fastTravelScene = { applyQualityFeatures: vi.fn() };
     subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    subject.initializeEffectsBridgeRuntime = vi.fn(() => {
-      subject.effectsBridgeRuntime = { applyEnvironment };
-    });
+    const ensureEffectsBridge = vi.fn(() => ({ applyEnvironment }));
+    subject.supportRuntimeRegistry = {
+      ensureEffectsBridge,
+    };
 
     subject.applyEnvironment();
 
-    expect(subject.initializeEffectsBridgeRuntime).toHaveBeenCalledTimes(1);
+    expect(ensureEffectsBridge).toHaveBeenCalledTimes(1);
     expect(applyEnvironment).toHaveBeenCalledTimes(1);
   });
 });
