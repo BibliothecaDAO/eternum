@@ -28,14 +28,12 @@ import { createRendererInteractionRuntime, type RendererInteractionRuntime } fro
 import { createRendererLabelRuntime, type RendererLabelRuntime } from "./renderer-label-runtime";
 import { createRendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import { createRendererRouteRuntime } from "./renderer-route-runtime";
+import { createRendererRuntimeAssembly } from "./renderer-runtime-assembly";
 import { bootstrapRendererSceneRuntime, createGameRendererSceneRegistry } from "./renderer-scene-bootstrap";
 import { destroyRendererRuntime } from "./renderer-destroy-runtime";
-import { createRendererSessionRuntime, type RendererSessionRuntime } from "./renderer-session-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
-import {
-  createRendererSupportRuntimeRegistry,
-  type RendererSupportRuntimeRegistry,
-} from "./renderer-support-runtime-registry";
+import type { RendererSessionRuntime } from "./renderer-session-runtime";
+import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
 import type { RendererBackendV2 } from "./renderer-backend-v2";
 import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
 import type { SceneManager } from "@/three/scene-manager";
@@ -82,7 +80,8 @@ export default class GameRenderer {
     this.graphicsSetting = GRAPHICS_SETTING;
     this.dojo = dojoContext;
 
-    this.supportRuntimeRegistry = createRendererSupportRuntimeRegistry({
+    const runtimeAssembly = createRendererRuntimeAssembly({
+      addWindowListener: (type, listener) => window.addEventListener(type, listener),
       createControlBridgeRuntime: () =>
         createRendererControlBridgeRuntime({
           changeCameraView: (view) => this.worldmapScene.changeCameraView(view),
@@ -138,15 +137,11 @@ export default class GameRenderer {
           moveCameraForScene: () => this.sceneManager.moveCameraForScene(),
           switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
         }),
-    });
-    this.sessionRuntime = createRendererSessionRuntime({
-      addWindowListener: (type, listener) => window.addEventListener(type, listener),
       createHudScene: () => new HUDScene(this.sceneManager, this.controls),
-      ensureMonitoring: () => this.supportRuntimeRegistry.ensureMonitoring(),
-      ensureRoute: () => this.supportRuntimeRegistry.ensureRoute(),
-      getMonitoring: () => this.supportRuntimeRegistry.getMonitoring(),
       windowResizeListener: this.handleWindowResize,
     });
+    this.supportRuntimeRegistry = runtimeAssembly.supportRuntimeRegistry;
+    this.sessionRuntime = runtimeAssembly.sessionRuntime;
     this.backendInitializationPromise = this.initializeRendererBackend();
     this.initializeInteractionRuntime();
     this.initializeLabelRuntime();
