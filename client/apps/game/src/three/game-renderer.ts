@@ -12,19 +12,14 @@ import { SetupResult } from "@bibliothecadao/dojo";
 import { type Camera, type Object3D, type Object3DEventMap } from "three";
 import { env } from "../../env";
 import { SceneName } from "./types";
-import {
-  setRendererDiagnosticCapabilities,
-  setRendererDiagnosticDegradations,
-  syncRendererBackendDiagnostics,
-} from "./renderer-diagnostics";
-import { disposeRendererBackend, resizeRendererBackend } from "./renderer-backend-compat";
-import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
+import { resizeRendererBackend } from "./renderer-backend-compat";
 import { transitionDB } from "./utils/";
-import { disposeContactShadowResources, getContactShadowResources } from "./utils/contact-shadow";
-import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
+import { getContactShadowResources } from "./utils/contact-shadow";
+import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { setupRendererDevGui } from "./renderer-dev-gui-runtime";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
-import { createWebGLRendererBackend, type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
+import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
+import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
 import { createRendererEffectsRuntime, type RendererEffectsRuntime } from "./renderer-effects-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
 import { createRendererInteractionRuntime, type RendererInteractionRuntime } from "./renderer-interaction-runtime";
@@ -32,8 +27,8 @@ import { createRendererLabelRuntime, type RendererLabelRuntime } from "./rendere
 import { createRendererMonitoringRuntime, type RendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import { createRendererRouteRuntime, type RendererRouteRuntime } from "./renderer-route-runtime";
 import { bootstrapRendererSceneRuntime, createRendererSceneRegistry } from "./renderer-scene-bootstrap";
+import { destroyRendererRuntime } from "./renderer-destroy-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
-import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import type { RendererBackendV2 } from "./renderer-backend-v2";
 import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
 
@@ -187,61 +182,16 @@ export default class GameRenderer {
   }
 
   private async initializeRendererBackend(backendFactory?: RendererBackendFactory): Promise<void> {
-    if (backendFactory) {
-      this.backend = backendFactory({
-        graphicsSetting: this.graphicsSetting,
-        isMobileDevice: this.isMobileDevice,
-        pixelRatio: this.getTargetPixelRatio(),
-      });
-      this.renderer = this.backend.renderer;
-      const diagnostics = await this.backend.initialize();
-      syncRendererBackendDiagnostics(diagnostics);
-      setRendererDiagnosticCapabilities(this.backend.capabilities);
-      setRendererDiagnosticDegradations([]);
-      return;
-    }
-
-    const pixelRatio = this.getTargetPixelRatio();
-    const result = await initializeSelectedRendererBackend({
-      experimentalFactory: async ({ requestedMode }) => {
-        const backend = createWebGPURendererBackend({
-          graphicsSetting: this.graphicsSetting,
-          isMobileDevice: this.isMobileDevice,
-          pixelRatio,
-          requestedMode,
-        });
-        const diagnostics = await backend.initialize();
-
-        return {
-          backend,
-          diagnostics,
-        };
-      },
-      legacyFactory: async () => {
-        const backend = createWebGLRendererBackend({
-          graphicsSetting: this.graphicsSetting,
-          isMobileDevice: this.isMobileDevice,
-          pixelRatio,
-        });
-        const diagnostics = await backend.initialize();
-
-        return {
-          backend,
-          diagnostics,
-        };
-      },
-      options: {
-        envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-        graphicsSetting: this.graphicsSetting,
-        isMobileDevice: this.isMobileDevice,
-        pixelRatio,
-        search: window.location.search,
-      },
+    const { backend, renderer } = await initializeRendererBackendRuntime({
+      backendFactory,
+      envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+      graphicsSetting: this.graphicsSetting,
+      isMobileDevice: this.isMobileDevice,
+      pixelRatio: this.getTargetPixelRatio(),
+      search: window.location.search,
     });
-
-    const backend = result.backend as RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
-    this.backend = backend;
-    this.renderer = backend.renderer;
+    this.backend = backend as RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+    this.renderer = renderer;
   }
 
   initStats() {
@@ -567,81 +517,33 @@ export default class GameRenderer {
     this.isDestroyed = true;
 
     try {
-      if (this.unsubscribeQualityController) {
-        this.unsubscribeQualityController();
-        this.unsubscribeQualityController = undefined;
-      }
-
-      // Clean up intervals
-      if (this.cleanupIntervals) {
-        this.cleanupIntervals.forEach((interval) => clearInterval(interval));
-        this.cleanupIntervals = [];
-      }
-
-      // Clean up renderer resources
-      if (this.renderer?.domElement && this.renderer.domElement.parentElement) {
-        this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
-      }
-      if (this.backend) {
-        disposeRendererBackend(this.backend);
-      }
-
-      // Clean up scenes
-      if (this.worldmapScene && typeof this.worldmapScene.destroy === "function") {
-        this.worldmapScene.destroy();
-      }
-      if (this.fastTravelScene && typeof this.fastTravelScene.destroy === "function") {
-        this.fastTravelScene.destroy();
-      }
-      if (this.hexceptionScene && typeof this.hexceptionScene.destroy === "function") {
-        this.hexceptionScene.destroy();
-      }
-      if (this.hudScene && typeof this.hudScene.destroy === "function") {
-        this.hudScene.destroy();
-      }
-
-      this.disposeInteractionRuntime();
-
-      if (this.transitionManager && typeof this.transitionManager.destroy === "function") {
-        this.transitionManager.destroy();
-      }
-
-      destroyTrackedGuiFolders(this.guiFolders ?? []);
-
-      // Remove event listeners
-      window.removeEventListener("resize", this.handleWindowResize);
-
-      this.disposeLabelRuntime();
-      this.disposeMonitoringRuntime();
-      this.disposeRouteRuntime();
-
-      disposeContactShadowResources();
+      destroyRendererRuntime({
+        backend: this.backend,
+        cleanupIntervals: this.cleanupIntervals,
+        controls: this.controls,
+        guiFolders: this.guiFolders ?? [],
+        handleWindowResize: this.handleWindowResize,
+        interactionRuntime: this.interactionRuntime,
+        labelRuntime: this.labelRuntime,
+        monitoringRuntime: this.monitoringRuntime,
+        removeWindowListener: (type, listener) => window.removeEventListener(type, listener),
+        renderer: this.renderer,
+        routeRuntime: this.routeRuntime,
+        scenes: {
+          fastTravelScene: this.fastTravelScene,
+          hexceptionScene: this.hexceptionScene,
+          hudScene: this.hudScene,
+          worldmapScene: this.worldmapScene,
+        },
+        transitionManager: this.transitionManager,
+        unsubscribeQualityController: this.unsubscribeQualityController,
+      });
+      this.unsubscribeQualityController = undefined;
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");
     } catch (error) {
       console.error("Error during GameRenderer cleanup:", error);
     }
-  }
-
-  private disposeInteractionRuntime() {
-    if (this.interactionRuntime) {
-      this.interactionRuntime.dispose();
-      return;
-    }
-
-    this.controls?.dispose();
-  }
-
-  private disposeLabelRuntime() {
-    this.labelRuntime?.dispose();
-  }
-
-  private disposeMonitoringRuntime() {
-    this.monitoringRuntime?.dispose();
-  }
-
-  private disposeRouteRuntime() {
-    this.routeRuntime?.dispose();
   }
 
   private subscribeToQualityController(): void {

@@ -257,6 +257,12 @@ vi.mock("@/three/scenes/hexagon-scene", () => ({
   },
 }));
 
+const destroyRendererRuntime = vi.fn();
+
+vi.mock("./renderer-destroy-runtime", () => ({
+  destroyRendererRuntime,
+}));
+
 const { default: GameRenderer } = await import("./game-renderer");
 
 function createGameRendererSubject() {
@@ -325,28 +331,31 @@ describe("GameRenderer destroy lifecycle", () => {
 
   it("cleans timers, listeners, scenes, and DOM resources on destroy", () => {
     const fixture = createGameRendererSubject();
-    const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
-    const removeWindowListenerSpy = vi.spyOn(window, "removeEventListener");
 
     fixture.subject.destroy();
 
     expect(fixture.subject.isDestroyed).toBe(true);
-    expect(fixture.unsubscribeQualityController).toHaveBeenCalledTimes(1);
-    expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
-    expect(fixture.subject.cleanupIntervals).toEqual([]);
-    expect(fixture.rendererDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.worldmapDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.hexceptionDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.interactionRuntimeDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.monitoringRuntimeDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.routeRuntimeDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.envDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.canvas.isConnected).toBe(false);
-
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith("resize", fixture.subject.handleWindowResize);
-
-    expect(fixture.subject.labelRuntime.dispose).toHaveBeenCalledTimes(1);
+    expect(destroyRendererRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({
+        backend: fixture.subject.backend,
+        cleanupIntervals: fixture.subject.cleanupIntervals,
+        guiFolders: fixture.subject.guiFolders,
+        handleWindowResize: fixture.subject.handleWindowResize,
+        interactionRuntime: fixture.subject.interactionRuntime,
+        labelRuntime: fixture.subject.labelRuntime,
+        monitoringRuntime: fixture.subject.monitoringRuntime,
+        renderer: fixture.subject.renderer,
+        routeRuntime: fixture.subject.routeRuntime,
+        scenes: {
+          fastTravelScene: fixture.subject.fastTravelScene,
+          hexceptionScene: fixture.subject.hexceptionScene,
+          hudScene: fixture.subject.hudScene,
+          worldmapScene: fixture.subject.worldmapScene,
+        },
+        transitionManager: fixture.subject.transitionManager,
+        unsubscribeQualityController: fixture.unsubscribeQualityController,
+      }),
+    );
   });
 
   it("is idempotent and skips cleanup work after the first destroy call", () => {
@@ -356,23 +365,21 @@ describe("GameRenderer destroy lifecycle", () => {
     fixture.subject.destroy();
     fixture.subject.destroy();
 
-    expect(fixture.worldmapDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.hexceptionDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.interactionRuntimeDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.monitoringRuntimeDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.routeRuntimeDispose).toHaveBeenCalledTimes(1);
+    expect(destroyRendererRuntime).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("GameRenderer already destroyed, skipping cleanup");
   });
 
   it("cancels transition cleanup during destroy", () => {
     const fixture = createGameRendererSubject();
-    const transitionDestroy = vi.fn();
-    fixture.subject.transitionManager = { destroy: transitionDestroy };
+    fixture.subject.transitionManager = { destroy: vi.fn() };
 
     fixture.subject.destroy();
 
-    expect(transitionDestroy).toHaveBeenCalledTimes(1);
+    expect(destroyRendererRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transitionManager: fixture.subject.transitionManager,
+      }),
+    );
   });
 });
 
