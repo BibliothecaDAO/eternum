@@ -692,9 +692,7 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
                         </div>
                       </div>
                     )}
-                    {!nextTier && playerTier?.name === "Elite" && (
-                      <p className="text-[11px] text-white/25 italic">Peak rank achieved</p>
-                    )}
+                    {!nextTier && playerTier && <p className="text-[11px] text-white/25 italic">Peak rank achieved</p>}
                   </div>
                 ) : (
                   <div className="space-y-1">

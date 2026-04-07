@@ -80,6 +80,13 @@ const allLatestFeatures: LatestFeature[] = [
     type: "fix",
   },
   {
+    date: "2026-04-07",
+    title: "Blitz Rank Refresh",
+    description:
+      "Blitz MMR ranks now use the new Scrapper-to-Storm Lord naming ladder, so leaderboard, profile, and match views all reflect the updated progression language.",
+    type: "improvement",
+  },
+  {
     date: "2026-04-02",
     title: "Unit Command Audio",
     description:
