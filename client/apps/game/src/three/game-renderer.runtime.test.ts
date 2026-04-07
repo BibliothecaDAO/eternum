@@ -141,8 +141,6 @@ describe("GameRenderer runtime harness", () => {
     subject.isMobileDevice = false;
     subject.graphicsSetting = "HIGH";
     subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    subject.postProcessingConfig = undefined;
-    subject.toneMappingEffect = undefined;
 
     subject.onWindowResize();
     subject.applyQualityFeatures({
@@ -156,11 +154,14 @@ describe("GameRenderer runtime harness", () => {
     });
 
     expect(harness.backend.resize).toHaveBeenCalledWith(640, 360);
-    expect(harness.backend.applyQuality).toHaveBeenCalledWith({
-      height: window.innerHeight,
+    expect(subject.effectsRuntime.applyQualityFeatures).toHaveBeenCalledWith({
+      bloom: false,
+      bloomIntensity: 0,
+      chromaticAberration: false,
+      fxaa: false,
       pixelRatio: 1.5,
       shadows: true,
-      width: window.innerWidth,
+      vignette: false,
     });
   });
 

@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ToneMappingMode } from "postprocessing";
-import { resetRendererDiagnostics, snapshotRendererDiagnostics } from "./renderer-diagnostics";
+import { resetRendererDiagnostics } from "./renderer-diagnostics";
 import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
 const initializeSelectedRendererBackendMock = vi.fn();
@@ -198,112 +197,43 @@ describe("GameRenderer backend seam", () => {
   });
 
   it("delegates quality application through the backend", () => {
-    const backend = createFakeBackend();
     const subject = Object.create(GameRenderer.prototype) as any;
-    subject.backend = backend;
-    subject.isMobileDevice = false;
-    subject.graphicsSetting = "HIGH";
-    subject.postProcessingConfig = undefined;
-    subject.toneMappingEffect = undefined;
-    subject.worldmapScene = { applyQualityFeatures: vi.fn() };
-    subject.fastTravelScene = { applyQualityFeatures: vi.fn() };
-    subject.hexceptionScene = { applyQualityFeatures: vi.fn() };
-    subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
+    const applyQualityFeatures = vi.fn();
+    subject.effectsRuntime = { applyQualityFeatures };
 
-    subject.applyQualityFeatures({
-      pixelRatio: 1.5,
-      shadows: true,
-      fxaa: false,
+    const qualityFeatures = {
       bloom: false,
       bloomIntensity: 0,
-      vignette: false,
       chromaticAberration: false,
-    });
-
-    expect(backend.applyQuality).toHaveBeenCalledWith({
-      height: window.innerHeight,
+      fxaa: false,
       pixelRatio: 1.5,
       shadows: true,
-      width: window.innerWidth,
-    });
+      vignette: false,
+    };
+
+    subject.applyQualityFeatures(qualityFeatures);
+
+    expect(applyQualityFeatures).toHaveBeenCalledWith(qualityFeatures);
   });
 
-  it("disables unsupported optional effects before applying the backend plan and reports degradations", () => {
-    const backend = createFakeBackend();
-    backend.capabilities = createRendererBackendCapabilities({
-      supportsEnvironmentIbl: false,
-      supportsToneMappingControl: true,
-    });
-
+  it("delegates quality-driven postprocess updates through the effects runtime", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
-    subject.backend = backend;
-    subject.isMobileDevice = false;
-    subject.graphicsSetting = "HIGH";
-    subject.postProcessingConfig = {
-      bloomIntensity: 0.25,
-      brightness: 0,
-      contrast: 0,
-      hue: 0,
-      saturation: 0.1,
-      toneMapping: {
-        exposure: 0.7,
-        mode: ToneMappingMode.OPTIMIZED_CINEON,
-        whitePoint: 1.2,
-      },
-      vignette: {
-        darkness: 0.9,
-        offset: 0.35,
-      },
-    };
-    subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    subject.resolveRendererToneMappingMode = (GameRenderer.prototype as any).resolveRendererToneMappingMode.bind(
-      subject,
-    );
-    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
+    const applyQualityFeatures = vi.fn();
+    subject.effectsRuntime = { applyQualityFeatures };
 
-    subject.applyQualityFeatures({
-      pixelRatio: 1.5,
-      shadows: true,
-      fxaa: true,
+    const qualityFeatures = {
       bloom: true,
       bloomIntensity: 0.25,
-      vignette: true,
       chromaticAberration: true,
-    });
+      fxaa: true,
+      pixelRatio: 1.5,
+      shadows: true,
+      vignette: true,
+    };
 
-    expect(backend.applyPostProcessPlan).toHaveBeenCalledWith({
-      antiAlias: "fxaa",
-      bloom: {
-        enabled: false,
-        intensity: 0.25,
-      },
-      chromaticAberration: {
-        enabled: false,
-      },
-      colorGrade: {
-        brightness: 0,
-        contrast: 0,
-        hue: 0,
-        saturation: 0,
-      },
-      toneMapping: {
-        exposure: 0.7,
-        mode: "cineon",
-        whitePoint: 1.2,
-      },
-      vignette: {
-        darkness: 0.9,
-        enabled: false,
-        offset: 0.35,
-      },
-    });
-    expect(snapshotRendererDiagnostics().degradations).toEqual([
-      { feature: "colorGrade", reason: "unsupported-backend" },
-      { feature: "bloom", reason: "unsupported-backend" },
-      { feature: "vignette", reason: "unsupported-backend" },
-      { feature: "chromaticAberration", reason: "unsupported-backend" },
-    ]);
+    subject.applyQualityFeatures(qualityFeatures);
+
+    expect(applyQualityFeatures).toHaveBeenCalledWith(qualityFeatures);
   });
 
   it("uses the backend-owned frame pipeline during animate", () => {
@@ -375,48 +305,34 @@ describe("GameRenderer backend seam", () => {
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
   });
 
-  it("applies environment ibl with the graphics-tier intensity when the backend supports it", () => {
-    const backend = createFakeBackend();
+  it("delegates environment application through the effects runtime", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
-    subject.backend = backend;
-    subject.graphicsSetting = "HIGH";
-    subject.worldmapScene = { setEnvironment: vi.fn() };
-    subject.hexceptionScene = { setEnvironment: vi.fn() };
-    subject.fastTravelScene = { setEnvironment: vi.fn() };
+    const applyEnvironment = vi.fn();
+    subject.effectsRuntime = { applyEnvironment };
 
     subject.applyEnvironment();
 
-    expect(backend.applyEnvironment).toHaveBeenCalledWith({
-      fastTravelScene: subject.fastTravelScene,
-      hexceptionScene: subject.hexceptionScene,
-      intensity: 0.55,
-      worldmapScene: subject.worldmapScene,
-    });
-    expect(snapshotRendererDiagnostics().degradations).toEqual([]);
+    expect(applyEnvironment).toHaveBeenCalledTimes(1);
   });
 
-  it("reports explicit fallback lighting when environment ibl is unavailable", () => {
-    const backend = createFakeBackend();
-    backend.capabilities = createRendererBackendCapabilities({
-      supportsToneMappingControl: true,
-    });
-
+  it("initializes the effects runtime on demand for environment application", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
-    subject.backend = backend;
+    const applyEnvironment = vi.fn();
+    subject.backend = createFakeBackend();
     subject.graphicsSetting = "MID";
-    subject.worldmapScene = { setEnvironment: vi.fn() };
-    subject.hexceptionScene = { setEnvironment: vi.fn() };
-    subject.fastTravelScene = { setEnvironment: vi.fn() };
+    subject.isMobileDevice = false;
+    subject.guiFolders = [];
+    subject.worldmapScene = { applyQualityFeatures: vi.fn() };
+    subject.hexceptionScene = { applyQualityFeatures: vi.fn() };
+    subject.fastTravelScene = { applyQualityFeatures: vi.fn() };
+    subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
+    subject.initializeEffectsRuntime = vi.fn(() => {
+      subject.effectsRuntime = { applyEnvironment };
+    });
 
     subject.applyEnvironment();
 
-    expect(backend.applyEnvironment).not.toHaveBeenCalled();
-    expect(snapshotRendererDiagnostics().degradations).toEqual([
-      {
-        detail: "Using scene key/fill fallback lighting policy at target environment intensity 0.45",
-        feature: "environmentIbl",
-        reason: "unsupported-backend",
-      },
-    ]);
+    expect(subject.initializeEffectsRuntime).toHaveBeenCalledTimes(1);
+    expect(applyEnvironment).toHaveBeenCalledTimes(1);
   });
 });
