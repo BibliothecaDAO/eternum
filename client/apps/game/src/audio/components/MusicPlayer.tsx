@@ -28,7 +28,15 @@ export const useMusicPlayer = () => {
   };
 };
 
-export const ScrollingTrackName = ({ trackName, trackArtist }: { trackName: string; trackArtist?: string }) => {
+export const ScrollingTrackName = ({
+  trackName,
+  trackArtist,
+  className,
+}: {
+  trackName: string;
+  trackArtist?: string;
+  className?: string;
+}) => {
   const trackNameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,7 +60,7 @@ export const ScrollingTrackName = ({ trackName, trackArtist }: { trackName: stri
   }, [trackName]);
 
   return (
-    <div className="w-full p-1 overflow-hidden text-xs border border-gold">
+    <div className={className ?? "w-full overflow-hidden border border-gold p-1 text-xs"}>
       <div className="track-name" ref={trackNameRef}>
         {trackName}
         {trackArtist ? ` - ${trackArtist}` : ""}
