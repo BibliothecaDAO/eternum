@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   defineComponentSystemMock,
+  enhanceArmyDataMock,
+  getExplorerInfoFromTileOccupierMock,
+  getBlockTimestampMock,
+  getStaminaManagerGetMaxStaminaMock,
+  getStaminaManagerGetStaminaMock,
   mapDataStoreRefreshMock,
   mapDataStoreGetStructureByIdMock,
   mapDataStoreUpdateStructureGuardsMock,
@@ -16,6 +21,25 @@ const {
   updateStructureOwnerMock,
 } = vi.hoisted(() => ({
   defineComponentSystemMock: vi.fn(),
+  enhanceArmyDataMock: vi.fn(async () => ({
+    troopCount: 0,
+    currentStamina: 0,
+    onChainStamina: undefined,
+    owner: { address: 0n, ownerName: "", guildName: "" },
+    ownerStructureId: null,
+    battleData: undefined,
+  })),
+  getExplorerInfoFromTileOccupierMock: vi.fn(),
+  getBlockTimestampMock: vi.fn(() => ({
+    currentBlockTimestamp: 100,
+    currentDefaultTick: 10,
+    currentArmiesTick: 10,
+  })),
+  getStaminaManagerGetMaxStaminaMock: vi.fn(() => 120),
+  getStaminaManagerGetStaminaMock: vi.fn((troops: { stamina: { amount: bigint; updated_tick: bigint } }) => ({
+    amount: troops.stamina.amount,
+    updated_tick: troops.stamina.updated_tick,
+  })),
   mapDataStoreRefreshMock: vi.fn().mockResolvedValue(undefined),
   mapDataStoreGetStructureByIdMock: vi.fn(),
   mapDataStoreUpdateStructureGuardsMock: vi.fn(),
@@ -69,16 +93,28 @@ vi.mock("../utils", async () => {
 });
 
 vi.mock("./utils", () => ({
-  getExplorerInfoFromTileOccupier: vi.fn(),
+  getExplorerInfoFromTileOccupier: getExplorerInfoFromTileOccupierMock,
   getStructureInfoFromTileOccupier: getStructureInfoFromTileOccupierMock,
 }));
 
 vi.mock("./data-enhancer", () => ({
   DataEnhancer: class {
     constructor(_mapDataStore: unknown) {}
+    enhanceArmyData = enhanceArmyDataMock;
     enhanceStructureData = enhanceStructureDataMock;
     getPlayerName = getPlayerNameMock;
     updateStructureOwner = updateStructureOwnerMock;
+  },
+}));
+
+vi.mock("../utils/timestamp", () => ({
+  getBlockTimestamp: getBlockTimestampMock,
+}));
+
+vi.mock("../managers", () => ({
+  StaminaManager: {
+    getMaxStamina: getStaminaManagerGetMaxStaminaMock,
+    getStamina: getStaminaManagerGetStaminaMock,
   },
 }));
 
@@ -88,6 +124,12 @@ const encodeAddressName = (value: string): bigint => BigInt(`0x${Buffer.from(val
 
 describe("WorldUpdateListener army tile bootstrap", () => {
   beforeEach(() => {
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+    });
     defineComponentSystemMock.mockClear();
     mapDataStoreRefreshMock.mockClear();
     mapDataStoreGetStructureByIdMock.mockReset();
@@ -99,6 +141,31 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     tileOptToTileMock.mockReset();
     getStructureTypeNameMock.mockReset();
     getStructureTypeNameMock.mockReturnValue("Essence Rift");
+    getExplorerInfoFromTileOccupierMock.mockReset();
+    getBlockTimestampMock.mockReset();
+    getBlockTimestampMock.mockReturnValue({
+      currentBlockTimestamp: 100,
+      currentDefaultTick: 10,
+      currentArmiesTick: 10,
+    });
+    getStaminaManagerGetMaxStaminaMock.mockReset();
+    getStaminaManagerGetMaxStaminaMock.mockReturnValue(120);
+    getStaminaManagerGetStaminaMock.mockReset();
+    getStaminaManagerGetStaminaMock.mockImplementation(
+      (troops: { stamina: { amount: bigint; updated_tick: bigint } }) => ({
+        amount: troops.stamina.amount,
+        updated_tick: troops.stamina.updated_tick,
+      }),
+    );
+    enhanceArmyDataMock.mockReset();
+    enhanceArmyDataMock.mockResolvedValue({
+      troopCount: 0,
+      currentStamina: 0,
+      onChainStamina: undefined,
+      owner: { address: 0n, ownerName: "", guildName: "" },
+      ownerStructureId: null,
+      battleData: undefined,
+    });
     getIsBlitzMock.mockReset();
     getIsBlitzMock.mockReturnValue(true);
     getStructureInfoFromTileOccupierMock.mockReset();
@@ -125,6 +192,100 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     expect(defineComponentSystemMock).toHaveBeenCalledTimes(1);
     const options = defineComponentSystemMock.mock.calls[0][3];
     expect(options).toMatchObject({ runOnInit: true });
+  });
+
+  it("subscribes explorer troop updates with runOnInit enabled", () => {
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          ExplorerTroops: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    listener.Army.onExplorerTroopsUpdate(() => {});
+
+    expect(defineComponentSystemMock).toHaveBeenCalledTimes(1);
+    const options = defineComponentSystemMock.mock.calls[0][3];
+    expect(options).toMatchObject({ runOnInit: true });
+  });
+
+  it("uses live explorer troops stamina on tile bootstrap when data enhancer is stale", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockReturnValue({
+      occupier_type: 1,
+      occupier_id: 777,
+      col: 12,
+      row: 34,
+    });
+    getExplorerInfoFromTileOccupierMock.mockReturnValue({
+      troopType: "Knight",
+      troopTier: "T1",
+      isDaydreamsAgent: false,
+    });
+    getComponentValueMock.mockReturnValue({
+      owner: 99,
+      troops: {
+        count: 500n,
+        category: "Knight",
+        tier: "T1",
+        stamina: {
+          amount: 15n,
+          updated_tick: 3n,
+        },
+        boosts: {
+          incr_damage_dealt_percent_num: 0,
+          incr_damage_dealt_end_tick: 0,
+          decr_damage_gotten_percent_num: 0,
+          decr_damage_gotten_end_tick: 0,
+          incr_stamina_regen_percent_num: 0,
+          incr_stamina_regen_tick_count: 0,
+          incr_explore_reward_percent_num: 0,
+          incr_explore_reward_end_tick: 0,
+        },
+        battle_cooldown_end: 0,
+      },
+    });
+    enhanceArmyDataMock.mockResolvedValue({
+      troopCount: 0,
+      currentStamina: 0,
+      onChainStamina: undefined,
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+      ownerStructureId: 99,
+      battleData: undefined,
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          ExplorerTroops: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Army.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({ value: [{ value: "tile" }, undefined] });
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: 777,
+        troopCount: 500,
+        currentStamina: 15,
+        onChainStamina: {
+          amount: 15n,
+          updatedTick: 3,
+        },
+      }),
+    );
   });
 
   it("falls back to type-based structure name when Structure component is unavailable", async () => {
@@ -248,6 +409,9 @@ describe("WorldUpdateListener army tile bootstrap", () => {
         return {
           owner: 123n,
           troop_guards: null,
+          base: {
+            category: 0,
+          },
         };
       }
 

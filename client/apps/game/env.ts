@@ -209,6 +209,12 @@ const envSchema = z.object({
     .default("8000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS"),
+  VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("12000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS"),
   VITE_PUBLIC_WORLDMAP_STREAMING_STAGED: z
     .string()
     .transform((v) => v === "true")
