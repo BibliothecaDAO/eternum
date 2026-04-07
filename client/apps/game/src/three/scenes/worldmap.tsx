@@ -157,6 +157,10 @@ import { hydrateWorldmapChunkRuntime } from "./worldmap-chunk-hydration-runtime"
 import { handleWorldmapChunkFinalizeResult } from "./worldmap-chunk-finalize-runtime";
 import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
 import {
+  recordWorldmapChunkMemoryDelta,
+  resolveWorldmapChunkSwitchAnchorState,
+} from "./worldmap-chunk-success-runtime";
+import {
   commitWorldmapPreparedTerrainPresentation,
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
@@ -6612,11 +6616,20 @@ export default class WorldmapScene extends WarpTravel {
         finalizeStatus: finalizeResult.status,
         managerCatchUpPromise,
         onCommitted: () => {
-          if (switchPosition) {
-            this.lastChunkSwitchPosition = switchPosition;
-            this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
-            this.hasChunkSwitchAnchor = true;
-          }
+          const nextAnchorState = resolveWorldmapChunkSwitchAnchorState({
+            nextMovementVector: reversalRefreshDecision.nextMovementVector,
+            previousAnchorState: {
+              hasChunkSwitchAnchor: this.hasChunkSwitchAnchor,
+              movementVector: this.lastChunkSwitchMovement,
+              switchPosition: this.lastChunkSwitchPosition,
+            },
+            switchPosition,
+          });
+          this.hasChunkSwitchAnchor = nextAnchorState.hasChunkSwitchAnchor;
+          this.lastChunkSwitchMovement = nextAnchorState.movementVector;
+          this.lastChunkSwitchPosition = nextAnchorState.switchPosition
+            ? new Vector3(nextAnchorState.switchPosition.x, 0, nextAnchorState.switchPosition.z)
+            : undefined;
         },
         recordChunkDiagnosticsEvent,
       });
@@ -6628,11 +6641,12 @@ export default class WorldmapScene extends WarpTravel {
       // Track memory usage after chunk switch
       if (memoryMonitor) {
         const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
-        if (preChunkStats && postChunkStats) {
-          const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-          // Memory monitoring hooks - intentionally silent unless threshold exceeded
-          void memoryDelta;
-        }
+        const memoryDelta = recordWorldmapChunkMemoryDelta({
+          postChunkStats,
+          preChunkStats,
+        });
+        // Memory monitoring hooks - intentionally silent unless threshold exceeded
+        void memoryDelta;
       }
     } finally {
       recordWorldmapRenderDuration("performChunkSwitch", performance.now() - chunkSwitchStartedAt);
@@ -6734,11 +6748,12 @@ export default class WorldmapScene extends WarpTravel {
 
     if (memoryMonitor) {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
-      if (preChunkStats && postChunkStats) {
-        const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        // Memory monitoring hooks - intentionally silent unless threshold exceeded
-        void memoryDelta;
-      }
+      const memoryDelta = recordWorldmapChunkMemoryDelta({
+        postChunkStats,
+        preChunkStats,
+      });
+      // Memory monitoring hooks - intentionally silent unless threshold exceeded
+      void memoryDelta;
     }
   }
 
