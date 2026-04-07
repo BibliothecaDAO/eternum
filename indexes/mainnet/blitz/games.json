@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-07T23:28:50.000Z",
+  "updatedAt": "2026-04-07T23:29:12.043Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -74,16 +74,19 @@
       "path": "runs/mainnet/blitz/bltz-clash-563.json",
       "inputPath": "inputs/mainnet/blitz/bltz-clash-563/24109283215-1.json",
       "status": "running",
-      "updatedAt": "2026-04-07T23:28:50.000Z",
+      "updatedAt": "2026-04-07T23:29:12.043Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-04-08T00:13:50.000Z",
-      "hasRunningStep": true,
+      "currentStepId": "sync-paymaster",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "sync-paymaster",
       "startTime": 1775608200,
       "durationSeconds": 3600,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-04-07T23:29:10.203Z"
+      }
     }
   }
 }
