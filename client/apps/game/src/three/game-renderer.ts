@@ -23,9 +23,10 @@ import { qualityController, type QualityFeatures } from "./utils/quality-control
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
 import { createRendererEffectsRuntime } from "./renderer-effects-runtime";
+import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
-import { createRendererInteractionRuntime, type RendererInteractionRuntime } from "./renderer-interaction-runtime";
-import { createRendererLabelRuntime, type RendererLabelRuntime } from "./renderer-label-runtime";
+import type { RendererInteractionRuntime } from "./renderer-interaction-runtime";
+import type { RendererLabelRuntime } from "./renderer-label-runtime";
 import { createRendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import { createRendererRouteRuntime } from "./renderer-route-runtime";
 import { createRendererRuntimeAssembly } from "./renderer-runtime-assembly";
@@ -143,28 +144,23 @@ export default class GameRenderer {
     this.supportRuntimeRegistry = runtimeAssembly.supportRuntimeRegistry;
     this.sessionRuntime = runtimeAssembly.sessionRuntime;
     this.backendInitializationPromise = this.initializeRendererBackend();
-    this.initializeInteractionRuntime();
-    this.initializeLabelRuntime();
+    this.initializeFoundationRuntime();
   }
 
-  private initializeInteractionRuntime() {
-    this.interactionRuntime = createRendererInteractionRuntime({
+  private initializeFoundationRuntime() {
+    const foundationRuntime = createRendererFoundationRuntime({
       graphicsSetting: this.graphicsSetting,
+      isMobileDevice: this.isMobileDevice,
       onControlsChange: () => this.supportRuntimeRegistry.getControlBridge().handleInteractionChange(),
       resolveCurrentSceneName: () => this.sceneManager?.getCurrentScene(),
+      warn: (message, error) => console.warn(message, error),
     });
-    this.camera = this.interactionRuntime.camera;
-    this.raycaster = this.interactionRuntime.raycaster;
-    this.mouse = this.interactionRuntime.pointer;
-  }
 
-  private initializeLabelRuntime() {
-    this.labelRuntime = createRendererLabelRuntime({
-      isMobileDevice: this.isMobileDevice,
-    });
-    this.labelRuntime.initialize().catch((error) => {
-      console.warn("GameRenderer: Failed to initialize label renderer:", error);
-    });
+    this.interactionRuntime = foundationRuntime.interactionRuntime;
+    this.labelRuntime = foundationRuntime.labelRuntime;
+    this.camera = foundationRuntime.camera;
+    this.raycaster = foundationRuntime.raycaster;
+    this.mouse = foundationRuntime.pointer;
   }
 
   private isFastTravelEnabled(): boolean {
@@ -233,7 +229,7 @@ export default class GameRenderer {
 
   private attachInteractionRuntime() {
     if (!this.interactionRuntime) {
-      this.initializeInteractionRuntime();
+      this.initializeFoundationRuntime();
     }
 
     this.interactionRuntime.attachSurface(this.renderer.domElement);
