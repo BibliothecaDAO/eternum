@@ -80,20 +80,23 @@ interface CreateRendererSceneRegistryInput<
 
 interface BootstrapRendererSceneRuntimeInput<
   TSceneManager extends Pick<SceneManagerLike<unknown>, "moveCameraForScene">,
+  TEffectsBridgeRuntime extends {
+    applyEnvironment(): void;
+    applyQualityFeatures(features: TQualityFeatures): void;
+    setupPostProcessingEffects(): void;
+    subscribeToQualityController(): void;
+  },
   THexceptionScene extends PrewarmableScene,
   TWorldmapScene extends PrewarmableScene,
   TFastTravelScene extends PrewarmableScene,
   TQualityFeatures,
 > {
-  applyEnvironment: () => void;
-  applyQualityFeatures: (features: TQualityFeatures) => void;
+  effectsBridgeRuntime: TEffectsBridgeRuntime;
   fastTravelScene?: TFastTravelScene;
   hexceptionScene: THexceptionScene;
   qualityFeatures: TQualityFeatures;
   requestScenePrewarm: (scene: PrewarmableScene | undefined) => void;
   sceneManager: TSceneManager;
-  setupPostProcessingEffects: () => void;
-  subscribeToQualityController: () => void;
   worldmapScene: TWorldmapScene;
 }
 
@@ -192,6 +195,12 @@ export function createGameRendererSceneRegistry(input: {
 
 export function bootstrapRendererSceneRuntime<
   TSceneManager extends Pick<SceneManagerLike<unknown>, "moveCameraForScene">,
+  TEffectsBridgeRuntime extends {
+    applyEnvironment(): void;
+    applyQualityFeatures(features: TQualityFeatures): void;
+    setupPostProcessingEffects(): void;
+    subscribeToQualityController(): void;
+  },
   THexceptionScene extends PrewarmableScene,
   TWorldmapScene extends PrewarmableScene,
   TFastTravelScene extends PrewarmableScene,
@@ -199,6 +208,7 @@ export function bootstrapRendererSceneRuntime<
 >(
   input: BootstrapRendererSceneRuntimeInput<
     TSceneManager,
+    TEffectsBridgeRuntime,
     THexceptionScene,
     TWorldmapScene,
     TFastTravelScene,
@@ -208,11 +218,11 @@ export function bootstrapRendererSceneRuntime<
   input.requestScenePrewarm(input.worldmapScene);
   input.requestScenePrewarm(input.hexceptionScene);
   input.requestScenePrewarm(input.fastTravelScene);
-  input.applyEnvironment();
-  input.setupPostProcessingEffects();
+  input.effectsBridgeRuntime.applyEnvironment();
+  input.effectsBridgeRuntime.setupPostProcessingEffects();
   input.sceneManager.moveCameraForScene();
-  input.applyQualityFeatures(input.qualityFeatures);
-  input.subscribeToQualityController();
+  input.effectsBridgeRuntime.applyQualityFeatures(input.qualityFeatures);
+  input.effectsBridgeRuntime.subscribeToQualityController();
 }
 
 function attachRendererSceneToSurface(scene: SceneInputSurfaceOwner, inputSurface: HTMLElement): void {

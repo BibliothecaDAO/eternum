@@ -60,6 +60,9 @@ describe("runRendererFrame", () => {
       render: vi.fn(),
       shouldRender: vi.fn(() => false),
     };
+    const effectsBridgeRuntime = {
+      updateWeatherPostProcessing: vi.fn(),
+    };
 
     const rendered = runRendererFrame({
       backend: backend as never,
@@ -73,7 +76,7 @@ describe("runRendererFrame", () => {
       hexceptionScene: hexceptionScene as never,
       hudScene: hudScene as never,
       labelRuntime: labelRuntime as never,
-      updateWeatherPostProcessing: vi.fn(),
+      effectsBridgeRuntime,
       worldmapScene: worldmapScene as never,
     });
 
@@ -96,7 +99,9 @@ describe("runRendererFrame", () => {
       shouldRender: vi.fn(() => true),
     };
     const captureStatsSample = vi.fn();
-    const updateWeatherPostProcessing = vi.fn();
+    const effectsBridgeRuntime = {
+      updateWeatherPostProcessing: vi.fn(),
+    };
 
     const rendered = runRendererFrame({
       backend: backend as never,
@@ -110,7 +115,7 @@ describe("runRendererFrame", () => {
       hexceptionScene: hexceptionScene as never,
       hudScene: hudScene as never,
       labelRuntime: labelRuntime as never,
-      updateWeatherPostProcessing,
+      effectsBridgeRuntime,
       worldmapScene: worldmapScene as never,
     });
 
@@ -140,7 +145,7 @@ describe("runRendererFrame", () => {
       sceneName: SceneName.WorldMap,
     });
     expect(labelRuntime.render).toHaveBeenNthCalledWith(2, "hud-scene", "hud-camera");
-    expect(updateWeatherPostProcessing).toHaveBeenCalledTimes(1);
+    expect(effectsBridgeRuntime.updateWeatherPostProcessing).toHaveBeenCalledTimes(1);
     expect(captureStatsSample).toHaveBeenCalledTimes(1);
     expect(snapshotRendererDiagnostics().sceneName).toBe(SceneName.WorldMap);
   });
@@ -156,6 +161,9 @@ describe("runRendererFrame", () => {
       render: vi.fn(),
       shouldRender: vi.fn(() => false),
     };
+    const effectsBridgeRuntime = {
+      updateWeatherPostProcessing: vi.fn(),
+    };
 
     runRendererFrame({
       backend: backend as never,
@@ -169,7 +177,7 @@ describe("runRendererFrame", () => {
       hexceptionScene: hexceptionScene as never,
       hudScene: hudScene as never,
       labelRuntime: labelRuntime as never,
-      updateWeatherPostProcessing: vi.fn(),
+      effectsBridgeRuntime,
       worldmapScene: worldmapScene as never,
     });
 

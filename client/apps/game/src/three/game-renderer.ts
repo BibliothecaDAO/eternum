@@ -30,7 +30,7 @@ import type { RendererLabelRuntime } from "./renderer-label-runtime";
 import { createRendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import { createRendererRouteRuntime } from "./renderer-route-runtime";
 import { createRendererRuntimeAssembly } from "./renderer-runtime-assembly";
-import { bootstrapRendererSceneRuntime, createGameRendererSceneRegistry } from "./renderer-scene-bootstrap";
+import { prepareGameRendererScenes } from "./renderer-scene-orchestration";
 import { destroyRendererRuntime } from "./renderer-destroy-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
@@ -241,30 +241,19 @@ export default class GameRenderer {
   }
 
   async prepareScenes() {
-    this.assignRendererSceneRegistry(
-      createGameRendererSceneRegistry({
-        controls: this.controls,
-        dojo: this.dojo,
-        fastTravelEnabled: this.isFastTravelEnabled(),
-        inputSurface: this.renderer.domElement,
-        mouse: this.mouse,
-        raycaster: this.raycaster,
-      }),
-    );
-    this.supportRuntimeRegistry.ensureEffectsBridge();
-    bootstrapRendererSceneRuntime({
-      applyEnvironment: () => this.applyEnvironment(),
-      applyQualityFeatures: (features) => this.applyQualityFeatures(features),
-      fastTravelScene: this.fastTravelScene,
-      hexceptionScene: this.hexceptionScene,
+    prepareGameRendererScenes({
+      applySceneRegistry: (registry) => this.assignRendererSceneRegistry(registry),
+      controls: this.controls,
+      dojo: this.dojo,
+      effectsBridgeRuntime: this.supportRuntimeRegistry.ensureEffectsBridge(),
+      fastTravelEnabled: this.isFastTravelEnabled(),
+      inputSurface: this.renderer.domElement,
+      mouse: this.mouse,
       qualityFeatures: qualityController.getFeatures(),
+      raycaster: this.raycaster,
       requestScenePrewarm: (scene) => {
         void this.requestScenePrewarm(scene);
       },
-      sceneManager: this.sceneManager,
-      setupPostProcessingEffects: () => this.setupPostProcessingEffects(),
-      subscribeToQualityController: () => this.subscribeToQualityController(),
-      worldmapScene: this.worldmapScene,
     });
   }
 
@@ -282,12 +271,12 @@ export default class GameRenderer {
     this.fastTravelScene = input.fastTravelScene;
   }
 
-  private setupPostProcessingEffects() {
-    this.supportRuntimeRegistry.ensureEffectsBridge().setupPostProcessingEffects();
-  }
-
   applyEnvironment() {
     this.supportRuntimeRegistry.ensureEffectsBridge().applyEnvironment();
+  }
+
+  private applyQualityFeatures(features: QualityFeatures): void {
+    this.supportRuntimeRegistry.ensureEffectsBridge().applyQualityFeatures(features);
   }
 
   private getTargetPixelRatio() {
@@ -344,18 +333,6 @@ export default class GameRenderer {
     });
   }
 
-  /**
-   * Update post-processing effects based on weather state
-   * Weather modulates saturation, contrast, and vignette for atmospheric mood
-   *
-   * Clear: Normal values
-   * Rain: Slightly desaturated, lower contrast
-   * Storm: More desaturated, higher contrast, stronger vignette
-   */
-  private updateWeatherPostProcessing(): void {
-    this.supportRuntimeRegistry.getEffectsBridge()?.updateWeatherPostProcessing();
-  }
-
   animate() {
     this.lastTime = runRendererAnimationTick({
       getCurrentTime: () => performance.now(),
@@ -377,7 +354,7 @@ export default class GameRenderer {
           hexceptionScene: this.hexceptionScene,
           hudScene: this.hudScene,
           labelRuntime: this.labelRuntime,
-          updateWeatherPostProcessing: () => this.updateWeatherPostProcessing(),
+          effectsBridgeRuntime: this.supportRuntimeRegistry.getEffectsBridge(),
           worldmapScene: this.worldmapScene,
         }),
       requestNextFrame: () =>
@@ -430,14 +407,6 @@ export default class GameRenderer {
     } catch (error) {
       console.error("Error during GameRenderer cleanup:", error);
     }
-  }
-
-  private subscribeToQualityController(): void {
-    this.supportRuntimeRegistry.ensureEffectsBridge().subscribeToQualityController();
-  }
-
-  private applyQualityFeatures(features: QualityFeatures): void {
-    this.supportRuntimeRegistry.ensureEffectsBridge().applyQualityFeatures(features);
   }
 
   private async requestScenePrewarm(

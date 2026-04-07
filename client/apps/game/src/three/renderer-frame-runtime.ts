@@ -41,11 +41,11 @@ interface RunRendererFrameInput {
   currentTime: number;
   cycleProgress: number;
   deltaTime: number;
+  effectsBridgeRuntime?: Pick<{ updateWeatherPostProcessing(): void }, "updateWeatherPostProcessing">;
   fastTravelScene?: RendererFrameSceneController;
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
   labelRuntime: Pick<RendererLabelRuntime, "render" | "shouldRender">;
-  updateWeatherPostProcessing: () => void;
   worldmapScene: RendererFrameSceneController;
 }
 
@@ -86,7 +86,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     resolvedFrame,
     shouldRenderLabels,
   });
-  input.updateWeatherPostProcessing();
+  input.effectsBridgeRuntime?.updateWeatherPostProcessing();
   input.captureStatsSample();
 
   return true;

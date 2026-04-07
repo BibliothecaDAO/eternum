@@ -126,10 +126,12 @@ describe("createGameRendererSceneRegistry", () => {
 describe("bootstrapRendererSceneRuntime", () => {
   it("prewarms scenes and applies environment, postprocess, and quality policies in order", async () => {
     const requestScenePrewarm = vi.fn();
-    const applyEnvironment = vi.fn();
-    const setupPostProcessingEffects = vi.fn();
-    const applyQualityFeatures = vi.fn();
-    const subscribeToQualityController = vi.fn();
+    const effectsBridgeRuntime = {
+      applyEnvironment: vi.fn(),
+      applyQualityFeatures: vi.fn(),
+      setupPostProcessingEffects: vi.fn(),
+      subscribeToQualityController: vi.fn(),
+    };
     const sceneManager = { moveCameraForScene: vi.fn() };
     const qualityFeatures = {
       bloom: true,
@@ -142,25 +144,22 @@ describe("bootstrapRendererSceneRuntime", () => {
     };
 
     bootstrapRendererSceneRuntime({
-      applyEnvironment,
-      applyQualityFeatures,
+      effectsBridgeRuntime,
       fastTravelScene: { id: "travel" } as never,
       hexceptionScene: { id: "hex" } as never,
       qualityFeatures,
       requestScenePrewarm,
       sceneManager: sceneManager as never,
-      setupPostProcessingEffects,
-      subscribeToQualityController,
       worldmapScene: { id: "map" } as never,
     });
 
     expect(requestScenePrewarm).toHaveBeenNthCalledWith(1, { id: "map" });
     expect(requestScenePrewarm).toHaveBeenNthCalledWith(2, { id: "hex" });
     expect(requestScenePrewarm).toHaveBeenNthCalledWith(3, { id: "travel" });
-    expect(applyEnvironment).toHaveBeenCalledTimes(1);
-    expect(setupPostProcessingEffects).toHaveBeenCalledTimes(1);
+    expect(effectsBridgeRuntime.applyEnvironment).toHaveBeenCalledTimes(1);
+    expect(effectsBridgeRuntime.setupPostProcessingEffects).toHaveBeenCalledTimes(1);
     expect(sceneManager.moveCameraForScene).toHaveBeenCalledTimes(1);
-    expect(applyQualityFeatures).toHaveBeenCalledWith(qualityFeatures);
-    expect(subscribeToQualityController).toHaveBeenCalledTimes(1);
+    expect(effectsBridgeRuntime.applyQualityFeatures).toHaveBeenCalledWith(qualityFeatures);
+    expect(effectsBridgeRuntime.subscribeToQualityController).toHaveBeenCalledTimes(1);
   });
 });
