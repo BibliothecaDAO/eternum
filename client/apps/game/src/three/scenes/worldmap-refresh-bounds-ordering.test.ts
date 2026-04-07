@@ -19,7 +19,7 @@ describe("worldmap refresh bounds ordering", () => {
     const methodSource = extractRefreshCurrentChunkMethod(readWorldmapSource());
 
     const hydrateIndex = methodSource.indexOf(
-      "const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({",
+      "const { tileFetchSucceeded, preparedTerrain, presentationRuntime } = await hydrateWorldmapChunkRuntime({",
     );
     const commitRuntimeIndex = methodSource.indexOf("commitWorldmapPreparedTerrainPresentation({");
     const updateBoundsIndex = methodSource.indexOf("this.updateCurrentChunkBounds(startRow, startCol);");

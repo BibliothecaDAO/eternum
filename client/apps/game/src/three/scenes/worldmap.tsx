@@ -153,7 +153,7 @@ import {
   enqueueWorldmapPostCommitManagerCatchUpTask,
   scheduleWorldmapPostCommitManagerCatchUpDrain,
 } from "./worldmap-post-commit-manager-catchup-runtime";
-import { createWorldmapChunkPresentationRuntime } from "./worldmap-chunk-presentation-runtime";
+import { hydrateWorldmapChunkRuntime } from "./worldmap-chunk-hydration-runtime";
 import {
   commitWorldmapPreparedTerrainPresentation,
   recordWorldmapTerrainReadyDuration,
@@ -279,7 +279,6 @@ import {
   evaluateTileFetchVolumeRegression,
   type TileFetchVolumeRegressionResult,
 } from "./worldmap-tile-fetch-volume-regression";
-import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { prepareWarpTravelChunkBounds } from "./warp-travel-chunk-bounds-preparation";
 import { resolveWarpTravelDirectionalPrefetchPlan } from "./warp-travel-directional-prefetch";
 import { drainWarpTravelPrefetchQueue } from "./warp-travel-prefetch-drain";
@@ -287,11 +286,7 @@ import { enqueueWarpTravelPrefetch } from "./warp-travel-prefetch-enqueue";
 import { resolveWarpTravelVisibleChunkDecision } from "./warp-travel-chunk-runtime";
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
-import {
-  deferWarpTravelManagerFanout,
-  drainMultiBudgetedDeferredManagerCatchUpQueue,
-  runWarpTravelManagerFanout,
-} from "./warp-travel-manager-fanout";
+import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
 import {
@@ -6517,42 +6512,31 @@ export default class WorldmapScene extends WarpTravel {
         this.removeCachedMatricesForChunk(startRow, startCol);
       }
 
-      const presentationRuntime = createWorldmapChunkPresentationRuntime({
+      const { tileFetchSucceeded, preparedTerrain, presentationRuntime } = await hydrateWorldmapChunkRuntime({
+        chunkKey,
+        computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
+        diagnostics: this.chunkDiagnostics,
         now: () => performance.now(),
         onChunkHydrated: (hydratedChunkKey) => {
           this.hydratedChunkRefreshes.delete(hydratedChunkKey);
         },
+        onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info as never),
+        phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
         prewarmChunkAssets: (targetChunkKey) => this.structureManager.prewarmChunkAssets(targetChunkKey),
         prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
           this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
-        recordDuration: (metric, durationMs) => {
-          recordWorldmapRenderDuration(metric, durationMs);
-        },
-        recordTileHydrationDrainCompleted: () => {
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
-        },
-        waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
-        waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
-      });
-
-      const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
-        chunkKey,
-        startRow,
+        recordChunkDiagnosticsEvent,
+        recordWorldmapRenderDuration,
+        renderSize: this.renderChunkSize,
         startCol,
+        startRow,
         surroundingChunks,
         transitionToken,
-        renderSize: this.renderChunkSize,
-        computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
           this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-        waitForTileHydrationIdle: presentationRuntime.waitForTileHydrationIdle,
-        waitForStructureHydrationIdle: presentationRuntime.waitForStructureHydrationIdle,
-        prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
-        prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
-        onChunkHydrated: presentationRuntime.onChunkHydrated,
-        phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
-        onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
+        waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
+        waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
       });
 
       if (tileFetchSucceeded && preparedTerrain) {
@@ -6671,42 +6655,31 @@ export default class WorldmapScene extends WarpTravel {
 
     try {
       const refreshStartedAt = performance.now();
-      const presentationRuntime = createWorldmapChunkPresentationRuntime({
+      const { tileFetchSucceeded, preparedTerrain, presentationRuntime } = await hydrateWorldmapChunkRuntime({
+        chunkKey,
+        computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
+        diagnostics: this.chunkDiagnostics,
         now: () => performance.now(),
         onChunkHydrated: (hydratedChunkKey) => {
           this.hydratedChunkRefreshes.delete(hydratedChunkKey);
         },
+        onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info as never),
+        phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
         prewarmChunkAssets: (targetChunkKey) => this.structureManager.prewarmChunkAssets(targetChunkKey),
         prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
           this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
-        recordDuration: (metric, durationMs) => {
-          recordWorldmapRenderDuration(metric, durationMs);
-        },
-        recordTileHydrationDrainCompleted: () => {
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_hydration_drain_completed");
-        },
-        waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
-        waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
-      });
-
-      const { tileFetchSucceeded, preparedTerrain } = await hydrateWarpTravelChunk({
-        chunkKey,
-        startRow,
+        recordChunkDiagnosticsEvent,
+        recordWorldmapRenderDuration,
+        renderSize: this.renderChunkSize,
         startCol,
+        startRow,
         surroundingChunks,
         transitionToken,
-        renderSize: this.renderChunkSize,
-        computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
           this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-        waitForTileHydrationIdle: presentationRuntime.waitForTileHydrationIdle,
-        waitForStructureHydrationIdle: presentationRuntime.waitForStructureHydrationIdle,
-        prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
-        prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
-        onChunkHydrated: presentationRuntime.onChunkHydrated,
-        phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
-        onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
+        waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
+        waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
       });
       if (!tileFetchSucceeded) {
         return;
