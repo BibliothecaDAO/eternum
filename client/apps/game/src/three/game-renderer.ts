@@ -9,16 +9,7 @@ import WorldmapScene from "@/three/scenes/worldmap";
 import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
-import {
-  ACESFilmicToneMapping,
-  CineonToneMapping,
-  LinearToneMapping,
-  NoToneMapping,
-  ReinhardToneMapping,
-  type Camera,
-  type Object3D,
-  type Object3DEventMap,
-} from "three";
+import { type Camera, type Object3D, type Object3DEventMap } from "three";
 import { env } from "../../env";
 import { SceneName } from "./types";
 import {
@@ -31,6 +22,7 @@ import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 import { transitionDB } from "./utils/";
 import { disposeContactShadowResources, getContactShadowResources } from "./utils/contact-shadow";
 import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
+import { setupRendererDevGui } from "./renderer-dev-gui-runtime";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 import { createWebGLRendererBackend, type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { createRendererEffectsRuntime, type RendererEffectsRuntime } from "./renderer-effects-runtime";
@@ -173,94 +165,25 @@ export default class GameRenderer {
   }
 
   private setupGUIControls() {
-    this.setupSceneSwitchingGUI();
-    this.setupCameraMovementGUI();
-    this.setupRendererGUI();
+    const { material } = getContactShadowResources();
+
+    setupRendererDevGui({
+      changeCameraView: (view) => this.worldmapScene.changeCameraView(view),
+      contactShadowOpacity: material.opacity,
+      createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
+      fastTravelEnabled: this.isFastTravelEnabled(),
+      moveCameraToColRow: (col, row, duration) => this.worldmapScene.moveCameraToColRow(col, row, duration),
+      moveCameraToXYZ: (x, y, z, duration) => this.worldmapScene.moveCameraToXYZ(x, y, z, duration),
+      renderer: this.renderer,
+      switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
+      updateContactShadowOpacity: (opacity) => {
+        material.opacity = opacity;
+      },
+    });
   }
 
   private isFastTravelEnabled(): boolean {
     return getGameModeId() !== "blitz";
-  }
-
-  private setupSceneSwitchingGUI() {
-    const changeSceneFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Switch scene"));
-    const changeSceneParams = { scene: SceneName.WorldMap };
-    const sceneOptions = this.isFastTravelEnabled()
-      ? [SceneName.WorldMap, SceneName.Hexception, SceneName.FastTravel]
-      : [SceneName.WorldMap, SceneName.Hexception];
-    changeSceneFolder.add(changeSceneParams, "scene", sceneOptions).name("Scene");
-    changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
-    changeSceneFolder.close();
-  }
-
-  private setupCameraMovementGUI() {
-    const moveCameraFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Move Camera"));
-    const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
-
-    moveCameraFolder.add(moveCameraParams, "col").name("Column");
-    moveCameraFolder.add(moveCameraParams, "row").name("Row");
-    moveCameraFolder.add(moveCameraParams, "x").name("X");
-    moveCameraFolder.add(moveCameraParams, "y").name("Y");
-    moveCameraFolder.add(moveCameraParams, "z").name("Z");
-
-    moveCameraFolder
-      .add(
-        {
-          move: () => this.worldmapScene.moveCameraToColRow(moveCameraParams.col, moveCameraParams.row, 0),
-        },
-        "move",
-      )
-      .name("Move Camera");
-
-    moveCameraFolder.add(
-      {
-        move: () => this.worldmapScene.moveCameraToXYZ(moveCameraParams.x, moveCameraParams.y, moveCameraParams.z, 0),
-      },
-      "move",
-    );
-
-    // Add camera view controls
-    const cameraViewParams = { view: 2 };
-    moveCameraFolder.add(cameraViewParams, "view", [1, 2, 3]).name("Camera View");
-    moveCameraFolder
-      .add(
-        {
-          changeView: () => this.worldmapScene.changeCameraView(cameraViewParams.view as 1 | 2 | 3),
-        },
-        "changeView",
-      )
-      .name("Change View");
-
-    moveCameraFolder.close();
-  }
-
-  private setupRendererGUI() {
-    if (!this.renderer) {
-      return;
-    }
-    const rendererFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Renderer"));
-    rendererFolder
-      .add(this.renderer, "toneMapping", {
-        "No Tone Mapping": NoToneMapping,
-        "Linear Tone Mapping": LinearToneMapping,
-        "Reinhard Tone Mapping": ReinhardToneMapping,
-        "Cineon Tone Mapping": CineonToneMapping,
-        "ACESFilmic Tone Mapping": ACESFilmicToneMapping,
-      })
-      .name("Tone Mapping");
-    rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
-    rendererFolder.close();
-
-    const contactShadowFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Contact Shadows"));
-    const { material } = getContactShadowResources();
-    const params = { opacity: material.opacity };
-    contactShadowFolder
-      .add(params, "opacity", 0, 0.6, 0.01)
-      .name("Opacity")
-      .onChange((value: number) => {
-        material.opacity = value;
-      });
-    contactShadowFolder.close();
   }
 
   private async initializeRendererBackend(backendFactory?: RendererBackendFactory): Promise<void> {
