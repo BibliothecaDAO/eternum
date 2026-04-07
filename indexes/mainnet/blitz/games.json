@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-07T23:28:28.045Z",
+  "updatedAt": "2026-04-07T23:28:40.619Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -74,11 +74,10 @@
       "path": "runs/mainnet/blitz/bltz-clash-563.json",
       "inputPath": "inputs/mainnet/blitz/bltz-clash-563/24109283215-1.json",
       "status": "running",
-      "updatedAt": "2026-04-07T23:28:28.045Z",
+      "updatedAt": "2026-04-07T23:28:40.619Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-04-08T00:13:28.045Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1775608200,
