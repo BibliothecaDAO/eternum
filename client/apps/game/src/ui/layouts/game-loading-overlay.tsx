@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
@@ -247,83 +248,96 @@ export const GameLoadingOverlay = () => {
   }, [phase, elapsedMs]);
 
   const statements = useMemo(() => {
-    if (phase === "ready") return ["World view ready!"];
-    if (phase === "slow") return ["Taking longer than usual, still syncing...", "Still charting nearby territory..."];
-    if (phase === "handoff") return ["Opening your world map..."];
-    return ["Rendering the world map...", "Charting nearby territory...", "Locating your realm..."];
+    if (phase === "ready") return ["Your realm awaits."];
+    if (phase === "slow") return ["The realm is vast — still gathering intel..."];
+    if (phase === "handoff") return ["Crossing into the world map..."];
+    return ["Assembling the known world..."];
   }, [phase]);
 
   const tasks = useMemo<BootstrapTask[]>(() => {
     if (phase === "ready") {
       return [
-        { id: "handoff", label: "Transitioning to the world map", status: "complete" },
-        { id: "render", label: "Rendering terrain and structures", status: "complete" },
-        { id: "final", label: "Final checks", status: "complete" },
+        { id: "handoff", label: "World map located", status: "complete" },
+        { id: "render", label: "Terrain & structures rendered", status: "complete" },
+        { id: "final", label: "Realm synchronized", status: "complete" },
       ];
     }
 
     if (phase === "handoff") {
       return [
-        { id: "handoff", label: "Transitioning to the world map", status: "running" },
-        { id: "render", label: "Rendering terrain and structures", status: "pending" },
-        { id: "final", label: "Final checks", status: "pending" },
+        { id: "handoff", label: "Locating world map", status: "running" },
+        { id: "render", label: "Terrain & structures", status: "pending" },
+        { id: "final", label: "Realm synchronization", status: "pending" },
       ];
     }
 
     if (phase === "slow") {
       return [
-        { id: "handoff", label: "Transitioning to the world map", status: "complete" },
-        { id: "render", label: "Rendering terrain and structures", status: "running" },
-        { id: "final", label: "Final checks", status: "running" },
+        { id: "handoff", label: "World map located", status: "complete" },
+        { id: "render", label: "Rendering terrain & structures", status: "running" },
+        { id: "final", label: "Synchronizing realm", status: "running" },
       ];
     }
 
     return [
-      { id: "handoff", label: "Transitioning to the world map", status: "complete" },
-      { id: "render", label: "Rendering terrain and structures", status: "running" },
-      { id: "final", label: "Final checks", status: "pending" },
+      { id: "handoff", label: "World map located", status: "complete" },
+      { id: "render", label: "Rendering terrain & structures", status: "running" },
+      { id: "final", label: "Realm synchronization", status: "pending" },
     ];
   }, [phase]);
 
-  const overlayTitle = "Entering World View";
+  const overlayTitle = "Entering the Realm";
   const activeStatement = statements[0] ?? "Rendering the world map...";
 
   return (
     <BootLoaderShell
       className="absolute inset-0 z-[110]"
-      panelClassName="max-w-[32rem] px-5 py-6 sm:px-6 sm:py-7"
+      panelClassName="max-w-[30rem] px-6 py-7 sm:px-8 sm:py-8"
       mode="determinate"
       progress={progress}
       title={overlayTitle}
       subtitle={activeStatement}
-      caption="Step 2 of 2"
+      caption="World Sync"
       detail={
         <div className="space-y-4">
-          <div className="flex items-center justify-between font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-xs uppercase tracking-[0.28em] text-gold/45">
+          <div className="flex items-center justify-between border-b border-gold/10 pb-3 font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-xs uppercase tracking-[0.28em] text-gold/45">
             <span>World handoff</span>
-            <span>{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
+            <span className="tabular-nums">{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {tasks.map((task) => {
-              const statusTone =
-                task.status === "complete"
-                  ? "border-gold/40 bg-gold/15 text-gold"
-                  : task.status === "running"
-                    ? "border-gold/35 bg-gold/10 text-gold/90"
-                    : "border-white/10 bg-white/5 text-[rgba(236,224,194,0.45)]";
+              const isRunning = task.status === "running";
+              const isComplete = task.status === "complete";
+              const statusTone = isComplete
+                ? "border-gold/30 bg-gold/12 text-gold"
+                : isRunning
+                  ? "border-gold/20 bg-gold/6 text-gold/80"
+                  : "border-gold/8 bg-gold/3 text-gold/30";
 
               return (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-white/8 bg-black/25 px-4 py-3"
+                  className={clsx(
+                    "flex items-center justify-between gap-4 rounded-lg border border-gold/15 bg-black/20 px-4 py-2.5 transition-all duration-300",
+                    isRunning && "border-l-2 border-l-gold/50",
+                  )}
                 >
-                  <span className="font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-sm text-[rgba(236,224,194,0.84)]">
+                  <span
+                    className={clsx(
+                      "font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-sm transition-colors duration-300",
+                      isComplete
+                        ? "text-[rgba(236,224,194,0.9)]"
+                        : isRunning
+                          ? "text-[rgba(236,224,194,0.84)]"
+                          : "text-[rgba(236,224,194,0.45)]",
+                    )}
+                  >
                     {task.label}
                   </span>
                   <span
-                    className={`rounded-full border px-2.5 py-1 font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-[0.62rem] uppercase tracking-[0.22em] ${statusTone}`}
+                    className={`shrink-0 rounded-full border px-2.5 py-0.5 font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-[0.6rem] uppercase tracking-[0.22em] transition-all duration-300 ${statusTone}`}
                   >
-                    {task.status}
+                    {task.status === "complete" ? "done" : task.status === "running" ? "syncing" : "waiting"}
                   </span>
                 </div>
               );
