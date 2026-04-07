@@ -154,6 +154,7 @@ import {
   scheduleWorldmapPostCommitManagerCatchUpDrain,
 } from "./worldmap-post-commit-manager-catchup-runtime";
 import { hydrateWorldmapChunkRuntime } from "./worldmap-chunk-hydration-runtime";
+import { handleWorldmapChunkFinalizeResult } from "./worldmap-chunk-finalize-runtime";
 import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
 import {
   commitWorldmapPreparedTerrainPresentation,
@@ -6606,20 +6607,22 @@ export default class WorldmapScene extends WarpTravel {
         unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
       });
 
-      if (finalizeResult.status === "rolled_back") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_rolled_back");
+      const committed = await handleWorldmapChunkFinalizeResult({
+        diagnostics: this.chunkDiagnostics,
+        finalizeStatus: finalizeResult.status,
+        managerCatchUpPromise,
+        onCommitted: () => {
+          if (switchPosition) {
+            this.lastChunkSwitchPosition = switchPosition;
+            this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
+            this.hasChunkSwitchAnchor = true;
+          }
+        },
+        recordChunkDiagnosticsEvent,
+      });
+
+      if (!committed) {
         return;
-      }
-
-      if (finalizeResult.status === "stale_dropped") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_prepare_stale_dropped");
-        return;
-      }
-
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_committed");
-
-      if (managerCatchUpPromise) {
-        await managerCatchUpPromise;
       }
 
       // Track memory usage after chunk switch
@@ -6630,12 +6633,6 @@ export default class WorldmapScene extends WarpTravel {
           // Memory monitoring hooks - intentionally silent unless threshold exceeded
           void memoryDelta;
         }
-      }
-
-      if (switchPosition) {
-        this.lastChunkSwitchPosition = switchPosition;
-        this.lastChunkSwitchMovement = reversalRefreshDecision.nextMovementVector ?? this.lastChunkSwitchMovement;
-        this.hasChunkSwitchAnchor = true;
       }
     } finally {
       recordWorldmapRenderDuration("performChunkSwitch", performance.now() - chunkSwitchStartedAt);
