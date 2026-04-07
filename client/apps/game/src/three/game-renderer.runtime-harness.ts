@@ -156,6 +156,17 @@ export function createGameRendererRuntimeHarness() {
           getMonitoring: () => monitoringRuntime,
           getRoute: () => routeRuntime,
         },
+        sessionRuntime: {
+          captureStatsSample: vi.fn(),
+          createHudScene: vi.fn(),
+          exportStatsRecording: vi.fn(),
+          initializeMonitoring: vi.fn(),
+          startListeners: vi.fn(),
+          startStatsRecording: vi.fn(),
+          stopStatsRecording: vi.fn(() => []),
+          syncRouteFromLocation: vi.fn(),
+          updateStatsPanel: vi.fn(),
+        },
         handleURLChange: vi.fn(),
         handleWindowResize: vi.fn(),
       } as any;

@@ -289,8 +289,11 @@ describe("GameRenderer backend seam", () => {
     subject.sceneManager = {
       getCurrentScene: vi.fn(() => "map"),
     };
+    subject.sessionRuntime = {
+      captureStatsSample: vi.fn(),
+      updateStatsPanel: vi.fn(),
+    };
     subject.camera = "camera";
-    subject.captureStatsSample = vi.fn();
     subject.lastTime = performance.now() - 16;
     subject.getTargetFPS = vi.fn(() => null);
     subject.updateWeatherPostProcessing = vi.fn();

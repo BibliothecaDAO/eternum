@@ -398,6 +398,9 @@ describe("initScene destruction guard", () => {
   it("skips all setup when destroyed during backend initialization wait", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     let resolveBackend!: () => void;
+    const sessionRuntime = {
+      startListeners: vi.fn(),
+    };
     subject.backendInitializationPromise = new Promise<void>((r) => {
       resolveBackend = r;
     });
@@ -405,7 +408,7 @@ describe("initScene destruction guard", () => {
     subject.supportRuntimeRegistry = {
       getControlBridge: () => ({ setupGuiControls: vi.fn() }),
     };
-    subject.setupListeners = vi.fn();
+    subject.sessionRuntime = sessionRuntime;
 
     const initPromise = subject.initScene();
 
@@ -414,13 +417,16 @@ describe("initScene destruction guard", () => {
     resolveBackend();
     await initPromise;
 
-    expect(subject.setupListeners).not.toHaveBeenCalled();
+    expect(sessionRuntime.startListeners).not.toHaveBeenCalled();
   });
 
   it("does not append a canvas after destroy during backend wait", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     let resolveBackend!: () => void;
     const controlBridge = { setupGuiControls: vi.fn() };
+    const sessionRuntime = {
+      startListeners: vi.fn(),
+    };
     subject.backendInitializationPromise = new Promise<void>((r) => {
       resolveBackend = r;
     });
@@ -428,7 +434,7 @@ describe("initScene destruction guard", () => {
     subject.supportRuntimeRegistry = {
       getControlBridge: () => controlBridge,
     };
-    subject.setupListeners = vi.fn();
+    subject.sessionRuntime = sessionRuntime;
     subject.renderer = { domElement: document.createElement("canvas") };
 
     const initPromise = subject.initScene();
@@ -442,6 +448,9 @@ describe("initScene destruction guard", () => {
   it("does not register cleanup intervals after destroy during backend wait", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     let resolveBackend!: () => void;
+    const sessionRuntime = {
+      startListeners: vi.fn(),
+    };
     subject.backendInitializationPromise = new Promise<void>((r) => {
       resolveBackend = r;
     });
@@ -449,7 +458,7 @@ describe("initScene destruction guard", () => {
     subject.supportRuntimeRegistry = {
       getControlBridge: () => ({ setupGuiControls: vi.fn() }),
     };
-    subject.setupListeners = vi.fn();
+    subject.sessionRuntime = sessionRuntime;
     subject.cleanupIntervals = [];
 
     const initPromise = subject.initScene();
@@ -463,12 +472,15 @@ describe("initScene destruction guard", () => {
   it("proceeds with normal setup when not destroyed", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const controlBridge = { setupGuiControls: vi.fn() };
+    const sessionRuntime = {
+      startListeners: vi.fn(),
+    };
     subject.backendInitializationPromise = Promise.resolve();
     subject.isDestroyed = false;
     subject.supportRuntimeRegistry = {
       getControlBridge: () => controlBridge,
     };
-    subject.setupListeners = vi.fn();
+    subject.sessionRuntime = sessionRuntime;
     subject.camera = {};
     subject.graphicsSetting = "HIGH";
     subject.cleanupIntervals = [];
@@ -488,6 +500,6 @@ describe("initScene destruction guard", () => {
     }
 
     expect(controlBridge.setupGuiControls).toHaveBeenCalledTimes(1);
-    expect(subject.setupListeners).toHaveBeenCalledTimes(1);
+    expect(sessionRuntime.startListeners).toHaveBeenCalledTimes(1);
   });
 });

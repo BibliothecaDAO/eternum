@@ -30,6 +30,7 @@ import { createRendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import { createRendererRouteRuntime } from "./renderer-route-runtime";
 import { bootstrapRendererSceneRuntime, createGameRendererSceneRegistry } from "./renderer-scene-bootstrap";
 import { destroyRendererRuntime } from "./renderer-destroy-runtime";
+import { createRendererSessionRuntime, type RendererSessionRuntime } from "./renderer-session-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import {
   createRendererSupportRuntimeRegistry,
@@ -48,6 +49,7 @@ const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
 
 export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
+  private readonly sessionRuntime: RendererSessionRuntime<HUDScene>;
   private readonly supportRuntimeRegistry: RendererSupportRuntimeRegistry;
   private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
   private renderer!: RendererSurfaceLike;
@@ -137,6 +139,14 @@ export default class GameRenderer {
           switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
         }),
     });
+    this.sessionRuntime = createRendererSessionRuntime({
+      addWindowListener: (type, listener) => window.addEventListener(type, listener),
+      createHudScene: () => new HUDScene(this.sceneManager, this.controls),
+      ensureMonitoring: () => this.supportRuntimeRegistry.ensureMonitoring(),
+      ensureRoute: () => this.supportRuntimeRegistry.ensureRoute(),
+      getMonitoring: () => this.supportRuntimeRegistry.getMonitoring(),
+      windowResizeListener: this.handleWindowResize,
+    });
     this.backendInitializationPromise = this.initializeRendererBackend();
     this.initializeInteractionRuntime();
     this.initializeLabelRuntime();
@@ -180,24 +190,20 @@ export default class GameRenderer {
   }
 
   initStats() {
-    this.supportRuntimeRegistry.ensureMonitoring().initialize();
+    this.sessionRuntime.initializeMonitoring();
   }
 
   // Stats Recording — delegated to StatsRecorder
   public startStatsRecording() {
-    this.supportRuntimeRegistry.getMonitoring()?.startStatsRecording();
+    this.sessionRuntime.startStatsRecording();
   }
 
   public stopStatsRecording() {
-    return this.supportRuntimeRegistry.getMonitoring()?.stopStatsRecording() ?? [];
-  }
-
-  private captureStatsSample() {
-    this.supportRuntimeRegistry.getMonitoring()?.captureStatsSample();
+    return this.sessionRuntime.stopStatsRecording();
   }
 
   public exportStatsRecording() {
-    this.supportRuntimeRegistry.getMonitoring()?.exportStatsRecording();
+    this.sessionRuntime.exportStatsRecording();
   }
 
   async initScene() {
@@ -206,14 +212,16 @@ export default class GameRenderer {
       return;
     }
     this.supportRuntimeRegistry.getControlBridge().setupGuiControls();
-    this.setupListeners();
+    this.sessionRuntime.startListeners();
     bootstrapRendererStartupRuntime({
       animate: () => this.animate(),
       attachInteractionRuntime: () => this.attachInteractionRuntime(),
       cleanupExpiredTransitions: (maxAgeMs) => transitionDB.cleanupExpired(maxAgeMs),
       debug: (message) => console.debug(message),
       document,
-      initializeHudScene: () => this.initializeHudScene(),
+      initializeHudScene: () => {
+        this.hudScene = this.sessionRuntime.createHudScene();
+      },
       isDestroyed: this.isDestroyed,
       prepareScenes: () => {
         void this.prepareScenes();
@@ -223,7 +231,7 @@ export default class GameRenderer {
         this.cleanupIntervals.push(intervalId);
       },
       rendererDomElement: this.renderer.domElement,
-      syncRouteFromLocation: () => this.syncRouteFromLocation(),
+      syncRouteFromLocation: () => this.sessionRuntime.syncRouteFromLocation(),
       warn: (message) => console.warn(message),
     });
   }
@@ -239,19 +247,6 @@ export default class GameRenderer {
     }
 
     this.controls = this.interactionRuntime.controls;
-  }
-
-  private initializeHudScene() {
-    this.hudScene = new HUDScene(this.sceneManager, this.controls);
-  }
-
-  private setupListeners() {
-    this.supportRuntimeRegistry.ensureRoute().start();
-    window.addEventListener("resize", this.handleWindowResize);
-  }
-
-  private syncRouteFromLocation() {
-    this.supportRuntimeRegistry.ensureRoute().syncFromLocation();
   }
 
   async prepareScenes() {
@@ -382,7 +377,7 @@ export default class GameRenderer {
         runRendererFrame({
           backend: this.backend,
           camera: this.camera,
-          captureStatsSample: () => this.captureStatsSample(),
+          captureStatsSample: () => this.sessionRuntime.captureStatsSample(),
           currentScene: this.sceneManager?.getCurrentScene(),
           currentTime,
           cycleProgress,
@@ -402,7 +397,7 @@ export default class GameRenderer {
       updateControls: () => {
         this.controls?.update();
       },
-      updateStatsPanel: () => this.supportRuntimeRegistry.getMonitoring()?.updateStatsPanel(),
+      updateStatsPanel: () => this.sessionRuntime.updateStatsPanel(),
     });
   }
 
