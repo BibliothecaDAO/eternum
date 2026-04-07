@@ -146,6 +146,7 @@ import {
   settleWorldmapShortcutSelectionProtection,
   shouldResetWorldmapShortcutRefreshUiReason,
 } from "./worldmap-shortcut-selection-runtime";
+import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
@@ -2811,38 +2812,34 @@ export default class WorldmapScene extends WarpTravel {
 
     void (async () => {
       try {
-        if (this.globalChunkSwitchPromise) {
-          await this.globalChunkSwitchPromise;
-        }
-
-        await this.updateVisibleChunks(true, { reason: "default" });
-
-        // Army meshes may not be instantiated immediately after chunk refresh.
-        // Retry a few times with short delays to let the army manager populate.
-        const MAX_RETRIES = 5;
-        const RETRY_DELAY_MS = 200;
-        for (let i = 0; i <= MAX_RETRIES; i++) {
-          if (this.pendingArmyMovements.has(selectedEntityId)) break;
-
-          if (this.armyManager.hasArmy(selectedEntityId)) {
+        await runWorldmapArmySelectionRecovery({
+          awaitActiveChunkSwitch: this.globalChunkSwitchPromise
+            ? async () => {
+                await this.globalChunkSwitchPromise;
+              }
+            : undefined,
+          forceChunkRefresh: () => this.updateVisibleChunks(true, { reason: "default" }),
+          isArmyAvailable: () => this.armyManager.hasArmy(selectedEntityId),
+          isArmyPendingMovement: () => this.pendingArmyMovements.has(selectedEntityId),
+          onRecovered: () => {
             this.onArmySelection(selectedEntityId, playerAddress, { deferDuringChunkTransition: false });
-            return;
-          }
-
-          if (i < MAX_RETRIES) {
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-          }
-        }
-
-        if (import.meta.env.DEV) {
-          console.warn(
-            `[DEBUG] Army ${selectedEntityId} still unavailable after forced chunk refresh during selection recovery`,
-          );
-        }
+          },
+          onUnavailable: () => {
+            if (import.meta.env.DEV) {
+              console.warn(
+                `[DEBUG] Army ${selectedEntityId} still unavailable after forced chunk refresh during selection recovery`,
+              );
+            }
+          },
+          onError: (error) => {
+            if (import.meta.env.DEV) {
+              console.warn(`[DEBUG] Army selection recovery failed for ${selectedEntityId}`, error);
+            }
+          },
+          wait: (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs)),
+        });
       } catch (error) {
-        if (import.meta.env.DEV) {
-          console.warn(`[DEBUG] Army selection recovery failed for ${selectedEntityId}`, error);
-        }
+        console.error("[WorldMap] Unexpected army selection recovery wrapper failure", error);
       } finally {
         this.armySelectionRecoveryInFlight.delete(selectedEntityId);
       }
