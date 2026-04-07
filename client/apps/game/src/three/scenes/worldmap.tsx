@@ -132,6 +132,13 @@ import {
   queueWorldmapHydratedChunkRefresh,
 } from "./worldmap-hydrated-refresh-runtime";
 import {
+  createWorldmapChunkRefreshRuntimeState,
+  requestWorldmapChunkRefreshToken,
+  runWorldmapChunkRefreshExecution,
+  scheduleWorldmapChunkRefreshTimer,
+  waitForWorldmapRequestedChunkRefresh,
+} from "./worldmap-chunk-refresh-runtime";
+import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
@@ -151,9 +158,6 @@ import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
 import {
   resolveDuplicateTileReconcilePlan,
-  resolveRefreshCompletionActions,
-  resolveRefreshExecutionPlan,
-  resolveRefreshRunningActions,
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   resolveEntityActionPathsTransitionTokenSync,
@@ -190,9 +194,7 @@ import {
 import type { WorldmapCameraSnapshot, WorldmapZoomAnchor } from "./worldmap-zoom/worldmap-zoom-types";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import {
-  WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS,
   resolveWorldmapChunkRefreshDebounceMs,
-  resolveWorldmapChunkRefreshSchedule,
   shouldDelayWorldmapChunkSwitch,
 } from "./worldmap-chunk-switch-delay-policy";
 import { classifyWorldmapUploadWork, resolveWorldmapPostCommitWorkAction } from "./worldmap-upload-budget-policy";
@@ -480,14 +482,9 @@ export default class WorldmapScene extends WarpTravel {
 
   private currentChunk: string = "null";
   private isChunkTransitioning: boolean = false;
-  private chunkRefreshTimeout: number | null = null;
-  private chunkRefreshDeadlineAtMs: number | null = null;
+  private chunkRefreshRuntimeState = createWorldmapChunkRefreshRuntimeState();
   private pendingChunkRefreshForce = false;
   private pendingChunkRefreshUiReason: "default" | "shortcut" = "default";
-  private chunkRefreshRequestToken = 0;
-  private chunkRefreshAppliedToken = 0;
-  private chunkRefreshRunning = false;
-  private chunkRefreshRerunRequested = false;
   private isShortcutArmySelectionInFlight = false;
   private lastControlsCameraDistance: number | null = null;
   private readonly zoomForceRefreshDistanceThreshold = 0.75;
@@ -541,6 +538,54 @@ export default class WorldmapScene extends WarpTravel {
 
   private set hydratedRefreshScheduled(value: boolean) {
     this.hydratedRefreshQueueState.isScheduled = value;
+  }
+
+  private get chunkRefreshTimeout(): number | null {
+    return this.chunkRefreshRuntimeState.timeoutId;
+  }
+
+  private set chunkRefreshTimeout(value: number | null) {
+    this.chunkRefreshRuntimeState.timeoutId = value;
+  }
+
+  private get chunkRefreshDeadlineAtMs(): number | null {
+    return this.chunkRefreshRuntimeState.deadlineAtMs;
+  }
+
+  private set chunkRefreshDeadlineAtMs(value: number | null) {
+    this.chunkRefreshRuntimeState.deadlineAtMs = value;
+  }
+
+  private get chunkRefreshRequestToken(): number {
+    return this.chunkRefreshRuntimeState.requestToken;
+  }
+
+  private set chunkRefreshRequestToken(value: number) {
+    this.chunkRefreshRuntimeState.requestToken = value;
+  }
+
+  private get chunkRefreshAppliedToken(): number {
+    return this.chunkRefreshRuntimeState.appliedToken;
+  }
+
+  private set chunkRefreshAppliedToken(value: number) {
+    this.chunkRefreshRuntimeState.appliedToken = value;
+  }
+
+  private get chunkRefreshRunning(): boolean {
+    return this.chunkRefreshRuntimeState.running;
+  }
+
+  private set chunkRefreshRunning(value: boolean) {
+    this.chunkRefreshRuntimeState.running = value;
+  }
+
+  private get chunkRefreshRerunRequested(): boolean {
+    return this.chunkRefreshRuntimeState.rerunRequested;
+  }
+
+  private set chunkRefreshRerunRequested(value: boolean) {
+    this.chunkRefreshRuntimeState.rerunRequested = value;
   }
   private handleTransactionFailed?: (...args: any[]) => void;
   private readonly stalePendingArmyMovementMs = 10_000;
@@ -6150,7 +6195,7 @@ export default class WorldmapScene extends WarpTravel {
 
     incrementWorldmapRenderCounter("chunkRefreshRequests");
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
-    this.chunkRefreshRequestToken += 1;
+    requestWorldmapChunkRefreshToken(this.chunkRefreshRuntimeState);
     this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({
       currentReason: this.pendingChunkRefreshUiReason,
       isShortcutArmySelectionInFlight: this.isShortcutArmySelectionInFlight,
@@ -6181,147 +6226,89 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private waitForRequestedChunkRefresh(requestToken: number): Promise<void> {
-    if (this.isSwitchedOff) {
-      return Promise.resolve();
-    }
-
-    if (!WORLDMAP_ZOOM_HARDENING.latestWinsRefresh) {
-      return new Promise((resolve) => window.setTimeout(resolve, WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS));
-    }
-
-    return new Promise((resolve) => {
-      const poll = () => {
-        if (this.isSwitchedOff) {
-          resolve();
-          return;
-        }
-
-        if (
-          this.chunkRefreshAppliedToken >= requestToken &&
-          !this.chunkRefreshRunning &&
-          this.chunkRefreshTimeout === null
-        ) {
-          resolve();
-          return;
-        }
-        window.setTimeout(poll, 0);
-      };
-
-      poll();
+    return waitForWorldmapRequestedChunkRefresh({
+      isSwitchedOff: () => this.isSwitchedOff,
+      latestWinsRefresh: WORLDMAP_ZOOM_HARDENING.latestWinsRefresh,
+      requestToken,
+      setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs),
+      state: this.chunkRefreshRuntimeState,
     });
   }
 
   private scheduleLegacyChunkRefresh(requestedDelayMs: number): void {
-    const scheduleDecision = resolveWorldmapChunkRefreshSchedule({
-      existingDeadlineAtMs: this.chunkRefreshDeadlineAtMs,
+    scheduleWorldmapChunkRefreshTimer({
+      clearTimeoutFn: (timeoutId) => window.clearTimeout(timeoutId),
       nowMs: performance.now(),
+      onTimer: () => {
+        const shouldForce = this.pendingChunkRefreshForce;
+        const refreshReason = this.pendingChunkRefreshUiReason;
+        this.pendingChunkRefreshForce = false;
+        this.pendingChunkRefreshUiReason = "default";
+        void this.updateVisibleChunks(shouldForce, { reason: refreshReason }).catch((error) => {
+          console.error("[WorldMap] Legacy chunk refresh failed:", error);
+        });
+      },
       requestedDelayMs,
+      setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs),
+      state: this.chunkRefreshRuntimeState,
     });
-    if (!scheduleDecision.shouldScheduleTimer) {
-      return;
-    }
-
-    if (this.chunkRefreshTimeout !== null) {
-      window.clearTimeout(this.chunkRefreshTimeout);
-    }
-
-    this.chunkRefreshDeadlineAtMs = scheduleDecision.deadlineAtMs;
-
-    this.chunkRefreshTimeout = window.setTimeout(() => {
-      const shouldForce = this.pendingChunkRefreshForce;
-      const refreshReason = this.pendingChunkRefreshUiReason;
-      this.pendingChunkRefreshForce = false;
-      this.pendingChunkRefreshUiReason = "default";
-      this.chunkRefreshTimeout = null;
-      this.chunkRefreshDeadlineAtMs = null;
-      void this.updateVisibleChunks(shouldForce, { reason: refreshReason }).catch((error) => {
-        console.error("[WorldMap] Legacy chunk refresh failed:", error);
-      });
-    }, scheduleDecision.delayMs);
   }
 
   private scheduleChunkRefreshExecution(requestedDelayMs: number): void {
-    const scheduleDecision = resolveWorldmapChunkRefreshSchedule({
-      existingDeadlineAtMs: this.chunkRefreshDeadlineAtMs,
-      nowMs: performance.now(),
-      requestedDelayMs,
-    });
-    if (!scheduleDecision.shouldScheduleTimer) {
-      return;
-    }
-
-    if (this.chunkRefreshTimeout !== null) {
-      window.clearTimeout(this.chunkRefreshTimeout);
-    }
-
     const scheduledToken = this.chunkRefreshRequestToken;
-    this.chunkRefreshDeadlineAtMs = scheduleDecision.deadlineAtMs;
-    this.chunkRefreshTimeout = window.setTimeout(() => {
-      this.chunkRefreshTimeout = null;
-      this.chunkRefreshDeadlineAtMs = null;
-      void this.flushChunkRefresh(scheduledToken);
-    }, scheduleDecision.delayMs);
+    scheduleWorldmapChunkRefreshTimer({
+      clearTimeoutFn: (timeoutId) => window.clearTimeout(timeoutId),
+      nowMs: performance.now(),
+      onTimer: () => {
+        void this.flushChunkRefresh(scheduledToken);
+      },
+      requestedDelayMs,
+      setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs),
+      state: this.chunkRefreshRuntimeState,
+    });
   }
 
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
-    const latestToken = this.chunkRefreshRequestToken;
-    const refreshExecutionPlan = resolveRefreshExecutionPlan(scheduledToken, latestToken);
-    const { executionToken, shouldRecordSuperseded } = refreshExecutionPlan;
-
-    if (shouldRecordSuperseded) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_superseded");
-      this.emitZoomHardeningTelemetry("refresh_superseded", {
-        scheduledToken,
-        latestToken,
-        executionToken,
-      });
-    }
-
-    if (this.chunkRefreshRunning) {
-      const runningActions = resolveRefreshRunningActions(scheduledToken, this.chunkRefreshRequestToken);
-      this.chunkRefreshRerunRequested = runningActions.shouldMarkRerunRequested;
-      if (runningActions.shouldRescheduleTimer) {
-        this.emitZoomHardeningTelemetry("refresh_rescheduled", {
-          scheduledToken,
-          latestToken: this.chunkRefreshRequestToken,
-        });
-        this.scheduleChunkRefreshExecution(0);
-      }
-      return;
-    }
-
-    this.chunkRefreshRunning = true;
     const shouldForce = this.pendingChunkRefreshForce;
     const refreshReason = this.pendingChunkRefreshUiReason;
     this.pendingChunkRefreshForce = false;
     this.pendingChunkRefreshUiReason = "default";
 
-    try {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_executed");
-      await this.updateVisibleChunks(shouldForce, { reason: refreshReason });
-    } catch (error) {
-      console.error("[WorldMap] Chunk refresh failed:", error);
-    } finally {
-      this.chunkRefreshRunning = false;
-      this.chunkRefreshAppliedToken = executionToken;
-
-      const completionActions = resolveRefreshCompletionActions({
-        appliedToken: this.chunkRefreshAppliedToken,
-        latestToken: this.chunkRefreshRequestToken,
-        rerunRequested: this.chunkRefreshRerunRequested,
-      });
-      this.emitZoomHardeningTelemetry("refresh_applied", {
-        executionToken: this.chunkRefreshAppliedToken,
-        latestToken: this.chunkRefreshRequestToken,
-        hasNewerRequest: completionActions.hasNewerRequest,
-      });
-      if (completionActions.shouldClearRerunRequested) {
-        this.chunkRefreshRerunRequested = false;
-      }
-      if (completionActions.shouldScheduleRerun) {
+    await runWorldmapChunkRefreshExecution({
+      executeRefresh: async () => {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_executed");
+        await this.updateVisibleChunks(shouldForce, { reason: refreshReason });
+      },
+      onError: (error) => {
+        console.error("[WorldMap] Chunk refresh failed:", error);
+      },
+      onExecutionComplete: ({ executionToken, hasNewerRequest, latestToken }) => {
+        this.emitZoomHardeningTelemetry("refresh_applied", {
+          executionToken,
+          latestToken,
+          hasNewerRequest,
+        });
+      },
+      onRescheduleWhileRunning: ({ latestToken, scheduledToken: queuedScheduledToken }) => {
+        this.emitZoomHardeningTelemetry("refresh_rescheduled", {
+          scheduledToken: queuedScheduledToken,
+          latestToken,
+        });
+      },
+      onSuperseded: ({ executionToken, latestToken, scheduledToken: queuedScheduledToken }) => {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_superseded");
+        this.emitZoomHardeningTelemetry("refresh_superseded", {
+          scheduledToken: queuedScheduledToken,
+          latestToken,
+          executionToken,
+        });
+      },
+      scheduledToken,
+      scheduleRerun: () => {
         this.scheduleChunkRefreshExecution(0);
-      }
-    }
+      },
+      state: this.chunkRefreshRuntimeState,
+    });
   }
 
   async updateVisibleChunks(force: boolean = false, options?: { reason?: "default" | "shortcut" }): Promise<boolean> {
