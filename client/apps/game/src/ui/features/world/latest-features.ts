@@ -5,9 +5,45 @@ interface LatestFeature {
   title: string;
   description: string;
   type: FeatureType;
+  gameSlug?: string;
+  readMore?: string;
 }
 
-export const latestFeatures: LatestFeature[] = [
+const MAX_LATEST_FEATURES = 10;
+
+const compareLatestFeatureDatesDescending = (left: LatestFeature, right: LatestFeature) => {
+  const timestampDifference = new Date(right.date).getTime() - new Date(left.date).getTime();
+  if (timestampDifference !== 0) return timestampDifference;
+  return left.title.localeCompare(right.title);
+};
+
+const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
+  features.toSorted(compareLatestFeatureDatesDescending).slice(0, MAX_LATEST_FEATURES);
+
+const allLatestFeatures: LatestFeature[] = [
+  {
+    date: "2026-04-07",
+    title: "Landing Hub Refresh",
+    description:
+      "The dashboard News, Learn, and Markets tabs now surface fresher updates, clearer onboarding, and more actionable market stats so you can find the right information faster.",
+    type: "improvement",
+    gameSlug: "landing",
+    readMore: "https://github.com/BibliothecaDAO/eternum/issues/4375",
+  },
+  {
+    date: "2026-04-07",
+    title: "Stamina Sync Fixes",
+    description:
+      "Army and guard stamina now stays aligned with live tick updates more reliably, so combat previews and action gating stop freezing on stale values or jumping to misleading full stamina.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-07",
+    title: "Chunk Stall Recovery",
+    description:
+      "World map chunk streaming now traces stalled Torii and hydration handoffs and automatically retries instead of leaving dead chunks stuck until you reload the game.",
+    type: "fix",
+  },
   {
     date: "2026-04-06",
     title: "Army Ghosting Suppression",
@@ -42,6 +78,13 @@ export const latestFeatures: LatestFeature[] = [
     description:
       "Moving armies now keep their on-map visuals and ownership dots in sync more reliably, and stale removal recovery no longer depends on zooming the camera to make a valid unit reappear.",
     type: "fix",
+  },
+  {
+    date: "2026-04-07",
+    title: "Blitz Rank Refresh",
+    description:
+      "Blitz MMR ranks now use the new Scrapper-to-Storm Lord naming ladder, so leaderboard, profile, and match views all reflect the updated progression language.",
+    type: "improvement",
   },
   {
     date: "2026-04-02",
@@ -751,3 +794,5 @@ export const latestFeatures: LatestFeature[] = [
     type: "balance",
   },
 ];
+
+export const latestFeatures = buildLatestFeaturesFeed(allLatestFeatures);

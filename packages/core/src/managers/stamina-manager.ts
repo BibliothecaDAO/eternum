@@ -31,9 +31,18 @@ export class StaminaManager {
 
   public static getStamina(troops: Troops, currentArmiesTick: number) {
     const lastRefillTick = troops.stamina.updated_tick;
+    const staminaConfig = configManager.getTroopStaminaConfig(troops.category as TroopType, troops.tier as TroopTier);
+    const maxStamina = staminaConfig.staminaMax;
 
     if (lastRefillTick >= BigInt(currentArmiesTick)) {
       return structuredClone(troops.stamina);
+    }
+
+    if (lastRefillTick === 0n) {
+      return {
+        amount: BigInt(Math.min(staminaConfig.staminaInitial, maxStamina)),
+        updated_tick: BigInt(currentArmiesTick),
+      };
     }
 
     const staminaPerTick = configManager.getRefillPerTick();
@@ -46,7 +55,7 @@ export class StaminaManager {
     const newStamina = this.refill(
       currentArmiesTick,
       lastRefillTick,
-      this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
+      maxStamina,
       Number(troops.stamina.amount),
       additionalStaminaBoost,
     );

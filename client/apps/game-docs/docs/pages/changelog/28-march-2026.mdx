@@ -1,0 +1,196 @@
+---
+layout: docs
+---
+
+import { table } from "@/components/styles";
+
+# 28th March 2026
+
+### Series 0 — Balance & Configuration
+
+The first official Blitz series has launched with significant balance changes across the board:
+
+**Game Duration**
+
+- Blitz [game duration](/blitz/world-physics) reduced from **90 minutes to 60 minutes** (10 Eternum Days).
+
+**Starting Resources**
+
+- [Realm starting materials](/blitz/realms/realm#starting-materials) updated for Series 0:
+  - Wheat: 1,000
+  - Labor: 1,500 (up from 1,200)
+  - Wood: 360 (up from 180)
+  - Coal: 240 (up from 120)
+  - Copper: 120 (up from 60)
+  - Donkeys: 500 (up from 200)
+  - T1 Troops: 5,000 (up from 3,000)
+- [Camp starting materials](/blitz/world-structures#starting-materials) updated:
+  - Wheat: 500
+  - Labor: 5,000 (up from 2,500)
+  - Donkeys: 1,000 (up from 200)
+
+**Realm Progression**
+
+- All Realms now start the game at **City level** — the Settlement → City upgrade has been removed.
+- [Kingdom upgrade costs](/blitz/realms/realm#realm-progression) updated: 720 Labor, 2,400 Wheat, 600 Essence, 360 Wood.
+- Empire upgrade costs updated: 1,440 Labor, 4,800 Wheat, 1,200 Essence, 720 Wood, 360 Coal, 360 Copper.
+
+**Production Rates**
+
+- Base output of all [resources, essence, and labor](/blitz/materials/production) increased to **2 units/sec** (up from
+  1 unit/sec).
+- [Donkey production](/blitz/materials/production#donkeys) increased to **5/sec** (up from 3/sec).
+- Labor input costs for simple mode resource production have been doubled.
+- Troop production: resource and labor input costs doubled alongside a doubled output rate, while wheat and essence
+  input costs remain unchanged.
+
+**Building Costs**
+
+- Essence costs for constructing [T2 and T3 buildings](/blitz/realms/buildings) have been **halved** — this applies to
+  both military buildings (T2: 300 Essence, T3: 600 Essence) and T3 resource buildings (Adamantine Mine, Mithral Forge,
+  Dragonhide Tannery: 300 Essence).
+
+**Exploration Rewards**
+
+- [Exploration reward](/blitz/worldmap-movement/movement#exploring) table updated. T1 troop drops have been removed from
+  exploration rewards:
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Reward</th>
+          <th style={table.headerCell}>Quantity</th>
+          <th style={table.headerCell}>Chance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Essence</td>
+          <td style={table.cell}>150</td>
+          <td style={table.cell}>35%</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Essence</td>
+          <td style={table.cell}>300</td>
+          <td style={table.cell}>25%</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Essence</td>
+          <td style={table.cell}>600</td>
+          <td style={table.cell}>15%</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Labor</td>
+          <td style={table.cell}>500</td>
+          <td style={table.cell}>15%</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Labor</td>
+          <td style={table.cell}>1,000</td>
+          <td style={table.cell}>5%</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Donkeys</td>
+          <td style={table.cell}>500</td>
+          <td style={table.cell}>5%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+**Essence Rifts**
+
+- [Essence Rift](/blitz/world-structures#essence-rifts) discovery chance increased from 1/50 to **1/40**.
+- Essence Rift production doubled from 10/sec to **20/sec**.
+
+**Stamina**
+
+- [Stamina on deployment](/blitz/worldmap-movement/movement#stamina) increased to **30** (up from 20).
+- [Stamina gain per phase](/blitz/military/stamina-and-biomes#stamina) increased to **30** (up from 20), totaling 180
+  per Eternum Day.
+
+**Victory Points**
+
+- [VP awarding values](/blitz/victory#scoring-system) updated:
+  - Explore a tile: 5 VP (down from 10)
+  - Claim a World Structure from bandits: 250 VP (down from 500)
+  - Open a Relic Crate: 250 VP (down from 1,000)
+  - Claim a Hyperstructure from bandits: 1,000 VP (down from 3,000)
+  - Control a Hyperstructure: 1-6 VP/second (unchanged)
+
+**1 vs. 1 Mode**
+
+- Hyperstructure calculation updated for 1 vs. 1 mode.
+- VP radius fixed for single-realm Blitz variants.
+
+### MMR & Leaderboards
+
+- MMR system rolled out to mainnet.
+- MMR leaderboard overhauled with podium display, badges, and "find me" button.
+- MMR profile enhanced with resource tier badges.
+- Leaderboard now populates during the game, not just at the end.
+
+### Post-Game Review
+
+- Full post-game review flow added with game review screens and map fingerprint review card.
+- Game review Blitz awards flow with refined visuals.
+- Shareable claim rewards recap card.
+
+### Realtime Chat
+
+- Realtime chat enabled on mainnet Blitz games.
+- Chat UI polished with message grouping, date separators, DM toasts, emoji categories, and typing indicators.
+
+### Prediction Markets
+
+- Prediction market UI unified with resolved winner behavior.
+- Market resolve and claim flow unified with improved redeemable UX.
+- Landing UX, filters, and data sources improved.
+
+### Visual & Audio
+
+- Night readability improved with moon rim lighting and a raised lighting floor.
+- Time-of-day readability improved across all phases.
+- Random biome light variants removed for visual consistency.
+- Sound effects expanded across UI, trading, chat, and 3D interactions.
+- Noisy gong sound removed from non-battle story events.
+- Worldmap camera tilt adjusted for a more tactical perspective.
+- Count-up animation added for resource balance changes.
+- Production badge pulse now color-matches its resource type.
+- Bottom-right panel refactored for smaller screens.
+- Markets terminal UI redesigned.
+- Marketplace UI/UX overhauled with performance optimizations.
+- Landing page redesigned with explicit Blitz and Eternum entry points, including prize pool display.
+- Loot chest reveal presentation polished.
+
+### Onchain Agent (Axis)
+
+- Full headless mode for AI orchestration.
+- ABI-driven action and policy pipeline.
+- A\* pathfinder with biome-aware dynamic stamina costs and move executor.
+- Password authentication, auto-bootstrap, and heartbeat loop.
+- [Axis documentation](/development/axis/overview) section added to game docs.
+
+### Factory V2
+
+- Complete rewrite of the game deployment factory.
+- Series and rotation launch runs with prize funding flow.
+- Mobile-optimized layout with advanced launch overrides.
+- Extensive hardening of indexer recovery, grouped launches, and maintenance flows.
+
+### Stability & Infrastructure
+
+- Torii connection health monitor with auto-reconnect.
+- Client clock drift capped to prevent resource desync.
+- VRF: single request per transaction enforced.
+- Transaction retry with backoff and configurable batch delay.
+- Production automation dashboard with inline feedback.
+- Game client memory retention reduced with lazy-loaded manifests.
+- Blitz and Eternum mode isolation hardened in the game client.
+
+---
+
+_This changelog covers all game and documentation changes between 18 February and 28 March 2026._

@@ -1,4 +1,3 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useEffect, useRef } from "react";
 import { useBackgroundMusic } from "../providers/music-router-provider";
 import { formatTrackDisplayName } from "../shared/track-display";
@@ -29,9 +28,16 @@ export const useMusicPlayer = () => {
   };
 };
 
-export const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
+export const ScrollingTrackName = ({
+  trackName,
+  trackArtist,
+  className,
+}: {
+  trackName: string;
+  trackArtist?: string;
+  className?: string;
+}) => {
   const trackNameRef = useRef<HTMLDivElement>(null);
-  const mode = useGameModeConfig();
 
   useEffect(() => {
     const trackNameElement = trackNameRef.current;
@@ -54,9 +60,10 @@ export const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
   }, [trackName]);
 
   return (
-    <div className="w-full p-1 overflow-hidden text-xs border border-gold">
+    <div className={className ?? "w-full overflow-hidden border border-gold p-1 text-xs"}>
       <div className="track-name" ref={trackNameRef}>
-        {trackName} - {mode.audio.trackArtist}
+        {trackName}
+        {trackArtist ? ` - ${trackArtist}` : ""}
       </div>
     </div>
   );

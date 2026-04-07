@@ -1,10 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { prepareWorldmapChunkPresentation } from "./worldmap-chunk-presentation";
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
 import { createControlledAsyncCall, flushMicrotasks } from "./worldmap-test-harness";
 
 describe("prepareWorldmapChunkPresentation", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("does not prepare target terrain before the structure barrier and asset prewarm complete", async () => {
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
     const tileFetch = createControlledAsyncCall<[], boolean>();
@@ -170,6 +174,55 @@ describe("prepareWorldmapChunkPresentation", () => {
       tileFetchSucceeded: true,
       preparedTerrain: { chunkKey: "24,24" },
     });
+  });
+
+  it("times out a stalled presentation barrier instead of hanging the chunk switch forever", async () => {
+    vi.useFakeTimers();
+
+    const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
+    const tileFetch = createControlledAsyncCall<[], boolean>();
+    const tileHydrationReady = createControlledAsyncCall<[], void>();
+    const boundsReady = createControlledAsyncCall<[], void>();
+    const structureReady = createControlledAsyncCall<[], void>();
+    const assetPrewarm = createControlledAsyncCall<[], void>();
+    const onPhaseTimeout = vi.fn();
+
+    const presentationPromise = prepareWorldmapChunkPresentation({
+      chunkKey: "24,24",
+      startRow: 24,
+      startCol: 24,
+      renderSize: { height: 80, width: 90 },
+      tileFetchPromise: tileFetch.fn(),
+      tileHydrationReadyPromise: tileHydrationReady.fn(),
+      boundsReadyPromise: boundsReady.fn(),
+      structureReadyPromise: structureReady.fn(),
+      assetPrewarmPromise: assetPrewarm.fn(),
+      prepareTerrainChunk: prepareTerrainChunk.fn,
+      phaseTimeoutMs: 25,
+      onPhaseTimeout,
+    });
+
+    await flushMicrotasks(2);
+    tileFetch.resolveNext(true);
+    tileHydrationReady.resolveNext();
+    structureReady.resolveNext();
+    assetPrewarm.resolveNext();
+    await flushMicrotasks(2);
+
+    await vi.advanceTimersByTimeAsync(25);
+
+    await expect(presentationPromise).resolves.toEqual({
+      tileFetchSucceeded: false,
+      preparedTerrain: null,
+      timedOutPhase: "bounds_ready",
+    });
+    expect(onPhaseTimeout).toHaveBeenCalledWith({
+      chunkKey: "24,24",
+      phase: "bounds_ready",
+      timeoutMs: 25,
+    });
+    expect(prepareTerrainChunk.calls).toEqual([]);
+    expect(boundsReady.pendingCount()).toBe(1);
   });
 
   it("commits same-chunk refresh terrain and managers through one gate", () => {

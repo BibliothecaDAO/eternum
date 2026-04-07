@@ -1,9 +1,9 @@
 import { sqlApi } from "@/services/api";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   DEFAULT_COORD_ALT,
   getArmyRelicEffects,
-  getBlockTimestamp,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
@@ -61,9 +61,9 @@ export const useAttackTargetData = (
   const [isLoading, setIsLoading] = useState(false);
   const [attackerRelicEffects, setAttackerRelicEffects] = useState<RelicEffectWithEndTick[]>([]);
   const [targetRelicEffects, setTargetRelicEffects] = useState<RelicEffectWithEndTick[]>([]);
+  const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
 
   useEffect(() => {
-    const { currentArmiesTick } = getBlockTimestamp();
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
 
     if (structure) {
@@ -87,7 +87,7 @@ export const useAttackTargetData = (
     } else {
       setAttackerRelicEffects([]);
     }
-  }, [attackerEntityId, Structure, ExplorerTroops, ProductionBoostBonus]);
+  }, [attackerEntityId, Structure, ExplorerTroops, ProductionBoostBonus, currentArmiesTick]);
 
   useEffect(() => {
     let isActive = true;
@@ -107,7 +107,6 @@ export const useAttackTargetData = (
 
       try {
         const isStructure = targetTile.occupier_is_structure;
-        const { currentArmiesTick, currentBlockTimestamp } = getBlockTimestamp();
 
         if (isStructure) {
           const { structure, resources, productionBoostBonus } = await getStructureFromToriiClient(
@@ -203,7 +202,7 @@ export const useAttackTargetData = (
     return () => {
       isActive = false;
     };
-  }, [targetTile, toriiClient]);
+  }, [targetTile, toriiClient, currentArmiesTick, currentBlockTimestamp]);
 
   return {
     attackerRelicEffects,

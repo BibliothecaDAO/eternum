@@ -1,9 +1,7 @@
 import { AudioCategory, useAudio, useMusicPlayer, ScrollingTrackName } from "@/audio";
 import { GraphicsSettings } from "@/ui/config";
-import Button from "@/ui/design-system/atoms/button";
-import { RangeInput } from "@/ui/design-system/atoms";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Maximize2, Minimize2, Music, Volume2, VolumeX, X } from "lucide-react";
+import { Maximize2, Minimize2, Monitor, Music, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface DocumentWithFullscreen extends HTMLDocument {
@@ -64,6 +62,82 @@ interface LandingSettingsProps {
   className?: string;
 }
 
+const SETTINGS_SHELL_CLASS = [
+  "relative w-full max-w-md overflow-hidden rounded-[22px]",
+  "border border-gold/18 bg-[linear-gradient(180deg,rgba(11,11,11,0.96),rgba(6,6,6,0.92))]",
+  "p-5 shadow-[0_28px_90px_-42px_rgba(0,0,0,0.95)] backdrop-blur-xl",
+].join(" ");
+
+const SETTINGS_SECTION_CLASS = [
+  "rounded-[18px] border border-gold/12 bg-black/30 px-4 py-4",
+  "shadow-[inset_0_1px_0_rgba(223,170,84,0.05)]",
+].join(" ");
+
+const SETTINGS_CONTROL_CLASS = [
+  "rounded-[14px] border border-gold/14 bg-black/35",
+  "shadow-[inset_0_1px_0_rgba(223,170,84,0.04)]",
+].join(" ");
+
+const SETTINGS_ACTION_BUTTON_CLASS = [
+  "inline-flex items-center justify-center rounded-[14px] border border-gold/16 bg-black/35",
+  "px-3 py-2 text-sm font-medium text-gold/80 transition-colors",
+  "hover:border-gold/28 hover:bg-gold/[0.08] hover:text-gold",
+].join(" ");
+
+const SETTINGS_CHOICE_BUTTON_BASE_CLASS = [
+  "inline-flex items-center justify-center rounded-[12px] border px-3 py-2 text-sm font-medium transition-colors",
+].join(" ");
+
+const LandingSettingsSection = ({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof Volume2;
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section className={SETTINGS_SECTION_CLASS}>
+    <div className="mb-4 flex items-center gap-2 text-sm font-medium uppercase tracking-[0.18em] text-gold/72">
+      <Icon className="h-4 w-4 text-gold/55" />
+      <span>{title}</span>
+    </div>
+    <div className="space-y-3">{children}</div>
+  </section>
+);
+
+const LandingSettingsSlider = ({
+  label,
+  value,
+  onChange,
+  trailing,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  trailing?: React.ReactNode;
+}) => (
+  <div className={cn(SETTINGS_CONTROL_CLASS, "px-3 py-3")}>
+    <div className="mb-2 flex items-center justify-between gap-3">
+      <span className="text-sm text-gold/72">{label}</span>
+      {trailing ?? <span className="text-[11px] font-medium text-gold/45">{value}%</span>}
+    </div>
+    <input
+      type="range"
+      min={0}
+      max={100}
+      step={1}
+      value={value}
+      onChange={(event) => onChange(Number.parseInt(event.target.value, 10))}
+      className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-[#dfaa54]"
+    />
+    <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-[0.12em] text-gold/32">
+      <span>0</span>
+      <span>100</span>
+    </div>
+  </div>
+);
+
 /**
  * Simplified settings panel for the landing page.
  * Includes audio controls and basic preferences.
@@ -116,180 +190,123 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
   };
 
   return (
-    <div
-      className={cn(
-        "relative w-full max-w-md",
-        "rounded-lg border border-gold/30",
-        "bg-black/90 backdrop-blur-md",
-        "p-6",
-        "shadow-[0_0_60px_rgba(0,0,0,0.8)]",
-        className,
-      )}
-    >
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="font-serif text-xl font-semibold text-gold">Settings</h2>
+    <div className={cn(SETTINGS_SHELL_CLASS, className)}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-[radial-gradient(circle_at_top,rgba(223,170,84,0.14),transparent_68%)]" />
+
+      <div className="relative mb-5 flex items-center justify-between">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-gold/42">Dashboard</p>
+          <h2 className="font-serif text-[28px] font-semibold text-gold">Settings</h2>
+        </div>
         <button
           type="button"
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-gold/60 transition-colors hover:bg-gold/10 hover:text-gold"
+          className={cn(
+            SETTINGS_CONTROL_CLASS,
+            "flex h-10 w-10 items-center justify-center text-gold/58 transition-colors hover:border-gold/26 hover:bg-gold/[0.08] hover:text-gold",
+          )}
         >
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      {/* Divider */}
-      <div className="mb-6 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-
-      {/* Audio Section */}
       <div className="space-y-4">
-        <h3 className="flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-gold/70">
-          <Volume2 className="h-4 w-4" />
-          Audio
-        </h3>
-
-        {/* Master Volume */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gold/60">Master Volume</span>
-            <button
-              type="button"
-              onClick={() => setMuted(!isMuted)}
-              className="text-gold/60 transition-colors hover:text-gold"
-            >
-              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            </button>
-          </div>
-          <RangeInput
-            title=""
+        <LandingSettingsSection icon={Volume2} title="Audio">
+          <LandingSettingsSlider
+            label="Master Volume"
             value={Math.round(masterVolume * 100)}
-            fromTitle="0"
-            toTitle="100"
             onChange={(value) => setMasterVolume(value / 100)}
+            trailing={
+              <button
+                type="button"
+                onClick={() => setMuted(!isMuted)}
+                className={cn(
+                  SETTINGS_CONTROL_CLASS,
+                  "flex h-8 w-8 items-center justify-center text-gold/58 transition-colors hover:border-gold/26 hover:bg-gold/[0.08] hover:text-gold",
+                )}
+              >
+                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </button>
+            }
           />
-        </div>
-
-        {/* Music Volume */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gold/60">Music</span>
-            <span className="text-xs text-gold/40">{Math.round(musicVolume * 100)}%</span>
-          </div>
-          <RangeInput
-            title=""
+          <LandingSettingsSlider
+            label="Music"
             value={Math.round(musicVolume * 100)}
-            fromTitle="0"
-            toTitle="100"
             onChange={(value) => setCategoryVolume(AudioCategory.MUSIC, value / 100)}
           />
-        </div>
-
-        {/* UI/Sound Effects Volume */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gold/60">Sound Effects</span>
-            <span className="text-xs text-gold/40">{Math.round(uiVolume * 100)}%</span>
-          </div>
-          <RangeInput
-            title=""
+          <LandingSettingsSlider
+            label="Sound Effects"
             value={Math.round(uiVolume * 100)}
-            fromTitle="0"
-            toTitle="100"
             onChange={(value) => setCategoryVolume(AudioCategory.UI, value / 100)}
           />
-        </div>
 
-        {/* Now Playing */}
-        {trackName && (
-          <div className="flex items-center gap-3 rounded-lg bg-gold/5 p-3">
-            <Music className="h-4 w-4 flex-shrink-0 text-gold/60" />
-            <div className="min-w-0 flex-1">
-              <ScrollingTrackName trackName={trackName} />
+          {trackName && (
+            <div className={cn(SETTINGS_CONTROL_CLASS, "flex items-center gap-3 px-3 py-3")}>
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[12px] border border-gold/12 bg-black/45 text-gold/55">
+                <Music className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.14em] text-gold/34">Now Playing</div>
+                <ScrollingTrackName trackName={trackName} className="w-full overflow-hidden text-xs" />
+              </div>
+              <button
+                type="button"
+                onClick={nextTrack}
+                className={cn(
+                  SETTINGS_ACTION_BUTTON_CLASS,
+                  "px-2.5 py-2 text-[11px] uppercase tracking-[0.16em] text-gold/58",
+                )}
+              >
+                Skip
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={nextTrack}
-              className="text-xs text-gold/60 transition-colors hover:text-gold"
-            >
-              Skip
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Divider */}
-      <div className="my-6 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-
-      {/* Display Section */}
-      <div className="space-y-4">
-        <h3 className="flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-gold/70">
-          <Maximize2 className="h-4 w-4" />
-          Display
-        </h3>
-
-        {/* Fullscreen Toggle */}
-        <Button
-          variant="outline"
-          size="md"
-          onClick={handleFullScreen}
-          className="w-full justify-center gap-2"
-          forceUppercase={false}
-        >
-          {fullScreen ? (
-            <>
-              <Minimize2 className="h-4 w-4" />
-              Exit Fullscreen
-            </>
-          ) : (
-            <>
-              <Maximize2 className="h-4 w-4" />
-              Enter Fullscreen
-            </>
           )}
-        </Button>
+        </LandingSettingsSection>
+
+        <LandingSettingsSection icon={Maximize2} title="Display">
+          <button type="button" onClick={handleFullScreen} className={cn(SETTINGS_ACTION_BUTTON_CLASS, "w-full gap-2")}>
+            {fullScreen ? (
+              <>
+                <Minimize2 className="h-4 w-4" />
+                Exit Fullscreen
+              </>
+            ) : (
+              <>
+                <Maximize2 className="h-4 w-4" />
+                Enter Fullscreen
+              </>
+            )}
+          </button>
+        </LandingSettingsSection>
+
+        <LandingSettingsSection icon={Monitor} title="Graphics">
+          <div className="grid grid-cols-3 gap-2">
+            {[GraphicsSettings.LOW, GraphicsSettings.MID, GraphicsSettings.HIGH].map((setting) => {
+              const isActive = graphicsSetting === setting;
+              return (
+                <button
+                  key={setting}
+                  type="button"
+                  disabled={isActive}
+                  onClick={() => handleGraphicsSettingChange(setting)}
+                  className={cn(
+                    SETTINGS_CHOICE_BUTTON_BASE_CLASS,
+                    isActive
+                      ? "cursor-default border-gold/32 bg-gold/[0.14] text-gold"
+                      : "border-gold/14 bg-black/35 text-gold/68 hover:border-gold/26 hover:bg-gold/[0.08] hover:text-gold",
+                  )}
+                >
+                  {setting.charAt(0).toUpperCase() + setting.slice(1)}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs leading-relaxed text-gold/42">Changing graphics quality reloads the page.</p>
+        </LandingSettingsSection>
       </div>
 
-      {/* Divider */}
-      <div className="my-6 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-
-      {/* Graphics Section */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium uppercase tracking-wider text-gold/70">Graphics</h3>
-        <div className="flex gap-2">
-          <Button
-            variant={graphicsSetting === GraphicsSettings.LOW ? "success" : "outline"}
-            disabled={graphicsSetting === GraphicsSettings.LOW}
-            onClick={() => handleGraphicsSettingChange(GraphicsSettings.LOW)}
-            className="flex-1 justify-center"
-            forceUppercase={false}
-          >
-            Low
-          </Button>
-          <Button
-            variant={graphicsSetting === GraphicsSettings.MID ? "success" : "outline"}
-            disabled={graphicsSetting === GraphicsSettings.MID}
-            onClick={() => handleGraphicsSettingChange(GraphicsSettings.MID)}
-            className="flex-1 justify-center"
-            forceUppercase={false}
-          >
-            Medium
-          </Button>
-          <Button
-            variant={graphicsSetting === GraphicsSettings.HIGH ? "success" : "outline"}
-            disabled={graphicsSetting === GraphicsSettings.HIGH}
-            onClick={() => handleGraphicsSettingChange(GraphicsSettings.HIGH)}
-            className="flex-1 justify-center"
-            forceUppercase={false}
-          >
-            High
-          </Button>
-        </div>
-        <p className="text-xs text-gold/40">Changing graphics quality reloads the page.</p>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-6 text-center">
-        <p className="text-xs text-gold/40">More settings available in-game</p>
+      <div className="mt-5 text-center">
+        <p className="text-xs uppercase tracking-[0.14em] text-gold/34">More settings available in-game</p>
       </div>
     </div>
   );

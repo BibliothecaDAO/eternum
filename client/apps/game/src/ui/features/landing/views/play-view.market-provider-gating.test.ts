@@ -4,10 +4,10 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("PlayView market provider gating", () => {
-  it("mounts prediction-market providers only for the play tab", () => {
+  it("mounts prediction-market providers for tabs that render market-aware game grids", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
 
-    expect(source).toContain('const shouldMountMarketsProviders = activeTab === "play"');
+    expect(source).toContain('const shouldMountMarketsProviders = activeTab === "play" || activeTab === "learn"');
     expect(source).toContain("shouldMountMarketsProviders ? <MarketsProviders>{content}</MarketsProviders> : content");
   });
 });
