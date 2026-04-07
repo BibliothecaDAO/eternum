@@ -65,6 +65,10 @@ const mockWindow = {
   innerWidth: 1280,
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
+  setInterval,
+  clearInterval,
+  setTimeout,
+  clearTimeout,
 };
 
 const mockNavigator = {
@@ -91,6 +95,12 @@ vi.stubGlobal("localStorage", mockLocalStorage);
 vi.stubGlobal("sessionStorage", mockLocalStorage);
 vi.stubGlobal("requestAnimationFrame", (cb: () => void) => setTimeout(cb, 0));
 vi.stubGlobal("cancelAnimationFrame", clearTimeout);
+vi.stubGlobal(
+  "ProgressEvent",
+  class {
+    constructor(public readonly type: string) {}
+  },
+);
 vi.stubGlobal("matchMedia", () => ({ matches: false, addListener: vi.fn(), removeListener: vi.fn() }));
 vi.stubGlobal(
   "ResizeObserver",
@@ -115,7 +125,12 @@ vi.stubGlobal(
     disconnect() {}
   },
 );
-vi.stubGlobal("performance", { now: () => Date.now(), mark: vi.fn(), measure: vi.fn() });
+vi.stubGlobal("performance", {
+  mark: vi.fn(),
+  markResourceTiming: vi.fn(),
+  measure: vi.fn(),
+  now: () => Date.now(),
+});
 
 class MockGUI {
   domElement = createMockElement("div");
@@ -226,6 +241,13 @@ vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} 
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
 vi.mock("@/three/scenes/fast-travel", () => ({ default: class MockFastTravelScene {} }));
+vi.mock("../../env", () => ({
+  env: {
+    VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
+    VITE_PUBLIC_GRAPHICS_DEV: false,
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "experimental-webgpu-auto",
+  },
+}));
 vi.mock("@/three/scenes/hexagon-scene", () => ({
   HexagonScene: class MockHexagonScene {},
   CameraView: {
@@ -245,36 +267,20 @@ function createGameRendererSubject() {
   canvasParent.appendChild(canvas);
   document.body.appendChild(canvasParent);
 
-  const memoryStatsElement = document.createElement("div");
-  const statsDomElement = document.createElement("div");
-  const labelRendererElement = document.createElement("div");
-  labelRendererElement.appendChild(document.createElement("span"));
-  const statsRecordingIndicator = document.createElement("div");
-  const pulseStyle = document.createElement("style");
-  pulseStyle.id = "stats-recording-pulse";
-
-  document.body.appendChild(memoryStatsElement);
-  document.body.appendChild(statsDomElement);
-  document.body.appendChild(statsRecordingIndicator);
-  document.body.appendChild(pulseStyle);
-
-  const unsubscribeEnableMapZoom = vi.fn();
   const unsubscribeQualityController = vi.fn();
   const worldmapDestroy = vi.fn();
   const hexceptionDestroy = vi.fn();
   const hudDestroy = vi.fn();
-  const controlsDispose = vi.fn();
+  const interactionRuntimeDispose = vi.fn();
+  const monitoringRuntimeDispose = vi.fn();
   const rendererDispose = vi.fn();
   const envDispose = vi.fn();
   const backendDispose = vi.fn(() => {
     rendererDispose();
     envDispose();
   });
-  const keyHandler = vi.fn();
 
   subject.isDestroyed = false;
-  subject.memoryMonitorTimeoutId = setTimeout(() => {}, 60_000);
-  subject.unsubscribeEnableMapZoom = unsubscribeEnableMapZoom;
   subject.unsubscribeQualityController = unsubscribeQualityController;
   subject.cleanupIntervals = [setInterval(() => {}, 60_000), setInterval(() => {}, 60_000)];
   subject.renderer = { domElement: canvas, dispose: rendererDispose };
@@ -282,38 +288,26 @@ function createGameRendererSubject() {
   subject.worldmapScene = { destroy: worldmapDestroy };
   subject.hexceptionScene = { destroy: hexceptionDestroy };
   subject.hudScene = { destroy: hudDestroy };
-  subject.controls = { dispose: controlsDispose };
+  subject.interactionRuntime = { dispose: interactionRuntimeDispose };
+  subject.monitoringRuntime = { dispose: monitoringRuntimeDispose };
   subject.environmentTarget = { dispose: envDispose };
   subject.guiFolders = [];
-  subject.memoryStatsElement = memoryStatsElement;
-  subject.statsDomElement = statsDomElement;
-  subject.labelRenderer = { domElement: document.createElement("div") };
-  subject.labelRendererElement = labelRendererElement;
-  subject.statsRecorder = {
-    destroy: vi.fn(() => {
-      statsRecordingIndicator.remove();
-      pulseStyle.remove();
-      window.removeEventListener("keydown", keyHandler);
-    }),
-  };
+  subject.labelRuntime = { dispose: vi.fn() };
   subject.handleURLChange = vi.fn();
   subject.handleWindowResize = vi.fn();
-  subject.handleDocumentFocus = vi.fn();
-  subject.handleDocumentBlur = vi.fn();
 
   return {
     subject,
     canvas,
-    unsubscribeEnableMapZoom,
     unsubscribeQualityController,
     worldmapDestroy,
     hexceptionDestroy,
     hudDestroy,
-    controlsDispose,
+    interactionRuntimeDispose,
+    monitoringRuntimeDispose,
     rendererDispose,
     envDispose,
     backendDispose,
-    keyHandler,
   };
 }
 
@@ -329,40 +323,29 @@ describe("GameRenderer destroy lifecycle", () => {
 
   it("cleans timers, listeners, scenes, and DOM resources on destroy", () => {
     const fixture = createGameRendererSubject();
-    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
     const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
     const removeWindowListenerSpy = vi.spyOn(window, "removeEventListener");
-    const removeDocumentListenerSpy = vi.spyOn(document, "removeEventListener");
 
     fixture.subject.destroy();
 
     expect(fixture.subject.isDestroyed).toBe(true);
-    expect(fixture.unsubscribeEnableMapZoom).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeQualityController).toHaveBeenCalledTimes(1);
-    expect(clearTimeoutSpy).toHaveBeenCalled();
     expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
     expect(fixture.subject.cleanupIntervals).toEqual([]);
     expect(fixture.rendererDispose).toHaveBeenCalledTimes(1);
     expect(fixture.worldmapDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.hexceptionDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.controlsDispose).toHaveBeenCalledTimes(1);
+    expect(fixture.interactionRuntimeDispose).toHaveBeenCalledTimes(1);
+    expect(fixture.monitoringRuntimeDispose).toHaveBeenCalledTimes(1);
     expect(fixture.envDispose).toHaveBeenCalledTimes(1);
     expect(fixture.canvas.isConnected).toBe(false);
 
     expect(removeWindowListenerSpy).toHaveBeenCalledWith("urlChanged", fixture.subject.handleURLChange);
     expect(removeWindowListenerSpy).toHaveBeenCalledWith("popstate", fixture.subject.handleURLChange);
     expect(removeWindowListenerSpy).toHaveBeenCalledWith("resize", fixture.subject.handleWindowResize);
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith("keydown", fixture.keyHandler);
-    expect(removeDocumentListenerSpy).toHaveBeenCalledWith("focus", fixture.subject.handleDocumentFocus, true);
-    expect(removeDocumentListenerSpy).toHaveBeenCalledWith("blur", fixture.subject.handleDocumentBlur, true);
 
-    expect(fixture.subject.memoryStatsElement.isConnected).toBe(false);
-    expect(fixture.subject.statsDomElement).toBeUndefined();
-    expect(fixture.subject.labelRenderer).toBeUndefined();
-    expect(fixture.subject.labelRendererElement).toBeUndefined();
-    expect(fixture.subject.statsRecorder.destroy).toHaveBeenCalledTimes(1);
-    expect(document.getElementById("stats-recording-pulse")).toBeNull();
+    expect(fixture.subject.labelRuntime.dispose).toHaveBeenCalledTimes(1);
   });
 
   it("is idempotent and skips cleanup work after the first destroy call", () => {
@@ -375,7 +358,8 @@ describe("GameRenderer destroy lifecycle", () => {
     expect(fixture.worldmapDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.hexceptionDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.controlsDispose).toHaveBeenCalledTimes(1);
+    expect(fixture.interactionRuntimeDispose).toHaveBeenCalledTimes(1);
+    expect(fixture.monitoringRuntimeDispose).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("GameRenderer already destroyed, skipping cleanup");
   });
 

@@ -187,15 +187,14 @@ describe("GameRenderer backend seam", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     subject.backend = backend;
     subject.camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
-    subject.labelRenderer = { setSize: vi.fn() };
+    subject.labelRuntime = { markDirty: vi.fn(), resize: vi.fn() };
     subject.hudScene = { onWindowResize: vi.fn() };
-    subject.labelsDirty = false;
 
     subject.onWindowResize();
 
     expect(backend.resize).toHaveBeenCalledWith(320, 200);
     expect(subject.hudScene.onWindowResize).toHaveBeenCalledWith(320, 200);
-    expect(subject.labelRenderer.setSize).toHaveBeenCalledWith(320, 200);
+    expect(subject.labelRuntime.resize).toHaveBeenCalledWith(320, 200);
   });
 
   it("delegates quality application through the backend", () => {
@@ -315,7 +314,11 @@ describe("GameRenderer backend seam", () => {
     subject.backend = backend;
     subject.renderer = backend.renderer;
     subject.isDestroyed = false;
-    subject.labelRenderer = { render: vi.fn() };
+    subject.labelRuntime = {
+      isReady: vi.fn(() => true),
+      render: vi.fn(),
+      shouldRender: vi.fn(() => false),
+    };
     subject.controls = { update: vi.fn() };
     subject.hudScene = {
       update: vi.fn(),
@@ -345,7 +348,6 @@ describe("GameRenderer backend seam", () => {
       getCurrentScene: vi.fn(() => "map"),
     };
     subject.camera = "camera";
-    subject.shouldRenderLabels = vi.fn(() => false);
     subject.captureStatsSample = vi.fn();
     subject.lastTime = performance.now() - 16;
     subject.getTargetFPS = vi.fn(() => null);

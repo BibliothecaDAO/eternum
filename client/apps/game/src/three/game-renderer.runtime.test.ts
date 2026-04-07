@@ -58,6 +58,13 @@ vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} 
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
 vi.mock("@/three/scenes/fast-travel", () => ({ default: class MockFastTravelScene {} }));
+vi.mock("../../env", () => ({
+  env: {
+    VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
+    VITE_PUBLIC_GRAPHICS_DEV: false,
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "experimental-webgpu-auto",
+  },
+}));
 vi.mock("@/three/scenes/hexagon-scene", () => ({
   HexagonScene: class MockHexagonScene {},
   CameraView: {

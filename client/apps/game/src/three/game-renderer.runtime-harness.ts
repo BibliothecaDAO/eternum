@@ -86,7 +86,14 @@ export function createGameRendererRuntimeHarness() {
         backend,
         renderer: backend.renderer,
         camera: { aspect: 1, updateProjectionMatrix: vi.fn() },
-        labelRenderer: { render: vi.fn(), setSize: vi.fn() },
+        labelRuntime: {
+          dispose: vi.fn(),
+          isReady: vi.fn(() => true),
+          markDirty: vi.fn(),
+          render: vi.fn(),
+          resize: vi.fn(),
+          shouldRender: vi.fn(() => false),
+        },
         controls: { update: vi.fn(), dispose: vi.fn() },
         hudScene: {
           update: vi.fn(),
@@ -101,7 +108,6 @@ export function createGameRendererRuntimeHarness() {
         hexceptionScene,
         fastTravelScene: undefined,
         sceneManager,
-        shouldRenderLabels: vi.fn(() => false),
         captureStatsSample: vi.fn(),
         lastTime: performance.now() - 16,
         getTargetFPS: vi.fn(() => null),
@@ -111,8 +117,6 @@ export function createGameRendererRuntimeHarness() {
         guiFolders: [],
         handleURLChange: vi.fn(),
         handleWindowResize: vi.fn(),
-        handleDocumentFocus: vi.fn(),
-        handleDocumentBlur: vi.fn(),
       } as any;
     },
   };

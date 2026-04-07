@@ -1,15 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getGameModeId } from "@/config/game-modes";
-import {
-  CAMERA_CONFIG,
-  CAMERA_FAR_PLANE,
-  CONTROL_CONFIG,
-  POST_PROCESSING_CONFIG,
-  type PostProcessingConfig,
-} from "@/three/constants";
+import { POST_PROCESSING_CONFIG, type PostProcessingConfig } from "@/three/constants";
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
-import { CameraView } from "@/three/scenes/hexagon-scene";
 import FastTravelScene from "@/three/scenes/fast-travel";
 import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
@@ -23,30 +16,21 @@ import {
   CineonToneMapping,
   LinearToneMapping,
   NoToneMapping,
-  PerspectiveCamera,
-  Raycaster,
   ReinhardToneMapping,
-  Vector2,
   type Camera,
   type Object3D,
   type Object3DEventMap,
 } from "three";
-import { CSS2DRenderer } from "three-stdlib";
-import { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import Stats from "three/examples/jsm/libs/stats.module.js";
 import { env } from "../../env";
 import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
 import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
 import { SceneName } from "./types";
 import {
   resolveCapabilityAwareRendererEffectPlan,
-  resolveLabelRenderDecision,
-  resolveLabelRenderIntervalMs,
   resolveRendererEnvironmentPolicy,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
-import { clearGameRendererDebugGlobals, registerGameRendererDebugGlobals } from "./game-renderer-debug-globals";
 import {
   replaceRendererDiagnosticDegradations,
   setRendererDiagnosticCapabilities,
@@ -54,7 +38,6 @@ import {
   setRendererDiagnosticEffectPlan,
   setRendererDiagnosticPostprocessPolicy,
   snapshotRendererDiagnostics,
-  setRendererDiagnosticSceneName,
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
 import {
@@ -62,21 +45,22 @@ import {
   applyRendererBackendPostProcessPlan,
   applyRendererBackendQuality,
   disposeRendererBackend,
-  renderRendererBackendFrame,
   resizeRendererBackend,
 } from "./renderer-backend-compat";
 import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 import { transitionDB } from "./utils/";
 import { disposeContactShadowResources, getContactShadowResources } from "./utils/contact-shadow";
 import { destroyTrackedGuiFolders, trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
-import { MaterialPool } from "./utils/material-pool";
-import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 import { createWebGLRendererBackend, type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
+import { runRendererFrame } from "./renderer-frame-runtime";
+import { createRendererInteractionRuntime, type RendererInteractionRuntime } from "./renderer-interaction-runtime";
+import { createRendererLabelRuntime, type RendererLabelRuntime } from "./renderer-label-runtime";
+import { createRendererMonitoringRuntime, type RendererMonitoringRuntime } from "./renderer-monitoring-runtime";
+import { bootstrapRendererSceneRuntime, createRendererSceneRegistry } from "./renderer-scene-bootstrap";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
 import { requestRendererScenePrewarm, resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
-import { StatsRecorder } from "./stats-recorder";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
@@ -88,20 +72,17 @@ const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
 };
 
 export default class GameRenderer {
-  private labelRenderer!: CSS2DRenderer;
-  private labelRendererElement!: HTMLDivElement;
+  private labelRuntime!: RendererLabelRuntime;
   private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
   private renderer!: RendererSurfaceLike;
-  private camera!: PerspectiveCamera;
-  private raycaster!: Raycaster;
-  private mouse!: Vector2;
-  private controls!: MapControls;
+  private interactionRuntime!: RendererInteractionRuntime;
+  private camera!: RendererInteractionRuntime["camera"];
+  private raycaster!: RendererInteractionRuntime["raycaster"];
+  private mouse!: RendererInteractionRuntime["pointer"];
+  private controls!: NonNullable<RendererInteractionRuntime["controls"]>;
   private postProcessingConfig?: PostProcessingConfig;
   private postProcessController?: RendererPostProcessController;
   private postProcessingGUIInitialized = false;
-  private labelsDirty = true;
-  private lastLabelRenderTime = 0;
-  private lastLabelsActive = false;
 
   // Weather-based post-processing modulation
   private basePostProcessingValues = {
@@ -114,19 +95,6 @@ export default class GameRenderer {
   private weatherPostProcessingEnabled = true;
   private unsubscribeQualityController?: () => void;
   private lastAppliedQuality?: QualityFeatures;
-
-  // Stats and Monitoring
-  private stats!: Stats;
-  private memoryMonitor?: MemoryMonitor;
-  private memoryStatsElement?: HTMLDivElement;
-  private statsDomElement?: HTMLElement;
-
-  // Stats Recording
-  private statsRecorder!: StatsRecorder;
-
-  // Camera settings
-  private cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
-  private cameraAngle = CAMERA_CONFIG.defaultAngle;
 
   // Components
   private transitionManager!: TransitionManager;
@@ -143,60 +111,64 @@ export default class GameRenderer {
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private guiFolders: TrackableGuiFolder[] = [];
-  private unsubscribeEnableMapZoom?: () => void;
-  private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
+  private monitoringRuntime?: RendererMonitoringRuntime;
   private readonly isMobileDevice = IS_MOBILE;
   private backendInitializationPromise?: Promise<void>;
   private readonly handleWindowResize = () => this.onWindowResize();
-  private readonly handleDocumentFocus = (event: FocusEvent) => {
-    if (event.target instanceof HTMLInputElement && this.controls) {
-      this.controls.stopListenToKeyEvents();
-    }
-  };
-  private readonly handleDocumentBlur = (event: FocusEvent) => {
-    if (event.target instanceof HTMLInputElement && this.controls) {
-      this.controls.listenToKeyEvents(document.body);
-    }
-  };
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
     this.dojo = dojoContext;
 
     this.backendInitializationPromise = this.initializeRendererBackend();
-    this.initializeCamera();
-    this.initializeRaycaster();
-
-    this.waitForLabelRendererElement()
-      .then((labelRendererElement) => {
-        if (this.isDestroyed) {
-          return;
-        }
-        this.labelRendererElement = labelRendererElement;
-        this.initializeLabelRenderer();
-      })
-      .catch((error) => {
-        console.warn("GameRenderer: Failed to initialize label renderer:", error);
-      });
+    this.initializeInteractionRuntime();
+    this.initializeLabelRuntime();
   }
 
-  private initializeRaycaster() {
-    this.raycaster = new Raycaster();
-    this.mouse = new Vector2();
+  private initializeInteractionRuntime() {
+    this.interactionRuntime = createRendererInteractionRuntime({
+      graphicsSetting: this.graphicsSetting,
+      onControlsChange: () => this.handleInteractionChange(),
+      resolveCurrentSceneName: () => this.sceneManager?.getCurrentScene(),
+    });
+    this.camera = this.interactionRuntime.camera;
+    this.raycaster = this.interactionRuntime.raycaster;
+    this.mouse = this.interactionRuntime.pointer;
   }
 
-  private initializeCamera() {
-    this.camera = new PerspectiveCamera(
-      CAMERA_CONFIG.fov,
-      window.innerWidth / window.innerHeight,
-      CAMERA_CONFIG.near,
-      CAMERA_FAR_PLANE,
-    );
-    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
-    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-    this.camera.position.set(0, cameraHeight, cameraDepth);
-    this.camera.lookAt(0, 0, 0);
-    this.camera.up.set(0, 1, 0);
+  private initializeLabelRuntime() {
+    this.labelRuntime = createRendererLabelRuntime({
+      isMobileDevice: this.isMobileDevice,
+    });
+    this.labelRuntime.initialize().catch((error) => {
+      console.warn("GameRenderer: Failed to initialize label renderer:", error);
+    });
+  }
+
+  private initializeMonitoringRuntime() {
+    if (this.monitoringRuntime) {
+      return;
+    }
+
+    this.monitoringRuntime = createRendererMonitoringRuntime({
+      debugWindow: window,
+      getSceneName: () => this.sceneManager?.getCurrentScene() || "unknown",
+      isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,
+      isMemoryMonitoringEnabled: MEMORY_MONITORING_ENABLED,
+      renderer: this.renderer,
+      rendererOwner: this,
+    });
+  }
+
+  private handleInteractionChange() {
+    this.markLabelsDirty();
+    if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel && this.fastTravelScene) {
+      this.fastTravelScene.requestSceneRefresh();
+    }
+  }
+
+  private markLabelsDirty() {
+    this.labelRuntime?.markDirty();
   }
 
   private setupGUIControls() {
@@ -290,40 +262,6 @@ export default class GameRenderer {
     contactShadowFolder.close();
   }
 
-  private initializeLabelRenderer() {
-    this.labelRenderer = new CSS2DRenderer({ element: this.labelRendererElement });
-    this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
-  }
-
-  private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
-    return new Promise((resolve, reject) => {
-      const WARN_AFTER_ATTEMPTS = 300; // ~5 seconds at 60fps
-      let attempts = 0;
-
-      const checkElement = () => {
-        if (this.isDestroyed) {
-          reject(new Error("GameRenderer destroyed while waiting for label renderer element"));
-          return;
-        }
-
-        const element = document.getElementById("labelrenderer") as HTMLDivElement | null;
-        if (element) {
-          resolve(element);
-          return;
-        }
-
-        attempts++;
-        if (attempts === WARN_AFTER_ATTEMPTS) {
-          console.warn("GameRenderer: labelrenderer element not found yet; continuing to wait for world UI to mount");
-        }
-
-        requestAnimationFrame(checkElement);
-      };
-
-      checkElement();
-    });
-  }
-
   private async initializeRendererBackend(backendFactory?: RendererBackendFactory): Promise<void> {
     if (backendFactory) {
       this.backend = backendFactory({
@@ -383,144 +321,25 @@ export default class GameRenderer {
   }
 
   initStats() {
-    this.stats = new (Stats as any)();
-    document.body.appendChild(this.stats.dom);
-    this.statsDomElement = this.stats.dom;
-
-    // Initialize memory monitoring
-    this.initMemoryMonitoring();
-
-    // Initialize stats recorder
-    this.statsRecorder = new StatsRecorder({
-      getRendererInfo: () => this.renderer.info,
-      getSceneName: () => this.sceneManager?.getCurrentScene() || "unknown",
-      getMemoryStatsProvider: () => this.memoryMonitor,
-      isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,
-    });
-    this.statsRecorder.setupKeyboardShortcuts();
-  }
-
-  public initMemoryMonitoring() {
-    if (!MEMORY_MONITORING_ENABLED) {
-      return;
-    }
-
-    // Check if memory API is supported
-    if (!MemoryMonitor.isMemoryAPISupported()) {
-      console.warn("Memory monitoring not supported in this browser");
-      return;
-    }
-
-    // Initialize memory monitor with spike detection
-    this.memoryMonitor = new MemoryMonitor({
-      spikeThresholdMB: 30, // Alert on 30MB+ spikes during gameplay
-      onMemorySpike: (spike: MemorySpike) => {
-        console.warn(`🚨 Memory spike in ${spike.context}: +${spike.increaseMB.toFixed(1)}MB`);
-
-        // Additional logging for large spikes
-        if (spike.increaseMB > 100) {
-          console.error("🔥 Large memory spike detected!", spike);
-          // Could trigger additional debugging here
-        }
-      },
-    });
-
-    // Provide renderer reference for better resource tracking
-    this.memoryMonitor.setRenderer(this.renderer);
-    registerGameRendererDebugGlobals(window, this, this.renderer);
-
-    // Create memory stats display element
-    this.createMemoryStatsDisplay();
-
-    // Start periodic memory monitoring
-    this.startMemoryMonitoring();
-  }
-
-  private createMemoryStatsDisplay() {
-    this.memoryStatsElement = document.createElement("div");
-    this.memoryStatsElement.style.cssText = `
-      position: fixed;
-      top: 50px;
-      left: 0px;
-      background: rgba(0, 0, 0, 0.8);
-      color: #00ff00;
-      font-family: monospace;
-      font-size: 10px;
-      padding: 5px;
-      border-radius: 3px;
-      z-index: 10000;
-      min-width: 200px;
-    `;
-    document.body.appendChild(this.memoryStatsElement);
-  }
-
-  private startMemoryMonitoring() {
-    const updateMemoryStats = () => {
-      if (this.isDestroyed || !this.memoryMonitor || !this.memoryStatsElement) {
-        return;
-      }
-
-      try {
-        const currentScene = this.sceneManager?.getCurrentScene() || "unknown";
-        const stats = this.memoryMonitor.getCurrentStats(currentScene);
-        const summary = this.memoryMonitor.getSummary();
-
-        // Get material pool stats
-        const materialStats = MaterialPool.getInstance().getStats();
-        const sharingRatio = materialStats.totalReferences / Math.max(materialStats.uniqueMaterials, 1);
-
-        // Get renderer draw call stats
-        const drawCalls = this.renderer.info.render.calls;
-        const triangles = this.renderer.info.render.triangles;
-        const drawCallColor = drawCalls > 100 ? "#ff4444" : drawCalls > 50 ? "#ffaa00" : "#00ff00";
-
-        // Update display
-        this.memoryStatsElement.innerHTML = `
-          <strong>Memory Monitor</strong><br>
-          Heap: ${stats.heapUsedMB}MB / ${stats.heapTotalMB}MB<br>
-          Avg: ${summary.averageMB}MB<br>
-          Trend: ${summary.trendMBPerSecond > 0 ? "+" : ""}${summary.trendMBPerSecond.toFixed(2)}MB/s<br>
-          Spikes: ${summary.spikeCount} (max: ${summary.largestSpikeMB}MB)<br>
-          Resources: G:${stats.geometries} M:${stats.materials} T:${stats.textures}<br>
-          Materials: ${materialStats.uniqueMaterials} shared (${sharingRatio.toFixed(1)}:1)<br>
-          <span style="color: ${drawCallColor};">Draw Calls: ${drawCalls} | Triangles: ${(triangles / 1000).toFixed(1)}k</span><br>
-          ${stats.memorySpike ? `<span style="color: #ff4444;">⚠ SPIKE: +${stats.spikeIncrease.toFixed(1)}MB</span>` : ""}
-        `;
-
-        // Color coding based on memory usage
-        const memoryPercent = (stats.heapUsedMB / stats.heapLimitMB) * 100;
-        let color = "#00ff00"; // Green
-        if (memoryPercent > 70) color = "#ffaa00"; // Orange
-        if (memoryPercent > 85) color = "#ff4444"; // Red
-
-        this.memoryStatsElement.style.color = color;
-      } catch (error) {
-        console.error("Error updating memory stats:", error);
-      }
-
-      // Schedule next update (every second)
-      this.memoryMonitorTimeoutId = setTimeout(updateMemoryStats, 1000);
-    };
-
-    // Start monitoring
-    updateMemoryStats();
+    this.initializeMonitoringRuntime();
+    this.monitoringRuntime?.initialize();
   }
 
   // Stats Recording — delegated to StatsRecorder
   public startStatsRecording() {
-    this.statsRecorder?.start();
+    this.monitoringRuntime?.startStatsRecording();
   }
 
   public stopStatsRecording() {
-    return this.statsRecorder?.stop() ?? [];
+    return this.monitoringRuntime?.stopStatsRecording() ?? [];
   }
 
   private captureStatsSample() {
-    this.statsRecorder?.capture();
+    this.monitoringRuntime?.captureStatsSample();
   }
 
   public exportStatsRecording() {
-    this.statsRecorder?.exportAsJSON();
+    this.monitoringRuntime?.exportStatsRecording();
   }
 
   async initScene() {
@@ -530,9 +349,18 @@ export default class GameRenderer {
     }
     this.setupGUIControls();
     this.setupListeners();
+    this.mountRendererSurface();
+    this.startTransitionCleanupInterval();
+    this.attachInteractionRuntime();
+    this.initializeHudScene();
 
+    this.prepareScenes();
+    this.handleURLChange();
+    this.animate();
+  }
+
+  private mountRendererSurface() {
     document.body.style.background = "black";
-    // Remove stale canvas from a previous instance BEFORE claiming the id
     const existingCanvas = document.getElementById("main-canvas");
     if (existingCanvas) {
       console.warn("[GameRenderer] Found existing canvas, removing it to prevent memory leak");
@@ -541,71 +369,35 @@ export default class GameRenderer {
 
     this.renderer.domElement.id = "main-canvas";
     document.body.appendChild(this.renderer.domElement);
+  }
 
-    // Set up periodic cleanup of the transition database
+  private startTransitionCleanupInterval() {
     const dbCleanupInterval = setInterval(() => {
-      // Clean up expired records older than 10 seconds
       const cleanedCount = transitionDB.cleanupExpired(10000);
       if (cleanedCount > 0) {
         console.debug(`Cleaned up ${cleanedCount} expired transition records`);
       }
-    }, 30 * 1000); // Run every 30 seconds
+    }, 30 * 1000);
 
-    // Store the interval ID for cleanup
     this.cleanupIntervals = this.cleanupIntervals || [];
     this.cleanupIntervals.push(dbCleanupInterval);
+  }
 
-    // Adjust OrbitControls for new camera angle
-    this.controls = new MapControls(this.camera, this.renderer.domElement);
-    this.controls.enableRotate = CONTROL_CONFIG.enableRotate;
-    const zoomSetting = useUIStore.getState().enableMapZoom;
-    console.log(`[GameRenderer] Setting enableZoom to: ${zoomSetting}`);
-    this.controls.enableZoom = zoomSetting;
-    this.controls.enablePan = CONTROL_CONFIG.enablePan;
-    this.controls.panSpeed = CONTROL_CONFIG.panSpeed;
-    this.controls.zoomToCursor = CONTROL_CONFIG.zoomToCursor;
-    this.controls.minDistance = CONTROL_CONFIG.minDistance;
-    this.controls.maxDistance = CONTROL_CONFIG.maxDistance;
-    this.controls.enableDamping = CONTROL_CONFIG.enableDamping && this.graphicsSetting === GraphicsSettings.HIGH;
-    this.controls.dampingFactor = CONTROL_CONFIG.dampingFactor;
-    this.controls.target.set(0, 0, 0);
-    this.controls.addEventListener("change", () => {
-      this.labelsDirty = true;
-      if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel && this.fastTravelScene) {
-        this.fastTravelScene.requestSceneRefresh();
-      }
-    });
-    this.controls.keys = {
-      LEFT: "KeyA",
-      UP: "KeyW",
-      RIGHT: "KeyD",
-      BOTTOM: "KeyS",
-    };
-    this.controls.keyPanSpeed = CONTROL_CONFIG.keyPanSpeed;
-    this.controls.listenToKeyEvents(document.body);
+  private attachInteractionRuntime() {
+    if (!this.interactionRuntime) {
+      this.initializeInteractionRuntime();
+    }
 
-    // Subscribe to zoom setting changes
-    this.unsubscribeEnableMapZoom = useUIStore.subscribe(
-      (state) => state.enableMapZoom,
-      (enableMapZoom) => {
-        console.log(`[GameRenderer] Zoom setting changed to: ${enableMapZoom}`);
-        if (this.controls) {
-          this.controls.enableZoom =
-            this.sceneManager?.getCurrentScene() === SceneName.WorldMap ? false : enableMapZoom;
-        }
-      },
-    );
+    this.interactionRuntime.attachSurface(this.renderer.domElement);
+    if (!this.interactionRuntime.controls) {
+      throw new Error("GameRenderer: Failed to attach renderer interaction runtime");
+    }
 
-    document.addEventListener("focus", this.handleDocumentFocus, true);
-    document.addEventListener("blur", this.handleDocumentBlur, true);
+    this.controls = this.interactionRuntime.controls;
+  }
 
-    // Create HUD scene
+  private initializeHudScene() {
     this.hudScene = new HUDScene(this.sceneManager, this.controls);
-
-    this.prepareScenes();
-    this.handleURLChange();
-    // Init animation
-    this.animate();
   }
 
   private setupListeners() {
@@ -635,52 +427,56 @@ export default class GameRenderer {
       this.sceneManager.switchScene(targetScene);
     }
 
-    this.labelsDirty = true;
+    this.markLabelsDirty();
   };
 
   async prepareScenes() {
-    this.initializeSceneManagement();
-    this.initializeScenes();
-    this.requestScenePrewarm(this.worldmapScene);
-    this.requestScenePrewarm(this.hexceptionScene);
-    this.requestScenePrewarm(this.fastTravelScene);
-    this.applyEnvironment();
-    this.setupPostProcessingEffects();
-    this.sceneManager.moveCameraForScene();
-    this.applyQualityFeatures(qualityController.getFeatures());
-    this.subscribeToQualityController();
+    this.assignRendererSceneRegistry(
+      createRendererSceneRegistry({
+        controls: this.controls,
+        createFastTravelScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
+          new FastTravelScene(dojo, raycaster, controls, mouse, sceneManager),
+        createHexceptionScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
+          new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager),
+        createSceneManager: (transitionManager) => new SceneManager(transitionManager),
+        createTransitionManager: () => new TransitionManager(),
+        createWorldmapScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
+          new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager),
+        dojo: this.dojo,
+        fastTravelEnabled: this.isFastTravelEnabled(),
+        inputSurface: this.renderer.domElement,
+        mouse: this.mouse,
+        raycaster: this.raycaster,
+      }),
+    );
+    bootstrapRendererSceneRuntime({
+      applyEnvironment: () => this.applyEnvironment(),
+      applyQualityFeatures: (features) => this.applyQualityFeatures(features),
+      fastTravelScene: this.fastTravelScene,
+      hexceptionScene: this.hexceptionScene,
+      qualityFeatures: qualityController.getFeatures(),
+      requestScenePrewarm: (scene) => {
+        void this.requestScenePrewarm(scene);
+      },
+      sceneManager: this.sceneManager,
+      setupPostProcessingEffects: () => this.setupPostProcessingEffects(),
+      subscribeToQualityController: () => this.subscribeToQualityController(),
+      worldmapScene: this.worldmapScene,
+    });
   }
 
-  private initializeSceneManagement() {
-    this.transitionManager = new TransitionManager();
-    this.sceneManager = new SceneManager(this.transitionManager);
-  }
-
-  private initializeScenes() {
-    // Initialize Hexception scene
-    this.hexceptionScene = new HexceptionScene(this.controls, this.dojo, this.mouse, this.raycaster, this.sceneManager);
-    this.hexceptionScene.setInputSurface(this.renderer.domElement);
-    this.sceneManager.addScene(SceneName.Hexception, this.hexceptionScene);
-
-    // Initialize WorldMap scene
-    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
-    this.worldmapScene.setInputSurface(this.renderer.domElement);
-    this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
-
-    if (this.isFastTravelEnabled()) {
-      // Initialize FastTravel scene for non-Blitz modes only.
-      this.fastTravelScene = new FastTravelScene(
-        this.dojo,
-        this.raycaster,
-        this.controls,
-        this.mouse,
-        this.sceneManager,
-      );
-      this.fastTravelScene.setInputSurface(this.renderer.domElement);
-      this.sceneManager.addScene(SceneName.FastTravel, this.fastTravelScene);
-    } else {
-      this.fastTravelScene = undefined;
-    }
+  private assignRendererSceneRegistry(input: {
+    fastTravelScene?: FastTravelScene;
+    hexceptionScene: HexceptionScene;
+    sceneManager: SceneManager;
+    transitionManager: TransitionManager;
+    worldmapScene: WorldmapScene;
+  }) {
+    this.transitionManager = input.transitionManager;
+    this.sceneManager = input.sceneManager;
+    this.worldmapScene = input.worldmapScene;
+    this.hexceptionScene = input.hexceptionScene;
+    this.fastTravelScene = input.fastTravelScene;
   }
 
   private setupPostProcessingEffects() {
@@ -877,7 +673,7 @@ export default class GameRenderer {
   }
 
   onWindowResize() {
-    this.labelsDirty = true;
+    this.markLabelsDirty();
     const container = document.getElementById("three-container");
     if (container) {
       const width = container.clientWidth;
@@ -885,14 +681,14 @@ export default class GameRenderer {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
       resizeRendererBackend(this.backend, width, height);
-      this.labelRenderer?.setSize(width, height);
+      this.labelRuntime?.resize(width, height);
       this.hudScene.onWindowResize(width, height);
     } else {
       // Fallback to window size if container not found
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       resizeRendererBackend(this.backend, window.innerWidth, window.innerHeight);
-      this.labelRenderer?.setSize(window.innerWidth, window.innerHeight);
+      this.labelRuntime?.resize(window.innerWidth, window.innerHeight);
       this.hudScene.onWindowResize(window.innerWidth, window.innerHeight);
     }
   }
@@ -952,55 +748,6 @@ export default class GameRenderer {
     });
   }
 
-  private shouldRenderLabels(now: number): boolean {
-    const currentScene = this.sceneManager?.getCurrentScene();
-    let view: CameraView | undefined;
-    let labelsActive = false;
-
-    if (currentScene === SceneName.WorldMap) {
-      view = this.worldmapScene.getCurrentCameraView();
-      labelsActive = this.worldmapScene.hasActiveLabelAnimations();
-    } else if (currentScene === SceneName.FastTravel && this.fastTravelScene) {
-      view = this.fastTravelScene.getCurrentCameraView();
-      labelsActive = this.fastTravelScene.hasActiveLabelAnimations();
-    } else if (currentScene === SceneName.Hexception) {
-      view = this.hexceptionScene.getCurrentCameraView();
-      labelsActive = this.hexceptionScene.hasActiveLabelAnimations();
-    }
-
-    if (this.hudScene?.hasActiveLabelAnimations()) {
-      labelsActive = true;
-    }
-
-    const cadenceView = (() => {
-      switch (view) {
-        case CameraView.Close:
-          return "close" as const;
-        case CameraView.Medium:
-          return "medium" as const;
-        case CameraView.Far:
-          return "far" as const;
-        default:
-          return undefined;
-      }
-    })();
-
-    const decision = resolveLabelRenderDecision({
-      now,
-      lastLabelRenderTime: this.lastLabelRenderTime,
-      labelsDirty: this.labelsDirty,
-      lastLabelsActive: this.lastLabelsActive,
-      labelsActive,
-      intervalMs: resolveLabelRenderIntervalMs(cadenceView, this.isMobileDevice),
-    });
-
-    this.labelsDirty = decision.nextLabelsDirty;
-    this.lastLabelsActive = decision.nextLastLabelsActive;
-    this.lastLabelRenderTime = decision.nextLastLabelRenderTime;
-
-    return decision.shouldRender;
-  }
-
   animate() {
     // Stop animation if renderer has been destroyed
     if (this.isDestroyed) {
@@ -1008,7 +755,7 @@ export default class GameRenderer {
       return;
     }
 
-    if (!this.labelRenderer) {
+    if (!this.labelRuntime?.isReady()) {
       requestAnimationFrame(() => {
         this.animate();
       });
@@ -1032,81 +779,34 @@ export default class GameRenderer {
     const deltaTime = (currentTime - this.lastTime) / 1000;
     this.lastTime = currentTime;
 
-    if (this.stats) this.stats.update();
+    this.monitoringRuntime?.updateStatsPanel();
 
     if (this.controls) {
       this.controls.update();
     }
     const cycleProgress = useUIStore.getState().cycleProgress || 0;
-    this.hudScene.update(deltaTime, cycleProgress);
-    const weatherState = this.hudScene.getWeatherState();
-    this.worldmapScene.setWeatherAtmosphereState(weatherState);
-    this.fastTravelScene?.setWeatherAtmosphereState(weatherState);
-    this.hexceptionScene.setWeatherAtmosphereState(weatherState);
+    const didRenderFrame = runRendererFrame({
+      backend: this.backend,
+      camera: this.camera,
+      captureStatsSample: () => this.captureStatsSample(),
+      currentScene: this.sceneManager?.getCurrentScene(),
+      currentTime,
+      cycleProgress,
+      deltaTime,
+      fastTravelScene: this.fastTravelScene,
+      hexceptionScene: this.hexceptionScene,
+      hudScene: this.hudScene,
+      labelRuntime: this.labelRuntime,
+      updateWeatherPostProcessing: () => this.updateWeatherPostProcessing(),
+      worldmapScene: this.worldmapScene,
+    });
 
-    // Render the current game scene
-    const currentScene = this.sceneManager?.getCurrentScene();
-    if (!currentScene) {
-      // No scene active yet (startup, transition, or failed setup).
-      // Transition overlay covers the gap — skip game scene update/render.
+    if (!didRenderFrame) {
       requestAnimationFrame(() => {
         this.animate();
       });
       return;
     }
-
-    const isWorldMap = currentScene === SceneName.WorldMap;
-    const isFastTravel = currentScene === SceneName.FastTravel && Boolean(this.fastTravelScene);
-    if (isWorldMap) {
-      this.worldmapScene.update(deltaTime);
-    } else if (isFastTravel && this.fastTravelScene) {
-      this.fastTravelScene.update(deltaTime);
-    } else {
-      this.hexceptionScene.update(deltaTime);
-    }
-    const activeScene = isWorldMap
-      ? this.worldmapScene.getScene()
-      : isFastTravel
-        ? (this.fastTravelScene?.getScene() ?? this.worldmapScene.getScene())
-        : this.hexceptionScene.getScene();
-    const activeSceneController = isWorldMap
-      ? this.worldmapScene
-      : isFastTravel
-        ? (this.fastTravelScene ?? this.worldmapScene)
-        : this.hexceptionScene;
-    const overlayPasses = [
-      {
-        camera: this.camera,
-        name: "world-interaction",
-        scene: activeSceneController.getInteractionOverlayScene(),
-      },
-      {
-        camera: this.hudScene.getCamera(),
-        name: "hud",
-        scene: this.hudScene.getScene(),
-      },
-    ];
-
-    const shouldRenderLabels = this.shouldRenderLabels(currentTime);
-    if (shouldRenderLabels) {
-      this.labelRenderer.render(activeScene, this.camera);
-    }
-    renderRendererBackendFrame(this.backend, {
-      mainCamera: this.camera,
-      mainScene: activeScene,
-      overlayPasses,
-      sceneName: currentScene,
-    });
-    setRendererDiagnosticSceneName(currentScene ?? "unknown");
-    if (shouldRenderLabels) {
-      this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
-    }
-
-    // Update post-processing based on weather state
-    this.updateWeatherPostProcessing();
-
-    // Capture stats sample AFTER rendering (to get accurate draw call/triangle counts)
-    this.captureStatsSample();
 
     requestAnimationFrame(() => {
       this.animate();
@@ -1125,17 +825,6 @@ export default class GameRenderer {
     this.isDestroyed = true;
 
     try {
-      // Clean up memory monitor timeout
-      if (this.memoryMonitorTimeoutId) {
-        clearTimeout(this.memoryMonitorTimeoutId);
-        this.memoryMonitorTimeoutId = undefined;
-      }
-
-      if (this.unsubscribeEnableMapZoom) {
-        this.unsubscribeEnableMapZoom();
-        this.unsubscribeEnableMapZoom = undefined;
-      }
-
       if (this.unsubscribeQualityController) {
         this.unsubscribeQualityController();
         this.unsubscribeQualityController = undefined;
@@ -1169,10 +858,7 @@ export default class GameRenderer {
         this.hudScene.destroy();
       }
 
-      // Clean up controls
-      if (this.controls) {
-        this.controls.dispose();
-      }
+      this.disposeInteractionRuntime();
 
       if (this.transitionManager && typeof this.transitionManager.destroy === "function") {
         this.transitionManager.destroy();
@@ -1184,34 +870,35 @@ export default class GameRenderer {
       window.removeEventListener("urlChanged", this.handleURLChange);
       window.removeEventListener("popstate", this.handleURLChange);
       window.removeEventListener("resize", this.handleWindowResize);
-      document.removeEventListener("focus", this.handleDocumentFocus, true);
-      document.removeEventListener("blur", this.handleDocumentBlur, true);
 
-      // Clean up memory monitoring
-      clearGameRendererDebugGlobals(window);
-      if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
-        this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
-      }
-      if (this.statsDomElement && this.statsDomElement.parentNode) {
-        this.statsDomElement.parentNode.removeChild(this.statsDomElement);
-        this.statsDomElement = undefined;
-      }
-      if (this.labelRendererElement) {
-        this.labelRendererElement.replaceChildren();
-        this.labelRenderer = undefined!;
-        this.labelRendererElement = undefined!;
-      }
+      this.disposeLabelRuntime();
+      this.disposeMonitoringRuntime();
 
       disposeContactShadowResources();
-
-      // Clean up stats recording
-      this.statsRecorder?.destroy();
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");
     } catch (error) {
       console.error("Error during GameRenderer cleanup:", error);
     }
   }
+
+  private disposeInteractionRuntime() {
+    if (this.interactionRuntime) {
+      this.interactionRuntime.dispose();
+      return;
+    }
+
+    this.controls?.dispose();
+  }
+
+  private disposeLabelRuntime() {
+    this.labelRuntime?.dispose();
+  }
+
+  private disposeMonitoringRuntime() {
+    this.monitoringRuntime?.dispose();
+  }
+
   private subscribeToQualityController(): void {
     if (this.unsubscribeQualityController) {
       return;
