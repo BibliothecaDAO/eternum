@@ -1150,7 +1150,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
     }
   };
 
-  const shouldMountMarketsProviders = activeTab === "play";
+  const shouldMountMarketsProviders = activeTab === "play" || activeTab === "learn";
   const content = (
     <div className={cn("flex flex-col gap-6", activeTab === "factory" && FACTORY_TAB_BLEED_CLASS_NAME, className)}>
       {renderContent()}
