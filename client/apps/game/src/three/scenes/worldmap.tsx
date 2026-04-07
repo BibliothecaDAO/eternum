@@ -127,6 +127,11 @@ import { getLiveWorldmapEntityActions, resetWorldmapEntityActions } from "./worl
 import { resolveWorldmapHexClickPlan } from "./worldmap-selection-routing";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
 import {
+  createWorldmapHydratedRefreshQueueState,
+  flushWorldmapHydratedChunkRefreshQueue,
+  queueWorldmapHydratedChunkRefresh,
+} from "./worldmap-hydrated-refresh-runtime";
+import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
@@ -161,7 +166,6 @@ import {
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
-  resolveHydratedChunkRefreshFlushPlan,
   shouldScheduleHydratedChunkRefreshForFetch,
   shouldForceChunkRefreshForZoomDistanceChange,
   waitForChunkTransitionToSettle,
@@ -507,9 +511,8 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
-  private hydratedChunkRefreshes: Set<string> = new Set();
+  private hydratedRefreshQueueState = createWorldmapHydratedRefreshQueueState();
   private hydratedRefreshSuppressionAreaKeys: Set<string> = new Set();
-  private hydratedRefreshScheduled = false;
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
   private cameraGroundIntersectionScratch: Vector3 = new Vector3();
@@ -523,6 +526,22 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
+
+  private get hydratedChunkRefreshes(): Set<string> {
+    return this.hydratedRefreshQueueState.queuedChunkKeys;
+  }
+
+  private set hydratedChunkRefreshes(value: Set<string>) {
+    this.hydratedRefreshQueueState.queuedChunkKeys = value;
+  }
+
+  private get hydratedRefreshScheduled(): boolean {
+    return this.hydratedRefreshQueueState.isScheduled;
+  }
+
+  private set hydratedRefreshScheduled(value: boolean) {
+    this.hydratedRefreshQueueState.isScheduled = value;
+  }
   private handleTransactionFailed?: (...args: any[]) => void;
   private readonly stalePendingArmyMovementMs = 10_000;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
@@ -4284,49 +4303,42 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private scheduleHydratedChunkRefresh(chunkKey: string) {
-    this.hydratedChunkRefreshes.add(chunkKey);
-    if (this.hydratedRefreshScheduled) {
-      return;
-    }
-    this.hydratedRefreshScheduled = true;
-    Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
+    queueWorldmapHydratedChunkRefresh({
+      chunkKey,
+      scheduleFlush: () => {
+        Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
+      },
+      state: this.hydratedRefreshQueueState,
+    });
   }
 
   private async flushHydratedChunkRefreshes() {
-    this.hydratedRefreshScheduled = false;
-
-    if (this.globalChunkSwitchPromise) {
-      try {
-        await this.globalChunkSwitchPromise;
-      } catch (error) {
-        console.warn("Previous global chunk switch failed before hydrated refresh:", error);
-      }
-    }
-
-    const refreshPlan = resolveHydratedChunkRefreshFlushPlan({
-      queuedChunkKeys: Array.from(this.hydratedChunkRefreshes),
+    await flushWorldmapHydratedChunkRefreshQueue({
+      awaitActiveChunkSwitch: this.globalChunkSwitchPromise
+        ? async () => {
+            await this.globalChunkSwitchPromise;
+          }
+        : undefined,
       currentChunk: this.currentChunk,
       isChunkTransitioning: this.isChunkTransitioning,
+      onAfterRefresh: () => {
+        this.retryDeferredChunkRemovals();
+      },
+      queueFlush: () => {
+        Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
+      },
+      refreshCurrentChunk: async () => {
+        const refreshToken = this.requestChunkRefresh(true, "hydrated_chunk");
+        await this.waitForRequestedChunkRefresh(refreshToken);
+      },
+      reportRefreshError: (currentChunk, error) => {
+        console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${currentChunk}`, error);
+      },
+      state: this.hydratedRefreshQueueState,
+      warn: (message, error) => {
+        console.warn(message, error);
+      },
     });
-    this.hydratedChunkRefreshes = new Set(refreshPlan.remainingQueuedChunkKeys);
-
-    if (refreshPlan.shouldDefer) {
-      this.hydratedRefreshScheduled = true;
-      Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
-      return;
-    }
-
-    if (!refreshPlan.shouldForceRefreshCurrentChunk) {
-      return;
-    }
-
-    try {
-      const refreshToken = this.requestChunkRefresh(true, "hydrated_chunk");
-      await this.waitForRequestedChunkRefresh(refreshToken);
-      this.retryDeferredChunkRemovals();
-    } catch (error) {
-      console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${this.currentChunk}`, error);
-    }
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, width: number, height: number) {
