@@ -12,10 +12,13 @@ import { getContactShadowResources } from "./utils/contact-shadow";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { runRendererAnimationTick } from "./renderer-animation-runtime";
 import {
+  createRendererControlBridgeRuntime,
+  type RendererControlBridgeRuntime,
+} from "./renderer-control-bridge-runtime";
+import {
   createRendererEffectsBridgeRuntime,
   type RendererEffectsBridgeRuntime,
 } from "./renderer-effects-bridge-runtime";
-import { setupRendererDevGui } from "./renderer-dev-gui-runtime";
 import {
   resolveRendererPixelRatioCap,
   resolveRendererTargetFps,
@@ -47,6 +50,7 @@ const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
 
 export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
+  private controlBridgeRuntime!: RendererControlBridgeRuntime;
   private effectsBridgeRuntime?: RendererEffectsBridgeRuntime;
   private routeRuntime?: RendererRouteRuntime;
   private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
@@ -82,6 +86,7 @@ export default class GameRenderer {
     this.dojo = dojoContext;
 
     this.backendInitializationPromise = this.initializeRendererBackend();
+    this.initializeControlBridgeRuntime();
     this.initializeInteractionRuntime();
     this.initializeLabelRuntime();
   }
@@ -89,12 +94,31 @@ export default class GameRenderer {
   private initializeInteractionRuntime() {
     this.interactionRuntime = createRendererInteractionRuntime({
       graphicsSetting: this.graphicsSetting,
-      onControlsChange: () => this.handleInteractionChange(),
+      onControlsChange: () => this.controlBridgeRuntime.handleInteractionChange(),
       resolveCurrentSceneName: () => this.sceneManager?.getCurrentScene(),
     });
     this.camera = this.interactionRuntime.camera;
     this.raycaster = this.interactionRuntime.raycaster;
     this.mouse = this.interactionRuntime.pointer;
+  }
+
+  private initializeControlBridgeRuntime() {
+    this.controlBridgeRuntime = createRendererControlBridgeRuntime({
+      changeCameraView: (view) => this.worldmapScene.changeCameraView(view),
+      createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
+      fastTravelEnabled: () => this.isFastTravelEnabled(),
+      getCurrentScene: () => this.sceneManager?.getCurrentScene(),
+      getRenderer: () => this.renderer,
+      markLabelsDirty: () => this.labelRuntime?.markDirty(),
+      moveCameraToColRow: (col, row, duration) => this.worldmapScene.moveCameraToColRow(col, row, duration),
+      moveCameraToXYZ: (x, y, z, duration) => this.worldmapScene.moveCameraToXYZ(x, y, z, duration),
+      requestFastTravelSceneRefresh: () => this.fastTravelScene?.requestSceneRefresh(),
+      switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
+      updateContactShadowOpacity: (opacity) => {
+        const { material } = getContactShadowResources();
+        material.opacity = opacity;
+      },
+    });
   }
 
   private initializeLabelRuntime() {
@@ -131,7 +155,7 @@ export default class GameRenderer {
       fastTravelEnabled: () => this.isFastTravelEnabled(),
       getCurrentScene: () => this.sceneManager?.getCurrentScene(),
       hasFastTravelScene: () => Boolean(this.fastTravelScene),
-      markLabelsDirty: () => this.markLabelsDirty(),
+      markLabelsDirty: () => this.controlBridgeRuntime.markLabelsDirty(),
       moveCameraForScene: () => this.sceneManager.moveCameraForScene(),
       switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
     });
@@ -159,35 +183,6 @@ export default class GameRenderer {
         }),
       resolveQualityFeatures: () => qualityController.getFeatures(),
       resolveWeatherState: () => this.hudScene?.getWeatherManager?.()?.getState(),
-    });
-  }
-
-  private handleInteractionChange() {
-    this.markLabelsDirty();
-    if (this.sceneManager?.getCurrentScene() === SceneName.FastTravel && this.fastTravelScene) {
-      this.fastTravelScene.requestSceneRefresh();
-    }
-  }
-
-  private markLabelsDirty() {
-    this.labelRuntime?.markDirty();
-  }
-
-  private setupGUIControls() {
-    const { material } = getContactShadowResources();
-
-    setupRendererDevGui({
-      changeCameraView: (view) => this.worldmapScene.changeCameraView(view),
-      contactShadowOpacity: material.opacity,
-      createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
-      fastTravelEnabled: this.isFastTravelEnabled(),
-      moveCameraToColRow: (col, row, duration) => this.worldmapScene.moveCameraToColRow(col, row, duration),
-      moveCameraToXYZ: (x, y, z, duration) => this.worldmapScene.moveCameraToXYZ(x, y, z, duration),
-      renderer: this.renderer,
-      switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
-      updateContactShadowOpacity: (opacity) => {
-        material.opacity = opacity;
-      },
     });
   }
 
@@ -235,7 +230,7 @@ export default class GameRenderer {
     if (this.isDestroyed) {
       return;
     }
-    this.setupGUIControls();
+    this.controlBridgeRuntime.setupGuiControls();
     this.setupListeners();
     bootstrapRendererStartupRuntime({
       animate: () => this.animate(),
@@ -386,7 +381,7 @@ export default class GameRenderer {
       getContainer: () => document.getElementById("three-container"),
       hudScene: this.hudScene,
       labelRuntime: this.labelRuntime,
-      markLabelsDirty: () => this.markLabelsDirty(),
+      markLabelsDirty: () => this.controlBridgeRuntime.markLabelsDirty(),
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
     });

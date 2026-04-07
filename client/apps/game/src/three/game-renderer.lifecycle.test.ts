@@ -400,7 +400,7 @@ describe("initScene destruction guard", () => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.setupGUIControls = vi.fn();
+    subject.controlBridgeRuntime = { setupGuiControls: vi.fn() };
     subject.setupListeners = vi.fn();
 
     const initPromise = subject.initScene();
@@ -410,7 +410,7 @@ describe("initScene destruction guard", () => {
     resolveBackend();
     await initPromise;
 
-    expect(subject.setupGUIControls).not.toHaveBeenCalled();
+    expect(subject.controlBridgeRuntime.setupGuiControls).not.toHaveBeenCalled();
     expect(subject.setupListeners).not.toHaveBeenCalled();
   });
 
@@ -421,7 +421,7 @@ describe("initScene destruction guard", () => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.setupGUIControls = vi.fn();
+    subject.controlBridgeRuntime = { setupGuiControls: vi.fn() };
     subject.setupListeners = vi.fn();
     subject.renderer = { domElement: document.createElement("canvas") };
 
@@ -440,7 +440,7 @@ describe("initScene destruction guard", () => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.setupGUIControls = vi.fn();
+    subject.controlBridgeRuntime = { setupGuiControls: vi.fn() };
     subject.setupListeners = vi.fn();
     subject.cleanupIntervals = [];
 
@@ -456,7 +456,7 @@ describe("initScene destruction guard", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     subject.backendInitializationPromise = Promise.resolve();
     subject.isDestroyed = false;
-    subject.setupGUIControls = vi.fn();
+    subject.controlBridgeRuntime = { setupGuiControls: vi.fn() };
     subject.setupListeners = vi.fn();
     subject.camera = {};
     subject.graphicsSetting = "HIGH";
@@ -468,7 +468,7 @@ describe("initScene destruction guard", () => {
 
     // Stub out the downstream calls that initScene makes
     const origInitScene = GameRenderer.prototype.initScene;
-    // We just verify setupGUIControls and setupListeners are called
+    // We just verify the control bridge and listener setup are called
     // by letting it run until it hits the first thing that would throw
     try {
       await subject.initScene();
@@ -476,7 +476,7 @@ describe("initScene destruction guard", () => {
       // Expected: will fail on MapControls or other deps, but setup fns should have been called
     }
 
-    expect(subject.setupGUIControls).toHaveBeenCalledTimes(1);
+    expect(subject.controlBridgeRuntime.setupGuiControls).toHaveBeenCalledTimes(1);
     expect(subject.setupListeners).toHaveBeenCalledTimes(1);
   });
 });

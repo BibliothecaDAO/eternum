@@ -86,6 +86,11 @@ export function createGameRendererRuntimeHarness() {
         backend,
         renderer: backend.renderer,
         camera: { aspect: 1, updateProjectionMatrix: vi.fn() },
+        controlBridgeRuntime: {
+          handleInteractionChange: vi.fn(),
+          markLabelsDirty: vi.fn(),
+          setupGuiControls: vi.fn(),
+        },
         effectsBridgeRuntime: {
           applyEnvironment: vi.fn(),
           applyQualityFeatures: vi.fn(),

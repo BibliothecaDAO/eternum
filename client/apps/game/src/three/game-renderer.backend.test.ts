@@ -191,6 +191,7 @@ describe("GameRenderer backend seam", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     subject.backend = backend;
     subject.camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
+    subject.controlBridgeRuntime = { markLabelsDirty: vi.fn() };
     subject.labelRuntime = { markDirty: vi.fn(), resize: vi.fn() };
     subject.hudScene = { onWindowResize: vi.fn() };
 
