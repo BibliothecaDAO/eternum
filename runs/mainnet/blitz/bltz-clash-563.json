@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-clash-563/24109283215-1.json",
   "latestLaunchRequestId": "24109283215-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-07T23:25:38.109Z",
-  "updatedAt": "2026-04-07T23:28:50.000Z",
+  "updatedAt": "2026-04-07T23:29:12.043Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-04-07T23:28:50.000Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-04-07T23:28:50.000Z",
+      "finishedAt": "2026-04-07T23:29:12.043Z"
     },
     {
       "id": "sync-paymaster",
@@ -83,14 +84,12 @@
     "worldAddress": "0x04b3f4418a257a12dd664109cb31f9b33221a4dd3830a962c874496ab40a6fa5",
     "createGameTxHash": "0x224c8dc5a3d9ffb88b336d9f5f31c0d4859db10393b42ff999f8bb5bc5986e0",
     "configureTxHash": "0x559c56297ef66694f1c2936cb594c02f8b7c018cb9b429a51215d88eb7871f8",
-    "worldConfigTxHash": "0x559c56297ef66694f1c2936cb594c02f8b7c018cb9b429a51215d88eb7871f8"
-  },
-  "activeLease": {
-    "launchRequestId": "24109283215-1",
-    "workflowRunId": 24109283215,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-04-07T23:28:50.000Z",
-    "expiresAt": "2026-04-08T00:13:50.000Z"
+    "worldConfigTxHash": "0x559c56297ef66694f1c2936cb594c02f8b7c018cb9b429a51215d88eb7871f8",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-clash-563/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-04-07T23:29:10.203Z"
   }
 }
