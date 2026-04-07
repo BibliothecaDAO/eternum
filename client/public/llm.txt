@@ -112,7 +112,7 @@ series.
 
 Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
 other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
-forces, territorial positioning, and resource management to survive and thrive within the intense 90-minute game
+forces, territorial positioning, and resource management to survive and thrive within the intense 60-minute game
 duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed
 world state.
 
@@ -130,7 +130,7 @@ meta: {
 
 <img src="/images/covers/blitz-key-concepts.png" alt="Blitz Key Concepts" className="w-full rounded-lg my-6" />
 
-Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 90-minute match,
+Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 60-minute match,
 players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
 Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
 high skill ceiling that rewards skill and experience. Both human and AI agent players compete under the same ruleset,
@@ -144,7 +144,7 @@ bracket, which offers even greater prizes!
 
 ### Game Duration
 
-Each Blitz game runs for exactly **90 minutes**. Time is measured in Eternum Days, which are six minutes long and
+Each Blitz game runs for exactly **60 minutes**. Time is measured in Eternum Days, which are six minutes long and
 divided into six 'phases'.
 
 ### Realms
@@ -200,11 +200,11 @@ divided into six 'phases'.
 
 * **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
   neighbors.
-* **Essence Discovery**: Players primarily find essence when exploring, along with small stacks of donkeys, T1 troops
-  and labor. Resources cannot be discovered through exploration.
+* **Essence Discovery**: Players primarily find essence when exploring, along with stacks of donkeys and labor. Resources
+  cannot be discovered through exploration.
 * **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
 * **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Phase, +120 per Eternum Day), with costs
+* **Movement & Stamina**: Armies move using stamina (regenerating at +30 per Phase, +180 per Eternum Day), with costs
   varying by biome and troop type.
 
 ### Military
@@ -215,7 +215,7 @@ divided into six 'phases'.
 * **Army Types**:
   * **Field Armies**: Deploy onto the world map for exploration and conquest.
   * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +20 stamina each Phase (6 phases per Eternum Day, totaling +120 stamina per day).
+* **Stamina System**: Armies recover +30 stamina each Phase (6 phases per Eternum Day, totaling +180 stamina per day).
 * **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
   specific biomes.
 * **Reinforcements**: Lords can transport troops by donkey to any Realm, Hyperstructure, Camp or Essence Rift that they
@@ -234,7 +234,7 @@ and control World Structures. Victory Points are awarded for:
 
 ### Victory
 
-Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the 90
+Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the 60
 minutes share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the
 game.
 
@@ -659,22 +659,22 @@ The number of VP awarded for each feat described above is as follows:
       <tbody>
         <tr style={table.tableRow}>
           <td style={table.cell}>Explore a tile</td>
-          <td style={table.cell}>10 VP</td>
+          <td style={table.cell}>5 VP</td>
         </tr>
 
         <tr style={table.tableRow}>
           <td style={table.cell}>Claim a World Structure from bandits</td>
-          <td style={table.cell}>500 VP</td>
+          <td style={table.cell}>250 VP</td>
         </tr>
 
         <tr style={table.tableRow}>
           <td style={table.cell}>Open a Relic Crate</td>
-          <td style={table.cell}>1,000 VP</td>
+          <td style={table.cell}>250 VP</td>
         </tr>
 
         <tr style={table.tableRow}>
           <td style={table.cell}>Claim a Hyperstructure from bandits</td>
-          <td style={table.cell}>3,000 VP</td>
+          <td style={table.cell}>1,000 VP</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -705,13 +705,13 @@ boundaries set by these protocols.
 
 ## Game Duration
 
-Each Blitz game runs for exactly **90 minutes**.
+Each Blitz game runs for exactly **60 minutes**.
 
 ## Time
 
 Time within a Blitz game is measured in Eternum Days, and each is precisely six minutes in length. Each Eternum Day is
 divided into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting
-one minute. One day ends and the next begins every six minutes, so a single Blitz game takes place over 15 Eternum Days.
+one minute. One day ends and the next begins every six minutes, so a single Blitz game takes place over 10 Eternum Days.
 
 ## Materials
 
@@ -727,7 +727,7 @@ and donkeys. This is not to be confused with 'resources', which specifically ref
 
 With the exception of food and labor, nothing in Blitz is produced for free; every unit of production demands an
 input—food, labor, resources, or some combination of the three. Lords must consider these costs and effectively balance
-production to ensure they can maximize their Score within the 90-minute game window.
+production to ensure they can maximize their Score within the 60-minute game window.
 
 ## Travel
 
@@ -805,14 +805,15 @@ The number of Hyperstructures in the game, and their positioning on the world ma
 
 Essence Rifts are striking fissures in the earth where valuable Essence has swelled from beneath the surface. These
 locations provide a steady source of the valuable dust to the owning player, reducing the need to explore new hexes for
-continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 10 units per second from the
-moment they're discovered. Lords have a 1/50 chance of finding one of these structures when exploring a hex.
+continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 2 units per second from the
+moment they're discovered. Lords have a 1/40 chance of finding one of these structures when exploring a hex.
 
 ## Camps
 
 Camps act in a similar capacity to Villages in Eternum, in the sense that they perform as small, discoverable Realms
 that can boost production and act as forward bases. Camps are restricted to the Settlement level and cannot be upgraded.
-Lords have a 1/30 chance of finding one of these structures when exploring a hex.
+Once claimed, Camps can construct buildings, store troops and materials in their inventory, deploy defensive guards, and
+create one field army. Lords have a 1/30 chance of finding one of these structures when exploring a hex.
 
 ### Starting Materials
 
@@ -850,7 +851,7 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
             </div>
           </td>
 
-          <td style={{ ...table.cell, textAlign: "center" }}>2,500</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>5,000</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -862,12 +863,514 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
             </div>
           </td>
 
-          <td style={{ ...table.cell, textAlign: "center" }}>200</td>
+          <td style={{ ...table.cell, textAlign: "center" }}>1,000</td>
         </tr>
       </tbody>
     </table>
   </div>
 </div>
+
+
+
+---
+
+file: docs/pages/changelog/14-november-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 14th November 2025
+
+### Balance and Content Updates
+
+* [Blitz/World Map & Movement](/blitz/worldmap-movement/movement): Updated the wheat consumption to **0.03/troop unit**
+  for both exploration and travel.
+* [Blitz/World Structures](/blitz/world-structures): Reduced Essence Rift discovery chance from **1/30** to **1/50** and
+  increased essence output from **5 units/second** to **10 units/second**.
+* [Blitz/Realms/Buildings](/blitz/realms/buildings): Population capacity from the Keep and Worker’s Huts has been
+  increased from **+5** to **+6**. Construction costs for Farms, Worker’s Huts, T3 resource sites, and T2/T3 military
+  buildings have been adjusted.
+* [Blitz/Materials/Production](/blitz/materials/production): Wheat production from farms has been increased from **5
+  units/second** to **6 units/second**. Wheat cost has been reduced from **4/second** to **3/second** for T2 troop
+  production, and reduced from **7/second** to **4/second** for T3 troop production.
+* [Blitz/Materials/Relics](/blitz/materials/relics): Removed Labor Production relics from the game due to
+  incompatibility with the labor system in Blitz.
+* [Blitz/Military/Stamina & Biomes](/blitz/military/stamina-and-biomes): Scorched biome combat bonuses have been changed
+  to provide a damage bonus for Crossbowmen, a damage penalty for Paladins, and neither an advantage or penalty for
+  Knights. Knights and Crossbowmen no longer have a stamina penalty on snow biomes.
+* [Blitz/Realms/Realm](/blitz/realms/realm): Starting troop guidance now indicates that Realms on scorched biomes spawn
+  Crossbowmen as their starting troop type. Essence costs for Realm upgrades have been revised.
+* [Blitz/Victory](/blitz/victory): Victory Points awarded for exploring a tile have been reduced from **50 VP** to **25
+  VP**.
+
+***
+
+*This changelog reflects all documentation updates made since the previous release. For detailed information about
+specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/changelog/18-february-2026.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 18th February 2026
+
+### Blitz Prize Pool Rewrite
+
+* [Blitz/Prize Pool](/blitz/prize-pool): Complete rewrite of the prize pool and distribution documentation. Updated
+  prize pool composition, tier breakdowns, and distribution mechanics to reflect current game state.
+
+### Component Architecture
+
+* Separated Blitz and Eternum component variants into dedicated directories (`blitz-components/`, `eternum-components/`)
+  for clearer maintainability. Affected components: DefendingArmies, HyperstructureRings, TroopMovementTable,
+  WeightTable, ResourceProduction, RewardsChestTable, and others.
+* Introduced shared `styles.ts` design system with consistent color palette, spacing, and reusable table/section/stats
+  styles across all components.
+
+### Visual Overhaul
+
+* Applied a Realms-themed design language across all documentation pages: dark card backgrounds, brass/gold accent
+  colors, consistent typography (Exo 2 headings), and hover states on table rows.
+* Rebuilt sidebar navigation with collapsible sections, chevron toggles, and improved hierarchy.
+* Fixed table dead space issues on Deployment Caps and Prize Pool Composition tables.
+* Centre-aligned numeric columns across multiple tables: Deployment Caps, Guard Slots, Damage Comparison, Max Stamina,
+  Buildable Hexes, Armies by Realm Level, and Starting Materials (Realms and Camps).
+* Reduced loot chest table cell margins to allow more width for description columns.
+* Unbolded numeric figures in Troop Tier Stats tables for cleaner readability.
+* Restructured Troop Movement stats as a flat list layout.
+* Added global mobile overflow protection for all tables.
+* Changed Hyperstructure ring formula notation from √(P/6) to (P/6)^(1/2).
+* Converted damage refund calculation rules to code blocks for consistency.
+
+### Content Updates
+
+* [Overview/Introduction](/overview/introduction): Linked 'Eternum' and 'Blitz' in Game Modes section to their
+  respective key concept pages.
+* [Blitz/Loot Chests](/overview/chests/contents): Updated Blitz and Eternum rewards chest tables with revised item
+  descriptions and column layout.
+* [Blitz/Armies](/blitz/military/armies): Converted Deployment Caps to inline HTML table with fixed layout.
+* [Blitz/Game Entry](/blitz/game-entry): Minor content adjustments.
+* [Blitz/MMR](/blitz/mmr): Removed redundant content.
+* [Development/Getting Started](/development/getting-started): Added setup notes.
+* Multiple Eternum section pages: Minor cross-reference and link fixes.
+
+### Sidebar & Navigation
+
+* Restructured `vocs.config.ts` sidebar: reordered sections, added new pages, improved collapsed/expanded defaults.
+* Added 18 February 2026 changelog to navigation.
+
+### Changelog Formatting
+
+* Standardised section heading levels across 8th December and 31st January changelog entries.
+
+***
+
+*This changelog covers all documentation changes in PR #4204.*
+
+
+
+---
+
+file: docs/pages/changelog/28-march-2026.mdx
+meta: {
+  "layout": "docs"
+}
+
+import { table } from "@/components/styles";
+
+# 28th March 2026
+
+### Series 0 — Balance & Configuration
+
+The first official Blitz series has launched with significant balance changes across the board:
+
+**Game Duration**
+
+* Blitz [game duration](/blitz/world-physics) reduced from **90 minutes to 60 minutes** (10 Eternum Days).
+
+**Starting Resources**
+
+* [Realm starting materials](/blitz/realms/realm#starting-materials) updated for Series 0:
+  * Wheat: 1,000
+  * Labor: 1,500 (up from 1,200)
+  * Wood: 360 (up from 180)
+  * Coal: 240 (up from 120)
+  * Copper: 120 (up from 60)
+  * Donkeys: 500 (up from 200)
+  * T1 Troops: 5,000 (up from 3,000)
+* [Camp starting materials](/blitz/world-structures#starting-materials) updated:
+  * Wheat: 500
+  * Labor: 5,000 (up from 2,500)
+  * Donkeys: 1,000 (up from 200)
+
+**Realm Progression**
+
+* All Realms now start the game at **City level** — the Settlement → City upgrade has been removed.
+* [Kingdom upgrade costs](/blitz/realms/realm#realm-progression) updated: 720 Labor, 2,400 Wheat, 600 Essence, 360
+  Wood.
+* Empire upgrade costs updated: 1,440 Labor, 4,800 Wheat, 1,200 Essence, 720 Wood, 360 Coal, 360 Copper.
+
+**Production Rates**
+
+* Base output of all [resources, essence, and labor](/blitz/materials/production) increased to **2 units/sec** (up from
+  1 unit/sec).
+* [Donkey production](/blitz/materials/production#donkeys) increased to **5/sec** (up from 3/sec).
+* Labor input costs for simple mode resource production have been doubled.
+* Troop production: resource and labor input costs doubled alongside a doubled output rate, while wheat and essence
+  input costs remain unchanged.
+
+**Building Costs**
+
+* Essence costs for constructing [T2 and T3 buildings](/blitz/realms/buildings) have been **halved** — this applies to
+  both military buildings (T2: 300 Essence, T3: 600 Essence) and T3 resource buildings (Adamantine Mine, Mithral Forge,
+  Dragonhide Tannery: 300 Essence).
+
+**Exploration Rewards**
+
+* [Exploration reward](/blitz/worldmap-movement/movement#exploring) table updated. T1 troop drops have been removed
+  from exploration rewards:
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Reward</th>
+          <th style={table.headerCell}>Quantity</th>
+          <th style={table.headerCell}>Chance</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Essence</td>
+          <td style={table.cell}>150</td>
+          <td style={table.cell}>35%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Essence</td>
+          <td style={table.cell}>300</td>
+          <td style={table.cell}>25%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Essence</td>
+          <td style={table.cell}>600</td>
+          <td style={table.cell}>15%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Labor</td>
+          <td style={table.cell}>500</td>
+          <td style={table.cell}>15%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Labor</td>
+          <td style={table.cell}>1,000</td>
+          <td style={table.cell}>5%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Donkeys</td>
+          <td style={table.cell}>500</td>
+          <td style={table.cell}>5%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+**Essence Rifts**
+
+* [Essence Rift](/blitz/world-structures#essence-rifts) discovery chance increased from 1/50 to **1/40**.
+* Essence Rift production increased from 1/sec to **2/sec**.
+
+**Stamina**
+
+* [Stamina on deployment](/blitz/worldmap-movement/movement#stamina) increased to **30** (up from 20).
+* [Stamina gain per phase](/blitz/military/stamina-and-biomes#stamina) increased to **30** (up from 20), totaling 180
+  per Eternum Day.
+
+**Victory Points**
+
+* [VP awarding values](/blitz/victory#scoring-system) updated:
+  * Explore a tile: 5 VP (down from 10)
+  * Claim a World Structure from bandits: 250 VP (down from 500)
+  * Open a Relic Crate: 250 VP (down from 1,000)
+  * Claim a Hyperstructure from bandits: 1,000 VP (down from 3,000)
+  * Control a Hyperstructure: 1-6 VP/second (unchanged)
+
+**1 vs. 1 Mode**
+
+* Hyperstructure calculation updated for 1 vs. 1 mode.
+* VP radius fixed for single-realm Blitz variants.
+
+### MMR & Leaderboards
+
+* MMR system rolled out to mainnet.
+* MMR leaderboard overhauled with podium display, badges, and "find me" button.
+* MMR profile enhanced with resource tier badges.
+* Leaderboard now populates during the game, not just at the end.
+
+### Post-Game Review
+
+* Full post-game review flow added with game review screens and map fingerprint review card.
+* Game review Blitz awards flow with refined visuals.
+* Shareable claim rewards recap card.
+
+### Realtime Chat
+
+* Realtime chat enabled on mainnet Blitz games.
+* Chat UI polished with message grouping, date separators, DM toasts, emoji categories, and typing indicators.
+
+### Prediction Markets
+
+* Prediction market UI unified with resolved winner behavior.
+* Market resolve and claim flow unified with improved redeemable UX.
+* Landing UX, filters, and data sources improved.
+
+### Visual & Audio
+
+* Night readability improved with moon rim lighting and a raised lighting floor.
+* Time-of-day readability improved across all phases.
+* Random biome light variants removed for visual consistency.
+* Sound effects expanded across UI, trading, chat, and 3D interactions.
+* Noisy gong sound removed from non-battle story events.
+* Worldmap camera tilt adjusted for a more tactical perspective.
+* Count-up animation added for resource balance changes.
+* Production badge pulse now color-matches its resource type.
+* Bottom-right panel refactored for smaller screens.
+* Markets terminal UI redesigned.
+* Marketplace UI/UX overhauled with performance optimizations.
+* Landing page redesigned with explicit Blitz and Eternum entry points, including prize pool display.
+* Loot chest reveal presentation polished.
+
+### Onchain Agent (Axis)
+
+* Full headless mode for AI orchestration.
+* ABI-driven action and policy pipeline.
+* A\* pathfinder with biome-aware dynamic stamina costs and move executor.
+* Password authentication, auto-bootstrap, and heartbeat loop.
+* [Axis documentation](/development/axis/overview) section added to game docs.
+
+### Factory V2
+
+* Complete rewrite of the game deployment factory.
+* Series and rotation launch runs with prize funding flow.
+* Mobile-optimized layout with advanced launch overrides.
+* Extensive hardening of indexer recovery, grouped launches, and maintenance flows.
+
+### Stability & Infrastructure
+
+* Torii connection health monitor with auto-reconnect.
+* Client clock drift capped to prevent resource desync.
+* VRF: single request per transaction enforced.
+* Transaction retry with backoff and configurable batch delay.
+* Production automation dashboard with inline feedback.
+* Game client memory retention reduced with lazy-loaded manifests.
+* Blitz and Eternum mode isolation hardened in the game client.
+
+***
+
+*This changelog covers all game and documentation changes between 18 February and 28 March 2026.*
+
+
+
+---
+
+file: docs/pages/changelog/3-september-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 3rd September 2025
+
+### New Features
+
+* **Changelog Section**: Added new independent Changelog section to sidebar navigation
+* **Changelog Page**: Created first changelog entry for September 3rd, 2025 release
+* **Loot Chest Documentation**: Added comprehensive [Loot Chests](/overview/chests/loot-chests) section with detailed
+  information on chest contents and cosmetic items
+* **Cosmetic Collection**: New [Cosmetics](/overview/chests/cosmetics) page detailing the cosmetic item collection
+  system
+
+### Prize Distribution
+
+* **Game Entry**: Updated Blitz bracket system information to align with current key concepts
+  * Added Gladiator Bracket with 250 $LORDS entry fee
+  * Updated Recruit Bracket
+  * Delineated Warrior and Elite bracket games as being part of a 'series', hosted by the core team.
+* **Blitz Prize Pool**: Added [Prize Pool & Distribution](/blitz/prize-pool) page with detailed formulas and
+  distribution mechanics
+
+### Combat System Updates
+
+* **Time System**: Eternum days are now divided into six 'phases', each phase is 1 minute in Blitz or 12 minutes in
+  Eternum
+* **Damage Calculation**: Updated damage calculation systems for both [Blitz](/blitz/military/damage) and
+  [Eternum](/eternum/military/damage), including the addition of 'battle timer' and refund mechanics
+* **Stamina System**: Updated stamina mechanics and regeneration rates across both game modes
+* **Troop Transfer**: Updated troop transfer to include impact to battle timers
+
+### Blitz Gameplay Changes
+
+* **Storage System Removal**: Completely removed storage system from Blitz, including storehouses - players should
+  review [Materials & Production](/blitz/materials/production)
+* **Victory Points**: Updated [Victory](/blitz/victory) page with changes to VP/second awarded for holding
+  hyperstructures
+
+### Technical Improvements
+
+* **Navigation**: Restructured and updated the sidebar
+
+***
+
+*This changelog reflects all documentation updates made since the previous release. For detailed information about
+specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/changelog/31-january-2026.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 31st January 2026
+
+### New Features
+
+* [Blitz/MMR](/blitz/mmr): Documented Blitz MMR, eligibility, and the commit + claim update flow in the client.
+* [Blitz/Key Concepts](/blitz/key-concepts): Added an MMR overview and link to the dedicated page.
+
+### Content Updates
+
+* [Blitz/Materials/Automation](/blitz/materials/automation): Updated automation docs to match the current dashboard and
+  behavior (Realms/Villages tabs, Smart/Custom/Idle presets, staged edits requiring Save Changes).
+* [Blitz/Military/Stamina & Biomes](/blitz/military/stamina-and-biomes): Noted Paladin max stamina increase to **120**.
+* [Blitz/Military/Armies](/blitz/military/armies): Documented updated mercenary troop bounds (**800–1600**).
+* [Eternum/Prize Pool](/eternum/prize-pool): Added note that quests are temporarily disabled.
+
+***
+
+*This changelog reflects all documentation updates made since the previous release.*
+
+
+
+---
+
+file: docs/pages/changelog/7-november-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 7th November 2025
+
+### New Features
+
+* **Game Entry Split**: Split the combined Game Entry page into two dedicated pages placed under their sections:
+  * [Eternum/Game Entry](/eternum/game-entry)
+  * [Blitz/Game Entry](/blitz/game-entry)
+
+### Content Updates
+
+* [Blitz/Game Entry](/blitz/game-entry): Minor clarifications to scheduling, prize pool distribution, and rewards
+  wording.
+* [Overview/Loot Chests](/overview/chests/loot-chests): Clarified opening flow (collection page), epoch labeling, and
+  current dev status.
+* [Overview/Chest Contents](/overview/chests/contents): Clarified per-epoch item lists and independent roll mechanics;
+  noted WIP sections.
+* [Overview/Cosmetics](/overview/chests/cosmetics): Clarified equip slots, Season 2 scope for per‑Realm cosmetics, and
+  ownership persistence.
+* [Overview/$LORDS Token](/overview/lords): Clarified Blitz entry fees convert to $LORDS and prize pools pay top
+  performers.
+* [Blitz/Key Concepts](/blitz/key-concepts): Clarified exploration (no resource discovery), mode names (resource/labor),
+  and rewards phrasing.
+* [Blitz/World Physics](/blitz/world-physics): Clarified time/phase wording, materials isolation/bridging (WIP), and
+  stamina/travel notes.
+* [Blitz/Realms](/blitz/realms/realm): Added missing starting Wheat (1,000) to Starting Resources table.
+* [Blitz/Production](/blitz/materials/production): Refreshed production tables and labels to align with labor/resource
+  modes.
+* [Blitz/World Map & Movement](/blitz/worldmap-movement/movement): Minor clarifications; Relic Crates now award 1,000 VP
+  on open.
+* [Blitz/World Structures](/blitz/world-structures): Updated discovery chances for Essence Rifts and Camps.
+* [Blitz/Troop Tiers](/blitz/military/troop-tiers): Revised tier presentation and naming; images updated.
+* [Blitz/Prize Pool](/blitz/prize-pool) / [Blitz/Victory](/blitz/victory): Minor text clarifications; VP and
+  distribution wording tightened.
+
+### Balance Change Summary
+
+* [Production](/blitz/materials/production): Tables updated; mode rename (standard/simple → resource/labor).
+* [Buildings](/blitz/realms/buildings): Building construction costs updated; labor vs. resource requirements now
+  explicitly documented (standard/simple → resource/labor).
+* [Realm Upgrades](/blitz/realms/realm): Reduced labor, resource, and essence requirements.
+* [Army Size](blitz/military/armies): Maximum army size reduced from 100,000 to 30,000.
+* Exploration & Rewards: Relic Crates grant 1,000 VP; minor movement/map clarifications; troop exploration bundles
+  reduced (2,500 → 1,000). See [World Map & Movement](/blitz/worldmap-movement/movement) and [Victory](/blitz/victory).
+* Discovery Rates: Essence Rifts and Camps discovery chances adjusted from 1/20 to 1/30. See
+  [World Structures](/blitz/world-structures).
+* Troop Power Curve: T2 = 3× T1, T3 = 9× T1; presentation refreshed. See [Troop Tiers](/blitz/military/troop-tiers).
+
+### Technical Improvements
+
+* **Navigation/Sidebar**: Updated sidebar to list Game Entry as sibling items under Key Concepts for both Blitz and
+  Eternum; removed the Overview Game Entry link.
+* **Prev/Next Order**: Fixed navigation loops for first pages in groups; prev/next now follows sidebar sequence across
+  all pages and subpages.
+* **Naming Consistency (Blitz)**: Standard/Simple renamed to Resource/Labor across buildings; component props updated.
+  Corrected resource IDs to ensure proper icons in military building cards.
+* **Asset Cleanup**: Removed deprecated GIFs no longer referenced after buildings/production updates.
+
+### Incoming Updates
+
+* GIFs and client flow instructions: updates pending to reflect new UI/flows.
+* Competitive Series (Warrior & Elite): expanded details expected in November.
+* Automation: docs overhaul planned after the in-progress automation upgrade.
+
+***
+
+*This changelog reflects all documentation updates made since the previous release. For detailed information about
+specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/changelog/8-december-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 8th December 2025
+
+### Balance Updates
+
+* [Blitz/Production](/blitz/materials/production): Updated resource recipes, troop upgrade inputs, and donkey production
+  output rate.
+* [Blitz/Buildings](/blitz/realms/buildings): Adjusted T2/T3 resource and military building costs for both labor and
+  resource modes.
+
+### Starting Resources
+
+* [Blitz/Realms](/blitz/realms/realm): Increased starting labor per Realm to 1,200.
+* [Blitz/World Structures](/blitz/world-structures): Documented revised camp spawn stockpiles (500 Wheat, 2,500 Labor,
+  200 Donkeys).
+
+### Victory Points
+
+* [Blitz/Victory](/blitz/victory): Exploration VP reduced to 10 per tile.
+
+***
+
+*This changelog reflects all documentation updates made since the previous release.*
 
 
 
@@ -1506,299 +2009,6 @@ this logic in any other project that uses Typescript, e.g. new mobile client, da
 
 ---
 
-file: docs/pages/changelog/14-november-2025.mdx
-meta: {
-  "layout": "docs"
-}
-
-# 14th November 2025
-
-### Balance and Content Updates
-
-* [Blitz/World Map & Movement](/blitz/worldmap-movement/movement): Updated the wheat consumption to **0.03/troop unit**
-  for both exploration and travel.
-* [Blitz/World Structures](/blitz/world-structures): Reduced Essence Rift discovery chance from **1/30** to **1/50** and
-  increased essence output from **5 units/second** to **10 units/second**.
-* [Blitz/Realms/Buildings](/blitz/realms/buildings): Population capacity from the Keep and Worker’s Huts has been
-  increased from **+5** to **+6**. Construction costs for Farms, Worker’s Huts, T3 resource sites, and T2/T3 military
-  buildings have been adjusted.
-* [Blitz/Materials/Production](/blitz/materials/production): Wheat production from farms has been increased from **5
-  units/second** to **6 units/second**. Wheat cost has been reduced from **4/second** to **3/second** for T2 troop
-  production, and reduced from **7/second** to **4/second** for T3 troop production.
-* [Blitz/Materials/Relics](/blitz/materials/relics): Removed Labor Production relics from the game due to
-  incompatibility with the labor system in Blitz.
-* [Blitz/Military/Stamina & Biomes](/blitz/military/stamina-and-biomes): Scorched biome combat bonuses have been changed
-  to provide a damage bonus for Crossbowmen, a damage penalty for Paladins, and neither an advantage or penalty for
-  Knights. Knights and Crossbowmen no longer have a stamina penalty on snow biomes.
-* [Blitz/Realms/Realm](/blitz/realms/realm): Starting troop guidance now indicates that Realms on scorched biomes spawn
-  Crossbowmen as their starting troop type. Essence costs for Realm upgrades have been revised.
-* [Blitz/Victory](/blitz/victory): Victory Points awarded for exploring a tile have been reduced from **50 VP** to **25
-  VP**.
-
-***
-
-*This changelog reflects all documentation updates made since the previous release. For detailed information about
-specific changes, please refer to the individual documentation pages.*
-
-
-
----
-
-file: docs/pages/changelog/18-february-2026.mdx
-meta: {
-  "layout": "docs"
-}
-
-# 18th February 2026
-
-### Blitz Prize Pool Rewrite
-
-* [Blitz/Prize Pool](/blitz/prize-pool): Complete rewrite of the prize pool and distribution documentation. Updated
-  prize pool composition, tier breakdowns, and distribution mechanics to reflect current game state.
-
-### Component Architecture
-
-* Separated Blitz and Eternum component variants into dedicated directories (`blitz-components/`, `eternum-components/`)
-  for clearer maintainability. Affected components: DefendingArmies, HyperstructureRings, TroopMovementTable,
-  WeightTable, ResourceProduction, RewardsChestTable, and others.
-* Introduced shared `styles.ts` design system with consistent color palette, spacing, and reusable table/section/stats
-  styles across all components.
-
-### Visual Overhaul
-
-* Applied a Realms-themed design language across all documentation pages: dark card backgrounds, brass/gold accent
-  colors, consistent typography (Exo 2 headings), and hover states on table rows.
-* Rebuilt sidebar navigation with collapsible sections, chevron toggles, and improved hierarchy.
-* Fixed table dead space issues on Deployment Caps and Prize Pool Composition tables.
-* Centre-aligned numeric columns across multiple tables: Deployment Caps, Guard Slots, Damage Comparison, Max Stamina,
-  Buildable Hexes, Armies by Realm Level, and Starting Materials (Realms and Camps).
-* Reduced loot chest table cell margins to allow more width for description columns.
-* Unbolded numeric figures in Troop Tier Stats tables for cleaner readability.
-* Restructured Troop Movement stats as a flat list layout.
-* Added global mobile overflow protection for all tables.
-* Changed Hyperstructure ring formula notation from √(P/6) to (P/6)^(1/2).
-* Converted damage refund calculation rules to code blocks for consistency.
-
-### Content Updates
-
-* [Overview/Introduction](/overview/introduction): Linked 'Eternum' and 'Blitz' in Game Modes section to their
-  respective key concept pages.
-* [Blitz/Loot Chests](/overview/chests/contents): Updated Blitz and Eternum rewards chest tables with revised item
-  descriptions and column layout.
-* [Blitz/Armies](/blitz/military/armies): Converted Deployment Caps to inline HTML table with fixed layout.
-* [Blitz/Game Entry](/blitz/game-entry): Minor content adjustments.
-* [Blitz/MMR](/blitz/mmr): Removed redundant content.
-* [Development/Getting Started](/development/getting-started): Added setup notes.
-* Multiple Eternum section pages: Minor cross-reference and link fixes.
-
-### Sidebar & Navigation
-
-* Restructured `vocs.config.ts` sidebar: reordered sections, added new pages, improved collapsed/expanded defaults.
-* Added 18 February 2026 changelog to navigation.
-
-### Changelog Formatting
-
-* Standardised section heading levels across 8th December and 31st January changelog entries.
-
-***
-
-*This changelog covers all documentation changes in PR #4204.*
-
-
-
----
-
-file: docs/pages/changelog/3-september-2025.mdx
-meta: {
-  "layout": "docs"
-}
-
-# 3rd September 2025
-
-### New Features
-
-* **Changelog Section**: Added new independent Changelog section to sidebar navigation
-* **Changelog Page**: Created first changelog entry for September 3rd, 2025 release
-* **Loot Chest Documentation**: Added comprehensive [Loot Chests](/overview/chests/loot-chests) section with detailed
-  information on chest contents and cosmetic items
-* **Cosmetic Collection**: New [Cosmetics](/overview/chests/cosmetics) page detailing the cosmetic item collection
-  system
-
-### Prize Distribution
-
-* **Game Entry**: Updated Blitz bracket system information to align with current key concepts
-  * Added Gladiator Bracket with 250 $LORDS entry fee
-  * Updated Recruit Bracket
-  * Delineated Warrior and Elite bracket games as being part of a 'series', hosted by the core team.
-* **Blitz Prize Pool**: Added [Prize Pool & Distribution](/blitz/prize-pool) page with detailed formulas and
-  distribution mechanics
-
-### Combat System Updates
-
-* **Time System**: Eternum days are now divided into six 'phases', each phase is 1 minute in Blitz or 12 minutes in
-  Eternum
-* **Damage Calculation**: Updated damage calculation systems for both [Blitz](/blitz/military/damage) and
-  [Eternum](/eternum/military/damage), including the addition of 'battle timer' and refund mechanics
-* **Stamina System**: Updated stamina mechanics and regeneration rates across both game modes
-* **Troop Transfer**: Updated troop transfer to include impact to battle timers
-
-### Blitz Gameplay Changes
-
-* **Storage System Removal**: Completely removed storage system from Blitz, including storehouses - players should
-  review [Materials & Production](/blitz/materials/production)
-* **Victory Points**: Updated [Victory](/blitz/victory) page with changes to VP/second awarded for holding
-  hyperstructures
-
-### Technical Improvements
-
-* **Navigation**: Restructured and updated the sidebar
-
-***
-
-*This changelog reflects all documentation updates made since the previous release. For detailed information about
-specific changes, please refer to the individual documentation pages.*
-
-
-
----
-
-file: docs/pages/changelog/31-january-2026.mdx
-meta: {
-  "layout": "docs"
-}
-
-# 31st January 2026
-
-### New Features
-
-* [Blitz/MMR](/blitz/mmr): Documented Blitz MMR, eligibility, and the commit + claim update flow in the client.
-* [Blitz/Key Concepts](/blitz/key-concepts): Added an MMR overview and link to the dedicated page.
-
-### Content Updates
-
-* [Blitz/Materials/Automation](/blitz/materials/automation): Updated automation docs to match the current dashboard and
-  behavior (Realms/Villages tabs, Smart/Custom/Idle presets, staged edits requiring Save Changes).
-* [Blitz/Military/Stamina & Biomes](/blitz/military/stamina-and-biomes): Noted Paladin max stamina increase to **120**.
-* [Blitz/Military/Armies](/blitz/military/armies): Documented updated mercenary troop bounds (**800–1600**).
-* [Eternum/Prize Pool](/eternum/prize-pool): Added note that quests are temporarily disabled.
-
-***
-
-*This changelog reflects all documentation updates made since the previous release.*
-
-
-
----
-
-file: docs/pages/changelog/7-november-2025.mdx
-meta: {
-  "layout": "docs"
-}
-
-# 7th November 2025
-
-### New Features
-
-* **Game Entry Split**: Split the combined Game Entry page into two dedicated pages placed under their sections:
-  * [Eternum/Game Entry](/eternum/game-entry)
-  * [Blitz/Game Entry](/blitz/game-entry)
-
-### Content Updates
-
-* [Blitz/Game Entry](/blitz/game-entry): Minor clarifications to scheduling, prize pool distribution, and rewards
-  wording.
-* [Overview/Loot Chests](/overview/chests/loot-chests): Clarified opening flow (collection page), epoch labeling, and
-  current dev status.
-* [Overview/Chest Contents](/overview/chests/contents): Clarified per-epoch item lists and independent roll mechanics;
-  noted WIP sections.
-* [Overview/Cosmetics](/overview/chests/cosmetics): Clarified equip slots, Season 2 scope for per‑Realm cosmetics, and
-  ownership persistence.
-* [Overview/$LORDS Token](/overview/lords): Clarified Blitz entry fees convert to $LORDS and prize pools pay top
-  performers.
-* [Blitz/Key Concepts](/blitz/key-concepts): Clarified exploration (no resource discovery), mode names (resource/labor),
-  and rewards phrasing.
-* [Blitz/World Physics](/blitz/world-physics): Clarified time/phase wording, materials isolation/bridging (WIP), and
-  stamina/travel notes.
-* [Blitz/Realms](/blitz/realms/realm): Added missing starting Wheat (1,000) to Starting Resources table.
-* [Blitz/Production](/blitz/materials/production): Refreshed production tables and labels to align with labor/resource
-  modes.
-* [Blitz/World Map & Movement](/blitz/worldmap-movement/movement): Minor clarifications; Relic Crates now award 1,000 VP
-  on open.
-* [Blitz/World Structures](/blitz/world-structures): Updated discovery chances for Essence Rifts and Camps.
-* [Blitz/Troop Tiers](/blitz/military/troop-tiers): Revised tier presentation and naming; images updated.
-* [Blitz/Prize Pool](/blitz/prize-pool) / [Blitz/Victory](/blitz/victory): Minor text clarifications; VP and
-  distribution wording tightened.
-
-### Balance Change Summary
-
-* [Production](/blitz/materials/production): Tables updated; mode rename (standard/simple → resource/labor).
-* [Buildings](/blitz/realms/buildings): Building construction costs updated; labor vs. resource requirements now
-  explicitly documented (standard/simple → resource/labor).
-* [Realm Upgrades](/blitz/realms/realm): Reduced labor, resource, and essence requirements.
-* [Army Size](blitz/military/armies): Maximum army size reduced from 100,000 to 30,000.
-* Exploration & Rewards: Relic Crates grant 1,000 VP; minor movement/map clarifications; troop exploration bundles
-  reduced (2,500 → 1,000). See [World Map & Movement](/blitz/worldmap-movement/movement) and [Victory](/blitz/victory).
-* Discovery Rates: Essence Rifts and Camps discovery chances adjusted from 1/20 to 1/30. See
-  [World Structures](/blitz/world-structures).
-* Troop Power Curve: T2 = 3× T1, T3 = 9× T1; presentation refreshed. See [Troop Tiers](/blitz/military/troop-tiers).
-
-### Technical Improvements
-
-* **Navigation/Sidebar**: Updated sidebar to list Game Entry as sibling items under Key Concepts for both Blitz and
-  Eternum; removed the Overview Game Entry link.
-* **Prev/Next Order**: Fixed navigation loops for first pages in groups; prev/next now follows sidebar sequence across
-  all pages and subpages.
-* **Naming Consistency (Blitz)**: Standard/Simple renamed to Resource/Labor across buildings; component props updated.
-  Corrected resource IDs to ensure proper icons in military building cards.
-* **Asset Cleanup**: Removed deprecated GIFs no longer referenced after buildings/production updates.
-
-### Incoming Updates
-
-* GIFs and client flow instructions: updates pending to reflect new UI/flows.
-* Competitive Series (Warrior & Elite): expanded details expected in November.
-* Automation: docs overhaul planned after the in-progress automation upgrade.
-
-***
-
-*This changelog reflects all documentation updates made since the previous release. For detailed information about
-specific changes, please refer to the individual documentation pages.*
-
-
-
----
-
-file: docs/pages/changelog/8-december-2025.mdx
-meta: {
-  "layout": "docs"
-}
-
-# 8th December 2025
-
-### Balance Updates
-
-* [Blitz/Production](/blitz/materials/production): Updated resource recipes, troop upgrade inputs, and donkey production
-  output rate.
-* [Blitz/Buildings](/blitz/realms/buildings): Adjusted T2/T3 resource and military building costs for both labor and
-  resource modes.
-
-### Starting Resources
-
-* [Blitz/Realms](/blitz/realms/realm): Increased starting labor per Realm to 1,200.
-* [Blitz/World Structures](/blitz/world-structures): Documented revised camp spawn stockpiles (500 Wheat, 2,500 Labor,
-  200 Donkeys).
-
-### Victory Points
-
-* [Blitz/Victory](/blitz/victory): Exploration VP reduced to 10 per tile.
-
-***
-
-*This changelog reflects all documentation updates made since the previous release.*
-
-
-
----
-
 file: docs/pages/eternum/achievements.mdx
 meta: {}
 
@@ -2406,6 +2616,97 @@ only have one defense slot to support a guard army.
 
 ---
 
+file: docs/pages/overview/agora.mdx
+meta: {}
+
+# The Agora
+
+The Agora is Eternum's on-chain automated market maker (AMM) for trading LORDS against game resources. Each tradable
+resource has a dedicated LORDS/Resource pool using the constant-product (x \* y = k) formula.
+
+## How It Works
+
+The Agora uses **liquidity pools** — paired reserves of LORDS and a resource token. When you swap, you deposit one token
+into the pool and withdraw the other. The price is determined automatically by the ratio of tokens in the pool.
+
+### Swapping
+
+You can swap between any two tokens:
+
+* **Direct swaps**: Trade LORDS for a resource (or vice versa) through a single pool.
+* **Routed swaps**: Trade one resource for another. The Agora routes automatically through LORDS as an intermediary
+  (e.g., Wood → LORDS → Stone uses two pools).
+
+The price you receive depends on the size of your trade relative to the pool. Larger trades move the price more
+(slippage). You can set a **slippage tolerance** (default 0.5%) to protect against unfavorable price movement — the
+transaction will revert if the price moves beyond your tolerance.
+
+### Providing Liquidity
+
+Anyone can become a liquidity provider (LP) by depositing both LORDS and a resource token into a pool proportionally. In
+return you receive **LP tokens** representing your share of the pool.
+
+As trades occur, LPs earn a share of the swap fees proportional to their pool share. When you're ready to exit, burn
+your LP tokens to withdraw your share of both tokens from the pool.
+
+**First deposit**: LP tokens minted = `lordsDeposited - 1000` (a tiny amount is locked permanently to prevent pool
+manipulation).
+
+**Subsequent deposits**: LP tokens minted = `(lordsAdded * totalLpSupply) / lordsReserve`.
+
+### Fee Structure
+
+Every swap incurs two fees:
+
+| Fee              | Rate | Recipient                                      |
+| ---------------- | ---- | ---------------------------------------------- |
+| **LP Fee**       | 1%   | Liquidity providers (accrues to pool reserves) |
+| **Protocol Fee** | 3%   | veLORDS holders                                |
+
+* The **LP fee** is deducted from the input amount before the swap.
+* The **Protocol fee** is deducted from the output amount after the swap.
+* Both fees apply sequentially, not additively.
+
+### Deadlines
+
+All swap and liquidity transactions include a deadline (default: 20 minutes from submission). If the transaction hasn't
+been processed by then, it automatically reverts to protect you from stale prices.
+
+## Using The Agora
+
+### Swap Tab
+
+1. Select a pool from the pool list on the left.
+2. Choose your **Pay** and **Receive** tokens from the dropdowns.
+3. Enter the amount you want to swap.
+4. Review the quoted output, price impact, and minimum received.
+5. Adjust slippage tolerance if needed (gear icon).
+6. Click **Swap** and confirm the transaction.
+
+### Add Liquidity
+
+1. Select a pool.
+2. Enter the amount of LORDS you want to deposit — the required resource amount is calculated automatically to maintain
+   the pool ratio.
+3. Review the LP tokens you'll receive and your projected pool share.
+4. Click **Add Liquidity**.
+
+### Remove Liquidity
+
+1. Select a pool where you hold LP tokens.
+2. Enter the amount of LP tokens to burn.
+3. Review the LORDS and resource tokens you'll receive.
+4. Click **Remove Liquidity**.
+
+### Trade History
+
+The **History** tab shows recent swaps for the selected pool, including direction (Buy/Sell), amounts, and the effective
+rate.
+
+
+
+---
+
 file: docs/pages/overview/controller.mdx
 meta: {
   "title": "Cartridge Controller",
@@ -2660,7 +2961,7 @@ resource trading, exploration, and minigames. Whether aspiring to dominate the c
 peaceful corner of the world, Eternum offers rewarding experiences suited to every play style.
 
 **[Blitz](/blitz/key-concepts)** - Blitz provides an exciting contrast through rapid, high-intensity, free-for-all
-competition lasting exactly 90 minutes. This mode distills strategic gameplay into streamlined mechanics, accelerated
+competition lasting exactly 60 minutes. This mode distills strategic gameplay into streamlined mechanics, accelerated
 resource production, and immediate military engagements, rewarding quick thinking and decisive action. Blitz is
 structured around a competitive bracket system—Recruit, Gladiator, Warrior, and Elite—allowing Lords to engage at their
 preferred intensity level, from casual challenges to elite competitions with significant stakes and rewards. Whether
@@ -2782,637 +3083,6 @@ import { ResourceAddresses } from "@/components/ResourceAddresses";
 # Resource Addresses
 
 <ResourceAddresses />
-
-
-
----
-
-file: docs/pages/blitz/realms/buildings.mdx
-meta: {}
-
-import BuildingCard from "../../../components/BuildingCard";
-import { formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { BlitzBuildingCard } from "@/components/blitz-components/BlitzBuildingCard";
-
-# 🪓 Buildings
-
-## Resource Mode vs. Labor Mode
-
-Blitz offers two building systems. Lords can switch between resource and labor building modes at any time by clicking
-the toggle at the top of the construction tab.
-
-*Note: Some buildings only require labor to construct. Farms and Wood Mills have the same construction cost in both
-resource and labor building modes.*
-
-### Resource Mode
-
-This is the classic building experience. Construction requires a combination of labor and a particular set of resources
-as building materials. Resource mode is more complex and involves a greater number of materials, however it is far more
-efficient overall.
-
-### Labor Mode
-
-This mode allows players to utilize labor as the singular input for construction. Labor mode greatly improves
-accessibility and simplifies gameplay overall, but is much less efficient in both time and materials.
-
-## Placement & Population
-
-### Placement
-
-Construct buildings by selecting one in the buildings menu and clicking on an empty buildable hex in the local view, or
-by clicking the 'Build' button when accessing the buildings menu from the world view (this will place the building on
-the next available hex). Buildings can be constructed on any buildable hex of a Realm, provided the owner has the
-requisite materials and population capacity. Buildable hexes are defined by the upgrade level (Settlement, City,
-Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
-
-![Building Placement](/gifs/construction.gif)
-
-### Population
-
-**Population** is the total population used to construct the current buildings on a Realm, while **population capacity**
-is the maximum available population with which to construct buildings. Worker Huts can be built to increase population
-capacity, while all other buildings require population capacity to be available in order to construct. Lords must
-balance their construction to ensure there is enough population capacity available to construct their desired production
-buildings.
-
-## Building Types
-
-### The Keep
-
-All Realms start the game with a structure in the center of the buildable hexes, known as the Keep. This structure
-represents the central point of governance of the Realm, and facilitates key functions such as Realm upgrades and labor
-production. This building cannot be destroyed and provides a baseline population capacity of 6.
-
-<BuildingCard title="Keep" image="/images/buildings/construction/castleZero.png" buildingType={25} description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]} />
-
-### Resource Buildings
-
-There is a specific resource building for each of the 9 resources in Blitz, so Lords will require separate resource
-buildings if they wish to produce more than one type of resource.
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BlitzBuildingCard
-    title="Wood Mill"
-    image="/images/buildings/construction/lumber_mill.png"
-    buildingType={5}
-    description={["Produces Wood resource"]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 30 } // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 30 } // Labor
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Coal Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={4}
-    description={["Produces Coal resource"]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 90 }, // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 30 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 30 }, // Wood
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Copper Smelter"
-    image="/images/buildings/construction/forge.png"
-    buildingType={6}
-    description={["Produces Copper resource"]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 300 }, // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 60 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 60 }, // Wood
-  { resource: ResourcesIds.Coal, amount: 30 }, // Coal
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Ironwood Mill"
-    image="/images/buildings/construction/lumber_mill.png"
-    buildingType={7}
-    description={["Produces Ironwood resource"]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
-  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
-  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Cold Iron Foundry"
-    image="/images/buildings/construction/forge.png"
-    buildingType={13}
-    description={["Produces Cold Iron resource"]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
-  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
-  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Gold Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={9}
-    description={["Produces Gold resource"]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
-  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
-  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Adamantine Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={21}
-    description={["Produces Adamantine resource", "Only available in resource mode"]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
-  { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
-  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
-]}
-    standardOnly={true}
-  />
-
-  <BlitzBuildingCard
-    title="Mithral Forge"
-    image="/images/buildings/construction/forge.png"
-    buildingType={11}
-    description={["Produces Mithral resource", "Only available in resource mode"]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
-  { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
-  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
-]}
-    standardOnly={true}
-  />
-
-  <BlitzBuildingCard
-    title="Dragonhide Tannery"
-    image="/images/buildings/construction/dragonhide.png"
-    buildingType={24}
-    description={[
-  "Produces Dragonhide resource",
-  "Only available in resource mode",
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
-  { resource: ResourcesIds.Gold, amount: 60 }, // Gold
-  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
-]}
-    standardOnly={true}
-  />
-</div>
-
-### Economic Buildings
-
-These buildings define the utility of a Realm or Village, including food production, donkey production, and population
-capacity. All of these buildings can be constructed in either resource or labor mode, but have varying costs and
-population requirements:
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BlitzBuildingCard
-    title="Farm"
-    image="/images/buildings/construction/farm.png"
-    buildingType={37}
-    description={["Produces Wheat (food)"]}
-    simpleCosts={[
-  { resource: 23, amount: 10 } // Labor
-]}
-    standardCosts={[
-  { resource: 23, amount: 10 } // Labor
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Worker's Hut"
-    image="/images/buildings/construction/workers_hut.png"
-    buildingType={1}
-    description={["Increases population capacity by 6"]}
-    simpleCosts={[
-  { resource: 23, amount: 60 }, // Labor
-]}
-    standardCosts={[
-  { resource: 23, amount: 20 }, // Labor
-  { resource: 3, amount: 20 }, // Wood
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Market"
-    image="/images/buildings/construction/market.png"
-    buildingType={27}
-    description={[
-  "Produces Donkeys for transportation of materials",
-]}
-    simpleCosts={[
-  { resource: 23, amount: 180 } // Labor
-]}
-    standardCosts={[
-  { resource: 23, amount: 60 }, // Labor
-  { resource: 3, amount: 60 } // Wood
-]}
-  />
-</div>
-
-### Military Buildings
-
-Your military buildings are essential for training up armies to defend your territories and project your might. There
-are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
-such, there are a total of 9 military buildings in the game.
-
-Note: Only T1 troop buildings can be constructed in both labor and resource mode. T2 and T3 military buildings are only
-available for construction in resource mode.
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BlitzBuildingCard
-    title="Barracks (T1)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={28}
-    description={[
-  "Produces T1 Knights",
-  "Available in both labor and resource modes"
-]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 1200 } // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 120 } // Copper
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Barracks (T2)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={29}
-    description={["Produces T2 Knights", "Only available in resource mode"]}
-    standardOnly={true}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
-  { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
-  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Barracks (T3)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={30}
-    description={["Produces T3 Knights", "Only available in resource mode"]}
-    standardOnly={true}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
-  { resource: ResourcesIds.ColdIron, amount: 240 }, // Cold Iron
-  { resource: ResourcesIds.Mithral, amount: 120 }, // Mithral
-  { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
-]}
-  />
-
-  <div
-    style={{
-  gridColumn: "1 / -1",
-  height: "1px",
-  backgroundColor: "#8b5a2b",
-  margin: "1rem 0",
-  opacity: 0.6,
-}}
-  />
-
-  <BlitzBuildingCard
-    title="Archery Range (T1)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={31}
-    description={["Produces T1 Crossbowmen", "Available in both labor and resource modes"]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 1200 }, // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Archery Range (T2)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={32}
-    description={["Produces T2 Crossbowmen", "Only available in resource mode"]}
-    standardOnly={true}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
-  { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
-  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Archery Range (T3)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={33}
-    description={["Produces T3 Crossbowmen", "Only available in resource mode"]}
-    standardOnly={true}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
-  { resource: ResourcesIds.Ironwood, amount: 240 }, // Ironwood
-  { resource: ResourcesIds.Adamantine, amount: 120 }, // Adamantine
-  { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
-]}
-  />
-
-  <div
-    style={{
-  gridColumn: "1 / -1",
-  height: "1px",
-  backgroundColor: "#8b5a2b",
-  margin: "1rem 0",
-  opacity: 0.6,
-}}
-  />
-
-  <BlitzBuildingCard
-    title="Stables (T1)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={34}
-    description={["Produces T1 Paladins", "Available in both labor and resource modes"]}
-    laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 1200 }, // Labor
-]}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Stables (T2)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={35}
-    description={["Produces T2 Paladins", "Only available in resource mode"]}
-    standardOnly={true}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
-  { resource: ResourcesIds.Gold, amount: 60 }, // Gold
-  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Stables (T3)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={36}
-    description={["Produces T3 Paladins", "Only available in resource mode"]}
-    standardOnly={true}
-    resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
-  { resource: ResourcesIds.Gold, amount: 240 }, // Gold
-  { resource: ResourcesIds.Dragonhide, amount: 120 }, // Dragonhide
-  { resource: ResourcesIds.Essence, amount: 1200 } // Essence 
-]}
-  />
-</div>
-
-### Same Building Cost Increase
-
-Building multiple buildings of the same type will cost progressively more each time. The cost increase is calculated
-using the following formula:
-
-```
-Cost = Base Cost + (Base Cost × 0.1 × (N-1)²)
-```
-
-Where:
-
-* **Base Cost** is the initial cost of the building (from the tables above)
-* **N** is the number of the same buildings already constructed
-
-For example, if you build a second building of the same type (N=2), the cost will be:
-
-```
-Cost = Base Cost + (Base Cost × 0.1 × (2-1)²)
-     = Base Cost + (Base Cost × 0.1 × 1)
-     = Base Cost × 1.1
-```
-
-*Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Coal Mine after a Wood
-Mill (both being resource buildings) would not be subject to this cost increase.*
-
-
-
----
-
-file: docs/pages/blitz/realms/realm.mdx
-meta: {}
-
-import { StartingMilitary } from "@/components/StartingMilitary";
-import { BlitzRealmDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
-import { BuildableHexes } from "@/components/BuildableHexes";
-import ResourceIcon from "@/components/ResourceIcon";
-import { importantNote, table, formatAmount, section } from "@/components/styles";
-import { BlitzRealmLeveling } from "@/components/blitz-components/BlitzRealmLeveling";
-
-# 🏰 Realms
-
-In Blitz, each Lord starts the game commanding three Realms, evenly spaced in a triangular formation. These Realms are
-functionally identical and are not related to the 8,000 Realm NFTs that are the basis of Eternum. They can produce any
-of the nine resources available in Blitz and are equally capable in all aspects of the game, limited only by the skill
-and strategy of their Lord.
-
-<img src="/images/buildings/construction/castleOne.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
-
-## Registration
-
-All Lords willing to participate in a Blitz game are required to register prior to the start of the game. The
-'Registration Phase' is different for each bracket, but in all cases it is used to predetermine the number of players
-and establish the size of the game world. Each wallet address can only be registered once per Blitz game.
-
-## Settling
-
-Realms can be settled as soon as the game officially starts. This will confirm a Lord's participation in the game and
-place their Realms in a randomized spawn position. If a Lord fails to settle their Realms, their spawn position will
-remain empty throughout the game and any entry fee paid during registration will be forfeit. Lords should settle their
-Realms as soon as possible after the game starts to avoid falling behind their neighbors.
-
-### Settling Algorithm
-
-The number of registered Lords for a session determines the size of the map and the number of Hyperstructures available
-for Lords to compete over. A single Hyperstructure marks the center of the map, around which other concentric
-Hyperstructure 'rings' are spawned every 15 hexes until all players are accommodated. The details of Hyperstructure
-spawns are explained in greater detail in the [World Map](/blitz/worldmap-movement/worldmap) section.
-
-When the game starts, the size of the map and the number of Hyperstructures are finalized. Player positions are
-randomized within the bounds of the Hyperstructure rings, following a rotational pattern to distribute Lords as evenly
-as possible to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement
-sequence for an example of 24 players is visualized below:
-
-<img src="/images/gifs/blitz-map-build.gif" alt="Blitz map building sequence showing hyperstructure placement and player realm spawns" className="w-full rounded-lg my-6" />
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    There is no immunity period in Blitz. All Realms are able to be attacked and claimed from the moment the game
-    begins.
-  </p>
-</div>
-
-## Realm Details
-
-### Starting Materials
-
-<div style={table.container}>
-  <div style={table.wrapper}>
-    <table style={table.table}>
-      <thead style={table.tableHead}>
-        <tr>
-          <th style={{ ...table.headerCell, width: "70%" }}>Starting Resources per Realm</th>
-          <th style={{ ...table.headerCell, width: "30%", textAlign: "center" }}>Quantity</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={35} name="Wheat" size="md" />
-
-              Wheat
-            </div>
-          </td>
-
-          <td style={{ ...table.cell, textAlign: "center" }}>1,000</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={23} name="Labor" size="md" />
-
-              Labor
-            </div>
-          </td>
-
-          <td style={{ ...table.cell, textAlign: "center" }}>1,200</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={3} name="Wood" size="md" />
-
-              Wood
-            </div>
-          </td>
-
-          <td style={{ ...table.cell, textAlign: "center" }}>180</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={2} name="Coal" size="md" />
-
-              Coal
-            </div>
-          </td>
-
-          <td style={{ ...table.cell, textAlign: "center" }}>120</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={4} name="Copper" size="md" />
-
-              Copper
-            </div>
-          </td>
-
-          <td style={{ ...table.cell, textAlign: "center" }}>60</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={25} name="Donkey" size="md" />
-
-              Donkeys
-            </div>
-          </td>
-
-          <td style={{ ...table.cell, textAlign: "center" }}>200</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ResourceIcon id={26} name="Knight" size="md" />
-
-              T1 Troops
-            </div>
-          </td>
-
-          <td style={{ ...table.cell, textAlign: "center" }}>3,000</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-*Note: The type of T1 troop depends on the biome that the realm is spawned on. Starting troops will always have a combat
-advantage when defending their home.*
-
-### Realm Progression
-
-Realms can grow from a Settlement into a City, then to a Kingdom, and finally an Empire. Each upgrade level unlocks
-additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
-your defenses. Each progression requires specific materials, outlined in the table below:
-
-<BlitzRealmLeveling />
-
-<BuildableHexes />
-
-<BlitzRealmDefenseSlotsTable />
 
 
 
@@ -3626,7 +3296,7 @@ troop production - so mastery of these assets is key to success and security.
 
 Labor is the primary input for construction and production in simple mode, but is also required in resource mode for
 building construction and Realm upgrades. It is produced automatically by the Keep, creating a steady stream at a fixed
-rate of 1 labor per second.
+rate of 2 labor per second.
 
 ### Troops
 
@@ -3837,7 +3507,8 @@ Materials have different weights that affect transportation:
 ### Blitz Restrictions
 
 Troops can be transferred by donkey between any structures owned by the same player, including Realms, Camps, Essence
-Rifts, and Hyperstructures.
+Rifts, and Hyperstructures. This applies to structure inventory transfers; direct structure-to-army transfers are not
+available in Blitz.
 
 If a structure is captured, any troops stored in that structure or in transit to it are destroyed. This prevents capture
 handoffs from being used to move troops farther or faster than intended. Deployed armies still become owned by the new
@@ -4180,11 +3851,14 @@ then right-clicking the target hex.
 
 ## World Structure Deployment
 
-World Structures (Camps, Essence Rifts, and Hyperstructures) can only have guard armies deployed to them—field armies
-cannot be created from these structures.
+World Structures follow their structure-specific army slot limits:
 
-* **Camps & Essence Rifts**: Use Settlement-level deployment caps and army slots (1 guard slot)
-* **Hyperstructures**: Use Empire-level deployment caps and army slots (4 guard slots)
+* **Camps**: Use Settlement-level deployment caps, can create **1 field army**, and can maintain **1 guard slot**
+* **Essence Rifts**: Use Settlement-level deployment caps and can maintain **1 guard slot**
+* **Hyperstructures**: Use Empire-level deployment caps and can maintain **4 guard slots**
+
+Essence Rifts and Hyperstructures are defensive-only structures for armies. Camps are the only discoverable world
+structure that can create field armies.
 
 <BlitzWorldStructureDefenseSlotsTable />
 
@@ -4288,20 +3962,20 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 **Blitz Stamina System:**
 
 * **Day Length**: 6 minutes (1 minute per phase)
-* **Stamina Regeneration per Phase**: 20 stamina
-* **Total Stamina Regeneration per Day**: 120 stamina
+* **Stamina Regeneration per Phase**: 30 stamina
+* **Total Stamina Regeneration per Day**: 180 stamina
 
 ## Combat Stamina Mechanics
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **75
 stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
 rejected and no combat occurs.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **60
 stamina** (2.0 × stamina regen per phase). If the defender's current stamina is below this required threshold, they
 receive a **30% damage penalty** during that combat round.
 
@@ -4362,6 +4036,637 @@ Each troop tier provides escalating advantages in terms of damage output and sta
 
 ---
 
+file: docs/pages/blitz/realms/buildings.mdx
+meta: {}
+
+import BuildingCard from "../../../components/BuildingCard";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { BlitzBuildingCard } from "@/components/blitz-components/BlitzBuildingCard";
+
+# 🪓 Buildings
+
+## Resource Mode vs. Labor Mode
+
+Blitz offers two building systems. Lords can switch between resource and labor building modes at any time by clicking
+the toggle at the top of the construction tab.
+
+*Note: Some buildings only require labor to construct. Farms and Wood Mills have the same construction cost in both
+resource and labor building modes.*
+
+### Resource Mode
+
+This is the classic building experience. Construction requires a combination of labor and a particular set of resources
+as building materials. Resource mode is more complex and involves a greater number of materials, however it is far more
+efficient overall.
+
+### Labor Mode
+
+This mode allows players to utilize labor as the singular input for construction. Labor mode greatly improves
+accessibility and simplifies gameplay overall, but is much less efficient in both time and materials.
+
+## Placement & Population
+
+### Placement
+
+Construct buildings by selecting one in the buildings menu and clicking on an empty buildable hex in the local view, or
+by clicking the 'Build' button when accessing the buildings menu from the world view (this will place the building on
+the next available hex). Buildings can be constructed on any buildable hex of a Realm, provided the owner has the
+requisite materials and population capacity. Buildable hexes are defined by the upgrade level (Settlement, City,
+Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
+
+![Building Placement](/gifs/construction.gif)
+
+### Population
+
+**Population** is the total population used to construct the current buildings on a Realm, while **population capacity**
+is the maximum available population with which to construct buildings. Worker Huts can be built to increase population
+capacity, while all other buildings require population capacity to be available in order to construct. Lords must
+balance their construction to ensure there is enough population capacity available to construct their desired production
+buildings.
+
+## Building Types
+
+### The Keep
+
+All Realms start the game with a structure in the center of the buildable hexes, known as the Keep. This structure
+represents the central point of governance of the Realm, and facilitates key functions such as Realm upgrades and labor
+production. This building cannot be destroyed and provides a baseline population capacity of 6.
+
+<BuildingCard title="Keep" image="/images/buildings/construction/castleZero.png" buildingType={25} description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]} />
+
+### Resource Buildings
+
+There is a specific resource building for each of the 9 resources in Blitz, so Lords will require separate resource
+buildings if they wish to produce more than one type of resource.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BlitzBuildingCard
+    title="Wood Mill"
+    image="/images/buildings/construction/lumber_mill.png"
+    buildingType={5}
+    description={["Produces Wood resource"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 30 } // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 30 } // Labor
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Coal Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={4}
+    description={["Produces Coal resource"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 90 }, // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 30 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 30 }, // Wood
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Copper Smelter"
+    image="/images/buildings/construction/forge.png"
+    buildingType={6}
+    description={["Produces Copper resource"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 300 }, // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 60 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 60 }, // Wood
+  { resource: ResourcesIds.Coal, amount: 30 }, // Coal
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Ironwood Mill"
+    image="/images/buildings/construction/lumber_mill.png"
+    buildingType={7}
+    description={["Produces Ironwood resource"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Cold Iron Foundry"
+    image="/images/buildings/construction/forge.png"
+    buildingType={13}
+    description={["Produces Cold Iron resource"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Gold Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={9}
+    description={["Produces Gold resource"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+  { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+  { resource: ResourcesIds.Copper, amount: 30 }, // Copper
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Adamantine Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={21}
+    description={["Produces Adamantine resource", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
+  { resource: ResourcesIds.Essence, amount: 300 }, // Essence
+]}
+    standardOnly={true}
+  />
+
+  <BlitzBuildingCard
+    title="Mithral Forge"
+    image="/images/buildings/construction/forge.png"
+    buildingType={11}
+    description={["Produces Mithral resource", "Only available in resource mode"]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
+  { resource: ResourcesIds.Essence, amount: 300 }, // Essence
+]}
+    standardOnly={true}
+  />
+
+  <BlitzBuildingCard
+    title="Dragonhide Tannery"
+    image="/images/buildings/construction/dragonhide.png"
+    buildingType={24}
+    description={[
+  "Produces Dragonhide resource",
+  "Only available in resource mode",
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.Gold, amount: 60 }, // Gold
+  { resource: ResourcesIds.Essence, amount: 300 }, // Essence
+]}
+    standardOnly={true}
+  />
+</div>
+
+### Economic Buildings
+
+These buildings define the utility of a Realm or Village, including food production, donkey production, and population
+capacity. All of these buildings can be constructed in either resource or labor mode, but have varying costs and
+population requirements:
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BlitzBuildingCard
+    title="Farm"
+    image="/images/buildings/construction/farm.png"
+    buildingType={37}
+    description={["Produces Wheat (food)"]}
+    simpleCosts={[
+  { resource: 23, amount: 10 } // Labor
+]}
+    standardCosts={[
+  { resource: 23, amount: 10 } // Labor
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Worker's Hut"
+    image="/images/buildings/construction/workers_hut.png"
+    buildingType={1}
+    description={["Increases population capacity by 6"]}
+    simpleCosts={[
+  { resource: 23, amount: 60 }, // Labor
+]}
+    standardCosts={[
+  { resource: 23, amount: 20 }, // Labor
+  { resource: 3, amount: 20 }, // Wood
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Market"
+    image="/images/buildings/construction/market.png"
+    buildingType={27}
+    description={[
+  "Produces Donkeys for transportation of materials",
+]}
+    simpleCosts={[
+  { resource: 23, amount: 180 } // Labor
+]}
+    standardCosts={[
+  { resource: 23, amount: 60 }, // Labor
+  { resource: 3, amount: 60 } // Wood
+]}
+  />
+</div>
+
+### Military Buildings
+
+Your military buildings are essential for training up armies to defend your territories and project your might. There
+are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
+such, there are a total of 9 military buildings in the game.
+
+Note: Only T1 troop buildings can be constructed in both labor and resource mode. T2 and T3 military buildings are only
+available for construction in resource mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BlitzBuildingCard
+    title="Barracks (T1)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={28}
+    description={[
+  "Produces T1 Knights",
+  "Available in both labor and resource modes"
+]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 1200 } // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 } // Copper
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Barracks (T2)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={29}
+    description={["Produces T2 Knights", "Only available in resource mode"]}
+    standardOnly={true}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+  { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
+  { resource: ResourcesIds.Essence, amount: 300 }, // Essence
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Barracks (T3)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={30}
+    description={["Produces T3 Knights", "Only available in resource mode"]}
+    standardOnly={true}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+  { resource: ResourcesIds.ColdIron, amount: 240 }, // Cold Iron
+  { resource: ResourcesIds.Mithral, amount: 120 }, // Mithral
+  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
+]}
+  />
+
+  <div
+    style={{
+  gridColumn: "1 / -1",
+  height: "1px",
+  backgroundColor: "#8b5a2b",
+  margin: "1rem 0",
+  opacity: 0.6,
+}}
+  />
+
+  <BlitzBuildingCard
+    title="Archery Range (T1)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={31}
+    description={["Produces T1 Crossbowmen", "Available in both labor and resource modes"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 1200 }, // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Archery Range (T2)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={32}
+    description={["Produces T2 Crossbowmen", "Only available in resource mode"]}
+    standardOnly={true}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+  { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
+  { resource: ResourcesIds.Essence, amount: 300 }, // Essence
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Archery Range (T3)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={33}
+    description={["Produces T3 Crossbowmen", "Only available in resource mode"]}
+    standardOnly={true}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+  { resource: ResourcesIds.Ironwood, amount: 240 }, // Ironwood
+  { resource: ResourcesIds.Adamantine, amount: 120 }, // Adamantine
+  { resource: ResourcesIds.Essence, amount: 600 }, // Essence
+]}
+  />
+
+  <div
+    style={{
+  gridColumn: "1 / -1",
+  height: "1px",
+  backgroundColor: "#8b5a2b",
+  margin: "1rem 0",
+  opacity: 0.6,
+}}
+  />
+
+  <BlitzBuildingCard
+    title="Stables (T1)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={34}
+    description={["Produces T1 Paladins", "Available in both labor and resource modes"]}
+    laborCosts={[
+  { resource: ResourcesIds.Labor, amount: 1200 }, // Labor
+]}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Stables (T2)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={35}
+    description={["Produces T2 Paladins", "Only available in resource mode"]}
+    standardOnly={true}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+  { resource: ResourcesIds.Gold, amount: 60 }, // Gold
+  { resource: ResourcesIds.Essence, amount: 300 }, // Essence
+]}
+  />
+
+  <BlitzBuildingCard
+    title="Stables (T3)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={36}
+    description={["Produces T3 Paladins", "Only available in resource mode"]}
+    standardOnly={true}
+    resourceCosts={[
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+  { resource: ResourcesIds.Gold, amount: 240 }, // Gold
+  { resource: ResourcesIds.Dragonhide, amount: 120 }, // Dragonhide
+  { resource: ResourcesIds.Essence, amount: 600 } // Essence 
+]}
+  />
+</div>
+
+### Same Building Cost Increase
+
+Building multiple buildings of the same type will cost progressively more each time. The cost increase is calculated
+using the following formula:
+
+```
+Cost = Base Cost + (Base Cost × 0.1 × (N-1)²)
+```
+
+Where:
+
+* **Base Cost** is the initial cost of the building (from the tables above)
+* **N** is the number of the same buildings already constructed
+
+For example, if you build a second building of the same type (N=2), the cost will be:
+
+```
+Cost = Base Cost + (Base Cost × 0.1 × (2-1)²)
+     = Base Cost + (Base Cost × 0.1 × 1)
+     = Base Cost × 1.1
+```
+
+*Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Coal Mine after a Wood
+Mill (both being resource buildings) would not be subject to this cost increase.*
+
+
+
+---
+
+file: docs/pages/blitz/realms/realm.mdx
+meta: {}
+
+import { StartingMilitary } from "@/components/StartingMilitary";
+import { BlitzRealmDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
+import { BuildableHexes } from "@/components/BuildableHexes";
+import ResourceIcon from "@/components/ResourceIcon";
+import { importantNote, table, formatAmount, section } from "@/components/styles";
+import { BlitzRealmLeveling } from "@/components/blitz-components/BlitzRealmLeveling";
+
+# 🏰 Realms
+
+In Blitz, each Lord starts the game commanding three Realms, evenly spaced in a triangular formation. These Realms are
+functionally identical and are not related to the 8,000 Realm NFTs that are the basis of Eternum. They can produce any
+of the nine resources available in Blitz and are equally capable in all aspects of the game, limited only by the skill
+and strategy of their Lord.
+
+<img src="/images/buildings/construction/castleOne.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
+
+## Registration
+
+All Lords willing to participate in a Blitz game are required to register prior to the start of the game. The
+'Registration Phase' is different for each bracket, but in all cases it is used to predetermine the number of players
+and establish the size of the game world. Each wallet address can only be registered once per Blitz game.
+
+## Settling
+
+Realms can be settled as soon as the game officially starts. This will confirm a Lord's participation in the game and
+place their Realms in a randomized spawn position. If a Lord fails to settle their Realms, their spawn position will
+remain empty throughout the game and any entry fee paid during registration will be forfeit. Lords should settle their
+Realms as soon as possible after the game starts to avoid falling behind their neighbors.
+
+### Settling Algorithm
+
+The number of registered Lords for a session determines the size of the map and the number of Hyperstructures available
+for Lords to compete over. A single Hyperstructure marks the center of the map, around which other concentric
+Hyperstructure 'rings' are spawned every 15 hexes until all players are accommodated. The details of Hyperstructure
+spawns are explained in greater detail in the [World Map](/blitz/worldmap-movement/worldmap) section.
+
+When the game starts, the size of the map and the number of Hyperstructures are finalized. Player positions are
+randomized within the bounds of the Hyperstructure rings, following a rotational pattern to distribute Lords as evenly
+as possible to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement
+sequence for an example of 24 players is visualized below:
+
+<img src="/images/gifs/blitz-map-build.gif" alt="Blitz map building sequence showing hyperstructure placement and player realm spawns" className="w-full rounded-lg my-6" />
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    There is no immunity period in Blitz. All Realms are able to be attacked and claimed from the moment the game
+    begins.
+  </p>
+</div>
+
+## Realm Details
+
+### Starting Materials
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={{ ...table.headerCell, width: "70%" }}>Starting Resources per Realm</th>
+          <th style={{ ...table.headerCell, width: "30%", textAlign: "center" }}>Quantity</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={35} name="Wheat" size="md" />
+
+              Wheat
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>1,000</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={23} name="Labor" size="md" />
+
+              Labor
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>1,500</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={3} name="Wood" size="md" />
+
+              Wood
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>360</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={2} name="Coal" size="md" />
+
+              Coal
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>240</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={4} name="Copper" size="md" />
+
+              Copper
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>120</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={25} name="Donkey" size="md" />
+
+              Donkeys
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>500</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={26} name="Knight" size="md" />
+
+              T1 Troops
+            </div>
+          </td>
+
+          <td style={{ ...table.cell, textAlign: "center" }}>5,000</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+*Note: The type of T1 troop depends on the biome that the realm is spawned on. Starting troops will always have a combat
+advantage when defending their home.*
+
+### Realm Progression
+
+All Realms begin the game at City level. From there, they can be upgraded to a Kingdom and finally an Empire. Each
+upgrade level unlocks additional buildable hexes and defensive army slots, allowing for the expansion of your economy
+and strengthening of your defenses. Each progression requires specific materials, outlined in the table below:
+
+<BlitzRealmLeveling />
+
+<BuildableHexes />
+
+<BlitzRealmDefenseSlotsTable />
+
+
+
+---
+
 file: docs/pages/blitz/worldmap-movement/movement.mdx
 meta: {}
 
@@ -4377,8 +4682,8 @@ import { ExplorationRewards } from "@/components/blitz-components/ExplorationRew
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Phase (one
-minute), totaling +120 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +30 stamina per Phase (one
+minute), totaling +180 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined
 in the table below:
 
 <BlitzTroopMovementTable />
@@ -4442,6 +4747,8 @@ ownership:
 * Field armies can only transfer into guard slots of their own structure.
 * Guard armies can only transfer into field armies from the same structure (guard armies on Realms, Camps, Essence
   Rifts, or Hyperstructures cannot reinforce field armies from other structures).
+
+Camps can create field armies, while Essence Rifts and Hyperstructures can only store troops and deploy guards.
 
 To transfer troops from one army to another, or to a structure, the player first needs to select its army on the
 worldmap using left-click, then right-click on the target and select the Transfer Troops tab. Troops can be transferred
@@ -4520,706 +4827,6 @@ activate the crate will receive **three** Relics directly into their inventory a
 Lord, so be sure to secure them before your enemies do!
 
 <img src="/images/covers/blitz-relic-crate.png" alt="Relic Crate" className="w-full rounded-lg my-6" />
-
-
-
----
-
-file: docs/pages/eternum/realm-and-villages/buildings.mdx
-meta: {}
-
-import BuildingCard from "../../../components/BuildingCard";
-import { formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfig } from "@bibliothecadao/types";
-import { ETERNUM_CONFIG } from "@/utils/config";
-
-# 🪓 Buildings
-
-## Standard vs. Simple
-
-Season 1 offers two building systems. Lords can switch between standard and simple building modes at any time by
-clicking the toggle at the top of the construction tab.
-
-![Simple Mode Production](/gifs/simple-mode.gif)
-
-Note: Some buildings only require food to construct. Farms, Fishing Villages and Resource Buildings have the same
-construction cost in both standard and simple building modes.
-
-### Standard Mode
-
-This is the classic Eternum experience. Construction requires a combination of labor and a particular set of resources
-as building materials. Standard mode is more complex as it involves a greater number of materials in storage, however it
-is far more efficient overall. This building mode is generally designed for those with multiple Realms and/or Villages
-working with economies of scale.
-
-### Simple Mode
-
-This mode allows players to utilize Labor, a new material for Season 1, as the singular input for construction. Simple
-mode greatly improves accessibility and simplifies gameplay overall, but is much less efficient in both time and
-materials. This would be the preferred system for players with smaller holdings and limited access to a variety of
-resources.
-
-## Placement & Population
-
-### Placement
-
-The construction tab can be accessed in the Local view. Buildings can be constructed on any buildable hex of a Realm or
-Village, provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the
-upgrade level (i.e. Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
-Most buildings can be constructed in either simple or standard mode, which toggled at the top of the construction tab.
-
-![Building Placement](/gifs/construction.gif)
-
-### Population
-
-Population is the total population utilised by the currently constructed production buildings on a Realm or Village,
-while the population capacity is the maximum available population with which to construct production buildings. Worker
-Huts can be built to increase population capacity, while all other buildings require population capacity to be available
-in order to construct. Lords must balance their construction to ensure there is enough population capacity available to
-construct their desired production buildings.
-
-## Building Types
-
-### The Keep
-
-Settling any Realm or Village will automatically construct a structure in the centre of your buildable hexes, known as
-the Keep. This structure represents your seat of power and the central point of governance, and facilitates key
-functions such as Realm/Village upgrades and Labor production. This building cannot be destroyed and provides a baseline
-population capacity of 5.
-
-<BuildingCard
-  title="Labor Camp"
-  image="/images/buildings/construction/castleZero.png"
-  buildingType={25}
-  description={[
-  "Produces Labor resource",
-  "Provides a baseline population capacity of 5",
-  "Available in both simple and standard building modes",
-]}
-/>
-
-### Resource Buildings
-
-There is a specific resource building for each of the 22 resources in the game, so Lords will require separate resource
-buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
-have the same requirements in simple and standard mode.
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BuildingCard
-    title="Lumber Camp"
-    image="/images/buildings/construction/lumber_mill.png"
-    buildingType={5}
-    description={[
-  "Produces Wood resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes"
-]}
-  />
-
-  <BuildingCard
-    title="Stone Quarry"
-    image="/images/buildings/construction/mine.png"
-    buildingType={3}
-    description={[
-  "Produces Stone resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Coal Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={4}
-    description={[
-  "Produces Coal resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Copper Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={6}
-    description={[
-  "Produces Copper resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Obsidian Flows"
-    image="/images/buildings/construction/mine.png"
-    buildingType={8}
-    description={[
-  "Produces Obsidian resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Silver Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={10}
-    description={[
-  "Produces Silver resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Ironwood Grove"
-    image="/images/buildings/construction/lumber_mill.png"
-    buildingType={7}
-    description={[
-  "Produces Ironwood resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Cold Iron Foundry"
-    image="/images/buildings/construction/forge.png"
-    buildingType={13}
-    description={[
-  "Produces Cold Iron resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Gold Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={9}
-    description={[
-  "Produces Gold resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Hartwood Sanctuary"
-    image="/images/buildings/construction/lumber_mill.png"
-    buildingType={17}
-    description={[
-  "Produces Hartwood resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Diamond Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={16}
-    description={[
-  "Produces Diamond resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Sapphire Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={22}
-    description={[
-  "Produces Sapphire resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Ruby Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={15}
-    description={[
-  "Produces Ruby resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Deep Crystal Cave"
-    image="/images/buildings/construction/mine.png"
-    buildingType={14}
-    description={[
-  "Produces Deep Crystal resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Ignium Harvester"
-    image="/images/buildings/construction/forge.png"
-    buildingType={18}
-    description={[
-  "Produces Ignium resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Ethereal Silica Harvester"
-    image="/images/buildings/construction/mine.png"
-    buildingType={23}
-    description={[
-  "Produces Ethereal Silica resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="True Ice Harvester"
-    image="/images/buildings/construction/mine.png"
-    buildingType={20}
-    description={[
-  "Produces True Ice resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Twilight Quartz Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={19}
-    description={[
-  "Produces Twilight Quartz resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Alchemical Workshop"
-    image="/images/buildings/construction/forge.png"
-    buildingType={12}
-    description={[
-  "Produces Alchemical Silver resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Adamantine Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={21}
-    description={[
-  "Produces Adamantine resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Mithral Forge"
-    image="/images/buildings/construction/forge.png"
-    buildingType={11}
-    description={[
-  "Produces Mithral resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Dragonhide Harvester"
-    image="/images/buildings/construction/dragonhide.png"
-    buildingType={24}
-    description={[
-  "Produces Dragonhide resource",
-  "Requires 2 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-</div>
-
-### Economic Buildings
-
-These buildings define the utility of a Realm or Village, including food production, donkey production, population
-capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
-varying costs and population requirements:
-
-\[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
-increase (Storehouse)]
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BuildingCard
-    title="Worker's Hut"
-    image="/images/buildings/construction/workers_hut.png"
-    buildingType={1}
-    description={[
-  "Increases population capacity by 5",
-  "Available in both simple and standard building modes"
-]}
-  />
-
-  <BuildingCard
-    title="Storehouse"
-    image="/images/buildings/construction/storehouse.png"
-    buildingType={2}
-    description={[
-  "Increases storage capacity by {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )} kg for each material",
-  "Requires 2 population to be constructed",
-  "Available in both simple and standard building modes",
-]}
-  />
-
-  <BuildingCard
-    title="Market"
-    image="/images/buildings/construction/market.png"
-    buildingType={27}
-    description={[
-  "Produces Donkeys for transportation",
-  "Requires 3 population to be constructed",
-  "Available in both simple and standard building modes",
-]}
-  />
-
-  <BuildingCard
-    title="Farm"
-    image="/images/buildings/construction/farm.png"
-    buildingType={37}
-    description={[
-  "Produces Wheat (food) resource",
-  "Requires 1 population to be constructed",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Fishing Village"
-    image="/images/buildings/construction/fishing_village.png"
-    buildingType={38}
-    description={[
-  "Produces Fish (food) resource",
-  "Requires 1 population to be constructed",
-  "Same construction cost in both simple and standard modes"
-]}
-  />
-</div>
-
-### Military Buildings
-
-Your military buildings are essential for training up armies to defend your territories and project your might. There
-are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
-such, there are a total of 9 military buildings in the game.
-
-Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
-available for construction in standard mode.
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BuildingCard
-    title="Footman Barracks (T1)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={28}
-    description={[
-  "Produces T1 Footman units",
-  "Requires 3 population to be constructed",
-  "Available in both simple and standard building modes"
-]}
-  />
-
-  <BuildingCard
-    title="Knight Quarters (T2)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={29}
-    description={[
-  "Produces T2 Knight units",
-  "Requires 3 population to be constructed",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Guardian Sanctum (T3)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={30}
-    description={[
-  "Produces T3 Royal Guardian units",
-  "Requires 3 population to be constructed",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Archery Range (T1)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={31}
-    description={[
-  "Produces T1 Archer units",
-  "Requires 3 population to be constructed",
-  "Available in both simple and standard building modes",
-]}
-  />
-
-  <BuildingCard
-    title="Crossbow Garrison (T2)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={32}
-    description={[
-  "Produces T2 Crossbowman units",
-  "Requires 3 population to be constructed",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Hunting Den (T3)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={33}
-    description={[
-  "Produces T3 Beast Hunter units",
-  "Requires 3 population to be constructed",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Horseman Stables (T1)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={34}
-    description={[
-  "Produces T1 Horseman units",
-  "Requires 3 population to be constructed",
-  "Available in both simple and standard building modes",
-]}
-  />
-
-  <BuildingCard
-    title="Paladin Sanctuary (T2)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={35}
-    description={[
-  "Produces T2 Paladin units",
-  "Requires 3 population to be constructed",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Dragon Pit (T3)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={36}
-    description={[
-  "Produces T3 Dragon Rider units",
-  "Requires 3 population to be constructed",
-  "Only available in standard building mode"
-]}
-  />
-</div>
-
-### Same Building Cost Increase
-
-Building multiple buildings of the same type will cost progressively more each time. The cost increase is calculated
-using the following formula:
-
-```
-Cost = Base Cost + (Base Cost × 0.5 × (N-1)²)
-```
-
-Where:
-
-* **Base Cost** is the initial cost of the building (from the tables above)
-* **N** is the number of the same buildings already constructed
-
-For example, if you build a second building of the same type (N=2), the cost will be:
-
-```
-Cost = Base Cost + (Base Cost × 0.5 × (2-1)²)
-     = Base Cost + (Base Cost × 0.5 × 1)
-     = Base Cost × 1.5
-```
-
-Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Stone Quarry after a
-Lumber Camp (both being resource buildings) would not be subject to this cost increase.
-
-
-
----
-
-file: docs/pages/eternum/realm-and-villages/realm.mdx
-meta: {}
-
-import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
-import { StartingMilitary } from "@/components/StartingMilitary";
-import { RealmDefenseSlotsTable } from "@/components/eternum-components/DefendingArmies";
-import { BuildableHexes } from "@/components/BuildableHexes";
-import { RealmLeveling } from "@/components/eternum-components/RealmLeveling";
-import { importantNote } from "@/components/styles";
-
-# 🏰 Realms
-
-The 8,000 Realms are the foundation of Eternum, each uniquely destined to shape the fate of this vast continent. As
-limited and irreplaceable strongholds, these Realms serve as the primary playing pieces of the game. Each Realm settled
-in Eternum can produce between one and seven different resources, depending on the metadata of the original Realm NFT
-and its associated Season Pass. This metadata also aligns each Realm to one of sixteen ancient Orders, however the
-meaning of this alignment has been lost to the mist… for now.
-
-<img src="/images/buildings/construction/castleOne.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
-
-### Settling
-
-To settle a Realm, Lords must first burn a Season Pass, which gives them the ability to select the location of their
-homeland from an array of locations scattered across the map. For Season 1, there is a seven-day settling period before
-the game starts, allowing players to organize and position themselves before a move can be made. Realms can still be
-settled after this period, however the earlier in the season that Lords can establish their holdings, the greater their
-production potential and overall experience.
-
-<img src="/gifs/settle-realm.gif" alt="Settling a Realm" width="800" className="mx-auto" />
-
-![Realm Settling Screen](/screenshots/settling.png)
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    When the game starts, all structures are immune to attacks and raids for 24 hours. Once the first day of gameplay
-    has concluded, there are no more instances of immunity, all Realms and Villages settling into the game after this
-    time will need to rely on their starting defences and consider their starting locations carefully. Lords entering
-    the game after the immunity period are advised to make use of the spectator mode to scout for relatively safe
-    spawning locations before initiating a settling transaction.
-  </p>
-</div>
-
-### Starting Resources
-
-<StartingResources structureType={StructureType.Realm} />
-
-### Starting Military
-
-Each Realm starts with the majority of the starting troops deployed to the first defense slot as a guard army. A small
-number of troops remain within the Realm's storage to be deployed as a field army should the Realm Lord wish to explore
-beyond their walls. Troops can be transferred from the guard army to the field army using the troop transfer process
-explained in the [Movement & Exploration](/eternum/worldmap-movement/movement) section. The specific type of military
-unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that particular
-environment.
-
-<StartingMilitary amount={5000} structureType={StructureType.Realm} />
-
-### Realm Progression
-
-Realms can grow from a Settlement into a City, then to a Kingdom, and finally an Empire. Each upgrade level unlocks
-additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
-your defenses. Each progression requires specific materials, outlined in the table below:
-
-<RealmLeveling />
-
-<BuildableHexes />
-
-<RealmDefenseSlotsTable />
-
-
-
----
-
-file: docs/pages/eternum/realm-and-villages/villages.mdx
-meta: {}
-
-import ResourceProbability from "@/components/eternum-components/ResourceProbability";
-import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
-import { StartingMilitary } from "@/components/StartingMilitary";
-
-# 🛖 Villages
-
-Beyond the limited number of sacred Realms lies the humble yet vital Village—small settlements established on hexes that
-surround a settled Realm. These modest outposts offer a more accessible entry into Eternum, serving as gateways for new
-settlers and loyal subjects. Additionally, they can act as supplementary playing pieces for more serious players who
-wish to maximise their potential. Each settled Realm can have up to six Villages surrounding it, allowing up to 48,000
-Villages in Season 1!
-
-<img src="/images/buildings/construction/village.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
-
-### Settling
-
-Villages are settled by minting a Village token. Aspiring settlers can choose to place their Village next to a specific
-Realm by entering the asset ID of a settled Realm, or let fate guide them to a random Realm's outskirts - either way,
-the Realm that they spawn adjacent to becomes that Village's 'parent' Realm. Players may also choose which of the six
-possible hexes they spawn on by selecting a compass direction.
-
-<img src="/screenshots/villages.png" alt="Village Settling Screen" width="600" className="mx-auto" />
-
-<span style={{ fontSize: "0.9rem", display: "block", textAlign: "center" }}>
-  *Three villages settled next to a realm*
-</span>
-
-### Starting Resources
-
-<StartingResources structureType={StructureType.Village} />
-
-### Starting Military
-
-Each Village starts with the majority of the starting troops deployed to the first defense slot as a guard army. A small
-number of troops remain within the Village’s storage to be deployed as a field army should the Village Lord wish to
-explore beyond their walls. Troops can be transferred from the guard army to the field army using the troop transfer
-process explained in the [Movement & Exploration](/eternum/worldmap-movement/movement) section. The specific type of
-military unit is determined by your Village's biome, and is strategically chosen to have a combat advantage in that
-particular environment.
-
-<StartingMilitary amount={1000} structureType={StructureType.Village} />
-
-### Resource Roll
-
-When minting a Village, a random number is rolled to determine the single resource that it can produce.
-
-<ResourceProbability />
-
-### Limitations
-
-Villages produce food, resources, troops, donkeys, and labor at 50% the rate of Realms. They can receive and purchase
-food, labor, donkeys and resources without restriction, but can only receive troops from their parent Realm - this
-limitation is in place to prevent players from spawning a Village on their rival's Realm and 'teleporting' troops there
-by using the donkey network.
-
-### Village Progression
-
-Villages have a limited progression path and may only upgrade once from Settlement to City. The cost and benefits of
-this progression is the same as that of a Realm.
-
-
-
----
-
-file: docs/pages/eternum/realm-and-villages/wonders.mdx
-meta: {
-  "title": "Wonders",
-  "description": "The Wonders of Realms Eternum"
-}
-
-# ✨ Wonders
-
-Of the 8,000 Realms, 50 are distinguished by the presence of Wonders—unique and magical places of power that confer
-special benefits, making them highly desirable playing pieces that may put a target on their owner's back.
-
-In Season 1, Wonder Realms grant a 20% production bonus not only to themselves but also to all Realms and Villages
-located within 12 tiles. This bonus means the Wonder Realm itself, the surrounding Realms (up to six), and all Villages
-settled around these seven Realms produce food, resources, troops, labor, and donkeys at 120% efficiency compared to
-standard Realms, using the same inputs.
-
-Key Notes:
-
-* Production rates are not increased by this bonus, more is produced overall for the same amount of input.
-* These bonuses do not stack. There is no benefit to settling multiple wonders in a limited range.
-
-<br />
-
-<img src="/images/buildings/construction/wonder.png" width="800" style={{ margin: "0 auto", display: "block", maxWidth: "100%" }} />
-
-<br />
 
 
 
@@ -6059,6 +5666,706 @@ Each troop tier provides escalating advantages in terms of damage output and sta
 <TroopTierDamageStats />
 
 <MaxStaminaTable />
+
+
+
+---
+
+file: docs/pages/eternum/realm-and-villages/buildings.mdx
+meta: {}
+
+import BuildingCard from "../../../components/BuildingCard";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { CapacityConfig } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
+
+# 🪓 Buildings
+
+## Standard vs. Simple
+
+Season 1 offers two building systems. Lords can switch between standard and simple building modes at any time by
+clicking the toggle at the top of the construction tab.
+
+![Simple Mode Production](/gifs/simple-mode.gif)
+
+Note: Some buildings only require food to construct. Farms, Fishing Villages and Resource Buildings have the same
+construction cost in both standard and simple building modes.
+
+### Standard Mode
+
+This is the classic Eternum experience. Construction requires a combination of labor and a particular set of resources
+as building materials. Standard mode is more complex as it involves a greater number of materials in storage, however it
+is far more efficient overall. This building mode is generally designed for those with multiple Realms and/or Villages
+working with economies of scale.
+
+### Simple Mode
+
+This mode allows players to utilize Labor, a new material for Season 1, as the singular input for construction. Simple
+mode greatly improves accessibility and simplifies gameplay overall, but is much less efficient in both time and
+materials. This would be the preferred system for players with smaller holdings and limited access to a variety of
+resources.
+
+## Placement & Population
+
+### Placement
+
+The construction tab can be accessed in the Local view. Buildings can be constructed on any buildable hex of a Realm or
+Village, provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the
+upgrade level (i.e. Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
+Most buildings can be constructed in either simple or standard mode, which toggled at the top of the construction tab.
+
+![Building Placement](/gifs/construction.gif)
+
+### Population
+
+Population is the total population utilised by the currently constructed production buildings on a Realm or Village,
+while the population capacity is the maximum available population with which to construct production buildings. Worker
+Huts can be built to increase population capacity, while all other buildings require population capacity to be available
+in order to construct. Lords must balance their construction to ensure there is enough population capacity available to
+construct their desired production buildings.
+
+## Building Types
+
+### The Keep
+
+Settling any Realm or Village will automatically construct a structure in the centre of your buildable hexes, known as
+the Keep. This structure represents your seat of power and the central point of governance, and facilitates key
+functions such as Realm/Village upgrades and Labor production. This building cannot be destroyed and provides a baseline
+population capacity of 5.
+
+<BuildingCard
+  title="Labor Camp"
+  image="/images/buildings/construction/castleZero.png"
+  buildingType={25}
+  description={[
+  "Produces Labor resource",
+  "Provides a baseline population capacity of 5",
+  "Available in both simple and standard building modes",
+]}
+/>
+
+### Resource Buildings
+
+There is a specific resource building for each of the 22 resources in the game, so Lords will require separate resource
+buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
+have the same requirements in simple and standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BuildingCard
+    title="Lumber Camp"
+    image="/images/buildings/construction/lumber_mill.png"
+    buildingType={5}
+    description={[
+  "Produces Wood resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes"
+]}
+  />
+
+  <BuildingCard
+    title="Stone Quarry"
+    image="/images/buildings/construction/mine.png"
+    buildingType={3}
+    description={[
+  "Produces Stone resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Coal Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={4}
+    description={[
+  "Produces Coal resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Copper Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={6}
+    description={[
+  "Produces Copper resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Obsidian Flows"
+    image="/images/buildings/construction/mine.png"
+    buildingType={8}
+    description={[
+  "Produces Obsidian resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Silver Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={10}
+    description={[
+  "Produces Silver resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Ironwood Grove"
+    image="/images/buildings/construction/lumber_mill.png"
+    buildingType={7}
+    description={[
+  "Produces Ironwood resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Cold Iron Foundry"
+    image="/images/buildings/construction/forge.png"
+    buildingType={13}
+    description={[
+  "Produces Cold Iron resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Gold Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={9}
+    description={[
+  "Produces Gold resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Hartwood Sanctuary"
+    image="/images/buildings/construction/lumber_mill.png"
+    buildingType={17}
+    description={[
+  "Produces Hartwood resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Diamond Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={16}
+    description={[
+  "Produces Diamond resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Sapphire Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={22}
+    description={[
+  "Produces Sapphire resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Ruby Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={15}
+    description={[
+  "Produces Ruby resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Deep Crystal Cave"
+    image="/images/buildings/construction/mine.png"
+    buildingType={14}
+    description={[
+  "Produces Deep Crystal resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Ignium Harvester"
+    image="/images/buildings/construction/forge.png"
+    buildingType={18}
+    description={[
+  "Produces Ignium resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Ethereal Silica Harvester"
+    image="/images/buildings/construction/mine.png"
+    buildingType={23}
+    description={[
+  "Produces Ethereal Silica resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="True Ice Harvester"
+    image="/images/buildings/construction/mine.png"
+    buildingType={20}
+    description={[
+  "Produces True Ice resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Twilight Quartz Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={19}
+    description={[
+  "Produces Twilight Quartz resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Alchemical Workshop"
+    image="/images/buildings/construction/forge.png"
+    buildingType={12}
+    description={[
+  "Produces Alchemical Silver resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Adamantine Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={21}
+    description={[
+  "Produces Adamantine resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Mithral Forge"
+    image="/images/buildings/construction/forge.png"
+    buildingType={11}
+    description={[
+  "Produces Mithral resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Dragonhide Harvester"
+    image="/images/buildings/construction/dragonhide.png"
+    buildingType={24}
+    description={[
+  "Produces Dragonhide resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+</div>
+
+### Economic Buildings
+
+These buildings define the utility of a Realm or Village, including food production, donkey production, population
+capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
+varying costs and population requirements:
+
+\[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
+increase (Storehouse)]
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BuildingCard
+    title="Worker's Hut"
+    image="/images/buildings/construction/workers_hut.png"
+    buildingType={1}
+    description={[
+  "Increases population capacity by 5",
+  "Available in both simple and standard building modes"
+]}
+  />
+
+  <BuildingCard
+    title="Storehouse"
+    image="/images/buildings/construction/storehouse.png"
+    buildingType={2}
+    description={[
+  "Increases storage capacity by {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )} kg for each material",
+  "Requires 2 population to be constructed",
+  "Available in both simple and standard building modes",
+]}
+  />
+
+  <BuildingCard
+    title="Market"
+    image="/images/buildings/construction/market.png"
+    buildingType={27}
+    description={[
+  "Produces Donkeys for transportation",
+  "Requires 3 population to be constructed",
+  "Available in both simple and standard building modes",
+]}
+  />
+
+  <BuildingCard
+    title="Farm"
+    image="/images/buildings/construction/farm.png"
+    buildingType={37}
+    description={[
+  "Produces Wheat (food) resource",
+  "Requires 1 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Fishing Village"
+    image="/images/buildings/construction/fishing_village.png"
+    buildingType={38}
+    description={[
+  "Produces Fish (food) resource",
+  "Requires 1 population to be constructed",
+  "Same construction cost in both simple and standard modes"
+]}
+  />
+</div>
+
+### Military Buildings
+
+Your military buildings are essential for training up armies to defend your territories and project your might. There
+are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
+such, there are a total of 9 military buildings in the game.
+
+Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
+available for construction in standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BuildingCard
+    title="Footman Barracks (T1)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={28}
+    description={[
+  "Produces T1 Footman units",
+  "Requires 3 population to be constructed",
+  "Available in both simple and standard building modes"
+]}
+  />
+
+  <BuildingCard
+    title="Knight Quarters (T2)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={29}
+    description={[
+  "Produces T2 Knight units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Guardian Sanctum (T3)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={30}
+    description={[
+  "Produces T3 Royal Guardian units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Archery Range (T1)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={31}
+    description={[
+  "Produces T1 Archer units",
+  "Requires 3 population to be constructed",
+  "Available in both simple and standard building modes",
+]}
+  />
+
+  <BuildingCard
+    title="Crossbow Garrison (T2)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={32}
+    description={[
+  "Produces T2 Crossbowman units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Hunting Den (T3)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={33}
+    description={[
+  "Produces T3 Beast Hunter units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Horseman Stables (T1)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={34}
+    description={[
+  "Produces T1 Horseman units",
+  "Requires 3 population to be constructed",
+  "Available in both simple and standard building modes",
+]}
+  />
+
+  <BuildingCard
+    title="Paladin Sanctuary (T2)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={35}
+    description={[
+  "Produces T2 Paladin units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Dragon Pit (T3)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={36}
+    description={[
+  "Produces T3 Dragon Rider units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode"
+]}
+  />
+</div>
+
+### Same Building Cost Increase
+
+Building multiple buildings of the same type will cost progressively more each time. The cost increase is calculated
+using the following formula:
+
+```
+Cost = Base Cost + (Base Cost × 0.5 × (N-1)²)
+```
+
+Where:
+
+* **Base Cost** is the initial cost of the building (from the tables above)
+* **N** is the number of the same buildings already constructed
+
+For example, if you build a second building of the same type (N=2), the cost will be:
+
+```
+Cost = Base Cost + (Base Cost × 0.5 × (2-1)²)
+     = Base Cost + (Base Cost × 0.5 × 1)
+     = Base Cost × 1.5
+```
+
+Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Stone Quarry after a
+Lumber Camp (both being resource buildings) would not be subject to this cost increase.
+
+
+
+---
+
+file: docs/pages/eternum/realm-and-villages/realm.mdx
+meta: {}
+
+import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
+import { StartingMilitary } from "@/components/StartingMilitary";
+import { RealmDefenseSlotsTable } from "@/components/eternum-components/DefendingArmies";
+import { BuildableHexes } from "@/components/BuildableHexes";
+import { RealmLeveling } from "@/components/eternum-components/RealmLeveling";
+import { importantNote } from "@/components/styles";
+
+# 🏰 Realms
+
+The 8,000 Realms are the foundation of Eternum, each uniquely destined to shape the fate of this vast continent. As
+limited and irreplaceable strongholds, these Realms serve as the primary playing pieces of the game. Each Realm settled
+in Eternum can produce between one and seven different resources, depending on the metadata of the original Realm NFT
+and its associated Season Pass. This metadata also aligns each Realm to one of sixteen ancient Orders, however the
+meaning of this alignment has been lost to the mist… for now.
+
+<img src="/images/buildings/construction/castleOne.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
+
+### Settling
+
+To settle a Realm, Lords must first burn a Season Pass, which gives them the ability to select the location of their
+homeland from an array of locations scattered across the map. For Season 1, there is a seven-day settling period before
+the game starts, allowing players to organize and position themselves before a move can be made. Realms can still be
+settled after this period, however the earlier in the season that Lords can establish their holdings, the greater their
+production potential and overall experience.
+
+<img src="/gifs/settle-realm.gif" alt="Settling a Realm" width="800" className="mx-auto" />
+
+![Realm Settling Screen](/screenshots/settling.png)
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    When the game starts, all structures are immune to attacks and raids for 24 hours. Once the first day of gameplay
+    has concluded, there are no more instances of immunity, all Realms and Villages settling into the game after this
+    time will need to rely on their starting defences and consider their starting locations carefully. Lords entering
+    the game after the immunity period are advised to make use of the spectator mode to scout for relatively safe
+    spawning locations before initiating a settling transaction.
+  </p>
+</div>
+
+### Starting Resources
+
+<StartingResources structureType={StructureType.Realm} />
+
+### Starting Military
+
+Each Realm starts with the majority of the starting troops deployed to the first defense slot as a guard army. A small
+number of troops remain within the Realm's storage to be deployed as a field army should the Realm Lord wish to explore
+beyond their walls. Troops can be transferred from the guard army to the field army using the troop transfer process
+explained in the [Movement & Exploration](/eternum/worldmap-movement/movement) section. The specific type of military
+unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that particular
+environment.
+
+<StartingMilitary amount={5000} structureType={StructureType.Realm} />
+
+### Realm Progression
+
+Realms can grow from a Settlement into a City, then to a Kingdom, and finally an Empire. Each upgrade level unlocks
+additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
+your defenses. Each progression requires specific materials, outlined in the table below:
+
+<RealmLeveling />
+
+<BuildableHexes />
+
+<RealmDefenseSlotsTable />
+
+
+
+---
+
+file: docs/pages/eternum/realm-and-villages/villages.mdx
+meta: {}
+
+import ResourceProbability from "@/components/eternum-components/ResourceProbability";
+import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
+import { StartingMilitary } from "@/components/StartingMilitary";
+
+# 🛖 Villages
+
+Beyond the limited number of sacred Realms lies the humble yet vital Village—small settlements established on hexes that
+surround a settled Realm. These modest outposts offer a more accessible entry into Eternum, serving as gateways for new
+settlers and loyal subjects. Additionally, they can act as supplementary playing pieces for more serious players who
+wish to maximise their potential. Each settled Realm can have up to six Villages surrounding it, allowing up to 48,000
+Villages in Season 1!
+
+<img src="/images/buildings/construction/village.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
+
+### Settling
+
+Villages are settled by minting a Village token. Aspiring settlers can choose to place their Village next to a specific
+Realm by entering the asset ID of a settled Realm, or let fate guide them to a random Realm's outskirts - either way,
+the Realm that they spawn adjacent to becomes that Village's 'parent' Realm. Players may also choose which of the six
+possible hexes they spawn on by selecting a compass direction.
+
+<img src="/screenshots/villages.png" alt="Village Settling Screen" width="600" className="mx-auto" />
+
+<span style={{ fontSize: "0.9rem", display: "block", textAlign: "center" }}>
+  *Three villages settled next to a realm*
+</span>
+
+### Starting Resources
+
+<StartingResources structureType={StructureType.Village} />
+
+### Starting Military
+
+Each Village starts with the majority of the starting troops deployed to the first defense slot as a guard army. A small
+number of troops remain within the Village’s storage to be deployed as a field army should the Village Lord wish to
+explore beyond their walls. Troops can be transferred from the guard army to the field army using the troop transfer
+process explained in the [Movement & Exploration](/eternum/worldmap-movement/movement) section. The specific type of
+military unit is determined by your Village's biome, and is strategically chosen to have a combat advantage in that
+particular environment.
+
+<StartingMilitary amount={1000} structureType={StructureType.Village} />
+
+### Resource Roll
+
+When minting a Village, a random number is rolled to determine the single resource that it can produce.
+
+<ResourceProbability />
+
+### Limitations
+
+Villages produce food, resources, troops, donkeys, and labor at 50% the rate of Realms. They can receive and purchase
+food, labor, donkeys and resources without restriction, but can only receive troops from their parent Realm - this
+limitation is in place to prevent players from spawning a Village on their rival's Realm and 'teleporting' troops there
+by using the donkey network.
+
+### Village Progression
+
+Villages have a limited progression path and may only upgrade once from Settlement to City. The cost and benefits of
+this progression is the same as that of a Realm.
+
+
+
+---
+
+file: docs/pages/eternum/realm-and-villages/wonders.mdx
+meta: {
+  "title": "Wonders",
+  "description": "The Wonders of Realms Eternum"
+}
+
+# ✨ Wonders
+
+Of the 8,000 Realms, 50 are distinguished by the presence of Wonders—unique and magical places of power that confer
+special benefits, making them highly desirable playing pieces that may put a target on their owner's back.
+
+In Season 1, Wonder Realms grant a 20% production bonus not only to themselves but also to all Realms and Villages
+located within 12 tiles. This bonus means the Wonder Realm itself, the surrounding Realms (up to six), and all Villages
+settled around these seven Realms produce food, resources, troops, labor, and donkeys at 120% efficiency compared to
+standard Realms, using the same inputs.
+
+Key Notes:
+
+* Production rates are not increased by this bonus, more is produced overall for the same amount of input.
+* These bonuses do not stack. There is no benefit to settling multiple wonders in a limited range.
+
+<br />
+
+<img src="/images/buildings/construction/wonder.png" width="800" style={{ margin: "0 auto", display: "block", maxWidth: "100%" }} />
+
+<br />
 
 
 
