@@ -154,6 +154,7 @@ import {
   scheduleWorldmapPostCommitManagerCatchUpDrain,
 } from "./worldmap-post-commit-manager-catchup-runtime";
 import { hydrateWorldmapChunkRuntime } from "./worldmap-chunk-hydration-runtime";
+import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
 import {
   commitWorldmapPreparedTerrainPresentation,
   recordWorldmapTerrainReadyDuration,
@@ -219,7 +220,6 @@ import {
   shouldDelayWorldmapChunkSwitch,
 } from "./worldmap-chunk-switch-delay-policy";
 import { classifyWorldmapUploadWork, resolveWorldmapPostCommitWorkAction } from "./worldmap-upload-budget-policy";
-import { resolveChunkReversalRefreshDecision } from "./worldmap-chunk-reversal-policy";
 import {
   applyWorldmapSwitchOffRuntimeState,
   finalizePendingChunkFetchOwnership,
@@ -6461,56 +6461,55 @@ export default class WorldmapScene extends WarpTravel {
         this.clearEntitySelection();
       }
 
-      const oldChunk = this.currentChunk;
-      const reversalRefreshDecision = resolveChunkReversalRefreshDecision({
-        previousSwitchPosition: this.lastChunkSwitchPosition
+      const {
+        effectiveForce,
+        hasFiniteOldChunkCoordinates,
+        oldChunk,
+        oldChunkCoordinates,
+        previousPinnedChunks,
+        reversalRefreshDecision,
+        surroundingChunks,
+      } = prepareWorldmapChunkSwitchRuntime({
+        chunkKey,
+        currentChunk: this.currentChunk,
+        force,
+        getSurroundingChunkKeys: (targetStartRow, targetStartCol) =>
+          this.getSurroundingChunkKeys(targetStartRow, targetStartCol),
+        invalidateTerrainCaches: (targetChunkKey, options) =>
+          this.aggressivelyInvalidateChunkTerrainCaches(targetChunkKey, options),
+        lastChunkSwitchMovement: this.lastChunkSwitchMovement,
+        lastChunkSwitchPosition: this.lastChunkSwitchPosition
           ? {
               x: this.lastChunkSwitchPosition.x,
               z: this.lastChunkSwitchPosition.z,
             }
           : null,
-        nextSwitchPosition: switchPosition
+        pinnedChunkKeys: this.pinnedChunkKeys,
+        prepareBounds: ({ hasFiniteOldChunkCoordinates, oldChunkCoordinates, startCol, startRow, targetChunkKey }) => {
+          prepareWarpTravelChunkBounds({
+            targetChunkKey,
+            startRow,
+            startCol,
+            hasFiniteOldChunkCoordinates,
+            oldChunkCoordinates,
+            computeChunkBounds: (targetStartRow, targetStartCol) =>
+              this.computeChunkBounds(targetStartRow, targetStartCol),
+            registerChunk: (targetChunkKey, bounds) => this.visibilityManager?.registerChunk(targetChunkKey, bounds),
+            combineChunkBounds: (previousBounds, nextBounds) => this.combineChunkBounds(previousBounds, nextBounds),
+            applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
+          });
+        },
+        removeCachedMatricesForChunk: (targetStartRow, targetStartCol) =>
+          this.removeCachedMatricesForChunk(targetStartRow, targetStartCol),
+        startCol,
+        startRow,
+        switchPosition: switchPosition
           ? {
               x: switchPosition.x,
               z: switchPosition.z,
             }
           : null,
-        previousMovementVector: this.lastChunkSwitchMovement,
-        minMovementDistance: 0.001,
       });
-      const shouldAggressiveReversalRefresh = reversalRefreshDecision.shouldForceRefresh;
-      const effectiveForce = force || shouldAggressiveReversalRefresh;
-      const previousPinnedChunks = Array.from(this.pinnedChunkKeys);
-      const oldChunkCoordinates = oldChunk !== "null" ? oldChunk.split(",").map(Number) : null;
-      const hasFiniteOldChunkCoordinates =
-        oldChunkCoordinates !== null &&
-        Number.isFinite(oldChunkCoordinates[0]) &&
-        Number.isFinite(oldChunkCoordinates[1]);
-      prepareWarpTravelChunkBounds({
-        targetChunkKey: chunkKey,
-        startRow,
-        startCol,
-        hasFiniteOldChunkCoordinates,
-        oldChunkCoordinates:
-          hasFiniteOldChunkCoordinates && oldChunkCoordinates !== null
-            ? [oldChunkCoordinates[0], oldChunkCoordinates[1]]
-            : null,
-        computeChunkBounds: (targetStartRow, targetStartCol) => this.computeChunkBounds(targetStartRow, targetStartCol),
-        registerChunk: (targetChunkKey, bounds) => this.visibilityManager?.registerChunk(targetChunkKey, bounds),
-        combineChunkBounds: (previousBounds, nextBounds) => this.combineChunkBounds(previousBounds, nextBounds),
-        applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
-      });
-
-      // Load surrounding pinned chunks for better UX.
-      const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-      if (shouldAggressiveReversalRefresh) {
-        this.aggressivelyInvalidateChunkTerrainCaches(chunkKey, {
-          includeSurroundingChunks: surroundingChunks,
-          invalidateFetchAreas: true,
-        });
-      } else if (effectiveForce) {
-        this.removeCachedMatricesForChunk(startRow, startCol);
-      }
 
       const { tileFetchSucceeded, preparedTerrain, presentationRuntime } = await hydrateWorldmapChunkRuntime({
         chunkKey,
