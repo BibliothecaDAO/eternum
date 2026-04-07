@@ -12,11 +12,16 @@ import { SetupResult } from "@bibliothecadao/dojo";
 import { type Camera, type Object3D, type Object3DEventMap } from "three";
 import { env } from "../../env";
 import { SceneName } from "./types";
-import { resizeRendererBackend } from "./renderer-backend-compat";
 import { transitionDB } from "./utils/";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { setupRendererDevGui } from "./renderer-dev-gui-runtime";
+import {
+  resolveRendererPixelRatioCap,
+  resolveRendererTargetFps,
+  resolveRendererTargetPixelRatio,
+  resizeRendererDisplay,
+} from "./renderer-display-runtime";
 import { qualityController, type QualityFeatures } from "./utils/quality-controller";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
@@ -333,59 +338,28 @@ export default class GameRenderer {
   }
 
   private getTargetPixelRatio() {
-    const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
-    const mobileCap = this.getMobilePixelRatioCap();
-
-    switch (this.graphicsSetting) {
-      case GraphicsSettings.HIGH:
-        return Math.min(devicePixelRatio, 2, mobileCap);
-      case GraphicsSettings.MID:
-        return Math.min(devicePixelRatio, 1.5, mobileCap);
-      default:
-        return Math.min(1, mobileCap);
-    }
+    return resolveRendererTargetPixelRatio({
+      devicePixelRatio: window.devicePixelRatio || 1,
+      graphicsSetting: this.graphicsSetting,
+      isMobileDevice: this.isMobileDevice,
+    });
   }
 
   private getTargetFPS(): number | null {
-    if (this.isMobileDevice) {
-      switch (this.graphicsSetting) {
-        case GraphicsSettings.HIGH:
-          return 45;
-        case GraphicsSettings.MID:
-          return 30;
-        default:
-          return 30;
-      }
-    }
-
-    switch (this.graphicsSetting) {
-      case GraphicsSettings.LOW:
-        return 30;
-      case GraphicsSettings.MID:
-        return 45;
-      default:
-        return null;
-    }
-  }
-
-  private getMobilePixelRatioCap(): number {
-    if (!this.isMobileDevice) {
-      return Number.POSITIVE_INFINITY;
-    }
-
-    switch (this.graphicsSetting) {
-      case GraphicsSettings.HIGH:
-        return 1.5;
-      case GraphicsSettings.MID:
-        return 1.25;
-      default:
-        return 1;
-    }
+    return resolveRendererTargetFps({
+      graphicsSetting: this.graphicsSetting,
+      isMobileDevice: this.isMobileDevice,
+    });
   }
 
   public resolvePixelRatio(pixelRatio: number): number {
-    const mobileCap = this.getMobilePixelRatioCap();
-    return Math.min(pixelRatio, mobileCap);
+    return Math.min(
+      pixelRatio,
+      resolveRendererPixelRatioCap({
+        graphicsSetting: this.graphicsSetting,
+        isMobileDevice: this.isMobileDevice,
+      }),
+    );
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
@@ -405,24 +379,16 @@ export default class GameRenderer {
   }
 
   onWindowResize() {
-    this.markLabelsDirty();
-    const container = document.getElementById("three-container");
-    if (container) {
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-      this.camera.aspect = width / height;
-      this.camera.updateProjectionMatrix();
-      resizeRendererBackend(this.backend, width, height);
-      this.labelRuntime?.resize(width, height);
-      this.hudScene.onWindowResize(width, height);
-    } else {
-      // Fallback to window size if container not found
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      resizeRendererBackend(this.backend, window.innerWidth, window.innerHeight);
-      this.labelRuntime?.resize(window.innerWidth, window.innerHeight);
-      this.hudScene.onWindowResize(window.innerWidth, window.innerHeight);
-    }
+    resizeRendererDisplay({
+      backend: this.backend,
+      camera: this.camera,
+      getContainer: () => document.getElementById("three-container"),
+      hudScene: this.hudScene,
+      labelRuntime: this.labelRuntime,
+      markLabelsDirty: () => this.markLabelsDirty(),
+      windowHeight: window.innerHeight,
+      windowWidth: window.innerWidth,
+    });
   }
 
   /**
