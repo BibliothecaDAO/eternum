@@ -1,7 +1,7 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { toast } from "sonner";
 
-import { ensureStructureSynced, getMapFromToriiExact } from "@/dojo/queries";
+import { ensureStructureSynced, getExplorerTroopsFromToriiExact, getMapFromToriiExact } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import {
   ToriiStreamManager,
@@ -5590,6 +5590,14 @@ export default class WorldmapScene extends WarpTravel {
   ): Promise<boolean> {
     this.beginToriiFetch();
     try {
+      await getExplorerTroopsFromToriiExact(
+        this.dojo.network.toriiClient,
+        this.dojo.network.contractComponents as unknown as Parameters<typeof getExplorerTroopsFromToriiExact>[1],
+        minCol + FELT_CENTER(),
+        maxCol + FELT_CENTER(),
+        minRow + FELT_CENTER(),
+        maxRow + FELT_CENTER(),
+      );
       await getMapFromToriiExact(
         this.dojo.network.toriiClient,
         this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],

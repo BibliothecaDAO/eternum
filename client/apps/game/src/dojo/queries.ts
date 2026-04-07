@@ -562,6 +562,30 @@ export const getMapFromToriiExact = async <S extends Schema>(
   );
 };
 
+export const getExplorerTroopsFromToriiExact = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  minCol: number,
+  maxCol: number,
+  minRow: number,
+  maxRow: number,
+) => {
+  return getEntities(
+    client,
+    AndComposeClause([
+      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", minCol),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", maxCol),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", minRow),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", maxRow),
+    ]).build(),
+    components as any,
+    [],
+    ["s1_eternum-ExplorerTroops"],
+    EVENT_QUERY_LIMIT,
+    false,
+  );
+};
+
 export const getQuestsFromTorii = async (client: ToriiClient, components: Component<Schema, Metadata, undefined>[]) => {
   const query = {
     Keys: {
