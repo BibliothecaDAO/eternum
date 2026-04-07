@@ -273,6 +273,7 @@ function createGameRendererSubject() {
   const hudDestroy = vi.fn();
   const interactionRuntimeDispose = vi.fn();
   const monitoringRuntimeDispose = vi.fn();
+  const routeRuntimeDispose = vi.fn();
   const rendererDispose = vi.fn();
   const envDispose = vi.fn();
   const backendDispose = vi.fn(() => {
@@ -290,10 +291,10 @@ function createGameRendererSubject() {
   subject.hudScene = { destroy: hudDestroy };
   subject.interactionRuntime = { dispose: interactionRuntimeDispose };
   subject.monitoringRuntime = { dispose: monitoringRuntimeDispose };
+  subject.routeRuntime = { dispose: routeRuntimeDispose };
   subject.environmentTarget = { dispose: envDispose };
   subject.guiFolders = [];
   subject.labelRuntime = { dispose: vi.fn() };
-  subject.handleURLChange = vi.fn();
   subject.handleWindowResize = vi.fn();
 
   return {
@@ -305,6 +306,7 @@ function createGameRendererSubject() {
     hudDestroy,
     interactionRuntimeDispose,
     monitoringRuntimeDispose,
+    routeRuntimeDispose,
     rendererDispose,
     envDispose,
     backendDispose,
@@ -338,11 +340,10 @@ describe("GameRenderer destroy lifecycle", () => {
     expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.interactionRuntimeDispose).toHaveBeenCalledTimes(1);
     expect(fixture.monitoringRuntimeDispose).toHaveBeenCalledTimes(1);
+    expect(fixture.routeRuntimeDispose).toHaveBeenCalledTimes(1);
     expect(fixture.envDispose).toHaveBeenCalledTimes(1);
     expect(fixture.canvas.isConnected).toBe(false);
 
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith("urlChanged", fixture.subject.handleURLChange);
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith("popstate", fixture.subject.handleURLChange);
     expect(removeWindowListenerSpy).toHaveBeenCalledWith("resize", fixture.subject.handleWindowResize);
 
     expect(fixture.subject.labelRuntime.dispose).toHaveBeenCalledTimes(1);
@@ -360,6 +361,7 @@ describe("GameRenderer destroy lifecycle", () => {
     expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
     expect(fixture.interactionRuntimeDispose).toHaveBeenCalledTimes(1);
     expect(fixture.monitoringRuntimeDispose).toHaveBeenCalledTimes(1);
+    expect(fixture.routeRuntimeDispose).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("GameRenderer already destroyed, skipping cleanup");
   });
 

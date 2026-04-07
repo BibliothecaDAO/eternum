@@ -20,8 +20,6 @@ import {
   type Object3DEventMap,
 } from "three";
 import { env } from "../../env";
-import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
-import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
 import { SceneName } from "./types";
 import {
   setRendererDiagnosticCapabilities,
@@ -40,6 +38,7 @@ import { runRendererFrame } from "./renderer-frame-runtime";
 import { createRendererInteractionRuntime, type RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import { createRendererLabelRuntime, type RendererLabelRuntime } from "./renderer-label-runtime";
 import { createRendererMonitoringRuntime, type RendererMonitoringRuntime } from "./renderer-monitoring-runtime";
+import { createRendererRouteRuntime, type RendererRouteRuntime } from "./renderer-route-runtime";
 import { bootstrapRendererSceneRuntime, createRendererSceneRegistry } from "./renderer-scene-bootstrap";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import type { RendererBackendV2 } from "./renderer-backend-v2";
@@ -51,6 +50,7 @@ const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
 export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
   private effectsRuntime?: RendererEffectsRuntime;
+  private routeRuntime?: RendererRouteRuntime;
   private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
   private renderer!: RendererSurfaceLike;
   private interactionRuntime!: RendererInteractionRuntime;
@@ -122,6 +122,22 @@ export default class GameRenderer {
       isMemoryMonitoringEnabled: MEMORY_MONITORING_ENABLED,
       renderer: this.renderer,
       rendererOwner: this,
+    });
+  }
+
+  private initializeRouteRuntime() {
+    if (this.routeRuntime) {
+      return;
+    }
+
+    this.routeRuntime = createRendererRouteRuntime({
+      fadeIn: () => this.transitionManager?.fadeIn(),
+      fastTravelEnabled: () => this.isFastTravelEnabled(),
+      getCurrentScene: () => this.sceneManager?.getCurrentScene(),
+      hasFastTravelScene: () => Boolean(this.fastTravelScene),
+      markLabelsDirty: () => this.markLabelsDirty(),
+      moveCameraForScene: () => this.sceneManager.moveCameraForScene(),
+      switchScene: (sceneName) => this.sceneManager.switchScene(sceneName),
     });
   }
 
@@ -339,7 +355,7 @@ export default class GameRenderer {
     this.initializeHudScene();
 
     this.prepareScenes();
-    this.handleURLChange();
+    this.syncRouteFromLocation();
     this.animate();
   }
 
@@ -385,34 +401,15 @@ export default class GameRenderer {
   }
 
   private setupListeners() {
-    window.addEventListener("urlChanged", this.handleURLChange);
-    window.addEventListener("popstate", this.handleURLChange);
+    this.initializeRouteRuntime();
+    this.routeRuntime?.start();
     window.addEventListener("resize", this.handleWindowResize);
   }
 
-  private handleURLChange = () => {
-    const url = new URL(window.location.href);
-    const pathSegments = url.pathname.split("/").filter(Boolean);
-    const sceneSlug = pathSegments.pop();
-    const fastTravelEnabled = this.isFastTravelEnabled();
-    const targetScene = resolveNavigationSceneTarget({
-      requestedScene: resolveSceneNameFromRouteSegment(sceneSlug),
-      currentPath: url.pathname,
-      fastTravelEnabled,
-    });
-
-    if (
-      targetScene === this.sceneManager.getCurrentScene() &&
-      (targetScene === SceneName.WorldMap || (targetScene === SceneName.FastTravel && this.fastTravelScene))
-    ) {
-      this.sceneManager.moveCameraForScene();
-      this.transitionManager?.fadeIn();
-    } else {
-      this.sceneManager.switchScene(targetScene);
-    }
-
-    this.markLabelsDirty();
-  };
+  private syncRouteFromLocation() {
+    this.initializeRouteRuntime();
+    this.routeRuntime?.syncFromLocation();
+  }
 
   async prepareScenes() {
     this.assignRendererSceneRegistry(
@@ -701,12 +698,11 @@ export default class GameRenderer {
       destroyTrackedGuiFolders(this.guiFolders ?? []);
 
       // Remove event listeners
-      window.removeEventListener("urlChanged", this.handleURLChange);
-      window.removeEventListener("popstate", this.handleURLChange);
       window.removeEventListener("resize", this.handleWindowResize);
 
       this.disposeLabelRuntime();
       this.disposeMonitoringRuntime();
+      this.disposeRouteRuntime();
 
       disposeContactShadowResources();
 
@@ -731,6 +727,10 @@ export default class GameRenderer {
 
   private disposeMonitoringRuntime() {
     this.monitoringRuntime?.dispose();
+  }
+
+  private disposeRouteRuntime() {
+    this.routeRuntime?.dispose();
   }
 
   private subscribeToQualityController(): void {
