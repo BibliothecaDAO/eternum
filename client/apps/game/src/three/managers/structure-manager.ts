@@ -60,6 +60,7 @@ import {
   recordVisibleCosmeticStructureModelInstance,
   recordVisibleStructureModelInstance,
 } from "./structure-visible-instance-binding";
+import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
 import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
 import {
@@ -1349,50 +1350,7 @@ export class StructureManager {
         Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
       }
 
-      if (this.activeStructureAttachmentEntities.size > 0) {
-        const toRemove: number[] = [];
-        this.activeStructureAttachmentEntities.forEach((entityId) => {
-          if (!attachmentRetain.has(entityId)) {
-            toRemove.push(entityId);
-          }
-        });
-
-        toRemove.forEach((entityId) => {
-          this.attachmentManager.removeAttachments(entityId);
-          this.activeStructureAttachmentEntities.delete(entityId);
-          this.structureAttachmentSignatures.delete(entityId);
-        });
-      }
-
-      const labelsToRemove: ID[] = [];
-      for (const entityId of this.entityIdLabels.keys()) {
-        if (!visibleStructureIds.has(entityId)) {
-          labelsToRemove.push(entityId);
-        }
-      }
-
-      labelsToRemove.forEach((entityId) => {
-        this.removeEntityIdLabel(entityId);
-      });
-
-      // Remove points for structures no longer visible (diff-based: O(previously_visible) instead of O(all_structures))
-      if (this.pointsRenderers) {
-        for (const entityId of this.previousVisibleIds) {
-          if (!visibleStructureIds.has(entityId)) {
-            // Structure was visible last frame but not anymore - remove its point
-            const structure = this.structures.getStructureByEntityId(entityId);
-            if (structure) {
-              const renderer = this.getRendererForStructure(structure);
-              renderer?.removePoint(entityId);
-            }
-          }
-        }
-      }
-
-      // Update tracking for next frame's diff
-      this.previousVisibleIds = visibleStructureIds;
-
-      this.frustumVisibilityDirty = true;
+      this.finalizeVisibleStructurePass(visibleStructureIds, attachmentRetain);
     } finally {
       recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
       setWorldmapRenderGauge("visibleStructures", this.visibleStructureCount);
@@ -1514,6 +1472,25 @@ export class StructureManager {
       activeModels: nextActiveCosmeticStructureModels,
       cosmeticEntityIdMaps: this.cosmeticEntityIdMaps,
     });
+  }
+
+  private finalizeVisibleStructurePass(visibleStructureIds: Set<ID>, attachmentRetain: Set<number>): void {
+    this.previousVisibleIds = cleanupVisibleStructurePass({
+      retainedAttachmentEntities: attachmentRetain,
+      activeAttachmentEntities: this.activeStructureAttachmentEntities,
+      attachmentSignatures: this.structureAttachmentSignatures,
+      removeAttachments: (entityId) => this.attachmentManager.removeAttachments(entityId),
+      trackedLabelEntityIds: this.entityIdLabels.keys(),
+      visibleStructureIds,
+      removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
+      previousVisibleIds: this.previousVisibleIds,
+      getStructureByEntityId: (entityId) => this.structures.getStructureByEntityId(entityId),
+      removeStructurePoint: (entityId, structure) => {
+        const renderer = this.getRendererForStructure(structure);
+        renderer?.removePoint(entityId);
+      },
+    });
+    this.frustumVisibilityDirty = true;
   }
 
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {
