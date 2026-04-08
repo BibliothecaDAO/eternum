@@ -2317,7 +2317,7 @@
     "research_cost_for_relic": 50000
   },
   "vrf": {
-    "vrfProviderAddress": "0x0"
+    "vrfProviderAddress": "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f"
   },
   "setup": {
     "chain": "slot",
@@ -4968,7 +4968,7 @@
         },
         {
           "address": "0x310d01999c77964e0f0af3e5dcfd88b70e2af0a121b78138e8eb4eb9b0d909e",
-          "class_hash": "0x636e47719d1366dce72a212d7473e47b4c46eae84270c6728deff1dd986608e",
+          "class_hash": "0x4e335fa67dd0db2445b51c78c954b36fd7e26ab27c7af43c8ef0bf1e491d9fd",
           "init_calldata": [],
           "tag": "s1_eternum-camp_discovery_systems",
           "selector": "0x7629a8235d3c0a8a2020de7ab1e79d29dc031713f400a9c71ac9a85fc1531da",
