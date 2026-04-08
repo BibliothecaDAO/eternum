@@ -61,6 +61,7 @@ import {
   recordVisibleStructureModelInstance,
 } from "./structure-visible-instance-binding";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
+import { finalizeVisibleStructureModelPass } from "./structure-visible-pass-finalizer";
 import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
 import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
 import {
@@ -1335,20 +1336,11 @@ export class StructureManager {
         // Note: setCount will be called once per model after all structures are processed
       }
 
-      // Batch update: call setCount once per model that was used (triggers needsUpdate + computeBoundingSphere once)
-      for (const [model, count] of modelInstanceCounts) {
-        model.setCount(count);
-      }
-      this.previouslyActiveStructureModels = nextActiveStructureModels;
-      this.previouslyActiveCosmeticStructureModels = nextActiveCosmeticStructureModels;
-
-      // Apply deferred worldBounds now that instance data matches the new chunk
-      this.applyPendingModelBounds();
-
-      // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
-      if (this.pointsRenderers) {
-        Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
-      }
+      this.finalizeVisibleStructureModelPass(
+        modelInstanceCounts,
+        nextActiveStructureModels,
+        nextActiveCosmeticStructureModels,
+      );
 
       this.finalizeVisibleStructurePass(visibleStructureIds, attachmentRetain);
     } finally {
@@ -1491,6 +1483,27 @@ export class StructureManager {
       },
     });
     this.frustumVisibilityDirty = true;
+  }
+
+  private finalizeVisibleStructureModelPass(
+    modelInstanceCounts: Map<InstancedModel, number>,
+    nextActiveStructureModels: Set<InstancedModel>,
+    nextActiveCosmeticStructureModels: Set<InstancedModel>,
+  ): void {
+    const finalizedModelSets = finalizeVisibleStructureModelPass({
+      modelInstanceCounts,
+      nextActiveStructureModels,
+      nextActiveCosmeticStructureModels,
+      applyPendingModelBounds: () => this.applyPendingModelBounds(),
+      endPointBatches: this.pointsRenderers
+        ? () => {
+            Object.values(this.pointsRenderers!).forEach((renderer) => renderer.endBatch());
+          }
+        : undefined,
+    });
+
+    this.previouslyActiveStructureModels = finalizedModelSets.activeStructureModels;
+    this.previouslyActiveCosmeticStructureModels = finalizedModelSets.activeCosmeticStructureModels;
   }
 
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {
