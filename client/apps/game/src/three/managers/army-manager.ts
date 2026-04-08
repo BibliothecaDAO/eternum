@@ -60,6 +60,7 @@ import { MemoryMonitor } from "../utils/memory-monitor";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
+import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
@@ -2303,32 +2304,10 @@ export class ArmyManager {
   }
 
   private applyFrustumVisibilityToLabels() {
-    this.entityIdLabels.forEach((label) => {
-      const isVisible = this.visibilityManager
-        ? this.visibilityManager.isPointVisible(label.position)
-        : (this.frustumManager?.isPointVisible(label.position) ?? true);
-      const wasVisible = label.userData.isVisible === true;
-      if (isVisible === wasVisible) {
-        return;
-      }
-
-      label.userData.isVisible = isVisible;
-      label.visible = isVisible;
-      label.element.style.display = isVisible ? "" : "none";
-
-      if (isVisible) {
-        if (label.parent !== this.labelsGroup) {
-          this.labelsGroup.add(label);
-        }
-
-        // Force update data when showing again to ensure it's fresh
-        const entityId = label.userData.entityId;
-        const army = this.armies.get(entityId);
-        if (army) {
-          // Use the internal update function directly to avoid the visibility check in the wrapper
-          updateArmyLabel(label.element, army, this.currentCameraView);
-        }
-      }
+    syncArmyLabelVisibility({
+      labels: this.entityIdLabels.values(),
+      setLabelVisible: (label) => this.isArmyLabelVisible(label),
+      revealLabel: (entityId, label) => this.revealArmyLabel(entityId, label),
     });
   }
 
@@ -2514,18 +2493,43 @@ export class ArmyManager {
   }
 
   public hideAllLabels(): void {
-    Array.from(this.entityIdLabels.keys()).forEach((armyId) => this.removeEntityIdLabel(armyId));
-
-    // Clear hover highlight from all points
-    if (this.pointsRenderers) {
-      [
-        this.pointsRenderers.player,
-        this.pointsRenderers.enemy,
-        this.pointsRenderers.ally,
-        this.pointsRenderers.agent,
-      ].forEach((renderer) => renderer.clearHover());
-    }
+    removeArmyLabels({
+      trackedLabelEntityIds: Array.from(this.entityIdLabels.keys()),
+      shouldRetainLabel: () => false,
+      removeEntityIdLabel: (armyId) => this.removeEntityIdLabel(armyId),
+    });
+    this.clearArmyPointHoverIcons();
     this.frustumVisibilityDirty = true;
+  }
+
+  private isArmyLabelVisible(label: CSS2DObject): boolean {
+    return this.visibilityManager
+      ? this.visibilityManager.isPointVisible(label.position)
+      : (this.frustumManager?.isPointVisible(label.position) ?? true);
+  }
+
+  private revealArmyLabel(entityId: ID, label: CSS2DObject) {
+    if (label.parent !== this.labelsGroup) {
+      this.labelsGroup.add(label);
+    }
+
+    const army = this.armies.get(entityId);
+    if (army) {
+      updateArmyLabel(label.element, army, this.currentCameraView);
+    }
+  }
+
+  private clearArmyPointHoverIcons() {
+    if (!this.pointsRenderers) {
+      return;
+    }
+
+    [
+      this.pointsRenderers.player,
+      this.pointsRenderers.enemy,
+      this.pointsRenderers.ally,
+      this.pointsRenderers.agent,
+    ].forEach((renderer) => renderer.clearHover());
   }
 
   removeLabelsFromScene() {
