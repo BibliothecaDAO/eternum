@@ -52,10 +52,12 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
 
   const arrivalSummaries = useMemo<ArrivalSummary[]>(() => {
     return arrivalsWithResources.map((arrival) => {
-      const resources: ArrivalSummaryResource[] = arrival.resources.filter(isDefined).map((resource: ArrivalResourceLike) => ({
-        resourceId: resource.resourceId,
-        amount: divideByPrecision(resource.amount),
-      }));
+      const resources: ArrivalSummaryResource[] = arrival.resources
+        .filter(isDefined)
+        .map((resource: ArrivalResourceLike) => ({
+          resourceId: resource.resourceId,
+          amount: divideByPrecision(resource.amount),
+        }));
 
       const secondsUntilArrival = Math.max(0, Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS - now);
       const isReady = secondsUntilArrival === 0;
