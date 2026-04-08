@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-clash-563",
-    "launchRequestId": "24109283215-1",
+    "gameName": "bltz-blink-770",
+    "launchRequestId": "24116262782-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24109283215,
+    "workflowRunId": 24116262782,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "6cd565a5-8f41-45ad-bf13-776bba85d64f"
+    "stepId": "create-world",
+    "leaseId": "c321a3d6-a908-4237-9573-1549b5830cd9"
   },
-  "acquiredAt": "2026-04-07T23:28:32.112Z",
-  "heartbeatAt": "2026-04-07T23:28:37.437Z",
-  "expiresAt": "2026-04-07T23:28:37.437Z",
-  "releasedAt": "2026-04-07T23:28:37.437Z"
+  "acquiredAt": "2026-04-08T03:36:26.455Z",
+  "heartbeatAt": "2026-04-08T03:36:26.455Z",
+  "expiresAt": "2026-04-08T03:46:26.455Z"
 }
