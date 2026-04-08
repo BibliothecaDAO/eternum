@@ -61,6 +61,7 @@ import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifec
 import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
+import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
@@ -980,22 +981,15 @@ export class ArmyManager {
   private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {
     const numericId = this.toNumericId(army.entityId);
     const isSuppressed = this.suppressedArmies.has(army.entityId);
-    const path = this.armyPaths.get(army.entityId);
-
-    let sourceHex = army.hexCoords;
-    if (path && path.length > 0) {
-      sourceHex = path[0];
-    }
-
     const isMoving = this.armyModel.isEntityMoving(numericId);
-    let position: Vector3;
-    if (isMoving) {
-      position =
-        this.armyModel.getEntityWorldPosition(numericId)?.clone() ??
-        this.getArmyWorldPosition(army.entityId, sourceHex);
-    } else {
-      position = this.getArmyWorldPosition(army.entityId, sourceHex);
-    }
+    const position = resolveArmyPresentationPosition({
+      entityId: army.entityId,
+      hexCoords: army.hexCoords,
+      path: this.armyPaths.get(army.entityId),
+      isMoving,
+      movingPosition: this.armyModel.getEntityWorldPosition(numericId),
+      getArmyWorldPosition: (entityId, hexCoords) => this.getArmyWorldPosition(entityId, hexCoords),
+    });
 
     this.armyModel.assignModelToEntity(numericId, modelType);
 
@@ -1003,43 +997,18 @@ export class ArmyManager {
       this.armyModel.setIsAgent(true);
     }
 
-    // Handle cosmetic model assignment
-    let cosmeticId = army.cosmeticId;
-    let cosmeticAssetPaths = army.cosmeticAssetPaths;
-    let usesFallbackCosmeticSkin = army.usesFallbackCosmeticSkin ?? true;
-
-    // Re-resolve cosmetics if requested (for debug mode)
-    if (reResolveCosmetics) {
-      const cosmetic = resolveArmyCosmetic({
-        owner: army.owner.address,
-        troopType: army.category,
-        tier: army.tier,
-        defaultModelType: modelType,
-      });
-      cosmeticId = cosmetic.skin.cosmeticId;
-      cosmeticAssetPaths = cosmetic.skin.assetPaths;
-      usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
-
-      // Update army data with new cosmetic info
-      army.cosmeticId = cosmeticId;
-      army.cosmeticAssetPaths = cosmeticAssetPaths;
-      army.usesFallbackCosmeticSkin = usesFallbackCosmeticSkin;
-      army.attachments = cosmetic.attachments;
-    }
-
-    const hasCosmeticSkin = Boolean(
-      cosmeticId && cosmeticAssetPaths && cosmeticAssetPaths.length > 0 && !usesFallbackCosmeticSkin,
-    );
-
-    if (hasCosmeticSkin) {
-      this.armyModel.assignCosmeticToEntity(numericId, {
-        cosmeticId: cosmeticId!,
-        assetPaths: cosmeticAssetPaths!,
-        isFallback: false,
-        registryEntry: findCosmeticById(cosmeticId!),
-      });
-    } else {
-      // Clear any existing cosmetic assignment
+    const cosmeticPresentation = resolveArmyCosmeticPresentation({
+      army,
+      modelType,
+      reResolveCosmetics,
+    });
+    army.cosmeticId = cosmeticPresentation.cosmeticId;
+    army.cosmeticAssetPaths = cosmeticPresentation.cosmeticAssetPaths;
+    army.usesFallbackCosmeticSkin = cosmeticPresentation.usesFallbackCosmeticSkin;
+    army.attachments = cosmeticPresentation.attachments;
+    if (cosmeticPresentation.cosmeticAssignment) {
+      this.armyModel.assignCosmeticToEntity(numericId, cosmeticPresentation.cosmeticAssignment);
+    } else if (cosmeticPresentation.clearCosmeticAssignment) {
       this.armyModel.clearCosmeticForEntity(numericId);
     }
 

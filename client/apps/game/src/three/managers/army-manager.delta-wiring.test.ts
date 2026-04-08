@@ -35,4 +35,11 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).toMatch(/queuePendingExplorerTroopsUpdate\(/);
     expect(source).toMatch(/calculateArmyCurrentStamina\(/);
   });
+
+  it("routes instance presentation through shared position and cosmetic helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/resolveArmyPresentationPosition\(/);
+    expect(source).toMatch(/resolveArmyCosmeticPresentation\(/);
+  });
 });
