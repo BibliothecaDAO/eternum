@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "mainnet.blitz:bltz-blink-770",
+  "launchRequestId": "24116262782-1",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "bltz-blink-770",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-04-08T03:36:17.973Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 24116262782,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/24116262782",
+    "ref": "next",
+    "sha": "f82a86b19b00616c83bcb4e68807d8d95d256c90"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "mainnet.blitz",
+    "gameName": "bltz-blink-770",
+    "startTime": "2026-04-08T03:40:00.000Z",
+    "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+    "factoryAddress": "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
+    "devModeOn": true,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 432000,
+    "mapConfigOverrides": {
+      "campFindProbability": 47841,
+      "campFindFailProbability": 17694
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 50
+  }
+}
