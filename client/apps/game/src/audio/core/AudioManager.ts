@@ -1,4 +1,5 @@
 import { AudioAsset, AudioCategory, AudioMetrics, AudioPlayOptions, AudioState } from "../types";
+import { AudioPlaybackPolicy, PlaybackRejectionReason } from "./AudioPlaybackPolicy";
 import { AudioPoolManager } from "./AudioPoolManager";
 
 export class AudioManager {
@@ -12,21 +13,17 @@ export class AudioManager {
   private musicSources: Set<AudioBufferSourceNode> = new Set(); // Track music sources separately
   private musicGainNodes: Map<AudioBufferSourceNode, GainNode> = new Map();
   private sourceGainNodes: Map<AudioBufferSourceNode, GainNode> = new Map(); // Track ALL per-play gain nodes for cleanup
+  private sourceMetadata: Map<AudioBufferSourceNode, { assetId: string; category: AudioCategory }> = new Map();
   private poolManager: AudioPoolManager | null = null;
+  private playbackPolicy = new AudioPlaybackPolicy();
   private state: AudioState;
   private static readonly STORAGE_KEY = "ETERNUM_AUDIO_SETTINGS";
 
   // Variation tracking to avoid immediate repeats
   private lastPlayedVariation: Map<string, number> = new Map();
 
-  // Anti-spam: track last play time per asset to prevent rapid repeats
-  private lastPlayTime: Map<string, number> = new Map();
-
   // Ramp duration for volume changes to prevent clicks/pops (in seconds)
   private static readonly VOLUME_RAMP_DURATION = 0.015; // 15ms
-
-  // Minimum interval between repeated plays of the same sound (in milliseconds)
-  private static readonly MIN_REPEAT_INTERVAL_MS = 50;
 
   private constructor() {
     this.state = this.loadPersistedState();
@@ -43,13 +40,13 @@ export class AudioManager {
     return {
       masterVolume: 1.0,
       categoryVolumes: {
-        [AudioCategory.MUSIC]: 0.4, // Reduced from 0.5 - background layer
-        [AudioCategory.UI]: 0.5, // Reduced from 0.8 - clear but not overpowering
-        [AudioCategory.RESOURCE]: 0.5, // Reduced from 0.6 - frequent actions
-        [AudioCategory.BUILDING]: 0.5, // Reduced from 0.6 - frequent actions
-        [AudioCategory.COMBAT]: 0.5, // Reduced from 0.8 - still important but not overpowering
-        [AudioCategory.AMBIENT]: 0.3, // Reduced from 0.4 - subtle atmosphere
-        [AudioCategory.ENVIRONMENT]: 0.35, // Reduced from 0.5 - weather effects
+        [AudioCategory.MUSIC]: 0.08,
+        [AudioCategory.UI]: 0.2,
+        [AudioCategory.RESOURCE]: 0.25,
+        [AudioCategory.BUILDING]: 0.2,
+        [AudioCategory.COMBAT]: 0.1,
+        [AudioCategory.AMBIENT]: 0.15,
+        [AudioCategory.ENVIRONMENT]: 0.2,
       },
       muted: false,
       spatialEnabled: true,
@@ -255,14 +252,15 @@ export class AudioManager {
       return null;
     }
 
-    // Anti-spam: skip if same sound played too recently (except for music which should always play)
-    if (asset.category !== AudioCategory.MUSIC) {
-      const now = performance.now();
-      const lastTime = this.lastPlayTime.get(assetId) ?? 0;
-      if (now - lastTime < AudioManager.MIN_REPEAT_INTERVAL_MS) {
-        return null; // Skip rapid repeat
-      }
-      this.lastPlayTime.set(assetId, now);
+    const playbackDecision = this.playbackPolicy.registerStart({
+      assetId,
+      category: asset.category,
+      priority: options.priority ?? asset.priority,
+      nowMs: performance.now(),
+    });
+    if (!playbackDecision.allowed) {
+      this.handlePlaybackRejection(assetId, playbackDecision.reason);
+      return null;
     }
 
     // Select variation URL (or main URL if no variations)
@@ -305,7 +303,7 @@ export class AudioManager {
     }
 
     const gainNode = this.audioContext.createGain();
-    const finalVolume = (options.volume ?? asset.volume) * this.state.categoryVolumes[asset.category];
+    const finalVolume = options.volume ?? asset.volume;
     const now = this.audioContext.currentTime;
 
     if (options.fadeInMs && options.fadeInMs > 0) {
@@ -321,6 +319,7 @@ export class AudioManager {
 
     // Track gain node for cleanup (prevents WebAudio graph bloat)
     this.sourceGainNodes.set(source, gainNode);
+    this.sourceMetadata.set(source, { assetId, category: asset.category });
 
     source.onended = () => {
       this.activeSources.delete(source);
@@ -340,6 +339,7 @@ export class AudioManager {
         this.musicSources.delete(source);
         this.musicGainNodes.delete(source);
       }
+      this.releasePlayback(source);
       options.onComplete?.();
     };
 
@@ -380,6 +380,7 @@ export class AudioManager {
       if (musicGain) {
         this.musicGainNodes.delete(source);
       }
+      this.releasePlayback(source);
     }
   }
 
@@ -541,6 +542,25 @@ export class AudioManager {
     this.musicSources.clear();
     this.musicGainNodes.clear();
     this.sourceGainNodes.clear();
+    this.sourceMetadata.clear();
     AudioManager.instance = null as unknown as AudioManager;
+  }
+
+  private releasePlayback(source: AudioBufferSourceNode): void {
+    const metadata = this.sourceMetadata.get(source);
+    if (!metadata) {
+      return;
+    }
+
+    this.playbackPolicy.registerEnd(metadata);
+    this.sourceMetadata.delete(source);
+  }
+
+  private handlePlaybackRejection(assetId: string, reason?: PlaybackRejectionReason): void {
+    if (!reason) return;
+
+    if (import.meta.env.DEV) {
+      console.debug(`Skipped audio playback for ${assetId} due to ${reason}`);
+    }
   }
 }
