@@ -71,12 +71,13 @@ import {
 } from "./structure-label-state";
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { refreshStructureCosmeticsByOwner } from "./structure-cosmetics-refresh";
+import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
 import {
   mapPendingStructureGuardArmies,
   queuePendingBuildingLabelUpdate,
   queuePendingStructureLabelUpdate,
 } from "./structure-pending-label-updates";
-import { createStructureRecord } from "./structure-record";
+import { StructureRecordStore } from "./structure-record-store";
 import {
   resolveStructureTileUpdateRecord,
   takeFreshPendingLabelUpdate,
@@ -91,31 +92,6 @@ import {
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
-
-const normalizeEntityId = (entityId: ID | bigint | string | undefined | null): ID | undefined => {
-  if (entityId === undefined || entityId === null) {
-    return undefined;
-  }
-
-  if (typeof entityId === "bigint") {
-    const normalized = Number(entityId);
-    if (!Number.isSafeInteger(normalized)) {
-      console.warn(`[StructureManager] Entity id ${entityId.toString()} exceeds safe integer range`);
-    }
-    return normalized as ID;
-  }
-
-  if (typeof entityId === "string") {
-    const parsed = Number(entityId);
-    if (Number.isNaN(parsed)) {
-      console.warn(`[StructureManager] Failed to parse entity id string "${entityId}"`);
-      return undefined;
-    }
-    return parsed as ID;
-  }
-
-  return entityId;
-};
 
 interface StructureInstanceBinding {
   modelIndex: number;
@@ -142,7 +118,7 @@ export class StructureManager {
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
   private dummy: Object3D = new Object3D();
-  public readonly structures: Structures;
+  public readonly structures: StructureRecordStore;
   structureHexCoords: Map<number, Set<number>> = new Map();
   private currentChunk: string = MANAGER_UNCOMMITTED_CHUNK;
   private renderChunkSize: RenderChunkSize;
@@ -282,7 +258,11 @@ export class StructureManager {
       }
     });
     this.renderChunkSize = renderChunkSize;
-    this.structures = new Structures(this.handleStructureRecordRemoved, () => this.updateVisibleStructures());
+    this.structures = new StructureRecordStore({
+      onRemove: this.handleStructureRecordRemoved,
+      onStructuresChanged: () => this.updateVisibleStructures(),
+      isAddressMine: (address) => isAddressEqualToAccount(address),
+    });
     this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
@@ -2164,161 +2144,5 @@ export class StructureManager {
 
     existingLabel.userData.lastDataKey = dataKey;
     updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
-  }
-}
-
-class Structures {
-  private structures: Map<StructureType, Map<ID, StructureInfo>> = new Map();
-  private entityIdIndex: Map<ID, StructureInfo> = new Map();
-
-  constructor(
-    private readonly onRemove?: (structure: StructureInfo) => void,
-    private readonly onStructuresChanged?: () => void,
-  ) {}
-
-  addStructure(
-    entityId: ID,
-    structureName: string,
-    structureType: StructureType,
-    hexCoords: { col: number; row: number },
-    initialized: boolean,
-    stage: number = 0,
-    level: number = 0,
-    owner: { address: bigint; ownerName: string; guildName: string },
-    hasWonder: boolean,
-    attachments: CosmeticAttachmentTemplate[] | undefined,
-    isAlly: boolean,
-    guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
-    activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>,
-    incomingTroopArrivals?: IncomingTroopArrival[],
-    hyperstructureRealmCount?: number,
-    attackedFromDegrees?: number,
-    attackedTowardDegrees?: number,
-    battleCooldownEnd?: number,
-    battleTimerLeft?: number,
-  ) {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      console.warn("[Structures] Attempted to add structure without a valid entity id", {
-        entityId,
-        structureType,
-      });
-      return;
-    }
-
-    if (!this.structures.has(structureType)) {
-      this.structures.set(structureType, new Map());
-    }
-    this.structures.get(structureType)!.set(
-      normalizedEntityId,
-      createStructureRecord({
-        entityId: normalizedEntityId,
-        structureName,
-        hexCoords,
-        stage,
-        initialized,
-        level,
-        owner,
-        structureType,
-        hasWonder,
-        attachments,
-        isAlly,
-        isAddressMine: (address) => isAddressEqualToAccount(address),
-        guardArmies,
-        activeProductions,
-        incomingTroopArrivals,
-        hyperstructureRealmCount,
-        attackedFromDegrees,
-        attackedTowardDegrees,
-        battleCooldownEnd,
-        battleTimerLeft,
-      }),
-    );
-    this.entityIdIndex.set(normalizedEntityId, this.structures.get(structureType)!.get(normalizedEntityId)!);
-  }
-
-  updateStructureStage(entityId: ID, structureType: StructureType, stage: number) {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      return;
-    }
-    const structure = this.structures.get(structureType)?.get(normalizedEntityId);
-    if (structure) {
-      structure.stage = stage;
-    }
-  }
-
-  removeStructureFromPosition(hexCoords: { col: number; row: number }) {
-    let removed = false;
-    this.structures.forEach((structures) => {
-      const removalQueue: ID[] = [];
-      structures.forEach((structure, entityId) => {
-        if (structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row) {
-          removalQueue.push(entityId);
-          this.onRemove?.(structure);
-          this.entityIdIndex.delete(entityId);
-          removed = true;
-        }
-      });
-      removalQueue.forEach((entityId) => structures.delete(entityId));
-    });
-
-    if (removed) {
-      this.onStructuresChanged?.();
-    }
-  }
-
-  updateStructure(entityId: ID, structure: StructureInfo) {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      return;
-    }
-    this.structures.get(structure.structureType)?.set(normalizedEntityId, structure);
-    this.entityIdIndex.set(normalizedEntityId, structure);
-  }
-
-  removeStructure(entityId: ID): StructureInfo | null {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      return null;
-    }
-
-    let removedStructure: StructureInfo | null = null;
-
-    this.structures.forEach((structures) => {
-      const structure = structures.get(normalizedEntityId);
-      if (structure) {
-        this.onRemove?.(structure);
-        structures.delete(normalizedEntityId);
-        this.entityIdIndex.delete(normalizedEntityId);
-        removedStructure = structure;
-      }
-    });
-
-    if (removedStructure) {
-      this.onStructuresChanged?.();
-    }
-
-    return removedStructure;
-  }
-
-  getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
-    return this.structures;
-  }
-
-  getStructureByEntityId(entityId: ID): StructureInfo | undefined {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      return undefined;
-    }
-    return this.entityIdIndex.get(normalizedEntityId);
-  }
-
-  recheckOwnership() {
-    this.structures.forEach((structures) => {
-      structures.forEach((structure) => {
-        structure.isMine = isAddressEqualToAccount(structure.owner.address);
-      });
-    });
   }
 }

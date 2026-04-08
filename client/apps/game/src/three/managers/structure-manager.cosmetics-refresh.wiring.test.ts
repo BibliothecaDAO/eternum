@@ -17,9 +17,9 @@ describe("structure manager cosmetics refresh wiring", () => {
     expect(source).toMatch(/void\s+this\.updateVisibleStructures\s*\(\s*\)/);
   });
 
-  it("builds structure records through a named helper instead of inlining the object literal", () => {
+  it("constructs its structure store through the extracted store module", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(/createStructureRecord\(/);
+    expect(source).toMatch(/new\s+StructureRecordStore\(/);
   });
 });
