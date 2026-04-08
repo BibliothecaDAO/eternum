@@ -280,6 +280,29 @@ interface FactoryPageProps {
   embedded?: boolean;
 }
 
+const resolveFactoryPageViewportClassName = (embedded: boolean) =>
+  embedded
+    ? "w-full overflow-x-hidden"
+    : "fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-black via-brown/80 to-black";
+
+const resolveFactoryPageContentClassName = (embedded: boolean) =>
+  embedded ? "mx-auto flex w-full max-w-[1500px] flex-col gap-6 pb-10" : "max-w-6xl mx-auto px-8 py-16";
+
+const resolveFactoryPrimaryPanelClassName = (embedded: boolean) =>
+  embedded
+    ? "relative overflow-hidden rounded-[28px] border border-gold/15 bg-black/35 p-5 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl sm:p-6 lg:p-8"
+    : "relative overflow-hidden p-10 panel-wood rounded-3xl shadow-xl shadow-gold/10 border border-gold/20";
+
+const resolveFactorySecondaryPanelClassName = (embedded: boolean) =>
+  embedded
+    ? "rounded-[24px] border border-gold/15 bg-black/35 p-5 shadow-[0_20px_48px_-36px_rgba(0,0,0,0.95)] backdrop-blur-xl sm:p-6"
+    : "p-6 bg-black/40 rounded-2xl border-2 border-gold/20";
+
+const resolveFactorySummaryPanelClassName = (embedded: boolean) =>
+  embedded
+    ? "rounded-[28px] border border-gold/15 bg-black/35 p-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl sm:p-8"
+    : "p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-lg";
+
 export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   useBootDocumentState("app-ready");
 
@@ -1003,20 +1026,14 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   };
 
   return (
-    <div
-      className={
-        embedded
-          ? "w-full overflow-x-hidden"
-          : "fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-black via-brown/80 to-black"
-      }
-    >
-      <div className={embedded ? "w-full" : "max-w-6xl mx-auto px-8 py-16"}>
+    <div className={resolveFactoryPageViewportClassName(embedded)}>
+      <div className={resolveFactoryPageContentClassName(embedded)}>
         {!embedded && <AdminHeader network={currentChain} onBack={() => navigate("/")} onReload={handleReload} />}
 
         {/* Unified Configuration and Deployment */}
         {parsedManifest && (
-          <div className="mb-12">
-            <div className="relative overflow-hidden p-10 panel-wood rounded-3xl shadow-xl shadow-gold/10 border border-gold/20">
+          <div className={embedded ? "space-y-6" : "mb-12"}>
+            <div className={resolveFactoryPrimaryPanelClassName(embedded)}>
               <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-gold/15 to-transparent rounded-full blur-3xl" />
               <div className="relative space-y-8">
                 {/* Header */}
@@ -1040,7 +1057,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                 </div>
 
                 {/* Connection Status */}
-                <div className="flex items-center justify-between p-6 bg-black/40 rounded-2xl border border-gold/20">
+                <div className={resolveFactorySecondaryPanelClassName(embedded)}>
                   <div className="space-y-1">
                     <span className="text-xs font-bold text-gold/60 uppercase tracking-wider">Connected Wallet</span>
                     <div className="flex items-center gap-2">
@@ -1062,7 +1079,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                 </div>
 
                 {/* Deploy Section - Always Visible */}
-                <div className="space-y-6 p-6 bg-gradient-to-br from-black/40 to-black/20 rounded-2xl border-2 border-gold/20 shadow-sm">
+                <div className={resolveFactorySecondaryPanelClassName(embedded)}>
                   <div className="space-y-4">
                     {activeGameMode === "blitz" && (
                       <div className="space-y-2">
@@ -2541,7 +2558,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
             {showDevConfig && (
               <div className="space-y-8">
                 {/* Configuration Section */}
-                <div className="p-6 bg-black/40 rounded-2xl border-2 border-gold/20">
+                <div className={resolveFactorySecondaryPanelClassName(embedded)}>
                   <h3 className="text-lg font-bold text-gold mb-4">Configuration</h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -2650,7 +2667,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                     </div>
                   </div>
 
-                  <div className="p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-lg space-y-1">
+                  <div className={resolveFactorySummaryPanelClassName(embedded)}>
                     <div className="flex items-center justify-between py-5 border-b-2 border-gold/10">
                       <span className="text-sm font-bold text-gold/70 uppercase tracking-wide">World Class Hash</span>
                       <span className="text-sm text-gold font-mono bg-black/40 px-4 py-2 rounded-lg border border-gold/20">
@@ -2672,7 +2689,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                   </div>
 
                   {showCairoOutput && (
-                    <div className="p-8 panel-wood border-2 border-gold/20 rounded-3xl shadow-2xl">
+                    <div className={resolveFactorySummaryPanelClassName(embedded)}>
                       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/20">
                         <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center">
                           <Download className="w-5 h-5 text-gold" />
@@ -2689,7 +2706,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                   )}
 
                   {showFullConfig && (
-                    <div className="p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-lg">
+                    <div className={resolveFactorySummaryPanelClassName(embedded)}>
                       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/20">
                         <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center">
                           <Download className="w-5 h-5 text-gold" />

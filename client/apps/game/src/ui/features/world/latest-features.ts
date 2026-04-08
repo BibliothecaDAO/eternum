@@ -25,7 +25,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-04-09",
     title: "Factory Route Alignment",
     description:
-      "Direct factory links now open inside the main dashboard factory tab with the right version preselected, so factory tooling matches the rest of the landing experience instead of dropping you into a mismatched standalone shell.",
+      "Direct factory links now open inside the main dashboard factory tab with the right version preselected, and the embedded factory surfaces now use the same bounded dashboard styling, so factory tooling no longer drops into a mismatched standalone look.",
     type: "improvement",
   },
   {
