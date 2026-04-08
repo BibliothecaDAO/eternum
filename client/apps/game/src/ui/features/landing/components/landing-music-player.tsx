@@ -8,7 +8,7 @@ export const LandingMusicPlayer = () => {
   const { currentTrackId, trackName, next, requiresInteraction, requestStart } = useMusicPlayer();
 
   const isMuted = audioState?.muted ?? false;
-  const musicVolume = audioState?.categoryVolumes?.[AudioCategory.MUSIC] ?? 0.4;
+  const musicVolume = audioState?.categoryVolumes?.[AudioCategory.MUSIC] ?? 0.08;
   const currentTrackLabel = currentTrackId ? trackName : "Awaiting first track";
 
   const handleSkip = useCallback(() => {
