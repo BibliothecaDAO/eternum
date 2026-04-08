@@ -56,6 +56,10 @@ import {
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import {
+  recordVisibleCosmeticStructureModelInstance,
+  recordVisibleStructureModelInstance,
+} from "./structure-visible-instance-binding";
 import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
 import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
 import {
@@ -1290,42 +1294,17 @@ export class StructureManager {
           continue;
         }
 
-        if (!this.entityIdMaps.has(structureType)) {
-          this.entityIdMaps.set(structureType, new Map());
-        }
-
         structures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
           const rotationY = this.resolveVisibleStructureRotationY(structure);
           this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
-
-          let modelType = models[structure.stage];
-          if (structureType === StructureType.Realm) {
-            modelType = models[structure.level];
-
-            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-            const currentCount = modelInstanceCounts.get(modelType) ?? 0;
-            modelType.setMatrixAt(currentCount, this.dummy.matrix);
-            modelInstanceCounts.set(modelType, currentCount + 1);
-            nextActiveStructureModels.add(modelType);
-            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
-
-            if (structure.hasWonder) {
-              const wonderModel = models[WONDER_MODEL_INDEX];
-              const wonderCount = modelInstanceCounts.get(wonderModel) ?? 0;
-              wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
-              modelInstanceCounts.set(wonderModel, wonderCount + 1);
-              nextActiveStructureModels.add(wonderModel);
-              this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
-            }
-          } else {
-            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-            const currentCount = modelInstanceCounts.get(modelType) ?? 0;
-            modelType.setMatrixAt(currentCount, this.dummy.matrix);
-            modelInstanceCounts.set(modelType, currentCount + 1);
-            nextActiveStructureModels.add(modelType);
-            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
-          }
+          this.bindVisibleStructureInstance(
+            structureType,
+            structure,
+            models,
+            modelInstanceCounts,
+            nextActiveStructureModels,
+          );
         });
 
         // Note: setCount will be called once per model after all structures are processed
@@ -1339,25 +1318,17 @@ export class StructureManager {
           continue;
         }
 
-        if (!this.cosmeticEntityIdMaps.has(cosmeticId)) {
-          this.cosmeticEntityIdMaps.set(cosmeticId, new Map());
-        }
-
         structures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
           const rotationY = this.resolveVisibleStructureRotationY(structure);
           this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
-
-          // Cosmetic skins typically have a single model (index 0)
-          const model = models[0];
-          if (model) {
-            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-            const currentCount = modelInstanceCounts.get(model) ?? 0;
-            model.setMatrixAt(currentCount, this.dummy.matrix);
-            modelInstanceCounts.set(model, currentCount + 1);
-            nextActiveCosmeticStructureModels.add(model);
-            this.cosmeticEntityIdMaps.get(cosmeticId)!.set(currentCount, structure.entityId);
-          }
+          this.bindVisibleCosmeticStructureInstance(
+            cosmeticId,
+            structure,
+            models,
+            modelInstanceCounts,
+            nextActiveCosmeticStructureModels,
+          );
         });
 
         // Note: setCount will be called once per model after all structures are processed
@@ -1503,6 +1474,45 @@ export class StructureManager {
       updateAttachmentTransforms: (entityId, baseTransform, mountTransforms) =>
         this.attachmentManager.updateAttachmentTransforms(entityId, baseTransform, mountTransforms),
       attachmentRetain,
+    });
+  }
+
+  private bindVisibleStructureInstance(
+    structureType: StructureType,
+    structure: StructureInfo,
+    models: InstancedModel[],
+    modelInstanceCounts: Map<InstancedModel, number>,
+    nextActiveStructureModels: Set<InstancedModel>,
+  ): void {
+    recordVisibleStructureModelInstance({
+      structure,
+      structureType,
+      isRealmStructure: structureType === StructureType.Realm,
+      models,
+      wonderModelIndex: WONDER_MODEL_INDEX,
+      matrix: this.dummy.matrix,
+      modelInstanceCounts,
+      activeModels: nextActiveStructureModels,
+      entityIdMaps: this.entityIdMaps,
+      wonderEntityIdMap: this.wonderEntityIdMaps,
+    });
+  }
+
+  private bindVisibleCosmeticStructureInstance(
+    cosmeticId: string,
+    structure: StructureInfo,
+    models: InstancedModel[],
+    modelInstanceCounts: Map<InstancedModel, number>,
+    nextActiveCosmeticStructureModels: Set<InstancedModel>,
+  ): void {
+    recordVisibleCosmeticStructureModelInstance({
+      cosmeticId,
+      entityId: structure.entityId,
+      models,
+      matrix: this.dummy.matrix,
+      modelInstanceCounts,
+      activeModels: nextActiveCosmeticStructureModels,
+      cosmeticEntityIdMaps: this.cosmeticEntityIdMaps,
     });
   }
 
