@@ -58,6 +58,13 @@ vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} 
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
 vi.mock("@/three/scenes/fast-travel", () => ({ default: class MockFastTravelScene {} }));
+vi.mock("../../env", () => ({
+  env: {
+    VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
+    VITE_PUBLIC_GRAPHICS_DEV: false,
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "experimental-webgpu-auto",
+  },
+}));
 vi.mock("@/three/scenes/hexagon-scene", () => ({
   HexagonScene: class MockHexagonScene {},
   CameraView: {
@@ -70,6 +77,11 @@ vi.mock("@/three/scenes/hexagon-scene", () => ({
 Object.defineProperty(navigator, "getBattery", {
   configurable: true,
   value: vi.fn(async () => ({ charging: true })),
+});
+
+Object.defineProperty(URL, "createObjectURL", {
+  configurable: true,
+  value: vi.fn(() => "blob:mock"),
 });
 
 vi.stubGlobal("GPUShaderStage", {
@@ -122,7 +134,7 @@ describe("GameRenderer runtime harness", () => {
     expect(harness.hexceptionScene.activateInputSurface).toHaveBeenCalledTimes(1);
   });
 
-  it("propagates resize and quality changes through the backend", () => {
+  it("propagates resize through the backend", () => {
     const harness = createGameRendererRuntimeHarness();
     const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
     const container = document.createElement("div");
@@ -134,27 +146,10 @@ describe("GameRenderer runtime harness", () => {
     subject.isMobileDevice = false;
     subject.graphicsSetting = "HIGH";
     subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    subject.postProcessingConfig = undefined;
-    subject.toneMappingEffect = undefined;
 
     subject.onWindowResize();
-    subject.applyQualityFeatures({
-      pixelRatio: 1.5,
-      shadows: true,
-      fxaa: false,
-      bloom: false,
-      bloomIntensity: 0,
-      vignette: false,
-      chromaticAberration: false,
-    });
 
     expect(harness.backend.resize).toHaveBeenCalledWith(640, 360);
-    expect(harness.backend.applyQuality).toHaveBeenCalledWith({
-      height: window.innerHeight,
-      pixelRatio: 1.5,
-      shadows: true,
-      width: window.innerWidth,
-    });
   });
 
   it("destroys backend, transition manager, and scenes", () => {

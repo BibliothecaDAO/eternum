@@ -42,6 +42,11 @@ import { applyLabelTransitions, transitionManager } from "../utils/labels/label-
 import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { FXManager } from "./fx-manager";
 import {
+  bindManagerChunkRuntimeState,
+  type ManagerChunkUpdateOptions,
+  runManagerChunkUpdateRuntime,
+} from "./manager-chunk-runtime";
+import {
   createCoalescedAsyncUpdateRunner,
   isCommittedManagerChunk,
   MANAGER_UNCOMMITTED_CHUNK,
@@ -51,6 +56,14 @@ import {
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import {
+  recordVisibleCosmeticStructureModelInstance,
+  recordVisibleStructureModelInstance,
+} from "./structure-visible-instance-binding";
+import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
+import { finalizeVisibleStructureModelPass } from "./structure-visible-pass-finalizer";
+import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
+import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
 import {
   resolveVisibleStructureUpdateMode,
   shouldRebuildVisibleStructuresForStructureUpdate,
@@ -199,13 +212,6 @@ export class StructureManager {
   private previouslyActiveStructureModels: Set<InstancedModel> = new Set();
   private previouslyActiveCosmeticStructureModels: Set<InstancedModel> = new Set();
   private isDestroyed = false;
-  private pruneTransitionChunkHistory(): void {
-    this.transitionChunkByToken.forEach((_, token) => {
-      if (token < this.latestTransitionToken) {
-        this.transitionChunkByToken.delete(token);
-      }
-    });
-  }
 
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
@@ -1045,99 +1051,53 @@ export class StructureManager {
     return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+  async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
     if (this.isDestroyed) {
       return;
     }
+    await runManagerChunkUpdateRuntime({
+      chunkKey,
+      executeChunkUpdate: async (nextChunkKey, nextOptions) => {
+        if (
+          !shouldRunManagerChunkUpdate({
+            chunkKey: nextChunkKey,
+            currentChunk: this.currentChunk,
+            transitionToken: nextOptions?.transitionToken,
+            latestTransitionToken: this.latestTransitionToken,
+          })
+        ) {
+          return false;
+        }
 
-    const force = options?.force ?? false;
-    const transitionToken = options?.transitionToken;
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-    if (transitionToken !== undefined) {
-      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
-      this.transitionChunkByToken.set(transitionToken, chunkKey);
-      this.pruneTransitionChunkHistory();
-    }
-
-    if (!force && this.currentChunk === chunkKey) {
-      return;
-    }
-
-    // Wait for any ongoing chunk switch to complete first
-    if (this.chunkSwitchPromise) {
-      // console.log(
-      //   `[CHUNK SYNC] Waiting for previous structure chunk switch to complete before switching to ${chunkKey}`,
-      // );
-      try {
-        await this.chunkSwitchPromise;
-      } catch (error) {
+        await this.updateVisibleStructures();
+      },
+      isDestroyed: () => this.isDestroyed,
+      onPreviousUpdateFailed: (error) => {
         console.warn(`Previous structure chunk switch failed:`, error);
-      }
-    }
+      },
+      options,
+      shouldAcceptRequest: shouldAcceptManagerChunkRequest,
+      state: this.resolveChunkUpdateRuntimeState(),
+      waitForSettle: waitForVisualSettle,
+    });
+  }
 
-    if (this.isDestroyed) {
-      return;
-    }
-
-    // Check again if chunk key is still different (might have changed while waiting)
-    if (!force && this.currentChunk === chunkKey) {
-      return;
-    }
-
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-
-    const previousChunk = this.currentChunk;
-    const isSwitch = previousChunk !== chunkKey;
-    if (isSwitch) {
-      // console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
-      this.currentChunk = chunkKey;
-    } else if (force) {
-      // console.log(`[CHUNK SYNC] Refreshing structure chunk ${chunkKey}`);
-    }
-
-    // Create and track the chunk switch promise
-    this.chunkSwitchPromise = (async () => {
-      if (
-        !shouldRunManagerChunkUpdate({
-          chunkKey,
-          currentChunk: this.currentChunk,
-          transitionToken,
-          latestTransitionToken: this.latestTransitionToken,
-        })
-      ) {
-        return;
-      }
-
-      await this.updateVisibleStructures();
-      await waitForVisualSettle();
-    })();
-
-    try {
-      await this.chunkSwitchPromise;
-      // console.log(`[CHUNK SYNC] Structure chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
-    } finally {
-      this.chunkSwitchPromise = null;
-    }
+  private resolveChunkUpdateRuntimeState() {
+    return bindManagerChunkRuntimeState({
+      getCurrentChunk: () => this.currentChunk,
+      setCurrentChunk: (chunkKey) => {
+        this.currentChunk = chunkKey ?? MANAGER_UNCOMMITTED_CHUNK;
+      },
+      getInFlightPromise: () => this.chunkSwitchPromise,
+      setInFlightPromise: (promise) => {
+        this.chunkSwitchPromise = promise;
+      },
+      getLatestTransitionToken: () => this.latestTransitionToken,
+      setLatestTransitionToken: (transitionToken) => {
+        this.latestTransitionToken = transitionToken;
+      },
+      transitionChunkByToken: this.transitionChunkByToken,
+    });
   }
 
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
@@ -1277,76 +1237,10 @@ export class StructureManager {
       return;
     }
 
-    const { col, row } = next.hexCoords;
-    getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-    this.scratchPosition.y += 0.05;
-    this.dummy.position.copy(this.scratchPosition);
-
-    if (next.structureType === StructureType.Bank) {
-      this.dummy.rotation.y = (4 * Math.PI) / 6;
-    } else {
-      const rotationSeed = hashCoordinates(col, row);
-      const rotationIndex = Math.floor(rotationSeed * 6);
-      this.dummy.rotation.y = (rotationIndex * Math.PI) / 3;
-    }
-    this.dummy.updateMatrix();
+    const rotationY = this.resolveVisibleStructureRotationY(next);
+    this.syncVisibleStructurePresentation(previous, next, rotationY);
     model.setMatrixAt(instanceId, this.dummy.matrix);
     model.needsUpdate();
-
-    const existingLabel = this.entityIdLabels.get(next.entityId);
-    if (existingLabel) {
-      this.updateStructureLabelData(next, existingLabel);
-      getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-      this.scratchLabelPosition.y += 2;
-      existingLabel.position.copy(this.scratchLabelPosition);
-    }
-
-    if (this.pointsRenderers) {
-      this.scratchIconPosition.copy(this.scratchPosition);
-      this.scratchIconPosition.y += 2;
-      const previousRenderer = this.getRendererForStructure(previous);
-      const nextRenderer = this.getRendererForStructure(next);
-      if (previousRenderer && previousRenderer !== nextRenderer && previousRenderer.hasPoint(next.entityId)) {
-        previousRenderer.removePoint(next.entityId);
-      }
-      nextRenderer?.setPoint({
-        entityId: next.entityId,
-        position: this.scratchIconPosition,
-      });
-    }
-
-    const entityNumericId = Number(next.entityId);
-    const templates = this.resolveStructureAttachmentsForRender(next);
-    if (templates.length > 0) {
-      const signature = this.getAttachmentSignature(templates);
-      if (
-        !this.activeStructureAttachmentEntities.has(entityNumericId) ||
-        this.structureAttachmentSignatures.get(entityNumericId) !== signature
-      ) {
-        this.attachmentManager.spawnAttachments(entityNumericId, templates);
-        this.activeStructureAttachmentEntities.add(entityNumericId);
-        this.structureAttachmentSignatures.set(entityNumericId, signature);
-      }
-
-      this.tempCosmeticPosition.copy(this.scratchPosition);
-      this.tempCosmeticRotation.copy(this.dummy.rotation);
-      const baseTransform = {
-        position: this.tempCosmeticPosition,
-        rotation: this.tempCosmeticRotation,
-        scale: this.dummy.scale,
-      };
-      const mountTransforms = resolveStructureMountTransforms(
-        next.structureType,
-        baseTransform,
-        this.structureAttachmentTransformScratch,
-      );
-      this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-    } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-      this.attachmentManager.removeAttachments(entityNumericId);
-      this.activeStructureAttachmentEntities.delete(entityNumericId);
-      this.structureAttachmentSignatures.delete(entityNumericId);
-    }
-
     this.frustumVisibilityDirty = true;
   }
 
@@ -1369,52 +1263,8 @@ export class StructureManager {
       const [startRow, startCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
       const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
       this.visibleStructureCount = visibleStructures.length;
-
-      // Organize by type for model loading and rendering
-      const structuresByType = new Map<StructureType, StructureInfo[]>();
-      // Organize structures with cosmetic skins separately
-      const structuresByCosmeticId = new Map<string, StructureInfo[]>();
-
-      visibleStructures.forEach((structure) => {
-        if (this.hasCosmeticSkin(structure)) {
-          const cosmeticId = structure.cosmeticId!;
-          if (!structuresByCosmeticId.has(cosmeticId)) {
-            structuresByCosmeticId.set(cosmeticId, []);
-          }
-          structuresByCosmeticId.get(cosmeticId)!.push(structure);
-        } else {
-          if (!structuresByType.has(structure.structureType)) {
-            structuresByType.set(structure.structureType, []);
-          }
-          structuresByType.get(structure.structureType)!.push(structure);
-        }
-      });
-
-      const preloadPromises: Promise<unknown>[] = [];
-
-      for (const [structureType] of structuresByType) {
-        if (!this.structureModels.has(structureType)) {
-          preloadPromises.push(this.ensureStructureModels(structureType));
-        }
-      }
-
-      // Preload cosmetic models
-      for (const [cosmeticId, structures] of structuresByCosmeticId) {
-        if (!this.cosmeticStructureModels.has(cosmeticId)) {
-          const assetPaths = structures[0]?.cosmeticAssetPaths ?? [];
-          if (assetPaths.length > 0) {
-            preloadPromises.push(this.ensureCosmeticStructureModels(cosmeticId, assetPaths));
-          }
-        }
-      }
-
-      if (preloadPromises.length > 0) {
-        try {
-          await Promise.all(preloadPromises);
-        } catch (error) {
-          console.error("Failed to preload structure models", error);
-        }
-      }
+      const renderPlan = this.createVisibleStructureRenderPlan(visibleStructures);
+      await this.preloadVisibleStructureRenderPlan(renderPlan);
 
       if (this.isDestroyed) {
         return;
@@ -1439,290 +1289,223 @@ export class StructureManager {
         Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
       }
 
-      for (const [structureType, structures] of structuresByType) {
+      for (const [structureType, structures] of renderPlan.structuresByType) {
         const models = this.structureModels.get(structureType);
 
         if (!models || models.length === 0) {
           continue;
         }
 
-        if (!this.entityIdMaps.has(structureType)) {
-          this.entityIdMaps.set(structureType, new Map());
-        }
-
         structures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
-          // Use scratch vector to avoid allocation
-          const { col, row } = structure.hexCoords;
-          getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-          this.scratchPosition.y += 0.05;
-
-          const existingLabel = this.entityIdLabels.get(structure.entityId);
-          if (existingLabel) {
-            this.updateStructureLabelData(structure, existingLabel);
-            // Use scratch vector for label position
-            getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-            this.scratchLabelPosition.y += 2;
-            existingLabel.position.copy(this.scratchLabelPosition);
-          }
-
-          this.dummy.position.copy(this.scratchPosition);
-
-          if (structureType === StructureType.Bank) {
-            this.dummy.rotation.y = (4 * Math.PI) / 6;
-          } else {
-            const rotationSeed = hashCoordinates(col, row);
-            const rotationIndex = Math.floor(rotationSeed * 6);
-            const randomRotation = (rotationIndex * Math.PI) / 3;
-            this.dummy.rotation.y = randomRotation;
-          }
-          this.dummy.updateMatrix();
-
-          // Add point icon for this structure (always visible)
-          if (this.pointsRenderers) {
-            // Use scratch vector for icon position
-            this.scratchIconPosition.copy(this.scratchPosition);
-            this.scratchIconPosition.y += 2; // Match CSS2D label height
-
-            const renderer = this.getRendererForStructure(structure);
-            if (renderer) {
-              renderer.setPoint({
-                entityId: structure.entityId,
-                position: this.scratchIconPosition,
-              });
-            }
-          }
-
-          const entityNumericId = Number(structure.entityId);
-          const templates = this.resolveStructureAttachmentsForRender(structure);
-          if (templates.length > 0) {
-            attachmentRetain.add(entityNumericId);
-            const signature = this.getAttachmentSignature(templates);
-            const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
-            if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
-              this.attachmentManager.spawnAttachments(entityNumericId, templates);
-              this.structureAttachmentSignatures.set(entityNumericId, signature);
-              this.activeStructureAttachmentEntities.add(entityNumericId);
-            }
-
-            this.tempCosmeticPosition.copy(this.scratchPosition);
-            this.tempCosmeticRotation.copy(this.dummy.rotation);
-
-            const baseTransform = {
-              position: this.tempCosmeticPosition,
-              rotation: this.tempCosmeticRotation,
-              scale: this.dummy.scale,
-            };
-
-            const mountTransforms = resolveStructureMountTransforms(
-              structure.structureType,
-              baseTransform,
-              this.structureAttachmentTransformScratch,
-            );
-
-            this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-          } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-            this.attachmentManager.removeAttachments(entityNumericId);
-            this.activeStructureAttachmentEntities.delete(entityNumericId);
-            this.structureAttachmentSignatures.delete(entityNumericId);
-          }
-
-          let modelType = models[structure.stage];
-          if (structureType === StructureType.Realm) {
-            modelType = models[structure.level];
-
-            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-            const currentCount = modelInstanceCounts.get(modelType) ?? 0;
-            modelType.setMatrixAt(currentCount, this.dummy.matrix);
-            modelInstanceCounts.set(modelType, currentCount + 1);
-            nextActiveStructureModels.add(modelType);
-            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
-
-            if (structure.hasWonder) {
-              const wonderModel = models[WONDER_MODEL_INDEX];
-              const wonderCount = modelInstanceCounts.get(wonderModel) ?? 0;
-              wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
-              modelInstanceCounts.set(wonderModel, wonderCount + 1);
-              nextActiveStructureModels.add(wonderModel);
-              this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
-            }
-          } else {
-            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-            const currentCount = modelInstanceCounts.get(modelType) ?? 0;
-            modelType.setMatrixAt(currentCount, this.dummy.matrix);
-            modelInstanceCounts.set(modelType, currentCount + 1);
-            nextActiveStructureModels.add(modelType);
-            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
-          }
+          const rotationY = this.resolveVisibleStructureRotationY(structure);
+          this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
+          this.bindVisibleStructureInstance(
+            structureType,
+            structure,
+            models,
+            modelInstanceCounts,
+            nextActiveStructureModels,
+          );
         });
 
         // Note: setCount will be called once per model after all structures are processed
       }
 
       // Render structures with cosmetic skins
-      for (const [cosmeticId, structures] of structuresByCosmeticId) {
+      for (const [cosmeticId, structures] of renderPlan.structuresByCosmeticId) {
         const models = this.cosmeticStructureModels.get(cosmeticId);
 
         if (!models || models.length === 0) {
           continue;
         }
 
-        if (!this.cosmeticEntityIdMaps.has(cosmeticId)) {
-          this.cosmeticEntityIdMaps.set(cosmeticId, new Map());
-        }
-
         structures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
-          // Use scratch vector to avoid allocation
-          const { col, row } = structure.hexCoords;
-          getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-          this.scratchPosition.y += 0.05;
-
-          const existingLabel = this.entityIdLabels.get(structure.entityId);
-          if (existingLabel) {
-            this.updateStructureLabelData(structure, existingLabel);
-            // Use scratch vector for label position
-            getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-            this.scratchLabelPosition.y += 2;
-            existingLabel.position.copy(this.scratchLabelPosition);
-          }
-
-          this.dummy.position.copy(this.scratchPosition);
-
-          const rotationSeed = hashCoordinates(col, row);
-          const rotationIndex = Math.floor(rotationSeed * 6);
-          const randomRotation = (rotationIndex * Math.PI) / 3;
-          this.dummy.rotation.y = randomRotation;
-          this.dummy.updateMatrix();
-
-          // Add point icon for this structure
-          if (this.pointsRenderers) {
-            // Use scratch vector for icon position
-            this.scratchIconPosition.copy(this.scratchPosition);
-            this.scratchIconPosition.y += 2;
-
-            const renderer = this.getRendererForStructure(structure);
-            if (renderer) {
-              renderer.setPoint({
-                entityId: structure.entityId,
-                position: this.scratchIconPosition,
-              });
-            }
-          }
-
-          // Handle attachments
-          const entityNumericId = Number(structure.entityId);
-          const templates = this.resolveStructureAttachmentsForRender(structure);
-          if (templates.length > 0) {
-            attachmentRetain.add(entityNumericId);
-            const signature = this.getAttachmentSignature(templates);
-            const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
-            if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
-              this.attachmentManager.spawnAttachments(entityNumericId, templates);
-              this.structureAttachmentSignatures.set(entityNumericId, signature);
-              this.activeStructureAttachmentEntities.add(entityNumericId);
-            }
-
-            this.tempCosmeticPosition.copy(this.scratchPosition);
-            this.tempCosmeticRotation.copy(this.dummy.rotation);
-
-            const baseTransform = {
-              position: this.tempCosmeticPosition,
-              rotation: this.tempCosmeticRotation,
-              scale: this.dummy.scale,
-            };
-
-            const mountTransforms = resolveStructureMountTransforms(
-              structure.structureType,
-              baseTransform,
-              this.structureAttachmentTransformScratch,
-            );
-
-            this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-          } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-            this.attachmentManager.removeAttachments(entityNumericId);
-            this.activeStructureAttachmentEntities.delete(entityNumericId);
-            this.structureAttachmentSignatures.delete(entityNumericId);
-          }
-
-          // Cosmetic skins typically have a single model (index 0)
-          const model = models[0];
-          if (model) {
-            // Use tracked count instead of getCount/setCount to avoid repeated needsUpdate calls
-            const currentCount = modelInstanceCounts.get(model) ?? 0;
-            model.setMatrixAt(currentCount, this.dummy.matrix);
-            modelInstanceCounts.set(model, currentCount + 1);
-            nextActiveCosmeticStructureModels.add(model);
-            this.cosmeticEntityIdMaps.get(cosmeticId)!.set(currentCount, structure.entityId);
-          }
+          const rotationY = this.resolveVisibleStructureRotationY(structure);
+          this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
+          this.bindVisibleCosmeticStructureInstance(
+            cosmeticId,
+            structure,
+            models,
+            modelInstanceCounts,
+            nextActiveCosmeticStructureModels,
+          );
         });
 
         // Note: setCount will be called once per model after all structures are processed
       }
 
-      // Batch update: call setCount once per model that was used (triggers needsUpdate + computeBoundingSphere once)
-      for (const [model, count] of modelInstanceCounts) {
-        model.setCount(count);
-      }
-      this.previouslyActiveStructureModels = nextActiveStructureModels;
-      this.previouslyActiveCosmeticStructureModels = nextActiveCosmeticStructureModels;
+      this.finalizeVisibleStructureModelPass(
+        modelInstanceCounts,
+        nextActiveStructureModels,
+        nextActiveCosmeticStructureModels,
+      );
 
-      // Apply deferred worldBounds now that instance data matches the new chunk
-      this.applyPendingModelBounds();
-
-      // End batch mode for all point renderers (triggers single computeBoundingSphere per renderer)
-      if (this.pointsRenderers) {
-        Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
-      }
-
-      if (this.activeStructureAttachmentEntities.size > 0) {
-        const toRemove: number[] = [];
-        this.activeStructureAttachmentEntities.forEach((entityId) => {
-          if (!attachmentRetain.has(entityId)) {
-            toRemove.push(entityId);
-          }
-        });
-
-        toRemove.forEach((entityId) => {
-          this.attachmentManager.removeAttachments(entityId);
-          this.activeStructureAttachmentEntities.delete(entityId);
-          this.structureAttachmentSignatures.delete(entityId);
-        });
-      }
-
-      const labelsToRemove: ID[] = [];
-      for (const entityId of this.entityIdLabels.keys()) {
-        if (!visibleStructureIds.has(entityId)) {
-          labelsToRemove.push(entityId);
-        }
-      }
-
-      labelsToRemove.forEach((entityId) => {
-        this.removeEntityIdLabel(entityId);
-      });
-
-      // Remove points for structures no longer visible (diff-based: O(previously_visible) instead of O(all_structures))
-      if (this.pointsRenderers) {
-        for (const entityId of this.previousVisibleIds) {
-          if (!visibleStructureIds.has(entityId)) {
-            // Structure was visible last frame but not anymore - remove its point
-            const structure = this.structures.getStructureByEntityId(entityId);
-            if (structure) {
-              const renderer = this.getRendererForStructure(structure);
-              renderer?.removePoint(entityId);
-            }
-          }
-        }
-      }
-
-      // Update tracking for next frame's diff
-      this.previousVisibleIds = visibleStructureIds;
-
-      this.frustumVisibilityDirty = true;
+      this.finalizeVisibleStructurePass(visibleStructureIds, attachmentRetain);
     } finally {
       recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
       setWorldmapRenderGauge("visibleStructures", this.visibleStructureCount);
     }
+  }
+
+  private createVisibleStructureRenderPlan(
+    visibleStructures: StructureInfo[],
+  ): VisibleStructureRenderPlan<StructureInfo, StructureType> {
+    return buildVisibleStructureRenderPlan<StructureInfo, StructureType>({
+      visibleStructures,
+      hasCosmeticSkin: (structure) => this.hasCosmeticSkin(structure),
+      hasStructureModel: (structureType) => this.structureModels.has(structureType),
+      hasCosmeticModel: (cosmeticId) => this.cosmeticStructureModels.has(cosmeticId),
+    });
+  }
+
+  private async preloadVisibleStructureRenderPlan(
+    renderPlan: VisibleStructureRenderPlan<StructureInfo, StructureType>,
+  ): Promise<void> {
+    const preloadPromises: Promise<unknown>[] = [
+      ...renderPlan.missingStructureModels.map((structureType) => this.ensureStructureModels(structureType)),
+      ...renderPlan.missingCosmeticModels.map(({ cosmeticId, assetPaths }) =>
+        this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
+      ),
+    ];
+
+    if (preloadPromises.length === 0) {
+      return;
+    }
+
+    try {
+      await Promise.all(preloadPromises);
+    } catch (error) {
+      console.error("Failed to preload structure models", error);
+    }
+  }
+
+  private resolveVisibleStructureRotationY(structure: StructureInfo): number {
+    if (structure.structureType === StructureType.Bank) {
+      return (4 * Math.PI) / 6;
+    }
+
+    const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+    const rotationIndex = Math.floor(rotationSeed * 6);
+    return (rotationIndex * Math.PI) / 3;
+  }
+
+  private syncVisibleStructurePresentation(
+    previous: StructureInfo | undefined,
+    next: StructureInfo,
+    rotationY: number,
+    attachmentRetain?: Set<number>,
+  ): void {
+    applyVisibleStructurePresentation({
+      previousStructure: previous,
+      structure: next,
+      rotationY,
+      dummy: this.dummy,
+      scratchPosition: this.scratchPosition,
+      scratchLabelPosition: this.scratchLabelPosition,
+      scratchIconPosition: this.scratchIconPosition,
+      tempCosmeticPosition: this.tempCosmeticPosition,
+      tempCosmeticRotation: this.tempCosmeticRotation,
+      getWorldPositionForHexCoordsInto,
+      getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
+      updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
+      getRendererForStructure: (structure) => this.getRendererForStructure(structure),
+      resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
+      getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),
+      activeAttachmentEntities: this.activeStructureAttachmentEntities,
+      attachmentSignatures: this.structureAttachmentSignatures,
+      spawnAttachments: (entityId, templates) => this.attachmentManager.spawnAttachments(entityId, templates),
+      removeAttachments: (entityId) => this.attachmentManager.removeAttachments(entityId),
+      resolveMountTransforms: (structure, baseTransform) =>
+        resolveStructureMountTransforms(
+          structure.structureType,
+          baseTransform,
+          this.structureAttachmentTransformScratch,
+        ),
+      updateAttachmentTransforms: (entityId, baseTransform, mountTransforms) =>
+        this.attachmentManager.updateAttachmentTransforms(entityId, baseTransform, mountTransforms),
+      attachmentRetain,
+    });
+  }
+
+  private bindVisibleStructureInstance(
+    structureType: StructureType,
+    structure: StructureInfo,
+    models: InstancedModel[],
+    modelInstanceCounts: Map<InstancedModel, number>,
+    nextActiveStructureModels: Set<InstancedModel>,
+  ): void {
+    recordVisibleStructureModelInstance({
+      structure,
+      structureType,
+      isRealmStructure: structureType === StructureType.Realm,
+      models,
+      wonderModelIndex: WONDER_MODEL_INDEX,
+      matrix: this.dummy.matrix,
+      modelInstanceCounts,
+      activeModels: nextActiveStructureModels,
+      entityIdMaps: this.entityIdMaps,
+      wonderEntityIdMap: this.wonderEntityIdMaps,
+    });
+  }
+
+  private bindVisibleCosmeticStructureInstance(
+    cosmeticId: string,
+    structure: StructureInfo,
+    models: InstancedModel[],
+    modelInstanceCounts: Map<InstancedModel, number>,
+    nextActiveCosmeticStructureModels: Set<InstancedModel>,
+  ): void {
+    recordVisibleCosmeticStructureModelInstance({
+      cosmeticId,
+      entityId: structure.entityId,
+      models,
+      matrix: this.dummy.matrix,
+      modelInstanceCounts,
+      activeModels: nextActiveCosmeticStructureModels,
+      cosmeticEntityIdMaps: this.cosmeticEntityIdMaps,
+    });
+  }
+
+  private finalizeVisibleStructurePass(visibleStructureIds: Set<ID>, attachmentRetain: Set<number>): void {
+    this.previousVisibleIds = cleanupVisibleStructurePass({
+      retainedAttachmentEntities: attachmentRetain,
+      activeAttachmentEntities: this.activeStructureAttachmentEntities,
+      attachmentSignatures: this.structureAttachmentSignatures,
+      removeAttachments: (entityId) => this.attachmentManager.removeAttachments(entityId),
+      trackedLabelEntityIds: this.entityIdLabels.keys(),
+      visibleStructureIds,
+      removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
+      previousVisibleIds: this.previousVisibleIds,
+      getStructureByEntityId: (entityId) => this.structures.getStructureByEntityId(entityId),
+      removeStructurePoint: (entityId, structure) => {
+        const renderer = this.getRendererForStructure(structure);
+        renderer?.removePoint(entityId);
+      },
+    });
+    this.frustumVisibilityDirty = true;
+  }
+
+  private finalizeVisibleStructureModelPass(
+    modelInstanceCounts: Map<InstancedModel, number>,
+    nextActiveStructureModels: Set<InstancedModel>,
+    nextActiveCosmeticStructureModels: Set<InstancedModel>,
+  ): void {
+    const finalizedModelSets = finalizeVisibleStructureModelPass({
+      modelInstanceCounts,
+      nextActiveStructureModels,
+      nextActiveCosmeticStructureModels,
+      applyPendingModelBounds: () => this.applyPendingModelBounds(),
+      endPointBatches: this.pointsRenderers
+        ? () => {
+            Object.values(this.pointsRenderers!).forEach((renderer) => renderer.endBatch());
+          }
+        : undefined,
+    });
+
+    this.previouslyActiveStructureModels = finalizedModelSets.activeStructureModels;
+    this.previouslyActiveCosmeticStructureModels = finalizedModelSets.activeCosmeticStructureModels;
   }
 
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {
