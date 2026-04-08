@@ -27,4 +27,86 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).not.toMatch(/await this\.renderVisibleArmies\(this\.currentChunkKey\)/);
     expect(source).toMatch(/slot !== undefined[\s\S]*this\.refreshArmyInstance\(army, slot, modelType\)/);
   });
+
+  it("routes pending explorer deltas through shared reconciliation helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/takeFreshPendingExplorerTroopsUpdate\(/);
+    expect(source).toMatch(/queuePendingExplorerTroopsUpdate\(/);
+    expect(source).toMatch(/calculateArmyCurrentStamina\(/);
+  });
+
+  it("routes instance presentation through shared position and cosmetic helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/resolveArmyPresentationPosition\(/);
+    expect(source).toMatch(/resolveArmyCosmeticPresentation\(/);
+  });
+
+  it("routes auxiliary presentation through dedicated sync helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyAuxiliaryPresentation\(/);
+    expect(source).toMatch(/syncArmyIndicatorPresentation\(/);
+    expect(source).toMatch(/syncArmyLabelPresentation\(/);
+    expect(source).toMatch(/syncArmyPointPresentation\(/);
+  });
+
+  it("routes label visibility and label retirement through shared helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyLabelVisibility\(/);
+    expect(source).toMatch(/removeArmyLabels\(/);
+  });
+
+  it("routes attachment lifecycle through shared helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyAttachmentState\(/);
+    expect(source).toMatch(/removeArmyAttachmentsIfTracked\(/);
+  });
+
+  it("routes point icon lifecycle through shared helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/resolveArmyPointRendererKey\(/);
+    expect(source).toMatch(/syncArmyPointIconState\(/);
+    expect(source).toMatch(/removeArmyPointIconState\(/);
+    expect(source).toMatch(/setArmyPointHoverState\(/);
+    expect(source).toMatch(/clearArmyPointHoverState\(/);
+  });
+
+  it("routes indicator refresh through shared helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyIndicatorPresentationState\(/);
+    expect(source).toMatch(/syncMovingArmyIndicatorPresentationState\(/);
+  });
+
+  it("routes label positioning through a shared helper", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyLabelPresentationState\(/);
+  });
+
+  it("routes attachment transform updates through a shared helper", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyAttachmentTransformState\(/);
+  });
+
+  it("routes label content updates through shared helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/buildArmyLabelDataKey\(/);
+    expect(source).toMatch(/syncArmyLabelContentState\(/);
+  });
+
+  it("routes label lifecycle through shared helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/initializeArmyLabelState\(/);
+    expect(source).toMatch(/configureArmyLabelHoverPriority\(/);
+    expect(source).toMatch(/revealArmyLabelState\(/);
+  });
 });

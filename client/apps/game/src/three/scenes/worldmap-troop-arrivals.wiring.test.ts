@@ -12,12 +12,12 @@ describe("WorldMap troop arrival wiring", () => {
   it("subscribes to public incoming troop arrivals and forwards them to StructureManager", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(/state\) => state\.publicIncomingTroopArrivalsByStructure/);
+    expect(source).toMatch(/onIncomingTroopArrivalsChanged:\s*\(publicIncomingTroopArrivalsByStructure\)\s*=>/);
     expect(source).toMatch(
       /this\.structureManager\.setIncomingTroopArrivalsByStructure\(publicIncomingTroopArrivalsByStructure\)/,
     );
-    expect(source).toMatch(
-      /this\.structureManager\.setIncomingTroopArrivalsByStructure\(uiState\.publicIncomingTroopArrivalsByStructure\)/,
-    );
+    expect(
+      source.match(/onIncomingTroopArrivalsChanged:\s*\(publicIncomingTroopArrivalsByStructure\)\s*=>/g),
+    ).toHaveLength(2);
   });
 });

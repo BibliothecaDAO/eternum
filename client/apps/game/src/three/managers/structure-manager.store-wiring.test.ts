@@ -8,12 +8,11 @@ function readStructureManagerSource(): string {
   return readFileSync(resolve(currentDir, "structure-manager.ts"), "utf8");
 }
 
-describe("StructureManager incremental update wiring", () => {
-  it("uses a patch path for visible single-entity updates before falling back to rebuild", () => {
+describe("StructureManager store wiring", () => {
+  it("imports the structure store instead of declaring it inline", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(/resolveVisibleStructureUpdateMode\(/);
-    expect(source).toMatch(/visibleUpdateMode === "patch" && input\.existingStructure && input\.structureRecord/);
-    expect(source).toMatch(/this\.patchVisibleStructure\(/);
+    expect(source).toMatch(/from "\.\/structure-record-store"/);
+    expect(source).not.toMatch(/class Structures \{/);
   });
 });
