@@ -29,6 +29,11 @@ import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { primePlayEntryRoute } from "@/game-entry-preload";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
+import {
+  resolveFactoryDashboardVersion,
+  updateFactoryDashboardVersion,
+  type FactoryDashboardVersion,
+} from "../../factory-v2/factory-dashboard-route";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameEntryModal } from "../components/game-entry-modal";
 import { GameReviewModal } from "../components/game-review-modal";
@@ -430,10 +435,11 @@ const NewsContent = () => (
   </div>
 );
 
-type FactoryVersion = "v2" | "v1";
-
 const FactoryTabContent = () => {
-  const [selectedFactoryVersion, setSelectedFactoryVersion] = useState<FactoryVersion>("v2");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedFactoryVersion = resolveFactoryDashboardVersion(searchParams);
+  const selectFactoryVersion = (version: FactoryDashboardVersion) =>
+    setSearchParams(updateFactoryDashboardVersion(searchParams, version));
 
   return (
     <div className="flex flex-col gap-4">
@@ -451,7 +457,7 @@ const FactoryTabContent = () => {
 
       <FactoryVersionChooser
         selectedFactoryVersion={selectedFactoryVersion}
-        onSelectFactoryVersion={setSelectedFactoryVersion}
+        onSelectFactoryVersion={selectFactoryVersion}
       />
     </div>
   );
@@ -461,8 +467,8 @@ const FactoryVersionChooser = ({
   selectedFactoryVersion,
   onSelectFactoryVersion,
 }: {
-  selectedFactoryVersion: FactoryVersion;
-  onSelectFactoryVersion: (version: FactoryVersion) => void;
+  selectedFactoryVersion: FactoryDashboardVersion;
+  onSelectFactoryVersion: (version: FactoryDashboardVersion) => void;
 }) => (
   <div className={FACTORY_TAB_HEADER_INSET_CLASS_NAME}>
     <div className="rounded-[22px] border border-gold/15 bg-black/45 px-4 py-4 backdrop-blur-xl">

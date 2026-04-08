@@ -14,11 +14,13 @@ describe("PlayView factory tab integration", () => {
     expect(source).toContain('case "factory":');
     expect(source).toContain('import("../../factory-v2")');
     expect(source).toContain('import("../../admin")');
-    expect(source).toContain('type FactoryVersion = "v2" | "v1"');
+    expect(source).toContain("resolveFactoryDashboardVersion");
+    expect(source).toContain("updateFactoryDashboardVersion");
     expect(source).toContain('activeTab === "factory" && FACTORY_TAB_BLEED_CLASS_NAME');
     expect(source).toContain("FactoryVersionChooser");
     expect(source).toContain("Factory versions");
     expect(source).toContain('{selectedFactoryVersion === "v2" ? <FactoryV2Content /> : <FactoryPage embedded />}');
+    expect(source).not.toContain('useState<FactoryVersion>("v2")');
     expect(suspenseIndex).toBeGreaterThan(-1);
     expect(chooserCopyIndex).toBeGreaterThan(suspenseIndex);
   });
