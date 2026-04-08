@@ -42,7 +42,7 @@ export function configureArmyLabelHoverPriority<TEntityId, TPosition, TArmy>(
 export function revealArmyLabelState<TEntityId, TPosition, TArmy>(input: {
   label: LabelWithPosition<TEntityId, TPosition, TArmy>;
   labelsGroup: {
-    add: (label: LabelWithPosition<TEntityId, TPosition, TArmy>) => void;
+    add: (...labels: any[]) => unknown;
   };
   army?: TArmy;
   renderLabel: (army: TArmy) => void;

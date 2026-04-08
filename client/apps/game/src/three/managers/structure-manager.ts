@@ -978,7 +978,7 @@ export class StructureManager {
         isMine: input.structureRecord?.isMine ?? false,
         isAlly: input.structureRecord?.isAlly ?? false,
         cosmeticId: input.cosmeticId,
-        attachmentSignature: this.getAttachmentSignature(input.attachments),
+        attachmentSignature: this.getAttachmentSignature(input.attachments ?? []),
       },
       wasVisible: input.existingWasVisible,
       isVisible: isCurrentlyVisible,
@@ -1684,7 +1684,7 @@ export class StructureManager {
   }
 
   private applyFrustumVisibilityToLabels() {
-    syncStructureLabelVisibility({
+    syncStructureLabelVisibility<ID>({
       labels: this.entityIdLabels.values(),
       setLabelVisible: (label) => this.isStructureLabelVisible(label),
       revealLabel: (entityId, label) => this.revealStructureLabel(entityId, label),

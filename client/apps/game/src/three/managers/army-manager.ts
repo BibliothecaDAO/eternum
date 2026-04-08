@@ -1636,8 +1636,8 @@ export class ArmyManager {
       tier: params.tier,
       battleCooldownEnd: finalBattleCooldownEnd,
       battleTimerLeft: finalBattleTimerLeft,
-      attackedFromDegrees,
-      attackTowardDegrees,
+      attackedFromDegrees: attackedFromDegrees ?? undefined,
+      attackTowardDegrees: attackTowardDegrees ?? undefined,
       pendingUpdate,
       resolveCurrentStamina: ({ troopCount, onChainStamina, category, tier }) =>
         this.calculateArmyCurrentStamina({
@@ -2255,7 +2255,7 @@ export class ArmyManager {
   }
 
   private applyFrustumVisibilityToLabels() {
-    syncArmyLabelVisibility({
+    syncArmyLabelVisibility<ID>({
       labels: this.entityIdLabels.values(),
       setLabelVisible: (label) => this.isArmyLabelVisible(label),
       revealLabel: (entityId, label) => this.revealArmyLabel(entityId, label),

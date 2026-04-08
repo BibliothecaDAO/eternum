@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { buildArmyLabelDataKey, syncArmyLabelContentState } from "./army-label-content";
+import { buildArmyLabelDataKey, syncArmyLabelContentState, type ArmyLabelContentFields } from "./army-label-content";
 
 function createArmyLabelStub() {
   return {
@@ -11,19 +11,21 @@ function createArmyLabelStub() {
   };
 }
 
-function createArmyLabelData(overrides: Partial<Parameters<typeof buildArmyLabelDataKey>[0]> = {}) {
+function createArmyLabelData(overrides: Partial<ArmyLabelContentFields> = {}): ArmyLabelContentFields {
   return {
     troopCount: 10,
     currentStamina: 9,
     battleTimerLeft: 8,
     isMine: true,
     owner: {
+      address: 1n,
       ownerName: "Alice",
+      guildName: "Guild",
     },
     attackedFromDegrees: 45,
     attackedTowardDegrees: 90,
     ...overrides,
-  };
+  } as ArmyLabelContentFields;
 }
 
 describe("buildArmyLabelDataKey", () => {

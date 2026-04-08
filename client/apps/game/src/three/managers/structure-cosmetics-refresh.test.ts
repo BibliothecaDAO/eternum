@@ -34,7 +34,7 @@ describe("structure cosmetics refresh", () => {
         assetPaths: [`${structure.structureType}.glb`],
         isFallback: false,
       },
-      attachments: [{ slot: "banner" }],
+      attachments: [{ id: "banner", slot: "banner" }],
     }));
 
     const shouldRefreshVisibleStructures = refreshStructureCosmeticsByOwner({

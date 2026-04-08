@@ -3,11 +3,11 @@ import type { ArmyData } from "../types";
 interface LabelWithRenderState {
   visible: boolean;
   userData: {
-    lastDataKey: string | null;
+    lastDataKey?: string | null;
   };
 }
 
-type ArmyLabelContentFields = Pick<
+export type ArmyLabelContentFields = Pick<
   ArmyData,
   | "troopCount"
   | "currentStamina"
