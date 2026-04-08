@@ -15,7 +15,7 @@ function findStartingResourceAmount(
   return resources.find((resource) => resource.resource === resourceId)?.amount;
 }
 
-function findDiscoverableVillageResourceAmount(
+function findCampStartingResourceAmount(
   resources: Array<{ resource: ResourcesIds; min_amount: number; max_amount: number }>,
   resourceId: ResourcesIds,
 ): { min_amount: number; max_amount: number } | undefined {
@@ -84,9 +84,7 @@ describe("Blitz balance profiles", () => {
     expect(profiledConfig.realmUpgradeCosts[RealmLevels.Kingdom]?.[0]?.amount).toBe(720);
     expect(findStartingResourceAmount(profiledConfig.startingResources, ResourcesIds.Labor)).toBe(1_500);
     expect(findStartingResourceAmount(profiledConfig.startingResources, ResourcesIds.Knight)).toBe(3_500);
-    expect(
-      findDiscoverableVillageResourceAmount(profiledConfig.discoverableVillageStartingResources, ResourcesIds.Labor),
-    ).toMatchObject({
+    expect(findCampStartingResourceAmount(profiledConfig.campStartingResources, ResourcesIds.Labor)).toMatchObject({
       min_amount: 5_000,
       max_amount: 5_000,
     });

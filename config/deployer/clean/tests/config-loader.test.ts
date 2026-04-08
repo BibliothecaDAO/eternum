@@ -35,7 +35,7 @@ describe("applyDeploymentConfigOverrides", () => {
     });
 
     expect(result.season.durationSeconds).toBe(3_600);
-    expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(5);
+    expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(3);
     expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(2);
     expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Essence]).toBe(20);
     expect(result.troop.stamina.staminaInitial).toBe(30);
@@ -52,10 +52,9 @@ describe("applyDeploymentConfigOverrides", () => {
     expect(result.startingResources.find((resource) => resource.resource === ResourcesIds.Knight)?.amount).toBe(3_500);
     expect(result.blitz.exploration.rewardProfileId).toBe("official-60");
     expect(result.blitz.exploration.rewards).toHaveLength(6);
-    expect(
-      result.discoverableVillageStartingResources.find((resource) => resource.resource === ResourcesIds.Donkey)
-        ?.min_amount,
-    ).toBe(1_000);
+    expect(result.campStartingResources.find((resource) => resource.resource === ResourcesIds.Donkey)?.min_amount).toBe(
+      1_000,
+    );
   });
 
   test("keeps the base blitz balance for custom durations", () => {

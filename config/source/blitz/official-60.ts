@@ -144,7 +144,7 @@ export const official60BlitzProfile: BlitzBalanceProfile = {
   },
   realmUpgradeCosts: official60BlitzRealmUpgradeCosts,
   startingResources: official60BlitzStartingResources,
-  discoverableVillageStartingResources: [
+  campStartingResources: [
     { resource: ResourcesIds.Wheat, min_amount: 500, max_amount: 500 },
     { resource: ResourcesIds.Labor, min_amount: 5_000, max_amount: 5_000 },
     { resource: ResourcesIds.Donkey, min_amount: 1_000, max_amount: 1_000 },
