@@ -9,8 +9,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
-import { StructureTileSystemUpdate } from "@bibliothecadao/eternum";
+import type { IncomingTroopArrival, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -18,7 +17,7 @@ import { shortString } from "starknet";
 import * as THREE from "three";
 import { Box3, Euler, Group, Object3D, Scene, Sphere, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
+import type { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
@@ -28,13 +27,13 @@ import {
   resolveStructureMountTransforms,
 } from "../cosmetics";
 import { resolveAllSkinGltfs } from "../cosmetics/skin-asset-source";
-import { StructureInfo } from "../types";
-import { AnimationVisibilityContext } from "../types/animation";
-import { RenderChunkSize } from "../types/common";
+import type { StructureInfo } from "../types";
+import type { AnimationVisibilityContext } from "../types/animation";
+import type { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinates } from "../utils";
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
-import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
+import { getBattleTimerLeft } from "../utils/combat-directions";
 import { FrustumManager } from "../utils/frustum-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
@@ -64,6 +63,12 @@ import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import { finalizeVisibleStructureModelPass } from "./structure-visible-pass-finalizer";
 import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
 import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
+import {
+  resolveStructureTileUpdateRecord,
+  takeFreshPendingLabelUpdate,
+  type PendingLabelUpdate,
+  type ResolvedStructureTileUpdateRecord,
+} from "./structure-update-reconciliation";
 import {
   resolveVisibleStructureUpdateMode,
   shouldRebuildVisibleStructuresForStructureUpdate,
@@ -115,18 +120,6 @@ const buildIncomingTroopKey = (incomingTroopArrivals: IncomingTroopArrival[] | u
         `${arrival.resourceId}:${arrival.troopTier}:${arrival.count}:${Math.max(0, Number(arrival.arrivesAt) - nowSeconds)}`,
     )
     .join(",");
-
-interface PendingLabelUpdate {
-  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
-  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
-  owner: { address: bigint; ownerName: string; guildName: string };
-  timestamp: number; // When this update was received
-  updateType: "structure" | "building"; // Type of update for ordering
-  attackedFromDegrees?: number;
-  attackedTowardDegrees?: number;
-  battleCooldownEnd?: number;
-  battleTimerLeft?: number;
-}
 
 interface StructureInstanceBinding {
   modelIndex: number;
@@ -792,253 +785,232 @@ export class StructureManager {
   }
 
   async onUpdate(update: StructureTileSystemUpdate) {
-    // console.log("[UPDATE STRUCTURE SYSTEM ON UPDATE]", update);
-    const { entityId: rawEntityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
+    const { entityId: rawEntityId, hexCoords, structureType, stage, level, hasWonder } = update;
     const entityId = normalizeEntityId(rawEntityId);
     if (entityId === undefined) {
       console.warn("[StructureManager] Received tile update without a valid entity id", update);
       return;
     }
+
     await this.ensureStructureModels(structureType);
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
-    const position = getWorldPositionForHex(normalizedCoord);
-    position.y += 0.05;
-    this.dummy.position.copy(position);
-    this.dummy.updateMatrix();
+    this.prepareStructurePlacement(normalizedCoord);
+    this.trackKnownStructureHexCoords(normalizedCoord);
 
-    if (!this.structureHexCoords.has(normalizedCoord.col)) {
-      this.structureHexCoords.set(normalizedCoord.col, new Set());
-    }
-    if (!this.structureHexCoords.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
-      this.structureHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
-    }
-
-    const key = structureType;
-
-    // Check for pending label updates and apply them if they exist
-    // Check if structure already exists with valid owner before overwriting
     const existingStructure = this.structures.getStructureByEntityId(entityId);
     const existingWasVisible = existingStructure ? this.isInCurrentChunk(existingStructure.hexCoords) : false;
     const existingAttachmentSignature = existingStructure
       ? this.getAttachmentSignature(existingStructure.attachments ?? [])
       : undefined;
 
-    // Update spatial index
     this.updateSpatialIndex(entityId, existingStructure?.hexCoords, normalizedCoord);
-
-    let finalOwner = {
-      address: owner.address || 0n,
-      ownerName: owner.ownerName || "",
-      guildName: owner.guildName || "",
-    };
-
-    // If incoming owner is invalid (0n or undefined) but existing structure has valid owner, preserve existing
-    if (
-      (!owner.address || owner.address === 0n) &&
-      existingStructure?.owner.address &&
-      existingStructure.owner.address !== 0n
-    ) {
-      console.log(
-        `[OWNER PRESERVATION] Structure ${entityId} preserving existing owner ${existingStructure.owner.address} instead of invalid update owner ${owner.address}`,
-      );
-      finalOwner = existingStructure.owner;
-    }
-    let finalGuardArmies = update.guardArmies;
-    let finalActiveProductions = update.activeProductions;
-
-    // Preserve existing activeProductions if the structure already has them.
-    // The real-time onStructureBuildingsUpdate subscription is the authoritative source
-    // for building data, while this update path reads from MapDataStore (SQL cache) which
-    // refreshes on a timer and may be stale.
-    if (existingStructure?.activeProductions && existingStructure.activeProductions.length > 0) {
-      finalActiveProductions = existingStructure.activeProductions;
-    }
-
-    const battleData = update.battleData ?? {};
-    let { battleCooldownEnd } = battleData as { battleCooldownEnd?: number };
-    const {
-      latestAttackerId,
-      latestDefenderId,
-      latestAttackerCoordX,
-      latestAttackerCoordY,
-      latestDefenderCoordX,
-      latestDefenderCoordY,
-    } = battleData as {
-      latestAttackerId?: number;
-      latestDefenderId?: number;
-      latestAttackerCoordX?: number;
-      latestAttackerCoordY?: number;
-      latestDefenderCoordX?: number;
-      latestDefenderCoordY?: number;
-    };
-
-    let { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
-      hexCoords,
-      latestAttackerId ?? undefined,
-      latestAttackerCoordX && latestAttackerCoordY ? { x: latestAttackerCoordX, y: latestAttackerCoordY } : undefined,
-      latestDefenderId ?? undefined,
-      latestDefenderCoordX && latestDefenderCoordY ? { x: latestDefenderCoordX, y: latestDefenderCoordY } : undefined,
-    );
-
-    // Calculate battle timer left
-    let battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
-
-    const pendingUpdate = this.pendingLabelUpdates.get(entityId);
-    if (pendingUpdate) {
-      // Check if pending update is not too old (max 30 seconds)
-      const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
-
-      if (isPendingStale) {
-        this.pendingLabelUpdates.delete(entityId);
-      } else {
-        // Building updates can arrive before tile updates and carry a placeholder empty owner.
-        // Merge owner fields conservatively so placeholder data cannot clobber fresher tile owner data.
-        const pendingOwner = pendingUpdate.owner;
-        if (pendingOwner) {
-          const hasPendingAddress = pendingOwner.address !== undefined && pendingOwner.address !== null;
-          const shouldApplyPendingAddress =
-            hasPendingAddress &&
-            (pendingUpdate.updateType === "structure" || pendingOwner.address !== 0n || finalOwner.address === 0n);
-
-          finalOwner = {
-            address: shouldApplyPendingAddress ? pendingOwner.address : finalOwner.address,
-            ownerName: pendingOwner.ownerName || finalOwner.ownerName,
-            guildName: pendingOwner.guildName || finalOwner.guildName,
-          };
-        }
-        if (pendingUpdate.guardArmies) {
-          finalGuardArmies = pendingUpdate.guardArmies;
-        }
-        if (pendingUpdate.activeProductions) {
-          finalActiveProductions = pendingUpdate.activeProductions;
-        }
-        // Apply any pending battle direction data
-        if (pendingUpdate.attackedFromDegrees !== undefined) {
-          attackedFromDegrees = pendingUpdate.attackedFromDegrees;
-        }
-        if (pendingUpdate.attackedTowardDegrees !== undefined) {
-          attackTowardDegrees = pendingUpdate.attackedTowardDegrees;
-        }
-        if (pendingUpdate.battleCooldownEnd !== undefined) {
-          battleCooldownEnd = pendingUpdate.battleCooldownEnd;
-          battleTimerLeft = getBattleTimerLeft(pendingUpdate.battleCooldownEnd);
-        }
-        // Clear the pending update
-        this.pendingLabelUpdates.delete(entityId);
-      }
-    }
-
-    if (this.components?.Structure) {
-      const liveStructure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-
-      if (liveStructure) {
-        const liveOwnerAddress = liveStructure.owner;
-
-        if (liveOwnerAddress !== undefined) {
-          let liveOwnerName = finalOwner.ownerName;
-
-          if (this.components.AddressName) {
-            const addressName = getComponentValue(this.components.AddressName, getEntityIdFromKeys([liveOwnerAddress]));
-
-            if (addressName?.name) {
-              try {
-                liveOwnerName = shortString.decodeShortString(addressName.name.toString());
-              } catch (error) {
-                console.warn(`[StructureManager] Failed to decode owner name for ${entityId}:`, error);
-              }
-            }
-          }
-
-          finalOwner = {
-            address: liveOwnerAddress,
-            ownerName: liveOwnerName,
-            guildName: finalOwner.guildName,
-          };
-        }
-      }
-    }
-
-    const ownerForCosmetics = finalOwner.address ?? 0n;
-    if (this.components && ownerForCosmetics !== 0n) {
-      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerForCosmetics);
-    }
-    const enumName = StructureType[key as unknown as keyof typeof StructureType];
-    const defaultModelKey = typeof enumName === "string" ? enumName : String(key);
-    const cosmetic = resolveStructureCosmetic({
-      owner: ownerForCosmetics,
-      structureType: key,
+    const resolvedUpdate = resolveStructureTileUpdateRecord({
+      update,
+      existingStructure,
+      pendingUpdate: takeFreshPendingLabelUpdate(this.pendingLabelUpdates, entityId),
+      resolveLiveOwner: (resolvedOwner) => this.resolveLiveStructureOwner(entityId, resolvedOwner),
+    });
+    const cosmetic = this.resolveStructureCosmeticSelection({
+      owner: resolvedUpdate.owner.address,
+      structureType,
       stage,
-      defaultModelKey,
+    });
+    const structureRecord = this.writeResolvedStructureRecord({
+      entityId,
+      update,
+      normalizedCoord,
+      hasWonder,
+      resolvedUpdate,
+      cosmetic,
+      existingStructure,
     });
 
-    // Add the structure to the structures map with the complete owner info
-    this.structures.addStructure(
-      entityId,
-      update.structureName,
-      key,
+    this.refreshTrackedStructureLabelState(entityId, structureRecord);
+    this.reconcileVisibleStructureUpdate({
+      existingStructure,
+      existingWasVisible,
+      existingAttachmentSignature,
       normalizedCoord,
-      update.initialized,
+      structureType,
       stage,
       level,
-      finalOwner,
-      hasWonder,
-      cosmetic.attachments,
-      update.isAlly,
-      finalGuardArmies,
-      finalActiveProductions,
-      existingStructure?.incomingTroopArrivals,
-      update.hyperstructureRealmCount,
-      attackedFromDegrees ?? undefined,
-      attackTowardDegrees ?? undefined,
-      battleCooldownEnd,
-      battleTimerLeft,
+      structureRecord,
+      cosmeticId: cosmetic.skin.cosmeticId,
+      attachments: cosmetic.attachments,
+    });
+  }
+
+  private prepareStructurePlacement(hexCoords: { col: number; row: number }) {
+    const position = getWorldPositionForHex(hexCoords);
+    position.y += 0.05;
+    this.dummy.position.copy(position);
+    this.dummy.updateMatrix();
+  }
+
+  private trackKnownStructureHexCoords(hexCoords: { col: number; row: number }) {
+    if (!this.structureHexCoords.has(hexCoords.col)) {
+      this.structureHexCoords.set(hexCoords.col, new Set());
+    }
+
+    this.structureHexCoords.get(hexCoords.col)!.add(hexCoords.row);
+  }
+
+  private resolveLiveStructureOwner(
+    entityId: ID,
+    resolvedOwner: StructureInfo["owner"],
+  ): Pick<StructureInfo["owner"], "address" | "ownerName"> | undefined {
+    if (!this.components?.Structure) {
+      return undefined;
+    }
+
+    const liveStructure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+    const liveOwnerAddress = liveStructure?.owner;
+    if (liveOwnerAddress === undefined) {
+      return undefined;
+    }
+
+    return {
+      address: liveOwnerAddress,
+      ownerName: this.resolveLiveStructureOwnerName(entityId, liveOwnerAddress, resolvedOwner.ownerName),
+    };
+  }
+
+  private resolveLiveStructureOwnerName(entityId: ID, ownerAddress: bigint, fallbackOwnerName: string): string {
+    if (!this.components?.AddressName) {
+      return fallbackOwnerName;
+    }
+
+    const addressName = getComponentValue(this.components.AddressName, getEntityIdFromKeys([ownerAddress]));
+    if (!addressName?.name) {
+      return fallbackOwnerName;
+    }
+
+    try {
+      return shortString.decodeShortString(addressName.name.toString());
+    } catch (error) {
+      console.warn(`[StructureManager] Failed to decode owner name for ${entityId}:`, error);
+      return fallbackOwnerName;
+    }
+  }
+
+  private resolveStructureCosmeticSelection(input: {
+    owner: bigint;
+    structureType: StructureType;
+    stage: number;
+  }): ReturnType<typeof resolveStructureCosmetic> {
+    if (this.components && input.owner !== 0n) {
+      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, input.owner);
+    }
+
+    const enumName = StructureType[input.structureType as unknown as keyof typeof StructureType];
+    const defaultModelKey = typeof enumName === "string" ? enumName : String(input.structureType);
+
+    return resolveStructureCosmetic({
+      owner: input.owner,
+      structureType: input.structureType,
+      stage: input.stage,
+      defaultModelKey,
+    });
+  }
+
+  private writeResolvedStructureRecord(input: {
+    entityId: ID;
+    update: StructureTileSystemUpdate;
+    normalizedCoord: { col: number; row: number };
+    hasWonder: boolean;
+    resolvedUpdate: ResolvedStructureTileUpdateRecord;
+    cosmetic: ReturnType<typeof resolveStructureCosmetic>;
+    existingStructure?: StructureInfo;
+  }): StructureInfo | undefined {
+    this.structures.addStructure(
+      input.entityId,
+      input.update.structureName,
+      input.update.structureType,
+      input.normalizedCoord,
+      input.update.initialized,
+      input.update.stage,
+      input.update.level,
+      input.resolvedUpdate.owner,
+      input.hasWonder,
+      input.cosmetic.attachments,
+      input.update.isAlly,
+      input.resolvedUpdate.guardArmies,
+      input.resolvedUpdate.activeProductions,
+      input.existingStructure?.incomingTroopArrivals,
+      input.update.hyperstructureRealmCount,
+      input.resolvedUpdate.battle.attackedFromDegrees,
+      input.resolvedUpdate.battle.attackTowardDegrees,
+      input.resolvedUpdate.battle.battleCooldownEnd,
+      input.resolvedUpdate.battle.battleTimerLeft,
     );
 
-    const structureRecord = this.structures.getStructureByEntityId(entityId);
-    if (structureRecord) {
-      structureRecord.cosmeticId = cosmetic.skin.cosmeticId;
-      structureRecord.cosmeticAssetPaths = cosmetic.skin.assetPaths;
-      structureRecord.usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
-      structureRecord.attachments = cosmetic.attachments;
+    const structureRecord = this.structures.getStructureByEntityId(input.entityId);
+    if (!structureRecord) {
+      return undefined;
     }
 
-    // Track structures with active timed labels for efficient timer updates
-    this.updateTimedLabelTracking(entityId, battleCooldownEnd, structureRecord?.incomingTroopArrivals);
+    structureRecord.cosmeticId = input.cosmetic.skin.cosmeticId;
+    structureRecord.cosmeticAssetPaths = input.cosmetic.skin.assetPaths;
+    structureRecord.usesFallbackCosmeticSkin = input.cosmetic.skin.isFallback;
+    structureRecord.attachments = input.cosmetic.attachments;
+
+    return structureRecord;
+  }
+
+  private refreshTrackedStructureLabelState(entityId: ID, structureRecord?: StructureInfo) {
+    if (!structureRecord) {
+      return;
+    }
+
+    this.updateTimedLabelTracking(entityId, structureRecord.battleCooldownEnd, structureRecord.incomingTroopArrivals);
 
     const existingLabel = this.entityIdLabels.get(entityId);
-    if (existingLabel && structureRecord) {
+    if (existingLabel) {
       this.updateStructureLabelData(structureRecord, existingLabel);
     }
+  }
 
-    const isCurrentlyVisible = this.isInCurrentChunk(normalizedCoord);
+  private reconcileVisibleStructureUpdate(input: {
+    existingStructure?: StructureInfo;
+    existingWasVisible: boolean;
+    existingAttachmentSignature?: string;
+    normalizedCoord: { col: number; row: number };
+    structureType: StructureType;
+    stage: number;
+    level: number;
+    structureRecord?: StructureInfo;
+    cosmeticId?: string | null;
+    attachments: CosmeticAttachmentTemplate[] | undefined;
+  }) {
+    const isCurrentlyVisible = this.isInCurrentChunk(input.normalizedCoord);
     const visibleUpdateInput = {
-      previous: existingStructure && {
-        hexCoords: existingStructure.hexCoords,
-        structureType: existingStructure.structureType,
-        stage: existingStructure.stage,
-        level: existingStructure.level,
-        isMine: existingStructure.isMine,
-        isAlly: existingStructure.isAlly,
-        cosmeticId: existingStructure.cosmeticId,
-        attachmentSignature: existingAttachmentSignature,
+      previous: input.existingStructure && {
+        hexCoords: input.existingStructure.hexCoords,
+        structureType: input.existingStructure.structureType,
+        stage: input.existingStructure.stage,
+        level: input.existingStructure.level,
+        isMine: input.existingStructure.isMine,
+        isAlly: input.existingStructure.isAlly,
+        cosmeticId: input.existingStructure.cosmeticId,
+        attachmentSignature: input.existingAttachmentSignature,
       },
       next: {
-        hexCoords: normalizedCoord,
-        structureType: key,
-        stage,
-        level,
-        isMine: structureRecord?.isMine ?? false,
-        isAlly: structureRecord?.isAlly ?? false,
-        cosmeticId: cosmetic.skin.cosmeticId,
-        attachmentSignature: this.getAttachmentSignature(cosmetic.attachments),
+        hexCoords: input.normalizedCoord,
+        structureType: input.structureType,
+        stage: input.stage,
+        level: input.level,
+        isMine: input.structureRecord?.isMine ?? false,
+        isAlly: input.structureRecord?.isAlly ?? false,
+        cosmeticId: input.cosmeticId,
+        attachmentSignature: this.getAttachmentSignature(input.attachments),
       },
-      wasVisible: existingWasVisible,
+      wasVisible: input.existingWasVisible,
       isVisible: isCurrentlyVisible,
     };
     const visibleUpdateMode = resolveVisibleStructureUpdateMode(visibleUpdateInput);
 
-    if (visibleUpdateMode === "patch" && existingStructure && structureRecord) {
-      this.patchVisibleStructure(existingStructure, structureRecord);
+    if (visibleUpdateMode === "patch" && input.existingStructure && input.structureRecord) {
+      this.patchVisibleStructure(input.existingStructure, input.structureRecord);
       return;
     }
 
