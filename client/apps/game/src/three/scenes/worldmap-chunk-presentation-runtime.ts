@@ -1,3 +1,5 @@
+import type { WorldmapRenderDurationMetric } from "../perf/worldmap-render-diagnostics";
+
 export interface WorldmapChunkPresentationPhaseDurations {
   structureAssetPrewarmMs: number;
   structureHydrationDrainMs: number;
@@ -10,7 +12,7 @@ interface CreateWorldmapChunkPresentationRuntimeInput<TPreparedTerrain> {
   onChunkHydrated: (chunkKey: string) => void;
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
-  recordDuration: (metric: string, durationMs: number) => void;
+  recordDuration: (metric: WorldmapRenderDurationMetric, durationMs: number) => void;
   recordTileHydrationDrainCompleted: () => void;
   waitForStructureHydrationIdle: (chunkKey: string) => Promise<void>;
   waitForTileHydrationIdle: (chunkKey: string) => Promise<void>;

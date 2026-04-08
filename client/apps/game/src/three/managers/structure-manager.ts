@@ -1349,8 +1349,10 @@ export class StructureManager {
     }
   }
 
-  private createVisibleStructureRenderPlan(visibleStructures: StructureInfo[]) {
-    return buildVisibleStructureRenderPlan({
+  private createVisibleStructureRenderPlan(
+    visibleStructures: StructureInfo[],
+  ): VisibleStructureRenderPlan<StructureInfo, StructureType> {
+    return buildVisibleStructureRenderPlan<StructureInfo, StructureType>({
       visibleStructures,
       hasCosmeticSkin: (structure) => this.hasCosmeticSkin(structure),
       hasStructureModel: (structureType) => this.structureModels.has(structureType),
@@ -1406,7 +1408,7 @@ export class StructureManager {
       tempCosmeticPosition: this.tempCosmeticPosition,
       tempCosmeticRotation: this.tempCosmeticRotation,
       getWorldPositionForHexCoordsInto,
-      getLabel: (entityId) => this.entityIdLabels.get(entityId),
+      getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
       getRendererForStructure: (structure) => this.getRendererForStructure(structure),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),

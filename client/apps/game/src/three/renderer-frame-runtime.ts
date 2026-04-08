@@ -1,5 +1,5 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
-import type { Camera, Object3D, Object3DEventMap } from "three";
+import type { Camera, Scene } from "three";
 import { renderRendererBackendFrame } from "./renderer-backend-compat";
 import { setRendererDiagnosticSceneName } from "./renderer-diagnostics";
 import type { RendererBackendV2, RendererOverlayPass } from "./renderer-backend-v2";
@@ -9,8 +9,8 @@ import { SceneName } from "./types";
 
 interface RendererFrameSceneController {
   getCurrentCameraView(): CameraView | undefined;
-  getInteractionOverlayScene(): Object3D<Object3DEventMap>;
-  getScene(): Object3D<Object3DEventMap>;
+  getInteractionOverlayScene(): Scene;
+  getScene(): Scene;
   hasActiveLabelAnimations(): boolean;
   setWeatherAtmosphereState(weatherState: unknown): void;
   update(deltaTime: number): void;
@@ -18,7 +18,7 @@ interface RendererFrameSceneController {
 
 interface RendererFrameHudController {
   getCamera(): Camera;
-  getScene(): Object3D<Object3DEventMap>;
+  getScene(): Scene;
   getWeatherState(): unknown;
   hasActiveLabelAnimations(): boolean;
   update(deltaTime: number, cycleProgress: number): void;
@@ -28,7 +28,7 @@ interface ResolvedRendererFrame {
   cadenceView: RendererLabelCadenceView;
   labelsActive: boolean;
   overlayPasses: RendererOverlayPass[];
-  scene: Object3D<Object3DEventMap>;
+  scene: Scene;
   sceneController: RendererFrameSceneController;
   sceneName: SceneName;
 }

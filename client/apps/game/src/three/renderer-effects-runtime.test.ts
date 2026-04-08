@@ -51,6 +51,7 @@ vi.mock("@/ui/config", () => ({
 }));
 
 const { createRendererEffectsRuntime } = await import("./renderer-effects-runtime");
+const { GraphicsSettings } = await import("@/ui/config");
 
 function createBackend() {
   return {
@@ -101,6 +102,28 @@ function createFolderFactory() {
   }));
 }
 
+function createQualityFeatures(overrides: Partial<import("./utils/quality-controller").QualityFeatures> = {}) {
+  return {
+    animationCullDistance: 120,
+    animationFPS: 20,
+    bloom: true,
+    bloomIntensity: 0.2,
+    chromaticAberration: false,
+    chunkLoadRadius: 2,
+    fxaa: true,
+    labelRenderDistance: 120,
+    maxVisibleArmies: 250,
+    maxVisibleLabels: 200,
+    maxVisibleStructures: 150,
+    morphAnimations: true,
+    pixelRatio: 1.5,
+    shadowMapSize: 1024,
+    shadows: true,
+    vignette: false,
+    ...overrides,
+  };
+}
+
 describe("renderer effects runtime", () => {
   beforeEach(() => {
     resetRendererDiagnostics();
@@ -112,20 +135,17 @@ describe("renderer effects runtime", () => {
     const runtime = createRendererEffectsRuntime({
       backend: backend as never,
       createFolder: createFolderFactory(),
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: false,
       scenes: scenes as never,
     });
 
-    runtime.setupPostProcessingEffects({
-      bloom: true,
-      bloomIntensity: 0.3,
-      chromaticAberration: false,
-      fxaa: true,
-      pixelRatio: 1.5,
-      shadows: true,
-      vignette: true,
-    });
+    runtime.setupPostProcessingEffects(
+      createQualityFeatures({
+        bloomIntensity: 0.3,
+        vignette: true,
+      }),
+    );
 
     expect(backend.applyPostProcessPlan).toHaveBeenCalledTimes(1);
     expect(runtime.hasPostProcessing()).toBe(true);
@@ -138,21 +158,19 @@ describe("renderer effects runtime", () => {
     const runtime = createRendererEffectsRuntime({
       backend: backend as never,
       createFolder: createFolderFactory(),
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: false,
       scenes: scenes as never,
     });
 
     await runtime.applyEnvironment();
-    runtime.applyQualityFeatures({
-      bloom: false,
-      bloomIntensity: 0,
-      chromaticAberration: false,
-      fxaa: false,
-      pixelRatio: 1.5,
-      shadows: true,
-      vignette: false,
-    });
+    runtime.applyQualityFeatures(
+      createQualityFeatures({
+        bloom: false,
+        bloomIntensity: 0,
+        fxaa: false,
+      }),
+    );
 
     expect(backend.applyEnvironment).toHaveBeenCalledWith({
       fastTravelScene: scenes.fastTravelScene,
@@ -180,20 +198,18 @@ describe("renderer effects runtime", () => {
     const runtime = createRendererEffectsRuntime({
       backend: backend as never,
       createFolder: createFolderFactory(),
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: false,
       scenes: createScenes() as never,
     });
 
-    runtime.setupPostProcessingEffects({
-      bloom: true,
-      bloomIntensity: 0.6,
-      chromaticAberration: true,
-      fxaa: true,
-      pixelRatio: 1.5,
-      shadows: true,
-      vignette: true,
-    });
+    runtime.setupPostProcessingEffects(
+      createQualityFeatures({
+        bloomIntensity: 0.6,
+        chromaticAberration: true,
+        vignette: true,
+      }),
+    );
     void runtime.applyEnvironment();
 
     expect(snapshotRendererDiagnostics().degradations).toEqual(
@@ -213,20 +229,17 @@ describe("renderer effects runtime", () => {
     const runtime = createRendererEffectsRuntime({
       backend: backend as never,
       createFolder: createFolderFactory(),
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: false,
       scenes: createScenes() as never,
     });
 
-    runtime.setupPostProcessingEffects({
-      bloom: true,
-      bloomIntensity: 0.6,
-      chromaticAberration: false,
-      fxaa: true,
-      pixelRatio: 1.5,
-      shadows: true,
-      vignette: true,
-    });
+    runtime.setupPostProcessingEffects(
+      createQualityFeatures({
+        bloomIntensity: 0.6,
+        vignette: true,
+      }),
+    );
     runtime.updateWeatherPostProcessing({
       intensity: 0.6,
       stormIntensity: 0.4,
@@ -240,7 +253,7 @@ describe("renderer effects runtime", () => {
     const runtime = createRendererEffectsRuntime({
       backend: createBackend() as never,
       createFolder: createFolderFactory(),
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: false,
       scenes: createScenes() as never,
     });

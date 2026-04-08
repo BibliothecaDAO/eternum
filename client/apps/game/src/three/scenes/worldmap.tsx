@@ -271,6 +271,7 @@ import {
   setWorldmapRenderGauge,
   snapshotWorldmapRenderDiagnostics,
   type WorldmapForceRefreshReason,
+  type WorldmapRenderDurationMetric,
 } from "../perf/worldmap-render-diagnostics";
 import { recordRendererColorUploadBytes, recordRendererMatrixUploadBytes } from "../perf/renderer-gpu-telemetry";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
@@ -547,7 +548,7 @@ export default class WorldmapScene extends WarpTravel {
   private wheelGroundIntersectionScratch: Vector3 = new Vector3();
   private interactiveHexWindowKey: string | null = null;
 
-  private armyManager: ArmyManager;
+  private armyManager!: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
@@ -658,9 +659,9 @@ export default class WorldmapScene extends WarpTravel {
   private handleTransactionFailed?: (...args: any[]) => void;
   private readonly stalePendingArmyMovementMs = 10_000;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
-  private structureManager: StructureManager;
+  private structureManager!: StructureManager;
   private memoryMonitor?: MemoryMonitor;
-  private chestManager: ChestManager;
+  private chestManager!: ChestManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
@@ -677,11 +678,11 @@ export default class WorldmapScene extends WarpTravel {
   private structuresPositions: Map<ID, HexPosition> = new Map();
 
   // Battle direction manager for tracking attacker/defender relationships
-  private battleDirectionManager: BattleDirectionManager;
+  private battleDirectionManager!: BattleDirectionManager;
 
-  private selectedHexManager: SelectedHexManager;
-  private readonly interactionAdapter;
-  private selectionPulseManager: SelectionPulseManager;
+  private selectedHexManager!: SelectedHexManager;
+  private interactionAdapter!: ReturnType<typeof createWorldmapInteractionAdapter>;
+  private selectionPulseManager!: SelectionPulseManager;
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
   private armyStructureOwners: Map<ID, ID> = new Map();
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
@@ -836,9 +837,9 @@ export default class WorldmapScene extends WarpTravel {
   private lastChunkRecoveryAtMs = 0;
 
   // Label groups
-  private armyLabelsGroup: Group;
-  private structureLabelsGroup: Group;
-  private chestLabelsGroup: Group;
+  private armyLabelsGroup!: Group;
+  private structureLabelsGroup!: Group;
+  private chestLabelsGroup!: Group;
 
   private storeSubscriptions: Array<() => void> = [];
 
@@ -866,15 +867,15 @@ export default class WorldmapScene extends WarpTravel {
   > = new Map();
   private deferredChunkRemovals: Map<ID, { reason: "tile" | "zero"; scheduledAt: number }> = new Map();
 
-  private fxManager: FXManager;
-  private resourceFXManager: ResourceFXManager;
+  private fxManager!: FXManager;
+  private resourceFXManager!: ResourceFXManager;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
   private playerStructures: Structure[] = [];
 
   // Hover-based label expansion manager
-  private hoverLabelManager: HoverLabelManager;
+  private hoverLabelManager!: HoverLabelManager;
 
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
@@ -2887,7 +2888,9 @@ export default class WorldmapScene extends WarpTravel {
                 await this.globalChunkSwitchPromise;
               }
             : undefined,
-          forceChunkRefresh: () => this.updateVisibleChunks(true, { reason: "default" }),
+          forceChunkRefresh: async () => {
+            await this.updateVisibleChunks(true, { reason: "default" });
+          },
           isArmyAvailable: () => this.armyManager.hasArmy(selectedEntityId),
           isArmyPendingMovement: () => this.pendingArmyMovements.has(selectedEntityId),
           onRecovered: () => {
@@ -6513,7 +6516,7 @@ export default class WorldmapScene extends WarpTravel {
     surroundingChunks: string[];
     transitionToken: number;
   }) {
-    return hydrateWorldmapChunkRuntime({
+    return hydrateWorldmapChunkRuntime<PreparedTerrainChunk>({
       chunkKey: input.chunkKey,
       computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
       diagnostics: this.chunkDiagnostics,
@@ -6527,7 +6530,8 @@ export default class WorldmapScene extends WarpTravel {
       prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
         this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
       recordChunkDiagnosticsEvent,
-      recordWorldmapRenderDuration,
+      recordWorldmapRenderDuration: (metric, durationMs) =>
+        recordWorldmapRenderDuration(metric as WorldmapRenderDurationMetric, durationMs),
       renderSize: this.renderChunkSize,
       startCol: input.startCol,
       startRow: input.startRow,
@@ -6783,7 +6787,7 @@ export default class WorldmapScene extends WarpTravel {
           commitPreparedTerrain: (nextPreparedTerrain) => {
             commitWorldmapPreparedTerrainPresentation({
               applyPreparedTerrain: (preparedTerrain) => {
-                this.applyPreparedTerrainChunk(preparedTerrain);
+                this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
               },
               diagnostics: this.chunkDiagnostics,
               now: () => performance.now(),

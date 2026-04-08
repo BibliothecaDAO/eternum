@@ -1,6 +1,7 @@
 import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
 import { createWorldmapChunkPresentationRuntime } from "./worldmap-chunk-presentation-runtime";
 import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
+import type { WorldmapRenderDurationMetric } from "../perf/worldmap-render-diagnostics";
 
 interface HydrateWorldmapChunkRuntimeInput<TPreparedTerrain> {
   chunkKey: string;
@@ -13,7 +14,7 @@ interface HydrateWorldmapChunkRuntimeInput<TPreparedTerrain> {
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   recordChunkDiagnosticsEvent: (diagnostics: WorldmapChunkDiagnostics, event: "tile_hydration_drain_completed") => void;
-  recordWorldmapRenderDuration: (metric: string, durationMs: number) => void;
+  recordWorldmapRenderDuration: (metric: WorldmapRenderDurationMetric, durationMs: number) => void;
   renderSize: {
     height: number;
     width: number;

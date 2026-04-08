@@ -34,6 +34,8 @@ describe("renderer effects bridge runtime", () => {
     const effectsRuntime = {
       applyEnvironment: vi.fn(async () => {}),
       applyQualityFeatures: vi.fn(),
+      hasPostProcessing: vi.fn(() => true),
+      resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
       setupPostProcessingEffects: vi.fn(),
       updateWeatherPostProcessing: vi.fn(),
     };
@@ -60,6 +62,8 @@ describe("renderer effects bridge runtime", () => {
     const effectsRuntime = {
       applyEnvironment: vi.fn(async () => {}),
       applyQualityFeatures: vi.fn(),
+      hasPostProcessing: vi.fn(() => true),
+      resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
       setupPostProcessingEffects: vi.fn(),
       updateWeatherPostProcessing: vi.fn(),
     };
@@ -91,6 +95,8 @@ describe("renderer effects bridge runtime", () => {
     const effectsRuntime = {
       applyEnvironment: vi.fn(async () => {}),
       applyQualityFeatures: vi.fn(),
+      hasPostProcessing: vi.fn(() => true),
+      resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
       setupPostProcessingEffects: vi.fn(),
       updateWeatherPostProcessing: vi.fn(),
     };

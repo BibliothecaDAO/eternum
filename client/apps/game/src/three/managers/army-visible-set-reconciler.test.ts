@@ -45,7 +45,7 @@ describe("reconcileVisibleArmySet", () => {
     const updateArmyAttachmentTransforms = vi.fn();
     const flushVisibleArmyBuffers = vi.fn();
 
-    reconcileVisibleArmySet<VisibleArmyStub, ModelTypeStub>({
+    reconcileVisibleArmySet<VisibleArmyStub, ModelTypeStub, ID>({
       desiredVisibleArmies: [{ entityId: 2 as ID }, { entityId: 4 as ID }, { entityId: 1 as ID }],
       modelTypesByEntity: new Map<ID, ModelTypeStub>([
         [1 as ID, "infantry"],
@@ -110,7 +110,7 @@ describe("reconcileVisibleArmySet", () => {
     const updateArmyAttachmentTransforms = vi.fn();
     const flushVisibleArmyBuffers = vi.fn();
 
-    reconcileVisibleArmySet<VisibleArmyStub, ModelTypeStub>({
+    reconcileVisibleArmySet<VisibleArmyStub, ModelTypeStub, ID>({
       desiredVisibleArmies: [{ entityId: 2 as ID }, { entityId: 1 as ID }],
       modelTypesByEntity: new Map<ID, ModelTypeStub>([
         [1 as ID, "infantry"],

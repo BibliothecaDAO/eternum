@@ -107,9 +107,10 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
   }
 
   private initializeStatsPanel(): void {
-    this.stats = new (Stats as any)();
-    document.body.appendChild(this.stats.dom);
-    this.statsDomElement = this.stats.dom;
+    const stats = new (Stats as any)();
+    this.stats = stats;
+    document.body.appendChild(stats.dom);
+    this.statsDomElement = stats.dom;
   }
 
   private initializeStatsRecorder(): void {

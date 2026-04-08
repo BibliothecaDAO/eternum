@@ -38,8 +38,10 @@ describe("bootstrapRendererStartupRuntime", () => {
   it("registers transition cleanup polling and logs only when expired records are removed", () => {
     const registerCleanupInterval = vi.fn();
     const debug = vi.fn();
-    const setIntervalFn = vi.fn((callback: () => void) => {
-      callback();
+    const setIntervalFn = vi.fn((handler: TimerHandler) => {
+      if (typeof handler === "function") {
+        handler();
+      }
       return 42 as never;
     });
 
@@ -77,10 +79,13 @@ describe("bootstrapRendererStartupRuntime", () => {
       prepareScenes: () => calls.push("prepareScenes"),
       registerCleanupInterval: () => calls.push("registerInterval"),
       rendererDomElement: document.createElement("canvas"),
-      setIntervalFn: ((callback: () => void) => {
+      setIntervalFn: ((handler: TimerHandler) => {
         calls.push("setInterval");
+        if (typeof handler === "function") {
+          handler();
+        }
         return 7 as never;
-      }) as typeof setInterval,
+      }) as unknown as typeof setInterval,
       syncRouteFromLocation: () => calls.push("syncRoute"),
       warn: vi.fn(),
     });

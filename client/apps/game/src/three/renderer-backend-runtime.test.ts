@@ -1,4 +1,6 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
 
 const initializeSelectedRendererBackend = vi.fn();
 const syncRendererBackendDiagnostics = vi.fn();
@@ -6,6 +8,11 @@ const setRendererDiagnosticCapabilities = vi.fn();
 const setRendererDiagnosticDegradations = vi.fn();
 const createWebGLRendererBackend = vi.fn();
 const createWebGPURendererBackend = vi.fn();
+const mockGraphicsSettings = {
+  HIGH: "HIGH",
+  LOW: "LOW",
+  MID: "MID",
+} as const;
 
 vi.mock("./renderer-backend-loader", () => ({
   initializeSelectedRendererBackend,
@@ -25,19 +32,43 @@ vi.mock("./webgpu-renderer-backend", () => ({
   createWebGPURendererBackend,
 }));
 
+vi.mock("@/ui/config", () => ({
+  GraphicsSettings: mockGraphicsSettings,
+}));
+
 const { initializeRendererBackendRuntime } = await import("./renderer-backend-runtime");
+const { GraphicsSettings } = await import("@/ui/config");
 
 function createFakeBackend() {
   return {
-    capabilities: { supportsBloom: true },
-    renderer: { info: { render: { calls: 0, triangles: 0 }, memory: { geometries: 0, textures: 0 }, reset: vi.fn() } },
-    initialize: vi.fn(async () => ({
-      activeMode: "legacy-webgl",
-      buildMode: "legacy-webgl",
-      fallbackReason: null,
-      initTimeMs: 0,
-      requestedMode: "legacy-webgl",
-    })),
+    capabilities: createRendererBackendCapabilities({
+      supportsBloom: true,
+    }),
+    renderer: {
+      autoClear: false,
+      clear: vi.fn(),
+      clearDepth: vi.fn(),
+      dispose: vi.fn(),
+      domElement: document.createElement("canvas"),
+      info: {
+        render: { calls: 0, triangles: 0 },
+        memory: { geometries: 0, textures: 0 },
+        reset: vi.fn(),
+      },
+      render: vi.fn(),
+      setPixelRatio: vi.fn(),
+      setSize: vi.fn(),
+      shadowMap: { enabled: true, type: 1 },
+      toneMapping: 1,
+      toneMappingExposure: 0.8,
+    },
+    initialize: vi.fn(async () =>
+      createRendererInitDiagnostics({
+        activeMode: "legacy-webgl",
+        buildMode: "legacy-webgl",
+        requestedMode: "legacy-webgl",
+      }),
+    ),
     resize: vi.fn(),
     applyQuality: vi.fn(),
     applyPostProcessPlan: vi.fn(),
@@ -59,14 +90,14 @@ describe("initializeRendererBackendRuntime", () => {
     const result = await initializeRendererBackendRuntime({
       backendFactory,
       envBuildMode: "experimental-webgpu-auto",
-      graphicsSetting: "HIGH" as never,
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: false,
       pixelRatio: 1.25,
       search: "?rendererMode=legacy-webgl",
     });
 
     expect(backendFactory).toHaveBeenCalledWith({
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: false,
       pixelRatio: 1.25,
     });
@@ -93,13 +124,13 @@ describe("initializeRendererBackendRuntime", () => {
       const legacyResult = await input.legacyFactory();
 
       expect(createWebGPURendererBackend).toHaveBeenCalledWith({
-        graphicsSetting: "HIGH",
+        graphicsSetting: GraphicsSettings.HIGH,
         isMobileDevice: true,
         pixelRatio: 1.5,
         requestedMode: "experimental-webgpu-auto",
       });
       expect(createWebGLRendererBackend).toHaveBeenCalledWith({
-        graphicsSetting: "HIGH",
+        graphicsSetting: GraphicsSettings.HIGH,
         isMobileDevice: true,
         pixelRatio: 1.5,
       });
@@ -120,7 +151,7 @@ describe("initializeRendererBackendRuntime", () => {
 
     const result = await initializeRendererBackendRuntime({
       envBuildMode: "experimental-webgpu-auto",
-      graphicsSetting: "HIGH" as never,
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: true,
       pixelRatio: 1.5,
       search: "?rendererMode=experimental-webgpu-auto",
@@ -131,7 +162,7 @@ describe("initializeRendererBackendRuntime", () => {
       legacyFactory: expect.any(Function),
       options: {
         envBuildMode: "experimental-webgpu-auto",
-        graphicsSetting: "HIGH",
+        graphicsSetting: GraphicsSettings.HIGH,
         isMobileDevice: true,
         pixelRatio: 1.5,
         search: "?rendererMode=experimental-webgpu-auto",

@@ -7,16 +7,8 @@ import {
 } from "./manager-chunk-runtime";
 
 describe("runManagerChunkUpdateRuntime", () => {
-  const shouldAcceptRequest = vi.fn(
-    ({
-      chunkKey,
-      knownChunkForToken,
-    }: {
-      chunkKey: string;
-      knownChunkForToken: string | undefined;
-      latestTransitionToken: number;
-      transitionToken: number | undefined;
-    }) => !knownChunkForToken || knownChunkForToken === chunkKey,
+  const shouldAcceptRequest: Parameters<typeof runManagerChunkUpdateRuntime>[0]["shouldAcceptRequest"] = vi.fn(
+    ({ chunkKey, knownChunkForToken }) => !knownChunkForToken || knownChunkForToken === chunkKey,
   );
 
   it("tracks accepted transition ownership and updates the current chunk before running the update", async () => {
@@ -87,7 +79,7 @@ describe("runManagerChunkUpdateRuntime", () => {
 
     await runManagerChunkUpdateRuntime({
       chunkKey: "24,24",
-      executeChunkUpdate: vi.fn(async () => false),
+      executeChunkUpdate: vi.fn(async (): Promise<false> => false),
       isDestroyed: () => false,
       options: { force: true, transitionToken: 4 },
       shouldAcceptRequest,

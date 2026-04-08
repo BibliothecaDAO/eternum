@@ -88,6 +88,8 @@ vi.mock("three/examples/jsm/controls/MapControls.js", () => ({
 }));
 
 const { createRendererInteractionRuntime } = await import("./renderer-interaction-runtime");
+const { GraphicsSettings } = await import("@/ui/config");
+const { SceneName } = await import("./types");
 
 describe("createRendererInteractionRuntime", () => {
   beforeEach(() => {
@@ -105,9 +107,9 @@ describe("createRendererInteractionRuntime", () => {
   it("configures shared camera, picking primitives, and control change wiring", () => {
     const onControlsChange = vi.fn();
     const runtime = createRendererInteractionRuntime({
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       onControlsChange,
-      resolveCurrentSceneName: () => "travel",
+      resolveCurrentSceneName: () => SceneName.FastTravel,
     });
 
     const surface = document.createElement("canvas");
@@ -130,9 +132,9 @@ describe("createRendererInteractionRuntime", () => {
   });
 
   it("preserves the current world map zoom lockout when the zoom preference changes", () => {
-    let currentSceneName = "map";
+    let currentSceneName = SceneName.WorldMap;
     const runtime = createRendererInteractionRuntime({
-      graphicsSetting: "MID",
+      graphicsSetting: GraphicsSettings.MID,
       onControlsChange: vi.fn(),
       resolveCurrentSceneName: () => currentSceneName,
     });
@@ -145,7 +147,7 @@ describe("createRendererInteractionRuntime", () => {
     zoomSubscriber.current?.(true);
     expect(controls?.enableZoom).toBe(false);
 
-    currentSceneName = "hex";
+    currentSceneName = SceneName.Hexception;
     zoomSubscriber.current?.(true);
     expect(controls?.enableZoom).toBe(true);
 
@@ -158,9 +160,9 @@ describe("createRendererInteractionRuntime", () => {
     const addDocumentListenerSpy = vi.spyOn(document, "addEventListener");
     const removeDocumentListenerSpy = vi.spyOn(document, "removeEventListener");
     const runtime = createRendererInteractionRuntime({
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       onControlsChange: vi.fn(),
-      resolveCurrentSceneName: () => "travel",
+      resolveCurrentSceneName: () => SceneName.FastTravel,
     });
 
     runtime.attachSurface(document.createElement("canvas"));
@@ -173,8 +175,8 @@ describe("createRendererInteractionRuntime", () => {
       | ((event: FocusEvent) => void)
       | undefined;
 
-    focusHandler?.({ target: input } as FocusEvent);
-    blurHandler?.({ target: input } as FocusEvent);
+    focusHandler?.({ target: input } as unknown as FocusEvent);
+    blurHandler?.({ target: input } as unknown as FocusEvent);
 
     expect(controls?.stopListenToKeyEvents).toHaveBeenCalledTimes(1);
     expect(controls?.listenToKeyEvents).toHaveBeenNthCalledWith(2, document.body);

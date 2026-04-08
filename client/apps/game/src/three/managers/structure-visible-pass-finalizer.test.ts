@@ -39,9 +39,9 @@ describe("finalizeVisibleStructureModelPass", () => {
     const applyPendingModelBounds = vi.fn();
 
     finalizeVisibleStructureModelPass({
-      modelInstanceCounts: new Map([[model, 1]]),
-      nextActiveStructureModels: new Set([model]),
-      nextActiveCosmeticStructureModels: new Set(),
+      modelInstanceCounts: new Map<CountableModel, number>([[model, 1]]),
+      nextActiveStructureModels: new Set<CountableModel>([model]),
+      nextActiveCosmeticStructureModels: new Set<CountableModel>(),
       applyPendingModelBounds,
     });
 

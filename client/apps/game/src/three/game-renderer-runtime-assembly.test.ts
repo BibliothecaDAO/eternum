@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 
 const runtimeAssemblyMocks = vi.hoisted(() => ({
@@ -7,6 +8,11 @@ const runtimeAssemblyMocks = vi.hoisted(() => ({
   createRendererMonitoringRuntime: vi.fn(() => ({ id: "monitoring-runtime" })),
   createRendererRouteRuntime: vi.fn(() => ({ id: "route-runtime" })),
   createRendererRuntimeAssembly: vi.fn(),
+  GraphicsSettings: {
+    HIGH: "HIGH",
+    LOW: "LOW",
+    MID: "MID",
+  },
   HUDScene: vi.fn(function MockHUDScene(this: Record<string, unknown>, sceneManager: unknown, controls: unknown) {
     this.sceneManager = sceneManager;
     this.controls = controls;
@@ -52,15 +58,34 @@ vi.mock("./utils/quality-controller", () => ({
   qualityController: runtimeAssemblyMocks.qualityController,
 }));
 
+vi.mock("@/ui/config", () => ({
+  GraphicsSettings: runtimeAssemblyMocks.GraphicsSettings,
+}));
+
 vi.mock("@/three/scenes/hud-scene", () => ({
   default: runtimeAssemblyMocks.HUDScene,
 }));
 
 const { createGameRendererRuntimeAssembly } = await import("./game-renderer-runtime-assembly");
+const { GraphicsSettings } = await import("@/ui/config");
+
+function requireMockCallInput<T>(input: T | undefined, label: string): T {
+  if (!input) {
+    throw new Error(`Expected ${label} mock to receive an input`);
+  }
+
+  return input;
+}
 
 describe("createGameRendererRuntimeAssembly", () => {
   it("builds support runtime factories around the current game renderer state", () => {
-    const createFolder = vi.fn(() => ({ add: vi.fn(), close: vi.fn(), destroy: vi.fn() }));
+    const createFolder = vi.fn(() => ({
+      add: vi.fn(),
+      addFolder: vi.fn(),
+      close: vi.fn(),
+      destroy: vi.fn(),
+      open: vi.fn(),
+    }));
     const addWindowListener = vi.fn();
     const assemblyResult = {
       sessionRuntime: { id: "session-runtime" },
@@ -115,7 +140,7 @@ describe("createGameRendererRuntimeAssembly", () => {
       addWindowListener,
       createFolder,
       fastTravelEnabled: () => true,
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       isGraphicsDevEnabled: true,
       isMemoryMonitoringEnabled: false,
       isMobileDevice: false,
@@ -126,7 +151,19 @@ describe("createGameRendererRuntimeAssembly", () => {
       windowResizeListener,
     });
 
-    const controlBridgeInput = runtimeAssemblyMocks.createRendererControlBridgeRuntime.mock.calls[0][0];
+    const controlBridgeInput = requireMockCallInput(
+      (
+        runtimeAssemblyMocks.createRendererControlBridgeRuntime.mock.lastCall as unknown as [unknown] | undefined
+      )?.[0] as
+        | {
+            fastTravelEnabled(): boolean;
+            getCurrentScene(): string | undefined;
+            getRenderer(): unknown;
+            markLabelsDirty(): void;
+          }
+        | undefined,
+      "control bridge",
+    );
     expect(controlBridgeInput.fastTravelEnabled()).toBe(true);
     expect(controlBridgeInput.getCurrentScene()).toBe("world-map");
     expect(controlBridgeInput.getRenderer()).toBe(runtimeState.renderer);
@@ -134,7 +171,17 @@ describe("createGameRendererRuntimeAssembly", () => {
     controlBridgeInput.markLabelsDirty();
     expect(runtimeState.labelRuntime.markDirty).toHaveBeenCalledTimes(1);
 
-    const effectsBridgeInput = runtimeAssemblyMocks.createRendererEffectsBridgeRuntime.mock.calls[0][0];
+    const effectsBridgeInput = requireMockCallInput(
+      (
+        runtimeAssemblyMocks.createRendererEffectsBridgeRuntime.mock.lastCall as unknown as [unknown] | undefined
+      )?.[0] as
+        | {
+            createEffectsRuntime(): unknown;
+            resolveWeatherState(): unknown;
+          }
+        | undefined,
+      "effects bridge",
+    );
     expect(effectsBridgeInput.createEffectsRuntime()).toEqual({ id: "effects-runtime" });
     expect(effectsBridgeInput.resolveWeatherState()).toEqual({
       intensity: 0.8,
@@ -144,7 +191,7 @@ describe("createGameRendererRuntimeAssembly", () => {
     expect(runtimeAssemblyMocks.createRendererEffectsRuntime).toHaveBeenCalledWith({
       backend: runtimeState.backend,
       createFolder,
-      graphicsSetting: "HIGH",
+      graphicsSetting: GraphicsSettings.HIGH,
       isMobileDevice: false,
       resolvePixelRatio: expect.any(Function),
       scenes: {
@@ -155,13 +202,33 @@ describe("createGameRendererRuntimeAssembly", () => {
     });
     expect(runtimeAssemblyMocks.qualityController.getFeatures).toHaveBeenCalledTimes(0);
 
-    const monitoringInput = runtimeAssemblyMocks.createRendererMonitoringRuntime.mock.calls[0][0];
+    const monitoringInput = requireMockCallInput(
+      (runtimeAssemblyMocks.createRendererMonitoringRuntime.mock.lastCall as unknown as [unknown] | undefined)?.[0] as
+        | {
+            debugWindow: unknown;
+            getSceneName(): string;
+            renderer: unknown;
+            rendererOwner: unknown;
+          }
+        | undefined,
+      "monitoring runtime",
+    );
     expect(monitoringInput.renderer).toBe(runtimeState.renderer);
     expect(monitoringInput.rendererOwner).toEqual({ id: "game-renderer" });
     expect(monitoringInput.getSceneName()).toBe("world-map");
     expect(monitoringInput.debugWindow).toBe(fakeWindow);
 
-    const routeInput = runtimeAssemblyMocks.createRendererRouteRuntime.mock.calls[0][0];
+    const routeInput = requireMockCallInput(
+      (runtimeAssemblyMocks.createRendererRouteRuntime.mock.lastCall as unknown as [unknown] | undefined)?.[0] as
+        | {
+            fastTravelEnabled(): boolean;
+            getCurrentScene(): string | undefined;
+            hasFastTravelScene(): boolean;
+            markLabelsDirty(): void;
+          }
+        | undefined,
+      "route runtime",
+    );
     expect(routeInput.fastTravelEnabled()).toBe(true);
     expect(routeInput.getCurrentScene()).toBe("world-map");
     expect(routeInput.hasFastTravelScene()).toBe(true);
