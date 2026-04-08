@@ -27,4 +27,12 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).not.toMatch(/await this\.renderVisibleArmies\(this\.currentChunkKey\)/);
     expect(source).toMatch(/slot !== undefined[\s\S]*this\.refreshArmyInstance\(army, slot, modelType\)/);
   });
+
+  it("routes pending explorer deltas through shared reconciliation helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/takeFreshPendingExplorerTroopsUpdate\(/);
+    expect(source).toMatch(/queuePendingExplorerTroopsUpdate\(/);
+    expect(source).toMatch(/calculateArmyCurrentStamina\(/);
+  });
 });

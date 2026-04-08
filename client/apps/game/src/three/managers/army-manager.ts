@@ -10,6 +10,12 @@ import {
   recordWorldmapRenderDuration,
   setWorldmapRenderGauge,
 } from "@/three/perf/worldmap-render-diagnostics";
+import {
+  queuePendingExplorerTroopsUpdate,
+  resolvePendingArmySpawnState,
+  takeFreshPendingExplorerTroopsUpdate,
+  type PendingExplorerTroopsUpdate,
+} from "@/three/managers/army-explorer-delta";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
@@ -82,20 +88,6 @@ import {
 import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-
-interface PendingExplorerTroopsUpdate {
-  troopCount: number;
-  onChainStamina: { amount: bigint; updatedTick: number };
-  ownerAddress: bigint;
-  ownerName: string;
-  timestamp: number; // When this update was received
-  updateTick: number; // Game tick when this update occurred
-  ownerStructureId?: ID | null;
-  attackedFromDegrees?: number;
-  attackedTowardDegrees?: number;
-  battleCooldownEnd?: number;
-  battleTimerLeft?: number;
-}
 
 interface MovingArmySourceState {
   bucketKey: string;
@@ -728,6 +720,83 @@ export class ArmyManager {
     }
 
     return true;
+  }
+
+  private resolveArmyOwnerFromStructure(params: {
+    armyEntityId: ID;
+    ownerStructureId?: ID | null;
+    fallbackOwnerAddress: bigint;
+    fallbackOwnerName: string;
+    logContext: "spawn" | "explorer update";
+  }): { ownerAddress: bigint; ownerName: string } {
+    if (params.ownerStructureId === null || params.ownerStructureId === undefined || !this.components?.Structure) {
+      return {
+        ownerAddress: params.fallbackOwnerAddress,
+        ownerName: params.fallbackOwnerName,
+      };
+    }
+
+    try {
+      const structureEntityId = getEntityIdFromKeys([BigInt(params.ownerStructureId)]);
+      const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
+      const liveOwnerRaw = liveStructure?.owner;
+      if (liveOwnerRaw === undefined || liveOwnerRaw === null) {
+        return {
+          ownerAddress: params.fallbackOwnerAddress,
+          ownerName: params.fallbackOwnerName,
+        };
+      }
+
+      const ownerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
+      return {
+        ownerAddress,
+        ownerName: this.resolveArmyOwnerNameForAddress(
+          params.armyEntityId,
+          ownerAddress,
+          params.fallbackOwnerName,
+          params.logContext,
+        ),
+      };
+    } catch (error) {
+      console.warn(
+        `[ArmyManager] Failed to resolve owner from Structure component during ${params.logContext} for army ${params.armyEntityId}:`,
+        error,
+      );
+      return {
+        ownerAddress: params.fallbackOwnerAddress,
+        ownerName: params.fallbackOwnerName,
+      };
+    }
+  }
+
+  private resolveArmyOwnerNameForAddress(
+    armyEntityId: ID,
+    ownerAddress: bigint,
+    fallbackOwnerName: string,
+    logContext: "spawn" | "explorer update",
+  ): string {
+    let ownerName = fallbackOwnerName;
+
+    if (this.components?.AddressName) {
+      const addressName = getComponentValue(this.components.AddressName, getEntityIdFromKeys([ownerAddress]));
+
+      if (addressName?.name) {
+        try {
+          ownerName = shortString.decodeShortString(addressName.name.toString());
+        } catch (error) {
+          console.warn(
+            `[ArmyManager] Failed to decode owner name during ${logContext} for army ${armyEntityId}:`,
+            error,
+          );
+        }
+      }
+    }
+
+    if (!ownerName || ownerName.length === 0) {
+      ownerName = `0x${ownerAddress.toString(16)}`;
+    }
+
+    return ownerName;
   }
 
   async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
@@ -1592,130 +1661,57 @@ export class ArmyManager {
         : undefined,
     );
 
-    // Check for pending label updates and apply them if they exist
-    const pendingUpdate = this.pendingExplorerTroopsUpdate.get(params.entityId);
-    if (pendingUpdate) {
-      // Check if pending update is not too old (max 30 seconds)
-      const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
-
-      if (isPendingStale) {
-        this.pendingExplorerTroopsUpdate.delete(params.entityId);
-      } else {
-        finalOnChainStamina = pendingUpdate.onChainStamina;
-
-        // Apply any pending battle degrees data
-        if (pendingUpdate.attackedFromDegrees !== undefined) {
-          attackedFromDegrees = pendingUpdate.attackedFromDegrees;
-        }
-        if (pendingUpdate.attackedTowardDegrees !== undefined) {
-          attackTowardDegrees = pendingUpdate.attackedTowardDegrees;
-        }
-
-        // Calculate current stamina using the pending update data
-        const { currentArmiesTick } = getBlockTimestamp();
-        const updatedStamina = Number(
-          StaminaManager.getStamina(
-            {
-              category: params.category,
-              tier: params.tier,
-              count: BigInt(pendingUpdate.troopCount),
-              stamina: {
-                amount: BigInt(pendingUpdate.onChainStamina.amount),
-                updated_tick: BigInt(pendingUpdate.onChainStamina.updatedTick),
-              },
-              // todo: add boosts
-              boosts: {
-                incr_stamina_regen_percent_num: 0,
-                incr_stamina_regen_tick_count: 0,
-                incr_explore_reward_percent_num: 0,
-                incr_explore_reward_end_tick: 0,
-                incr_damage_dealt_percent_num: 0,
-                incr_damage_dealt_end_tick: 0,
-                decr_damage_gotten_percent_num: 0,
-                decr_damage_gotten_end_tick: 0,
-              },
-              battle_cooldown_end: 0,
-            },
-            currentArmiesTick,
-          ).amount,
-        );
-
-        // Use pending update data instead of initial data
-        finalTroopCount = pendingUpdate.troopCount;
-        finalCurrentStamina = updatedStamina;
-        finalOnChainStamina = pendingUpdate.onChainStamina;
-        const pendingOwner = resolveArmyOwnerState({
-          existingOwner: {
-            address: finalOwnerAddress,
-            ownerName: finalOwnerName,
-            guildName: finalGuildName,
-          },
-          incomingOwner: {
-            address: pendingUpdate.ownerAddress,
-            ownerName: pendingUpdate.ownerName,
-            guildName: finalGuildName,
-          },
-        });
-        finalOwnerAddress = pendingOwner.address;
-        finalOwnerName = pendingOwner.ownerName;
-        finalBattleCooldownEnd = pendingUpdate.battleCooldownEnd;
-        finalBattleTimerLeft = pendingUpdate.battleTimerLeft;
-        if (pendingUpdate.ownerStructureId !== undefined && pendingUpdate.ownerStructureId !== null) {
-          finalOwningStructureId = pendingUpdate.ownerStructureId;
-        }
-
-        // Clear the pending update
-        this.pendingExplorerTroopsUpdate.delete(params.entityId);
-      }
-    }
+    const pendingUpdate = takeFreshPendingExplorerTroopsUpdate(this.pendingExplorerTroopsUpdate, params.entityId);
+    const pendingSpawnState = resolvePendingArmySpawnState({
+      troopCount: finalTroopCount,
+      currentStamina: finalCurrentStamina,
+      onChainStamina: finalOnChainStamina,
+      owner: {
+        address: finalOwnerAddress,
+        ownerName: finalOwnerName,
+        guildName: finalGuildName,
+      },
+      owningStructureId: finalOwningStructureId,
+      category: params.category,
+      tier: params.tier,
+      battleCooldownEnd: finalBattleCooldownEnd,
+      battleTimerLeft: finalBattleTimerLeft,
+      attackedFromDegrees,
+      attackTowardDegrees,
+      pendingUpdate,
+      resolveCurrentStamina: ({ troopCount, onChainStamina, category, tier }) =>
+        this.calculateArmyCurrentStamina({
+          troopCount,
+          onChainStamina,
+          category,
+          tier,
+        }),
+    });
+    finalTroopCount = pendingSpawnState.troopCount;
+    finalCurrentStamina = pendingSpawnState.currentStamina;
+    finalOnChainStamina = pendingSpawnState.onChainStamina;
+    finalOwnerAddress = pendingSpawnState.owner.address;
+    finalOwnerName = pendingSpawnState.owner.ownerName;
+    finalOwningStructureId = pendingSpawnState.owningStructureId;
+    attackedFromDegrees = pendingSpawnState.attackedFromDegrees;
+    attackTowardDegrees = pendingSpawnState.attackTowardDegrees;
+    finalBattleCooldownEnd = pendingSpawnState.battleCooldownEnd;
+    finalBattleTimerLeft = pendingSpawnState.battleTimerLeft;
 
     const structureIdForOwner =
       finalOwningStructureId !== null && finalOwningStructureId !== undefined
         ? finalOwningStructureId
         : (params.owningStructureId ?? null);
 
-    if (structureIdForOwner !== null && this.components?.Structure) {
-      try {
-        const structureEntityId = getEntityIdFromKeys([BigInt(structureIdForOwner)]);
-        const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
-
-        if (liveStructure) {
-          const liveOwnerRaw = liveStructure.owner;
-          if (liveOwnerRaw !== undefined && liveOwnerRaw !== null) {
-            const normalizedOwnerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
-
-            finalOwnerAddress = normalizedOwnerAddress;
-
-            let resolvedOwnerName = finalOwnerName;
-            if (this.components.AddressName) {
-              const addressName = getComponentValue(
-                this.components.AddressName,
-                getEntityIdFromKeys([normalizedOwnerAddress]),
-              );
-
-              if (addressName?.name) {
-                try {
-                  resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
-                } catch (error) {
-                  console.warn(`[ArmyManager] Failed to decode owner name for army ${params.entityId}:`, error);
-                }
-              }
-            }
-
-            if (!resolvedOwnerName || resolvedOwnerName.length === 0) {
-              resolvedOwnerName = `0x${normalizedOwnerAddress.toString(16)}`;
-            }
-
-            finalOwnerName = resolvedOwnerName;
-          }
-        }
-      } catch (error) {
-        console.warn(
-          `[ArmyManager] Failed to resolve owner from Structure component for army ${params.entityId}:`,
-          error,
-        );
-      }
-    }
+    const resolvedOwnerFromStructure = this.resolveArmyOwnerFromStructure({
+      armyEntityId: params.entityId,
+      ownerStructureId: structureIdForOwner,
+      fallbackOwnerAddress: finalOwnerAddress ?? 0n,
+      fallbackOwnerName: finalOwnerName,
+      logContext: "spawn",
+    });
+    finalOwnerAddress = resolvedOwnerFromStructure.ownerAddress;
+    finalOwnerName = resolvedOwnerFromStructure.ownerName;
 
     finalOwningStructureId = structureIdForOwner ?? finalOwningStructureId;
 
@@ -2760,6 +2756,41 @@ ${
     `);
   }
 
+  private calculateArmyCurrentStamina(input: {
+    troopCount: number;
+    onChainStamina: { amount: bigint; updatedTick: number };
+    category: TroopType;
+    tier: TroopTier;
+  }): number {
+    const { currentArmiesTick } = getBlockTimestamp();
+
+    return Number(
+      StaminaManager.getStamina(
+        {
+          category: input.category,
+          tier: input.tier,
+          count: BigInt(input.troopCount),
+          stamina: {
+            amount: BigInt(input.onChainStamina.amount),
+            updated_tick: BigInt(input.onChainStamina.updatedTick),
+          },
+          boosts: {
+            incr_stamina_regen_percent_num: 0,
+            incr_stamina_regen_tick_count: 0,
+            incr_explore_reward_percent_num: 0,
+            incr_explore_reward_end_tick: 0,
+            incr_damage_dealt_percent_num: 0,
+            incr_damage_dealt_end_tick: 0,
+            decr_damage_gotten_percent_num: 0,
+            decr_damage_gotten_end_tick: 0,
+          },
+          battle_cooldown_end: 0,
+        },
+        currentArmiesTick,
+      ).amount,
+    );
+  }
+
   /**
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
@@ -2768,7 +2799,8 @@ ${
 
     // Update all army data in cache
     this.armies.forEach((army, entityId) => {
-      // Calculate current stamina using StaminaManager with the last known stamina values
+      // getBlockTimestamp may change during iteration; preserve existing behavior by
+      // keeping the loop-local tick for the refresh pass.
       const updatedStamina = Number(
         StaminaManager.getStamina(
           {
@@ -2884,32 +2916,17 @@ ${
 
     // If army doesn't exist yet, store the update as pending
     if (!army) {
-      const currentTime = Date.now();
-      const currentTick = update.onChainStamina.updatedTick;
-
-      // Check if we already have a pending update for this entity
-      const existingPending = this.pendingExplorerTroopsUpdate.get(update.entityId);
-
-      // Only store if this is newer than the existing pending update
-      if (!existingPending || currentTick >= existingPending.updateTick) {
-        // console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId} (tick: ${currentTick})`);
-        const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
-        this.pendingExplorerTroopsUpdate.set(update.entityId, {
-          troopCount: update.troopCount,
-          onChainStamina: update.onChainStamina,
-          ownerAddress: update.ownerAddress,
-          ownerName: update.ownerName,
-          timestamp: currentTime,
-          updateTick: currentTick,
-          ownerStructureId,
-          // Note: ExplorerTroopsSystemUpdate doesn't have battle degrees data
-          // Degrees would need to come from tile updates
-          attackedFromDegrees: undefined,
-          attackedTowardDegrees: undefined,
-          battleCooldownEnd: update.battleCooldownEnd,
-          battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
-        });
-      }
+      queuePendingExplorerTroopsUpdate({
+        pendingExplorerTroopsUpdate: this.pendingExplorerTroopsUpdate,
+        entityId: update.entityId,
+        troopCount: update.troopCount,
+        onChainStamina: update.onChainStamina,
+        ownerAddress: update.ownerAddress,
+        ownerName: update.ownerName,
+        ownerStructureId: (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null,
+        battleCooldownEnd: update.battleCooldownEnd,
+        updateTick: update.onChainStamina.updatedTick,
+      });
       return;
     }
 
@@ -2932,86 +2949,28 @@ ${
     // Update cached army data
     army.troopCount = update.troopCount;
 
-    // Calculate current stamina using StaminaManager
-    const { currentArmiesTick } = getBlockTimestamp();
-    army.currentStamina = Number(
-      StaminaManager.getStamina(
-        {
-          category: army.category,
-          tier: army.tier,
-          count: BigInt(update.troopCount),
-          stamina: {
-            amount: BigInt(update.onChainStamina.amount),
-            updated_tick: BigInt(update.onChainStamina.updatedTick),
-          },
-          boosts: {
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-          },
-          battle_cooldown_end: 0,
-        },
-        currentArmiesTick,
-      ).amount,
-    );
+    army.currentStamina = this.calculateArmyCurrentStamina({
+      troopCount: update.troopCount,
+      onChainStamina: update.onChainStamina,
+      category: army.category,
+      tier: army.tier,
+    });
 
     army.troopCount = update.troopCount;
 
-    let resolvedOwnerAddress =
-      typeof update.ownerAddress === "bigint" ? update.ownerAddress : BigInt(update.ownerAddress ?? 0);
-    let resolvedOwnerName = update.ownerName;
-
-    if (update.ownerStructureId !== null && update.ownerStructureId !== undefined && this.components?.Structure) {
-      try {
-        const structureEntityId = getEntityIdFromKeys([BigInt(update.ownerStructureId)]);
-        const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
-
-        if (liveStructure) {
-          const liveOwnerRaw = liveStructure.owner;
-          if (liveOwnerRaw !== undefined && liveOwnerRaw !== null) {
-            resolvedOwnerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
-
-            if (this.components.AddressName) {
-              const addressName = getComponentValue(
-                this.components.AddressName,
-                getEntityIdFromKeys([resolvedOwnerAddress]),
-              );
-
-              if (addressName?.name) {
-                try {
-                  resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
-                } catch (error) {
-                  console.warn(
-                    `[ArmyManager] Failed to decode owner name during explorer update for army ${update.entityId}:`,
-                    error,
-                  );
-                }
-              }
-            }
-
-            if (!resolvedOwnerName || resolvedOwnerName.length === 0) {
-              resolvedOwnerName = `0x${resolvedOwnerAddress.toString(16)}`;
-            }
-          }
-        }
-      } catch (error) {
-        console.warn(
-          `[ArmyManager] Failed to resolve owner from Structure component during explorer update for army ${update.entityId}:`,
-          error,
-        );
-      }
-    }
-
     const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
+    const resolvedOwnerFromStructure = this.resolveArmyOwnerFromStructure({
+      armyEntityId: update.entityId,
+      ownerStructureId,
+      fallbackOwnerAddress:
+        typeof update.ownerAddress === "bigint" ? update.ownerAddress : BigInt(update.ownerAddress ?? 0),
+      fallbackOwnerName: update.ownerName,
+      logContext: "explorer update",
+    });
     this.syncTrackedArmyOwnerState({
       entityId: update.entityId,
-      ownerAddress: resolvedOwnerAddress,
-      ownerName: resolvedOwnerName,
+      ownerAddress: resolvedOwnerFromStructure.ownerAddress,
+      ownerName: resolvedOwnerFromStructure.ownerName,
       guildName: army.owner.guildName,
       ownerStructureId,
     });
