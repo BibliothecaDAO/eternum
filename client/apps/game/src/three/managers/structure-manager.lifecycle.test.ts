@@ -38,7 +38,27 @@ vi.mock("@/three/utils/utils", () => ({
 
 vi.mock("@/ui/config", () => ({
   FELT_CENTER: () => 0,
+  IS_FLAT_MODE: false,
 }));
+
+vi.mock("@bibliothecadao/eternum", () => {
+  const eternumProxy = new Proxy(
+    {},
+    {
+      get: (_, key) => key,
+    },
+  );
+
+  return new Proxy(
+    {
+      StructureTileSystemUpdate: eternumProxy,
+    } as Record<string, unknown>,
+    {
+      get: (target, prop) => (prop in target ? target[prop as string] : eternumProxy),
+      has: () => true,
+    },
+  );
+});
 
 vi.mock("@bibliothecadao/types", () => {
   const enumProxy = new Proxy(
@@ -84,8 +104,11 @@ vi.mock("../cosmetics", () => ({
     hydrateFromBlitzComponent: vi.fn(),
   },
   resolveStructureCosmetic: vi.fn(() => ({
-    cosmeticId: "default",
-    registryEntry: undefined,
+    skin: {
+      cosmeticId: "default",
+      assetPaths: [],
+      isFallback: true,
+    },
     attachments: [],
   })),
   resolveStructureMountTransforms: vi.fn(() => []),
@@ -168,7 +191,7 @@ function createStructureManagerSubject() {
   subject.unsubscribeVisibility = unsubscribeVisibility;
   subject.hexagonScene = { removeCameraViewListener };
   subject.handleCameraViewChange = vi.fn();
-  subject.battleTimerInterval = setInterval(() => {}, 60_000);
+  subject.timedLabelInterval = setInterval(() => {}, 60_000);
   subject.pendingLabelUpdates = new Map([[1, { pending: true }]]);
   subject.entityIdLabels = new Map([
     [1, labelA],
@@ -220,7 +243,7 @@ function createStructureManagerSubject() {
   };
   subject.structureHexCoords = new Map([[1, new Set([1])]]);
   subject.chunkToStructures = new Map([["0,0", new Set([1])]]);
-  subject.structuresWithActiveBattleTimer = new Set([1]);
+  subject.structuresWithActiveTimedLabels = new Set([1]);
   subject.previousVisibleIds = new Set([1]);
   subject.pointsRenderers = {
     a: { dispose: disposePointsA },
@@ -261,7 +284,7 @@ function createOnUpdateSubject() {
   subject.pendingLabelUpdates = new Map();
   subject.components = undefined;
   subject.entityIdLabels = new Map();
-  subject.updateBattleTimerTracking = vi.fn();
+  subject.updateTimedLabelTracking = vi.fn();
   subject.isInCurrentChunk = vi.fn(() => false);
   subject.updateVisibleStructures = vi.fn();
   subject.structures = {
@@ -344,7 +367,7 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.unsubscribeVisibility).toHaveBeenCalledTimes(1);
     expect(fixture.removeCameraViewListener).toHaveBeenCalledTimes(1);
     expect(fixture.clearIntervalSpy).toHaveBeenCalledTimes(1);
-    expect(fixture.subject.battleTimerInterval).toBeNull();
+    expect(fixture.subject.timedLabelInterval).toBeNull();
     expect(fixture.subject.pendingLabelUpdates.size).toBe(0);
     expect(fixture.removeLabelFromGroup).toHaveBeenCalledTimes(2);
     expect(fixture.releaseLabel).toHaveBeenCalledTimes(2);
@@ -364,7 +387,7 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.subject.wonderEntityIdMaps.size).toBe(0);
     expect(fixture.subject.structureHexCoords.size).toBe(0);
     expect(fixture.subject.chunkToStructures.size).toBe(0);
-    expect(fixture.subject.structuresWithActiveBattleTimer.size).toBe(0);
+    expect(fixture.subject.structuresWithActiveTimedLabels.size).toBe(0);
     expect(fixture.subject.previousVisibleIds.size).toBe(0);
   });
 

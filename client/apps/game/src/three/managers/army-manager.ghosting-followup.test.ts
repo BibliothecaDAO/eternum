@@ -28,7 +28,7 @@ describe("army ghosting follow-up wiring", () => {
     const methodBody = src.slice(methodStart, methodStart + 1800);
     const loopPos = methodBody.indexOf("const army = this.visibleArmies[i]");
     const suppressedPos = methodBody.indexOf("this.suppressedArmies.has(army.entityId)");
-    const pointIconPos = methodBody.indexOf("renderer.setPoint(");
+    const pointIconPos = methodBody.indexOf("syncArmyPointIconState(");
 
     expect(loopPos).toBeGreaterThan(-1);
     expect(suppressedPos).toBeGreaterThan(-1);
