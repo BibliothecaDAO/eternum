@@ -11,6 +11,13 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useAccountStore } from "../store/use-account-store";
 import { useUIStore } from "../store/use-ui-store";
+import { resolveViewTransitionGuardDecision } from "./navigation-view-transition-guard";
+
+const VIEW_TOGGLE_NAVIGATION_COOLDOWN_MS = 500;
+let viewToggleGuardUntilMs = 0;
+let isViewToggleTransitionInFlight = false;
+
+type ViewScene = "map" | "hex" | "other";
 
 type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };
 
@@ -73,6 +80,21 @@ const toWorldMapPosition = (position: PositionLike): { col: number; row: number 
 
   return undefined;
 };
+
+const resolveViewSceneFromPath = (pathname: string): ViewScene => {
+  if (pathname.includes("/map")) {
+    return "map";
+  }
+  if (pathname.includes("/hex")) {
+    return "hex";
+  }
+  return "other";
+};
+
+const isWorldLocalScene = (scene: ViewScene): boolean => scene === "map" || scene === "hex";
+
+const isCrossSceneWorldLocalTransition = (fromScene: ViewScene, toScene: ViewScene): boolean =>
+  isWorldLocalScene(fromScene) && isWorldLocalScene(toScene) && fromScene !== toScene;
 
 const useNavigateToHexView = () => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -216,27 +238,53 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
     isMapView: boolean,
     options?: { spectator?: boolean },
   ) => {
-    const targetPosition = normalizeToPosition(positionInput);
-    const worldMapPosition = toWorldMapPosition(targetPosition);
-
-    try {
-      await ensureStructureSyncedCb(structureEntityId, targetPosition, worldMapPosition);
-    } catch (error) {
-      console.error("[useGoToStructure] Unexpected error while syncing structure", error);
-    }
-
-    setStructureEntityId(structureEntityId, {
-      spectator: options?.spectator ?? false,
-      worldMapPosition,
+    const fromScene = resolveViewSceneFromPath(window.location.pathname);
+    const toScene: ViewScene = isMapView ? "map" : "hex";
+    const transitionDecision = resolveViewTransitionGuardDecision({
+      nowMs: Date.now(),
+      guardUntilMs: viewToggleGuardUntilMs,
+      fromScene,
+      toScene,
+      cooldownMs: VIEW_TOGGLE_NAVIGATION_COOLDOWN_MS,
+      isTransitionInFlight: isViewToggleTransitionInFlight,
     });
 
-    updateSelectedHex(worldMapPosition);
-
-    if (isMapView) {
-      navigateToMapView(targetPosition);
+    viewToggleGuardUntilMs = transitionDecision.nextGuardUntilMs;
+    if (transitionDecision.shouldBlockTransition) {
       return;
     }
 
-    navigateToHexView(targetPosition);
+    const shouldReleaseTransitionLock = isCrossSceneWorldLocalTransition(fromScene, toScene);
+    if (shouldReleaseTransitionLock) {
+      isViewToggleTransitionInFlight = true;
+    }
+    try {
+      const targetPosition = normalizeToPosition(positionInput);
+      const worldMapPosition = toWorldMapPosition(targetPosition);
+
+      try {
+        await ensureStructureSyncedCb(structureEntityId, targetPosition, worldMapPosition);
+      } catch (error) {
+        console.error("[useGoToStructure] Unexpected error while syncing structure", error);
+      }
+
+      setStructureEntityId(structureEntityId, {
+        spectator: options?.spectator ?? false,
+        worldMapPosition,
+      });
+
+      updateSelectedHex(worldMapPosition);
+
+      if (isMapView) {
+        navigateToMapView(targetPosition);
+        return;
+      }
+
+      navigateToHexView(targetPosition);
+    } finally {
+      if (shouldReleaseTransitionLock) {
+        isViewToggleTransitionInFlight = false;
+      }
+    }
   };
 };

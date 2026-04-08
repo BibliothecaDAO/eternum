@@ -9,7 +9,14 @@ export const useQuery = () => {
 
   const handleUrlChange = useCallback(
     (url: string) => {
-      setLocation(url);
+      const normalizedTargetUrl = new URL(url, window.location.origin);
+      const targetLocation = `${normalizedTargetUrl.pathname}${normalizedTargetUrl.search}`;
+      const currentLocation = `${window.location.pathname}${window.location.search}`;
+      if (targetLocation === currentLocation) {
+        return;
+      }
+
+      setLocation(targetLocation);
       window.dispatchEvent(new Event("urlChanged"));
     },
     [setLocation],
