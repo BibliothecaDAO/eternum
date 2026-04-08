@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-08T02:12:11.789Z",
+  "updatedAt": "2026-04-08T03:36:17.973Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -87,6 +87,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-04-08T02:12:11.789Z"
       }
+    },
+    "bltz-blink-770": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-blink-770",
+      "path": "runs/mainnet/blitz/bltz-blink-770.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-blink-770/24116262782-1.json",
+      "status": "running",
+      "updatedAt": "2026-04-08T03:36:17.973Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-04-08T03:40:00.000Z",
+      "durationSeconds": 432000,
+      "artifacts": {}
     }
   }
 }
