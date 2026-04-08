@@ -57,6 +57,7 @@ import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
+import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
@@ -1240,65 +1241,7 @@ export class ArmyManager {
         (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
       );
       ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
-
-      let buffersDirty = false;
-
-      const desiredOrder = visibleArmies.map((army) => army.entityId);
-      const desiredIds = new Set(desiredOrder);
-      const toRemove = this.visibleArmyOrder
-        .filter((entityId) => !desiredIds.has(entityId))
-        .toSorted((a, b) => {
-          const aNum = this.toNumericId(a);
-          const bNum = this.toNumericId(b);
-          return aNum - bNum;
-        });
-
-      toRemove.forEach((entityId) => {
-        const removalResult = this.removeVisibleArmy(entityId);
-        if (removalResult !== null) {
-          buffersDirty = true;
-        }
-      });
-
-      visibleArmies
-        .filter((army) => !this.visibleArmyIndices.has(army.entityId))
-        .forEach((army) => {
-          const modelType = modelTypesByEntity.get(army.entityId);
-          if (!modelType) {
-            return;
-          }
-          this.addVisibleArmy(army, modelType);
-          buffersDirty = true;
-        });
-
-      if (options?.force) {
-        visibleArmies.forEach((army) => {
-          const slot = this.visibleArmyIndices.get(army.entityId);
-          const modelType = modelTypesByEntity.get(army.entityId);
-          if (slot !== undefined && modelType) {
-            // Re-resolve cosmetics on force refresh to pick up debug override changes
-            this.refreshArmyInstance(army, slot, modelType, true);
-            buffersDirty = true;
-          }
-        });
-      }
-
-      const visibleArmySet = new Set(this.visibleArmyOrder);
-      this.entityIdLabels.forEach((_, entityId) => {
-        if (!visibleArmySet.has(entityId)) {
-          this.removeEntityIdLabel(entityId);
-        }
-      });
-
-      this.setVisibleArmyOrder(desiredOrder.filter((id) => this.visibleArmyIndices.has(id)));
-      this.refreshVisibleArmyCollection();
-
-      this.syncVisibleArmyAttachments(this.visibleArmies);
-      this.updateArmyAttachmentTransforms();
-
-      if (buffersDirty) {
-        this.updateVisibleArmyBuffers();
-      }
+      this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
     } finally {
       this.isArmyChunkTransitioning = false;
       this.drainDeferredArmyQueue();
@@ -1363,6 +1306,36 @@ export class ArmyManager {
 
   private getChunkBounds(startRow: number, startCol: number) {
     return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
+  }
+
+  private reconcileVisibleArmies(
+    visibleArmies: ArmyData[],
+    modelTypesByEntity: Map<ID, ModelType>,
+    forceRefresh?: boolean,
+  ): void {
+    reconcileVisibleArmySet({
+      desiredVisibleArmies: visibleArmies,
+      modelTypesByEntity,
+      forceRefresh,
+      currentVisibleOrder: this.visibleArmyOrder,
+      forEachTrackedLabel: (visit) => {
+        this.entityIdLabels.forEach((_, entityId) => visit(entityId));
+      },
+      getVisibleArmySlot: (entityId) => this.visibleArmyIndices.get(entityId),
+      removeVisibleArmy: (entityId) => this.removeVisibleArmy(entityId),
+      addVisibleArmy: (army, modelType) => this.addVisibleArmy(army, modelType),
+      refreshVisibleArmy: (army, slot, modelType) => {
+        // Re-resolve cosmetics on force refresh to pick up debug override changes.
+        this.refreshArmyInstance(army, slot, modelType, true);
+      },
+      removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
+      commitVisibleArmyOrder: (entityIds) => this.setVisibleArmyOrder(entityIds),
+      refreshVisibleArmyCollection: () => this.refreshVisibleArmyCollection(),
+      syncVisibleArmyAttachments: () => this.syncVisibleArmyAttachments(this.visibleArmies),
+      updateArmyAttachmentTransforms: () => this.updateArmyAttachmentTransforms(),
+      flushVisibleArmyBuffers: () => this.updateVisibleArmyBuffers(),
+      sortEntityIds: (entityIds) => entityIds.toSorted((a, b) => this.toNumericId(a) - this.toNumericId(b)),
+    });
   }
 
   private updateSpatialIndex(entityId: ID, oldHex: Position | undefined, newHex: Position) {
