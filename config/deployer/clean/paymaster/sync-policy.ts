@@ -32,9 +32,10 @@ export interface SyncPaymasterPolicyOptions {
   gameName: string;
   paymasterName?: string;
   dryRun?: boolean;
+  autoConfirm?: boolean;
   cartridgeApiBase?: string;
   vrfProviderAddress?: string;
-  applyPolicy?: (paymasterName: string, filePath: string) => void;
+  applyPolicy?: (paymasterName: string, filePath: string, autoConfirm?: boolean) => void;
 }
 
 export interface SyncPaymasterPolicyResult {
@@ -79,6 +80,10 @@ function resolvePaymasterName(options: SyncPaymasterPolicyOptions): string {
 
 function resolvePaymasterCartridgeApiBase(options: SyncPaymasterPolicyOptions): string {
   return options.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE;
+}
+
+function resolvePaymasterAutoConfirm(options: SyncPaymasterPolicyOptions): boolean {
+  return options.autoConfirm === true || process.env.CI === "true";
 }
 
 function resolvePaymasterManifestPath(chain: Chain): string {
@@ -179,10 +184,15 @@ function writePaymasterActionsFile(chain: Chain, gameName: string, actions: Paym
   return outputPath;
 }
 
-function runSlotPaymasterPolicyCommand(paymasterName: string, filePath: string): SpawnSyncReturns<string> {
+function runSlotPaymasterPolicyCommand(
+  paymasterName: string,
+  filePath: string,
+  autoConfirm = false,
+): SpawnSyncReturns<string> {
   return spawnSync("slot", ["paymaster", paymasterName, "policy", "add-from-json", "--file", filePath], {
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+    input: autoConfirm ? "y\n" : undefined,
+    stdio: autoConfirm ? ["pipe", "pipe", "pipe"] : ["ignore", "pipe", "pipe"],
     maxBuffer: SLOT_COMMAND_MAX_BUFFER_BYTES,
   });
 }
@@ -218,8 +228,8 @@ function buildSlotCommandFailureMessage(result: SpawnSyncReturns<string>): strin
   return `slot command failed with exit code ${exitCode}: ${output}`;
 }
 
-function executeSlotPaymasterPolicyUpdate(paymasterName: string, filePath: string): void {
-  const result = runSlotPaymasterPolicyCommand(paymasterName, filePath);
+function executeSlotPaymasterPolicyUpdate(paymasterName: string, filePath: string, autoConfirm = false): void {
+  const result = runSlotPaymasterPolicyCommand(paymasterName, filePath, autoConfirm);
 
   if (result.error) {
     throw new Error(`Failed to execute slot CLI: ${result.error.message}`);
@@ -237,6 +247,7 @@ export async function syncPaymasterPolicy(options: SyncPaymasterPolicyOptions): 
   const chain = resolveSupportedChain(options.chain);
   const paymasterName = resolvePaymasterName(options);
   const dryRun = options.dryRun === true;
+  const autoConfirm = resolvePaymasterAutoConfirm(options);
   const manifest = await loadPatchedPaymasterManifest(options, chain);
   const actions = buildPaymasterActions(manifest, resolvePaymasterVrfProviderAddress(options, chain));
 
@@ -247,7 +258,7 @@ export async function syncPaymasterPolicy(options: SyncPaymasterPolicyOptions): 
   const outputPath = writePaymasterActionsFile(chain, options.gameName, actions);
 
   if (!dryRun) {
-    (options.applyPolicy || executeSlotPaymasterPolicyUpdate)(paymasterName, outputPath);
+    (options.applyPolicy || executeSlotPaymasterPolicyUpdate)(paymasterName, outputPath, autoConfirm);
   }
 
   return {
