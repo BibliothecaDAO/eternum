@@ -156,6 +156,7 @@ import {
 import { hydrateWorldmapChunkRuntime } from "./worldmap-chunk-hydration-runtime";
 import { handleWorldmapChunkFinalizeResult } from "./worldmap-chunk-finalize-runtime";
 import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
+import { catchUpCommittedWorldmapChunkManagers } from "./worldmap-committed-chunk-manager-catchup";
 import {
   recordWorldmapChunkMemoryDelta,
   resolveWorldmapChunkSwitchAnchorState,
@@ -4308,6 +4309,22 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private deferRemainingManagerCatchUpForChunk(
+    chunkKey: string,
+    options?: {
+      force?: boolean;
+      transitionToken?: number;
+    },
+  ): void {
+    this.deferManagerCatchUpForChunk(chunkKey, {
+      ...options,
+      // Structure presentation already caught up to the committed chunk. Let the
+      // deferred fanout refresh the remaining managers without forcing structure
+      // through the same rebuild again.
+      force: false,
+    });
+  }
+
   private drainPostCommitManagerCatchUpQueue(): void {
     void drainWorldmapPostCommitManagerCatchUpQueue({
       budgetBytes: this.postCommitManagerCatchUpBudgetBytes,
@@ -6603,12 +6620,13 @@ export default class WorldmapScene extends WarpTravel {
         updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
           this.updateCurrentChunkBounds(targetStartRow, targetStartCol),
         scheduleManagerCatchUp: (targetChunkKey, managerOptions) => {
-          if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
-            this.deferManagerCatchUpForChunk(targetChunkKey, managerOptions);
-            return;
-          }
-
-          managerCatchUpPromise = this.updateManagersForChunk(targetChunkKey, managerOptions);
+          managerCatchUpPromise = catchUpCommittedWorldmapChunkManagers({
+            stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
+            runImmediateFullManagerCatchUp: () => this.updateManagersForChunk(targetChunkKey, managerOptions),
+            runImmediateStructureCatchUp: () => this.updateStructureManagerForChunk(targetChunkKey, managerOptions),
+            scheduleDeferredRemainingManagerCatchUp: () =>
+              this.deferRemainingManagerCatchUpForChunk(targetChunkKey, managerOptions),
+          });
         },
         unregisterPreviousChunkOnNextFrame: (targetChunkKey) => this.queueChunkVisibilityUnregister(targetChunkKey),
       });
@@ -6834,6 +6852,20 @@ export default class WorldmapScene extends WarpTravel {
         },
         pendingFetches: this.pendingChunks.size,
       });
+    }
+  }
+
+  private async updateStructureManagerForChunk(
+    chunkKey: string,
+    options?: { force?: boolean; transitionToken?: number },
+  ) {
+    try {
+      await this.structureManager.updateChunk(chunkKey, options);
+    } catch (reason) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
+      console.error(`[CHUNK SYNC] structure manager failed for chunk ${chunkKey}`, reason);
+    } finally {
+      setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
     }
   }
 
