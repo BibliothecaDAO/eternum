@@ -66,6 +66,13 @@ import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
+import {
+  clearArmyPointHoverState,
+  removeArmyPointIconState,
+  resolveArmyPointRendererKey,
+  setArmyPointHoverState,
+  syncArmyPointIconState,
+} from "./army-point-visuals";
 import { createArmyRecord } from "./army-record";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
@@ -1115,37 +1122,20 @@ export class ArmyManager {
   }
 
   private updateArmyPointIcon(army: ArmyData, position: Vector3): void {
-    if (!this.pointsRenderers) {
-      return;
-    }
-
     const iconPosition = this.tempIconPosition.copy(position);
     iconPosition.y += 2.1; // Match CSS2D label height
-    const renderer = army.isDaydreamsAgent
-      ? this.pointsRenderers.agent
-      : army.isMine
-        ? this.pointsRenderers.player
-        : this.pointsRenderers.enemy;
-    renderer.setPoint({
+    syncArmyPointIconState({
+      renderers: this.pointsRenderers,
+      rendererKey: resolveArmyPointRendererKey(army),
       entityId: army.entityId,
       position: iconPosition,
     });
   }
 
   private removeArmyPointIcon(entityId: ID): void {
-    if (!this.pointsRenderers) {
-      return;
-    }
-
-    [
-      this.pointsRenderers.player,
-      this.pointsRenderers.enemy,
-      this.pointsRenderers.ally,
-      this.pointsRenderers.agent,
-    ].forEach((renderer) => {
-      if (renderer.hasPoint(entityId)) {
-        renderer.removePoint(entityId);
-      }
+    removeArmyPointIconState({
+      renderers: this.pointsRenderers,
+      entityId,
     });
   }
 
@@ -2191,12 +2181,9 @@ export class ArmyManager {
         const iconPosition = this.tempIconPosition.copy(instanceData.position);
         iconPosition.y += 2.1; // Match CSS2D label height
 
-        const renderer = army.isDaydreamsAgent
-          ? this.pointsRenderers!.agent
-          : army.isMine
-            ? this.pointsRenderers!.player
-            : this.pointsRenderers!.enemy;
-        renderer.setPoint({
+        syncArmyPointIconState({
+          renderers: this.pointsRenderers,
+          rendererKey: resolveArmyPointRendererKey(army),
           entityId: army.entityId,
           position: iconPosition,
         });
@@ -2414,45 +2401,18 @@ export class ArmyManager {
       label.position.copy(position);
       label.position.y += 1.5;
       this.updateArmyLabelData(entityId, army, label);
-
-      // Highlight point icon on hover
-      if (this.pointsRenderers) {
-        const renderer = army.isDaydreamsAgent
-          ? this.pointsRenderers.agent
-          : army.isMine
-            ? this.pointsRenderers.player
-            : this.pointsRenderers.enemy;
-        renderer.setHover(entityId);
-      }
+      this.highlightArmyPointHover(entityId, army);
       return;
     }
 
     this.addEntityIdLabel(army, position);
-
-    // Highlight point icon on hover
-    if (this.pointsRenderers) {
-      const renderer = army.isDaydreamsAgent
-        ? this.pointsRenderers.agent
-        : army.isMine
-          ? this.pointsRenderers.player
-          : this.pointsRenderers.enemy;
-      renderer.setHover(entityId);
-    }
+    this.highlightArmyPointHover(entityId, army);
     this.frustumVisibilityDirty = true;
   }
 
   public hideLabel(entityId: ID): void {
     this.removeEntityIdLabel(entityId);
-
-    // Remove hover highlight from point icon
-    if (this.pointsRenderers) {
-      [
-        this.pointsRenderers.player,
-        this.pointsRenderers.enemy,
-        this.pointsRenderers.ally,
-        this.pointsRenderers.agent,
-      ].forEach((renderer) => renderer.clearHover());
-    }
+    this.clearArmyPointHoverIcons();
     this.frustumVisibilityDirty = true;
   }
 
@@ -2483,17 +2443,18 @@ export class ArmyManager {
     }
   }
 
-  private clearArmyPointHoverIcons() {
-    if (!this.pointsRenderers) {
-      return;
-    }
+  private highlightArmyPointHover(entityId: ID, army: Pick<ArmyData, "isDaydreamsAgent" | "isMine">): void {
+    setArmyPointHoverState({
+      renderers: this.pointsRenderers,
+      rendererKey: resolveArmyPointRendererKey(army),
+      entityId,
+    });
+  }
 
-    [
-      this.pointsRenderers.player,
-      this.pointsRenderers.enemy,
-      this.pointsRenderers.ally,
-      this.pointsRenderers.agent,
-    ].forEach((renderer) => renderer.clearHover());
+  private clearArmyPointHoverIcons() {
+    clearArmyPointHoverState({
+      renderers: this.pointsRenderers,
+    });
   }
 
   removeLabelsFromScene() {
