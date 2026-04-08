@@ -58,11 +58,13 @@ import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
+import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
+import { createArmyRecord } from "./army-record";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
@@ -1029,26 +1031,44 @@ export class ArmyManager {
     const updatedArmy = { ...army, matrixIndex: slot };
     this.armies.set(army.entityId, updatedArmy);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
+    this.syncArmyAuxiliaryPresentation(updatedArmy, position, modelType, isSuppressed);
+  }
 
+  private syncArmyAuxiliaryPresentation(
+    army: ArmyData,
+    position: Vector3,
+    modelType: ModelType,
+    isSuppressed: boolean,
+  ) {
     if (isSuppressed) {
       this.hideSuppressedArmyAuxiliaryVisuals(army.entityId);
       return;
     }
 
-    // Update player indicator dot above unit
+    this.syncArmyIndicatorPresentation(army, position, modelType);
+    this.recordLastKnownHexFromWorld(army.entityId, position);
+    this.syncArmyLabelPresentation(army, position);
+    this.syncArmyPointPresentation(army, position);
+  }
+
+  private syncArmyIndicatorPresentation(army: ArmyData, position: Vector3, modelType: ModelType) {
     const indicatorYOffset = getIndicatorYOffset(modelType);
-    this.indicatorMetadataCache.set(army.entityId, indicatorYOffset); // Cache for movement updates
+    this.indicatorMetadataCache.set(army.entityId, indicatorYOffset);
     this.tempColor.set(army.color);
     this.playerIndicatorManager.updateIndicator(army.entityId, position, this.tempColor, indicatorYOffset);
+  }
 
-    this.recordLastKnownHexFromWorld(army.entityId, position);
-
+  private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
     const activeLabel = this.entityIdLabels.get(army.entityId);
-    if (activeLabel) {
-      activeLabel.position.copy(position);
-      activeLabel.position.y += 1.5;
+    if (!activeLabel) {
+      return;
     }
 
+    activeLabel.position.copy(position);
+    activeLabel.position.y += 1.5;
+  }
+
+  private syncArmyPointPresentation(army: ArmyData, position: Vector3) {
     this.updateArmyPointIcon(army, position);
   }
 
@@ -1718,35 +1738,38 @@ export class ArmyManager {
       owner: { address: finalOwnerAddress || 0n },
     });
 
-    this.armies.set(params.entityId, {
-      entityId: params.entityId,
-      hexCoords: params.hexCoords,
-      isMine,
-      owningStructureId: finalOwningStructureId,
-      owner: {
-        address: finalOwnerAddress || 0n,
-        ownerName: finalOwnerName,
-        guildName: finalGuildName,
-      },
-      cosmeticId: cosmetic.skin.cosmeticId,
-      cosmeticAssetPaths,
-      usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
-      attachments: cosmetic.attachments,
-      color,
-      category: params.category,
-      tier: params.tier,
-      isDaydreamsAgent: params.isDaydreamsAgent,
-      // Enhanced data
-      troopCount: finalTroopCount,
-      currentStamina: finalCurrentStamina,
-      maxStamina: finalMaxStamina,
-      // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
-      onChainStamina: finalOnChainStamina,
-      attackedFromDegrees: attackedFromDegrees ?? undefined,
-      attackedTowardDegrees: attackTowardDegrees ?? undefined,
-      battleCooldownEnd: finalBattleCooldownEnd,
-      battleTimerLeft: finalBattleTimerLeft,
-    });
+    this.armies.set(
+      params.entityId,
+      createArmyRecord({
+        entityId: params.entityId,
+        hexCoords: params.hexCoords,
+        isMine,
+        owningStructureId: finalOwningStructureId,
+        owner: {
+          address: finalOwnerAddress || 0n,
+          ownerName: finalOwnerName,
+          guildName: finalGuildName,
+        },
+        cosmeticId: cosmetic.skin.cosmeticId,
+        cosmeticAssetPaths,
+        usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
+        attachments: cosmetic.attachments,
+        color,
+        category: params.category,
+        tier: params.tier,
+        isDaydreamsAgent: params.isDaydreamsAgent,
+        // Enhanced data
+        troopCount: finalTroopCount,
+        currentStamina: finalCurrentStamina,
+        maxStamina: finalMaxStamina,
+        // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
+        onChainStamina: finalOnChainStamina,
+        attackedFromDegrees: attackedFromDegrees ?? undefined,
+        attackedTowardDegrees: attackTowardDegrees ?? undefined,
+        battleCooldownEnd: finalBattleCooldownEnd,
+        battleTimerLeft: finalBattleTimerLeft,
+      }),
+    );
 
     this.updateSpatialIndex(params.entityId, undefined, params.hexCoords);
 
@@ -2012,30 +2035,14 @@ export class ArmyManager {
   }
 
   public refreshCosmeticsForOwner(owner: string | bigint): void {
-    const normalizedOwner =
-      typeof owner === "bigint"
-        ? `0x${owner.toString(16)}`
-        : owner.toLowerCase().startsWith("0x")
-          ? owner.toLowerCase()
-          : owner;
-
-    this.armies.forEach((army, entityId) => {
-      const armyOwner = `0x${army.owner.address.toString(16)}`;
-      if (armyOwner !== normalizedOwner) {
-        return;
-      }
-
-      const slot = this.visibleArmyIndices.get(entityId);
-      if (slot === undefined) {
-        return;
-      }
-
-      const assignedModelType = this.armyModel.getAssignedModelType(this.toNumericId(entityId));
-      if (!assignedModelType) {
-        return;
-      }
-
-      this.refreshArmyInstance(army, slot, assignedModelType, true);
+    refreshVisibleArmyCosmeticsByOwner({
+      owner,
+      armies: this.armies,
+      visibleArmyIndices: this.visibleArmyIndices,
+      getAssignedModelType: (entityId) => this.armyModel.getAssignedModelType(entityId),
+      toNumericId: (entityId) => this.toNumericId(entityId),
+      refreshArmyInstance: (army, slot, assignedModelType, reResolveCosmetics) =>
+        this.refreshArmyInstance(army, slot, assignedModelType, reResolveCosmetics),
     });
   }
 

@@ -13,6 +13,12 @@ describe("army manager cosmetics refresh wiring", () => {
     const source = readArmyManagerSource();
 
     expect(source).toMatch(/public\s+refreshCosmeticsForOwner\s*\(\s*owner:\s*string\s*\|\s*bigint\s*\)/);
-    expect(source).toMatch(/this\.refreshArmyInstance\s*\(\s*army,\s*slot,\s*assignedModelType,\s*true\s*\)/);
+    expect(source).toMatch(/refreshVisibleArmyCosmeticsByOwner\(/);
+  });
+
+  it("builds army records through a named helper instead of an inline object literal", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/createArmyRecord\(/);
   });
 });

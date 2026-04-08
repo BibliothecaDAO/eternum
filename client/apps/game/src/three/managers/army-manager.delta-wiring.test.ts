@@ -42,4 +42,13 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).toMatch(/resolveArmyPresentationPosition\(/);
     expect(source).toMatch(/resolveArmyCosmeticPresentation\(/);
   });
+
+  it("routes auxiliary presentation through dedicated sync helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyAuxiliaryPresentation\(/);
+    expect(source).toMatch(/syncArmyIndicatorPresentation\(/);
+    expect(source).toMatch(/syncArmyLabelPresentation\(/);
+    expect(source).toMatch(/syncArmyPointPresentation\(/);
+  });
 });
