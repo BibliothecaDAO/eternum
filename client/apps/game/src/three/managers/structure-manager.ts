@@ -64,6 +64,12 @@ import { finalizeVisibleStructureModelPass } from "./structure-visible-pass-fina
 import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
 import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
 import {
+  buildStructureLabelDataKey,
+  resolveStructureIncomingTroopArrivals,
+  resolveTimedStructureLabelState,
+  shouldTrackTimedStructureLabel,
+} from "./structure-label-state";
+import {
   resolveStructureTileUpdateRecord,
   takeFreshPendingLabelUpdate,
   type PendingLabelUpdate,
@@ -102,24 +108,6 @@ const normalizeEntityId = (entityId: ID | bigint | string | undefined | null): I
 
   return entityId;
 };
-
-const serializeIncomingTroopArrivals = (incomingTroopArrivals?: IncomingTroopArrival[]): string =>
-  incomingTroopArrivals
-    ?.map((arrival) => `${arrival.resourceId}:${arrival.troopTier}:${arrival.count}:${arrival.arrivesAt.toString()}`)
-    .join(",") ?? "";
-
-const filterPendingIncomingTroopArrivals = (
-  incomingTroopArrivals: IncomingTroopArrival[] | undefined,
-  nowSeconds: number,
-): IncomingTroopArrival[] => (incomingTroopArrivals ?? []).filter((arrival) => Number(arrival.arrivesAt) > nowSeconds);
-
-const buildIncomingTroopKey = (incomingTroopArrivals: IncomingTroopArrival[] | undefined, nowSeconds: number): string =>
-  filterPendingIncomingTroopArrivals(incomingTroopArrivals, nowSeconds)
-    .map(
-      (arrival) =>
-        `${arrival.resourceId}:${arrival.troopTier}:${arrival.count}:${Math.max(0, Number(arrival.arrivesAt) - nowSeconds)}`,
-    )
-    .join(",");
 
 interface StructureInstanceBinding {
   modelIndex: number;
@@ -2134,26 +2122,38 @@ export class StructureManager {
 
     this.structures.getStructures().forEach((structuresByType) => {
       structuresByType.forEach((structure) => {
-        const nextIncomingTroopArrivals = filterPendingIncomingTroopArrivals(
+        this.syncIncomingTroopArrivalsForStructure(
+          structure,
           arrivalsByStructure[String(structure.entityId)],
           nowSeconds,
         );
-        const previousKey = serializeIncomingTroopArrivals(structure.incomingTroopArrivals);
-        const nextKey = serializeIncomingTroopArrivals(nextIncomingTroopArrivals);
-
-        if (previousKey !== nextKey) {
-          structure.incomingTroopArrivals =
-            nextIncomingTroopArrivals.length > 0 ? nextIncomingTroopArrivals : undefined;
-
-          const label = this.entityIdLabels.get(structure.entityId);
-          if (label) {
-            this.updateStructureLabelData(structure, label);
-          }
-        }
 
         this.updateTimedLabelTracking(structure.entityId, structure.battleCooldownEnd, structure.incomingTroopArrivals);
       });
     });
+  }
+
+  private syncIncomingTroopArrivalsForStructure(
+    structure: StructureInfo,
+    nextIncomingTroopArrivals: IncomingTroopArrival[] | undefined,
+    nowSeconds: number,
+  ) {
+    const arrivalUpdate = resolveStructureIncomingTroopArrivals({
+      currentIncomingTroopArrivals: structure.incomingTroopArrivals,
+      nextIncomingTroopArrivals,
+      nowSeconds,
+    });
+
+    if (!arrivalUpdate.changed) {
+      return;
+    }
+
+    structure.incomingTroopArrivals = arrivalUpdate.incomingTroopArrivals;
+
+    const label = this.entityIdLabels.get(structure.entityId);
+    if (label) {
+      this.updateStructureLabelData(structure, label);
+    }
   }
 
   /**
@@ -2165,11 +2165,8 @@ export class StructureManager {
     battleCooldownEnd: number | undefined,
     incomingTroopArrivals?: IncomingTroopArrival[],
   ): void {
-    const currentTimestamp = useChainTimeStore.getState().getNowSeconds();
-    const hasBattleTimer = battleCooldownEnd !== undefined && battleCooldownEnd > currentTimestamp;
-    const hasIncomingTroops = filterPendingIncomingTroopArrivals(incomingTroopArrivals, currentTimestamp).length > 0;
-
-    if (hasBattleTimer || hasIncomingTroops) {
+    const nowSeconds = useChainTimeStore.getState().getNowSeconds();
+    if (shouldTrackTimedStructureLabel({ battleCooldownEnd, incomingTroopArrivals, nowSeconds })) {
       this.structuresWithActiveTimedLabels.add(entityId);
       return;
     }
@@ -2201,20 +2198,21 @@ export class StructureManager {
         continue;
       }
 
-      const newBattleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
-      const nextIncomingTroopArrivals = filterPendingIncomingTroopArrivals(structure.incomingTroopArrivals, nowSeconds);
-      if (structure.battleTimerLeft !== newBattleTimerLeft) {
-        structure.battleTimerLeft = newBattleTimerLeft;
+      const timedLabelState = resolveTimedStructureLabelState({
+        battleCooldownEnd: structure.battleCooldownEnd,
+        incomingTroopArrivals: structure.incomingTroopArrivals,
+        nowSeconds,
+      });
+
+      if (structure.battleTimerLeft !== timedLabelState.battleTimerLeft) {
+        structure.battleTimerLeft = timedLabelState.battleTimerLeft;
       }
 
-      if (
-        serializeIncomingTroopArrivals(structure.incomingTroopArrivals) !==
-        serializeIncomingTroopArrivals(nextIncomingTroopArrivals)
-      ) {
-        structure.incomingTroopArrivals = nextIncomingTroopArrivals.length > 0 ? nextIncomingTroopArrivals : undefined;
+      if (structure.incomingTroopArrivals !== timedLabelState.incomingTroopArrivals) {
+        structure.incomingTroopArrivals = timedLabelState.incomingTroopArrivals;
       }
 
-      if (newBattleTimerLeft === undefined && nextIncomingTroopArrivals.length === 0) {
+      if (!timedLabelState.isActive) {
         inactiveTimedLabels.push(entityId);
       }
 
@@ -2233,42 +2231,17 @@ export class StructureManager {
    * Update a structure label with fresh data
    */
   private updateStructureLabelData(structure: StructureInfo, existingLabel: CSS2DObject): void {
-    // Build a data key from fields that affect label appearance
-    const guardKey =
-      structure.guardArmies?.map((g) => `${g.slot}:${g.category ?? ""}:${g.tier}:${g.count}`).join(",") ?? "";
-    const productionKey =
-      structure.activeProductions?.map((p) => `${p.buildingType}:${p.buildingCount}`).join(",") ?? "";
-    const incomingTroopKey = buildIncomingTroopKey(
-      structure.incomingTroopArrivals,
-      useChainTimeStore.getState().getNowSeconds(),
-    );
-    const dataKey = [
-      structure.isMine,
-      structure.owner?.ownerName ?? "",
-      guardKey,
-      structure.battleTimerLeft ?? 0,
-      structure.attackedFromDegrees ?? "",
-      structure.attackedTowardDegrees ?? "",
-      productionKey,
-      incomingTroopKey,
-      structure.level,
-      structure.stage,
-    ].join("|");
-
-    // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
-    // Only skip if label is currently visible - culled labels need update when shown
+    const dataKey = buildStructureLabelDataKey(structure, useChainTimeStore.getState().getNowSeconds());
     const isVisible = this.labelsGroup.parent !== null && existingLabel.visible === true;
     if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }
 
-    // If label is culled, mark it dirty so it updates when becoming visible
     if (!isVisible) {
-      existingLabel.userData.lastDataKey = null; // Force update on next show
+      existingLabel.userData.lastDataKey = null;
       return;
     }
 
-    // Update the existing label content in-place with correct camera view
     existingLabel.userData.lastDataKey = dataKey;
     updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
   }
