@@ -70,11 +70,13 @@ import {
   shouldTrackTimedStructureLabel,
 } from "./structure-label-state";
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
+import { refreshStructureCosmeticsByOwner } from "./structure-cosmetics-refresh";
 import {
   mapPendingStructureGuardArmies,
   queuePendingBuildingLabelUpdate,
   queuePendingStructureLabelUpdate,
 } from "./structure-pending-label-updates";
+import { createStructureRecord } from "./structure-record";
 import {
   resolveStructureTileUpdateRecord,
   takeFreshPendingLabelUpdate,
@@ -1085,44 +1087,19 @@ export class StructureManager {
   }
 
   public refreshCosmeticsForOwner(owner: string | bigint): void {
-    const normalizedOwner =
-      typeof owner === "bigint"
-        ? `0x${owner.toString(16)}`
-        : owner.toLowerCase().startsWith("0x")
-          ? owner.toLowerCase()
-          : owner;
-
-    let shouldRefreshVisibleStructures = false;
-    const allStructures = this.structures.getStructures();
-
-    allStructures.forEach((structuresByHex) => {
-      structuresByHex.forEach((structure) => {
-        const structureOwner = `0x${structure.owner.address.toString(16)}`;
-        if (structureOwner !== normalizedOwner) {
-          return;
-        }
-
-        const enumName = StructureType[structure.structureType as unknown as keyof typeof StructureType];
-        const defaultModelKey = typeof enumName === "string" ? enumName : String(structure.structureType);
-        const cosmetic = resolveStructureCosmetic({
-          owner: structure.owner.address,
-          structureType: structure.structureType,
-          stage: structure.stage,
-          defaultModelKey,
-        });
-
-        structure.cosmeticId = cosmetic.skin.cosmeticId;
-        structure.cosmeticAssetPaths = cosmetic.skin.assetPaths;
-        structure.usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
-        structure.attachments = cosmetic.attachments;
-
-        if (this.isInCurrentChunk(structure.hexCoords)) {
-          shouldRefreshVisibleStructures = true;
-        }
-      });
-    });
-
-    if (shouldRefreshVisibleStructures) {
+    if (
+      refreshStructureCosmeticsByOwner({
+        owner,
+        structuresByType: this.structures.getStructures(),
+        resolveCosmetic: (structure) =>
+          this.resolveStructureCosmeticSelection({
+            owner: structure.owner.address,
+            structureType: structure.structureType,
+            stage: structure.stage,
+          }),
+        isVisible: (hexCoords) => this.isInCurrentChunk(hexCoords),
+      })
+    ) {
       void this.updateVisibleStructures();
     }
   }
@@ -2232,30 +2209,31 @@ class Structures {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures.get(structureType)!.set(normalizedEntityId, {
-      entityId: normalizedEntityId,
-      structureName,
-      hexCoords,
-      stage,
-      initialized,
-      level,
-      isMine: isAddressEqualToAccount(owner.address),
-      owner,
-      structureType,
-      hasWonder,
-      attachments,
-      isAlly,
-      // Enhanced data
-      guardArmies,
-      activeProductions,
-      incomingTroopArrivals,
-      hyperstructureRealmCount,
-      // Battle data
-      attackedFromDegrees,
-      attackedTowardDegrees,
-      battleCooldownEnd,
-      battleTimerLeft,
-    });
+    this.structures.get(structureType)!.set(
+      normalizedEntityId,
+      createStructureRecord({
+        entityId: normalizedEntityId,
+        structureName,
+        hexCoords,
+        stage,
+        initialized,
+        level,
+        owner,
+        structureType,
+        hasWonder,
+        attachments,
+        isAlly,
+        isAddressMine: (address) => isAddressEqualToAccount(address),
+        guardArmies,
+        activeProductions,
+        incomingTroopArrivals,
+        hyperstructureRealmCount,
+        attackedFromDegrees,
+        attackedTowardDegrees,
+        battleCooldownEnd,
+        battleTimerLeft,
+      }),
+    );
     this.entityIdIndex.set(normalizedEntityId, this.structures.get(structureType)!.get(normalizedEntityId)!);
   }
 
