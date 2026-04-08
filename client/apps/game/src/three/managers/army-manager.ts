@@ -61,6 +61,10 @@ import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
+import {
+  syncArmyIndicatorPresentationState,
+  syncMovingArmyIndicatorPresentationState,
+} from "./army-indicator-presentation";
 import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
@@ -82,7 +86,6 @@ import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
-import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import {
@@ -1061,10 +1064,16 @@ export class ArmyManager {
   }
 
   private syncArmyIndicatorPresentation(army: ArmyData, position: Vector3, modelType: ModelType) {
-    const indicatorYOffset = getIndicatorYOffset(modelType);
-    this.indicatorMetadataCache.set(army.entityId, indicatorYOffset);
-    this.tempColor.set(army.color);
-    this.playerIndicatorManager.updateIndicator(army.entityId, position, this.tempColor, indicatorYOffset);
+    syncArmyIndicatorPresentationState({
+      entityId: army.entityId,
+      color: army.color,
+      modelType,
+      position,
+      indicatorMetadataCache: this.indicatorMetadataCache,
+      setIndicatorColor: (color) => this.tempColor.set(color),
+      updateIndicator: ({ entityId, position: indicatorPosition, color, yOffset }) =>
+        this.playerIndicatorManager.updateIndicator(entityId, indicatorPosition, color, yOffset),
+    });
   }
 
   private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
@@ -2191,16 +2200,15 @@ export class ArmyManager {
 
       // 1b. Update indicator dot positions for moving armies
       if (instanceData?.isMoving && instanceData.position) {
-        // Use cached yOffset to avoid redundant lookups every frame
-        const indicatorYOffset = this.indicatorMetadataCache.get(army.entityId) ?? 2.5;
-
-        this.tempColor.set(army.color);
-        this.playerIndicatorManager.updateIndicator(
-          army.entityId,
-          instanceData.position,
-          this.tempColor,
-          indicatorYOffset,
-        );
+        syncMovingArmyIndicatorPresentationState({
+          entityId: army.entityId,
+          color: army.color,
+          position: instanceData.position,
+          indicatorMetadataCache: this.indicatorMetadataCache,
+          setIndicatorColor: (color) => this.tempColor.set(color),
+          updateIndicator: ({ entityId, position: indicatorPosition, color, yOffset }) =>
+            this.playerIndicatorManager.updateIndicator(entityId, indicatorPosition, color, yOffset),
+        });
       }
 
       // 2. Update attachment transforms
