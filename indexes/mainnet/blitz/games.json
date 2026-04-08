@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-07T23:29:22.654Z",
+  "updatedAt": "2026-04-08T00:01:08.794Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -53,7 +53,7 @@
       "path": "runs/mainnet/blitz/bltz-lilt-606.json",
       "inputPath": "inputs/mainnet/blitz/bltz-lilt-606/24108995204-1.json",
       "status": "complete",
-      "updatedAt": "2026-04-07T23:19:30.012Z",
+      "updatedAt": "2026-04-08T00:01:08.794Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -64,7 +64,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "basic",
-        "lastIndexerDescribeAt": "2026-04-07T23:19:17.933Z"
+        "lastIndexerDescribeAt": "2026-04-07T23:19:17.933Z",
+        "pendingIndexerTierTarget": "legendary",
+        "pendingIndexerTierRequestedAt": "2026-04-08T00:01:07.196Z"
       }
     },
     "bltz-clash-563": {
