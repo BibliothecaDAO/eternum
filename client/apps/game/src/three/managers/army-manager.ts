@@ -67,6 +67,11 @@ import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import {
+  bindManagerChunkRuntimeState,
+  type ManagerChunkUpdateOptions,
+  runManagerChunkUpdateRuntime,
+} from "./manager-chunk-runtime";
+import {
   isCommittedManagerChunk,
   MANAGER_UNCOMMITTED_CHUNK,
   shouldAcceptManagerChunkRequest,
@@ -202,14 +207,6 @@ export class ArmyManager {
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempWorldPosition: Vector3 = new Vector3();
   private readonly tempColor: Color = new Color();
-
-  private pruneTransitionChunkHistory(): void {
-    this.transitionChunkByToken.forEach((_, token) => {
-      if (token < this.latestTransitionToken) {
-        this.transitionChunkByToken.delete(token);
-      }
-    });
-  }
 
   constructor(
     scene: Scene,
@@ -732,89 +729,41 @@ export class ArmyManager {
     return true;
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+  async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
     if (this.isDestroyed) {
       return;
     }
-
-    const force = options?.force ?? false;
-    const transitionToken = options?.transitionToken;
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-    if (transitionToken !== undefined) {
-      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
-      this.transitionChunkByToken.set(transitionToken, chunkKey);
-      this.pruneTransitionChunkHistory();
-    }
-
-    await this.armyModel.loadPromise;
-
-    if (this.isDestroyed) {
-      return;
-    }
-
-    if (!force && this.currentChunkKey === chunkKey) {
-      return;
-    }
-
-    // Wait for any ongoing chunk switch to complete first
-    if (this.chunkSwitchPromise) {
-      // console.log(`[CHUNK SYNC] Waiting for previous chunk switch to complete before switching to ${chunkKey}`);
-      try {
-        await this.chunkSwitchPromise;
-      } catch (error) {
+    await runManagerChunkUpdateRuntime({
+      chunkKey,
+      executeChunkUpdate: (nextChunkKey, nextOptions) => this.renderVisibleArmies(nextChunkKey, nextOptions),
+      isDestroyed: () => this.isDestroyed,
+      onPreviousUpdateFailed: (error) => {
         console.warn(`Previous chunk switch failed:`, error);
-      }
-    }
+      },
+      options,
+      prepareForUpdate: () => this.armyModel.loadPromise,
+      shouldAcceptRequest: shouldAcceptManagerChunkRequest,
+      state: this.resolveChunkUpdateRuntimeState(),
+      waitForSettle: waitForVisualSettle,
+    });
+  }
 
-    if (this.isDestroyed) {
-      return;
-    }
-
-    // Check again if chunk key is still different (might have changed while waiting)
-    if (!force && this.currentChunkKey === chunkKey) {
-      return;
-    }
-
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-
-    const previousChunkKey = this.currentChunkKey;
-    const chunkChanged = previousChunkKey !== chunkKey;
-
-    if (chunkChanged) {
-      // console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
-      this.currentChunkKey = chunkKey;
-    }
-
-    // Create and track the chunk switch promise
-    const renderOptions = { force: force || chunkChanged, transitionToken };
-    this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey, renderOptions);
-
-    try {
-      await this.chunkSwitchPromise;
-      await waitForVisualSettle();
-    } finally {
-      this.chunkSwitchPromise = null;
-    }
+  private resolveChunkUpdateRuntimeState() {
+    return bindManagerChunkRuntimeState({
+      getCurrentChunk: () => this.currentChunkKey,
+      setCurrentChunk: (chunkKey) => {
+        this.currentChunkKey = chunkKey;
+      },
+      getInFlightPromise: () => this.chunkSwitchPromise,
+      setInFlightPromise: (promise) => {
+        this.chunkSwitchPromise = promise;
+      },
+      getLatestTransitionToken: () => this.latestTransitionToken,
+      setLatestTransitionToken: (transitionToken) => {
+        this.latestTransitionToken = transitionToken;
+      },
+      transitionChunkByToken: this.transitionChunkByToken,
+    });
   }
 
   private renderVisibleArmies(

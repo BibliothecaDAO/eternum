@@ -42,6 +42,11 @@ import { applyLabelTransitions, transitionManager } from "../utils/labels/label-
 import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { FXManager } from "./fx-manager";
 import {
+  bindManagerChunkRuntimeState,
+  type ManagerChunkUpdateOptions,
+  runManagerChunkUpdateRuntime,
+} from "./manager-chunk-runtime";
+import {
   createCoalescedAsyncUpdateRunner,
   isCommittedManagerChunk,
   MANAGER_UNCOMMITTED_CHUNK,
@@ -199,13 +204,6 @@ export class StructureManager {
   private previouslyActiveStructureModels: Set<InstancedModel> = new Set();
   private previouslyActiveCosmeticStructureModels: Set<InstancedModel> = new Set();
   private isDestroyed = false;
-  private pruneTransitionChunkHistory(): void {
-    this.transitionChunkByToken.forEach((_, token) => {
-      if (token < this.latestTransitionToken) {
-        this.transitionChunkByToken.delete(token);
-      }
-    });
-  }
 
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
@@ -1045,99 +1043,53 @@ export class StructureManager {
     return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+  async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
     if (this.isDestroyed) {
       return;
     }
+    await runManagerChunkUpdateRuntime({
+      chunkKey,
+      executeChunkUpdate: async (nextChunkKey, nextOptions) => {
+        if (
+          !shouldRunManagerChunkUpdate({
+            chunkKey: nextChunkKey,
+            currentChunk: this.currentChunk,
+            transitionToken: nextOptions?.transitionToken,
+            latestTransitionToken: this.latestTransitionToken,
+          })
+        ) {
+          return false;
+        }
 
-    const force = options?.force ?? false;
-    const transitionToken = options?.transitionToken;
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-    if (transitionToken !== undefined) {
-      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
-      this.transitionChunkByToken.set(transitionToken, chunkKey);
-      this.pruneTransitionChunkHistory();
-    }
-
-    if (!force && this.currentChunk === chunkKey) {
-      return;
-    }
-
-    // Wait for any ongoing chunk switch to complete first
-    if (this.chunkSwitchPromise) {
-      // console.log(
-      //   `[CHUNK SYNC] Waiting for previous structure chunk switch to complete before switching to ${chunkKey}`,
-      // );
-      try {
-        await this.chunkSwitchPromise;
-      } catch (error) {
+        await this.updateVisibleStructures();
+      },
+      isDestroyed: () => this.isDestroyed,
+      onPreviousUpdateFailed: (error) => {
         console.warn(`Previous structure chunk switch failed:`, error);
-      }
-    }
+      },
+      options,
+      shouldAcceptRequest: shouldAcceptManagerChunkRequest,
+      state: this.resolveChunkUpdateRuntimeState(),
+      waitForSettle: waitForVisualSettle,
+    });
+  }
 
-    if (this.isDestroyed) {
-      return;
-    }
-
-    // Check again if chunk key is still different (might have changed while waiting)
-    if (!force && this.currentChunk === chunkKey) {
-      return;
-    }
-
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-
-    const previousChunk = this.currentChunk;
-    const isSwitch = previousChunk !== chunkKey;
-    if (isSwitch) {
-      // console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
-      this.currentChunk = chunkKey;
-    } else if (force) {
-      // console.log(`[CHUNK SYNC] Refreshing structure chunk ${chunkKey}`);
-    }
-
-    // Create and track the chunk switch promise
-    this.chunkSwitchPromise = (async () => {
-      if (
-        !shouldRunManagerChunkUpdate({
-          chunkKey,
-          currentChunk: this.currentChunk,
-          transitionToken,
-          latestTransitionToken: this.latestTransitionToken,
-        })
-      ) {
-        return;
-      }
-
-      await this.updateVisibleStructures();
-      await waitForVisualSettle();
-    })();
-
-    try {
-      await this.chunkSwitchPromise;
-      // console.log(`[CHUNK SYNC] Structure chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
-    } finally {
-      this.chunkSwitchPromise = null;
-    }
+  private resolveChunkUpdateRuntimeState() {
+    return bindManagerChunkRuntimeState({
+      getCurrentChunk: () => this.currentChunk,
+      setCurrentChunk: (chunkKey) => {
+        this.currentChunk = chunkKey ?? MANAGER_UNCOMMITTED_CHUNK;
+      },
+      getInFlightPromise: () => this.chunkSwitchPromise,
+      setInFlightPromise: (promise) => {
+        this.chunkSwitchPromise = promise;
+      },
+      getLatestTransitionToken: () => this.latestTransitionToken,
+      setLatestTransitionToken: (transitionToken) => {
+        this.latestTransitionToken = transitionToken;
+      },
+      transitionChunkByToken: this.transitionChunkByToken,
+    });
   }
 
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
