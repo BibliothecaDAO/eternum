@@ -29,29 +29,45 @@
 }
 
 .boot-loader-contour-group-a {
-  animation: bootContourDriftA 26s ease-in-out infinite alternate;
+  animation: bootContourDriftA 28s ease-in-out infinite alternate;
 }
 
 .boot-loader-contour-group-b {
-  animation: bootContourDriftB 32s ease-in-out infinite alternate;
+  animation: bootContourDriftB 34s ease-in-out infinite alternate;
 }
 
 .boot-loader-contour-group-c {
-  animation: bootContourDriftC 38s ease-in-out infinite alternate;
+  animation: bootContourDriftC 40s ease-in-out infinite alternate;
+}
+
+.boot-loader-contour-group-d {
+  animation: bootContourDriftD 24s ease-in-out infinite alternate;
+}
+
+.boot-loader-contour-group-e {
+  animation: bootContourDriftE 36s ease-in-out infinite alternate;
 }
 
 .boot-loader-contour-line {
   fill: none;
   stroke: rgba(201, 169, 96, 0.85);
-  stroke-dasharray: 12 18 88 24;
+  stroke-dasharray: 8 14 64 20 32 12;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 1.6;
-  animation: bootContourFlow 24s linear infinite;
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 3px rgba(201, 169, 96, 0.12));
+  animation: bootContourFlow 32s linear infinite;
 }
 
 .boot-loader-contour-line-echo {
-  stroke-width: 1.1;
+  stroke-width: 0.8;
+  filter: none;
+}
+
+.boot-loader-contour-particle {
+  stroke-dasharray: 4 8 20 10;
+  animation: bootContourParticleFlow 18s linear infinite;
+  filter: drop-shadow(0 0 2px rgba(201, 169, 96, 0.08));
 }
 
 .boot-loader-bracket-symbol {
@@ -89,34 +105,61 @@
     stroke-dashoffset: 0;
   }
   100% {
-    stroke-dashoffset: -142;
+    stroke-dashoffset: -280;
+  }
+}
+
+@keyframes bootContourParticleFlow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -160;
   }
 }
 
 @keyframes bootContourDriftA {
   from {
-    transform: translate3d(-1.5%, -0.8%, 0) scale(1.02);
+    transform: translate3d(-2%, -1.2%, 0) scale(1.01);
   }
   to {
-    transform: translate3d(1.8%, 1.4%, 0) scale(1.06);
+    transform: translate3d(2.2%, 1.8%, 0) scale(1.06);
   }
 }
 
 @keyframes bootContourDriftB {
   from {
-    transform: translate3d(1.6%, -1.2%, 0) scale(1.04);
+    transform: translate3d(1.8%, -1.5%, 0) scale(1.04);
   }
   to {
-    transform: translate3d(-1.4%, 1.1%, 0) scale(1.02);
+    transform: translate3d(-1.6%, 1.3%, 0) scale(1.01);
   }
 }
 
 @keyframes bootContourDriftC {
   from {
-    transform: translate3d(-0.8%, 1.2%, 0) scale(1.03);
+    transform: translate3d(-1.2%, 1.5%, 0) scale(1.02);
   }
   to {
-    transform: translate3d(1.3%, -1.1%, 0) scale(1.05);
+    transform: translate3d(1.5%, -1.4%, 0) scale(1.06);
+  }
+}
+
+@keyframes bootContourDriftD {
+  from {
+    transform: translate3d(0.8%, -2%, 0) scale(1.03);
+  }
+  to {
+    transform: translate3d(-1.8%, 0.6%, 0) scale(1.05);
+  }
+}
+
+@keyframes bootContourDriftE {
+  from {
+    transform: translate3d(-1.6%, 0.4%, 0) scale(1.05);
+  }
+  to {
+    transform: translate3d(1.2%, -1.8%, 0) scale(1.02);
   }
 }
 
@@ -159,7 +202,10 @@
   .boot-loader-contour-group-a,
   .boot-loader-contour-group-b,
   .boot-loader-contour-group-c,
+  .boot-loader-contour-group-d,
+  .boot-loader-contour-group-e,
   .boot-loader-contour-line,
+  .boot-loader-contour-particle,
   .boot-loader-segment-indeterminate,
   .boot-loader-segment-lead {
     animation: none !important;

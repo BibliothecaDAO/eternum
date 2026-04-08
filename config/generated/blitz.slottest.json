@@ -37,8 +37,8 @@
     "11": "18446744073709551615"
   },
   "speed": {
-    "donkey": 9,
-    "army": 1
+    "donkey_for_resources": 9,
+    "donkey_for_troops": 27
   },
   "battle": {
     "regularImmunityTicks": 0,
@@ -949,7 +949,7 @@
       "amount": 500
     }
   ],
-  "discoverableVillageStartingResources": [
+  "campStartingResources": [
     {
       "resource": 35,
       "min_amount": 500,

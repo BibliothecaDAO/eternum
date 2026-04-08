@@ -144,7 +144,7 @@ export class GameConfigDeployer {
     await setVictoryPointsConfig(config);
     await this.sleepNonLocal();
 
-    await setDiscoverableVillageSpawnResourcesConfig(config);
+    await setCampStartingResourcesConfig(config);
     await this.sleepNonLocal();
 
     await setBlitzRegistrationConfig(config);
@@ -1720,32 +1720,32 @@ export const setVictoryPointsConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Victory points configured `) + chalk.gray(victoryPointsTx.statusReceipt) + "\n");
 };
 
-export const setDiscoverableVillageSpawnResourcesConfig = async (config: Config) => {
+export const setCampStartingResourcesConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
-  🏘️  Discoverable Village Spawn Resources Configuration
+  🏕️  Camp Starting Resources Configuration
   ═══════════════════════════`),
   );
 
   // log the resources
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Discoverable Village Spawn Resources")}
-    │  ${chalk.gray("Resources:")} ${chalk.white(config.config.discoverableVillageStartingResources.map((resource) => `${resource.resource}: ${resource.min_amount} - ${resource.max_amount}`).join(", "))}
+    ┌─ ${chalk.yellow("Camp Starting Resources")}
+    │  ${chalk.gray("Resources:")} ${chalk.white(config.config.campStartingResources.map((resource) => `${resource.resource}: ${resource.min_amount} - ${resource.max_amount}`).join(", "))}
     └────────────────────────────────`),
   );
 
-  const discoverableVillageSpawnResourcesTx = await config.provider.set_discoverable_village_starting_resources_config({
+  const campStartingResourcesTx = await config.provider.set_camp_starting_resources_config({
     signer: config.account,
-    resources: config.config.discoverableVillageStartingResources.map((resource) => ({
+    resources: config.config.campStartingResources.map((resource) => ({
       resource: resource.resource,
       min_amount: resource.min_amount * RESOURCE_PRECISION,
       max_amount: resource.max_amount * RESOURCE_PRECISION,
     })),
   });
   console.log(
-    chalk.green(`\n    ✔ Discoverable village spawn resources configured `) +
-      chalk.gray(discoverableVillageSpawnResourcesTx.statusReceipt) +
+    chalk.green(`\n    ✔ Camp starting resources configured `) +
+      chalk.gray(campStartingResourcesTx.statusReceipt) +
       "\n",
   );
 };

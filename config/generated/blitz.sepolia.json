@@ -37,8 +37,8 @@
     "11": "18446744073709551615"
   },
   "speed": {
-    "donkey": 9,
-    "army": 1
+    "donkey_for_resources": 9,
+    "donkey_for_troops": 27
   },
   "battle": {
     "regularImmunityTicks": 40,
@@ -949,7 +949,7 @@
       "amount": 500
     }
   ],
-  "discoverableVillageStartingResources": [
+  "campStartingResources": [
     {
       "resource": 35,
       "min_amount": 500,
@@ -1735,7 +1735,7 @@
     "lordsLiquidityPerResource": 0
   },
   "vrf": {
-    "vrfProviderAddress": "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f"
+    "vrfProviderAddress": "0x0"
   },
   "setup": {
     "chain": "sepolia",

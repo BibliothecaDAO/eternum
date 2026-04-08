@@ -8,17 +8,18 @@ function readWorldmapSource(): string {
   return readFileSync(resolve(currentDir, "worldmap.tsx"), "utf8");
 }
 
-function extractDrainMethod(source: string): string {
-  const start = source.indexOf("  private drainPostCommitManagerCatchUpQueue(): void {");
-  const end = source.indexOf("  private clearStreamingWorkState(): void {", start);
-  return source.slice(start, end);
+function readRuntimeSource(): string {
+  const currentDir = dirname(fileURLToPath(import.meta.url));
+  return readFileSync(resolve(currentDir, "worldmap-post-commit-manager-catchup-runtime.ts"), "utf8");
 }
 
 describe("worldmap manager drain throughput wiring", () => {
   it("uses the multi-task budgeted drain in the production post-commit path", () => {
-    const methodSource = extractDrainMethod(readWorldmapSource());
+    const worldmapSource = readWorldmapSource();
+    const runtimeSource = readRuntimeSource();
 
-    expect(methodSource).toMatch(/drainMultiBudgetedDeferredManagerCatchUpQueue\(/);
-    expect(methodSource).not.toMatch(/drainBudgetedDeferredManagerCatchUpQueue\(/);
+    expect(worldmapSource).toMatch(/drainWorldmapPostCommitManagerCatchUpQueue\(/);
+    expect(runtimeSource).toMatch(/drainMultiBudgetedDeferredManagerCatchUpQueue\(/);
+    expect(runtimeSource).not.toMatch(/drainBudgetedDeferredManagerCatchUpQueue\(/);
   });
 });

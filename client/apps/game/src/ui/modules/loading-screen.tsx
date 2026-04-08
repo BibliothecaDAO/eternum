@@ -12,8 +12,8 @@ interface LoadingScreenProps {
 export const LoadingScreen = ({
   prefetchPlayAssets: shouldPrefetch,
   progress,
-  title = "Charting the World",
-  subtitle = "Tracing the next route across the map.",
+  title = "Forging the Realm",
+  subtitle = "Summoning terrain, armies, and ancient trade routes.",
 }: LoadingScreenProps) => {
   useEffect(() => {
     setBootDocumentState("app-loading");
@@ -30,7 +30,7 @@ export const LoadingScreen = ({
       progress={progress}
       title={title}
       subtitle={subtitle}
-      caption="Boot Sequence"
+      caption="Initializing"
     />
   );
 };

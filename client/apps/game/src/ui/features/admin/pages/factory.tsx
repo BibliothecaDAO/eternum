@@ -11,8 +11,8 @@ import {
   setBattleConfig,
   setBlitzRegistrationConfig,
   setBuildingConfig,
+  setCampStartingResourcesConfig,
   setCapacityConfig,
-  setDiscoverableVillageSpawnResourcesConfig,
   setFactoryAddress as setFactoryAddressConfig,
   setGameModeConfig,
   setHyperstructureConfig,
@@ -2438,7 +2438,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                 await setFactoryAddressConfig(ctx);
                                                 await setMMRConfig(ctx);
                                                 await setVictoryPointsConfig(ctx);
-                                                await setDiscoverableVillageSpawnResourcesConfig(ctx);
+                                                await setCampStartingResourcesConfig(ctx);
                                                 await setBlitzRegistrationConfig(ctx);
                                                 await setAgentConfig(ctx);
                                                 await setVillageControllersConfig(ctx);

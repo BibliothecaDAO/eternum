@@ -11,8 +11,10 @@ function readSceneSource(relativePath: string): string {
 describe("worldmap post-commit budgeting wiring", () => {
   it("routes deferred manager catch-up through the budgeted post-commit queue", () => {
     const worldmapSource = readSceneSource("./worldmap.tsx");
+    const runtimeSource = readSceneSource("./worldmap-post-commit-manager-catchup-runtime.ts");
 
-    expect(worldmapSource).toMatch(/drainMultiBudgetedDeferredManagerCatchUpQueue\(/);
+    expect(worldmapSource).toMatch(/drainWorldmapPostCommitManagerCatchUpQueue\(/);
     expect(worldmapSource).toMatch(/resolveWorldmapPostCommitWorkAction\(/);
+    expect(runtimeSource).toMatch(/drainMultiBudgetedDeferredManagerCatchUpQueue\(/);
   });
 });

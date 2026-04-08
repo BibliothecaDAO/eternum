@@ -57,6 +57,7 @@ import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
+import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
@@ -66,6 +67,11 @@ import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleAr
 import { getIndicatorYOffset } from "../constants/indicator-constants";
 import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
+import {
+  bindManagerChunkRuntimeState,
+  type ManagerChunkUpdateOptions,
+  runManagerChunkUpdateRuntime,
+} from "./manager-chunk-runtime";
 import {
   isCommittedManagerChunk,
   MANAGER_UNCOMMITTED_CHUNK,
@@ -202,14 +208,6 @@ export class ArmyManager {
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempWorldPosition: Vector3 = new Vector3();
   private readonly tempColor: Color = new Color();
-
-  private pruneTransitionChunkHistory(): void {
-    this.transitionChunkByToken.forEach((_, token) => {
-      if (token < this.latestTransitionToken) {
-        this.transitionChunkByToken.delete(token);
-      }
-    });
-  }
 
   constructor(
     scene: Scene,
@@ -732,89 +730,41 @@ export class ArmyManager {
     return true;
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
+  async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
     if (this.isDestroyed) {
       return;
     }
-
-    const force = options?.force ?? false;
-    const transitionToken = options?.transitionToken;
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-    if (transitionToken !== undefined) {
-      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
-      this.transitionChunkByToken.set(transitionToken, chunkKey);
-      this.pruneTransitionChunkHistory();
-    }
-
-    await this.armyModel.loadPromise;
-
-    if (this.isDestroyed) {
-      return;
-    }
-
-    if (!force && this.currentChunkKey === chunkKey) {
-      return;
-    }
-
-    // Wait for any ongoing chunk switch to complete first
-    if (this.chunkSwitchPromise) {
-      // console.log(`[CHUNK SYNC] Waiting for previous chunk switch to complete before switching to ${chunkKey}`);
-      try {
-        await this.chunkSwitchPromise;
-      } catch (error) {
+    await runManagerChunkUpdateRuntime({
+      chunkKey,
+      executeChunkUpdate: (nextChunkKey, nextOptions) => this.renderVisibleArmies(nextChunkKey, nextOptions),
+      isDestroyed: () => this.isDestroyed,
+      onPreviousUpdateFailed: (error) => {
         console.warn(`Previous chunk switch failed:`, error);
-      }
-    }
+      },
+      options,
+      prepareForUpdate: () => this.armyModel.loadPromise,
+      shouldAcceptRequest: shouldAcceptManagerChunkRequest,
+      state: this.resolveChunkUpdateRuntimeState(),
+      waitForSettle: waitForVisualSettle,
+    });
+  }
 
-    if (this.isDestroyed) {
-      return;
-    }
-
-    // Check again if chunk key is still different (might have changed while waiting)
-    if (!force && this.currentChunkKey === chunkKey) {
-      return;
-    }
-
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-
-    const previousChunkKey = this.currentChunkKey;
-    const chunkChanged = previousChunkKey !== chunkKey;
-
-    if (chunkChanged) {
-      // console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
-      this.currentChunkKey = chunkKey;
-    }
-
-    // Create and track the chunk switch promise
-    const renderOptions = { force: force || chunkChanged, transitionToken };
-    this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey, renderOptions);
-
-    try {
-      await this.chunkSwitchPromise;
-      await waitForVisualSettle();
-    } finally {
-      this.chunkSwitchPromise = null;
-    }
+  private resolveChunkUpdateRuntimeState() {
+    return bindManagerChunkRuntimeState({
+      getCurrentChunk: () => this.currentChunkKey,
+      setCurrentChunk: (chunkKey) => {
+        this.currentChunkKey = chunkKey;
+      },
+      getInFlightPromise: () => this.chunkSwitchPromise,
+      setInFlightPromise: (promise) => {
+        this.chunkSwitchPromise = promise;
+      },
+      getLatestTransitionToken: () => this.latestTransitionToken,
+      setLatestTransitionToken: (transitionToken) => {
+        this.latestTransitionToken = transitionToken;
+      },
+      transitionChunkByToken: this.transitionChunkByToken,
+    });
   }
 
   private renderVisibleArmies(
@@ -1291,65 +1241,7 @@ export class ArmyManager {
         (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
       );
       ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
-
-      let buffersDirty = false;
-
-      const desiredOrder = visibleArmies.map((army) => army.entityId);
-      const desiredIds = new Set(desiredOrder);
-      const toRemove = this.visibleArmyOrder
-        .filter((entityId) => !desiredIds.has(entityId))
-        .toSorted((a, b) => {
-          const aNum = this.toNumericId(a);
-          const bNum = this.toNumericId(b);
-          return aNum - bNum;
-        });
-
-      toRemove.forEach((entityId) => {
-        const removalResult = this.removeVisibleArmy(entityId);
-        if (removalResult !== null) {
-          buffersDirty = true;
-        }
-      });
-
-      visibleArmies
-        .filter((army) => !this.visibleArmyIndices.has(army.entityId))
-        .forEach((army) => {
-          const modelType = modelTypesByEntity.get(army.entityId);
-          if (!modelType) {
-            return;
-          }
-          this.addVisibleArmy(army, modelType);
-          buffersDirty = true;
-        });
-
-      if (options?.force) {
-        visibleArmies.forEach((army) => {
-          const slot = this.visibleArmyIndices.get(army.entityId);
-          const modelType = modelTypesByEntity.get(army.entityId);
-          if (slot !== undefined && modelType) {
-            // Re-resolve cosmetics on force refresh to pick up debug override changes
-            this.refreshArmyInstance(army, slot, modelType, true);
-            buffersDirty = true;
-          }
-        });
-      }
-
-      const visibleArmySet = new Set(this.visibleArmyOrder);
-      this.entityIdLabels.forEach((_, entityId) => {
-        if (!visibleArmySet.has(entityId)) {
-          this.removeEntityIdLabel(entityId);
-        }
-      });
-
-      this.setVisibleArmyOrder(desiredOrder.filter((id) => this.visibleArmyIndices.has(id)));
-      this.refreshVisibleArmyCollection();
-
-      this.syncVisibleArmyAttachments(this.visibleArmies);
-      this.updateArmyAttachmentTransforms();
-
-      if (buffersDirty) {
-        this.updateVisibleArmyBuffers();
-      }
+      this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
     } finally {
       this.isArmyChunkTransitioning = false;
       this.drainDeferredArmyQueue();
@@ -1414,6 +1306,36 @@ export class ArmyManager {
 
   private getChunkBounds(startRow: number, startCol: number) {
     return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
+  }
+
+  private reconcileVisibleArmies(
+    visibleArmies: ArmyData[],
+    modelTypesByEntity: Map<ID, ModelType>,
+    forceRefresh?: boolean,
+  ): void {
+    reconcileVisibleArmySet({
+      desiredVisibleArmies: visibleArmies,
+      modelTypesByEntity,
+      forceRefresh,
+      currentVisibleOrder: this.visibleArmyOrder,
+      forEachTrackedLabel: (visit) => {
+        this.entityIdLabels.forEach((_, entityId) => visit(entityId));
+      },
+      getVisibleArmySlot: (entityId) => this.visibleArmyIndices.get(entityId),
+      removeVisibleArmy: (entityId) => this.removeVisibleArmy(entityId),
+      addVisibleArmy: (army, modelType) => this.addVisibleArmy(army, modelType),
+      refreshVisibleArmy: (army, slot, modelType) => {
+        // Re-resolve cosmetics on force refresh to pick up debug override changes.
+        this.refreshArmyInstance(army, slot, modelType, true);
+      },
+      removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
+      commitVisibleArmyOrder: (entityIds) => this.setVisibleArmyOrder(entityIds),
+      refreshVisibleArmyCollection: () => this.refreshVisibleArmyCollection(),
+      syncVisibleArmyAttachments: () => this.syncVisibleArmyAttachments(this.visibleArmies),
+      updateArmyAttachmentTransforms: () => this.updateArmyAttachmentTransforms(),
+      flushVisibleArmyBuffers: () => this.updateVisibleArmyBuffers(),
+      sortEntityIds: (entityIds) => entityIds.toSorted((a, b) => this.toNumericId(a) - this.toNumericId(b)),
+    });
   }
 
   private updateSpatialIndex(entityId: ID, oldHex: Position | undefined, newHex: Position) {

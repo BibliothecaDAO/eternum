@@ -31,8 +31,8 @@ export const SegmentedBracketLoader = ({
 
   return (
     <div className={clsx("boot-loader-brackets flex items-center justify-center gap-2", className)} aria-hidden="true">
-      <span className="boot-loader-bracket-symbol text-gold/65">[</span>
-      <div className="flex items-center gap-2">
+      <span className="boot-loader-bracket-symbol text-gold/30">[</span>
+      <div className="flex items-center gap-1.5">
         {Array.from({ length: safeSegments }, (_, index) => {
           const isFilled = index < filledCount;
           const isLead = filledCount > 0 && index === filledCount - 1;
@@ -41,7 +41,7 @@ export const SegmentedBracketLoader = ({
             <span
               key={index}
               className={clsx(
-                "boot-loader-segment block h-4 w-4 rounded-[2px] border border-gold/45 bg-transparent shadow-[0_0_0_1px_rgba(8,10,12,0.2)_inset]",
+                "boot-loader-segment block h-3 w-5 rounded-[3px] border border-gold/15 bg-gold/4",
                 mode === "indeterminate" ? "boot-loader-segment-indeterminate" : "",
                 isFilled ? "boot-loader-segment-filled" : "",
                 isLead ? "boot-loader-segment-lead" : "",
@@ -59,7 +59,7 @@ export const SegmentedBracketLoader = ({
           );
         })}
       </div>
-      <span className="boot-loader-bracket-symbol text-gold/65">]</span>
+      <span className="boot-loader-bracket-symbol text-gold/30">]</span>
     </div>
   );
 };
