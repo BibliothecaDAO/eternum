@@ -58,6 +58,7 @@ import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-attachment-state";
+import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
@@ -1179,31 +1180,24 @@ export class ArmyManager {
 
     this.visibleArmies.forEach((army) => {
       const entityId = this.toNumericId(army.entityId);
-      if (!this.activeArmyAttachmentEntities.has(entityId)) {
-        return;
-      }
-
       const instanceData = this.armyModel.getInstanceData(entityId);
-      if (instanceData?.position) {
-        this.tempCosmeticPosition.copy(instanceData.position);
-      } else {
-        const worldPosition = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-        this.tempCosmeticPosition.copy(worldPosition);
-      }
-
-      const baseTransform = {
-        position: this.tempCosmeticPosition,
-        rotation: instanceData?.rotation,
-        scale: instanceData?.scale ?? this.scale,
-      };
-
-      const { x, y } = army.hexCoords.getContract();
-      const biome = Biome.getBiome(x, y);
-      const modelType = this.armyModel.getModelTypeForEntity(entityId, army.category, army.tier, biome);
-
-      const mountTransforms = resolveArmyMountTransforms(modelType, baseTransform, this.armyAttachmentTransformScratch);
-
-      this.attachmentManager.updateAttachmentTransforms(entityId, baseTransform, mountTransforms);
+      syncArmyAttachmentTransformState({
+        entityId,
+        army,
+        instanceData,
+        activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
+        tempPosition: this.tempCosmeticPosition,
+        scale: this.scale,
+        attachmentTransformScratch: this.armyAttachmentTransformScratch,
+        getWorldPositionInto: (out, hexCoords) => this.getArmyWorldPositionInto(out, hexCoords),
+        resolveBiome: (x, y) => Biome.getBiome(x, y),
+        getModelTypeForEntity: (trackedEntityId, category, tier, biome) =>
+          this.armyModel.getModelTypeForEntity(trackedEntityId, category, tier, biome),
+        resolveMountTransforms: (modelType, baseTransform, scratch) =>
+          resolveArmyMountTransforms(modelType, baseTransform, scratch),
+        updateAttachmentTransforms: (trackedEntityId, baseTransform, mountTransforms) =>
+          this.attachmentManager.updateAttachmentTransforms(trackedEntityId, baseTransform, mountTransforms),
+      });
     });
   }
 
@@ -2210,30 +2204,24 @@ export class ArmyManager {
       }
 
       // 2. Update attachment transforms
-      if (hasActiveAttachments && this.activeArmyAttachmentEntities.has(numericEntityId)) {
-        if (instanceData?.position) {
-          this.tempCosmeticPosition.copy(instanceData.position);
-        } else {
-          this.getArmyWorldPositionInto(this.tempCosmeticPosition, army.hexCoords);
-        }
-
-        const baseTransform = {
-          position: this.tempCosmeticPosition,
-          rotation: instanceData?.rotation,
-          scale: instanceData?.scale ?? this.scale,
-        };
-
-        const { x, y } = army.hexCoords.getContract();
-        const biome = Biome.getBiome(x, y);
-        const modelType = this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
-
-        const mountTransforms = resolveArmyMountTransforms(
-          modelType,
-          baseTransform,
-          this.armyAttachmentTransformScratch,
-        );
-
-        this.attachmentManager.updateAttachmentTransforms(numericEntityId, baseTransform, mountTransforms);
+      if (hasActiveAttachments) {
+        syncArmyAttachmentTransformState({
+          entityId: numericEntityId,
+          army,
+          instanceData,
+          activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
+          tempPosition: this.tempCosmeticPosition,
+          scale: this.scale,
+          attachmentTransformScratch: this.armyAttachmentTransformScratch,
+          getWorldPositionInto: (out, hexCoords) => this.getArmyWorldPositionInto(out, hexCoords),
+          resolveBiome: (x, y) => Biome.getBiome(x, y),
+          getModelTypeForEntity: (trackedEntityId, category, tier, biome) =>
+            this.armyModel.getModelTypeForEntity(trackedEntityId, category, tier, biome),
+          resolveMountTransforms: (modelType, baseTransform, scratch) =>
+            resolveArmyMountTransforms(modelType, baseTransform, scratch),
+          updateAttachmentTransforms: (trackedEntityId, baseTransform, mountTransforms) =>
+            this.attachmentManager.updateAttachmentTransforms(trackedEntityId, baseTransform, mountTransforms),
+        });
       }
     }
 

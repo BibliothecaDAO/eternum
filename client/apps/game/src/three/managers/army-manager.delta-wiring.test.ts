@@ -88,4 +88,10 @@ describe("army manager delta pipeline wiring", () => {
 
     expect(source).toMatch(/syncArmyLabelPresentationState\(/);
   });
+
+  it("routes attachment transform updates through a shared helper", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyAttachmentTransformState\(/);
+  });
 });
