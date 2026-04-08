@@ -161,6 +161,7 @@ import {
   resolveWorldmapChunkSwitchAnchorState,
 } from "./worldmap-chunk-success-runtime";
 import { handleWorldmapRefreshCommitRuntime } from "./worldmap-refresh-commit-runtime";
+import { runWorldmapRefreshRuntime } from "./worldmap-refresh-runtime";
 import {
   commitWorldmapPreparedTerrainPresentation,
   recordWorldmapTerrainReadyDuration,
@@ -6662,41 +6663,86 @@ export default class WorldmapScene extends WarpTravel {
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.removeCachedMatricesForChunk(startRow, startCol);
-    this.hydratedRefreshSuppressionAreaKeys.add(refreshAreaKey);
+    const refreshStartedAt = performance.now();
+    await runWorldmapRefreshRuntime({
+      commitRefresh: async ({ preparedTerrain, tileFetchSucceeded, presentationRuntime }) => {
+        const commitDecision = resolveSameChunkRefreshCommit({
+          refreshToken: transitionToken,
+          currentRefreshToken: this.chunkTransitionToken,
+          currentChunk: this.currentChunk,
+          targetChunk: chunkKey,
+          preparedTerrain,
+        });
 
-    try {
-      const refreshStartedAt = performance.now();
-      const { tileFetchSucceeded, preparedTerrain, presentationRuntime } = await hydrateWorldmapChunkRuntime({
-        chunkKey,
-        computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
-        diagnostics: this.chunkDiagnostics,
-        now: () => performance.now(),
-        onChunkHydrated: (hydratedChunkKey) => {
-          this.hydratedChunkRefreshes.delete(hydratedChunkKey);
-        },
-        onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info as never),
-        phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
-        prewarmChunkAssets: (targetChunkKey) => this.structureManager.prewarmChunkAssets(targetChunkKey),
-        prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
-          this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
-        recordChunkDiagnosticsEvent,
-        recordWorldmapRenderDuration,
-        renderSize: this.renderChunkSize,
-        startCol,
-        startRow,
-        surroundingChunks,
-        transitionToken,
-        updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
-        updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
-          this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-        waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
-        waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
-      });
-      if (!tileFetchSucceeded) {
-        return;
-      }
+        const refreshCommitStatus = await handleWorldmapRefreshCommitRuntime({
+          chunkKey,
+          commitPreparedTerrain: (nextPreparedTerrain) => {
+            commitWorldmapPreparedTerrainPresentation({
+              applyPreparedTerrain: (preparedTerrain) => {
+                this.applyPreparedTerrainChunk(preparedTerrain);
+              },
+              diagnostics: this.chunkDiagnostics,
+              now: () => performance.now(),
+              onAfterApply: () => {
+                this.updateCurrentChunkBounds(startRow, startCol);
+              },
+              phaseDurations: presentationRuntime.phaseDurations,
+              preparedTerrain: nextPreparedTerrain,
+              presentationStartedAtMs: refreshStartedAt,
+              recordChunkDiagnosticsEvent,
+              recordWorldmapRenderDuration,
+              incrementWorldmapRenderCounter,
+            });
+          },
+          diagnostics: this.chunkDiagnostics,
+          force: true,
+          preparedTerrain,
+          recordChunkDiagnosticsEvent,
+          refreshDecision: commitDecision,
+          runImmediateManagerCatchUp: (targetChunkKey, options) => this.updateManagersForChunk(targetChunkKey, options),
+          scheduleDeferredManagerCatchUp: (targetChunkKey, options) =>
+            this.deferManagerCatchUpForChunk(targetChunkKey, options),
+          stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
+          tileFetchSucceeded,
+          transitionToken,
+        });
 
-      if (preparedTerrain) {
+        if (refreshCommitStatus === "stale_dropped") {
+          return;
+        }
+      },
+      hydrateChunk: () =>
+        hydrateWorldmapChunkRuntime({
+          chunkKey,
+          computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
+          diagnostics: this.chunkDiagnostics,
+          now: () => performance.now(),
+          onChunkHydrated: (hydratedChunkKey) => {
+            this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+          },
+          onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info as never),
+          phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
+          prewarmChunkAssets: (targetChunkKey) => this.structureManager.prewarmChunkAssets(targetChunkKey),
+          prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
+            this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
+          recordChunkDiagnosticsEvent,
+          recordWorldmapRenderDuration,
+          renderSize: this.renderChunkSize,
+          startCol,
+          startRow,
+          surroundingChunks,
+          transitionToken,
+          updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
+          updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
+            this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
+          waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
+          waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
+        }),
+      onPreparedTerrainReady: ({ preparedTerrain }) => {
+        if (!preparedTerrain) {
+          return;
+        }
+
         recordWorldmapTerrainReadyDuration({
           diagnostics: this.chunkDiagnostics,
           nowMs: performance.now(),
@@ -6704,60 +6750,10 @@ export default class WorldmapScene extends WarpTravel {
           recordWorldmapRenderDuration,
           startedAtMs: refreshStartedAt,
         });
-      }
-
-      // Verify the refresh is still valid before committing terrain
-      const commitDecision = resolveSameChunkRefreshCommit({
-        refreshToken: transitionToken,
-        currentRefreshToken: this.chunkTransitionToken,
-        currentChunk: this.currentChunk,
-        targetChunk: chunkKey,
-        preparedTerrain,
-      });
-
-      if (commitDecision.shouldDropAsStale) {
-        return;
-      }
-
-      const refreshCommitStatus = await handleWorldmapRefreshCommitRuntime({
-        chunkKey,
-        commitPreparedTerrain: (nextPreparedTerrain) => {
-          commitWorldmapPreparedTerrainPresentation({
-            applyPreparedTerrain: (preparedTerrain) => {
-              this.applyPreparedTerrainChunk(preparedTerrain);
-            },
-            diagnostics: this.chunkDiagnostics,
-            now: () => performance.now(),
-            onAfterApply: () => {
-              this.updateCurrentChunkBounds(startRow, startCol);
-            },
-            phaseDurations: presentationRuntime.phaseDurations,
-            preparedTerrain: nextPreparedTerrain,
-            presentationStartedAtMs: refreshStartedAt,
-            recordChunkDiagnosticsEvent,
-            recordWorldmapRenderDuration,
-            incrementWorldmapRenderCounter,
-          });
-        },
-        diagnostics: this.chunkDiagnostics,
-        force: true,
-        preparedTerrain,
-        recordChunkDiagnosticsEvent,
-        refreshDecision: commitDecision,
-        runImmediateManagerCatchUp: (targetChunkKey, options) => this.updateManagersForChunk(targetChunkKey, options),
-        scheduleDeferredManagerCatchUp: (targetChunkKey, options) =>
-          this.deferManagerCatchUpForChunk(targetChunkKey, options),
-        stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
-        tileFetchSucceeded,
-        transitionToken,
-      });
-
-      if (refreshCommitStatus === "stale_dropped") {
-        return;
-      }
-    } finally {
-      this.hydratedRefreshSuppressionAreaKeys.delete(refreshAreaKey);
-    }
+      },
+      refreshAreaKey,
+      suppressedAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
+    });
 
     if (memoryMonitor) {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);

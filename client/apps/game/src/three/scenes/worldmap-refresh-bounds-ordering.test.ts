@@ -18,9 +18,7 @@ describe("worldmap refresh bounds ordering", () => {
   it("updates current chunk bounds only after prepared terrain commit in refreshCurrentChunk", () => {
     const methodSource = extractRefreshCurrentChunkMethod(readWorldmapSource());
 
-    const hydrateIndex = methodSource.indexOf(
-      "const { tileFetchSucceeded, preparedTerrain, presentationRuntime } = await hydrateWorldmapChunkRuntime({",
-    );
+    const hydrateIndex = methodSource.indexOf("await runWorldmapRefreshRuntime({");
     const commitRuntimeIndex = methodSource.indexOf("commitWorldmapPreparedTerrainPresentation({");
     const updateBoundsIndex = methodSource.indexOf("this.updateCurrentChunkBounds(startRow, startCol);");
 
