@@ -82,4 +82,10 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).toMatch(/syncArmyIndicatorPresentationState\(/);
     expect(source).toMatch(/syncMovingArmyIndicatorPresentationState\(/);
   });
+
+  it("routes label positioning through a shared helper", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/syncArmyLabelPresentationState\(/);
+  });
 });

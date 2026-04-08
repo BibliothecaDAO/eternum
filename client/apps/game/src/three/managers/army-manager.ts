@@ -65,6 +65,7 @@ import {
   syncArmyIndicatorPresentationState,
   syncMovingArmyIndicatorPresentationState,
 } from "./army-indicator-presentation";
+import { syncArmyLabelPresentationState } from "./army-label-presentation";
 import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
 import { PlayerIndicatorManager } from "./player-indicator-manager";
@@ -1077,13 +1078,10 @@ export class ArmyManager {
   }
 
   private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
-    const activeLabel = this.entityIdLabels.get(army.entityId);
-    if (!activeLabel) {
-      return;
-    }
-
-    activeLabel.position.copy(position);
-    activeLabel.position.y += 1.5;
+    syncArmyLabelPresentationState({
+      label: this.entityIdLabels.get(army.entityId),
+      position,
+    });
   }
 
   private syncArmyPointPresentation(army: ArmyData, position: Vector3) {
@@ -2406,8 +2404,10 @@ export class ArmyManager {
     const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
     if (this.entityIdLabels.has(army.entityId)) {
       const label = this.entityIdLabels.get(army.entityId)!;
-      label.position.copy(position);
-      label.position.y += 1.5;
+      syncArmyLabelPresentationState({
+        label,
+        position,
+      });
       this.updateArmyLabelData(entityId, army, label);
       this.highlightArmyPointHover(entityId, army);
       return;
