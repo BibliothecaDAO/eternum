@@ -51,6 +51,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     mode: "shuffle",
     tracks: [
       "music.daybreak",
+      "music.birds_paradise",
       "music.morning_ember",
       "music.beyond_horizon",
       "music.monophonic_mixtape_09",
@@ -71,6 +72,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     mode: "shuffle",
     tracks: [
       "music.rain_pool",
+      "music.bumu_bun",
       "music.beyond_horizon",
       "music.celestial_shores",
       "music.monophonic_mixtape_12",
@@ -99,6 +101,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     tracks: [
       "music.monophonic_mixtape_09",
       "music.monophonic_mixtape_10",
+      "music.cha_cha_chi",
       "music.monophonic_mixtape_11",
       "music.monophonic_mixtape_12",
       "music.monophonic_mixtape_13",
@@ -111,6 +114,7 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     mode: "shuffle",
     tracks: [
       "music.shadow_song",
+      "music.cha_cha_chi",
       "music.twilight_harvest",
       "music.strangers_arrival",
       "music.shining_realms",
@@ -125,8 +129,10 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     mode: "shuffle",
     tracks: [
       "music.daybreak",
+      "music.birds_paradise",
       "music.morning_ember",
       "music.shadow_song",
+      "music.bumu_bun",
       "music.wanderers_chronicle",
       "music.monophonic_mixtape_13",
     ],

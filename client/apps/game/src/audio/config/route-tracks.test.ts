@@ -21,7 +21,7 @@ describe("matchRoutePlaylist", () => {
     const match = matchRoutePlaylist("/");
     expect(match.key).toBe("landing:overview");
     expect(match.tracks.length).toBeGreaterThan(0);
-    expect(match.tracks).toContain("music.monophonic_mixtape_09");
+    expect(match.tracks).toContain("music.birds_paradise");
   });
 
   it("matches the profile section with nested routes", () => {
@@ -42,7 +42,7 @@ describe("matchRoutePlaylist", () => {
     const match = matchRoutePlaylist("/markets");
     expect(match.key).toBe("landing:markets");
     expect(match.tracks.length).toBeGreaterThan(0);
-    expect(match.tracks).toContain("music.monophonic_mixtape_12");
+    expect(match.tracks).toContain("music.bumu_bun");
   });
 
   it("matches the amm route with a dedicated trading playlist", () => {
@@ -61,6 +61,7 @@ describe("matchRoutePlaylist", () => {
     expect(match.tracks).toEqual([
       "music.monophonic_mixtape_09",
       "music.monophonic_mixtape_10",
+      "music.cha_cha_chi",
       "music.monophonic_mixtape_11",
       "music.monophonic_mixtape_12",
       "music.monophonic_mixtape_13",
@@ -71,7 +72,7 @@ describe("matchRoutePlaylist", () => {
     mockedGetGameModeId.mockReturnValue("eternum");
     const match = matchRoutePlaylist("/play/world");
     expect(match.key).toBe("play:main");
-    expect(match.tracks).toContain("music.monophonic_mixtape_10");
+    expect(match.tracks).toContain("music.cha_cha_chi");
   });
 
   it("always returns a playlist even for unknown routes", () => {

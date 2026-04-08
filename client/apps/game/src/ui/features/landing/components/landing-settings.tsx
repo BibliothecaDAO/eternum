@@ -177,10 +177,10 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
   };
 
   // Get volume values with safe defaults
-  const masterVolume = audioState?.masterVolume ?? 0.5;
+  const masterVolume = audioState?.masterVolume ?? 1;
   const isMuted = audioState?.muted ?? false;
-  const musicVolume = audioState?.categoryVolumes?.[AudioCategory.MUSIC] ?? 0.4;
-  const uiVolume = audioState?.categoryVolumes?.[AudioCategory.UI] ?? 0.5;
+  const musicVolume = audioState?.categoryVolumes?.[AudioCategory.MUSIC] ?? 0.08;
+  const uiVolume = audioState?.categoryVolumes?.[AudioCategory.UI] ?? 0.2;
   const graphicsSetting = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
 
   const handleGraphicsSettingChange = (setting: GraphicsSettings) => {
