@@ -9,7 +9,7 @@ import {
   setBlitzRegistrationParametersConfig,
   setBuildingCategoryConfig,
   setCapacityConfig,
-  setDiscoverableVillageSpawnResourcesConfig,
+  setCampStartingResourcesConfig,
   setFactoryAddress,
   setFaithConfig,
   setGameModeConfig,
@@ -129,11 +129,7 @@ export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeC
     shouldRun: ({ config }) => isBlitzConfiguration(config) && hasMmrConfig(config),
   }),
   defineStep("victory-points", "Set victory points config", setVictoryPointsConfig),
-  defineStep(
-    "village-spawn-resources",
-    "Set discoverable village spawn resources config",
-    setDiscoverableVillageSpawnResourcesConfig,
-  ),
+  defineStep("camp-starting-resources", "Set camp starting resources config", setCampStartingResourcesConfig),
   defineStep("blitz-registration", "Set blitz registration config", setBlitzRegistrationParametersConfig, {
     shouldRun: ({ config }) => isBlitzConfiguration(config),
   }),

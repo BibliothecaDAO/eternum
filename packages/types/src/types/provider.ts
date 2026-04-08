@@ -451,7 +451,7 @@ export interface SetMMRConfigProps extends SystemSigner {
   min_players: BigNumberish;
 }
 
-export interface SetDiscoveredVillageSpawnResourcesConfigProps extends SystemSigner {
+export interface SetCampStartingResourcesConfigProps extends SystemSigner {
   resources: {
     resource: ResourcesIds;
     min_amount: BigNumberish;

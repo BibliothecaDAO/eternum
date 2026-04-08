@@ -3273,9 +3273,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_discoverable_village_starting_resources_config(
-    props: SystemProps.SetDiscoveredVillageSpawnResourcesConfigProps,
-  ) {
+  public async set_camp_starting_resources_config(props: SystemProps.SetCampStartingResourcesConfigProps) {
     const { resources, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {

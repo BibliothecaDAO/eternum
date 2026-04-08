@@ -42,7 +42,7 @@ type NativeConfigProvider = Pick<
   | "set_factory_address"
   | "set_mmr_config"
   | "set_victory_points_config"
-  | "set_discoverable_village_starting_resources_config"
+  | "set_camp_starting_resources_config"
   | "set_blitz_exploration_config"
   | "set_blitz_registration_config"
 >;
@@ -759,9 +759,9 @@ export const setVictoryPointsConfig: NativeStep = async ({ account, provider, co
   );
 };
 
-function buildDiscoverableVillageSpawnResourcesPayload(config: NativeConfig) {
+function buildCampStartingResourcesPayload(config: NativeConfig) {
   return {
-    resources: config.discoverableVillageStartingResources.map((resource) => ({
+    resources: config.campStartingResources.map((resource) => ({
       resource: resource.resource,
       min_amount: resource.min_amount * RESOURCE_PRECISION,
       max_amount: resource.max_amount * RESOURCE_PRECISION,
@@ -769,10 +769,8 @@ function buildDiscoverableVillageSpawnResourcesPayload(config: NativeConfig) {
   };
 }
 
-export const setDiscoverableVillageSpawnResourcesConfig: NativeStep = async ({ account, provider, config }) => {
-  await provider.set_discoverable_village_starting_resources_config(
-    withSigner(account, buildDiscoverableVillageSpawnResourcesPayload(config)),
-  );
+export const setCampStartingResourcesConfig: NativeStep = async ({ account, provider, config }) => {
+  await provider.set_camp_starting_resources_config(withSigner(account, buildCampStartingResourcesPayload(config)));
 };
 
 const BLITZ_EXPLORATION_REWARD_PROFILE_IDS = {
@@ -883,7 +881,7 @@ export const NATIVE_FACTORY_WORLD_CONFIG_IMPLEMENTATIONS = {
   setFactoryAddress,
   setMMRConfig,
   setVictoryPointsConfig,
-  setDiscoverableVillageSpawnResourcesConfig,
+  setCampStartingResourcesConfig,
   setBlitzExplorationConfig,
   setBlitzRegistrationParametersConfig,
   setBlitzSeasonConfig,

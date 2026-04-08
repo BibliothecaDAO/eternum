@@ -639,7 +639,7 @@ export interface Config {
   };
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];
-  discoverableVillageStartingResources: ResourceMinMax[];
+  campStartingResources: ResourceMinMax[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;
