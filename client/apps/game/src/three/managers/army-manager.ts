@@ -67,6 +67,11 @@ import {
   syncMovingArmyIndicatorPresentationState,
 } from "./army-indicator-presentation";
 import { buildArmyLabelDataKey, syncArmyLabelContentState } from "./army-label-content";
+import {
+  configureArmyLabelHoverPriority,
+  initializeArmyLabelState,
+  revealArmyLabelState,
+} from "./army-label-lifecycle";
 import { syncArmyLabelPresentationState } from "./army-label-presentation";
 import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
@@ -2364,18 +2369,15 @@ export class ArmyManager {
   private async addEntityIdLabel(army: ArmyData, position: Vector3) {
     const { label } = this.labelPool.acquire(() => {
       const element = createArmyLabel(army, this.currentCameraView);
-      const cssLabel = new CSS2DObject(element);
-      cssLabel.userData.baseRenderOrder = cssLabel.renderOrder;
-      return cssLabel;
+      return new CSS2DObject(element);
     });
 
-    label.position.copy(position);
-    label.position.y += 2.1;
-    label.userData.entityId = army.entityId;
-    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
-    label.userData.lastDataKey = null;
-
-    this.configureArmyLabelInteractions(label);
+    initializeArmyLabelState({
+      label,
+      entityId: army.entityId,
+      position,
+    });
+    configureArmyLabelHoverPriority(label);
 
     this.entityIdLabels.set(army.entityId, label);
     this.armyModel.addLabel(this.toNumericId(army.entityId), label);
@@ -2430,14 +2432,12 @@ export class ArmyManager {
   }
 
   private revealArmyLabel(entityId: ID, label: CSS2DObject) {
-    if (label.parent !== this.labelsGroup) {
-      this.labelsGroup.add(label);
-    }
-
-    const army = this.armies.get(entityId);
-    if (army) {
-      updateArmyLabel(label.element, army, this.currentCameraView);
-    }
+    revealArmyLabelState({
+      label,
+      labelsGroup: this.labelsGroup,
+      army: this.armies.get(entityId),
+      renderLabel: (army) => updateArmyLabel(label.element, army, this.currentCameraView),
+    });
   }
 
   private highlightArmyPointHover(entityId: ID, army: Pick<ArmyData, "isDaydreamsAgent" | "isMine">): void {
@@ -2476,20 +2476,6 @@ export class ArmyManager {
     this.labelPool.release(label);
     this.entityIdLabels.delete(entityId);
     this.frustumVisibilityDirty = true;
-  }
-
-  private configureArmyLabelInteractions(label: CSS2DObject): void {
-    const element = label.element as HTMLElement;
-    const baseRenderOrder = (label.userData.baseRenderOrder as number | undefined) ?? label.renderOrder;
-    label.userData.baseRenderOrder = baseRenderOrder;
-
-    element.onmouseenter = () => {
-      label.renderOrder = Infinity;
-    };
-
-    element.onmouseleave = () => {
-      label.renderOrder = baseRenderOrder;
-    };
   }
 
   private initializePointsRenderers(): void {

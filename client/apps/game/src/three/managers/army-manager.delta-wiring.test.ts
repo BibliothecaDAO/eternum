@@ -101,4 +101,12 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).toMatch(/buildArmyLabelDataKey\(/);
     expect(source).toMatch(/syncArmyLabelContentState\(/);
   });
+
+  it("routes label lifecycle through shared helpers", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/initializeArmyLabelState\(/);
+    expect(source).toMatch(/configureArmyLabelHoverPriority\(/);
+    expect(source).toMatch(/revealArmyLabelState\(/);
+  });
 });
