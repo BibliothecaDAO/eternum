@@ -56,6 +56,7 @@ import {
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
 import {
   resolveVisibleStructureUpdateMode,
   shouldRebuildVisibleStructuresForStructureUpdate,
@@ -1321,52 +1322,8 @@ export class StructureManager {
       const [startRow, startCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
       const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
       this.visibleStructureCount = visibleStructures.length;
-
-      // Organize by type for model loading and rendering
-      const structuresByType = new Map<StructureType, StructureInfo[]>();
-      // Organize structures with cosmetic skins separately
-      const structuresByCosmeticId = new Map<string, StructureInfo[]>();
-
-      visibleStructures.forEach((structure) => {
-        if (this.hasCosmeticSkin(structure)) {
-          const cosmeticId = structure.cosmeticId!;
-          if (!structuresByCosmeticId.has(cosmeticId)) {
-            structuresByCosmeticId.set(cosmeticId, []);
-          }
-          structuresByCosmeticId.get(cosmeticId)!.push(structure);
-        } else {
-          if (!structuresByType.has(structure.structureType)) {
-            structuresByType.set(structure.structureType, []);
-          }
-          structuresByType.get(structure.structureType)!.push(structure);
-        }
-      });
-
-      const preloadPromises: Promise<unknown>[] = [];
-
-      for (const [structureType] of structuresByType) {
-        if (!this.structureModels.has(structureType)) {
-          preloadPromises.push(this.ensureStructureModels(structureType));
-        }
-      }
-
-      // Preload cosmetic models
-      for (const [cosmeticId, structures] of structuresByCosmeticId) {
-        if (!this.cosmeticStructureModels.has(cosmeticId)) {
-          const assetPaths = structures[0]?.cosmeticAssetPaths ?? [];
-          if (assetPaths.length > 0) {
-            preloadPromises.push(this.ensureCosmeticStructureModels(cosmeticId, assetPaths));
-          }
-        }
-      }
-
-      if (preloadPromises.length > 0) {
-        try {
-          await Promise.all(preloadPromises);
-        } catch (error) {
-          console.error("Failed to preload structure models", error);
-        }
-      }
+      const renderPlan = this.createVisibleStructureRenderPlan(visibleStructures);
+      await this.preloadVisibleStructureRenderPlan(renderPlan);
 
       if (this.isDestroyed) {
         return;
@@ -1391,7 +1348,7 @@ export class StructureManager {
         Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
       }
 
-      for (const [structureType, structures] of structuresByType) {
+      for (const [structureType, structures] of renderPlan.structuresByType) {
         const models = this.structureModels.get(structureType);
 
         if (!models || models.length === 0) {
@@ -1512,7 +1469,7 @@ export class StructureManager {
       }
 
       // Render structures with cosmetic skins
-      for (const [cosmeticId, structures] of structuresByCosmeticId) {
+      for (const [cosmeticId, structures] of renderPlan.structuresByCosmeticId) {
         const models = this.cosmeticStructureModels.get(cosmeticId);
 
         if (!models || models.length === 0) {
@@ -1674,6 +1631,36 @@ export class StructureManager {
     } finally {
       recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
       setWorldmapRenderGauge("visibleStructures", this.visibleStructureCount);
+    }
+  }
+
+  private createVisibleStructureRenderPlan(visibleStructures: StructureInfo[]) {
+    return buildVisibleStructureRenderPlan({
+      visibleStructures,
+      hasCosmeticSkin: (structure) => this.hasCosmeticSkin(structure),
+      hasStructureModel: (structureType) => this.structureModels.has(structureType),
+      hasCosmeticModel: (cosmeticId) => this.cosmeticStructureModels.has(cosmeticId),
+    });
+  }
+
+  private async preloadVisibleStructureRenderPlan(
+    renderPlan: VisibleStructureRenderPlan<StructureInfo, StructureType>,
+  ): Promise<void> {
+    const preloadPromises: Promise<unknown>[] = [
+      ...renderPlan.missingStructureModels.map((structureType) => this.ensureStructureModels(structureType)),
+      ...renderPlan.missingCosmeticModels.map(({ cosmeticId, assetPaths }) =>
+        this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
+      ),
+    ];
+
+    if (preloadPromises.length === 0) {
+      return;
+    }
+
+    try {
+      await Promise.all(preloadPromises);
+    } catch (error) {
+      console.error("Failed to preload structure models", error);
     }
   }
 
