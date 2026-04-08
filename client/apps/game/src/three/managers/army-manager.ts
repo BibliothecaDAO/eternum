@@ -57,6 +57,7 @@ import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory"
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-attachment-state";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
@@ -1103,11 +1104,7 @@ export class ArmyManager {
     this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
 
     const numericId = this.toNumericId(entityId);
-    if (this.activeArmyAttachmentEntities.has(numericId)) {
-      this.attachmentManager.removeAttachments(numericId);
-      this.activeArmyAttachmentEntities.delete(numericId);
-      this.armyAttachmentSignatures.delete(numericId);
-    }
+    this.removeTrackedArmyAttachments(entityId);
 
     // Clean up movement source bucket before freeing the slot, since
     // freeInstanceSlot kills the movement callback that would normally do this
@@ -1167,47 +1164,14 @@ export class ArmyManager {
   }
 
   private syncVisibleArmyAttachments(visibleArmies: ArmyData[]): void {
-    const retain = new Set<number>();
-
-    visibleArmies.forEach((army) => {
-      const templates = army.attachments ?? [];
-      const entityId = this.toNumericId(army.entityId);
-
-      if (templates.length === 0) {
-        if (this.activeArmyAttachmentEntities.has(entityId)) {
-          this.attachmentManager.removeAttachments(entityId);
-          this.activeArmyAttachmentEntities.delete(entityId);
-        }
-        this.armyAttachmentSignatures.delete(entityId);
-        return;
-      }
-
-      retain.add(entityId);
-      const signature = this.getAttachmentSignature(templates);
-      const isActive = this.activeArmyAttachmentEntities.has(entityId);
-
-      if (!isActive || this.armyAttachmentSignatures.get(entityId) !== signature) {
-        this.attachmentManager.spawnAttachments(entityId, templates);
-        this.armyAttachmentSignatures.set(entityId, signature);
-        this.activeArmyAttachmentEntities.add(entityId);
-      }
-    });
-
-    if (this.activeArmyAttachmentEntities.size === 0) {
-      return;
-    }
-
-    const toRemove: number[] = [];
-    this.activeArmyAttachmentEntities.forEach((entityId) => {
-      if (!retain.has(entityId)) {
-        toRemove.push(entityId);
-      }
-    });
-
-    toRemove.forEach((entityId) => {
-      this.attachmentManager.removeAttachments(entityId);
-      this.activeArmyAttachmentEntities.delete(entityId);
-      this.armyAttachmentSignatures.delete(entityId);
+    syncArmyAttachmentState({
+      visibleArmies,
+      activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
+      armyAttachmentSignatures: this.armyAttachmentSignatures,
+      toNumericId: (entityId) => this.toNumericId(entityId),
+      getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),
+      spawnAttachments: (entityId, templates) => this.attachmentManager.spawnAttachments(entityId, templates),
+      removeAttachments: (entityId) => this.attachmentManager.removeAttachments(entityId),
     });
   }
 
@@ -1243,6 +1207,15 @@ export class ArmyManager {
       const mountTransforms = resolveArmyMountTransforms(modelType, baseTransform, this.armyAttachmentTransformScratch);
 
       this.attachmentManager.updateAttachmentTransforms(entityId, baseTransform, mountTransforms);
+    });
+  }
+
+  private removeTrackedArmyAttachments(entityId: ID): void {
+    removeArmyAttachmentsIfTracked({
+      entityId: this.toNumericId(entityId),
+      activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
+      armyAttachmentSignatures: this.armyAttachmentSignatures,
+      removeAttachments: (trackedEntityId) => this.attachmentManager.removeAttachments(trackedEntityId),
     });
   }
 
@@ -1902,11 +1875,7 @@ export class ArmyManager {
     this.suppressedArmies.delete(entityId);
 
     const numericEntityId = this.toNumericId(entityId);
-    if (this.activeArmyAttachmentEntities.has(numericEntityId)) {
-      this.attachmentManager.removeAttachments(numericEntityId);
-      this.activeArmyAttachmentEntities.delete(numericEntityId);
-    }
-    this.armyAttachmentSignatures.delete(numericEntityId);
+    this.removeTrackedArmyAttachments(entityId);
 
     // Monitor memory usage before removing army
     this.memoryMonitor?.getCurrentStats(`removeArmy-${entityId}`);
@@ -2295,12 +2264,7 @@ export class ArmyManager {
       this.frustumVisibilityDirty = true;
     }
 
-    const numericEntityId = this.toNumericId(entityId);
-    if (this.activeArmyAttachmentEntities.has(numericEntityId)) {
-      this.attachmentManager.removeAttachments(numericEntityId);
-      this.activeArmyAttachmentEntities.delete(numericEntityId);
-      this.armyAttachmentSignatures.delete(numericEntityId);
-    }
+    this.removeTrackedArmyAttachments(entityId);
   }
 
   private applyFrustumVisibilityToLabels() {
