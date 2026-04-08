@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24108995204-1",
   "currentStepId": null,
   "createdAt": "2026-04-07T23:16:05.289Z",
-  "updatedAt": "2026-04-08T00:01:08.794Z",
+  "updatedAt": "2026-04-08T00:02:38.754Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -87,15 +87,13 @@
     "createGameTxHash": "0x5ba60dd4c1307e5a89a0818174aefc98fd82c0babc5e7e4cc587f5aa1be4a24",
     "configureTxHash": "0x84581b39bca38321eb1e251e14e584ee98a30fb96c2516742cb846c52bdc90",
     "worldConfigTxHash": "0x84581b39bca38321eb1e251e14e584ee98a30fb96c2516742cb846c52bdc90",
-    "indexerCreated": true,
-    "indexerTier": "basic",
-    "indexerUrl": "https://api.cartridge.gg/x/bltz-lilt-606/torii",
-    "indexerVersion": "v1.8.15",
-    "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-07T23:19:17.933Z",
+    "indexerCreated": false,
     "paymasterSynced": true,
     "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-04-08T00:01:07.196Z"
+    "pendingIndexerTierRequestedAt": "2026-04-08T00:02:38.754Z",
+    "lastIndexerTierDispatchTarget": "legendary",
+    "lastIndexerTierDispatchFailedAt": "2026-04-08T00:02:38.754Z",
+    "lastIndexerTierDispatchError": "Torii deployment \"bltz-lilt-606\" does not exist"
   },
   "completedAt": "2026-04-07T23:19:30.012Z"
 }
