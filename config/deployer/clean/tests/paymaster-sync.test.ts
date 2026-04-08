@@ -18,12 +18,18 @@ const { syncPaymasterPolicy } = await import("../paymaster");
 const originalFetch = globalThis.fetch;
 const originalStdoutWrite = process.stdout.write.bind(process.stdout);
 const originalStderrWrite = process.stderr.write.bind(process.stderr);
+const originalCi = process.env.CI;
 const outputPath = resolveRepoPath(".context/paymaster/eternum-actions-mainnet-alpha.json");
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
   process.stdout.write = originalStdoutWrite as typeof process.stdout.write;
   process.stderr.write = originalStderrWrite as typeof process.stderr.write;
+  if (originalCi === undefined) {
+    delete process.env.CI;
+  } else {
+    process.env.CI = originalCi;
+  }
   spawnSyncMock.mockClear();
 
   if (fs.existsSync(outputPath)) {
@@ -186,5 +192,50 @@ describe("syncPaymasterPolicy", () => {
     ]);
     expect(stdoutWrites).toEqual(["slot ok\n"]);
     expect(stderrWrites).toEqual(["slot warning\n"]);
+  });
+
+  test("auto-confirms broad paymaster warnings in CI", async () => {
+    process.env.CI = "true";
+
+    globalThis.fetch = async (url) => {
+      const decodedUrl = decodeURIComponent(String(url));
+
+      if (decodedUrl.includes("[wf-WorldContract]")) {
+        return Response.json([
+          {
+            contract_address: "0x123",
+            contract_selector: "0x1",
+          },
+        ]);
+      }
+
+      if (decodedUrl.includes("[wf-WorldDeployed]")) {
+        return Response.json([
+          {
+            world_address: "0xworld",
+          },
+        ]);
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    await syncPaymasterPolicy({
+      chain: "mainnet",
+      gameName: "alpha",
+      vrfProviderAddress: "0x456",
+    });
+
+    expect(spawnSyncMock).toHaveBeenCalledTimes(1);
+    expect(spawnSyncMock.mock.calls[0]).toEqual([
+      "slot",
+      ["paymaster", "empire", "policy", "add-from-json", "--file", outputPath],
+      {
+        encoding: "utf8",
+        input: "y\n",
+        stdio: ["pipe", "pipe", "pipe"],
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    ]);
   });
 });

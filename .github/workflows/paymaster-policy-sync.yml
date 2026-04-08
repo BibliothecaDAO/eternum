@@ -38,4 +38,5 @@ jobs:
           bun scripts/ci/paymaster/sync-policy.ts \
             --chain "${{ github.event.inputs.network }}" \
             --game "${{ github.event.inputs.game_name }}" \
-            --paymaster "empire"
+            --paymaster "empire" \
+            --yes
