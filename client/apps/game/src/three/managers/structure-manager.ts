@@ -56,6 +56,7 @@ import {
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
 import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
 import {
   resolveVisibleStructureUpdateMode,
@@ -1230,76 +1231,10 @@ export class StructureManager {
       return;
     }
 
-    const { col, row } = next.hexCoords;
-    getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-    this.scratchPosition.y += 0.05;
-    this.dummy.position.copy(this.scratchPosition);
-
-    if (next.structureType === StructureType.Bank) {
-      this.dummy.rotation.y = (4 * Math.PI) / 6;
-    } else {
-      const rotationSeed = hashCoordinates(col, row);
-      const rotationIndex = Math.floor(rotationSeed * 6);
-      this.dummy.rotation.y = (rotationIndex * Math.PI) / 3;
-    }
-    this.dummy.updateMatrix();
+    const rotationY = this.resolveVisibleStructureRotationY(next);
+    this.syncVisibleStructurePresentation(previous, next, rotationY);
     model.setMatrixAt(instanceId, this.dummy.matrix);
     model.needsUpdate();
-
-    const existingLabel = this.entityIdLabels.get(next.entityId);
-    if (existingLabel) {
-      this.updateStructureLabelData(next, existingLabel);
-      getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-      this.scratchLabelPosition.y += 2;
-      existingLabel.position.copy(this.scratchLabelPosition);
-    }
-
-    if (this.pointsRenderers) {
-      this.scratchIconPosition.copy(this.scratchPosition);
-      this.scratchIconPosition.y += 2;
-      const previousRenderer = this.getRendererForStructure(previous);
-      const nextRenderer = this.getRendererForStructure(next);
-      if (previousRenderer && previousRenderer !== nextRenderer && previousRenderer.hasPoint(next.entityId)) {
-        previousRenderer.removePoint(next.entityId);
-      }
-      nextRenderer?.setPoint({
-        entityId: next.entityId,
-        position: this.scratchIconPosition,
-      });
-    }
-
-    const entityNumericId = Number(next.entityId);
-    const templates = this.resolveStructureAttachmentsForRender(next);
-    if (templates.length > 0) {
-      const signature = this.getAttachmentSignature(templates);
-      if (
-        !this.activeStructureAttachmentEntities.has(entityNumericId) ||
-        this.structureAttachmentSignatures.get(entityNumericId) !== signature
-      ) {
-        this.attachmentManager.spawnAttachments(entityNumericId, templates);
-        this.activeStructureAttachmentEntities.add(entityNumericId);
-        this.structureAttachmentSignatures.set(entityNumericId, signature);
-      }
-
-      this.tempCosmeticPosition.copy(this.scratchPosition);
-      this.tempCosmeticRotation.copy(this.dummy.rotation);
-      const baseTransform = {
-        position: this.tempCosmeticPosition,
-        rotation: this.tempCosmeticRotation,
-        scale: this.dummy.scale,
-      };
-      const mountTransforms = resolveStructureMountTransforms(
-        next.structureType,
-        baseTransform,
-        this.structureAttachmentTransformScratch,
-      );
-      this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-    } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-      this.attachmentManager.removeAttachments(entityNumericId);
-      this.activeStructureAttachmentEntities.delete(entityNumericId);
-      this.structureAttachmentSignatures.delete(entityNumericId);
-    }
-
     this.frustumVisibilityDirty = true;
   }
 
@@ -1361,80 +1296,8 @@ export class StructureManager {
 
         structures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
-          // Use scratch vector to avoid allocation
-          const { col, row } = structure.hexCoords;
-          getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-          this.scratchPosition.y += 0.05;
-
-          const existingLabel = this.entityIdLabels.get(structure.entityId);
-          if (existingLabel) {
-            this.updateStructureLabelData(structure, existingLabel);
-            // Use scratch vector for label position
-            getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-            this.scratchLabelPosition.y += 2;
-            existingLabel.position.copy(this.scratchLabelPosition);
-          }
-
-          this.dummy.position.copy(this.scratchPosition);
-
-          if (structureType === StructureType.Bank) {
-            this.dummy.rotation.y = (4 * Math.PI) / 6;
-          } else {
-            const rotationSeed = hashCoordinates(col, row);
-            const rotationIndex = Math.floor(rotationSeed * 6);
-            const randomRotation = (rotationIndex * Math.PI) / 3;
-            this.dummy.rotation.y = randomRotation;
-          }
-          this.dummy.updateMatrix();
-
-          // Add point icon for this structure (always visible)
-          if (this.pointsRenderers) {
-            // Use scratch vector for icon position
-            this.scratchIconPosition.copy(this.scratchPosition);
-            this.scratchIconPosition.y += 2; // Match CSS2D label height
-
-            const renderer = this.getRendererForStructure(structure);
-            if (renderer) {
-              renderer.setPoint({
-                entityId: structure.entityId,
-                position: this.scratchIconPosition,
-              });
-            }
-          }
-
-          const entityNumericId = Number(structure.entityId);
-          const templates = this.resolveStructureAttachmentsForRender(structure);
-          if (templates.length > 0) {
-            attachmentRetain.add(entityNumericId);
-            const signature = this.getAttachmentSignature(templates);
-            const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
-            if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
-              this.attachmentManager.spawnAttachments(entityNumericId, templates);
-              this.structureAttachmentSignatures.set(entityNumericId, signature);
-              this.activeStructureAttachmentEntities.add(entityNumericId);
-            }
-
-            this.tempCosmeticPosition.copy(this.scratchPosition);
-            this.tempCosmeticRotation.copy(this.dummy.rotation);
-
-            const baseTransform = {
-              position: this.tempCosmeticPosition,
-              rotation: this.tempCosmeticRotation,
-              scale: this.dummy.scale,
-            };
-
-            const mountTransforms = resolveStructureMountTransforms(
-              structure.structureType,
-              baseTransform,
-              this.structureAttachmentTransformScratch,
-            );
-
-            this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-          } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-            this.attachmentManager.removeAttachments(entityNumericId);
-            this.activeStructureAttachmentEntities.delete(entityNumericId);
-            this.structureAttachmentSignatures.delete(entityNumericId);
-          }
+          const rotationY = this.resolveVisibleStructureRotationY(structure);
+          this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
 
           let modelType = models[structure.stage];
           if (structureType === StructureType.Realm) {
@@ -1482,77 +1345,8 @@ export class StructureManager {
 
         structures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
-          // Use scratch vector to avoid allocation
-          const { col, row } = structure.hexCoords;
-          getWorldPositionForHexCoordsInto(col, row, this.scratchPosition);
-          this.scratchPosition.y += 0.05;
-
-          const existingLabel = this.entityIdLabels.get(structure.entityId);
-          if (existingLabel) {
-            this.updateStructureLabelData(structure, existingLabel);
-            // Use scratch vector for label position
-            getWorldPositionForHexCoordsInto(col, row, this.scratchLabelPosition);
-            this.scratchLabelPosition.y += 2;
-            existingLabel.position.copy(this.scratchLabelPosition);
-          }
-
-          this.dummy.position.copy(this.scratchPosition);
-
-          const rotationSeed = hashCoordinates(col, row);
-          const rotationIndex = Math.floor(rotationSeed * 6);
-          const randomRotation = (rotationIndex * Math.PI) / 3;
-          this.dummy.rotation.y = randomRotation;
-          this.dummy.updateMatrix();
-
-          // Add point icon for this structure
-          if (this.pointsRenderers) {
-            // Use scratch vector for icon position
-            this.scratchIconPosition.copy(this.scratchPosition);
-            this.scratchIconPosition.y += 2;
-
-            const renderer = this.getRendererForStructure(structure);
-            if (renderer) {
-              renderer.setPoint({
-                entityId: structure.entityId,
-                position: this.scratchIconPosition,
-              });
-            }
-          }
-
-          // Handle attachments
-          const entityNumericId = Number(structure.entityId);
-          const templates = this.resolveStructureAttachmentsForRender(structure);
-          if (templates.length > 0) {
-            attachmentRetain.add(entityNumericId);
-            const signature = this.getAttachmentSignature(templates);
-            const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
-            if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
-              this.attachmentManager.spawnAttachments(entityNumericId, templates);
-              this.structureAttachmentSignatures.set(entityNumericId, signature);
-              this.activeStructureAttachmentEntities.add(entityNumericId);
-            }
-
-            this.tempCosmeticPosition.copy(this.scratchPosition);
-            this.tempCosmeticRotation.copy(this.dummy.rotation);
-
-            const baseTransform = {
-              position: this.tempCosmeticPosition,
-              rotation: this.tempCosmeticRotation,
-              scale: this.dummy.scale,
-            };
-
-            const mountTransforms = resolveStructureMountTransforms(
-              structure.structureType,
-              baseTransform,
-              this.structureAttachmentTransformScratch,
-            );
-
-            this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
-          } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
-            this.attachmentManager.removeAttachments(entityNumericId);
-            this.activeStructureAttachmentEntities.delete(entityNumericId);
-            this.structureAttachmentSignatures.delete(entityNumericId);
-          }
+          const rotationY = this.resolveVisibleStructureRotationY(structure);
+          this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
 
           // Cosmetic skins typically have a single model (index 0)
           const model = models[0];
@@ -1662,6 +1456,54 @@ export class StructureManager {
     } catch (error) {
       console.error("Failed to preload structure models", error);
     }
+  }
+
+  private resolveVisibleStructureRotationY(structure: StructureInfo): number {
+    if (structure.structureType === StructureType.Bank) {
+      return (4 * Math.PI) / 6;
+    }
+
+    const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+    const rotationIndex = Math.floor(rotationSeed * 6);
+    return (rotationIndex * Math.PI) / 3;
+  }
+
+  private syncVisibleStructurePresentation(
+    previous: StructureInfo | undefined,
+    next: StructureInfo,
+    rotationY: number,
+    attachmentRetain?: Set<number>,
+  ): void {
+    applyVisibleStructurePresentation({
+      previousStructure: previous,
+      structure: next,
+      rotationY,
+      dummy: this.dummy,
+      scratchPosition: this.scratchPosition,
+      scratchLabelPosition: this.scratchLabelPosition,
+      scratchIconPosition: this.scratchIconPosition,
+      tempCosmeticPosition: this.tempCosmeticPosition,
+      tempCosmeticRotation: this.tempCosmeticRotation,
+      getWorldPositionForHexCoordsInto,
+      getLabel: (entityId) => this.entityIdLabels.get(entityId),
+      updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
+      getRendererForStructure: (structure) => this.getRendererForStructure(structure),
+      resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
+      getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),
+      activeAttachmentEntities: this.activeStructureAttachmentEntities,
+      attachmentSignatures: this.structureAttachmentSignatures,
+      spawnAttachments: (entityId, templates) => this.attachmentManager.spawnAttachments(entityId, templates),
+      removeAttachments: (entityId) => this.attachmentManager.removeAttachments(entityId),
+      resolveMountTransforms: (structure, baseTransform) =>
+        resolveStructureMountTransforms(
+          structure.structureType,
+          baseTransform,
+          this.structureAttachmentTransformScratch,
+        ),
+      updateAttachmentTransforms: (entityId, baseTransform, mountTransforms) =>
+        this.attachmentManager.updateAttachmentTransforms(entityId, baseTransform, mountTransforms),
+      attachmentRetain,
+    });
   }
 
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {
