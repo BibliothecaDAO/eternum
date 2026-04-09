@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24171837943-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-04-09T04:09:26.172Z",
-  "updatedAt": "2026-04-09T04:10:29.374Z",
+  "updatedAt": "2026-04-09T04:10:38.425Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-04-09T04:10:38.425Z"
     },
     {
       "id": "configure-world",
@@ -68,5 +69,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-skid-922.json",
     "worldAddress": "0x07cbaf62c2c37cf7efe7fd1555852be47cdf0005207531760dc3a8c4afca4224",
     "createGameTxHash": "0x5e94899b8a83cf491bc5e3a1d70a1429556113be7f5865f6207da84cb200a94"
+  },
+  "activeLease": {
+    "launchRequestId": "24171837943-1",
+    "workflowRunId": 24171837943,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-04-09T04:10:38.425Z",
+    "expiresAt": "2026-04-09T04:55:38.425Z"
   }
 }
