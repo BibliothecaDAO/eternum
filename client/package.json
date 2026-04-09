@@ -5,18 +5,16 @@
   "scripts": {
     "build": "pnpm --dir ./apps/game build",
     "build:docs": "pnpm --dir ./apps/game-docs build",
-    "build:landing": "pnpm --dir ./apps/landing build",
     "build:packages": "pnpm --dir ../packages/types build && pnpm --dir ../packages/amm-sdk build && pnpm --dir ../packages/ammv2-sdk build && pnpm --dir ../packages/torii build && pnpm --dir ../packages/provider build && pnpm --dir ../packages/dojo build && pnpm --dir ../packages/core build && pnpm --dir ../packages/react build",
     "dev": "pnpm --dir ./apps/game dev",
     "dev:docs": "cd ./apps/game-docs && vocs dev",
-    "dev:landing": "pnpm --dir ./apps/landing dev",
     "format": "npx prettier --write . --root=..",
     "format:check": "npx prettier --check . --root=..",
     "knip": "npx knip --exclude binaries,dependencies",
     "lint": "pnpm --dir ./apps/game lint",
     "lint:fix": "pnpm --dir ./apps/game lint:fix",
     "test:client": "pnpm --dir ./apps/game test",
-    "typecheck": "pnpm --dir ./apps/game typecheck && pnpm --dir ./apps/landing typecheck && pnpm --dir ./apps/eternum-mobile typecheck && pnpm --dir ./apps/onchain-agent typecheck && pnpm --dir ./apps/realtime-server typecheck"
+    "typecheck": "pnpm --dir ./apps/game typecheck && pnpm --dir ./apps/eternum-mobile typecheck && pnpm --dir ./apps/onchain-agent typecheck && pnpm --dir ./apps/realtime-server typecheck"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

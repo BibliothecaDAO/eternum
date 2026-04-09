@@ -1,6 +1,5 @@
 packages:
   - client
-  - client/apps/landing
   - client/apps/game
   - client/apps/realtime-server
   - client/apps/game-docs
