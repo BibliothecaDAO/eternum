@@ -1,15 +1,12 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { getCharacterName } from "@/utils/agent";
-import {
-  getAddressName,
-  getArmyRelicEffects,
-  getBlockTimestamp,
-  getGuildFromPlayerAddress,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
+import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
+import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useCallback, useMemo, useState } from "react";
@@ -48,6 +45,10 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const liveExplorerTroops = useComponentValue(
+    components.ExplorerTroops,
+    getEntityIdFromKeys([BigInt(armyEntityId)]),
+  )?.troops;
 
   const {
     data: explorerData,
@@ -57,18 +58,27 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     queryKey: ["explorer", String(armyEntityId)],
     queryFn: async () => {
       if (!toriiClient || !armyEntityId) return undefined;
-      const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
-      const relicEffects = explorer.explorer
-        ? getArmyRelicEffects(explorer.explorer.troops, getBlockTimestamp().currentArmiesTick)
-        : [];
-      return { ...explorer, relicEffects };
+      return getExplorerFromToriiClient(toriiClient, armyEntityId);
     },
     staleTime: 5000,
   });
 
   const explorer = explorerData?.explorer;
   const explorerResources = explorerData?.resources;
-  const relicEffects = explorerData?.relicEffects ?? [];
+  const staminaSnapshot = useMemo(
+    () =>
+      getExplorerStaminaSnapshot({
+        currentArmiesTick,
+        snapshotTroops: explorer?.troops,
+        liveTroops: liveExplorerTroops,
+      }),
+    [currentArmiesTick, explorer?.troops, liveExplorerTroops],
+  );
+  const currentTroops = staminaSnapshot?.troops ?? null;
+  const relicEffects = useMemo(
+    () => (currentTroops ? getArmyRelicEffects(currentTroops, currentArmiesTick) : []),
+    [currentArmiesTick, currentTroops],
+  );
 
   const {
     data: structureData,
@@ -106,11 +116,8 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
-    const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
-    const maxStamina = StaminaManager.getMaxStamina(
-      explorer.troops.category as TroopType,
-      explorer.troops.tier as TroopTier,
-    );
+    const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
+    const maxStamina = staminaSnapshot?.max ?? 0;
 
     const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
     const isMine = structure?.owner === userAddress;
@@ -129,7 +136,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [explorer, structure, components, userAddress, armyEntityId, mode, currentArmiesTick]);
+  }, [explorer, structure, components, userAddress, armyEntityId, mode, staminaSnapshot]);
 
   const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
     if (!derivedData) return undefined;
