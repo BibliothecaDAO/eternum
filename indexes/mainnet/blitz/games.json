@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-09T11:40:40.815Z",
+  "updatedAt": "2026-04-09T11:42:19.112Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -116,7 +116,7 @@
       "path": "runs/mainnet/blitz/bltz-glow-217.json",
       "inputPath": "inputs/mainnet/blitz/bltz-glow-217/24182892759-1.json",
       "status": "complete",
-      "updatedAt": "2026-04-09T11:40:40.815Z",
+      "updatedAt": "2026-04-09T11:42:19.112Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -126,10 +126,8 @@
       "durationSeconds": 3600,
       "artifacts": {
         "indexerCreated": true,
-        "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-04-09T09:58:50.838Z",
-        "pendingIndexerTierTarget": "pro",
-        "pendingIndexerTierRequestedAt": "2026-04-09T11:40:39.493Z"
+        "indexerTier": "pro",
+        "lastIndexerDescribeAt": "2026-04-09T11:42:19.112Z"
       }
     },
     "bltz-glow-335": {
