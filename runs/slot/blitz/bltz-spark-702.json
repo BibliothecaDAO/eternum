@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24172159194-1",
   "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-04-09T04:21:24.985Z",
-  "updatedAt": "2026-04-09T04:23:06.907Z",
+  "updatedAt": "2026-04-09T04:23:15.838Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -54,9 +54,10 @@
     {
       "id": "grant-lootchest-role",
       "title": "Setting up loot chests",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Setting up loot chests started",
+      "startedAt": "2026-04-09T04:23:15.838Z"
     },
     {
       "id": "create-indexer",
@@ -74,5 +75,13 @@
     "createGameTxHash": "0x2e4f7b82fd8fd61504e1696af64d4bd9f3595bbaa636b7ffcffa555b84069ae",
     "configureTxHash": "0x24f7646e645d5d574abafa07a56465695919e55a77da4f88bd16d79bca99fcb",
     "worldConfigTxHash": "0x24f7646e645d5d574abafa07a56465695919e55a77da4f88bd16d79bca99fcb"
+  },
+  "activeLease": {
+    "launchRequestId": "24172159194-1",
+    "workflowRunId": 24172159194,
+    "workflowRunAttempt": 1,
+    "stepId": "grant-lootchest-role",
+    "acquiredAt": "2026-04-09T04:23:15.838Z",
+    "expiresAt": "2026-04-09T05:08:15.838Z"
   }
 }
