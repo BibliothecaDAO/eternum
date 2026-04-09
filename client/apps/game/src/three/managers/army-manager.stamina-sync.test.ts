@@ -2,6 +2,10 @@
 
 import { describe, expect, it, vi } from "vitest";
 
+interface NavigatorWithBattery extends Navigator {
+  getBattery?: () => Promise<{ level: number; charging: boolean }>;
+}
+
 const { getBlockTimestampMock, getComponentValueMock, getEntityIdFromKeysMock, getStaminaMock } = vi.hoisted(() => ({
   getBlockTimestampMock: vi.fn(() => ({
     currentBlockTimestamp: 0,
@@ -31,8 +35,9 @@ vi.hoisted(() => {
     currentUrl.createObjectURL = vi.fn(() => "blob:test");
   }
 
-  if (globalThis.navigator && typeof globalThis.navigator.getBattery !== "function") {
-    Object.defineProperty(globalThis.navigator, "getBattery", {
+  const navigatorWithBattery = globalThis.navigator as NavigatorWithBattery | undefined;
+  if (navigatorWithBattery && typeof navigatorWithBattery.getBattery !== "function") {
+    Object.defineProperty(navigatorWithBattery, "getBattery", {
       value: vi.fn(async () => ({ level: 1, charging: true })),
       configurable: true,
     });

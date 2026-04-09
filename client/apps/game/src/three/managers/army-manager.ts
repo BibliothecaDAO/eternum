@@ -1641,12 +1641,13 @@ export class ArmyManager {
       attackTowardDegrees: attackTowardDegrees ?? undefined,
       pendingUpdate,
       resolveCurrentStamina: ({ troopCount, onChainStamina, category, tier }) =>
-        this.calculateArmyCurrentStamina({
+        this.resolveArmyStaminaSnapshot({
+          entityId: params.entityId,
           troopCount,
           onChainStamina,
           category,
           tier,
-        }),
+        })?.current ?? finalCurrentStamina,
     });
     finalTroopCount = pendingSpawnState.troopCount;
     finalCurrentStamina = pendingSpawnState.currentStamina;
