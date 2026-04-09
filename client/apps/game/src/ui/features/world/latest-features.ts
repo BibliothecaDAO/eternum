@@ -22,6 +22,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-10",
+    title: "Structure Ghosting Hardening",
+    description:
+      "World map structures now discard stale render passes when chunk bounds change mid-update, so old buildings stop flashing onto newly loaded terrain during fast chunk and zoom transitions.",
+    type: "fix",
+  },
+  {
     date: "2026-04-09",
     title: "Canvas Guard Cleanup",
     description:

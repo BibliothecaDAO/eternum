@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   MANAGER_UNCOMMITTED_CHUNK,
+  createAsyncPassFence,
   createCoalescedAsyncUpdateRunner,
   isCommittedManagerChunk,
   shouldAcceptManagerChunkRequest,
@@ -35,6 +36,32 @@ describe("createCoalescedAsyncUpdateRunner", () => {
 
     await triggerDuringRun();
     expect(calls.filter((entry) => entry === "drain").length).toBe(2);
+  });
+});
+
+describe("createAsyncPassFence", () => {
+  it("keeps a captured snapshot current until the fence is invalidated", () => {
+    const fence = createAsyncPassFence();
+    const snapshot = fence.capture();
+
+    expect(fence.isCurrent(snapshot)).toBe(true);
+
+    fence.invalidate();
+
+    expect(fence.isCurrent(snapshot)).toBe(false);
+  });
+
+  it("supersedes earlier snapshots when the fence is invalidated multiple times", () => {
+    const fence = createAsyncPassFence();
+    const initialSnapshot = fence.capture();
+
+    fence.invalidate();
+    const refreshedSnapshot = fence.capture();
+    fence.invalidate();
+
+    expect(fence.isCurrent(initialSnapshot)).toBe(false);
+    expect(fence.isCurrent(refreshedSnapshot)).toBe(false);
+    expect(fence.isCurrent(fence.capture())).toBe(true);
   });
 });
 
