@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bun run --watch src/server.ts",
     "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --pretty false",
     "start": "bun run src/server.ts",
     "client": "bun run src/ws/client.ts",
     "test": "vitest run",

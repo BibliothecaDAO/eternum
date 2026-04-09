@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
     "build-storybook": "storybook build",
     "codegen": "graphql-codegen --config codegen.ts",
     "dev": "vite",

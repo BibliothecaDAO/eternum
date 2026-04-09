@@ -216,6 +216,7 @@
     "knip": "NODE_OPTIONS=--max-old-space-size=8192 pnpm dlx knip@5.80.0 --exclude binaries,dependencies",
     "lint": "pnpm --recursive run lint",
     "lint:fix": "pnpm --recursive run lint:fix",
+    "typecheck": "pnpm --dir ./client typecheck",
     "test": "pnpm --recursive run test",
     "summary:weekly": "node scripts/generate-weekly-summary.js",
     "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js",
@@ -277,9 +278,7 @@
       "client/apps/landing",
       "client/apps/game",
       "client/apps/realtime-server",
-      "client/apps/balancing",
       "client/apps/game-docs",
-      "client/apps/torii",
       "client/apps/heavy-load",
       "client/apps/eternum-mobile",
       "client/apps/onchain-agent",
@@ -287,8 +286,8 @@
       "client/apps/amm-indexerv2",
       "config",
       "packages/*",
-      "contracts/season_pass/scripts/deployment",
-      "contracts/season_resources/scripts/deployment",
+      "contracts/season_pass/ext/scripts/deployment",
+      "contracts/season_resources/ext/scripts/deployment",
       "scripts/lords-distribution"
     ],
     "catalog": {

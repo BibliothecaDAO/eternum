@@ -1906,7 +1906,6 @@ This file is subject to change, please keep an eye on the repository for potenti
     interface
   * [Landing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/landing) - Landing page
   * [Game Docs](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game-docs) - Game documentation
-  * [Balancing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/balancing) - Game balancing tools
 * [Contracts](https://github.com/BibliothecaDAO/eternum/tree/main/contracts) - Cairo/Dojo smart contracts
   * Game contracts
   * Season Pass contracts
@@ -7343,4 +7342,3 @@ Lords who prove themselves in Elite bracket games.
     Chest rewards. This section will be updated as more information is made available to the community.
   </p>
 </div>
-

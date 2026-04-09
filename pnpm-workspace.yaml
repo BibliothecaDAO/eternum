@@ -3,9 +3,7 @@ packages:
   - client/apps/landing
   - client/apps/game
   - client/apps/realtime-server
-  - client/apps/balancing
   - client/apps/game-docs
-  - client/apps/torii
   - client/apps/heavy-load
   - client/apps/eternum-mobile
   - client/apps/onchain-agent
@@ -13,8 +11,8 @@ packages:
   - client/apps/amm-indexerv2
   - config
   - packages/*
-  - contracts/season_pass/scripts/deployment
-  - contracts/season_resources/scripts/deployment
+  - contracts/season_pass/ext/scripts/deployment
+  - contracts/season_resources/ext/scripts/deployment
   - scripts/lords-distribution
 
 autoInstallPeers: true
