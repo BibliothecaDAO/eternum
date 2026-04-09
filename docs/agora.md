@@ -9,8 +9,8 @@ involve LORDS are routed through two pools automatically (Token A -> LORDS -> To
 The system has four layers:
 
 ```
-Cairo Contracts          Indexer              SDK                 Game UI
-(contracts/amm/)   -->  (amm-indexer/)  -->  (amm-sdk/)    -->  (amm/ feature)
+Cairo Contracts          Indexer                SDK                 Game UI
+(contracts/amm/)   -->  (amm-indexerv2/)  -->  (amm-sdk/)    -->  (amm/ feature)
 On-chain AMM            Hono API server      TypeScript client   React dashboard
 Starknet events         PostgreSQL + Drizzle  @bibliothecadao/    Swap, Liquidity,
                         OHLCV candles          amm-sdk            Charts, History
@@ -57,19 +57,19 @@ Key contract entrypoints (called by the SDK):
 - `create_pool(token_address, lp_fee_num, lp_fee_denom, protocol_fee_num, protocol_fee_denom)` (admin)
 - `set_pool_fee(...)`, `set_fee_recipient(recipient)`, `set_paused(paused)` (admin)
 
-### 2. Indexer (`client/apps/amm-indexer/`)
+### 2. Indexer (`client/apps/amm-indexerv2/`)
 
-A Hono API server that indexes on-chain AMM events into PostgreSQL via Drizzle ORM. It serves pool state, swap history,
-liquidity events, OHLCV price candles, pool statistics, user positions, and swap quotes.
+A Hono API server that indexes AMM factory and pair events into PostgreSQL via Drizzle ORM. It serves pair discovery,
+swap history, liquidity events, OHLCV price candles, pool statistics, and LP holder positions.
 
 Database schema (Drizzle, in `src/schema.ts`):
 
-- `pools` -- Current pool state (reserves, LP supply, fee parameters)
-- `swaps` -- Every swap event with amounts, fees, pre/post prices
-- `liquidity_events` -- Every add/remove liquidity event
-- `price_candles` -- OHLCV candles at intervals: `1m`, `5m`, `15m`, `1h`, `4h`, `1d`
-- `pool_snapshots` -- Periodic reserve snapshots
-- `pool_fee_changes` -- Admin fee change history
+- `factories` -- Factory fee settings and pair counts
+- `pairs` -- Current pair state (token addresses, reserves, LP supply)
+- `pair_swaps` -- Every swap event with token in/out amounts and fee amount
+- `pair_liquidity_events` -- Every add/remove liquidity event
+- `pair_lp_balances` -- Current LP balances by pair and owner
+- `pair_price_candles` -- OHLCV candles keyed by pair and interval
 
 ### 3. SDK (`packages/amm-sdk/`)
 
@@ -387,8 +387,8 @@ All three must be non-empty for the AMM UI to activate. The `useAmm` hook checks
 | `contracts/amm/src/lp_token.cairo`                              | ERC-20 LP token contract                                                                                                                |
 | `contracts/amm/src/tests/`                                      | Cairo integration tests (snforge)                                                                                                       |
 | `contracts/amm/Scarb.toml`                                      | Cairo package config (eternum_amm v1.0.0)                                                                                               |
-| `client/apps/amm-indexer/api/app.ts`                            | Hono REST API definition (all endpoints)                                                                                                |
-| `client/apps/amm-indexer/src/schema.ts`                         | Drizzle ORM schema (pools, swaps, liquidity_events, price_candles, pool_snapshots, pool_fee_changes)                                    |
+| `client/apps/amm-indexerv2/api/app.ts`                          | Hono REST API definition for factory, pair, swap, liquidity, candle, and LP position endpoints                                          |
+| `client/apps/amm-indexerv2/src/schema.ts`                       | Drizzle ORM schema for factories, pairs, swaps, liquidity events, LP balances, transfers, and candles                                   |
 | `packages/amm-sdk/src/index.ts`                                 | SDK entry point, `AmmClient` class, re-exports                                                                                          |
 | `packages/amm-sdk/src/api/client.ts`                            | `AmmApiClient` -- REST client for the indexer                                                                                           |
 | `packages/amm-sdk/src/transactions/swap.ts`                     | `SwapTransactions` -- builds Starknet swap Calls                                                                                        |
