@@ -29,6 +29,13 @@ const allLatestFeatures: LatestFeature[] = [
     type: "fix",
   },
   {
+    date: "2026-04-09",
+    title: "Canvas Guard Cleanup",
+    description:
+      "Game entry no longer carries dead tutorial overlay guards, so the world canvas stops falling into a non-interactive state from stale legacy DOM classes.",
+    type: "fix",
+  },
+  {
     date: "2026-04-08",
     title: "Chunk Structure Sync Fix",
     description:
