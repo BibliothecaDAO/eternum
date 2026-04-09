@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-09T04:32:22.835Z",
+  "updatedAt": "2026-04-09T04:47:10.368Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1124,6 +1124,19 @@
         "describedAt": "2026-04-09T04:32:22.835Z"
       },
       "updatedAt": "2026-04-09T04:32:22.835Z"
+    },
+    "bltz-skid-922": {
+      "gameName": "bltz-skid-922",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-skid-922/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-09T04:47:10.368Z"
+      },
+      "updatedAt": "2026-04-09T04:47:10.368Z"
     }
   }
 }
