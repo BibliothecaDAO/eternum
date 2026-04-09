@@ -1,5 +1,5 @@
 import { useMarketStore } from "@/hooks/store/use-market-store";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { comparePrices } from "@/hooks/helpers/use-best-price";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import Button from "@/ui/design-system/atoms/button";
@@ -38,7 +38,7 @@ interface UnifiedTradePanelProps {
 
 export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOffers }: UnifiedTradePanelProps) => {
   const dojo = useDojo();
-  const { currentDefaultTick } = useBlockTimestamp();
+  const currentDefaultTick = useCurrentDefaultTick();
   const resourceManager = useResourceManager(entityId);
 
   const tradeDirection = useMarketStore((state) => state.tradeDirection);

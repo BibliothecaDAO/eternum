@@ -1,6 +1,6 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, ID } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
@@ -18,7 +18,7 @@ interface MarketResourceRowProps {
 
 export const MarketResourceRow = memo(
   ({ entityId, resourceId, active, onClick, askPrice, bidPrice, ammPrice }: MarketResourceRowProps) => {
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
     const resourceManager = useResourceManager(entityId);
 
     const balance = useMemo(() => {

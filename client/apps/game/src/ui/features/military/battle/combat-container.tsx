@@ -1,6 +1,6 @@
 import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
@@ -113,7 +113,7 @@ export const CombatContainer = ({
 
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
 
   const accountName = useAccountStore((state) => state.accountName);
 

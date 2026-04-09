@@ -8,7 +8,7 @@ import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useQuery } from "@tanstack/react-query";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useCallback, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
@@ -40,7 +40,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   } = useDojo();
   const mode = useGameModeConfig();
 
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
