@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-glow-335",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-glow-335/24183541602-1.json",
   "latestLaunchRequestId": "24183541602-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-04-09T09:43:56.867Z",
-  "updatedAt": "2026-04-09T09:47:16.610Z",
+  "updatedAt": "2026-04-09T09:47:24.807Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-04-09T09:47:16.610Z"
+      "latestEvent": "Setting up gas coverage succeeded",
+      "startedAt": "2026-04-09T09:47:16.610Z",
+      "finishedAt": "2026-04-09T09:47:24.807Z"
     }
   ],
   "artifacts": {
@@ -91,14 +92,8 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-glow-335/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-09T09:47:10.915Z"
+    "lastIndexerDescribeAt": "2026-04-09T09:47:10.915Z",
+    "paymasterSynced": true
   },
-  "activeLease": {
-    "launchRequestId": "24183541602-1",
-    "workflowRunId": 24183541602,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-04-09T09:47:16.610Z",
-    "expiresAt": "2026-04-09T10:32:16.610Z"
-  }
+  "completedAt": "2026-04-09T09:47:24.807Z"
 }
