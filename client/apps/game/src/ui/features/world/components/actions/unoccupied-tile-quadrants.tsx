@@ -129,10 +129,10 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
             key={troopType}
             data-bonus-card="true"
             role="listitem"
-            className={`flex min-h-[74px] w-full min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-left ${tone.cardClassName}`}
+            className={`flex min-h-[64px] w-full min-w-0 items-center gap-1.5 rounded-xl border p-1.5 text-left ${tone.cardClassName}`}
           >
             <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tone.iconWrapClassName}`}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${tone.iconWrapClassName}`}
             >
               <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
             </div>

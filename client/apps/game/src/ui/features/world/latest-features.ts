@@ -22,6 +22,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-09",
+    title: "Biome Card Tightening",
+    description:
+      "Biome combat cards now use tighter spacing in the world action panel, so troop bonuses stay easier to scan without the terrain section crowding the rest of the tile details.",
+    type: "fix",
+  },
+  {
     date: "2026-04-08",
     title: "Chunk Structure Sync Fix",
     description:

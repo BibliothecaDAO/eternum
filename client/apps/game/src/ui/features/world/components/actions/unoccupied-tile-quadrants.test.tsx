@@ -100,6 +100,8 @@ describe("BiomeSummaryCard", () => {
     const bonusCards = container.querySelectorAll('[data-bonus-card="true"]');
     expect(bonusCards).toHaveLength(3);
     expect(Array.from(bonusCards).every((card) => card.className.includes("w-full"))).toBe(true);
+    expect(Array.from(bonusCards).every((card) => card.className.includes("min-h-[64px]"))).toBe(true);
+    expect(Array.from(bonusCards).every((card) => card.className.includes("p-1.5"))).toBe(true);
 
     expect(container.textContent).toContain("Penalty");
     expect(container.textContent).toContain("Neutral");
