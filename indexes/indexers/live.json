@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-09T09:58:53.170Z",
+  "updatedAt": "2026-04-09T10:02:26.768Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1150,6 +1150,19 @@
         "describedAt": "2026-04-09T09:58:53.170Z"
       },
       "updatedAt": "2026-04-09T09:58:53.170Z"
+    },
+    "bltz-glow-335": {
+      "gameName": "bltz-glow-335",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-glow-335/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-09T10:02:26.767Z"
+      },
+      "updatedAt": "2026-04-09T10:02:26.768Z"
     }
   }
 }
