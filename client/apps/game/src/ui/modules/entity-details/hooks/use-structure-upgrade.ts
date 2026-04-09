@@ -1,5 +1,5 @@
 import { getStructuresDataFromTorii } from "@/dojo/queries";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   type RealmUpgradeAction,
   type RealmUpgradeActionStatus,
@@ -166,7 +166,7 @@ const isRealmUpgradeLoadingState = (upgradeActionState: RealmUpgradeActionStatus
 
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
   const { setup, account, network } = useDojo();
-  const { currentDefaultTick } = useBlockTimestamp();
+  const currentDefaultTick = useCurrentDefaultTick();
   const pendingUpgrade = useRealmUpgradeStore((state) =>
     structureEntityId ? (state.upgradesByRealm[structureEntityId] ?? null) : null,
   );

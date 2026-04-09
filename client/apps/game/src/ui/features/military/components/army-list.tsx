@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 
@@ -16,7 +16,7 @@ import { ArmyChip } from "./army-chip";
 import { CompactDefenseDisplay } from "./compact-defense-display";
 
 export const ArmyList = ({ structure }: { structure: ComponentValue<ClientComponents["Structure"]["schema"]> }) => {
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureId = Number(structure?.entity_id ?? 0);
 

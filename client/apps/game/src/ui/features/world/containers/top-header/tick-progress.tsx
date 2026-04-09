@@ -1,6 +1,6 @@
 import { useUISound } from "@/audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, formatTime } from "@bibliothecadao/eternum";
@@ -20,7 +20,7 @@ export const TickProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setCycleProgress = useUIStore((state) => state.setCycleProgress);
   const setCycleTime = useUIStore((state) => state.setCycleTime);
-  const { currentBlockTimestamp } = useBlockTimestamp();
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
   const mode = useGameModeConfig();
   const cycleTime = configManager.getTick(TickIds.Armies);
   const hasValidCycle = cycleTime > 0;

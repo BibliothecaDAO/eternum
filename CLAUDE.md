@@ -22,9 +22,9 @@ These files contain app-specific guidelines, architecture decisions, and convent
 ## Build, Test & Development Commands
 
 Run `pnpm install` once at the workspace root. Use `pnpm dev` for the Blitz client (`client/apps/game`) and `pnpm dev`
-for the mobile client (`client/apps/eternum-mobile`). Production bundles come from `pnpm build`, and landing/docs builds
-use `pnpm build:landing` or `pnpm build:docs`. Launch the full local stack with `pnpm run contract:start:local`; stop it
-via `pnpm run contract:stop:local`. When iterating on packages, prefer `pnpm --dir packages/<name> build` to verify
+for the mobile client (`client/apps/eternum-mobile`). Production bundles come from `pnpm build`, and docs builds use
+`pnpm build:docs`. Launch the full local stack with `pnpm run contract:start:local`; stop it via
+`pnpm run contract:stop:local`. When iterating on packages, prefer `pnpm --dir packages/<name> build` to verify
 TypeScript output.
 
 ## Coding Style & Naming Conventions

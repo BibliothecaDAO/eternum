@@ -142,7 +142,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
         },
         {
           find: "@videos",
-          replacement: path.resolve(__dirname, "../landing/src/assets/videos"),
+          replacement: path.resolve(__dirname, "./src/assets/videos"),
         },
       ],
     },

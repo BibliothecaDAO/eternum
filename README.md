@@ -59,9 +59,7 @@ eternum/
 ├── client/                    # Frontend applications
 │   └── apps/
 │       ├── game/              # Main game client (React + Three.js)
-│       ├── landing/           # Landing page
-│       ├── game-docs/         # Documentation site (Vocs)
-│       └── balancing/         # Game balancing tools
+│       └── game-docs/         # Documentation site (Vocs)
 ├── contracts/                 # Cairo/Dojo smart contracts
 ├── packages/                  # Shared libraries & SDK
 │   ├── core/                  # @bibliothecadao/eternum (core SDK)

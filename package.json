@@ -10,7 +10,6 @@
     "start:amm-indexerv2": "pnpm --dir ./client/apps/amm-indexerv2 start",
     "build": "pnpm --dir ./client/apps/game build",
     "build:docs": "cd client/apps/game-docs && pnpm build",
-    "build:landing": "pnpm --dir ./client/apps/landing build",
     "build:packages": "pnpm --dir ./packages/types build && pnpm --dir ./packages/amm-sdk build && pnpm --dir ./packages/ammv2-sdk build && pnpm --dir ./packages/torii build && pnpm --dir ./packages/provider build && pnpm --dir ./packages/dojo build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",
     "build:mobile": "pnpm --dir ./client/apps/eternum-mobile build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
@@ -18,7 +17,6 @@
     "dev:webgpu": "pnpm --dir ./client/apps/game dev:webgpu",
     "dev:mainnet": "NODE_ENV=mainnet pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
-    "dev:landing": "pnpm --dir ./client/apps/landing dev",
     "dev:mobile": "pnpm --dir ./client/apps/eternum-mobile dev",
     "preview": "pnpm --dir ./client/apps/game preview",
     "_comment_local_network_": "_______________________________________________",
@@ -216,6 +214,7 @@
     "knip": "NODE_OPTIONS=--max-old-space-size=8192 pnpm dlx knip@5.80.0 --exclude binaries,dependencies",
     "lint": "pnpm --recursive run lint",
     "lint:fix": "pnpm --recursive run lint:fix",
+    "typecheck": "pnpm --dir ./client typecheck",
     "test": "pnpm --recursive run test",
     "summary:weekly": "node scripts/generate-weekly-summary.js",
     "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js",
@@ -274,12 +273,9 @@
   "workspaces": {
     "packages": [
       "client",
-      "client/apps/landing",
       "client/apps/game",
       "client/apps/realtime-server",
-      "client/apps/balancing",
       "client/apps/game-docs",
-      "client/apps/torii",
       "client/apps/heavy-load",
       "client/apps/eternum-mobile",
       "client/apps/onchain-agent",
@@ -287,8 +283,8 @@
       "client/apps/amm-indexerv2",
       "config",
       "packages/*",
-      "contracts/season_pass/scripts/deployment",
-      "contracts/season_resources/scripts/deployment",
+      "contracts/season_pass/ext/scripts/deployment",
+      "contracts/season_resources/ext/scripts/deployment",
       "scripts/lords-distribution"
     ],
     "catalog": {

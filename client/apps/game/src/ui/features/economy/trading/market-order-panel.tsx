@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -39,7 +39,7 @@ const MarketResource = memo(
     bidPrice: number;
     ammPrice: number;
   }) => {
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
     const resourceManager = useResourceManager(entityId);
 
     const balance = useMemo(() => {
@@ -280,7 +280,7 @@ const OrderRow = memo(
 
     const playTradeExecuteSound = useUISound("ui.trade_execute");
 
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
 
     const resourceManager = useResourceManager(entityId);
 
@@ -535,7 +535,7 @@ const OrderCreation = memo(
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
     const [showConfirmation, setShowConfirmation] = useState(false);
-    const { currentBlockTimestamp } = useBlockTimestamp();
+    const currentBlockTimestamp = useCurrentBlockTimestamp();
 
     const playTradePlaceSound = useUISound("ui.trade_place");
 
@@ -645,7 +645,7 @@ const OrderCreation = memo(
       return calculateDonkeysNeeded(orderWeightKg);
     }, [orderWeightKg]);
 
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
 
     const resourceManager = useResourceManager(entityId);
 

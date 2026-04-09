@@ -24,7 +24,8 @@
     "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",
     "test:three:types": "tsc --noEmit --pretty false -p tsconfig.three-types.json",
     "test:ui": "vitest --ui",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc --pretty false"
   },
   "dependencies": {
     "@bibliothecadao/ammv2-sdk": "workspace:*",
