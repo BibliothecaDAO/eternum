@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-glow-217",
-    "launchRequestId": "24182892759-1",
+    "gameName": "bltz-glow-335",
+    "launchRequestId": "24183541602-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24182892759,
+    "workflowRunId": 24183541602,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "a25513e6-49fd-4f01-9ddc-c03eb61dddc8"
+    "stepId": "create-world",
+    "leaseId": "523b83c4-a578-4dbf-9fa1-6644aeeef450"
   },
-  "acquiredAt": "2026-04-09T09:31:05.448Z",
-  "heartbeatAt": "2026-04-09T09:31:10.694Z",
-  "expiresAt": "2026-04-09T09:31:10.694Z",
-  "releasedAt": "2026-04-09T09:31:10.694Z"
+  "acquiredAt": "2026-04-09T09:44:05.982Z",
+  "heartbeatAt": "2026-04-09T09:44:05.982Z",
+  "expiresAt": "2026-04-09T09:54:05.982Z"
 }
