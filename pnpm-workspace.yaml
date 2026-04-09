@@ -1,11 +1,8 @@
 packages:
   - client
-  - client/apps/landing
   - client/apps/game
   - client/apps/realtime-server
-  - client/apps/balancing
   - client/apps/game-docs
-  - client/apps/torii
   - client/apps/heavy-load
   - client/apps/eternum-mobile
   - client/apps/onchain-agent
@@ -13,8 +10,8 @@ packages:
   - client/apps/amm-indexerv2
   - config
   - packages/*
-  - contracts/season_pass/scripts/deployment
-  - contracts/season_resources/scripts/deployment
+  - contracts/season_pass/ext/scripts/deployment
+  - contracts/season_resources/ext/scripts/deployment
   - scripts/lords-distribution
 
 autoInstallPeers: true
@@ -31,16 +28,10 @@ catalog:
   "@dojoengine/torii-client": 1.7.0-preview.3
   "@dojoengine/torii-wasm": 1.7.0-preview.3
   "@dojoengine/utils": 1.7.0-preview.3
-  "@metamask/sdk": ^0.32.1
-  "@solana/web3.js": ^1.98.0
   "@starknet-react/chains": 5.0.3
   "@starknet-react/core": 5.0.3
-  "@types/react": ^18
-  "@types/react-dom": ^18
   bignumber.js: ^9.3.0
-  open: ^10.1.0
   posthog-js: ^1.160.0
   react: ^18
   react-dom: ^18
   starknet: ^8.5.2
-  starknetkit: ^2.10.4
