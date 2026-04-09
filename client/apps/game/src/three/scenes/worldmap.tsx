@@ -2017,14 +2017,11 @@ export default class WorldmapScene extends WarpTravel {
 
   // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
-    const overlay = document.querySelector(".shepherd-modal-is-visible");
-    const overlayClick = document.querySelector(".allow-modal-click");
     const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
     const { army, structure, chest } = hexCoords
       ? this.getHexagonEntity(hexCoords)
       : { army: undefined, structure: undefined, chest: undefined };
     const clickPlan = resolveWorldmapHexClickPlan({
-      hasBlockingOverlay: Boolean(overlay && !overlayClick),
       hexCoords,
       accountAddress,
       army: army ? { id: army.id, owner: army.owner } : undefined,
@@ -2084,12 +2081,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
-    const overlay = document.querySelector(".shepherd-modal-overlay-container");
-    const overlayClick = document.querySelector(".allow-modal-click");
-    if (overlay && !overlayClick) {
-      return;
-    }
-
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
 
