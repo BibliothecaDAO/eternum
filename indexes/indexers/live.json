@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-08T03:42:21.967Z",
+  "updatedAt": "2026-04-09T04:32:22.835Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1111,6 +1111,19 @@
         "describedAt": "2026-04-08T03:42:21.967Z"
       },
       "updatedAt": "2026-04-08T03:42:21.967Z"
+    },
+    "bltz-spark-702": {
+      "gameName": "bltz-spark-702",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-spark-702/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-09T04:32:22.835Z"
+      },
+      "updatedAt": "2026-04-09T04:32:22.835Z"
     }
   }
 }
