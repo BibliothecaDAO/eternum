@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-skid-922",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-skid-922/24171837943-1.json",
   "latestLaunchRequestId": "24171837943-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-04-09T04:09:26.172Z",
-  "updatedAt": "2026-04-09T04:11:51.324Z",
+  "updatedAt": "2026-04-09T04:12:09.869Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-04-09T04:11:51.324Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-04-09T04:11:51.324Z",
+      "finishedAt": "2026-04-09T04:12:09.869Z"
     }
   ],
   "artifacts": {
@@ -77,14 +78,13 @@
     "createGameTxHash": "0x5e94899b8a83cf491bc5e3a1d70a1429556113be7f5865f6207da84cb200a94",
     "configureTxHash": "0x7b13834cd2814a783e0bcb828071a036b4c55795883eff2067810590fb0ffe3",
     "worldConfigTxHash": "0x7b13834cd2814a783e0bcb828071a036b4c55795883eff2067810590fb0ffe3",
-    "lootChestRoleTxHash": "0x5924a561776f1feae5fd2aa20775aaf82ace0d4e60525bd083661f7c47af952"
+    "lootChestRoleTxHash": "0x5924a561776f1feae5fd2aa20775aaf82ace0d4e60525bd083661f7c47af952",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-skid-922/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-04-09T04:12:07.957Z"
   },
-  "activeLease": {
-    "launchRequestId": "24171837943-1",
-    "workflowRunId": 24171837943,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-04-09T04:11:51.324Z",
-    "expiresAt": "2026-04-09T04:56:51.324Z"
-  }
+  "completedAt": "2026-04-09T04:12:09.869Z"
 }
