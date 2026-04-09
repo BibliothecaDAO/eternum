@@ -46,6 +46,7 @@ import {
   runManagerChunkUpdateRuntime,
 } from "./manager-chunk-runtime";
 import {
+  createAsyncPassFence,
   createCoalescedAsyncUpdateRunner,
   isCommittedManagerChunk,
   MANAGER_UNCOMMITTED_CHUNK,
@@ -92,6 +93,13 @@ import {
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
+
+interface VisibleStructurePassSnapshot {
+  chunkKey: string;
+  passFenceSnapshot: {
+    version: number;
+  };
+}
 
 interface StructureInstanceBinding {
   modelIndex: number;
@@ -173,6 +181,7 @@ export class StructureManager {
   private needsSpatialReindex = false;
   private hasPendingModelBounds = false;
   private visibleStructureCount = 0;
+  private readonly visibleStructurePassFence = createAsyncPassFence();
   private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
   private previouslyActiveStructureModels: Set<InstancedModel> = new Set();
   private previouslyActiveCosmeticStructureModels: Set<InstancedModel> = new Set();
@@ -260,7 +269,7 @@ export class StructureManager {
     this.renderChunkSize = renderChunkSize;
     this.structures = new StructureRecordStore({
       onRemove: this.handleStructureRecordRemoved,
-      onStructuresChanged: () => this.updateVisibleStructures(),
+      onStructuresChanged: () => this.requestVisibleStructuresRefresh(),
       isAddressMine: (address) => isAddressEqualToAccount(address),
     });
     this.labelsGroup = labelsGroup || new Group();
@@ -297,7 +306,7 @@ export class StructureManager {
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
       // Update labels when ownership changes
-      this.updateVisibleStructures();
+      this.requestVisibleStructuresRefresh();
     });
 
     // Initialize points-based icon renderers
@@ -444,7 +453,7 @@ export class StructureManager {
             console.log("[StructureManager] Points-based icon renderers initialized");
 
             if (isCommittedManagerChunk(this.currentChunk)) {
-              this.updateVisibleStructures();
+              this.requestVisibleStructuresRefresh();
             }
           }
         },
@@ -991,7 +1000,7 @@ export class StructureManager {
     }
 
     if (visibleUpdateMode === "rebuild" || shouldRebuildVisibleStructuresForStructureUpdate(visibleUpdateInput)) {
-      this.updateVisibleStructures();
+      this.requestVisibleStructuresRefresh();
     }
   }
 
@@ -1017,7 +1026,7 @@ export class StructureManager {
           return false;
         }
 
-        await this.updateVisibleStructures();
+        await this.requestVisibleStructuresRefresh();
       },
       isDestroyed: () => this.isDestroyed,
       onPreviousUpdateFailed: (error) => {
@@ -1080,11 +1089,13 @@ export class StructureManager {
         isVisible: (hexCoords) => this.isInCurrentChunk(hexCoords),
       })
     ) {
-      void this.updateVisibleStructures();
+      void this.requestVisibleStructuresRefresh();
     }
   }
 
-  private updateVisibleStructures(): Promise<void> {
+  private requestVisibleStructuresRefresh(): Promise<void> {
+    this.visibleStructurePassFence.invalidate();
+
     if (this.isDestroyed) {
       return Promise.resolve();
     }
@@ -1096,6 +1107,10 @@ export class StructureManager {
     return this.runVisibleStructuresUpdate().catch((error) => {
       console.error("Failed to update visible structures", error);
     });
+  }
+
+  private updateVisibleStructures(): Promise<void> {
+    return this.requestVisibleStructuresRefresh();
   }
 
   private resolveStructureAttachmentsForRender(structure: StructureInfo): CosmeticAttachmentTemplate[] {
@@ -1156,7 +1171,7 @@ export class StructureManager {
       : this.getInstanceIdFromEntityId(next.structureType, next.entityId);
 
     if (!model || instanceId === undefined) {
-      this.updateVisibleStructures();
+      this.requestVisibleStructuresRefresh();
       return;
     }
 
@@ -1179,20 +1194,21 @@ export class StructureManager {
       return;
     }
     try {
+      const visibleStructurePassSnapshot = this.captureVisibleStructurePassSnapshot();
       const visibleStructureIds = new Set<ID>();
       const attachmentRetain = new Set<number>();
 
       // Get visible structures from spatial index
-      const [startRow, startCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
+      const [startRow, startCol] = visibleStructurePassSnapshot.chunkKey.split(",").map(Number);
       const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
-      this.visibleStructureCount = visibleStructures.length;
       const renderPlan = this.createVisibleStructureRenderPlan(visibleStructures);
       await this.preloadVisibleStructureRenderPlan(renderPlan);
 
-      if (this.isDestroyed) {
+      if (this.shouldDiscardVisibleStructurePass(visibleStructurePassSnapshot)) {
         return;
       }
 
+      this.visibleStructureCount = visibleStructures.length;
       this.wonderEntityIdMaps.clear();
 
       this.previouslyActiveStructureModels.forEach((model) => model.setCount(0));
@@ -1281,6 +1297,21 @@ export class StructureManager {
       hasStructureModel: (structureType) => this.structureModels.has(structureType),
       hasCosmeticModel: (cosmeticId) => this.cosmeticStructureModels.has(cosmeticId),
     });
+  }
+
+  private captureVisibleStructurePassSnapshot(): VisibleStructurePassSnapshot {
+    return {
+      chunkKey: this.currentChunk,
+      passFenceSnapshot: this.visibleStructurePassFence.capture(),
+    };
+  }
+
+  private shouldDiscardVisibleStructurePass(snapshot: VisibleStructurePassSnapshot): boolean {
+    return (
+      this.isDestroyed ||
+      this.currentChunk !== snapshot.chunkKey ||
+      !this.visibleStructurePassFence.isCurrent(snapshot.passFenceSnapshot)
+    );
   }
 
   private async preloadVisibleStructureRenderPlan(
@@ -1589,6 +1620,7 @@ export class StructureManager {
 
   public setChunkBounds(bounds?: { box: Box3; sphere: Sphere }) {
     this.currentChunkBounds = bounds ?? undefined;
+    this.visibleStructurePassFence.invalidate();
     // Model worldBounds are NOT applied here — they are deferred to
     // applyPendingModelBounds() which runs after instance data is rebuilt
     // in performVisibleStructuresUpdate. Applying bounds before instance
@@ -2010,7 +2042,7 @@ export class StructureManager {
         isAlly: structure.isAlly,
       })
     ) {
-      this.updateVisibleStructures();
+      this.requestVisibleStructuresRefresh();
     }
   }
 
