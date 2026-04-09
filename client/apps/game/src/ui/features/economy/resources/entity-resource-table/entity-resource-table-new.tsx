@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
@@ -166,7 +166,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const mode = useGameModeConfig();
   const goToStructure = useGoToStructure(setup);
-  const { currentDefaultTick } = useBlockTimestamp();
+  const currentDefaultTick = useCurrentDefaultTick();
 
   const selectedStructureId = entityId && entityId !== 0 ? Number(entityId) : null;
 

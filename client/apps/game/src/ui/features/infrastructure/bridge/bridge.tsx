@@ -1,5 +1,5 @@
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
@@ -494,7 +494,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
   };
 
   const resourceManager = useResourceManager(selectedStructureId || 0);
-  const { currentDefaultTick: currentTick } = useBlockTimestamp();
+  const currentTick = useCurrentDefaultTick();
 
   const isBridgeButtonDisabled = useMemo(() => {
     if (!selectedStructureId || isBridgePending) return true;

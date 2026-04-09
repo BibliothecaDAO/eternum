@@ -1,6 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useOwnedMilitaryStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   createPendingWorldmapFxKey,
   dispatchPendingWorldmapFxStart,
@@ -111,7 +111,7 @@ export const UnifiedArmyCreationModal = ({
   const [troopCount, setTroopCount] = useState(0);
   const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const previousStructureIdRef = useRef<number | null>(null);
 

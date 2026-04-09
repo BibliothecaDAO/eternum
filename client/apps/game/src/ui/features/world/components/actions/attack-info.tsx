@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { ActionPath, configManager } from "@bibliothecadao/eternum";
 import { useStaminaManager } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
@@ -14,7 +14,7 @@ interface AttackInfoProps {
 }
 
 export const AttackInfo = memo(({ selectedEntityId }: AttackInfoProps) => {
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
   const staminaManager = useStaminaManager(selectedEntityId);
   const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 

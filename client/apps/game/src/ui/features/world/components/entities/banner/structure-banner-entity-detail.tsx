@@ -12,7 +12,7 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
@@ -72,7 +72,7 @@ const StructureBannerEntityDetailContent = memo(
     const mode = useGameModeConfig();
     const resolvedWorldMode = useResolvedWorldGameMode();
     const isEternumMode = resolvedWorldMode === "eternum";
-    const { currentBlockTimestamp } = useBlockTimestamp();
+    const currentBlockTimestamp = useCurrentBlockTimestamp();
     const openPopup = useUIStore((state) => state.openPopup);
     const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);

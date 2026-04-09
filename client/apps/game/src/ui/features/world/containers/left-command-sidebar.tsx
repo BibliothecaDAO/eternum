@@ -1,6 +1,6 @@
 import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -521,7 +521,7 @@ const StructureListItem = memo(
     const liveStructure = useComponentValue(components.Structure, entityKey as any);
     const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
     const productionBoostBonus = useComponentValue(components.ProductionBoostBonus, entityKey as any);
-    const { currentArmiesTick } = useBlockTimestamp();
+    const currentArmiesTick = useCurrentArmiesTick();
 
     const activeRelicEffects = useMemo(() => {
       const structureRelics = productionBoostBonus

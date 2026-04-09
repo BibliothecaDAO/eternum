@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resetBootstrap } from "@/init/bootstrap";
 import { getActiveWorld } from "@/runtime/world";
@@ -23,7 +23,7 @@ export const EndgameModal = () => {
   const navigate = useNavigate();
   const setModal = useUIStore((state) => state.setModal);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const { currentBlockTimestamp } = useBlockTimestamp();
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
 
   const [closedReviewKeys, setClosedReviewKeys] = useState<Record<string, true>>({});
   const [reviewOpenKey, setReviewOpenKey] = useState<string | null>(null);

@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
@@ -52,7 +52,7 @@ export const CompactDefenseDisplay = ({
   const {
     setup: { components },
   } = useDojo();
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
   const isBanner = variant === "banner";
   const canOpenModal = Boolean(canManageDefense && structureId && structureId > 0);
   const structureComponent = useMemo(() => {

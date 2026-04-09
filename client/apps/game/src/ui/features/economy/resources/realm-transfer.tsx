@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
@@ -45,7 +45,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     account: { account },
   } = useDojo();
 
-  const { currentDefaultTick: tick } = useBlockTimestamp();
+  const tick = useCurrentDefaultTick();
 
   const selectedStructureEntityId = useUIStore((state) => state.structureEntityId);
 

@@ -1,5 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 
@@ -24,7 +24,7 @@ import CrownIcon from "lucide-react/dist/esm/icons/crown";
 
 const RealmVillageDetails = () => {
   const dojo = useDojo();
-  const { currentBlockTimestamp } = useBlockTimestamp();
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const mode = useGameModeConfig();

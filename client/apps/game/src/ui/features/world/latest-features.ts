@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-10",
+    title: "Army Stamina Alignment",
+    description:
+      "World map army labels and selected-army stamina bars now stay aligned more reliably, including passive regen and live troop-state updates that previously drifted apart.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
     title: "Structure Ghosting Hardening",
     description:
       "World map structures now discard stale render passes when chunk bounds change mid-update, so old buildings stop flashing onto newly loaded terrain during fast chunk and zoom transitions.",
