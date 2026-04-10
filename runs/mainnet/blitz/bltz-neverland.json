@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24265414704-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-04-10T21:41:14.834Z",
-  "updatedAt": "2026-04-10T21:43:12.109Z",
+  "updatedAt": "2026-04-10T21:43:16.108Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-10T21:43:16.108Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-neverland.json",
     "worldAddress": "0x06f9846a0841b8a0916d58b9ab0fae906f26d0d9976527a5393689f12cfa46b4",
     "createGameTxHash": "0x40aba387e1bb5ed26b5d52a83c2f6276b49eb49280c9d50c71e8a2e629767e5"
+  },
+  "activeLease": {
+    "launchRequestId": "24265414704-1",
+    "workflowRunId": 24265414704,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-04-10T21:43:16.108Z",
+    "expiresAt": "2026-04-10T22:28:16.108Z"
   }
 }
