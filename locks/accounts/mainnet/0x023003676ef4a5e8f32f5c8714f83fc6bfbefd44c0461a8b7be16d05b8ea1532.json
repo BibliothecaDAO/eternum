@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "NAWARRIOR",
-    "launchRequestId": "24260074957-1",
+    "gameName": "bltz-neverland",
+    "launchRequestId": "24265414704-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24260074957,
+    "workflowRunId": 24265414704,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "74ea50b3-901b-4c48-90b1-188a5121a4b1"
+    "stepId": "create-world",
+    "leaseId": "c0eafaaf-7aff-4e31-ad0c-e10aa320b69c"
   },
-  "acquiredAt": "2026-04-10T19:25:00.943Z",
-  "heartbeatAt": "2026-04-10T19:25:06.449Z",
-  "expiresAt": "2026-04-10T19:25:06.449Z",
-  "releasedAt": "2026-04-10T19:25:06.449Z"
+  "acquiredAt": "2026-04-10T21:41:23.924Z",
+  "heartbeatAt": "2026-04-10T21:41:23.924Z",
+  "expiresAt": "2026-04-10T21:51:23.924Z"
 }
