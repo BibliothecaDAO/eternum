@@ -206,15 +206,7 @@ const useRealtimeChatConfig = () => {
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
 
-const StructureInfoStat = ({
-  icon: Icon,
-  label,
-  title,
-}: {
-  icon: LucideIcon;
-  label: string;
-  title: string;
-}) => (
+const StructureInfoStat = ({ icon: Icon, label, title }: { icon: LucideIcon; label: string; title: string }) => (
   <span
     className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-xxs text-gold/75"
     title={title}

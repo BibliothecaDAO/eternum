@@ -98,9 +98,17 @@ describe("entry overlay helpers", () => {
   });
 
   it("resolves phase order from handoff to ready", () => {
-    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: false, isSlow: false })).toBe("handoff");
-    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: false })).toBe("scene_warmup");
-    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: true })).toBe("slow");
-    expect(resolveEntryOverlayPhase({ isReady: true, hasNavigated: true, isSlow: true })).toBe("ready");
+    expect(
+      resolveEntryOverlayPhase({ isReady: false, hasNavigated: false, isSlow: false, didSafetyTimeout: false }),
+    ).toBe("handoff");
+    expect(
+      resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: false, didSafetyTimeout: false }),
+    ).toBe("scene_warmup");
+    expect(
+      resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: true, didSafetyTimeout: false }),
+    ).toBe("slow");
+    expect(
+      resolveEntryOverlayPhase({ isReady: true, hasNavigated: true, isSlow: true, didSafetyTimeout: false }),
+    ).toBe("ready");
   });
 });
