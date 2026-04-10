@@ -142,6 +142,10 @@ export class ArmyActionManager {
     return tile?.occupier_type === TileOccupier.Spire;
   }
 
+  private getAttackStaminaRequirement(): number {
+    return configManager.getCombatConfig().stamina_attack_req;
+  }
+
   public findActionPaths(
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
@@ -199,6 +203,7 @@ export class ArmyActionManager {
         actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;
+        staminaCost = this.getAttackStaminaRequirement();
       } else if (hasChest) {
         actionType = ActionType.Chest;
       } else if (biome) {
