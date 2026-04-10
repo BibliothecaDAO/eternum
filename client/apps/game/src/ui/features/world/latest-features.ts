@@ -30,6 +30,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-04-10",
+    title: "Resource Action Tick Fix",
+    description:
+      "Trading, transfers, bridge checks, and realm upgrade requirements now use the live default tick again, so newly produced resources stop waiting on a coarse UI refresh window before they count toward actions.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
     title: "Army Stamina Alignment",
     description:
       "World map army labels and selected-army stamina bars now stay aligned more reliably, including passive regen and live troop-state updates that previously drifted apart.",
