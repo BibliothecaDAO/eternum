@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "NAWARRIOR",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/mainnet/blitz/nawarrior/24260555253-1.json",
   "latestLaunchRequestId": "24260555253-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-04-10T19:22:17.882Z",
-  "updatedAt": "2026-04-10T19:34:08.062Z",
+  "updatedAt": "2026-04-10T19:34:12.999Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,12 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"NAWARRIOR\" on mainnet.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"NAWARRIOR\"\n\u001b[2m[+156ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"NAWARRIOR\" in 135ms (0x02bf8d10...2c686c)\n\u001b[2m[+166ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x02bf8d10...2c686c\n\u001b[2m[+277ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for NAWARRIOR as missing via slot d describe\n\u001b[2m[+12.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for NAWARRIOR as missing via slot d describe\n\u001b[2m[+12.6s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 12.4s: Torii deployment \"NAWARRIOR\" is not available after the Slot command completed\nError: Torii deployment \"NAWARRIOR\" is not available after the Slot command completed\n    at requireExistingToriiState (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:319:15)\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:398:21)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:891:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:889:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1055:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1089:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1104:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:147:25)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-04-10T19:25:19.430Z",
-      "finishedAt": "2026-04-10T19:25:38.938Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"NAWARRIOR\" on mainnet.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"NAWARRIOR\"\n\u001b[2m[+156ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"NAWARRIOR\" in 135ms (0x02bf8d10...2c686c)\n\u001b[2m[+166ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x02bf8d10...2c686c\n\u001b[2m[+277ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for NAWARRIOR as missing via slot d describe\n\u001b[2m[+12.6s]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for NAWARRIOR as missing via slot d describe\n\u001b[2m[+12.6s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 12.4s: Torii deployment \"NAWARRIOR\" is not available after the Slot command completed\nError: Torii deployment \"NAWARRIOR\" is not available after the Slot command completed\n    at requireExistingToriiState (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:319:15)\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:398:21)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:891:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:889:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1055:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1089:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1104:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:147:25)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-04-10T19:34:12.999Z",
+      "finishedAt": "2026-04-10T19:25:38.938Z"
     },
     {
       "id": "sync-paymaster",
@@ -86,5 +85,13 @@
     "createGameTxHash": "0x22523d21ee059e940b755b178c424740b2ae129138357e68ebba017f5cc3892",
     "configureTxHash": "0x4f52eec4270e6bda6a68f727622a12c45663ac878d9fd62ce8be8f9489ce530",
     "worldConfigTxHash": "0x4f52eec4270e6bda6a68f727622a12c45663ac878d9fd62ce8be8f9489ce530"
+  },
+  "activeLease": {
+    "launchRequestId": "24260555253-1",
+    "workflowRunId": 24260555253,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-04-10T19:34:12.999Z",
+    "expiresAt": "2026-04-10T20:19:12.999Z"
   }
 }
