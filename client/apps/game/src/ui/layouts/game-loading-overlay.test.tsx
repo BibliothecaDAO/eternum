@@ -6,6 +6,7 @@ const navigateMock = vi.fn();
 const setShowBlankOverlayMock = vi.fn();
 const setStructureEntityIdMock = vi.fn();
 const usePlayerStructuresMock = vi.fn();
+const useLocationMock = vi.fn();
 
 const uiStoreState = {
   isSpectating: false,
@@ -48,6 +49,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
+  useLocation: () => useLocationMock(),
 }));
 
 const { GameLoadingOverlay } = await import("./game-loading-overlay");
@@ -65,8 +67,10 @@ describe("GameLoadingOverlay", () => {
     setShowBlankOverlayMock.mockReset();
     setStructureEntityIdMock.mockReset();
     usePlayerStructuresMock.mockReset();
+    useLocationMock.mockReset();
     uiStoreState.isSpectating = false;
     uiStoreState.loadingStates = {};
+    useLocationMock.mockReturnValue({ pathname: "/play/hex", search: "", hash: "", state: null, key: "test" });
   });
 
   afterEach(async () => {
@@ -94,7 +98,7 @@ describe("GameLoadingOverlay", () => {
       worldMapPosition: { col: 4, row: 9 },
     });
     expect(navigateMock).toHaveBeenCalledWith("/play/map?col=4&row=9");
-    expect(container.textContent).toContain("Entering World View");
-    expect(container.textContent).toContain("Transitioning to the world map");
+    expect(container.textContent).toContain("Entering the Realm");
+    expect(container.textContent).toContain("Assembling the known world");
   });
 });

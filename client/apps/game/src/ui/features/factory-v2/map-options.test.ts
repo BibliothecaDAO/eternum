@@ -32,7 +32,7 @@ describe("Factory V2 map options", () => {
       "Relic discovery interval",
     );
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
-      "Prize token address",
+      "Entry ticket payment token address",
     );
     expect(blitzSections.find((section) => section.id === "explorationRewards")?.previewRows).toHaveLength(9);
   });

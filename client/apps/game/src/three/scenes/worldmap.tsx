@@ -309,6 +309,7 @@ import {
   prewarmWorldmapChunkPresentation,
   type WorldmapChunkPresentationTimeoutInfo,
 } from "./worldmap-chunk-presentation";
+import { recoverWorldmapMapLoadingStateFromChunkTimeout } from "./worldmap-timeout-loading-recovery";
 import { resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
 import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
@@ -3136,7 +3137,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async refreshWarpTravelScene(): Promise<void> {
-    await this.updateVisibleChunks(true);
+    const didRefresh = await this.updateVisibleChunks(true);
+    if (!didRefresh) {
+      throw new Error("World map did not finish its initial interactive refresh.");
+    }
   }
 
   private commitCurrentChunkAuthority(chunkKey: string): void {
@@ -5316,6 +5320,11 @@ export default class WorldmapScene extends WarpTravel {
 
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
     const areaKey = this.clearStalledChunkAreaState(info.chunkKey);
+    this.toriiLoadingCounter = recoverWorldmapMapLoadingStateFromChunkTimeout({
+      phase: info.phase,
+      toriiLoadingCounter: this.toriiLoadingCounter,
+      clearMapLoading: () => this.state.setLoading(LoadingStateKey.Map, false),
+    });
     this.traceChunk("chunk_presentation_timeout", {
       chunkKey: info.chunkKey,
       areaKey,

@@ -72,6 +72,7 @@ export const GameLoadingOverlay = () => {
   const worldMapReadyTimeoutId = useRef<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [isReady, setIsReady] = useState(false);
+  const [didSafetyTimeout, setDidSafetyTimeout] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -94,7 +95,11 @@ export const GameLoadingOverlay = () => {
     (delayMs: number) => {
       if (hasDismissed.current) return;
       hasDismissed.current = true;
-      setTimeout(() => setShowBlankOverlay(false), delayMs);
+      markGameEntryMilestone("overlay-dismissed");
+      setTimeout(() => {
+        markGameEntryMilestone("world-interactive");
+        setShowBlankOverlay(false);
+      }, delayMs);
     },
     [setShowBlankOverlay],
   );
@@ -169,7 +174,8 @@ export const GameLoadingOverlay = () => {
     isWaitingForWorldmapReady.current = true;
     let cancelled = false;
 
-    void waitForWorldmapSceneReady(WORLDMAP_READY_TIMEOUT_MS).then(() => {
+    void (async () => {
+      const didReceiveSceneReadySignal = await waitForWorldmapSceneReady(WORLDMAP_READY_TIMEOUT_MS);
       isWaitingForWorldmapReady.current = false;
       if (cancelled) {
         return;
@@ -177,11 +183,15 @@ export const GameLoadingOverlay = () => {
 
       hasSeenWorldmapReady.current = true;
       markGameEntryMilestone("worldmap-scene-ready");
+      if (didReceiveSceneReadySignal) {
+        markGameEntryMilestone("renderer-scene-ready");
+      }
+      setDidSafetyTimeout(false);
 
       if (hasSeenMapLoading.current && !mapLoading) {
         markWorldMapReady(0);
       }
-    });
+    })();
 
     return () => {
       cancelled = true;
@@ -224,12 +234,11 @@ export const GameLoadingOverlay = () => {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!hasDismissed.current) {
-        hasDismissed.current = true;
-        setShowBlankOverlay(false);
+        setDidSafetyTimeout(true);
       }
     }, SAFETY_TIMEOUT_MS);
     return () => clearTimeout(timeout);
-  }, [setShowBlankOverlay]);
+  }, []);
 
   const isSlow = !isReady && elapsedMs >= SLOW_THRESHOLD_MS;
   const hasNavigatedToTarget = isSpectating
@@ -239,6 +248,7 @@ export const GameLoadingOverlay = () => {
     isReady,
     hasNavigated: hasNavigatedToTarget,
     isSlow,
+    didSafetyTimeout,
   });
 
   const progress = useMemo(() => {
@@ -249,6 +259,7 @@ export const GameLoadingOverlay = () => {
 
   const statements = useMemo(() => {
     if (phase === "ready") return ["Your realm awaits."];
+    if (phase === "timed_out") return ["World map startup is still blocked."];
     if (phase === "slow") return ["The realm is vast — still gathering intel..."];
     if (phase === "handoff") return ["Crossing into the world map..."];
     return ["Assembling the known world..."];
@@ -276,6 +287,14 @@ export const GameLoadingOverlay = () => {
         { id: "handoff", label: "World map located", status: "complete" },
         { id: "render", label: "Rendering terrain & structures", status: "running" },
         { id: "final", label: "Synchronizing realm", status: "running" },
+      ];
+    }
+
+    if (phase === "timed_out") {
+      return [
+        { id: "handoff", label: "World map located", status: "complete" },
+        { id: "render", label: "Rendering terrain & structures", status: "running" },
+        { id: "final", label: "Waiting for world interactivity", status: "running" },
       ];
     }
 

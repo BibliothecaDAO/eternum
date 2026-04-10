@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { MMRLeaderboard } from "./mmr-leaderboard";
 
+vi.mock("@starknet-react/core", () => ({
+  useAccount: vi.fn(() => ({ address: null })),
+}));
+
 vi.mock("@/ui/utils/utils", () => ({
   displayAddress: vi.fn((address: string) => address),
 }));
@@ -51,10 +55,20 @@ const buildRow = (overrides: Record<string, unknown> = {}) => ({
   new_mmr_low: "0x0",
   new_mmr_high: "0x0",
   event_timestamp: "0x65c8f0f0",
-  mmr_rank: 1,
+  mmr_rank: 4,
   total_rows: 1,
   ...overrides,
 });
+
+const getLeaderboardSqlUrl = (chainHost: string) =>
+  vi
+    .mocked(fetch)
+    .mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()))
+    .find((url) => {
+      if (!url.includes(chainHost)) return false;
+      const query = new URL(url).searchParams.get("query")?.toLowerCase() ?? "";
+      return query.includes("from events") && query.includes("mmr_rank");
+    });
 
 describe("MMRLeaderboard", () => {
   let container: HTMLDivElement;
@@ -144,7 +158,7 @@ describe("MMRLeaderboard", () => {
     expect(fetchedUrls.some((url) => url.includes("blitz-mainnet-global-1"))).toBe(true);
     expect(fetchedUrls.some((url) => url.includes("blitz-slot-global-1"))).toBe(false);
 
-    const mainnetUrl = fetchedUrls.find((url) => url.includes("blitz-mainnet-global-1"));
+    const mainnetUrl = getLeaderboardSqlUrl("blitz-mainnet-global-1");
     expect(mainnetUrl).toBeDefined();
 
     const mainnetQuery = new URL(mainnetUrl ?? "").searchParams.get("query") ?? "";
@@ -169,7 +183,7 @@ describe("MMRLeaderboard", () => {
     const fetchedUrlsAfterSwitch = vi
       .mocked(fetch)
       .mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
-    const slotUrl = fetchedUrlsAfterSwitch.find((url) => url.includes("blitz-slot-global-1"));
+    const slotUrl = getLeaderboardSqlUrl("blitz-slot-global-1");
     expect(slotUrl).toBeDefined();
 
     const slotQuery = new URL(slotUrl ?? "").searchParams.get("query") ?? "";

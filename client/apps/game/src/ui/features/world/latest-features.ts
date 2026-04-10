@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-10",
+    title: "World Map Ready Guard",
+    description:
+      "Fresh game entry now keeps the loading shell up until the first world map refresh actually succeeds, so players no longer drop into a visible map that cannot yet be clicked.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
     title: "Structure Capacity Icons",
     description:
       "Realm and village entries in the left sidebar now show compact population and free building-tile stats with small icons, making it clearer how much capacity and construction room each structure still has.",

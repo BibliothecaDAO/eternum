@@ -4,6 +4,9 @@ import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 
 describe("initializeSelectedRendererBackend", () => {
   it("uses the legacy backend directly for the shipping lane", async () => {
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+    });
     const legacyBackend = {
       capabilities: createRendererBackendCapabilities(),
       initialize: vi.fn(),
@@ -33,9 +36,13 @@ describe("initializeSelectedRendererBackend", () => {
     expect(legacyFactory).toHaveBeenCalledTimes(1);
     expect(experimentalFactory).not.toHaveBeenCalled();
     expect(result.diagnostics.activeMode).toBe("legacy-webgl");
+    vi.unstubAllGlobals();
   });
 
   it("falls back to the legacy backend when experimental init fails", async () => {
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+    });
     const error = new Error("webgpu init failed");
     const legacyFactory = vi.fn(async () => ({
       backend: {
@@ -74,5 +81,6 @@ describe("initializeSelectedRendererBackend", () => {
       requestedMode: "experimental-webgpu-auto",
     });
     expect(result.fallbackError).toBe(error);
+    vi.unstubAllGlobals();
   });
 });

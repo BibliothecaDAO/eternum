@@ -32,7 +32,7 @@ describe("worldmap refresh bounds ordering", () => {
     const methodSource = extractRefreshCurrentChunkMethod(readWorldmapSource());
 
     expect(methodSource).toMatch(
-      /handleWorldmapRefreshCommitRuntime\(\{[\s\S]*?commitPreparedTerrain: \(nextPreparedTerrain\) => \{[\s\S]*?commitWorldmapPreparedTerrainPresentation\(\{[\s\S]*?this\.applyPreparedTerrainChunk\(preparedTerrain\);[\s\S]*?this\.updateCurrentChunkBounds\(startRow, startCol\);/s,
+      /handleWorldmapRefreshCommitRuntime\(\{[\s\S]*?commitPreparedTerrain: \(nextPreparedTerrain\) => \{[\s\S]*?commitWorldmapPreparedTerrainPresentation\(\{[\s\S]*?onAfterApply:\s*\(\)\s*=>\s*\{[\s\S]*?this\.updateCurrentChunkBounds\(startRow, startCol\);/s,
     );
   });
 });

@@ -10,9 +10,9 @@ describe("Game card forge visibility", () => {
       "utf8",
     );
 
-    expect(source).toContain("const canRegisterPeriod = isUpcoming || (isOngoing && devModeOn);");
+    expect(source).toContain("const canRegisterPeriod = isBlitzMode && (isUpcoming || (isOngoing && devModeOn));");
     expect(source).toContain(
-      "const showForgeButton = canRegisterPeriod && game.config?.numHyperstructuresLeft !== null && playerAddress;",
+      "const showForgeButton = isBlitzMode && game.config?.numHyperstructuresLeft !== null && playerAddress;",
     );
   });
 });
