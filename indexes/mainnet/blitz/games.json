@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-10T19:24:20.448Z",
+  "updatedAt": "2026-04-10T19:24:25.090Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -175,12 +175,13 @@
       "path": "runs/mainnet/blitz/nawarrior.json",
       "inputPath": "inputs/mainnet/blitz/nawarrior/24260074957-1.json",
       "status": "running",
-      "updatedAt": "2026-04-10T19:24:20.448Z",
+      "updatedAt": "2026-04-10T19:24:25.090Z",
       "workflowRef": "next",
       "currentStepId": "configure-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-04-10T20:09:25.090Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "configure-world",
+      "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1775854800,
       "durationSeconds": 3600,
       "artifacts": {}
