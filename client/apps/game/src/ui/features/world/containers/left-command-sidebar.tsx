@@ -460,8 +460,9 @@ const LeftPanelHeader = memo(
       ? formatPopulationStatusLabel(livePopulation, livePopulationCapacity)
       : null;
     const buildingTilesStatusLabel =
-      selectedStructureMetadata?.buildingTilesAvailable !== null &&
-      selectedStructureMetadata?.buildingTilesTotal !== null
+      selectedStructureMetadata &&
+      selectedStructureMetadata.buildingTilesAvailable !== null &&
+      selectedStructureMetadata.buildingTilesTotal !== null
         ? formatAvailableBuildingTilesLabel(
             selectedStructureMetadata.buildingTilesAvailable,
             selectedStructureMetadata.buildingTilesTotal,
