@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-10T19:24:09.233Z",
+  "updatedAt": "2026-04-10T19:24:13.749Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -175,12 +175,13 @@
       "path": "runs/mainnet/blitz/nawarrior.json",
       "inputPath": "inputs/mainnet/blitz/nawarrior/24260074957-1.json",
       "status": "running",
-      "updatedAt": "2026-04-10T19:24:09.233Z",
+      "updatedAt": "2026-04-10T19:24:13.749Z",
       "workflowRef": "next",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-04-10T20:09:13.749Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": "configure-world",
       "startTime": 1775854800,
       "durationSeconds": 3600,
       "artifacts": {}
