@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-10T19:25:38.938Z",
+  "updatedAt": "2026-04-10T19:34:08.062Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -173,9 +173,9 @@
       "environment": "mainnet.blitz",
       "gameName": "NAWARRIOR",
       "path": "runs/mainnet/blitz/nawarrior.json",
-      "inputPath": "inputs/mainnet/blitz/nawarrior/24260074957-1.json",
+      "inputPath": "inputs/mainnet/blitz/nawarrior/24260555253-1.json",
       "status": "attention",
-      "updatedAt": "2026-04-10T19:25:38.938Z",
+      "updatedAt": "2026-04-10T19:34:08.062Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
       "hasRunningStep": false,
