@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-neverland/24265414704-1.json",
   "latestLaunchRequestId": "24265414704-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-10T21:41:14.834Z",
-  "updatedAt": "2026-04-10T21:44:06.616Z",
+  "updatedAt": "2026-04-10T21:44:23.853Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-04-10T21:44:06.616Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-04-10T21:44:06.616Z",
+      "finishedAt": "2026-04-10T21:44:23.853Z"
     },
     {
       "id": "sync-paymaster",
@@ -83,14 +84,12 @@
     "worldAddress": "0x06f9846a0841b8a0916d58b9ab0fae906f26d0d9976527a5393689f12cfa46b4",
     "createGameTxHash": "0x40aba387e1bb5ed26b5d52a83c2f6276b49eb49280c9d50c71e8a2e629767e5",
     "configureTxHash": "0x1386980bd2d3b6df610b6843ab57e1e24a3e7e471459512b3bd4674b0cda15d",
-    "worldConfigTxHash": "0x1386980bd2d3b6df610b6843ab57e1e24a3e7e471459512b3bd4674b0cda15d"
-  },
-  "activeLease": {
-    "launchRequestId": "24265414704-1",
-    "workflowRunId": 24265414704,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-04-10T21:44:06.616Z",
-    "expiresAt": "2026-04-10T22:29:06.616Z"
+    "worldConfigTxHash": "0x1386980bd2d3b6df610b6843ab57e1e24a3e7e471459512b3bd4674b0cda15d",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-neverland/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-04-10T21:44:21.973Z"
   }
 }
