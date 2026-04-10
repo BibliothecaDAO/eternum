@@ -6,7 +6,7 @@ type GridCoordinates = {
   row: number;
 };
 
-type EntryOverlayPhase = "handoff" | "scene_warmup" | "slow" | "ready";
+type EntryOverlayPhase = "handoff" | "scene_warmup" | "slow" | "timed_out" | "ready";
 
 export const getSceneWarmupProgress = (elapsedMs: number): number => {
   if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 82;
@@ -19,12 +19,15 @@ export const resolveEntryOverlayPhase = ({
   isReady,
   hasNavigated,
   isSlow,
+  didSafetyTimeout,
 }: {
   isReady: boolean;
   hasNavigated: boolean;
   isSlow: boolean;
+  didSafetyTimeout: boolean;
 }): EntryOverlayPhase => {
   if (isReady) return "ready";
+  if (didSafetyTimeout) return "timed_out";
   if (!hasNavigated) return "handoff";
   if (isSlow) return "slow";
   return "scene_warmup";
@@ -65,27 +68,27 @@ export const waitForHexceptionGridReady = (expected: GridCoordinates, timeoutMs:
   });
 };
 
-export const waitForWorldmapSceneReady = (timeoutMs: number): Promise<void> => {
+export const waitForWorldmapSceneReady = (timeoutMs: number): Promise<boolean> => {
   if (typeof window === "undefined") {
-    return Promise.resolve();
+    return Promise.resolve(true);
   }
 
   return new Promise((resolve) => {
     let settled = false;
 
-    const complete = () => {
+    const complete = (didReceiveSceneReadySignal: boolean) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeoutId);
       window.removeEventListener(WORLDMAP_SCENE_READY_EVENT, onReady as EventListener);
-      resolve();
+      resolve(didReceiveSceneReadySignal);
     };
 
     const onReady = () => {
-      complete();
+      complete(true);
     };
 
-    const timeoutId = window.setTimeout(complete, timeoutMs);
+    const timeoutId = window.setTimeout(() => complete(false), timeoutMs);
 
     window.addEventListener(WORLDMAP_SCENE_READY_EVENT, onReady as EventListener);
   });

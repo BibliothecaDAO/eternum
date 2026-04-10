@@ -77,7 +77,7 @@ describe("waitForWorldmapSceneReady", () => {
 
     window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT));
 
-    await expect(promise).resolves.toBeUndefined();
+    await expect(promise).resolves.toBe(true);
   });
 
   it("resolves on timeout when the worldmap ready event never arrives", async () => {
@@ -85,7 +85,7 @@ describe("waitForWorldmapSceneReady", () => {
 
     await vi.advanceTimersByTimeAsync(1200);
 
-    await expect(promise).resolves.toBeUndefined();
+    await expect(promise).resolves.toBe(false);
   });
 });
 
@@ -98,9 +98,17 @@ describe("entry overlay helpers", () => {
   });
 
   it("resolves phase order from handoff to ready", () => {
-    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: false, isSlow: false })).toBe("handoff");
-    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: false })).toBe("scene_warmup");
-    expect(resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: true })).toBe("slow");
-    expect(resolveEntryOverlayPhase({ isReady: true, hasNavigated: true, isSlow: true })).toBe("ready");
+    expect(
+      resolveEntryOverlayPhase({ isReady: false, hasNavigated: false, isSlow: false, didSafetyTimeout: false }),
+    ).toBe("handoff");
+    expect(
+      resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: false, didSafetyTimeout: false }),
+    ).toBe("scene_warmup");
+    expect(
+      resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: true, didSafetyTimeout: false }),
+    ).toBe("slow");
+    expect(resolveEntryOverlayPhase({ isReady: true, hasNavigated: true, isSlow: true, didSafetyTimeout: false })).toBe(
+      "ready",
+    );
   });
 });

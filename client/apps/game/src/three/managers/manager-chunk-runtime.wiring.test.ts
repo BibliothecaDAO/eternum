@@ -24,7 +24,7 @@ describe("manager chunk runtime wiring", () => {
     expect(structureManagerSource).toMatch(/runManagerChunkUpdateRuntime\(\{/);
     expect(structureManagerSource).toMatch(/state: this\.resolveChunkUpdateRuntimeState\(\)/);
     expect(structureManagerSource).toMatch(/shouldRunManagerChunkUpdate\(\{/);
-    expect(structureManagerSource).toMatch(/await this\.updateVisibleStructures\(\)/);
+    expect(structureManagerSource).toMatch(/await this\.requestVisibleStructuresRefresh\(\)/);
 
     expect(chestManagerSource).toMatch(/runManagerChunkUpdateRuntime\(\{/);
     expect(chestManagerSource).toMatch(/state: this\.resolveChunkUpdateRuntimeState\(\)/);

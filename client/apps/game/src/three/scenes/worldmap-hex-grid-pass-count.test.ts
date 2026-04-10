@@ -13,7 +13,7 @@ describe("worldmap hex-grid pass count", () => {
   it("reuses generated explored coverage metadata instead of rescanning the full render window during cache validation", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(/cacheMatricesForChunk\(startRow,\s*startCol,\s*expectedExploredTerrainInstances\)/);
+    expect(source).toMatch(/cacheMatricesForChunk\(\s*startRow,\s*startCol,\s*expectedExploredTerrainInstances,/);
     expect(source).toMatch(/cachedChunk\.set\("__meta__",/);
     expect(source).toMatch(/cachedMetadata\?\.expectedExploredTerrainInstances/);
   });

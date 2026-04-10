@@ -1,6 +1,6 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 
 import {
@@ -28,7 +28,7 @@ export const BuildingsList = ({
   producedResources: ResourcesIds[];
   productionBuildings: Building[];
 }) => {
-  const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const currentDefaultTick = useCoarseCurrentDefaultTick();
   // Guard against invalid realm data to prevent crashes
   if (!realm || !realm.position || !realm.entityId) {
     return (
@@ -83,13 +83,11 @@ export const BuildingsList = ({
           (building) => building.produced.resource === resourceId,
         );
 
-        const balance = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
         if (!resource) return null;
         const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
 
         return {
           resource: resourceId,
-          balance,
           production,
           buildings: buildingsForResource,
           isLabor: resourceId === ResourcesIds.Labor,
@@ -210,9 +208,6 @@ export const BuildingsList = ({
                     activeRelicEffects={activeRelicEffects}
                     canOpenProduction={production.buildings.length > 0}
                     onManageProduction={(resource) => onSelectProduction(resource)}
-                    currentDefaultTick={currentDefaultTick}
-                    currentArmiesTick={currentArmiesTick}
-                    armiesTickTimeRemaining={armiesTickTimeRemaining}
                   />
                 </div>
               </div>

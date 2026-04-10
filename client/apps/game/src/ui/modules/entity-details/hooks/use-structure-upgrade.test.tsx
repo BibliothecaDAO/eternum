@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useCurrentDefaultTick: () => 0,
   useBlockTimestamp: () => ({ currentDefaultTick: 0 }),
 }));
 

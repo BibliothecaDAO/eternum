@@ -35,6 +35,7 @@ vi.mock("@dojoengine/react", () => ({
 }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useCurrentArmiesTick: () => 5,
   useBlockTimestamp: () => ({
     currentBlockTimestamp: 0,
     currentDefaultTick: 0,

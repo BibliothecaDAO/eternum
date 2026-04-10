@@ -29,7 +29,10 @@ describe("game-entry-timeline", () => {
     const timeline = (window as Window & typeof globalThis & { __eternumGameEntryTimeline?: Array<{ name: string }> })
       .__eternumGameEntryTimeline;
 
-    expect(timeline).toEqual([{ elapsedMs: expect.any(Number), name: "modal-opened", timestamp: expect.any(Number) }]);
+    expect(timeline).toEqual([
+      { elapsedMs: expect.any(Number), name: "modal-opened", timestamp: expect.any(Number) },
+      { elapsedMs: expect.any(Number), name: "entry-requested", timestamp: expect.any(Number) },
+    ]);
   });
 
   it("records milestones and emits a browser event", () => {
@@ -44,7 +47,7 @@ describe("game-entry-timeline", () => {
     const timeline = (window as Window & typeof globalThis & { __eternumGameEntryTimeline?: Array<{ name: string }> })
       .__eternumGameEntryTimeline;
 
-    expect(timeline?.map((entry) => entry.name)).toEqual(["modal-opened", "bootstrap-started"]);
+    expect(timeline?.map((entry) => entry.name)).toEqual(["modal-opened", "entry-requested", "bootstrap-started"]);
     expect(events.at(-1)?.detail.name).toBe("bootstrap-started");
   });
 
@@ -56,7 +59,7 @@ describe("game-entry-timeline", () => {
     const timeline = (window as Window & typeof globalThis & { __eternumGameEntryTimeline?: Array<{ name: string }> })
       .__eternumGameEntryTimeline;
 
-    expect(timeline?.map((entry) => entry.name)).toEqual(["modal-opened", "bootstrap-started"]);
+    expect(timeline?.map((entry) => entry.name)).toEqual(["modal-opened", "entry-requested", "bootstrap-started"]);
   });
 
   it("records named durations for later inspection", () => {

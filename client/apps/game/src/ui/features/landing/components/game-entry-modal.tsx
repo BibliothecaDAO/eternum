@@ -61,6 +61,11 @@ import {
   deriveSettlementStatus,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
+import {
+  resolveGameEntryBlockingError,
+  resolveGameEntryModalPhase,
+  type GameEntryModalPhase as ModalPhase,
+} from "./game-entry-phase";
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
 import { SeasonPassOptionCard } from "./season-pass-option-card";
 import { SettlementPlannerMap } from "./settlement-planner-map";
@@ -767,19 +772,6 @@ const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).to
 type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
 type EternumSettlementMode = "realm" | "village";
-type ModalPhase =
-  | "loading"
-  | "forge"
-  | "hyperstructure"
-  | "settlement"
-  | "settlement-planner"
-  | "season-pass-required"
-  | "season-placement"
-  | "village-pass-required"
-  | "village-placement"
-  | "village-reveal"
-  | "ready"
-  | "error";
 
 type OwnedRealmOption = {
   entityId: number;
@@ -2943,6 +2935,7 @@ export const GameEntryModal = ({
 
   // Bootstrap state
   const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
   const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
 
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
@@ -3456,53 +3449,57 @@ export const GameEntryModal = ({
 
   // Both checks must complete before we can determine the final phase
   const checksComplete = settlementCheckComplete && hyperstructureCheckComplete;
+  const worldAvailabilityErrorMessage =
+    worldAvailability?.error instanceof Error ? worldAvailability.error.message : null;
+  const phaseError = useMemo(
+    () =>
+      bootstrapError ??
+      resolveGameEntryBlockingError({
+        worldAvailabilityErrorMessage,
+        isCheckingWorldAvailability,
+        isWorldAvailable: worldAvailability?.isAvailable ?? null,
+        hasWorldMeta: worldMeta != null,
+        worldMode,
+      }),
+    [
+      bootstrapError,
+      worldAvailabilityErrorMessage,
+      isCheckingWorldAvailability,
+      worldAvailability?.isAvailable,
+      worldMeta,
+      worldMode,
+    ],
+  );
 
   // Determine current phase
   const phase: ModalPhase = useMemo(() => {
-    let result: ModalPhase;
-    if (isForgeMode && isBlitzMode) {
-      // Forge mode does not require game bootstrap or settlement checks
-      result = "forge";
-    } else if (bootstrapError || bootstrapStatus === "error") {
-      result = "error";
-    } else if (bootstrapStatus !== "ready") {
-      result = "loading";
-    } else if (isSpectateMode) {
-      result = "ready";
-    } else if (worldMode === "unknown" || isCheckingWorldAvailability || !worldMeta) {
-      result = "loading";
-    } else if (isEternumMode) {
-      if (isLoadingEternumPrereqs) {
-        result = "loading";
-      } else if (villageRevealResult) {
-        result = "village-reveal";
-      } else if (unifiedSettlementPlannerEnabled) {
-        result =
-          hasSettledRealm && eternumEntryIntent === "play" && !seasonSettlementComplete
-            ? "ready"
-            : "settlement-planner";
-      } else if (eternumSettlementMode === "village") {
-        result = hasVillagePass ? "village-placement" : "village-pass-required";
-      } else if (seasonSettlementComplete || (hasSettledRealm && eternumEntryIntent === "play")) {
-        result = "ready";
-      } else {
-        result = hasSeasonPass ? "season-placement" : "season-pass-required";
-      }
-    } else if (!checksComplete) {
-      // Still checking settlement/hyperstructure status - stay in loading
-      result = "loading";
-    } else if (needsHyperstructureInit) {
-      // Hyperstructure init takes priority over settlement
-      result = "hyperstructure";
-    } else if (needsSettlement) {
-      result = "settlement";
-    } else {
-      result = "ready";
-    }
+    const result = resolveGameEntryModalPhase({
+      bootstrapStatus,
+      hasPhaseError: phaseError != null,
+      isForgeMode,
+      isBlitzMode,
+      isSpectateMode,
+      worldMode,
+      isCheckingWorldAvailability,
+      hasWorldMeta: worldMeta != null,
+      isEternumMode,
+      isLoadingEternumPrereqs,
+      hasVillageRevealResult: villageRevealResult != null,
+      unifiedSettlementPlannerEnabled,
+      hasSettledRealm,
+      eternumEntryIntent,
+      seasonSettlementComplete,
+      eternumSettlementMode,
+      hasVillagePass,
+      hasSeasonPass,
+      checksComplete,
+      needsHyperstructureInit,
+      needsSettlement,
+    });
 
     debugLog(worldName, "Phase determined:", result, {
       bootstrapStatus,
-      hasError: !!bootstrapError,
+      hasError: phaseError != null,
       isForgeMode,
       isBlitzMode,
       isSpectateMode,
@@ -3547,7 +3544,7 @@ export const GameEntryModal = ({
     return result;
   }, [
     bootstrapStatus,
-    bootstrapError,
+    phaseError,
     isForgeMode,
     isBlitzMode,
     isSpectateMode,
@@ -4079,6 +4076,7 @@ export const GameEntryModal = ({
 
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
+        markGameEntryMilestone("destination-resolved");
         markGameEntryMilestone("world-selection-started");
         updateTask("world", "running");
         await applyWorldSelection({ name: worldName, chain }, chain);
@@ -4127,7 +4125,7 @@ export const GameEntryModal = ({
     };
 
     startBootstrap();
-  }, [isOpen, isForgeMode, isBlitzMode, worldName, chain, updateTask]);
+  }, [isOpen, isForgeMode, isBlitzMode, worldName, chain, updateTask, bootstrapAttempt]);
 
   // Update task progress based on sync
   useEffect(() => {
@@ -4178,7 +4176,7 @@ export const GameEntryModal = ({
     plannerOpenedRef.current = false;
     // Trigger re-bootstrap
     setTimeout(() => {
-      setBootstrapStatus("loading");
+      setBootstrapAttempt((attempt) => attempt + 1);
     }, 100);
   }, []);
 
@@ -5216,7 +5214,7 @@ export const GameEntryModal = ({
           <AnimatePresence mode="wait">
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <BootstrapLoadingPanel tasks={tasks} progress={progress} error={bootstrapError} onRetry={handleRetry} />
+                <BootstrapLoadingPanel tasks={tasks} progress={progress} error={phaseError} onRetry={handleRetry} />
               </motion.div>
             )}
             {phase === "forge" && (

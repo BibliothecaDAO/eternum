@@ -23,6 +23,27 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-10",
+    title: "World Map Ready Guard",
+    description:
+      "Fresh game entry now keeps the loading shell up until the first world map refresh actually succeeds, so players no longer drop into a visible map that cannot yet be clicked.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
+    title: "Structure Capacity Icons",
+    description:
+      "Realm and village entries in the left sidebar now show compact population and free building-tile stats with small icons, making it clearer how much capacity and construction room each structure still has.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
+    title: "Resource Action Tick Fix",
+    description:
+      "Trading, transfers, bridge checks, and realm upgrade requirements now use the live default tick again, so newly produced resources stop waiting on a coarse UI refresh window before they count toward actions.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
     title: "Army Stamina Alignment",
     description:
       "World map army labels and selected-army stamina bars now stay aligned more reliably, including passive regen and live troop-state updates that previously drifted apart.",

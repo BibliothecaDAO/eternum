@@ -5,10 +5,13 @@ export const GAME_ENTRY_TIMELINE_EVENT_NAME = GAME_ENTRY_TIMELINE_EVENT;
 
 type GameEntryMilestone =
   | "modal-opened"
+  | "entry-requested"
+  | "destination-resolved"
   | "world-selection-started"
   | "world-selection-completed"
   | "world-profile-build-started"
   | "world-profile-build-completed"
+  | "world-profile-resolved"
   | "world-selection-state-persisted"
   | "asset-prefetch-scheduled"
   | "bootstrap-started"
@@ -27,7 +30,10 @@ type GameEntryMilestone =
   | "worldmap-navigation-started"
   | "worldmap-fetch-completed"
   | "worldmap-scene-ready"
-  | "overlay-ready";
+  | "renderer-scene-ready"
+  | "overlay-ready"
+  | "overlay-dismissed"
+  | "world-interactive";
 
 type GameEntryTimelineRecord = {
   elapsedMs: number;
@@ -62,6 +68,7 @@ export const startGameEntryTimeline = (): void => {
   gameEntryWindow.__eternumGameEntryDurations = {};
   gameEntryWindow.__eternumGameEntryTimeline = [];
   markGameEntryMilestone("modal-opened");
+  markGameEntryMilestone("entry-requested");
 };
 
 export const markGameEntryMilestone = (name: GameEntryMilestone): void => {
