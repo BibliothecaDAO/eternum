@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-09T12:12:16.954Z",
+  "updatedAt": "2026-04-10T19:17:48.873Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -150,6 +150,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-04-09T12:12:16.954Z"
       }
+    },
+    "NA-WARRIOR": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "NA-WARRIOR",
+      "path": "runs/mainnet/blitz/na-warrior.json",
+      "inputPath": "inputs/mainnet/blitz/na-warrior/24259901346-1.json",
+      "status": "running",
+      "updatedAt": "2026-04-10T19:17:48.873Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-04-10T21:00:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
