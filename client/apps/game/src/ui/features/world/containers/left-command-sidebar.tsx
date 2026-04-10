@@ -31,6 +31,12 @@ import {
   StructureGroupsMap,
   useStructureGroups,
 } from "@/ui/features/world/containers/top-header/structure-groups";
+import {
+  countOccupiedBuildingTilesByStructure,
+  formatAvailableBuildingTilesLabel,
+  formatPopulationStatusLabel,
+  resolveAvailableBuildingTiles,
+} from "@/ui/features/world/containers/structure-status";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
@@ -52,8 +58,8 @@ import {
   Structure,
   StructureType,
 } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import type { LucideIcon } from "lucide-react";
@@ -61,6 +67,7 @@ import Castle from "lucide-react/dist/esm/icons/castle";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
 import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
 import Crown from "lucide-react/dist/esm/icons/crown";
+import Hexagon from "lucide-react/dist/esm/icons/hexagon";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
@@ -70,6 +77,7 @@ import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Star from "lucide-react/dist/esm/icons/star";
 import Tent from "lucide-react/dist/esm/icons/tent";
+import Users from "lucide-react/dist/esm/icons/users";
 import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -99,6 +107,8 @@ type StructureWithMetadata = Structure & {
   realmLevelLabel: string | null;
   population: number;
   populationCapacity: number;
+  buildingTilesAvailable: number | null;
+  buildingTilesTotal: number | null;
   groupColor: StructureGroupColor | null;
   isFavorite: boolean;
   canUpgrade: boolean;
@@ -196,6 +206,39 @@ const useRealtimeChatConfig = () => {
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
 
+const StructureInfoStat = ({
+  icon: Icon,
+  label,
+  title,
+}: {
+  icon: LucideIcon;
+  label: string;
+  title: string;
+}) => (
+  <span
+    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-xxs text-gold/75"
+    title={title}
+  >
+    <Icon className="h-3 w-3 text-gold/60" />
+    <span>{label}</span>
+  </span>
+);
+
+const StructureStatusStats = ({
+  populationLabel,
+  buildingTilesLabel,
+}: {
+  populationLabel: string;
+  buildingTilesLabel: string | null;
+}) => (
+  <div className="flex flex-wrap items-center gap-1.5">
+    <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" />
+    {buildingTilesLabel ? (
+      <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Available / total building tiles" />
+    ) : null}
+  </div>
+);
+
 const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] => {
   // Panel width is 420px, padding is 24px (px-3 on each side), available ~396px
   // lg buttons: 48px + 8px gap = fits ~7 buttons
@@ -227,6 +270,39 @@ const LeftPanelHeader = memo(
     const mode = useGameModeConfig();
 
     const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
+    const structureTileStatIds = useMemo(
+      () =>
+        structures
+          .filter((structure) => resolveStructureUiCapabilities(structure.structure).hasPopulationDetails)
+          .map((structure) => Number(structure.entityId))
+          .filter((entityId) => Number.isFinite(entityId))
+          .toSorted((left, right) => left - right),
+      [structures],
+    );
+    const trackedStructureIds = useMemo(() => new Set(structureTileStatIds), [structureTileStatIds]);
+    const buildingEntities = useEntityQuery([Has(components.Building)]);
+    const buildingTileCountsByStructure = useMemo(
+      () =>
+        countOccupiedBuildingTilesByStructure({
+          trackedStructureIds,
+          buildings: Array.from(buildingEntities)
+            .map((entity) => getComponentValue(components.Building, entity))
+            .flatMap((building) => {
+              if (!building) {
+                return [];
+              }
+
+              return [
+                {
+                  outerEntityId: Number(building.outer_entity_id ?? 0),
+                  innerCol: Number(building.inner_col ?? 0),
+                  innerRow: Number(building.inner_row ?? 0),
+                },
+              ];
+            }),
+        }),
+      [buildingEntities, components.Building, trackedStructureIds],
+    );
 
     const structureEntityKey = useMemo(() => {
       try {
@@ -287,6 +363,14 @@ const LeftPanelHeader = memo(
           ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
           : 0;
         const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
+        const occupiedBuildingTiles = buildingTileCountsByStructure[structure.entityId];
+        const buildingTileSummary =
+          structureCapabilities.hasPopulationDetails && occupiedBuildingTiles !== undefined
+            ? resolveAvailableBuildingTiles({
+                level: normalizedLevel,
+                occupiedBuildingTiles,
+              })
+            : null;
         const groupColor = structureGroups[structure.entityId] ?? null;
 
         const isFavorite = favoritesSet.has(structure.entityId);
@@ -299,12 +383,22 @@ const LeftPanelHeader = memo(
           realmLevelLabel,
           population,
           populationCapacity,
+          buildingTilesAvailable: buildingTileSummary?.available ?? null,
+          buildingTilesTotal: buildingTileSummary?.total ?? null,
           groupColor,
           isFavorite,
           canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
         };
       });
-    }, [structures, components.StructureBuildings, structureGroups, nameUpdateVersion, favoritesSet, mode]);
+    }, [
+      structures,
+      components.StructureBuildings,
+      structureGroups,
+      nameUpdateVersion,
+      favoritesSet,
+      mode,
+      buildingTileCountsByStructure,
+    ]);
 
     const orderedStructures = useMemo(() => {
       const currentTab = structureTabs[activeTab] ?? structureTabs[0];
@@ -362,7 +456,17 @@ const LeftPanelHeader = memo(
     const livePopulationCapacity =
       Number(liveStructureBuildings?.population.max ?? selectedStructureMetadata?.populationCapacity ?? 0) +
       normalizedBasePopulationCapacity;
-    const populationCapacityLabel = selectedStructureMetadata ? `${livePopulation}/${livePopulationCapacity}` : null;
+    const populationStatusLabel = selectedStructureMetadata
+      ? formatPopulationStatusLabel(livePopulation, livePopulationCapacity)
+      : null;
+    const buildingTilesStatusLabel =
+      selectedStructureMetadata?.buildingTilesAvailable !== null &&
+      selectedStructureMetadata?.buildingTilesTotal !== null
+        ? formatAvailableBuildingTilesLabel(
+            selectedStructureMetadata.buildingTilesAvailable,
+            selectedStructureMetadata.buildingTilesTotal,
+          )
+        : null;
     const showDetailedStats = Boolean(selectedStructureMetadata && selectedStructureCapabilities.hasPopulationDetails);
     const headerTitle =
       selectedStructureMetadata?.displayName ??
@@ -399,12 +503,15 @@ const LeftPanelHeader = memo(
               >
                 {headerTitle}
               </p>
-              {showDetailedStats && populationCapacityLabel && (
+              {showDetailedStats && populationStatusLabel && (
                 <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gold/70">
                   <span className="text-gold/40">•</span>
                   <span>{levelLabel}</span>
                   <span className="text-gold/40">•</span>
-                  <span>{populationCapacityLabel}</span>
+                  <StructureStatusStats
+                    populationLabel={populationStatusLabel}
+                    buildingTilesLabel={buildingTilesStatusLabel}
+                  />
                 </div>
               )}
             </div>
@@ -551,7 +658,11 @@ const StructureListItem = memo(
       normalizedBasePopulationCapacity;
 
     const showInfoLine = structureCapabilities.hasPopulationDetails;
-    const capacityDisplay = `${population}/${populationCapacity}`;
+    const populationStatusLabel = formatPopulationStatusLabel(population, populationCapacity);
+    const buildingTilesStatusLabel =
+      structure.buildingTilesAvailable !== null && structure.buildingTilesTotal !== null
+        ? formatAvailableBuildingTilesLabel(structure.buildingTilesAvailable, structure.buildingTilesTotal)
+        : null;
     const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
 
     const handleSelectStructure = useCallback(
@@ -579,7 +690,7 @@ const StructureListItem = memo(
           isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
         }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
           <button
             type="button"
             onClick={(event) => {
@@ -591,29 +702,35 @@ const StructureListItem = memo(
           >
             <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
           </button>
-          <div className="flex flex-1 min-w-0 items-center gap-2">
+          <div className="flex flex-1 min-w-0 items-start gap-2">
             {structure.groupColor && (
               <span
-                className={`h-2 w-2 shrink-0 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
+                className={`mt-1 h-2 w-2 shrink-0 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
               />
             )}
-            <span
-              className={`truncate text-sm font-semibold ${
-                structure.groupColor
-                  ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
-                  : "text-gold"
-              }`}
-            >
-              {structure.displayName}
-            </span>
-            {showInfoLine && (
-              <span className="shrink-0 whitespace-nowrap text-xxs text-gold/70">
-                {infoLineLabel} • {capacityDisplay}
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span
+                className={`truncate text-sm font-semibold ${
+                  structure.groupColor
+                    ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
+                    : "text-gold"
+                }`}
+              >
+                {structure.displayName}
               </span>
-            )}
+              {showInfoLine && (
+                <div className="flex flex-wrap items-center gap-2 text-xxs text-gold/70">
+                  <span className="shrink-0 whitespace-nowrap">{infoLineLabel}</span>
+                  <StructureStatusStats
+                    populationLabel={populationStatusLabel}
+                    buildingTilesLabel={buildingTilesStatusLabel}
+                  />
+                </div>
+              )}
+            </div>
           </div>
           {activeRelicEffects.length > 0 && (
-            <div className="flex items-center gap-0.5 shrink-0">
+            <div className="flex items-center gap-0.5 shrink-0 pt-0.5">
               {activeRelicEffects.map((effect) => {
                 const resourceId = Number(effect.id);
                 return (
@@ -625,7 +742,7 @@ const StructureListItem = memo(
             </div>
           )}
           {structure.category === StructureType.Realm && (
-            <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto shrink-0" />
+            <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto shrink-0 pt-0.5" />
           )}
         </div>
       </div>
