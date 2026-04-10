@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-10T21:43:36.356Z",
+  "updatedAt": "2026-04-10T21:43:45.356Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -192,12 +192,13 @@
       "path": "runs/mainnet/blitz/bltz-neverland.json",
       "inputPath": "inputs/mainnet/blitz/bltz-neverland/24265414704-1.json",
       "status": "running",
-      "updatedAt": "2026-04-10T21:43:36.356Z",
+      "updatedAt": "2026-04-10T21:43:45.356Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-04-10T22:28:45.356Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-role",
+      "recoverablePendingStepId": "create-indexer",
       "startTime": 1775860200,
       "durationSeconds": 3600,
       "artifacts": {}
