@@ -5,6 +5,8 @@ import {
   applyWorldmapWheelIntent,
   createWorldmapZoomControllerState,
   resetWorldmapWheelIntent,
+  resolveWorldmapWheelGestureTimeoutMs,
+  resolveWorldmapWheelThreshold,
   setWorldmapZoomTargetView,
 } from "./worldmap-zoom-controller";
 
@@ -78,5 +80,19 @@ describe("applyWorldmapWheelIntent", () => {
       wheelAccumulator: 0,
       wheelDirection: 0,
     });
+  });
+});
+
+describe("worldmap zoom controller thresholds", () => {
+  it("uses a lower step threshold for trackpad gestures than for wheel gestures", () => {
+    expect(resolveWorldmapWheelThreshold("trackpad", 120)).toBeLessThan(resolveWorldmapWheelThreshold("wheel", 120));
+    expect(resolveWorldmapWheelThreshold("wheel", 120)).toBe(120);
+  });
+
+  it("keeps trackpad gesture accumulation alive longer than wheel accumulation", () => {
+    expect(resolveWorldmapWheelGestureTimeoutMs("trackpad", 50)).toBeGreaterThan(
+      resolveWorldmapWheelGestureTimeoutMs("wheel", 50),
+    );
+    expect(resolveWorldmapWheelGestureTimeoutMs("wheel", 50)).toBe(50);
   });
 });

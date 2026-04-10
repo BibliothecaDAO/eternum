@@ -779,7 +779,13 @@ export abstract class HexagonScene {
     return { col, row, x, z };
   }
 
-  cameraAnimate(newPosition: Vector3, newTarget: Vector3, transitionDuration: number, onFinish?: () => void) {
+  cameraAnimate(
+    newPosition: Vector3,
+    newTarget: Vector3,
+    transitionDuration: number,
+    onFinish?: () => void,
+    options?: { ease?: string },
+  ) {
     const camera = this.controls.object;
     const target = this.controls.target;
     const transitionStart = resolveCameraTransitionStart(this.cameraTransitionState);
@@ -797,6 +803,7 @@ export abstract class HexagonScene {
     if (transitionToken === null) {
       return;
     }
+    const ease = options?.ease ?? "power3.inOut";
     this.setCameraTransitionStatus("transitioning");
 
     this.cameraTransitionTimeline = gsap.timeline({
@@ -819,7 +826,7 @@ export abstract class HexagonScene {
         x: newPosition.x,
         y: newPosition.y,
         z: newPosition.z,
-        ease: "power3.inOut",
+        ease,
       },
       0,
     );
@@ -832,7 +839,7 @@ export abstract class HexagonScene {
         x: newTarget.x,
         y: newTarget.y,
         z: newTarget.z,
-        ease: "power3.inOut",
+        ease,
       },
       0,
     );

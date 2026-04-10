@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-10",
+    title: "Smoother Map Zoom Steps",
+    description:
+      "World map zoom now responds more gently to trackpad gestures and settles into each tactical camera band faster, so stepping between map heights feels less chunky without bringing back unstable in-between zoom states.",
+    type: "improvement",
+  },
+  {
+    date: "2026-04-10",
     title: "Fixed World Map Zoom",
     description:
       "World map zoom now snaps between three intended tactical camera profiles instead of drifting through unstable in-between heights, so zooming feels steadier and no longer nudges chunk logic through extra camera-target movement.",

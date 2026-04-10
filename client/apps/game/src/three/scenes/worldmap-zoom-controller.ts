@@ -6,6 +6,8 @@ export interface WorldmapZoomControllerState {
   wheelDirection: -1 | 0 | 1;
 }
 
+export type WorldmapZoomInputKind = "trackpad" | "wheel";
+
 interface ApplyWorldmapWheelIntentInput {
   currentView: CameraView;
   normalizedDelta: number;
@@ -53,6 +55,27 @@ export function resetWorldmapWheelIntent(state: WorldmapZoomControllerState): Wo
     wheelAccumulator: 0,
     wheelDirection: 0,
   };
+}
+
+export function resolveWorldmapWheelThreshold(inputKind: WorldmapZoomInputKind, baseThreshold: number = 120): number {
+  const normalizedBaseThreshold = Math.max(1, baseThreshold);
+  if (inputKind === "trackpad") {
+    return Math.max(48, Math.round(normalizedBaseThreshold * 0.6));
+  }
+
+  return normalizedBaseThreshold;
+}
+
+export function resolveWorldmapWheelGestureTimeoutMs(
+  inputKind: WorldmapZoomInputKind,
+  baseTimeoutMs: number = 50,
+): number {
+  const normalizedBaseTimeoutMs = Math.max(0, baseTimeoutMs);
+  if (inputKind === "trackpad") {
+    return Math.max(normalizedBaseTimeoutMs, 90);
+  }
+
+  return normalizedBaseTimeoutMs;
 }
 
 export function applyWorldmapWheelIntent(

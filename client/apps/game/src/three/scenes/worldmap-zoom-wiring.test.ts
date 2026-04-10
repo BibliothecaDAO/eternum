@@ -14,6 +14,8 @@ describe("worldmap zoom wiring", () => {
 
     expect(source).toMatch(/WorldmapZoomCoordinator/);
     expect(source).toMatch(/applyWorldmapWheelIntent\(/);
+    expect(source).toMatch(/resolveWorldmapWheelThreshold\(/);
+    expect(source).toMatch(/resolveWorldmapWheelGestureTimeoutMs\(/);
     expect(source).toMatch(/setWorldmapZoomTargetView\(/);
     expect(source).not.toMatch(/type:\s*"continuous_delta"/);
   });
@@ -65,5 +67,12 @@ describe("worldmap zoom wiring", () => {
 
     expect(source).toMatch(/if \(!this\.hasInitialized\) \{\s*this\.alignInitialWorldmapCameraView\(\);\s*\}/);
     expect(source).toMatch(/this\.zoomCoordinator\.syncToBand\(CameraView\.Medium/);
+  });
+
+  it("uses a worldmap-specific camera transition curve for fixed zoom band changes", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).toMatch(/resolveCameraViewTransitionDuration\(/);
+    expect(source).toMatch(/resolveCameraTransitionEase\(/);
   });
 });
