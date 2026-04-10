@@ -4076,6 +4076,7 @@ export const GameEntryModal = ({
 
         // Apply world selection first
         debugLog(worldName, "Applying world selection...");
+        markGameEntryMilestone("destination-resolved");
         markGameEntryMilestone("world-selection-started");
         updateTask("world", "running");
         await applyWorldSelection({ name: worldName, chain }, chain);

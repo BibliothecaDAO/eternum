@@ -77,7 +77,7 @@ describe("waitForWorldmapSceneReady", () => {
 
     window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT));
 
-    await expect(promise).resolves.toBeUndefined();
+    await expect(promise).resolves.toBe(true);
   });
 
   it("resolves on timeout when the worldmap ready event never arrives", async () => {
@@ -85,7 +85,7 @@ describe("waitForWorldmapSceneReady", () => {
 
     await vi.advanceTimersByTimeAsync(1200);
 
-    await expect(promise).resolves.toBeUndefined();
+    await expect(promise).resolves.toBe(false);
   });
 });
 

@@ -95,7 +95,11 @@ export const GameLoadingOverlay = () => {
     (delayMs: number) => {
       if (hasDismissed.current) return;
       hasDismissed.current = true;
-      setTimeout(() => setShowBlankOverlay(false), delayMs);
+      markGameEntryMilestone("overlay-dismissed");
+      setTimeout(() => {
+        markGameEntryMilestone("world-interactive");
+        setShowBlankOverlay(false);
+      }, delayMs);
     },
     [setShowBlankOverlay],
   );
@@ -170,7 +174,8 @@ export const GameLoadingOverlay = () => {
     isWaitingForWorldmapReady.current = true;
     let cancelled = false;
 
-    void waitForWorldmapSceneReady(WORLDMAP_READY_TIMEOUT_MS).then(() => {
+    void (async () => {
+      const didReceiveSceneReadySignal = await waitForWorldmapSceneReady(WORLDMAP_READY_TIMEOUT_MS);
       isWaitingForWorldmapReady.current = false;
       if (cancelled) {
         return;
@@ -178,12 +183,15 @@ export const GameLoadingOverlay = () => {
 
       hasSeenWorldmapReady.current = true;
       markGameEntryMilestone("worldmap-scene-ready");
+      if (didReceiveSceneReadySignal) {
+        markGameEntryMilestone("renderer-scene-ready");
+      }
       setDidSafetyTimeout(false);
 
       if (hasSeenMapLoading.current && !mapLoading) {
         markWorldMapReady(0);
       }
-    });
+    })();
 
     return () => {
       cancelled = true;
