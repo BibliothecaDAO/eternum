@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-10",
+    title: "Structure Claim Stamina Guard",
+    description:
+      "Taking an undefended enemy structure now respects the same stamina requirement as other attacks, so the world map no longer invites claims your army cannot legally complete yet.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
     title: "World Map Ready Guard",
     description:
       "Fresh game entry now keeps the loading shell up until the first world map refresh actually succeeds, so players no longer drop into a visible map that cannot yet be clicked.",
