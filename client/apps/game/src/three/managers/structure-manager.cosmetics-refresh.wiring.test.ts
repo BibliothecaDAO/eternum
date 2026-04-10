@@ -14,7 +14,7 @@ describe("structure manager cosmetics refresh wiring", () => {
 
     expect(source).toMatch(/public\s+refreshCosmeticsForOwner\s*\(\s*owner:\s*string\s*\|\s*bigint\s*\)/);
     expect(source).toMatch(/refreshStructureCosmeticsByOwner\(/);
-    expect(source).toMatch(/void\s+this\.updateVisibleStructures\s*\(\s*\)/);
+    expect(source).toMatch(/void\s+this\.requestVisibleStructuresRefresh\s*\(\s*\)/);
   });
 
   it("constructs its structure store through the extracted store module", () => {

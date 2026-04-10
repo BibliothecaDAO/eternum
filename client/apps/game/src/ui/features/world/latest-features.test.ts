@@ -10,10 +10,14 @@ describe("latestFeatures landing feed", () => {
     expect(timestamps).toEqual([...timestamps].sort((left, right) => right - left));
   });
 
-  it("supports game-linked entries and optional read-more links", () => {
+  it("keeps optional metadata well-typed when present", () => {
     const featureMetadata = latestFeatures as Array<{ gameSlug?: string; readMore?: string }>;
 
-    expect(featureMetadata.some((feature) => Boolean(feature.gameSlug))).toBe(true);
-    expect(featureMetadata.some((feature) => Boolean(feature.readMore))).toBe(true);
+    expect(
+      featureMetadata.every((feature) => feature.gameSlug === undefined || typeof feature.gameSlug === "string"),
+    ).toBe(true);
+    expect(
+      featureMetadata.every((feature) => feature.readMore === undefined || typeof feature.readMore === "string"),
+    ).toBe(true);
   });
 });

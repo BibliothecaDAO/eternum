@@ -107,8 +107,8 @@ describe("entry overlay helpers", () => {
     expect(
       resolveEntryOverlayPhase({ isReady: false, hasNavigated: true, isSlow: true, didSafetyTimeout: false }),
     ).toBe("slow");
-    expect(
-      resolveEntryOverlayPhase({ isReady: true, hasNavigated: true, isSlow: true, didSafetyTimeout: false }),
-    ).toBe("ready");
+    expect(resolveEntryOverlayPhase({ isReady: true, hasNavigated: true, isSlow: true, didSafetyTimeout: false })).toBe(
+      "ready",
+    );
   });
 });
