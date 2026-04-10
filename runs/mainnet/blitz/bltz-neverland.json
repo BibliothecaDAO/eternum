@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-neverland/24265414704-1.json",
   "latestLaunchRequestId": "24265414704-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-04-10T21:41:14.834Z",
-  "updatedAt": "2026-04-10T21:43:16.108Z",
+  "updatedAt": "2026-04-10T21:43:36.356Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-04-10T21:43:16.108Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-04-10T21:43:16.108Z",
+      "finishedAt": "2026-04-10T21:43:36.356Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -77,14 +78,8 @@
     "durationSeconds": 3600,
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-neverland.json",
     "worldAddress": "0x06f9846a0841b8a0916d58b9ab0fae906f26d0d9976527a5393689f12cfa46b4",
-    "createGameTxHash": "0x40aba387e1bb5ed26b5d52a83c2f6276b49eb49280c9d50c71e8a2e629767e5"
-  },
-  "activeLease": {
-    "launchRequestId": "24265414704-1",
-    "workflowRunId": 24265414704,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-04-10T21:43:16.108Z",
-    "expiresAt": "2026-04-10T22:28:16.108Z"
+    "createGameTxHash": "0x40aba387e1bb5ed26b5d52a83c2f6276b49eb49280c9d50c71e8a2e629767e5",
+    "configureTxHash": "0x1386980bd2d3b6df610b6843ab57e1e24a3e7e471459512b3bd4674b0cda15d",
+    "worldConfigTxHash": "0x1386980bd2d3b6df610b6843ab57e1e24a3e7e471459512b3bd4674b0cda15d"
   }
 }
