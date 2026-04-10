@@ -419,6 +419,12 @@ pub mod troop_battle_systems {
             // ensure defender is not cloaked
             guarded_structure.assert_not_cloaked(battle_config, tick, season_config);
 
+            // ensure explorer is adjacent to structure
+            let battle_location = explorer_aggressor.coord.neighbor(structure_direction);
+            assert!(battle_location == guarded_structure.coord(), "explorer is not adjacent to structure");
+
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+
             // get guard troops
             let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
             let guard_slot: Option<GuardSlot> = guard_defender
@@ -426,6 +432,20 @@ pub mod troop_battle_systems {
 
             // claim structure if there are no guard troops. it is tried again after the attack
             if guard_slot.is_none() {
+                explorer_aggressor
+                    .troops
+                    .stamina
+                    .spend(
+                        ref explorer_aggressor.troops.boosts,
+                        explorer_aggressor.troops.category,
+                        explorer_aggressor.troops.tier,
+                        troop_stamina_config,
+                        troop_stamina_config.stamina_attack_req.into(),
+                        tick.current(),
+                        true,
+                    );
+                world.write_model(@explorer_aggressor);
+
                 // claim structure
                 structure_claimed_after_battle = true;
                 iStructureImpl::battle_claim(
@@ -439,10 +459,6 @@ pub mod troop_battle_systems {
             let (mut guard_troops, mut guard_destroyed_tick): (Troops, u32) = guard_defender.from_slot(guard_slot);
             assert!(guard_troops.count.is_non_zero(), "defender has no troops");
 
-            // ensure explorer is adjacent to structure
-            let battle_location = explorer_aggressor.coord.neighbor(structure_direction);
-            assert!(battle_location == guarded_structure.coord(), "explorer is not adjacent to structure");
-
             // aggressor attacks defender
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let biome_library = biome_library::get_dispatcher(@world);
@@ -453,8 +469,6 @@ pub mod troop_battle_systems {
                     guarded_structure.coord().y.into(),
                 );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            let tick = TickImpl::get_tick_interval(ref world);
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let guard_troop_count_before_attack = guard_troops.count;
 
