@@ -10,6 +10,7 @@ const {
   componentsMock,
   getBlockTimestampMock,
   getExplorerFromToriiClientMock,
+  getResourceBalancesWithProductionMock,
   getTileAtMock,
   toriiClientMock,
   getStructureFromToriiClientMock,
@@ -49,6 +50,7 @@ const {
     },
     resources: undefined,
   })),
+  getResourceBalancesWithProductionMock: vi.fn(() => []),
   getTileAtMock: vi.fn(() => ({
     occupier_id: 321,
     occupier_is_structure: false,
@@ -105,7 +107,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   },
   ResourceManager: {
     getResourceBalances: vi.fn(() => []),
-    getResourceBalancesWithProduction: vi.fn(() => []),
+    getResourceBalancesWithProduction: getResourceBalancesWithProductionMock,
   },
   StaminaManager: {
     getStamina: vi.fn((_troops: unknown, currentArmiesTick: number) => ({
@@ -149,7 +151,7 @@ describe("useAttackTargetData", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("derives target stamina from the live armies tick instead of freezing the fetch-time value", async () => {
+  it("derives target stamina from the live armies tick without refetching the target", async () => {
     await act(async () => {
       root.render(<HookHarness />);
     });
@@ -159,9 +161,11 @@ describe("useAttackTargetData", () => {
     });
 
     expect(latestResult?.target?.info[0]?.stamina.amount).toBe(10n);
+    expect(getExplorerFromToriiClientMock).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       useBlockTimestampStore.setState({
+        currentBlockTimestamp: 60,
         currentArmiesTick: 2,
       });
     });
@@ -171,5 +175,6 @@ describe("useAttackTargetData", () => {
     });
 
     expect(latestResult?.target?.info[0]?.stamina.amount).toBe(20n);
+    expect(getExplorerFromToriiClientMock).toHaveBeenCalledTimes(1);
   });
 });
