@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24260074957-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-04-10T19:22:17.882Z",
-  "updatedAt": "2026-04-10T19:24:09.233Z",
+  "updatedAt": "2026-04-10T19:24:13.749Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-04-10T19:24:13.749Z"
     },
     {
       "id": "configure-world",
@@ -75,5 +76,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-nawarrior.json",
     "worldAddress": "0x02bf8d1078ef74ae2d5759786aa3063bceaa0dc909a1e6c84c6181822d2c686c",
     "createGameTxHash": "0x22523d21ee059e940b755b178c424740b2ae129138357e68ebba017f5cc3892"
+  },
+  "activeLease": {
+    "launchRequestId": "24260074957-1",
+    "workflowRunId": 24260074957,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-04-10T19:24:13.749Z",
+    "expiresAt": "2026-04-10T20:09:13.749Z"
   }
 }
