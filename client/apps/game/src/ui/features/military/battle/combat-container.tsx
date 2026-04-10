@@ -50,6 +50,11 @@ import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { GuardStaminaBar } from "../components/guard-stamina-bar";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
+import {
+  buildAttackStaminaRequirementLabel,
+  buildAttackStaminaWarning,
+  resolveAttackStaminaState,
+} from "./attack-stamina-state";
 import { BattleCooldownTimer } from "./battle-cooldown-timer";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
 import { AttackTarget, TargetType } from "./types";
@@ -422,7 +427,7 @@ export const CombatContainer = ({
   }, [attackerArmyData, target, accountName, account.address, targetArmyData, components]);
 
   const onAttack = async () => {
-    if (!selectedHex) return;
+    if (!selectedHex || isAttackerOnCooldown || attackStaminaState.isBlocked) return;
 
     let pendingFxKey: string | null = null;
     try {
@@ -609,13 +614,23 @@ export const CombatContainer = ({
     return attackerArmyData.troops.battle_cooldown_end > currentTime;
   }, [attackerArmyData]);
 
+  const attackStaminaState = useMemo(
+    () =>
+      resolveAttackStaminaState({
+        attackerStamina,
+        hasAttackerTroops: Boolean(attackerArmyData),
+        hasDefenders: Boolean(targetArmyData),
+        requiredStamina: Number(combatConfig.stamina_attack_req),
+      }),
+    [attackerArmyData, attackerStamina, combatConfig, targetArmyData],
+  );
+
   const buttonMessage = useMemo(() => {
     if (isAttackerOnCooldown) return "On Battle Cooldown";
-    if (attackerStamina < combatConfig.stamina_attack_req)
-      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
+    if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
     if (!attackerArmyData) return "No Troops Present";
-    return "Attack!";
-  }, [isAttackerOnCooldown, attackerStamina, attackerArmyData, combatConfig]);
+    return attackStaminaState.actionLabel;
+  }, [attackStaminaState, attackerArmyData, isAttackerOnCooldown]);
 
   const trueAttackDamage = useMemo(() => {
     if (!battleSimulation || !targetArmyData) return 0;
@@ -800,18 +815,18 @@ export const CombatContainer = ({
           variant="primary"
           className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-base sm:text-lg transition-colors w-full sm:w-auto min-w-[200px]"
           isLoading={loading}
-          disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData || isAttackerOnCooldown}
+          disabled={attackStaminaState.isBlocked || !attackerArmyData || isAttackerOnCooldown}
           onClick={onAttack}
           aria-label={`Attack button: ${buttonMessage}`}
-          aria-describedby={attackerStamina < combatConfig.stamina_attack_req ? "stamina-warning" : undefined}
+          aria-describedby={attackStaminaState.isBlocked ? "stamina-warning" : undefined}
         >
           {buttonMessage}
         </Button>
 
         {/* Stamina Warning */}
-        {attackerStamina < combatConfig.stamina_attack_req && (
+        {attackStaminaState.isBlocked && (
           <div id="stamina-warning" className="text-sm text-red-400 text-center" role="alert">
-            Insufficient stamina: {Number(attackerStamina)} / {combatConfig.stamina_attack_req} required
+            {buildAttackStaminaWarning(attackStaminaState)}
           </div>
         )}
 

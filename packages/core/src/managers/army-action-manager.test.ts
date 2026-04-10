@@ -118,6 +118,9 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     vi.spyOn(configManager, "getMinTravelStaminaCost").mockReturnValue(1);
     vi.spyOn(configManager, "getTravelStaminaCost").mockReturnValue(1);
     vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(1);
+    vi.spyOn(configManager, "getCombatConfig").mockReturnValue({
+      stamina_attack_req: 5,
+    } as any);
     vi.spyOn(configManager, "getTravelFoodCostConfig").mockReturnValue({
       travelWheatBurnAmount: 0,
       travelFishBurnAmount: 0,
@@ -203,6 +206,56 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const spireActionPath = actionPaths.get(ActionPaths.posKey(spireHex));
     expect(spireActionPath).toBeDefined();
     expect(ActionPaths.getActionType(spireActionPath ?? [])).toBe(ActionType.SpireTravel);
+  });
+
+  it("omits adjacent enemy structure attack paths when attack stamina is below the required threshold", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const targetHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+
+    setNestedMapValue(structureHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
+      amount: 4n,
+      updated_tick: 0n,
+    } as any);
+
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
+
+    expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
+  });
+
+  it("keeps adjacent enemy structure attack paths when attack stamina meets the required threshold", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const targetHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+
+    setNestedMapValue(structureHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
+      amount: 5n,
+      updated_tick: 0n,
+    } as any);
+
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
+
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
   });
 });
 
