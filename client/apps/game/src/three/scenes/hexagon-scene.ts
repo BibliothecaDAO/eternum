@@ -1409,7 +1409,7 @@ export abstract class HexagonScene {
     }
   }
 
-  private syncResolvedCameraViewFromDistance(distance: number): void {
+  protected syncResolvedCameraViewFromDistance(distance: number): void {
     const nextView = resolveWorldmapZoomBand({
       currentBand: this.currentCameraView,
       distance,
