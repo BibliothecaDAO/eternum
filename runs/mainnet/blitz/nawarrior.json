@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/nawarrior/24260074957-1.json",
   "latestLaunchRequestId": "24260074957-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-04-10T19:22:17.882Z",
-  "updatedAt": "2026-04-10T19:22:23.721Z",
+  "updatedAt": "2026-04-10T19:24:09.233Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-04-10T19:22:23.721Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-04-10T19:22:23.721Z",
+      "finishedAt": "2026-04-10T19:24:09.233Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -69,15 +70,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-04-10T21:00:00.000Z",
-    "durationSeconds": 3600
-  },
-  "activeLease": {
-    "launchRequestId": "24260074957-1",
-    "workflowRunId": 24260074957,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-04-10T19:22:23.721Z",
-    "expiresAt": "2026-04-10T20:07:23.721Z"
+    "scheduledStartTime": 1775854800,
+    "durationSeconds": 3600,
+    "summaryPath": ".context/game-launch/mainnet-blitz-nawarrior.json",
+    "worldAddress": "0x02bf8d1078ef74ae2d5759786aa3063bceaa0dc909a1e6c84c6181822d2c686c",
+    "createGameTxHash": "0x22523d21ee059e940b755b178c424740b2ae129138357e68ebba017f5cc3892"
   }
 }
