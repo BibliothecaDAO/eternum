@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "NA-WARRIOR",
-    "launchRequestId": "24259901346-1",
+    "gameName": "NAWARRIOR",
+    "launchRequestId": "24260074957-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24259901346,
+    "workflowRunId": 24260074957,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "c2927587-df8c-4660-8d4a-b7904e2931c3"
+    "leaseId": "ae7b7abe-75e6-443c-8717-2874dc5e260d"
   },
-  "acquiredAt": "2026-04-10T19:17:57.698Z",
-  "heartbeatAt": "2026-04-10T19:18:03.606Z",
-  "expiresAt": "2026-04-10T19:18:03.606Z",
-  "releasedAt": "2026-04-10T19:18:03.606Z"
+  "acquiredAt": "2026-04-10T19:22:28.082Z",
+  "heartbeatAt": "2026-04-10T19:22:28.082Z",
+  "expiresAt": "2026-04-10T19:32:28.082Z"
 }
