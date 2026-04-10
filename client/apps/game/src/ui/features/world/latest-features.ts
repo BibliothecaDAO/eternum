@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-10",
+    title: "Fixed World Map Zoom",
+    description:
+      "World map zoom now snaps between three intended tactical camera profiles instead of drifting through unstable in-between heights, so zooming feels steadier and no longer nudges chunk logic through extra camera-target movement.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
     title: "Structure Claim Stamina Guard",
     description:
       "Taking an undefended enemy structure now respects the same stamina requirement as other attacks, so the world map no longer invites claims your army cannot legally complete yet.",

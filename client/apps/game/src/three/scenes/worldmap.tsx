@@ -85,7 +85,6 @@ import {
   InstancedBufferAttribute,
   Matrix4,
   Object3D,
-  Plane,
   Raycaster,
   Sphere,
   Vector2,
@@ -211,6 +210,12 @@ import {
   evaluateTerrainVisibilityAnomaly,
   resetWorldmapZoomHardeningRuntimeState,
 } from "./worldmap-zoom-hardening";
+import {
+  applyWorldmapWheelIntent,
+  createWorldmapZoomControllerState,
+  resetWorldmapWheelIntent,
+  setWorldmapZoomTargetView,
+} from "./worldmap-zoom-controller";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
 import {
   WORLDMAP_STEP_WHEEL_DELTA,
@@ -221,7 +226,7 @@ import {
   createWorldmapZoomRefreshPlannerState,
   planWorldmapZoomRefresh,
 } from "./worldmap-zoom/worldmap-zoom-refresh-planner";
-import type { WorldmapCameraSnapshot, WorldmapZoomAnchor } from "./worldmap-zoom/worldmap-zoom-types";
+import type { WorldmapCameraSnapshot } from "./worldmap-zoom/worldmap-zoom-types";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import {
   resolveWorldmapChunkRefreshDebounceMs,
@@ -493,9 +498,13 @@ export default class WorldmapScene extends WarpTravel {
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private readonly worldmapMinZoomDistance = 10;
-  private readonly worldmapMaxZoomDistance = 60;
+  private readonly worldmapMaxZoomDistance = 40;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelEventTarget: HTMLElement | null = null;
+  private zoomControllerState = createWorldmapZoomControllerState(CameraView.Medium);
+  private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly wheelThreshold = WORLDMAP_STEP_WHEEL_DELTA;
+  private readonly wheelGestureTimeoutMs = 50;
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
     minDistance: this.worldmapMinZoomDistance,
@@ -506,7 +515,6 @@ export default class WorldmapScene extends WarpTravel {
   private readonly worldmapCameraTransitionListeners: Set<(status: WorldmapCameraTransitionStatus) => void> = new Set();
   private lastPublishedStableCameraView = this.zoomCoordinator.getSnapshot().stableBand;
   private lastPublishedZoomStatus: WorldmapCameraTransitionStatus = "idle";
-  private readonly zoomGroundPlane = new Plane(new Vector3(0, 1, 0), 0);
   private renderChunkSize = this.chunkGeometry.renderSize;
 
   private totalStructures: number = 0;
@@ -544,9 +552,6 @@ export default class WorldmapScene extends WarpTravel {
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
   private cameraGroundIntersectionScratch: Vector3 = new Vector3();
-  private wheelPointerScratch: Vector2 = new Vector2();
-  private wheelRaycasterScratch: Raycaster = new Raycaster();
-  private wheelGroundIntersectionScratch: Vector3 = new Vector3();
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager!: ArmyManager;
@@ -717,12 +722,7 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     const detail = (event as CustomEvent<{ zoomOut: boolean }>).detail;
     if (!detail) return;
-    this.zoomCoordinator.applyIntent({
-      type: "continuous_delta",
-      delta: detail.zoomOut ? WORLDMAP_STEP_WHEEL_DELTA : -WORLDMAP_STEP_WHEEL_DELTA,
-      anchor: this.resolveWorldmapMinimapZoomAnchor(),
-    });
-    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+    this.applyDirectionalZoomIntent(detail.zoomOut);
   };
   private pendingWorldmapFxStartHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -1467,6 +1467,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private setupCameraZoomHandler() {
     this.detachWorldmapWheelHandler();
+    this.resetWheelState();
     this.wheelHandler = (event: WheelEvent) => {
       const normalizedWheelDelta = normalizeWorldmapWheelDelta({
         delta: event.deltaY,
@@ -1489,12 +1490,16 @@ export default class WorldmapScene extends WarpTravel {
       event.preventDefault();
       event.stopPropagation();
 
-      this.zoomCoordinator.applyIntent({
-        type: "continuous_delta",
-        delta: normalizedWheelDelta.normalizedDelta,
-        anchor: this.resolveWorldmapWheelAnchor(event),
+      const zoomIntent = applyWorldmapWheelIntent(this.zoomControllerState, {
+        currentView: this.zoomControllerState.targetView,
+        normalizedDelta: normalizedWheelDelta.normalizedDelta,
+        wheelThreshold: this.wheelThreshold,
       });
-      this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+      this.zoomControllerState = zoomIntent.nextState;
+      if (zoomIntent.didRequestViewChange) {
+        this.changeCameraView(zoomIntent.nextTargetView);
+      }
+      this.scheduleWheelAccumulatorReset();
     };
 
     this.attachWorldmapWheelHandler();
@@ -1523,21 +1528,35 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
-    this.zoomCoordinator.applyIntent({
-      type: "continuous_delta",
-      delta: zoomOut ? WORLDMAP_STEP_WHEEL_DELTA : -WORLDMAP_STEP_WHEEL_DELTA,
-      anchor: this.resolveWorldmapMinimapZoomAnchor(),
+    const zoomIntent = applyWorldmapWheelIntent(this.zoomControllerState, {
+      currentView: this.zoomControllerState.targetView,
+      normalizedDelta: zoomOut ? this.wheelThreshold : -this.wheelThreshold,
+      wheelThreshold: this.wheelThreshold,
     });
-    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+    this.zoomControllerState = zoomIntent.nextState;
+
+    if (zoomIntent.didRequestViewChange) {
+      this.changeCameraView(zoomIntent.nextTargetView);
+      return;
+    }
+
+    if (this.isCameraDistanceOutOfSync(this.zoomControllerState.targetView)) {
+      this.changeCameraView(this.zoomControllerState.targetView);
+    }
   }
 
   public override changeCameraView(position: CameraView) {
+    this.zoomControllerState = setWorldmapZoomTargetView(this.zoomControllerState, position);
     this.zoomCoordinator.applyIntent({
       type: "snap_to_band",
       band: position,
-      anchor: this.resolveWorldmapKeyboardZoomAnchor(),
+      anchor: {
+        mode: "screen_center",
+        worldPoint: this.controls.target.clone(),
+      },
     });
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+    super.changeCameraView(position);
   }
 
   public override getCurrentCameraView(): CameraView {
@@ -1585,51 +1604,34 @@ export default class WorldmapScene extends WarpTravel {
     return this.controls.object.position.distanceTo(this.controls.target);
   }
 
-  private resolveWorldmapWheelAnchor(event: WheelEvent): WorldmapZoomAnchor {
-    const worldPoint = this.resolveWorldmapGroundIntersection(event.clientX, event.clientY);
-
-    return {
-      mode: worldPoint ? "cursor" : "screen_center",
-      worldPoint: worldPoint ?? this.controls.target.clone(),
-    };
+  private getTargetDistanceForCameraView(view: CameraView): number {
+    return resolveWorldmapCameraViewProfile(view).distance;
   }
 
-  private resolveWorldmapKeyboardZoomAnchor(): WorldmapZoomAnchor {
-    return {
-      mode: "screen_center",
-      worldPoint: this.controls.target.clone(),
-    };
+  private isCameraDistanceOutOfSync(view: CameraView, tolerance: number = 1): boolean {
+    const currentDistance = this.getCurrentCameraDistance();
+    const targetDistance = this.getTargetDistanceForCameraView(view);
+    return Math.abs(currentDistance - targetDistance) > tolerance;
   }
 
-  private resolveWorldmapMinimapZoomAnchor(): WorldmapZoomAnchor {
-    return {
-      mode: "world_point",
-      worldPoint: this.controls.target.clone(),
-    };
-  }
-
-  private resolveWorldmapGroundIntersection(clientX: number, clientY: number): Vector3 | null {
-    const canvas = this.controls.domElement;
-    if (!canvas) {
-      return null;
-    }
-    const bounds = canvas.getBoundingClientRect();
-    if (bounds.width <= 0 || bounds.height <= 0) {
-      return null;
+  private scheduleWheelAccumulatorReset(): void {
+    if (this.wheelResetTimeout) {
+      clearTimeout(this.wheelResetTimeout);
     }
 
-    this.wheelPointerScratch.set(
-      ((clientX - bounds.left) / bounds.width) * 2 - 1,
-      -((clientY - bounds.top) / bounds.height) * 2 + 1,
-    );
-    this.wheelRaycasterScratch.setFromCamera(this.wheelPointerScratch, this.camera);
+    this.wheelResetTimeout = setTimeout(() => {
+      this.resetWheelState();
+    }, this.wheelGestureTimeoutMs);
+  }
 
-    const didIntersect = this.wheelRaycasterScratch.ray.intersectPlane(
-      this.zoomGroundPlane,
-      this.wheelGroundIntersectionScratch,
-    );
+  private resetWheelState(): void {
+    const timeoutId = this.wheelResetTimeout;
+    this.wheelResetTimeout = null;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
 
-    return didIntersect ? this.wheelGroundIntersectionScratch : null;
+    this.zoomControllerState = resetWorldmapWheelIntent(this.zoomControllerState);
   }
 
   private publishWorldmapZoomSnapshot(snapshot: WorldmapCameraSnapshot): void {
@@ -1660,6 +1662,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private alignInitialWorldmapCameraView(): void {
     this.alignWorldmapCameraToBand(CameraView.Medium);
+    this.zoomControllerState = setWorldmapZoomTargetView(this.zoomControllerState, CameraView.Medium);
     this.zoomCoordinator.syncToBand(CameraView.Medium, performance.now());
     this.lastControlsCameraDistance = this.getCurrentCameraDistance();
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
@@ -6935,7 +6938,7 @@ export default class WorldmapScene extends WarpTravel {
 
   update(deltaTime: number) {
     const animationContext = this.getAnimationVisibilityContext();
-    this.updateWorldmapZoom(deltaTime);
+    this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
     this.armyManager.update(deltaTime, animationContext);
     this.fxManager.update(deltaTime);
@@ -6955,7 +6958,7 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private updateWorldmapZoom(deltaTime: number): void {
+  private syncWorldmapZoomSnapshot(deltaTime: number): void {
     const zoomFrame = this.zoomCoordinator.tick({
       cameraPosition: this.controls.object.position,
       target: this.controls.target,
@@ -6963,15 +6966,6 @@ export default class WorldmapScene extends WarpTravel {
       nowMs: performance.now(),
     });
 
-    if (!zoomFrame.didMove) {
-      this.publishWorldmapZoomSnapshot(zoomFrame.snapshot);
-      return;
-    }
-
-    this.controls.object.position.copy(zoomFrame.cameraPosition);
-    this.controls.target.copy(zoomFrame.target);
-    this.notifyControlsChanged();
-    this.frustumManager?.forceUpdate();
     this.publishWorldmapZoomSnapshot(zoomFrame.snapshot);
   }
 
