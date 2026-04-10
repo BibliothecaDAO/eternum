@@ -15,6 +15,7 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
+import { env } from "../../env";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
@@ -304,6 +305,8 @@ export const syncEntitiesDebounced = async (
 type InitialSyncOptions = {
   logging?: boolean;
   reportProgress?: boolean;
+  subscriptionSetupTimeoutMs?: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 };
 
 export const initialSync = async (
@@ -313,6 +316,8 @@ export const initialSync = async (
   options: InitialSyncOptions = {},
 ) => {
   const { logging = false, reportProgress = true } = options;
+  const subscriptionSetupTimeoutMs =
+    options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
   console.log("[STARTING syncEntitiesDebounced]");
   if (entityStreamSubscription) {
     entityStreamSubscription.cancel();
@@ -323,13 +328,24 @@ export const initialSync = async (
     setInitialSyncProgress(0);
   }
 
-  entityStreamSubscription = await syncEntitiesDebounced(
-    setup.network.toriiClient,
-    setup,
-    GLOBAL_STREAM_CLAUSE,
-    logging,
-    () => useConnectionStore.getState().recordGlobalUpdate(),
-  );
+  try {
+    entityStreamSubscription = await syncEntitiesDebounced(
+      setup.network.toriiClient,
+      setup,
+      GLOBAL_STREAM_CLAUSE,
+      logging,
+      () => useConnectionStore.getState().recordGlobalUpdate(),
+      {
+        subscriptionSetupTimeoutMs,
+        onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
+      },
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Timed out waiting for")) {
+      throw new Error(`Timed out connecting to the world stream after ${subscriptionSetupTimeoutMs}ms.`);
+    }
+    throw error;
+  }
 
   const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
 

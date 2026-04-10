@@ -6,7 +6,7 @@ type GridCoordinates = {
   row: number;
 };
 
-type EntryOverlayPhase = "handoff" | "scene_warmup" | "slow" | "ready";
+type EntryOverlayPhase = "handoff" | "scene_warmup" | "slow" | "timed_out" | "ready";
 
 export const getSceneWarmupProgress = (elapsedMs: number): number => {
   if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 82;
@@ -19,12 +19,15 @@ export const resolveEntryOverlayPhase = ({
   isReady,
   hasNavigated,
   isSlow,
+  didSafetyTimeout,
 }: {
   isReady: boolean;
   hasNavigated: boolean;
   isSlow: boolean;
+  didSafetyTimeout: boolean;
 }): EntryOverlayPhase => {
   if (isReady) return "ready";
+  if (didSafetyTimeout) return "timed_out";
   if (!hasNavigated) return "handoff";
   if (isSlow) return "slow";
   return "scene_warmup";
