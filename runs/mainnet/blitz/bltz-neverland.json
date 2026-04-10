@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24265414704-1",
   "currentStepId": null,
   "createdAt": "2026-04-10T21:41:14.834Z",
-  "updatedAt": "2026-04-10T22:00:10.526Z",
+  "updatedAt": "2026-04-10T22:03:01.378Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -88,14 +88,12 @@
     "configureTxHash": "0x1386980bd2d3b6df610b6843ab57e1e24a3e7e471459512b3bd4674b0cda15d",
     "worldConfigTxHash": "0x1386980bd2d3b6df610b6843ab57e1e24a3e7e471459512b3bd4674b0cda15d",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-neverland/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-10T21:44:21.973Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-04-10T22:00:08.856Z"
+    "lastIndexerDescribeAt": "2026-04-10T22:03:01.378Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-04-10T21:44:36.421Z"
 }
