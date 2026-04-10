@@ -12314,7 +12314,7 @@
         },
         {
           "address": "0x4c0f91c357cd7b6b14937105132d56fb41030523c7551a77d171fec1e318a89",
-          "class_hash": "0x2e966b65ae29d4272ee647159f9b029b7fac02c78e38cedaa643d051d62b98d",
+          "class_hash": "0x3110481b878854bc2e36950b803944411f0cea8cab8863b7b38dab51d1ba49",
           "init_calldata": [],
           "tag": "s1_eternum-troop_battle_systems",
           "selector": "0x473dc1d8bca81e2a2d92011b4171ffe608d47dcde63f7d112f03bb767b57aea",
