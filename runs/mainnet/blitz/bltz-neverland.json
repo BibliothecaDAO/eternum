@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-neverland/24265414704-1.json",
   "latestLaunchRequestId": "24265414704-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-04-10T21:41:14.834Z",
-  "updatedAt": "2026-04-10T21:41:19.941Z",
+  "updatedAt": "2026-04-10T21:43:01.911Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-04-10T21:41:19.941Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-04-10T21:41:19.941Z",
+      "finishedAt": "2026-04-10T21:43:01.911Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -69,15 +70,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-04-10T22:30:00.000Z",
-    "durationSeconds": 3600
-  },
-  "activeLease": {
-    "launchRequestId": "24265414704-1",
-    "workflowRunId": 24265414704,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-04-10T21:41:19.941Z",
-    "expiresAt": "2026-04-10T22:26:19.941Z"
+    "scheduledStartTime": 1775860200,
+    "durationSeconds": 3600,
+    "summaryPath": ".context/game-launch/mainnet-blitz-bltz-neverland.json",
+    "worldAddress": "0x06f9846a0841b8a0916d58b9ab0fae906f26d0d9976527a5393689f12cfa46b4",
+    "createGameTxHash": "0x40aba387e1bb5ed26b5d52a83c2f6276b49eb49280c9d50c71e8a2e629767e5"
   }
 }
