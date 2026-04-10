@@ -15,4 +15,10 @@ describe("worldmap view resolution policy wiring", () => {
     expect(source).toMatch(/resolveWorldmapZoomBand\(/);
     expect(source).not.toMatch(/this\.currentCameraView = position;/);
   });
+
+  it("keeps distance-based view resync available to subclasses that own worldmap camera completion", () => {
+    const source = readHexagonSceneSource();
+
+    expect(source).toMatch(/protected syncResolvedCameraViewFromDistance\(distance: number\): void/);
+  });
 });
