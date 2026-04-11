@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-swish-872",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-swish-872/24273643351-1.json",
   "latestLaunchRequestId": "24273643351-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-04-11T03:29:56.896Z",
-  "updatedAt": "2026-04-11T03:33:02.391Z",
+  "updatedAt": "2026-04-11T03:33:10.533Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-04-11T03:33:02.391Z"
+      "latestEvent": "Setting up gas coverage succeeded",
+      "startedAt": "2026-04-11T03:33:02.391Z",
+      "finishedAt": "2026-04-11T03:33:10.533Z"
     }
   ],
   "artifacts": {
@@ -91,14 +92,8 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-swish-872/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-11T03:32:56.988Z"
+    "lastIndexerDescribeAt": "2026-04-11T03:32:56.988Z",
+    "paymasterSynced": true
   },
-  "activeLease": {
-    "launchRequestId": "24273643351-1",
-    "workflowRunId": 24273643351,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-04-11T03:33:02.391Z",
-    "expiresAt": "2026-04-11T04:18:02.391Z"
-  }
+  "completedAt": "2026-04-11T03:33:10.533Z"
 }
