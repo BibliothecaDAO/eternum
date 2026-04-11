@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-11T00:11:45.670Z",
+  "updatedAt": "2026-04-11T03:38:05.442Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1176,6 +1176,19 @@
         "describedAt": "2026-04-11T00:11:45.670Z"
       },
       "updatedAt": "2026-04-11T00:11:45.670Z"
+    },
+    "bltz-swish-872": {
+      "gameName": "bltz-swish-872",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-swish-872/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-11T03:38:05.442Z"
+      },
+      "updatedAt": "2026-04-11T03:38:05.442Z"
     }
   }
 }
