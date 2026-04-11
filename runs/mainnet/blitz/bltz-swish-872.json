@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24273643351-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-04-11T03:29:56.896Z",
-  "updatedAt": "2026-04-11T03:31:35.795Z",
+  "updatedAt": "2026-04-11T03:31:43.647Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-04-11T03:31:43.647Z"
     },
     {
       "id": "configure-world",
@@ -75,5 +76,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-swish-872.json",
     "worldAddress": "0x053c8c1edb394dd57919f581033d7451a48fcf41cda2c59e9dadcc0d40e3b980",
     "createGameTxHash": "0x7ed90ec4fd191b799abe36cc29e583662b3f07ef3cda8cbc7ef26ea839e70ff"
+  },
+  "activeLease": {
+    "launchRequestId": "24273643351-1",
+    "workflowRunId": 24273643351,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-04-11T03:31:43.647Z",
+    "expiresAt": "2026-04-11T04:16:43.647Z"
   }
 }
