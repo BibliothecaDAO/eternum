@@ -683,7 +683,7 @@ const StructureListItem = memo(
           isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
         }`}
       >
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 overflow-hidden">
           <button
             type="button"
             onClick={(event) => {
@@ -701,11 +701,12 @@ const StructureListItem = memo(
             />
           )}
           <span
-            className={`truncate text-xs font-semibold ${
+            className={`min-w-0 max-w-[7rem] shrink truncate text-xs font-semibold ${
               structure.groupColor
                 ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
                 : "text-gold"
             }`}
+            title={structure.displayName}
           >
             {structure.displayName}
           </span>
