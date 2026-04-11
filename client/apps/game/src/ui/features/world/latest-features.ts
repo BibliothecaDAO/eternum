@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-12",
+    title: "Cleaner Hero Cards",
+    description:
+      "The Play dashboard hero cards now show a single artwork layer per mode, so hovering between Seasons and Blitz no longer creates a ghosted double-image effect.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-10",
     title: "Smoother Map Zoom Steps",
     description:
