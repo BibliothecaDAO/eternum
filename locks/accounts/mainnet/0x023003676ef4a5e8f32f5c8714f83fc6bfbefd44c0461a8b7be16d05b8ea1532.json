@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-neverland",
-    "launchRequestId": "24265414704-1",
+    "gameName": "bltz-swish-872",
+    "launchRequestId": "24273643351-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24265414704,
+    "workflowRunId": 24273643351,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "b709e411-ca79-48db-9ff6-892ad7985fd4"
+    "stepId": "create-world",
+    "leaseId": "857a5c89-36a1-4486-931f-6ec506099e59"
   },
-  "acquiredAt": "2026-04-10T21:43:49.268Z",
-  "heartbeatAt": "2026-04-10T21:43:54.530Z",
-  "expiresAt": "2026-04-10T21:43:54.530Z",
-  "releasedAt": "2026-04-10T21:43:54.530Z"
+  "acquiredAt": "2026-04-11T03:30:05.236Z",
+  "heartbeatAt": "2026-04-11T03:30:05.236Z",
+  "expiresAt": "2026-04-11T03:40:05.236Z"
 }
