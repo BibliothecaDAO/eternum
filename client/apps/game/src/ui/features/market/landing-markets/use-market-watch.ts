@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 
 import { MarketClass } from "@/pm/class";
+import { buildEntryHref } from "@/play/navigation/play-route";
 import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory } from "@/runtime/world";
 import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { Chain, getGameManifest } from "@contracts";
@@ -200,7 +201,12 @@ export const useMarketWatch = () => {
         const chain = env.VITE_PUBLIC_CHAIN as Chain;
         await buildWorldProfile(chain, worldName);
 
-        const playUrl = `/play/${encodeURIComponent(worldName)}`;
+        const playUrl = buildEntryHref({
+          chain,
+          worldName,
+          intent: "spectate",
+          hyperstructuresLeft: null,
+        });
         const newTab = window.open(playUrl, "_blank", "noopener,noreferrer");
         if (!newTab) {
           toast.error("Enable pop-ups to watch this game.");

@@ -1,9 +1,9 @@
 import { env } from "../../../../../env";
-import { resolveChain, setSelectedChain } from "@/runtime/world";
+import { resolveChain, setSelectedChain, subscribeSelectedChain } from "@/runtime/world";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   getChainLabel,
@@ -37,13 +37,21 @@ const resolveIndicatorTone = ({
 };
 
 export const DashboardNetworkSwitch = ({ className }: { className?: string }) => {
-  const preferredChain = resolvePreferredDashboardChain(resolveChain(env.VITE_PUBLIC_CHAIN as Chain));
+  const fallbackChain = env.VITE_PUBLIC_CHAIN as Chain;
+  const [preferredChain, setPreferredChainState] = useState(() =>
+    resolvePreferredDashboardChain(resolveChain(fallbackChain)),
+  );
   const { address, chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
   const connectedTxChain = useMemo(
     () => resolveConnectedTxChainFromRuntime({ chainId, controller }),
     [chainId, controller],
   );
+  useEffect(() => {
+    return subscribeSelectedChain((nextChain) => {
+      setPreferredChainState(resolvePreferredDashboardChain(nextChain ?? fallbackChain));
+    });
+  }, [fallbackChain]);
   const indicatorTone = useMemo(
     () =>
       resolveIndicatorTone({
@@ -60,6 +68,7 @@ export const DashboardNetworkSwitch = ({ className }: { className?: string }) =>
         return;
       }
 
+      setPreferredChainState(resolvePreferredDashboardChain(nextChain));
       setSelectedChain(nextChain);
 
       if (!address) {

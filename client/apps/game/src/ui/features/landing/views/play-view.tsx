@@ -1,5 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { buildEntryHref } from "@/play/navigation/play-route";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
@@ -28,8 +29,8 @@ import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { primePlayEntryRoute } from "@/game-entry-preload";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
+import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
-import { GameEntryModal } from "../components/game-entry-modal";
 import { GameReviewModal } from "../components/game-review-modal";
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
@@ -37,6 +38,7 @@ import { useLandingContext } from "../context/landing-context";
 interface PlayViewProps {
   className?: string;
   activeTab?: PlayTab;
+  disableReviewFlow?: boolean;
 }
 
 type PlayTab = "play" | "learn" | "news" | "factory";
@@ -943,16 +945,10 @@ const PlayTabContent = ({
  * Main play view - shows card-based game selector for production games only.
  * This is the default landing page content.
  */
-export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
+export const PlayView = ({ className, activeTab = "play", disableReviewFlow = false }: PlayViewProps) => {
   const queryClient = useQueryClient();
-
-  // Modal state for game entry
-  const [entryModalOpen, setEntryModalOpen] = useState(false);
-  const [selectedWorld, setSelectedWorld] = useState<WorldSelection | null>(null);
-  const [isSpectateMode, setIsSpectateMode] = useState(false);
-  const [isForgeMode, setIsForgeMode] = useState(false);
-  const [eternumEntryIntent, setEternumEntryIntent] = useState<"play" | "settle">("play");
-  const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
@@ -966,16 +962,41 @@ export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
   const account = useAccountStore((state) => state.account);
   const { isConnected } = useAccount();
   const setModal = useUIStore((state) => state.setModal);
+  const currentLandingHref = `${location.pathname}${location.search}`;
+  const entryRedirectState = { returnTo: currentLandingHref };
 
-  const openGameEntryModal = useCallback((selection: WorldSelection, intent: "play" | "settle") => {
-    startGameEntryTimeline();
-    primePlayEntryRoute();
-    setSelectedWorld(selection);
-    setIsSpectateMode(false);
-    setIsForgeMode(false);
-    setEternumEntryIntent(intent);
-    setEntryModalOpen(true);
-  }, []);
+  const navigateToEntryRoute = useCallback(
+    (
+      selection: WorldSelection,
+      intent: "play" | "settle" | "spectate" | "forge",
+      hyperstructuresLeft: number | null,
+    ) => {
+      if (!selection.chain) {
+        return;
+      }
+
+      const entryHref = buildEntryHref({
+        chain: selection.chain,
+        worldName: selection.name,
+        intent,
+        hyperstructuresLeft,
+      });
+
+      navigate(entryHref, {
+        state: { returnTo: currentLandingHref },
+      });
+    },
+    [currentLandingHref, navigate],
+  );
+
+  const openGameEntryRoute = useCallback(
+    (selection: WorldSelection, intent: "play" | "settle") => {
+      startGameEntryTimeline();
+      primePlayEntryRoute();
+      navigateToEntryRoute(selection, intent, null);
+    },
+    [navigateToEntryRoute],
+  );
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
@@ -983,14 +1004,29 @@ export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
+        if (!selection.chain) {
+          return;
+        }
+
+        setModal(
+          <SignInPromptModal
+            redirectTo={buildEntryHref({
+              chain: selection.chain,
+              worldName: selection.name,
+              intent: "settle",
+              hyperstructuresLeft: null,
+            })}
+            redirectState={entryRedirectState}
+          />,
+          true,
+        );
         return;
       }
 
       // Open settle flow
-      openGameEntryModal(selection, "settle");
+      openGameEntryRoute(selection, "settle");
     },
-    [account, isConnected, setModal, openGameEntryModal],
+    [account, entryRedirectState, isConnected, openGameEntryRoute, setModal],
   );
 
   const handlePlayGame = useCallback(
@@ -998,26 +1034,40 @@ export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
       const hasAccount = Boolean(account) || isConnected;
 
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
+        if (!selection.chain) {
+          return;
+        }
+
+        setModal(
+          <SignInPromptModal
+            redirectTo={buildEntryHref({
+              chain: selection.chain,
+              worldName: selection.name,
+              intent: "play",
+              hyperstructuresLeft: null,
+            })}
+            redirectState={entryRedirectState}
+          />,
+          true,
+        );
         return;
       }
 
       // Open direct play flow
-      openGameEntryModal(selection, "play");
+      openGameEntryRoute(selection, "play");
     },
-    [account, isConnected, setModal, openGameEntryModal],
+    [account, entryRedirectState, isConnected, openGameEntryRoute, setModal],
   );
 
-  const handleSpectate = useCallback((selection: WorldSelection) => {
-    // Open game entry modal in spectate mode (no account required)
-    startGameEntryTimeline();
-    primePlayEntryRoute();
-    setSelectedWorld(selection);
-    setIsSpectateMode(true);
-    setIsForgeMode(false);
-    setEternumEntryIntent("play");
-    setEntryModalOpen(true);
-  }, []);
+  const handleSpectate = useCallback(
+    (selection: WorldSelection) => {
+      // Open game entry modal in spectate mode (no account required)
+      startGameEntryTimeline();
+      primePlayEntryRoute();
+      navigateToEntryRoute(selection, "spectate", null);
+    },
+    [navigateToEntryRoute],
+  );
 
   const handleForgeHyperstructures = useCallback(
     (selection: WorldSelection, numLeft: number) => {
@@ -1025,30 +1075,32 @@ export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
+        if (!selection.chain) {
+          return;
+        }
+
+        setModal(
+          <SignInPromptModal
+            redirectTo={buildEntryHref({
+              chain: selection.chain,
+              worldName: selection.name,
+              intent: "forge",
+              hyperstructuresLeft: numLeft,
+            })}
+            redirectState={entryRedirectState}
+          />,
+          true,
+        );
         return;
       }
 
       // Open game entry modal in forge mode
       startGameEntryTimeline();
       primePlayEntryRoute();
-      setSelectedWorld(selection);
-      setIsSpectateMode(false);
-      setIsForgeMode(true);
-      setEternumEntryIntent("play");
-      setNumHyperstructuresLeft(numLeft);
-      setEntryModalOpen(true);
+      navigateToEntryRoute(selection, "forge", numLeft);
     },
-    [account, isConnected, setModal],
+    [account, entryRedirectState, isConnected, navigateToEntryRoute, setModal],
   );
-
-  const handleCloseModal = useCallback(() => {
-    setEntryModalOpen(false);
-    setSelectedWorld(null);
-    setIsForgeMode(false);
-    setEternumEntryIntent("play");
-    setNumHyperstructuresLeft(0);
-  }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
     setReviewInitialStep(undefined);
@@ -1089,16 +1141,17 @@ export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
   }, [dismissReviewForWorld, reviewWorld]);
 
   const handleRequireSignIn = useCallback(() => {
-    setModal(<SignInPromptModal />, true);
-  }, [setModal]);
+    setModal(<SignInPromptModal redirectTo={currentLandingHref} />, true);
+  }, [currentLandingHref, setModal]);
 
   const handleEndedGamesResolved = useCallback((games: GameData[]) => {
     setEndedGames(games);
   }, []);
 
   useEffect(() => {
+    if (disableReviewFlow) return;
     if (activeTab !== "play") return;
-    if (entryModalOpen || reviewWorld) return;
+    if (reviewWorld) return;
     if (endedGames.length === 0) return;
 
     const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
@@ -1108,7 +1161,7 @@ export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
 
     setReviewInitialStep(undefined);
     setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
-  }, [activeTab, endedGames, entryModalOpen, reviewWorld]);
+  }, [activeTab, disableReviewFlow, endedGames, reviewWorld]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -1141,7 +1194,7 @@ export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
-            disabled={entryModalOpen || Boolean(reviewWorld)}
+            disabled={Boolean(reviewWorld)}
             onEndedGamesResolved={handleEndedGamesResolved}
           />
         );
@@ -1159,21 +1212,7 @@ export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
     <>
       {shouldMountMarketsProviders ? <MarketsProviders>{content}</MarketsProviders> : content}
 
-      {/* Game Entry Modal - Loading + Settlement + Forge */}
-      {selectedWorld && selectedWorld.chain && (
-        <GameEntryModal
-          isOpen={entryModalOpen}
-          onClose={handleCloseModal}
-          worldName={selectedWorld.name}
-          chain={selectedWorld.chain}
-          isSpectateMode={isSpectateMode}
-          isForgeMode={isForgeMode}
-          eternumEntryIntent={eternumEntryIntent}
-          numHyperstructuresLeft={numHyperstructuresLeft}
-        />
-      )}
-
-      {reviewWorld && (
+      {reviewWorld && !disableReviewFlow && (
         <GameReviewModal
           isOpen={Boolean(reviewWorld)}
           world={reviewWorld}

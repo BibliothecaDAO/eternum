@@ -1,5 +1,6 @@
 import { normalizeSelector, nameToPaddedFelt } from "./normalize";
 import { FACTORY_QUERIES, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
+import type { Chain } from "@contracts";
 import type { FactoryContractRow } from "./types";
 import { env } from "../../../env";
 
@@ -142,14 +143,13 @@ const extractWorldAddressFromRow = (row: Record<string, unknown>): string | null
   );
 };
 
-const resolveWorldDeploymentFromRealtime = async (worldName: string): Promise<WorldDeployment | null> => {
+const resolveWorldDeploymentFromRealtime = async (chain: Chain, worldName: string): Promise<WorldDeployment | null> => {
   const realtimeBaseUrl = env.VITE_PUBLIC_REALTIME_URL;
   if (!realtimeBaseUrl) {
     return null;
   }
 
   try {
-    const chain = env.VITE_PUBLIC_CHAIN;
     const response = await fetch(`${realtimeBaseUrl}/api/world-deployments/${chain}/${encodeURIComponent(worldName)}`, {
       signal: AbortSignal.timeout(5_000),
     });
@@ -173,11 +173,12 @@ const resolveWorldDeploymentFromRealtime = async (worldName: string): Promise<Wo
 
 export const resolveWorldDeploymentFromFactory = async (
   factorySqlBaseUrl: string,
+  chain: Chain,
   worldName: string,
 ): Promise<WorldDeployment | null> => {
   if (!factorySqlBaseUrl) return null;
 
-  const realtimeDeployment = await resolveWorldDeploymentFromRealtime(worldName);
+  const realtimeDeployment = await resolveWorldDeploymentFromRealtime(chain, worldName);
   if (realtimeDeployment) {
     return realtimeDeployment;
   }
@@ -206,8 +207,9 @@ export const resolveWorldDeploymentFromFactory = async (
  */
 export const resolveWorldAddressFromFactory = async (
   factorySqlBaseUrl: string,
+  chain: Chain,
   worldName: string,
 ): Promise<string | null> => {
-  const deployment = await resolveWorldDeploymentFromFactory(factorySqlBaseUrl, worldName);
+  const deployment = await resolveWorldDeploymentFromFactory(factorySqlBaseUrl, chain, worldName);
   return deployment?.worldAddress ?? null;
 };

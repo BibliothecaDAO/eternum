@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   useAccount: vi.fn(),
   resolveChain: vi.fn(),
   setSelectedChain: vi.fn(),
+  subscribeSelectedChain: vi.fn(),
   switchWalletToChain: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ vi.mock("@starknet-react/core", () => ({
 vi.mock("@/runtime/world", () => ({
   resolveChain: mocks.resolveChain,
   setSelectedChain: mocks.setSelectedChain,
+  subscribeSelectedChain: mocks.subscribeSelectedChain,
 }));
 
 vi.mock("@/ui/utils/network-switch", () => ({
@@ -47,8 +49,10 @@ describe("DashboardNetworkSwitch", () => {
 
     mocks.resolveChain.mockReturnValue("slot");
     mocks.setSelectedChain.mockReset();
+    mocks.subscribeSelectedChain.mockReset();
     mocks.switchWalletToChain.mockReset();
     mocks.switchWalletToChain.mockResolvedValue(true);
+    mocks.subscribeSelectedChain.mockReturnValue(() => {});
     mocks.useAccount.mockReturnValue({
       address: "0xabc",
       chainId: "0xslot",
@@ -93,5 +97,34 @@ describe("DashboardNetworkSwitch", () => {
       controller,
       targetChain: "mainnet",
     });
+  });
+
+  it("updates the selected button immediately after changing the preferred chain without waiting for wallet state", async () => {
+    mocks.useAccount.mockReturnValue({
+      address: null,
+      chainId: null,
+      connector: undefined,
+    });
+
+    await act(async () => {
+      root.render(<DashboardNetworkSwitch />);
+      await waitForAsyncWork();
+    });
+
+    const buttons = Array.from(container.querySelectorAll("button"));
+    const slotButton = buttons.find((button) => button.textContent?.includes("Slot"));
+    const mainnetButton = buttons.find((button) => button.textContent?.includes("Mainnet"));
+
+    expect(slotButton?.getAttribute("aria-pressed")).toBe("true");
+    expect(mainnetButton?.getAttribute("aria-pressed")).toBe("false");
+
+    await act(async () => {
+      mainnetButton?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(mocks.setSelectedChain).toHaveBeenCalledWith("mainnet");
+    expect(mainnetButton?.getAttribute("aria-pressed")).toBe("true");
+    expect(slotButton?.getAttribute("aria-pressed")).toBe("false");
   });
 });

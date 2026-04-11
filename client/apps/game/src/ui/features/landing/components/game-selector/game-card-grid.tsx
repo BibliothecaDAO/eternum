@@ -13,7 +13,7 @@ import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { findMarketByPrizeAddressAcrossChains, getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { useConfig } from "@/pm/providers";
-import type { WorldSelectionInput } from "@/runtime/world";
+import { setSelectedChain, type WorldSelectionInput } from "@/runtime/world";
 import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
@@ -35,6 +35,11 @@ import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  createPendingNetworkAction,
+  resolvePendingNetworkSwitchOutcome,
+  type PendingNetworkAction,
+} from "./pending-network-action";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
@@ -313,15 +318,13 @@ const GameCard = ({
     return Number.isFinite(value) && value > 0;
   }, [marketClaimableDisplay]);
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
-  const [switchTargetChain, setSwitchTargetChain] = useState<Chain | null>(null);
-  const [switchPromptContext, setSwitchPromptContext] = useState<"game" | "market">("game");
-  const targetChainLabel = getChainLabel(switchTargetChain ?? game.chain);
+  const [pendingNetworkAction, setPendingNetworkAction] = useState<PendingNetworkAction | null>(null);
+  const targetChainLabel = getChainLabel(pendingNetworkAction?.targetChain ?? game.chain);
 
   const runWithNetworkGuard = useCallback(
     (action: () => void, targetChain: Chain = game.chain, context: "game" | "market" = "game") => {
       if (!canInteractOnChain(targetChain)) {
-        setSwitchPromptContext(context);
-        setSwitchTargetChain(targetChain);
+        setPendingNetworkAction(createPendingNetworkAction(targetChain, context, action));
         return;
       }
       action();
@@ -373,15 +376,22 @@ const GameCard = ({
   }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending, runWithNetworkGuard]);
 
   const handleSwitchNetwork = useCallback(async () => {
-    if (!switchTargetChain) return;
+    if (!pendingNetworkAction) return;
     const switched = await switchWalletToChain({
       controller,
-      targetChain: switchTargetChain,
+      targetChain: pendingNetworkAction.targetChain,
     });
-    if (switched) {
-      setSwitchTargetChain(null);
+    const outcome = resolvePendingNetworkSwitchOutcome({
+      pendingAction: pendingNetworkAction,
+      switched,
+    });
+
+    setPendingNetworkAction(outcome.pendingAction);
+    if (outcome.selectedChain) {
+      setSelectedChain(outcome.selectedChain);
     }
-  }, [controller, switchTargetChain]);
+    outcome.replay?.();
+  }, [controller, pendingNetworkAction]);
 
   const handleOpenMarket = useCallback(
     (initialOutcomeIndex?: number) => {
@@ -818,15 +828,15 @@ const GameCard = ({
         )}
       </div>
       <SwitchNetworkPrompt
-        open={switchTargetChain !== null}
+        open={pendingNetworkAction !== null}
         description={
-          switchPromptContext === "market"
+          pendingNetworkAction?.context === "market"
             ? `Prediction market actions for ${game.name} are on another chain.`
             : `You're trying to interact with ${game.name} while your wallet is on another chain.`
         }
         hint={`Switch your wallet to ${targetChainLabel} to continue.`}
         switchLabel={`Switch To ${targetChainLabel}`}
-        onClose={() => setSwitchTargetChain(null)}
+        onClose={() => setPendingNetworkAction(null)}
         onSwitch={handleSwitchNetwork}
       />
     </div>

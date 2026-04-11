@@ -5,13 +5,24 @@ import { useAccount } from "@starknet-react/core";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Controller } from "@/ui/modules/controller/controller";
 import { ModalContainer } from "@/ui/shared";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-export const SignInPromptModal = () => {
+type SignInRedirectState = {
+  returnTo?: string;
+};
+
+interface SignInPromptModalProps {
+  redirectTo?: string;
+  redirectState?: SignInRedirectState;
+}
+
+export const SignInPromptModal = ({ redirectTo, redirectState }: SignInPromptModalProps) => {
   const setModal = useUIStore((state) => state.setModal);
   const account = useAccountStore((state) => state.account);
   const { isConnected } = useAccount();
   const navigate = useNavigate();
+  const location = useLocation();
+  const resolvedRedirectTo = redirectTo ?? `${location.pathname}${location.search}`;
 
   const handleClose = () => {
     setModal(null, false);
@@ -23,8 +34,8 @@ export const SignInPromptModal = () => {
     }
 
     setModal(null, false);
-    navigate("/play");
-  }, [account, isConnected, navigate, setModal]);
+    navigate(resolvedRedirectTo, { replace: true, state: redirectState });
+  }, [account, isConnected, navigate, redirectState, resolvedRedirectTo, setModal]);
 
   return (
     <ModalContainer>

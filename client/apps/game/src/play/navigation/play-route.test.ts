@@ -64,6 +64,12 @@ describe("play-route", () => {
     );
   });
 
+  it("normalizes bare scene routes emitted by legacy helpers into canonical play URLs", () => {
+    expect(normalizeLegacyPlayLocation(createLocation("/hex", "?col=4&row=9"), FALLBACK_WORLD)).toBe(
+      "/play/sepolia/aurora-blitz/hex?col=4&row=9",
+    );
+  });
+
   it("normalizes legacy world routes into canonical map routes when a fallback chain exists", () => {
     expect(normalizeLegacyPlayLocation(createLocation("/play/iron-age"), FALLBACK_WORLD)).toBe(
       "/play/sepolia/iron-age/map",

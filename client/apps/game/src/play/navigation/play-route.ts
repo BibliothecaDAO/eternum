@@ -2,7 +2,7 @@ import type { Chain } from "@contracts";
 
 import type { WorldProfile } from "@/runtime/world/types";
 
-type PlayScene = "map" | "hex" | "travel";
+export type PlayScene = "map" | "hex" | "travel";
 type EntryIntent = "play" | "settle" | "spectate" | "forge";
 
 interface PlayRouteDescriptor {
@@ -168,6 +168,25 @@ const resolveLegacyWorldRoute = (location: LocationLike, fallbackWorld?: WorldPr
   });
 };
 
+const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: WorldProfile | null): string | null => {
+  const sceneMatch = location.pathname.match(/^\/(map|hex|travel)\/?$/);
+  if (!sceneMatch || !fallbackWorld) {
+    return null;
+  }
+
+  const scene = sceneMatch[1] as PlayScene;
+  const searchParams = new URLSearchParams(location.search);
+
+  return buildPlayHref({
+    chain: fallbackWorld.chain,
+    worldName: fallbackWorld.name,
+    scene,
+    col: parseOptionalNumber(searchParams, "col"),
+    row: parseOptionalNumber(searchParams, "row"),
+    spectate: searchParams.get("spectate") === "true",
+  });
+};
+
 export const normalizeLegacyPlayLocation = (
   location: LocationLike,
   fallbackWorld?: WorldProfile | null,
@@ -176,5 +195,9 @@ export const normalizeLegacyPlayLocation = (
     return null;
   }
 
-  return resolveLegacySceneRoute(location, fallbackWorld) ?? resolveLegacyWorldRoute(location, fallbackWorld);
+  return (
+    resolveLegacySceneRoute(location, fallbackWorld) ??
+    resolveBareSceneRoute(location, fallbackWorld) ??
+    resolveLegacyWorldRoute(location, fallbackWorld)
+  );
 };

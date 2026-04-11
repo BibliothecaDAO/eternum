@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-11",
+    title: "Network Switch State Fix",
+    description:
+      "Preferred network changes now stay aligned with the actual game world lookup, modal wallet-switch prompts keep the landing tag in sync, and the blocked action now continues automatically after a successful switch.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
     title: "Deep Link Routing Fixes",
     description:
       "Canonical world-map links, shared profile links, and the Factory V2 legacy handoff now keep you on the intended destination instead of bouncing through the wrong route or dropping shared context.",

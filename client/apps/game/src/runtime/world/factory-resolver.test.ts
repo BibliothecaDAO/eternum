@@ -57,7 +57,7 @@ describe("resolveWorldDeploymentFromFactory", () => {
       ),
     );
 
-    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "bltz-warzone-31");
+    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "mainnet", "bltz-warzone-31");
 
     expect(result).toEqual({
       rpcUrl: "https://rpc.example",
@@ -83,7 +83,7 @@ describe("resolveWorldDeploymentFromFactory", () => {
       },
     ]);
 
-    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "bltz-warzone-31");
+    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "mainnet", "bltz-warzone-31");
 
     expect(result).toEqual({
       rpcUrl: "https://rpc.example",
@@ -108,12 +108,30 @@ describe("resolveWorldDeploymentFromFactory", () => {
       },
     ]);
 
-    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "bltz-warzone-31");
+    const result = await resolveWorldDeploymentFromFactory("https://factory.example/sql", "mainnet", "bltz-warzone-31");
 
     expect(result).toEqual({
       rpcUrl: "https://rpc.example",
       worldAddress: "0x1234",
     });
     expect(mocks.fetchWithErrorHandling).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the requested chain for realtime deployment lookup instead of the startup env chain", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          rpcUrl: "https://slot-rpc.example",
+          worldAddress: "0xslot",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await resolveWorldDeploymentFromFactory("https://factory.example/sql", "slot", "bltz-warzone-31");
+
+    expect(mockFetch).toHaveBeenCalledWith("https://realtime.example/api/world-deployments/slot/bltz-warzone-31", {
+      signal: expect.any(AbortSignal),
+    });
   });
 });

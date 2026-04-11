@@ -7,6 +7,7 @@ import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.s
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { buildPlayHref } from "@/play/navigation/play-route";
 import { applyWorldSelection } from "@/runtime/world";
 import { ToriiSetting } from "@/types";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -220,7 +221,14 @@ export const SettingsWindow = () => {
                     await applyWorldSelection(selection, gameEnv.VITE_PUBLIC_CHAIN as Chain);
                     toast(`World set to ${selection.name}. Reloading…`);
                     setTimeout(() => {
-                      window.location.href = "/play";
+                      window.location.href = buildPlayHref({
+                        chain: selection.chain ?? (gameEnv.VITE_PUBLIC_CHAIN as Chain),
+                        worldName: selection.name,
+                        scene: "map",
+                        col: null,
+                        row: null,
+                        spectate: false,
+                      });
                     }, 600);
                   } catch (e) {
                     // cancelled

@@ -13,6 +13,7 @@ import "./index.css";
 import { preloadGameRouteModule } from "./game-entry-preload";
 import {
   AmmView,
+  LandingEntryRoute,
   LandingFactoryRoute,
   LandingLayout,
   LandingLearnRoute,
@@ -92,6 +93,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingLayout />}>
               <Route index element={<LandingHomeRoute />} />
+              <Route path="enter/:chain/:world" element={<LandingEntryRoute />} />
               <Route path="learn" element={<LandingLearnRoute />} />
               <Route path="news" element={<LandingNewsRoute />} />
               <Route path="factory" element={<LandingFactoryRoute />} />
