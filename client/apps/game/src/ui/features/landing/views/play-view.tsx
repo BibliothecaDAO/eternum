@@ -25,7 +25,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { primePlayEntryRoute } from "@/game-entry-preload";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
@@ -37,6 +36,7 @@ import { useLandingContext } from "../context/landing-context";
 
 interface PlayViewProps {
   className?: string;
+  activeTab?: PlayTab;
 }
 
 type PlayTab = "play" | "learn" | "news" | "factory";
@@ -943,9 +943,7 @@ const PlayTabContent = ({
  * Main play view - shows card-based game selector for production games only.
  * This is the default landing page content.
  */
-export const PlayView = ({ className }: PlayViewProps) => {
-  const [searchParams] = useSearchParams();
-  const activeTab = (searchParams.get("tab") as PlayTab) || "play";
+export const PlayView = ({ className, activeTab = "play" }: PlayViewProps) => {
   const queryClient = useQueryClient();
 
   // Modal state for game entry

@@ -17,6 +17,9 @@ import { LandingProvider, useLandingContext } from "./context/landing-context";
 // Route to background mapping
 const ROUTE_BACKGROUNDS: Record<string, string> = {
   "/": "01",
+  "/learn": "01",
+  "/news": "01",
+  "/factory": "03",
   "/profile": "05",
   "/markets": "04",
   "/amm": "04",

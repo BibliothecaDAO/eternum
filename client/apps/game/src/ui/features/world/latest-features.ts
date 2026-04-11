@@ -22,6 +22,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-11",
+    title: "Deep Link Routing Fixes",
+    description:
+      "Canonical world-map links, shared profile links, and the Factory V2 legacy handoff now keep you on the intended destination instead of bouncing through the wrong route or dropping shared context.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Canonical Landing Routes",
+    description:
+      "Landing navigation now uses dedicated URLs for Play, Learn, News, and Factory, so shared links, reloads, and browser back-forward behavior stay aligned without relying on a hidden dashboard tab query.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-10",
     title: "Smoother Map Zoom Steps",
     description:

@@ -4,12 +4,25 @@
 import { MusicRouterProvider } from "@/audio";
 import { cleanupTracing } from "@/tracing/cleanup";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { env } from "../env";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
+import { normalizeLegacyPlayLocation } from "./play/navigation/play-route";
+import { getActiveWorld } from "./runtime/world";
 import "./index.css";
 import { preloadGameRouteModule } from "./game-entry-preload";
-import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView } from "./ui/features/landing";
+import {
+  AmmView,
+  LandingFactoryRoute,
+  LandingLayout,
+  LandingLearnRoute,
+  LandingNewsRoute,
+  LandingPlayRoute,
+  LeaderboardView,
+  MarketsView,
+  ProfileView,
+} from "./ui/features/landing";
+import { resolveLegacyLandingHref } from "./ui/features/landing/navigation/landing-route-redirects";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { LoadingScreen } from "./ui/modules/loading-screen";
@@ -22,6 +35,32 @@ const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({
 const FactoryV2Page = lazy(() =>
   import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
 );
+
+const LandingHomeRoute = () => {
+  const location = useLocation();
+  const legacyHref = resolveLegacyLandingHref(location);
+
+  if (legacyHref) {
+    return <Navigate to={legacyHref} replace />;
+  }
+
+  return <LandingPlayRoute />;
+};
+
+const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
+  const location = useLocation();
+  const normalizedLegacyHref = normalizeLegacyPlayLocation(location, getActiveWorld());
+
+  if (normalizedLegacyHref) {
+    return <Navigate to={normalizedLegacyHref} replace />;
+  }
+
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <LazyGameRoute backgroundImage={backgroundImage} />
+    </Suspense>
+  );
+};
 
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
@@ -51,37 +90,22 @@ function App() {
       <BrowserRouter>
         <MusicRouterProvider>
           <Routes>
-            {/* New unified landing layout */}
             <Route path="/" element={<LandingLayout />}>
-              {/* Play view with game selector - uses real world data */}
-              <Route index element={<PlayView />} />
-
-              {/* Profile with sub-tabs (Stats, Cosmetics, Wallet) */}
+              <Route index element={<LandingHomeRoute />} />
+              <Route path="learn" element={<LandingLearnRoute />} />
+              <Route path="news" element={<LandingNewsRoute />} />
+              <Route path="factory" element={<LandingFactoryRoute />} />
               <Route path="profile" element={<ProfileView />} />
-
-              {/* Markets */}
               <Route path="markets" element={<MarketsView />} />
-
-              {/* AMM */}
               <Route path="amm" element={<AmmView />} />
-
-              {/* Leaderboard */}
               <Route path="leaderboard" element={<LeaderboardView />} />
             </Route>
 
-            {/* Game route - triggered when entering a game */}
-            <Route
-              path="/play/*"
-              element={
-                <Suspense fallback={<LoadingScreen />}>
-                  <LazyGameRoute backgroundImage={backgroundImage} />
-                </Suspense>
-              }
-            />
+            <Route path="/play/:chain/:world/:scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
+            <Route path="/play/*" element={<GameRouteShell backgroundImage={backgroundImage} />} />
 
-            {/* Standalone factory route */}
             <Route
-              path="/factory"
+              path="/factory/legacy"
               element={
                 <Suspense fallback={<LoadingScreen />}>
                   <FactoryPage />
@@ -89,7 +113,6 @@ function App() {
               }
             />
 
-            {/* Standalone factory v2 route */}
             <Route
               path="/factory/v2"
               element={
@@ -99,7 +122,6 @@ function App() {
               }
             />
 
-            {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </MusicRouterProvider>

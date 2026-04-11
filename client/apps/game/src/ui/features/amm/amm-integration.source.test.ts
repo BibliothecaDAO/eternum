@@ -13,9 +13,10 @@ describe("AMM feature wiring", () => {
     const landingSource = readSource("src/ui/features/landing/index.ts");
     const layoutSource = readSource("src/ui/features/landing/landing-layout.tsx");
 
-    expect(appSource).toContain(
-      "import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView }",
-    );
+    expect(appSource).toContain("import {");
+    expect(appSource).toContain("LandingLayout");
+    expect(appSource).toContain("AmmView");
+    expect(appSource).toContain('} from "./ui/features/landing";');
     expect(appSource).toContain('<Route path="amm" element={<AmmView />} />');
     expect(appSource).not.toContain('const LazyAmmDashboard = lazy(() => import("./ui/features/amm/amm-dashboard"))');
     expect(appSource).not.toContain('path="/amm"');
