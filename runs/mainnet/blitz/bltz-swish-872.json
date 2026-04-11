@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24273643351-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-04-11T03:29:56.896Z",
-  "updatedAt": "2026-04-11T03:31:49.303Z",
+  "updatedAt": "2026-04-11T03:31:52.971Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-11T03:31:52.971Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-swish-872.json",
     "worldAddress": "0x053c8c1edb394dd57919f581033d7451a48fcf41cda2c59e9dadcc0d40e3b980",
     "createGameTxHash": "0x7ed90ec4fd191b799abe36cc29e583662b3f07ef3cda8cbc7ef26ea839e70ff"
+  },
+  "activeLease": {
+    "launchRequestId": "24273643351-1",
+    "workflowRunId": 24273643351,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-04-11T03:31:52.971Z",
+    "expiresAt": "2026-04-11T04:16:52.971Z"
   }
 }
