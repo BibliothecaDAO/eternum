@@ -1,6 +1,13 @@
 import type { LaunchGameRequest, LaunchRotationRequest, LaunchSeriesRequest } from "../types";
 
 type LaunchRequest = LaunchGameRequest | LaunchSeriesRequest | LaunchRotationRequest;
+type WorkflowEnvironment = Record<string, string | undefined>;
+
+const WORKFLOW_OVERRIDE_KEYS = [
+  "GAME_LAUNCH_AUTO_RETRY_ENABLED",
+  "GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES",
+  "GAME_LAUNCH_TARGET_GAME_NAMES_JSON",
+] as const;
 
 function assignOptionalLaunchOption(launchOptions: Record<string, unknown>, key: string, value: unknown): void {
   if (value === undefined || value === null) {
@@ -39,17 +46,55 @@ function buildReplayableLaunchOptions(request: LaunchRequest): Record<string, un
   assignOptionalLaunchOption(launchOptions, "skipLootChestRoleGrant", request.skipLootChestRoleGrant);
   assignOptionalLaunchOption(launchOptions, "skipBanks", request.skipBanks);
   assignOptionalLaunchOption(launchOptions, "dryRun", request.dryRun);
+  assignOptionalLaunchOption(launchOptions, "workflowFile", request.workflowFile);
+  assignOptionalLaunchOption(launchOptions, "ref", request.ref);
 
   return launchOptions;
 }
 
-function buildBaseLaunchWorkflowEnvironment(request: LaunchRequest): Record<string, string> {
+function parseWorkflowLaunchOptions(rawValue: string): Record<string, unknown> {
+  let parsedValue: unknown;
+
+  try {
+    parsedValue = JSON.parse(rawValue);
+  } catch {
+    throw new Error("GAME_LAUNCH_OPTIONS_JSON must be valid JSON");
+  }
+
+  if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+    throw new Error("GAME_LAUNCH_OPTIONS_JSON must be a JSON object");
+  }
+
+  return parsedValue as Record<string, unknown>;
+}
+
+function buildWorkflowLaunchOptions(
+  request: LaunchRequest,
+  currentEnvironment: WorkflowEnvironment,
+): Record<string, unknown> {
+  const launchOptions = buildReplayableLaunchOptions(request);
+  const currentLaunchOptions = currentEnvironment.GAME_LAUNCH_OPTIONS_JSON;
+
+  if (!currentLaunchOptions) {
+    return launchOptions;
+  }
+
+  return {
+    ...launchOptions,
+    ...parseWorkflowLaunchOptions(currentLaunchOptions),
+  };
+}
+
+function buildBaseLaunchWorkflowEnvironment(
+  request: LaunchRequest,
+  currentEnvironment: WorkflowEnvironment,
+): Record<string, string> {
   const environment: Record<string, string> = {
     GAME_LAUNCH_KIND: request.launchKind || "game",
     GAME_LAUNCH_ENVIRONMENT: request.environmentId,
   };
 
-  const launchOptions = buildReplayableLaunchOptions(request);
+  const launchOptions = buildWorkflowLaunchOptions(request, currentEnvironment);
   if (Object.keys(launchOptions).length > 0) {
     environment.GAME_LAUNCH_OPTIONS_JSON = JSON.stringify(launchOptions);
   }
@@ -111,15 +156,32 @@ function assignRotationWorkflowEnvironment(
   return environment;
 }
 
-export function buildLaunchWorkflowEnvironment(request: LaunchRequest): Record<string, string> {
-  const environment = buildBaseLaunchWorkflowEnvironment(request);
+function applyWorkflowOverrides(
+  environment: Record<string, string>,
+  currentEnvironment: WorkflowEnvironment,
+): Record<string, string> {
+  for (const key of WORKFLOW_OVERRIDE_KEYS) {
+    const value = currentEnvironment[key];
+    if (value !== undefined && value !== "") {
+      environment[key] = value;
+    }
+  }
+
+  return environment;
+}
+
+export function buildLaunchWorkflowEnvironment(
+  request: LaunchRequest,
+  currentEnvironment: WorkflowEnvironment = process.env,
+): Record<string, string> {
+  const environment = buildBaseLaunchWorkflowEnvironment(request, currentEnvironment);
 
   if (request.launchKind === "series") {
-    return assignSeriesWorkflowEnvironment(environment, request);
+    return applyWorkflowOverrides(assignSeriesWorkflowEnvironment(environment, request), currentEnvironment);
   }
 
   if (request.launchKind === "rotation") {
-    return assignRotationWorkflowEnvironment(environment, request);
+    return applyWorkflowOverrides(assignRotationWorkflowEnvironment(environment, request), currentEnvironment);
   }
 
   return assignGameWorkflowEnvironment(environment, request);

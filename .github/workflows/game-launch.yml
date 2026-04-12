@@ -254,6 +254,8 @@ jobs:
             skipLootChestRoleGrant: "GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT",
             skipBanks: "GAME_LAUNCH_SKIP_BANKS",
             dryRun: "GAME_LAUNCH_DRY_RUN",
+            workflowFile: "GAME_LAUNCH_WORKFLOW_FILE",
+            ref: "GAME_LAUNCH_REF",
           };
 
           function shellQuote(value) {
@@ -342,6 +344,8 @@ jobs:
             append_optional_arg "${args_name}" --skip-lootchest-role-grant "${GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT:-}"
             append_optional_arg "${args_name}" --skip-banks "${GAME_LAUNCH_SKIP_BANKS:-}"
             append_optional_arg "${args_name}" --dry-run "${GAME_LAUNCH_DRY_RUN:-}"
+            append_optional_arg "${args_name}" --workflow-file "${GAME_LAUNCH_WORKFLOW_FILE:-}"
+            append_optional_arg "${args_name}" --ref "${GAME_LAUNCH_REF:-}"
             append_optional_arg "${args_name}" --map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON:-}"
             append_optional_arg "${args_name}" --blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON:-}"
           }
