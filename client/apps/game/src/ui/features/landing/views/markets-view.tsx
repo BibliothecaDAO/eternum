@@ -15,6 +15,7 @@ import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { useLandingNetworkState } from "../hooks/use-landing-network-state";
+import { canInteractWithLandingChain } from "../lib/landing-network-state";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import {
   PM_CONTENT_PANEL_CLASS,
@@ -558,10 +559,14 @@ const MarketTerminalSkeletonCard = () => (
 const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { connectedLandingChain, preferredChain, status, switchToPreferredChain } = useLandingNetworkState();
-  const activeTradingChain: MarketDataChain = connectedLandingChain ?? preferredChain;
+  const landingNetworkState = useLandingNetworkState();
+  const { status, switchToPreferredChain } = landingNetworkState;
   const [switchTargetChain, setSwitchTargetChain] = useState<MarketDataChain | null>(null);
   const [isExplainerOpen, setIsExplainerOpen] = useState(true);
+  const canTradeOnChain = useCallback(
+    (chain: MarketDataChain) => canInteractWithLandingChain(landingNetworkState, chain),
+    [landingNetworkState],
+  );
 
   const selectedStatus = getStatusFromParam(searchParams.get("status"));
   const selectedChain = getChainFromParam(searchParams.get("chain"));
@@ -602,10 +607,14 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
 
   const handleCardClick = useCallback(
     (market: MarketClass, chain: MarketDataChain) => {
-      if (chain !== activeTradingChain) return;
+      if (!canTradeOnChain(chain)) {
+        setSwitchTargetChain(chain);
+        return;
+      }
+
       toggleModal(<MarketDetailsModal market={market} chain={chain} onClose={() => toggleModal(null)} />);
     },
-    [activeTradingChain, toggleModal],
+    [canTradeOnChain, toggleModal],
   );
 
   const handleOpenSwitchNetworkPrompt = useCallback(
@@ -900,7 +909,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
                 item={item}
                 onOpen={handleCardClick}
                 onSwitchNetwork={handleOpenSwitchNetworkPrompt}
-                canTrade={item.chain === activeTradingChain}
+                canTrade={canTradeOnChain(item.chain)}
               />
             ))}
           </div>

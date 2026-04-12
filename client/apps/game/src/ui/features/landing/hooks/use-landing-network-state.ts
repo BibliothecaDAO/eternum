@@ -1,5 +1,5 @@
 import { env } from "../../../../../env";
-import { resolveChain, setSelectedChain, subscribeSelectedChain } from "@/runtime/world";
+import { setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
 import {
   resolveConnectedTxChainFromRuntime,
   switchWalletToChain,
@@ -7,12 +7,13 @@ import {
 } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 
 import {
   resolveLandingNetworkState,
   resolvePreferredLandingChain,
   type LandingNetworkChain,
+  type LandingNetworkStatus,
 } from "../lib/landing-network-state";
 
 interface LandingNetworkControllerState {
@@ -20,22 +21,16 @@ interface LandingNetworkControllerState {
   connectedChain: Chain | null;
   connectedLandingChain: LandingNetworkChain | null;
   hasConnectedWallet: boolean;
-  status: "disconnected" | "detecting" | "matched" | "mismatched";
+  status: LandingNetworkStatus;
   selectPreferredChain: (chain: LandingNetworkChain) => void;
   switchToPreferredChain: (chain: LandingNetworkChain) => Promise<boolean>;
 }
 
 export const useLandingNetworkState = (): LandingNetworkControllerState => {
   const fallbackChain = env.VITE_PUBLIC_CHAIN as Chain;
-  const [selectedChain, setSelectedChainState] = useState<Chain>(() => resolveChain(fallbackChain));
+  const selectedChain = useSelectedRuntimeChain(fallbackChain);
   const { address, chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
-
-  useEffect(() => {
-    return subscribeSelectedChain((nextChain) => {
-      setSelectedChainState(nextChain ?? fallbackChain);
-    });
-  }, [fallbackChain]);
 
   const connectedChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
 

@@ -12,6 +12,7 @@ const MODEL_PREFETCH_BATCH_SIZE = 8;
 const IMAGE_PREFETCH_BATCH_SIZE = 20;
 const DASHBOARD_PRELOAD_STARTED_MARK = "dashboard-play-assets-prefetch-started";
 const DASHBOARD_PRELOAD_COMPLETED_MARK = "dashboard-play-assets-prefetch-completed";
+const inFlightPrefetchSessionKeys = new Set<string>();
 
 type PrefetchAsset = string;
 
@@ -136,14 +137,25 @@ const prefetchAssetsForSession = ({
     return;
   }
 
-  window.sessionStorage.setItem(sessionKey, "true");
+  if (inFlightPrefetchSessionKeys.has(sessionKey)) {
+    return;
+  }
+
+  inFlightPrefetchSessionKeys.add(sessionKey);
 
   if (startMarkName) {
     markPreload(startMarkName);
   }
 
   schedule(() => {
-    runPrefetchGroups(groups, completionMarkName ? () => markPreload(completionMarkName) : undefined);
+    runPrefetchGroups(groups, () => {
+      inFlightPrefetchSessionKeys.delete(sessionKey);
+      window.sessionStorage.setItem(sessionKey, "true");
+
+      if (completionMarkName) {
+        markPreload(completionMarkName);
+      }
+    });
   });
 };
 

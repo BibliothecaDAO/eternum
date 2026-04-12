@@ -53,7 +53,8 @@ describe("landing network state", () => {
       connectedChain: "local",
       hasConnectedWallet: true,
     });
-    expect(unsupportedWalletChain.status).toBe("mismatched");
+    expect(unsupportedWalletChain.status).toBe("unsupported");
     expect(unsupportedWalletChain.connectedLandingChain).toBeNull();
+    expect(canInteractWithLandingChain(unsupportedWalletChain, "slot")).toBe(false);
   });
 });

@@ -11,10 +11,10 @@ describe("PlayView entry preloading", () => {
   it("preloads only the game route chunk before navigating into the route-owned entry flow", () => {
     const source = readSource("src/ui/features/landing/views/play-view.tsx");
 
-    expect(source).toContain("primePlayEntryRoute");
-    expect(source).toContain("buildEntryHref");
+    expect(source).toContain("primeGameEntry");
+    expect(source).toContain("buildEntryHrefFromEntryContext");
     expect(source).toContain('openGameEntryRoute(selection, "play", false)');
-    expect(source).toContain("primePlayEntryRoute();");
+    expect(source).toContain('primeGameEntry("entry");');
     expect(source).not.toContain("primePlayEntryResources();");
   });
 });

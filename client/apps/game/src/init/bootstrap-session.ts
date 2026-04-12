@@ -1,4 +1,5 @@
 export interface BootstrapSelection {
+  cacheKey: string | null;
   chain: string | null;
   worldName: string | null;
 }
@@ -19,12 +20,12 @@ export function createBootstrapSession<TResult>(): BootstrapSession<TResult> {
   let cachedResult: TResult | null = null;
   let promise: Promise<TResult> | null = null;
   let rendererCleanup: (() => void) | null = null;
-  let trackedSelection: BootstrapSelection = { chain: null, worldName: null };
+  let trackedSelection: BootstrapSelection = { cacheKey: null, chain: null, worldName: null };
 
   const clearSessionState = () => {
     cachedResult = null;
     promise = null;
-    trackedSelection = { chain: null, worldName: null };
+    trackedSelection = { cacheKey: null, chain: null, worldName: null };
   };
 
   return {
@@ -38,6 +39,10 @@ export function createBootstrapSession<TResult>(): BootstrapSession<TResult> {
 
     getResetReason(nextSelection) {
       if (!promise) {
+        return null;
+      }
+
+      if (trackedSelection.cacheKey !== null && trackedSelection.cacheKey === nextSelection.cacheKey) {
         return null;
       }
 
