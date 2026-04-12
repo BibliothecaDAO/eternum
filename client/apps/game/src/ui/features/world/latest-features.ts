@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-12",
+    title: "Unified Landing Network State",
+    description:
+      "Landing network controls, game entry prompts, markets, and factory tools now read the same preferred-versus-wallet network state, so switch prompts stay aligned with the header and temporary wallet detection no longer shows the wrong network warning.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-11",
     title: "Network Switch State Fix",
     description:

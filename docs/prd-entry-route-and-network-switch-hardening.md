@@ -90,7 +90,9 @@ The final system should:
 ### Landing state and loading
 
 - Opening `/enter/...` no longer resets the active landing mode filter from season to blitz.
-- Landing chrome highlights the same section as the background content during entry.
+- Landing chrome highlights the same section as the background content during entry. Specifically,
+  `getSectionFromPath()` in `navigation-config.ts` or `resolveBackgroundTab()` in `landing-entry-route.tsx` returns the
+  correct section for `/enter/...` paths, and the header/mobile nav uses this value.
 - The route-owned loading flow does not introduce an avoidable extra route normalization hop.
 
 ### Network switching
@@ -120,14 +122,36 @@ The final system should:
 
 ### Workstream 2: Preserve landing context
 
-- Decide which landing state must survive entry:
-  - mode filter
-  - active landing section
-  - relevant route-local background state
-- Move only the required landing state to a route-stable owner or serialize it into route state deliberately.
+**State to preserve:**
+
+- `modeFilter` (blitz/season/eternum) — currently local `useState` in `PlayView` (`play-view.tsx:718`)
+- `activeTab` (play/learn/news/factory) — derived from route path via `getSectionFromPath()` in `navigation-config.ts`
+- Landing scroll position — implicit in the DOM, lost on remount
+
+**Recommended mechanism: serialize into `location.state` during entry navigation.**
+
+The `/enter/:chain/:world` navigation should carry `{ returnTo, modeFilter, activeSection }` in `location.state`. When
+`LandingEntryRoute` renders `PlayView` as a background, it reconstructs from this state rather than re-deriving from the
+current path. This avoids lifting state into a global store for what is fundamentally a route-transition concern.
+
+Alternatives considered:
+
+- _React context above the router outlet_ — over-scoped; landing state should not leak into play routes.
+- _Zustand store outside the route tree_ — introduces a second source of truth for route-local state.
+
+**Implementation steps:**
+
+- When navigating to `/enter/...`, include `modeFilter` and `activeSection` in `location.state`.
+- In `LandingEntryRoute`, read these from `location.state` and pass to `PlayView` as props.
+- Make `resolveBackgroundTab()` (`landing-entry-route.tsx:13-31`) prefer explicit state over path re-derivation.
 - Make landing header/mobile navigation aware of route-owned entry context instead of relying only on pathname.
 
 ### Workstream 3: Harden switch replay
+
+**Current state:** `switchWalletToChain()` in `network-switch.ts:129-160` is a bare async function with no in-flight
+tracking, no cancellation token, and no replay guard. The dashboard indicator in `dashboard-network-switch.tsx` compares
+`connectedTxChain === preferredChain` for a visual mismatch signal but has no "guarded action" abstraction — the switch
+is triggered directly on user click with no debounce or state machine.
 
 - Add explicit in-flight state to the network-switch prompt flow.
 - Disable or debounce the switch CTA while a switch is pending.
@@ -141,9 +165,23 @@ The final system should:
 
 ### Workstream 4: Align connector chain selection
 
-- Remove the module-init assumption that the connector chain is fixed for the whole session.
-- Rebind or reconstruct the connector/runtime inputs from selected-chain state where needed.
-- Verify sign-in from `/enter/:chain/:world` on a non-default chain works on first connect.
+**Current binding surface:** `ControllerConnector` is constructed once in `starknet-provider.tsx:97-112` with a
+`defaultChainId` resolved from environment variables (`VITE_PUBLIC_CHAIN`, `VITE_PUBLIC_NODE_URL`). The connector
+receives all supported RPC URLs via `controllerSupportedRpcUrls`, but `defaultChainId` is fixed at module init.
+
+**The problem:** When a user selects a world on a non-default chain before signing in, the preferred-chain UI state
+updates but `defaultChainId` in the connector still points to the environment default. The first connect attempt
+therefore targets the wrong chain, requiring a second manual switch or a full reload.
+
+**Fix surface:**
+
+- Make `defaultChainId` in the `ControllerConnector` constructor reactive to selected-chain state, or reconstruct the
+  connector when the selected chain diverges from the current `defaultChainId`.
+- `pickPrimaryConnector()` and `warmControllerConnector()` in `controller-connect.ts` must respect the selected chain
+  when choosing which connector configuration to activate.
+- `switchWalletToChain()` in `network-switch.ts:129-160` already supports programmatic switching — ensure this is called
+  automatically after connect if the connected chain does not match the selected world chain.
+- Verify sign-in from `/enter/:chain/:world` on a non-default chain works on first connect without a second switch.
 
 ### Workstream 5: Replace weak tests
 
@@ -157,6 +195,22 @@ The final system should:
   - cancel-during-switch behavior
   - market watch origin preservation
 - Fix or isolate the current jsdom/node environment issue so these tests can actually run in CI and locally.
+
+## Workstream Dependencies
+
+```
+Workstream 1 (canonical handoff) ──┐
+                                    ├── Workstream 5 (tests) ── ship
+Workstream 2 (landing context)  ───┤
+                                    │
+Workstream 3 (switch replay)   ────┘   (independent, can land separately)
+
+Workstream 4 (connector chain) ──────── (independent, requires manual verification on non-default chains)
+```
+
+- **Workstream 5** depends on 1, 2, and 3 being at least partially designed — tests must target the intended behavior.
+- **Workstream 3** has no code dependency on 1 or 2 and can be developed and landed in parallel.
+- **Workstream 4** is independently shippable but should land last per Rollout Notes due to reconnection risk.
 
 ## TDD Plan
 
@@ -176,6 +230,23 @@ The final system should:
 10. Implement the smallest production changes needed to make the tests pass in that order.
 11. Re-run targeted tests first, then run the repo-required checks for the final code change set.
 
+### TDD Priority Tiers
+
+**P0 — must ship (blocks production safety):**
+
+- Items 1–2: Canonical routing and history behavior — prevents users from landing on broken legacy URLs.
+- Items 5–6: Replay safety and cancel-during-switch — prevents duplicate transaction-sensitive actions.
+- Item 9: Hooks lint fix — prevents React runtime warnings and potential crash on invalid params.
+
+**P1 — should ship (prevents UX regressions):**
+
+- Items 3–4: Landing state and navigation shell — prevents confusing mode resets during entry.
+- Item 7: Sign-in chain alignment — prevents first-connect failure on non-default chains.
+
+**P2 — nice to have (edge case coverage):**
+
+- Item 8: Market watch origin — affects only fresh-tab `/enter/...` launches, narrow audience.
+
 ## Verification Plan
 
 - Targeted routing tests for `play-route`, entry navigation, and landing entry state.
@@ -194,6 +265,13 @@ The final system should:
 - Preserving landing state too broadly can over-couple the entry route to page-local UI concerns.
 - Reworking connector chain ownership can affect existing wallet reconnection behavior.
 - History fixes need care to avoid breaking deep-link entry or spectate reload behavior.
+- **Legacy URL breakage for shared/bookmarked links.** Users or external sites may have bookmarked `/play/map` or
+  `/play/hex` URLs. The existing `normalizeLegacyPlayLocation()` chain in `play-route.ts:129-188` already converts these
+  to canonical form — this normalization must be preserved as a redirect layer even after legacy construction is removed
+  from success paths. Removing legacy _construction_ is safe; removing legacy _recognition_ is not.
+- **Silent failure on invalid `/enter/...` params.** Currently `parseEntryRoute()` returns `null` on any validation
+  failure and `LandingEntryRoute` silently redirects to `/`. Users arriving via a malformed deep link get no feedback.
+  Consider adding a toast or brief error state before redirecting so the failure is diagnosable.
 
 ## Rollout Notes
 

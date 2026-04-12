@@ -1,86 +1,97 @@
-import { env } from "../../../../../env";
-import { resolveChain, setSelectedChain, subscribeSelectedChain } from "@/runtime/world";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
-import { useAccount } from "@starknet-react/core";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-import {
-  getChainLabel,
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
+import { useLandingNetworkState } from "../hooks/use-landing-network-state";
+import type { LandingNetworkChain, LandingNetworkStatus } from "../lib/landing-network-state";
 
-const DASHBOARD_CHAIN_OPTIONS: Chain[] = ["slot", "mainnet"];
+const DASHBOARD_CHAIN_OPTIONS: LandingNetworkChain[] = ["slot", "mainnet"];
 
-const resolvePreferredDashboardChain = (chain: Chain): Chain => {
-  return chain === "mainnet" ? "mainnet" : "slot";
+const resolveIndicatorTone = (status: LandingNetworkStatus) => {
+  switch (status) {
+    case "matched":
+      return "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.45)]";
+    case "mismatched":
+      return "bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.4)]";
+    case "detecting":
+      return "bg-sky-300 shadow-[0_0_10px_rgba(125,211,252,0.35)]";
+    case "disconnected":
+    default:
+      return "bg-white/40";
+  }
 };
 
-const resolveIndicatorTone = ({
-  preferredChain,
-  connectedTxChain,
-  hasConnectedWallet,
+const resolveWalletStatusLabel = ({
+  connectedChain,
+  status,
 }: {
-  preferredChain: Chain;
-  connectedTxChain: Chain | null;
-  hasConnectedWallet: boolean;
+  connectedChain: Chain | null;
+  status: LandingNetworkStatus;
 }) => {
-  if (!hasConnectedWallet) {
-    return "bg-white/40";
+  if (status === "disconnected") {
+    return "No Wallet";
   }
 
-  return connectedTxChain === preferredChain
-    ? "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.45)]"
-    : "bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.4)]";
+  if (status === "detecting") {
+    return "Detecting";
+  }
+
+  return connectedChain ? `Wallet ${getChainLabel(connectedChain)}` : "Wallet Other";
+};
+
+const resolveWalletStatusTone = (status: LandingNetworkStatus) => {
+  switch (status) {
+    case "matched":
+      return "text-emerald-200/85";
+    case "mismatched":
+      return "text-amber-200/90";
+    case "detecting":
+      return "text-sky-200/90";
+    case "disconnected":
+    default:
+      return "text-gold/45";
+  }
 };
 
 export const DashboardNetworkSwitch = ({ className }: { className?: string }) => {
-  const fallbackChain = env.VITE_PUBLIC_CHAIN as Chain;
-  const [preferredChain, setPreferredChainState] = useState(() =>
-    resolvePreferredDashboardChain(resolveChain(fallbackChain)),
-  );
-  const { address, chainId, connector } = useAccount();
-  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
-  const connectedTxChain = useMemo(
-    () => resolveConnectedTxChainFromRuntime({ chainId, controller }),
-    [chainId, controller],
-  );
-  useEffect(() => {
-    return subscribeSelectedChain((nextChain) => {
-      setPreferredChainState(resolvePreferredDashboardChain(nextChain ?? fallbackChain));
-    });
-  }, [fallbackChain]);
-  const indicatorTone = useMemo(
+  const { connectedChain, hasConnectedWallet, preferredChain, status, selectPreferredChain, switchToPreferredChain } =
+    useLandingNetworkState();
+  const [pendingChain, setPendingChain] = useState<LandingNetworkChain | null>(null);
+  const displayedPreferredChain = pendingChain ?? preferredChain;
+  const renderedStatus = hasConnectedWallet && pendingChain ? "detecting" : status;
+  const indicatorTone = useMemo(() => resolveIndicatorTone(renderedStatus), [renderedStatus]);
+  const walletStatusLabel = useMemo(
     () =>
-      resolveIndicatorTone({
-        preferredChain,
-        connectedTxChain,
-        hasConnectedWallet: Boolean(address),
-      }),
-    [address, connectedTxChain, preferredChain],
+      pendingChain
+        ? `Switching ${getChainLabel(pendingChain)}`
+        : resolveWalletStatusLabel({
+            connectedChain,
+            status,
+          }),
+    [connectedChain, pendingChain, status],
   );
+  const walletStatusTone = useMemo(() => resolveWalletStatusTone(renderedStatus), [renderedStatus]);
 
   const handleSelectChain = useCallback(
-    (nextChain: Chain) => {
-      if (nextChain === preferredChain) {
+    async (nextChain: LandingNetworkChain) => {
+      if (nextChain === preferredChain || pendingChain) {
         return;
       }
 
-      setPreferredChainState(resolvePreferredDashboardChain(nextChain));
-      setSelectedChain(nextChain);
-
-      if (!address) {
+      if (!hasConnectedWallet) {
+        selectPreferredChain(nextChain);
         return;
       }
 
-      void switchWalletToChain({
-        controller,
-        targetChain: nextChain,
-      });
+      setPendingChain(nextChain);
+      try {
+        await switchToPreferredChain(nextChain);
+      } finally {
+        setPendingChain(null);
+      }
     },
-    [address, controller, preferredChain],
+    [hasConnectedWallet, pendingChain, preferredChain, selectPreferredChain, switchToPreferredChain],
   );
 
   return (
@@ -89,26 +100,31 @@ export const DashboardNetworkSwitch = ({ className }: { className?: string }) =>
         "flex items-center gap-1 rounded-xl border border-gold/20 bg-black/35 px-1.5 py-1 text-gold backdrop-blur-md",
         className,
       )}
-      title={`Preferred network: ${getChainLabel(preferredChain)}`}
+      title={`Preferred: ${getChainLabel(preferredChain)} • ${walletStatusLabel}`}
     >
-      <div className="flex items-center gap-1 px-1.5">
+      <div className="flex items-center gap-1.5 px-1.5">
         <span className={cn("h-2 w-2 rounded-full border border-black/20", indicatorTone)} />
-        <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-gold/55">Net</span>
+        <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-gold/55">Pref</span>
+        <span className={cn("text-[9px] font-medium uppercase tracking-[0.12em]", walletStatusTone)}>
+          {walletStatusLabel}
+        </span>
       </div>
       <div className="flex items-center gap-1">
         {DASHBOARD_CHAIN_OPTIONS.map((chain) => {
-          const isSelected = preferredChain === chain;
+          const isSelected = displayedPreferredChain === chain;
 
           return (
             <button
               key={chain}
               type="button"
-              onClick={() => handleSelectChain(chain)}
+              onClick={() => void handleSelectChain(chain)}
+              disabled={pendingChain !== null}
               className={cn(
                 "rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors",
                 isSelected
                   ? "bg-gold/18 text-gold shadow-[inset_0_0_0_1px_rgba(223,170,84,0.18)]"
                   : "text-gold/55 hover:bg-gold/8 hover:text-gold",
+                pendingChain !== null && "cursor-wait opacity-70",
               )}
               aria-pressed={isSelected}
             >

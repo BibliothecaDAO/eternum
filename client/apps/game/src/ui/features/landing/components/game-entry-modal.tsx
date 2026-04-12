@@ -4423,34 +4423,22 @@ export const GameEntryModal = ({
     uiStore.setShowBlankOverlay(true);
     markGameEntryMilestone("enter-game-started");
 
-    if (isSpectateMode) {
-      const directEntryTarget = resolveGameEntryTarget({
-        structureEntityId: uiStore.structureEntityId,
-        worldMapReturnPosition: uiStore.worldMapReturnPosition,
-        isSpectateMode: true,
-      });
-
-      if (directEntryTarget) {
-        uiStore.setStructureEntityId(directEntryTarget.structureEntityId, {
-          spectator: directEntryTarget.spectator,
-          worldMapPosition: directEntryTarget.worldMapPosition,
-        });
-
-        navigate(directEntryTarget.url);
-        window.dispatchEvent(new Event("urlChanged"));
-        return;
-      }
-    }
-
-    const setStructureEntityId = uiStore.setStructureEntityId;
-    setStructureEntityId(0, {
-      spectator: isSpectateMode,
+    const entryTarget = resolveGameEntryTarget({
+      chain,
+      worldName,
+      structureEntityId: uiStore.structureEntityId,
+      worldMapReturnPosition: uiStore.worldMapReturnPosition,
+      isSpectateMode,
     });
 
-    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
-    navigate(url);
+    uiStore.setStructureEntityId(entryTarget.structureEntityId, {
+      spectator: entryTarget.spectator,
+      worldMapPosition: entryTarget.worldMapPosition ?? undefined,
+    });
+
+    navigate(entryTarget.url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [navigate, isSpectateMode]);
+  }, [chain, navigate, isSpectateMode, worldName]);
 
   const handleSeasonSettle = useCallback(async () => {
     if (!account?.address) return;

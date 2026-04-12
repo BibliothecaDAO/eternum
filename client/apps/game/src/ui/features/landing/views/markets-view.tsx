@@ -11,10 +11,10 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldsAvailability } from "@/hooks/use-world-availability";
 import type { MarketClass } from "@/pm/class";
 import { useOptionalControllers } from "@/pm/hooks/controllers/use-controllers";
-import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
+import { useLandingNetworkState } from "../hooks/use-landing-network-state";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import {
   PM_CONTENT_PANEL_CLASS,
@@ -26,13 +26,7 @@ import { MarketImage } from "@/ui/features/market/landing-markets/market-image";
 import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
 import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
 import { getMMRTierFromRaw, toMmrIntegerFromRaw, type MMRTier } from "@/ui/utils/mmr-tiers";
-import {
-  getChainLabel,
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
-import { useAccount } from "@starknet-react/core";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import { useQuery } from "@tanstack/react-query";
 import {
   marketChainLabels,
@@ -47,6 +41,7 @@ import { MaybeController } from "@/ui/features/market/landing-markets/maybe-cont
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { hash } from "starknet";
+import { toast } from "sonner";
 import { MarketDetailsModal } from "./market-details-modal";
 
 interface MarketsViewProps {
@@ -563,12 +558,8 @@ const MarketTerminalSkeletonCard = () => (
 const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { chainId, connector } = useAccount();
-  const runtimeChain = getPredictionMarketChain();
-  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
-  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
-  const activeTradingChain: MarketDataChain =
-    connectedTxChain === "mainnet" || connectedTxChain === "slot" ? connectedTxChain : runtimeChain;
+  const { connectedLandingChain, preferredChain, status, switchToPreferredChain } = useLandingNetworkState();
+  const activeTradingChain: MarketDataChain = connectedLandingChain ?? preferredChain;
   const [switchTargetChain, setSwitchTargetChain] = useState<MarketDataChain | null>(null);
   const [isExplainerOpen, setIsExplainerOpen] = useState(true);
 
@@ -617,20 +608,25 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     [activeTradingChain, toggleModal],
   );
 
-  const handleOpenSwitchNetworkPrompt = useCallback((chain: MarketDataChain) => {
-    setSwitchTargetChain(chain);
-  }, []);
+  const handleOpenSwitchNetworkPrompt = useCallback(
+    (chain: MarketDataChain) => {
+      if (status === "detecting") {
+        toast.info("Detecting wallet network. Try again in a moment.");
+        return;
+      }
+
+      setSwitchTargetChain(chain);
+    },
+    [status],
+  );
 
   const handleSwitchNetwork = useCallback(async () => {
     if (!switchTargetChain) return;
-    const switched = await switchWalletToChain({
-      controller,
-      targetChain: switchTargetChain,
-    });
+    const switched = await switchToPreferredChain(switchTargetChain);
     if (switched) {
       setSwitchTargetChain(null);
     }
-  }, [controller, switchTargetChain]);
+  }, [switchTargetChain, switchToPreferredChain]);
 
   const handleStatusChange = useCallback(
     (nextStatus: MarketStatusKey) => {

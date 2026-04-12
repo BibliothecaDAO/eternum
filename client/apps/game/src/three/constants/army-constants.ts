@@ -39,3 +39,7 @@ export const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
   [ModelType.AgentIstarai]: "agents/istarai.glb",
   [ModelType.AgentYP]: "agents/ypanther.glb",
 };
+
+export const buildArmyModelAssetPath = (modelType: ModelType): string => {
+  return `/models/${MODEL_TYPE_TO_FILE[modelType]}`;
+};

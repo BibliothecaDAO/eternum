@@ -13,24 +13,20 @@ import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { findMarketByPrizeAddressAcrossChains, getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { useConfig } from "@/pm/providers";
-import { setSelectedChain, type WorldSelectionInput } from "@/runtime/world";
+import type { WorldSelectionInput } from "@/runtime/world";
 import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
+import { canInteractWithLandingChain, resolvePreferredLandingChain } from "../../lib/landing-network-state";
 import { MarketDetailsModal } from "@/ui/features/landing/views/market-details-modal";
 import { normalizeHexAddress, transformMarketRowToClass } from "@/ui/features/market/hooks/transform-market-row";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
-import {
-  getChainLabel,
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
-import { useAccount } from "@starknet-react/core";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -269,13 +265,11 @@ const GameCard = ({
   marketState,
 }: GameCardProps) => {
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { chainId, connector, address } = useAccount();
-  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
-  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
-  const hasConnectedWallet = Boolean(address);
+  const landingNetworkState = useLandingNetworkState();
+  const { hasConnectedWallet, status, switchToPreferredChain } = landingNetworkState;
   const canInteractOnChain = useCallback(
-    (targetChain: Chain) => !hasConnectedWallet || (connectedTxChain !== null && connectedTxChain === targetChain),
-    [connectedTxChain, hasConnectedWallet],
+    (targetChain: Chain) => canInteractWithLandingChain(landingNetworkState, resolvePreferredLandingChain(targetChain)),
+    [landingNetworkState],
   );
 
   const isOngoing = game.gameStatus === "ongoing";
@@ -323,13 +317,18 @@ const GameCard = ({
 
   const runWithNetworkGuard = useCallback(
     (action: () => void, targetChain: Chain = game.chain, context: "game" | "market" = "game") => {
+      if (hasConnectedWallet && status === "detecting") {
+        toast.info("Detecting wallet network. Try again in a moment.");
+        return;
+      }
+
       if (!canInteractOnChain(targetChain)) {
         setPendingNetworkAction(createPendingNetworkAction(targetChain, context, action));
         return;
       }
       action();
     },
-    [canInteractOnChain, game.chain],
+    [canInteractOnChain, game.chain, hasConnectedWallet, status],
   );
 
   // Inline registration hook
@@ -377,21 +376,15 @@ const GameCard = ({
 
   const handleSwitchNetwork = useCallback(async () => {
     if (!pendingNetworkAction) return;
-    const switched = await switchWalletToChain({
-      controller,
-      targetChain: pendingNetworkAction.targetChain,
-    });
+    const switched = await switchToPreferredChain(resolvePreferredLandingChain(pendingNetworkAction.targetChain));
     const outcome = resolvePendingNetworkSwitchOutcome({
       pendingAction: pendingNetworkAction,
       switched,
     });
 
     setPendingNetworkAction(outcome.pendingAction);
-    if (outcome.selectedChain) {
-      setSelectedChain(outcome.selectedChain);
-    }
     outcome.replay?.();
-  }, [controller, pendingNetworkAction]);
+  }, [pendingNetworkAction, switchToPreferredChain]);
 
   const handleOpenMarket = useCallback(
     (initialOutcomeIndex?: number) => {

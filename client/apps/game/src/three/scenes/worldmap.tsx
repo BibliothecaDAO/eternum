@@ -1702,6 +1702,7 @@ export default class WorldmapScene extends WarpTravel {
     const row = this.locationManager.getRow();
     if (col !== undefined && row !== undefined) {
       this.moveCameraToColRow(col, row, 0);
+      this.requestChunkRefresh(true, "default");
     }
     if (!this.hasInitialized) {
       this.alignInitialWorldmapCameraView();
