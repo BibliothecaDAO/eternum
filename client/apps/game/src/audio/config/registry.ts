@@ -1140,6 +1140,16 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     loop: true,
     volume: 1.0,
   },
+  "music.monophonic_mixtape_14": {
+    id: "music.monophonic_mixtape_14",
+    url: "/sound/music/MonophonicMixtape14.mp3",
+    category: AudioCategory.MUSIC,
+    priority: 3,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 1.0,
+  },
 
   // === AMBIENT/ENVIRONMENTAL SOUNDS ===
   // Birds - Morning/Day variations

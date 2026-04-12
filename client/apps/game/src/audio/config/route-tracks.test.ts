@@ -65,6 +65,7 @@ describe("matchRoutePlaylist", () => {
       "music.monophonic_mixtape_11",
       "music.monophonic_mixtape_12",
       "music.monophonic_mixtape_13",
+      "music.monophonic_mixtape_14",
     ]);
   });
 
@@ -73,6 +74,7 @@ describe("matchRoutePlaylist", () => {
     const match = matchRoutePlaylist("/play/world");
     expect(match.key).toBe("play:main");
     expect(match.tracks).toContain("music.cha_cha_chi");
+    expect(match.tracks).toContain("music.monophonic_mixtape_14");
   });
 
   it("always returns a playlist even for unknown routes", () => {
