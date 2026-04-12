@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
@@ -19,22 +20,25 @@ import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
+import { canInteractWithLandingChain, resolvePreferredLandingChain } from "../../lib/landing-network-state";
 import { MarketDetailsModal } from "@/ui/features/landing/views/market-details-modal";
 import { normalizeHexAddress, transformMarketRowToClass } from "@/ui/features/market/hooks/transform-market-row";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
 import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market-redeem";
-import {
-  getChainLabel,
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
-import { useAccount } from "@starknet-react/core";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { primePlayEntryAssets, primePlayEntryRoute } from "@/game-entry-preload";
+import { describeAutoSettleRuntimePhase, resolveAutoSettleRuntimeState } from "./auto-settle-runtime";
+import {
+  createPendingNetworkAction,
+  resolvePendingNetworkSwitchOutcome,
+  type PendingNetworkAction,
+} from "./pending-network-action";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
@@ -233,6 +237,7 @@ const buildGameResolutionSignature = (game: GameData): string => {
 
 interface GameCardProps {
   game: GameData;
+  nowSec: number;
   onPlay: () => void;
   onSettle?: () => void;
   onSpectate: () => void;
@@ -251,6 +256,7 @@ interface GameCardProps {
  */
 const GameCard = ({
   game,
+  nowSec,
   onPlay,
   onSettle,
   onSpectate,
@@ -264,13 +270,11 @@ const GameCard = ({
   marketState,
 }: GameCardProps) => {
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { chainId, connector, address } = useAccount();
-  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
-  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
-  const hasConnectedWallet = Boolean(address);
+  const landingNetworkState = useLandingNetworkState();
+  const { hasConnectedWallet, status, switchToPreferredChain } = landingNetworkState;
   const canInteractOnChain = useCallback(
-    (targetChain: Chain) => !hasConnectedWallet || (connectedTxChain !== null && connectedTxChain === targetChain),
-    [connectedTxChain, hasConnectedWallet],
+    (targetChain: Chain) => canInteractWithLandingChain(landingNetworkState, resolvePreferredLandingChain(targetChain)),
+    [landingNetworkState],
   );
 
   const isOngoing = game.gameStatus === "ongoing";
@@ -313,20 +317,30 @@ const GameCard = ({
     return Number.isFinite(value) && value > 0;
   }, [marketClaimableDisplay]);
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
-  const [switchTargetChain, setSwitchTargetChain] = useState<Chain | null>(null);
-  const [switchPromptContext, setSwitchPromptContext] = useState<"game" | "market">("game");
-  const targetChainLabel = getChainLabel(switchTargetChain ?? game.chain);
+  const [isSwitchNetworkPending, setIsSwitchNetworkPending] = useState(false);
+  const [pendingNetworkAction, setPendingNetworkAction] = useState<PendingNetworkAction | null>(null);
+  const latestPendingNetworkActionRef = useRef<PendingNetworkAction | null>(null);
+  const handledRegistrationStageRef = useRef(false);
+  const targetChainLabel = getChainLabel(pendingNetworkAction?.targetChain ?? game.chain);
+
+  useEffect(() => {
+    latestPendingNetworkActionRef.current = pendingNetworkAction;
+  }, [pendingNetworkAction]);
 
   const runWithNetworkGuard = useCallback(
     (action: () => void, targetChain: Chain = game.chain, context: "game" | "market" = "game") => {
+      if (hasConnectedWallet && status === "detecting") {
+        toast.info("Detecting wallet network. Try again in a moment.");
+        return;
+      }
+
       if (!canInteractOnChain(targetChain)) {
-        setSwitchPromptContext(context);
-        setSwitchTargetChain(targetChain);
+        setPendingNetworkAction(createPendingNetworkAction(targetChain, context, action));
         return;
       }
       action();
     },
-    [canInteractOnChain, game.chain],
+    [canInteractOnChain, game.chain, hasConnectedWallet, status],
   );
 
   // Inline registration hook
@@ -346,6 +360,45 @@ const GameCard = ({
     isRegistered: game.isRegistered === true,
     enabled: isBlitzMode && game.status === "ok" && canRegisterPeriod,
   });
+  const autoSettleEntryKey = useMemo(
+    () =>
+      playerAddress
+        ? createAutoSettleEntryKey({
+            chain: game.chain,
+            worldName: game.name,
+            walletAddress: playerAddress,
+          })
+        : null,
+    [game.chain, game.name, playerAddress],
+  );
+  const autoSettleEntry = useAutoSettleStore((state) =>
+    autoSettleEntryKey ? state.entries[autoSettleEntryKey] : undefined,
+  );
+  const upsertAutoSettleEntry = useAutoSettleStore((state) => state.upsertEntry);
+  const setEnabled = useAutoSettleStore((state) => state.setEnabled);
+  const showRegistered = game.isRegistered || registrationStage === "done";
+  const startSettlingAt = game.config?.startSettlingAt ?? null;
+  const canShowAutoSettleControl =
+    isBlitzMode && showRegistered && playerAddress !== null && startSettlingAt !== null && !isEnded;
+  const autoSettleRuntimeState = resolveAutoSettleRuntimeState({
+    enabled: autoSettleEntry?.enabled ?? false,
+    persistedStatus: autoSettleEntry?.status ?? "idle",
+    settleAtSec: startSettlingAt ?? 0,
+    nowSec,
+    hasConnectedWallet,
+    hasCompatibleNetwork: canInteractOnChain(game.chain),
+  });
+  const autoSettleDisplay = canShowAutoSettleControl
+    ? describeAutoSettleRuntimePhase({
+        phase: autoSettleRuntimeState.phase,
+        nowSec,
+        settleAtSec: startSettlingAt ?? 0,
+      })
+    : null;
+  const autoSettleToggleDisabled =
+    autoSettleEntry?.status === "opening" ||
+    autoSettleEntry?.status === "settling" ||
+    autoSettleEntry?.status === "completed";
 
   // Handle registration with toast notification
   const handleRegister = useCallback(() => {
@@ -373,15 +426,25 @@ const GameCard = ({
   }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending, runWithNetworkGuard]);
 
   const handleSwitchNetwork = useCallback(async () => {
-    if (!switchTargetChain) return;
-    const switched = await switchWalletToChain({
-      controller,
-      targetChain: switchTargetChain,
-    });
-    if (switched) {
-      setSwitchTargetChain(null);
+    if (!pendingNetworkAction || isSwitchNetworkPending) return;
+
+    const requestedPendingAction = pendingNetworkAction;
+    setIsSwitchNetworkPending(true);
+
+    try {
+      const switched = await switchToPreferredChain(resolvePreferredLandingChain(requestedPendingAction.targetChain));
+      const outcome = resolvePendingNetworkSwitchOutcome({
+        pendingAction: requestedPendingAction,
+        latestPendingAction: latestPendingNetworkActionRef.current,
+        switched,
+      });
+
+      setPendingNetworkAction(outcome.pendingAction);
+      outcome.replay?.();
+    } finally {
+      setIsSwitchNetworkPending(false);
     }
-  }, [controller, switchTargetChain]);
+  }, [isSwitchNetworkPending, pendingNetworkAction, switchToPreferredChain]);
 
   const handleOpenMarket = useCallback(
     (initialOutcomeIndex?: number) => {
@@ -404,15 +467,82 @@ const GameCard = ({
     [marketSnapshot, runWithNetworkGuard, toggleModal],
   );
 
+  const handleAutoSettleToggle = useCallback(() => {
+    if (!autoSettleEntryKey || !startSettlingAt || !playerAddress) return;
+
+    if (!autoSettleEntry) {
+      upsertAutoSettleEntry(autoSettleEntryKey, {
+        enabled: true,
+        walletAddress: playerAddress,
+        chain: game.chain,
+        worldName: game.name,
+        worldKey: game.worldKey,
+        settleAtSec: startSettlingAt,
+        armedAtMs: Date.now(),
+        status: "armed",
+        lastError: null,
+        lastAttemptAtMs: null,
+      });
+      return;
+    }
+
+    setEnabled(autoSettleEntryKey, !autoSettleEntry.enabled);
+  }, [
+    autoSettleEntry,
+    autoSettleEntryKey,
+    game.chain,
+    game.name,
+    game.worldKey,
+    playerAddress,
+    setEnabled,
+    startSettlingAt,
+    upsertAutoSettleEntry,
+  ]);
+
   // Show success toast when registration completes
   useEffect(() => {
-    if (registrationStage === "done") {
-      toast.success("Registration successful!", {
-        description: `You are now registered for ${game.name}`,
-      });
-      onRegistrationComplete?.(game.worldKey);
+    if (registrationStage !== "done") {
+      handledRegistrationStageRef.current = false;
+      return;
     }
-  }, [registrationStage, game.name, game.worldKey, onRegistrationComplete]);
+
+    if (handledRegistrationStageRef.current) return;
+    handledRegistrationStageRef.current = true;
+
+    if (autoSettleEntryKey && autoSettleEntry) {
+      setEnabled(autoSettleEntryKey, true);
+    } else if (autoSettleEntryKey && startSettlingAt) {
+      upsertAutoSettleEntry(autoSettleEntryKey, {
+        enabled: true,
+        walletAddress: playerAddress!,
+        chain: game.chain,
+        worldName: game.name,
+        worldKey: game.worldKey,
+        settleAtSec: startSettlingAt,
+        armedAtMs: Date.now(),
+        status: "armed",
+        lastError: null,
+        lastAttemptAtMs: null,
+      });
+    }
+
+    toast.success("Registration successful!", {
+      description: `You are now registered for ${game.name}. Auto-settle is on for this game card.`,
+    });
+    onRegistrationComplete?.(game.worldKey);
+  }, [
+    autoSettleEntry,
+    autoSettleEntryKey,
+    game.chain,
+    game.name,
+    game.worldKey,
+    onRegistrationComplete,
+    playerAddress,
+    registrationStage,
+    setEnabled,
+    startSettlingAt,
+    upsertAutoSettleEntry,
+  ]);
 
   // Status colors - enhanced yellow for upcoming
   const statusColors = {
@@ -429,7 +559,6 @@ const GameCard = ({
     unknown: "bg-gray-500/20 text-gray-500 border-gray-500/30",
   };
 
-  const showRegistered = game.isRegistered || registrationStage === "done";
   const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
   const registrationCount = game.registrationCount ?? 0;
   const registrationCountMax = resolveEffectiveRegistrationCountMax(game.config);
@@ -513,6 +642,39 @@ const GameCard = ({
             className="text-xs text-white/70"
           />
         </div>
+
+        {canShowAutoSettleControl && autoSettleDisplay && (
+          <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-2.5 py-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
+                  {autoSettleDisplay.title}
+                </p>
+                <p className="mt-1 text-[11px] text-white/65">{autoSettleDisplay.detail}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAutoSettleToggle}
+                disabled={autoSettleToggleDisabled}
+                aria-pressed={autoSettleEntry?.enabled ?? false}
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
+                  autoSettleEntry?.enabled ? "border-amber-300/60 bg-amber-400/80" : "border-white/15 bg-white/10",
+                  autoSettleToggleDisabled && "cursor-not-allowed opacity-60",
+                )}
+                title="Auto-settle"
+              >
+                <span className="sr-only">Auto-settle</span>
+                <span
+                  className={cn(
+                    "mx-0.5 block h-4 w-4 rounded-full bg-brown shadow-sm transition-transform",
+                    autoSettleEntry?.enabled ? "translate-x-5" : "translate-x-0",
+                  )}
+                />
+              </button>
+            </div>
+          </div>
+        )}
 
         {showPredictionMarket && marketSnapshot ? (
           <div className="rounded-lg border border-emerald-400/35 bg-gradient-to-br from-emerald-500/10 via-black/40 to-black/20 p-2.5">
@@ -818,16 +980,20 @@ const GameCard = ({
         )}
       </div>
       <SwitchNetworkPrompt
-        open={switchTargetChain !== null}
+        open={pendingNetworkAction !== null}
         description={
-          switchPromptContext === "market"
+          pendingNetworkAction?.context === "market"
             ? `Prediction market actions for ${game.name} are on another chain.`
             : `You're trying to interact with ${game.name} while your wallet is on another chain.`
         }
         hint={`Switch your wallet to ${targetChainLabel} to continue.`}
-        switchLabel={`Switch To ${targetChainLabel}`}
-        onClose={() => setSwitchTargetChain(null)}
+        switchLabel={isSwitchNetworkPending ? "Switching..." : `Switch To ${targetChainLabel}`}
+        onClose={() => {
+          if (isSwitchNetworkPending) return;
+          setPendingNetworkAction(null);
+        }}
         onSwitch={handleSwitchNetwork}
+        busy={isSwitchNetworkPending}
       />
     </div>
   );
@@ -836,6 +1002,7 @@ const GameCard = ({
 interface UnifiedGameGridProps {
   onPlayGame?: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
+  onAutoSettleGame?: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
   onClaimRewards?: (selection: WorldSelection) => void;
@@ -873,6 +1040,7 @@ interface UnifiedGameGridProps {
 export const UnifiedGameGrid = ({
   onPlayGame,
   onSelectGame,
+  onAutoSettleGame,
   onSpectate,
   onSeeScore,
   onClaimRewards,
@@ -899,6 +1067,9 @@ export const UnifiedGameGrid = ({
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
+  const landingNetworkState = useLandingNetworkState();
+  const autoSettleEntries = useAutoSettleStore((state) => state.entries);
+  const markOpening = useAutoSettleStore((state) => state.markOpening);
 
   // Check if there's a stored controller session that's still reconnecting
   // starknet-react stores the last connected connector as "lastUsedConnector" in localStorage
@@ -918,7 +1089,7 @@ export const UnifiedGameGrid = ({
 
   const isWaitingForReconnect = hasStoredSession && !playerAddress && !reconnectTimedOut;
 
-  const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
+  const { nowSec, isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
   // Fetch from both chains
   const {
@@ -1208,6 +1379,64 @@ export const UnifiedGameGrid = ({
     onGamesResolved(resolvedGames);
   }, [onGamesResolved, resolvedGames, resolvedGamesSignature]);
 
+  useEffect(() => {
+    if (!playerAddress || !onAutoSettleGame) return;
+
+    resolvedGames.forEach((game) => {
+      if (game.config?.mode !== "blitz" || game.isRegistered !== true) return;
+
+      const settleAtSec = game.config?.startSettlingAt;
+      if (!settleAtSec) return;
+
+      const autoSettleEntryKey = createAutoSettleEntryKey({
+        chain: game.chain,
+        worldName: game.name,
+        walletAddress: playerAddress,
+      });
+      const autoSettleEntry = autoSettleEntries[autoSettleEntryKey];
+      if (!autoSettleEntry) return;
+
+      const runtimeState = resolveAutoSettleRuntimeState({
+        enabled: autoSettleEntry.enabled,
+        persistedStatus: autoSettleEntry.status,
+        settleAtSec,
+        nowSec,
+        hasConnectedWallet: landingNetworkState.hasConnectedWallet,
+        hasCompatibleNetwork: canInteractWithLandingChain(
+          landingNetworkState,
+          resolvePreferredLandingChain(game.chain),
+        ),
+      });
+
+      if (runtimeState.shouldPrimeAssets) {
+        primePlayEntryRoute();
+        primePlayEntryAssets();
+      }
+
+      if (runtimeState.shouldRefreshAvailability) {
+        void queryClient.invalidateQueries({ queryKey: ["worldAvailability", game.worldKey] });
+      }
+
+      if (!runtimeState.shouldOpenEntry) return;
+
+      markOpening(autoSettleEntryKey, Date.now());
+      onAutoSettleGame({
+        name: game.name,
+        chain: game.chain,
+        worldAddress: game.worldAddress ?? undefined,
+      });
+    });
+  }, [
+    autoSettleEntries,
+    landingNetworkState,
+    markOpening,
+    nowSec,
+    onAutoSettleGame,
+    playerAddress,
+    queryClient,
+    resolvedGames,
+  ]);
+
   return (
     <div className={cn("relative", className)}>
       {/* Header */}
@@ -1294,6 +1523,7 @@ export const UnifiedGameGrid = ({
                 <GameCard
                   key={game.worldKey}
                   game={game}
+                  nowSec={nowSec}
                   onPlay={() =>
                     (onPlayGame ?? onSelectGame)({
                       name: game.name,
@@ -1355,6 +1585,7 @@ export const UnifiedGameGrid = ({
                 <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
                   <GameCard
                     game={game}
+                    nowSec={nowSec}
                     onPlay={() =>
                       (onPlayGame ?? onSelectGame)({
                         name: game.name,

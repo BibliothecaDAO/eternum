@@ -6,6 +6,7 @@ interface SwitchNetworkPromptProps {
   description: string;
   hint: string;
   switchLabel: string;
+  busy?: boolean;
   onClose: () => void;
   onSwitch: () => void | Promise<void>;
 }
@@ -16,6 +17,7 @@ export const SwitchNetworkPrompt = ({
   description,
   hint,
   switchLabel,
+  busy = false,
   onClose,
   onSwitch,
 }: SwitchNetworkPromptProps) => {
@@ -33,6 +35,7 @@ export const SwitchNetworkPrompt = ({
           <button
             type="button"
             onClick={onClose}
+            disabled={busy}
             className="rounded-lg border border-gold/25 px-3 py-1.5 text-xs text-gold/80 hover:bg-gold/10"
           >
             Cancel
@@ -40,6 +43,7 @@ export const SwitchNetworkPrompt = ({
           <button
             type="button"
             onClick={() => void onSwitch()}
+            disabled={busy}
             className="rounded-lg border border-gold/50 bg-gold/20 px-3 py-1.5 text-xs font-medium text-gold hover:bg-gold/30"
           >
             {switchLabel}

@@ -23,10 +23,66 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Faster Play Asset Warmup",
+    description:
+      "Shared play assets now start warming from the dashboard so common world models and textures are more likely to be ready before you enter a game.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
     title: "Cleaner Hero Cards",
     description:
       "The Play dashboard hero cards now show a single artwork layer per mode, so hovering between Seasons and Blitz no longer creates a ghosted double-image effect.",
     type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Auto-Settle Card Switch",
+    description:
+      "Blitz registrations now turn on an Auto-settle switch directly on the game card, so the client can prewarm the entry flow, try settling as soon as the countdown ends, and push you into the game automatically unless you switch it off.",
+    type: "feature",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Entry Route Context Fixes",
+    description:
+      "Route-owned entry now keeps the right landing background and mode behind the modal, market watch opens the correct chain-specific spectate route, and wallet-switch prompts no longer replay blocked actions after you cancel or double-click.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Unified Landing Network State",
+    description:
+      "Landing network controls, game entry prompts, markets, and factory tools now read the same preferred-versus-wallet network state, so switch prompts stay aligned with the header and temporary wallet detection no longer shows the wrong network warning.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Network Switch State Fix",
+    description:
+      "Preferred network changes now stay aligned with the actual game world lookup, modal wallet-switch prompts keep the landing tag in sync, and the blocked action now continues automatically after a successful switch.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Deep Link Routing Fixes",
+    description:
+      "Canonical world-map links, shared profile links, and the Factory V2 legacy handoff now keep you on the intended destination instead of bouncing through the wrong route or dropping shared context.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Canonical Landing Routes",
+    description:
+      "Landing navigation now uses dedicated URLs for Play, Learn, News, and Factory, so shared links, reloads, and browser back-forward behavior stay aligned without relying on a hidden dashboard tab query.",
+    type: "improvement",
     gameSlug: "landing",
   },
   {

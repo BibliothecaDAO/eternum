@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useAccount } from "@starknet-react/core";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   DEFAULT_FACTORY_NAMESPACE,
@@ -9,12 +8,9 @@ import {
   resolveFactoryAddress,
   resolveFactoryConfigDefaultVersion,
 } from "@/ui/features/factory/shared/factory-metadata";
-import {
-  getChainLabel,
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
+import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";
+import { canInteractWithLandingChain } from "@/ui/features/landing/lib/landing-network-state";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { buildFactoryConfigMulticall } from "../developer/factory-config-multicall";
 import { buildFactoryConfigSections, listAllFactoryConfigSectionIds } from "../developer/factory-config-sections";
@@ -24,6 +20,7 @@ import type {
   FactoryDeveloperConfigDraft,
 } from "../developer/types";
 import type { FactoryGameMode, FactoryLaunchChain } from "../types";
+import { toast } from "sonner";
 
 type FactoryConfigManifestState = {
   status: "loading" | "ready" | "error";
@@ -76,22 +73,6 @@ function resolveFactoryConfigExecutionErrorMessage(error: unknown): string {
 function resolveFactoryConfigConfirmationErrorMessage(error: unknown): string {
   const details = error instanceof Error ? error.message : "confirmation could not be verified";
   return `Submitted, but confirmation could not be verified: ${details}`;
-}
-
-function resolveWalletChainController(connector: unknown): WalletChainControllerLike | null {
-  return (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
-}
-
-function canSubmitFactoryConfigOnCurrentNetwork({
-  hasWalletAccount,
-  connectedTxChain,
-  targetChain,
-}: {
-  hasWalletAccount: boolean;
-  connectedTxChain: FactoryLaunchChain | null;
-  targetChain: FactoryLaunchChain;
-}) {
-  return !hasWalletAccount || (connectedTxChain !== null && connectedTxChain === targetChain);
 }
 
 async function submitFactoryConfigMulticall({
@@ -185,11 +166,10 @@ function isPendingFactoryConfigExecutionState(
 
 export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGameMode; chain: FactoryLaunchChain }) => {
   const account = useAccountStore((state) => state.account);
-  const { chainId, connector } = useAccount();
+  const landingNetworkState = useLandingNetworkState();
+  const { hasConnectedWallet, status, switchToPreferredChain } = landingNetworkState;
   const defaultVersion = resolveFactoryConfigDefaultVersion(mode);
   const factoryAddress = resolveFactoryAddress(chain);
-  const controller = resolveWalletChainController(connector);
-  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller }) as FactoryLaunchChain | null;
   const [version, setVersion] = useState(defaultVersion);
   const [selectedSectionIds, setSelectedSectionIds] =
     useState<FactoryConfigSectionId[]>(listAllFactoryConfigSectionIds);
@@ -282,11 +262,7 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     manifestState.status === "ready" &&
     selectedSectionIds.length > 0 &&
     executionState.status !== "sending";
-  const canSubmitOnCurrentNetwork = canSubmitFactoryConfigOnCurrentNetwork({
-    hasWalletAccount: Boolean(account),
-    connectedTxChain,
-    targetChain: chain,
-  });
+  const canSubmitOnCurrentNetwork = canInteractWithLandingChain(landingNetworkState, chain);
 
   const isVersionCustomized = version !== defaultVersion;
   const executionTxHash =
@@ -327,14 +303,16 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
       return;
     }
 
+    if (hasConnectedWallet && status === "detecting") {
+      toast.info("Detecting wallet network. Try again in a moment.");
+      return;
+    }
+
     setShowSwitchNetworkPrompt(true);
   };
 
   const switchWalletToTargetChain = async () => {
-    const switched = await switchWalletToChain({
-      controller,
-      targetChain: chain,
-    });
+    const switched = await switchToPreferredChain(chain);
 
     if (switched) {
       setShowSwitchNetworkPrompt(false);

@@ -215,7 +215,7 @@ const MarketDetailsModalContent = ({
   const [refreshKey, setRefreshKey] = useState(0);
   const [isTradeSyncing, setIsTradeSyncing] = useState(false);
   const [isResolveActionPending, setIsResolveActionPending] = useState(false);
-  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
+  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch(chain);
   const { address } = useAccount();
   const {
     config: { manifest },

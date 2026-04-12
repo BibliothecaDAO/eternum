@@ -4,6 +4,7 @@ import { WorldProfile, WorldProfilesMap } from "./types";
 const ACTIVE_KEY = "ACTIVE_WORLD_NAME";
 const CHAIN_KEY = "ACTIVE_WORLD_CHAIN";
 const PROFILES_KEY = "WORLD_PROFILES";
+const SELECTED_CHAIN_EVENT = "runtime:selected-chain-changed";
 
 const safeParse = <T>(raw: string | null, fallback: T): T => {
   if (!raw) return fallback;
@@ -48,15 +49,49 @@ export const getSelectedChain = (): Chain | null => {
   return isValidChain(stored) ? stored : null;
 };
 
+const notifySelectedChainChanged = (chain: Chain | null) => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent<Chain | null>(SELECTED_CHAIN_EVENT, { detail: chain }));
+};
+
 export const setSelectedChain = (chain: Chain) => {
   writeStorageValue(CHAIN_KEY, chain);
+  notifySelectedChainChanged(chain);
 };
 
 const clearSelectedChain = () => {
   writeStorageValue(CHAIN_KEY, null);
+  notifySelectedChainChanged(null);
 };
 
 export const resolveChain = (fallback: Chain): Chain => getSelectedChain() ?? fallback;
+
+export const subscribeSelectedChain = (listener: (chain: Chain | null) => void): (() => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleSelectedChainChanged = (event: Event) => {
+    const customEvent = event as CustomEvent<Chain | null>;
+    listener(customEvent.detail ?? getSelectedChain());
+  };
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== null && event.key !== CHAIN_KEY) {
+      return;
+    }
+
+    listener(getSelectedChain());
+  };
+
+  window.addEventListener(SELECTED_CHAIN_EVENT, handleSelectedChainChanged as EventListener);
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener(SELECTED_CHAIN_EVENT, handleSelectedChainChanged as EventListener);
+    window.removeEventListener("storage", handleStorage);
+  };
+};
 
 export const listWorldNames = (): string[] => {
   const profiles = safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});

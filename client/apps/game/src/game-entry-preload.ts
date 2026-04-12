@@ -1,4 +1,4 @@
-import { prefetchPlayAssets } from "@/ui/utils/prefetch-play-assets";
+import { prefetchDashboardPlayAssets, prefetchPlayEntryAssets } from "@/ui/utils/prefetch-play-assets";
 
 type GameRouteModule = typeof import("./game-route");
 
@@ -48,6 +48,31 @@ export const createPlayEntryAssetPrimer = ({ prefetchPlayAssets }: { prefetchPla
   };
 };
 
+export const createDashboardPlayAssetPrimer = ({
+  prefetchDashboardPlayAssets,
+}: {
+  prefetchDashboardPlayAssets: () => void;
+}) => {
+  return () => {
+    const idleCallback = (
+      globalThis as typeof globalThis & {
+        requestIdleCallback?: (fn: () => void) => number;
+      }
+    ).requestIdleCallback;
+
+    if (typeof idleCallback === "function") {
+      idleCallback(() => {
+        prefetchDashboardPlayAssets();
+      });
+      return;
+    }
+
+    globalThis.setTimeout(() => {
+      prefetchDashboardPlayAssets();
+    }, 0);
+  };
+};
+
 let gameRoutePreloadPromise: Promise<GameRouteModule> | null = null;
 
 export const preloadGameRouteModule = (): Promise<GameRouteModule> => {
@@ -63,5 +88,9 @@ export const primePlayEntryRoute = createPlayEntryRoutePrimer({
 });
 
 export const primePlayEntryAssets = createPlayEntryAssetPrimer({
-  prefetchPlayAssets,
+  prefetchPlayAssets: prefetchPlayEntryAssets,
+});
+
+export const primeDashboardPlayAssets = createDashboardPlayAssetPrimer({
+  prefetchDashboardPlayAssets,
 });

@@ -1,16 +1,14 @@
-import { getActiveWorld, normalizeRpcUrl } from "@/runtime/world";
+import { normalizeRpcUrl } from "@/runtime/world";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { constants, shortString } from "starknet";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
-import { bootstrapGame } from "../../init/bootstrap";
-import { useAccountStore } from "../store/use-account-store";
 import { useControllerAccount } from "./use-controller-account";
 
 const slot: string = env.VITE_PUBLIC_SLOT;
@@ -195,58 +193,6 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
 
 const StarknetAccountSync = ({ children }: { children: React.ReactNode }) => {
   useControllerAccount();
-  useBootstrapPrefetch();
 
   return <>{children}</>;
-};
-
-const useBootstrapPrefetch = () => {
-  const account = useAccountStore((state) => state.account);
-  const hasPrefetchedRef = useRef(false);
-
-  useEffect(() => {
-    // Skip bootstrap on standalone factory routes and on the home factory tab.
-    if (isFactoryNavigationSurface()) {
-      return;
-    }
-
-    if (!account || hasPrefetchedRef.current) {
-      return;
-    }
-
-    const pathWorld = (() => {
-      if (typeof window === "undefined") return null;
-      const match = window.location.pathname.match(/^\/play\/([^/]+)(?:\/|$)/);
-      if (!match || !match[1]) return null;
-      try {
-        return decodeURIComponent(match[1]);
-      } catch {
-        return null;
-      }
-    })();
-
-    const activeWorld = getActiveWorld();
-    if (!activeWorld && !pathWorld) {
-      return;
-    }
-
-    hasPrefetchedRef.current = true;
-
-    void bootstrapGame().catch((error) => {
-      console.error("[BOOTSTRAP PREFETCH FAILED]", error);
-      hasPrefetchedRef.current = false;
-    });
-  }, [account]);
-};
-
-const isFactoryNavigationSurface = () => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  if (window.location.pathname.startsWith("/factory")) {
-    return true;
-  }
-
-  return window.location.pathname === "/" && new URLSearchParams(window.location.search).get("tab") === "factory";
 };

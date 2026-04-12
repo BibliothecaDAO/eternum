@@ -2,8 +2,9 @@ import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ArrowLeftRight, Home, Menu, Settings, TrendingUp, Trophy, User, X } from "lucide-react";
 import { useState, useCallback } from "react";
-import { NavLink, useLocation, useSearchParams } from "react-router-dom";
-import { getSectionFromPath, getActiveSubItem } from "../context/navigation-config";
+import { NavLink, useLocation } from "react-router-dom";
+import { getSectionFromPath, getActiveSubItem, getSubItemHref } from "../context/navigation-config";
+import { resolveLandingSurfacePath, type LandingEntryRouteState } from "../lib/landing-entry-state";
 
 interface LandingHeaderProps {
   walletButton?: React.ReactNode;
@@ -120,24 +121,15 @@ const MobileMenuDrawer = ({
  */
 export const LandingHeader = ({ walletButton, onSettingsClick, className }: LandingHeaderProps) => {
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const searchParams = new URLSearchParams(location.search);
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
 
-  const activeSection = getSectionFromPath(location.pathname);
-  const currentTab = searchParams.get("tab");
-  const activeSubItem = getActiveSubItem(activeSection, currentTab);
-
-  const handleSubItemClick = (tab: string | null) => {
-    const nextSearchParams = new URLSearchParams(searchParams);
-
-    if (tab === null) {
-      nextSearchParams.delete("tab");
-    } else {
-      nextSearchParams.set("tab", tab);
-    }
-
-    setSearchParams(nextSearchParams);
-  };
+  const activeSection = getSectionFromPath(surfacePath);
+  const activeSubItem = getActiveSubItem(activeSection, surfacePath, searchParams);
 
   const handleOpenMobileMenu = useCallback(() => {
     setMobileMenuOpen(true);
@@ -172,9 +164,9 @@ export const LandingHeader = ({ walletButton, onSettingsClick, className }: Land
             const isActive = activeSubItem.id === item.id;
 
             return (
-              <button
+              <NavLink
                 key={item.id}
-                onClick={() => handleSubItemClick(item.tab)}
+                to={getSubItemHref(activeSection, item, searchParams)}
                 className={cn(
                   "relative px-4 py-2 text-sm font-medium uppercase tracking-wider",
                   "transition-all duration-200",
@@ -188,7 +180,7 @@ export const LandingHeader = ({ walletButton, onSettingsClick, className }: Land
                 )}
               >
                 {item.label}
-              </button>
+              </NavLink>
             );
           })}
         </nav>

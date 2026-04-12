@@ -7,6 +7,6 @@ describe("Landing home navigation factory tab", () => {
   it("includes a factory submenu item on home", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/context/navigation-config.ts"), "utf8");
 
-    expect(source).toContain('{ id: "factory", label: "FACTORY", tab: "factory" }');
+    expect(source).toContain('{ id: "factory", label: "FACTORY", tab: "factory", href: "/factory" }');
   });
 });

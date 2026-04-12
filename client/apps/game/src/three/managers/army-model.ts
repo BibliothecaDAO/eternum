@@ -25,8 +25,8 @@ import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
+  buildArmyModelAssetPath,
   MAX_INSTANCES,
-  MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
 } from "../constants";
 import {
@@ -201,14 +201,11 @@ export class ArmyModel {
       return pending;
     }
 
-    const fileName = MODEL_TYPE_TO_FILE[modelType];
-    if (!fileName) {
-      throw new Error(`Missing model file for ${modelType}`);
-    }
+    const assetPath = buildArmyModelAssetPath(modelType);
 
     pending = new Promise<ModelData>((resolve, reject) => {
       gltfLoader.load(
-        `models/${fileName}`,
+        assetPath,
         (gltf) => {
           try {
             const modelData = this.createModelData(gltf);
