@@ -33,6 +33,7 @@ import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
 import { getStructureName } from "../utils/entities";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { DataEnhancer } from "./data-enhancer";
+import { recordArmyMovementLatencyPhase } from "./army-movement-latency-trace";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
@@ -331,6 +332,16 @@ export class WorldUpdateListener {
                 return;
               }
 
+              recordArmyMovementLatencyPhase({
+                phase: "tileopt_component_received",
+                source: "world_update_listener",
+                entityId: rawOccupierId,
+                details: {
+                  col: currentState.col,
+                  row: currentState.row,
+                },
+              });
+
               const { currentArmiesTick } = getBlockTimestamp();
 
               // Use sequential update processing to prevent race conditions
@@ -386,6 +397,17 @@ export class WorldUpdateListener {
               });
 
               // Return undefined if update was cancelled due to being outdated
+              if (result) {
+                recordArmyMovementLatencyPhase({
+                  phase: "tileopt_component_ready",
+                  source: "world_update_listener",
+                  entityId: rawOccupierId,
+                  details: {
+                    col: result.hexCoords.col,
+                    row: result.hexCoords.row,
+                  },
+                });
+              }
               return result || undefined;
             }
           },

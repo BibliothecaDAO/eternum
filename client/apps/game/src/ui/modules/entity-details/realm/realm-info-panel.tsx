@@ -546,14 +546,16 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
               <Sword className="h-3 w-3 text-gold/50" />
               <span className="uppercase tracking-wide text-gold/60">Field</span>
               <span className="font-semibold text-gold">
-                {attackArmyCount}{maxAttackArmies !== null ? `/${maxAttackArmies}` : ""}
+                {attackArmyCount}
+                {maxAttackArmies !== null ? `/${maxAttackArmies}` : ""}
               </span>
             </div>
             <div className="flex items-center gap-1.5 rounded border border-gold/10 bg-[#1b140f]/80 px-2 py-1">
               <Shield className="h-3 w-3 text-gold/50" />
               <span className="uppercase tracking-wide text-gold/60">Guard</span>
               <span className="font-semibold text-gold">
-                {guardArmyCount}{maxGuardArmies !== null ? `/${maxGuardArmies}` : ""}
+                {guardArmyCount}
+                {maxGuardArmies !== null ? `/${maxGuardArmies}` : ""}
               </span>
             </div>
           </div>

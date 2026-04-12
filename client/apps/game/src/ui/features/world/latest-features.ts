@@ -23,6 +23,46 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Juicier Move Ghosts",
+    description:
+      "Destination ghosts now breathe with a soft idle pulse, show a clearer ground ring, and burst into the arriving unit with a brighter handoff so delayed moves stay visible instead of feeling static.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Longer Movement Sync Bridge",
+    description:
+      "Army move ghosts and travel effects now stay visible through longer world-sync delays, so confirmed moves no longer drop into an empty dead gap before the real unit catches up.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Synchronized Army Move Handoff",
+    description:
+      "Local army moves now stay locked until the rendered movement actually begins, and destination ghosts wait for the real arrival before resolving, so move confirmations no longer leave units stranded in a stale pre-move state.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Arrival Ghost Moves",
+    description:
+      "Local army moves now leave a ghosted unit at the destination while the world update catches up, so moves stay readable and the real unit can absorb into place on arrival instead of disappearing into a dead gap.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Smoother Army Move FX",
+    description:
+      "Army move effects now stay visible until the rendered unit actually starts and finishes its travel, so long chunk-sync updates no longer make movement look stalled or broken.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
     title: "Faster Play Asset Warmup",
     description:
       "Shared play assets now start warming from the dashboard so common world models and textures are more likely to be ready before you enter a game.",

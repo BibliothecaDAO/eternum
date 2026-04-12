@@ -1,3 +1,4 @@
+export * from "./army-movement-latency-trace";
 export * from "./data-enhancer";
 export * from "./position";
 export * from "./story-event-formatter";
