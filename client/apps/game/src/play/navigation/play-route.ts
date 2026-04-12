@@ -19,6 +19,7 @@ interface EntryRouteDescriptor {
   worldName: string;
   intent: EntryIntent;
   hyperstructuresLeft: number | null;
+  autoSettle: boolean;
 }
 
 type LocationLike = Pick<Location, "pathname" | "search">;
@@ -109,6 +110,7 @@ export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | 
     worldName: decodeURIComponent(rawWorldName),
     intent,
     hyperstructuresLeft: parseOptionalNumber(searchParams, "hyperstructuresLeft"),
+    autoSettle: searchParams.get("autoSettle") === "true",
   };
 };
 
@@ -121,6 +123,10 @@ export const buildEntryHref = (route: EntryRouteDescriptor): string => {
 
   if (route.hyperstructuresLeft !== null) {
     searchParams.set("hyperstructuresLeft", String(route.hyperstructuresLeft));
+  }
+
+  if (route.autoSettle) {
+    searchParams.set("autoSettle", "true");
   }
 
   return `/enter/${route.chain}/${encodeURIComponent(route.worldName)}${buildSearch(searchParams)}`;

@@ -203,6 +203,7 @@ export const useMarketWatch = (chain: Chain) => {
           worldName,
           intent: "spectate",
           hyperstructuresLeft: null,
+          autoSettle: false,
         });
         const newTab = window.open(playUrl, "_blank", "noopener,noreferrer");
         if (!newTab) {

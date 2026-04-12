@@ -259,6 +259,7 @@ const LearnTierSection = ({ tier }: { tier: LearnGuideTier }) => {
 const LearnContent = ({
   onPlayGame,
   onSelectGame,
+  onAutoSettleGame,
   onSpectate,
   onForgeHyperstructures,
   onSeeScore,
@@ -267,6 +268,7 @@ const LearnContent = ({
 }: {
   onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
+  onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onSeeScore: (selection: WorldSelection) => void;
@@ -322,6 +324,7 @@ const LearnContent = ({
       <UnifiedGameGrid
         onPlayGame={onPlayGame}
         onSelectGame={onSelectGame}
+        onAutoSettleGame={onAutoSettleGame}
         onSpectate={onSpectate}
         onForgeHyperstructures={onForgeHyperstructures}
         onSeeScore={onSeeScore}
@@ -696,6 +699,7 @@ const PlayTabContent = ({
   onModeFilterChange,
   onPlayGame,
   onSelectGame,
+  onAutoSettleGame,
   onSpectate,
   onSeeScore,
   onClaimRewards,
@@ -710,6 +714,7 @@ const PlayTabContent = ({
   onModeFilterChange: (mode: LandingModeFilter) => void;
   onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
+  onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
   onClaimRewards: (selection: WorldSelection) => void;
@@ -752,6 +757,7 @@ const PlayTabContent = ({
                   <UnifiedGameGrid
                     onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
+                    onAutoSettleGame={onAutoSettleGame}
                     onSpectate={onSpectate}
                     onForgeHyperstructures={onForgeHyperstructures}
                     onRegistrationComplete={onRegistrationComplete}
@@ -787,6 +793,7 @@ const PlayTabContent = ({
                   <UnifiedGameGrid
                     onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
+                    onAutoSettleGame={onAutoSettleGame}
                     onSpectate={onSpectate}
                     onForgeHyperstructures={onForgeHyperstructures}
                     onRegistrationComplete={onRegistrationComplete}
@@ -813,6 +820,7 @@ const PlayTabContent = ({
                   <UnifiedGameGrid
                     onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
+                    onAutoSettleGame={onAutoSettleGame}
                     onSpectate={onSpectate}
                     onSeeScore={onSeeScore}
                     onClaimRewards={onClaimRewards}
@@ -860,6 +868,7 @@ const PlayTabContent = ({
                 <UnifiedGameGrid
                   onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
+                  onAutoSettleGame={onAutoSettleGame}
                   onSpectate={onSpectate}
                   onForgeHyperstructures={onForgeHyperstructures}
                   onRegistrationComplete={onRegistrationComplete}
@@ -895,6 +904,7 @@ const PlayTabContent = ({
                 <UnifiedGameGrid
                   onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
+                  onAutoSettleGame={onAutoSettleGame}
                   onSpectate={onSpectate}
                   onForgeHyperstructures={onForgeHyperstructures}
                   onRegistrationComplete={onRegistrationComplete}
@@ -921,6 +931,7 @@ const PlayTabContent = ({
                 <UnifiedGameGrid
                   onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
+                  onAutoSettleGame={onAutoSettleGame}
                   onSpectate={onSpectate}
                   onSeeScore={onSeeScore}
                   onClaimRewards={onClaimRewards}
@@ -982,6 +993,7 @@ export const PlayView = ({
       selection: WorldSelection,
       intent: "play" | "settle" | "spectate" | "forge",
       hyperstructuresLeft: number | null,
+      autoSettle = false,
     ) => {
       if (!selection.chain) {
         return;
@@ -992,6 +1004,7 @@ export const PlayView = ({
         worldName: selection.name,
         intent,
         hyperstructuresLeft,
+        autoSettle,
       });
 
       navigate(entryHref, {
@@ -1002,10 +1015,10 @@ export const PlayView = ({
   );
 
   const openGameEntryRoute = useCallback(
-    (selection: WorldSelection, intent: "play" | "settle") => {
+    (selection: WorldSelection, intent: "play" | "settle", autoSettle = false) => {
       startGameEntryTimeline();
       primePlayEntryRoute();
-      navigateToEntryRoute(selection, intent, null);
+      navigateToEntryRoute(selection, intent, null, autoSettle);
     },
     [navigateToEntryRoute],
   );
@@ -1027,6 +1040,7 @@ export const PlayView = ({
               worldName: selection.name,
               intent: "settle",
               hyperstructuresLeft: null,
+              autoSettle: false,
             })}
             redirectState={entryRedirectState}
           />,
@@ -1036,9 +1050,19 @@ export const PlayView = ({
       }
 
       // Open settle flow
-      openGameEntryRoute(selection, "settle");
+      openGameEntryRoute(selection, "settle", false);
     },
     [account, entryRedirectState, isConnected, openGameEntryRoute, setModal],
+  );
+
+  const handleAutoSettleGame = useCallback(
+    (selection: WorldSelection) => {
+      const hasAccount = Boolean(account) || isConnected;
+      if (!hasAccount) return;
+
+      openGameEntryRoute(selection, "settle", true);
+    },
+    [account, isConnected, openGameEntryRoute],
   );
 
   const handlePlayGame = useCallback(
@@ -1057,6 +1081,7 @@ export const PlayView = ({
               worldName: selection.name,
               intent: "play",
               hyperstructuresLeft: null,
+              autoSettle: false,
             })}
             redirectState={entryRedirectState}
           />,
@@ -1066,7 +1091,7 @@ export const PlayView = ({
       }
 
       // Open direct play flow
-      openGameEntryRoute(selection, "play");
+      openGameEntryRoute(selection, "play", false);
     },
     [account, entryRedirectState, isConnected, openGameEntryRoute, setModal],
   );
@@ -1076,7 +1101,7 @@ export const PlayView = ({
       // Open game entry modal in spectate mode (no account required)
       startGameEntryTimeline();
       primePlayEntryRoute();
-      navigateToEntryRoute(selection, "spectate", null);
+      navigateToEntryRoute(selection, "spectate", null, false);
     },
     [navigateToEntryRoute],
   );
@@ -1098,6 +1123,7 @@ export const PlayView = ({
               worldName: selection.name,
               intent: "forge",
               hyperstructuresLeft: numLeft,
+              autoSettle: false,
             })}
             redirectState={entryRedirectState}
           />,
@@ -1109,7 +1135,7 @@ export const PlayView = ({
       // Open game entry modal in forge mode
       startGameEntryTimeline();
       primePlayEntryRoute();
-      navigateToEntryRoute(selection, "forge", numLeft);
+      navigateToEntryRoute(selection, "forge", numLeft, false);
     },
     [account, entryRedirectState, isConnected, navigateToEntryRoute, setModal],
   );
@@ -1182,6 +1208,7 @@ export const PlayView = ({
           <LearnContent
             onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
+            onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
             onForgeHyperstructures={handleForgeHyperstructures}
             onSeeScore={handleSeeScore}
@@ -1201,6 +1228,7 @@ export const PlayView = ({
             onModeFilterChange={setModeFilter}
             onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
+            onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
             onClaimRewards={handleClaimRewards}

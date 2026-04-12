@@ -46,7 +46,11 @@ export const resolveLandingEntryState = ({
 }: {
   pathname: string;
   state: LandingEntryRouteState | null | undefined;
-}) => {
+}): {
+  activeTab: LandingHomeTab;
+  landingModeFilter: LandingModeFilter;
+  returnTo: string;
+} => {
   const returnTo = resolveReturnTo(pathname, state);
   const returnPathname = resolvePathnameFromHref(returnTo);
 

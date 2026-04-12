@@ -13,7 +13,7 @@ describe("PlayView entry preloading", () => {
 
     expect(source).toContain("primePlayEntryRoute");
     expect(source).toContain("buildEntryHref");
-    expect(source).toContain('openGameEntryRoute(selection, "play")');
+    expect(source).toContain('openGameEntryRoute(selection, "play", false)');
     expect(source).toContain("primePlayEntryRoute();");
     expect(source).not.toContain("primePlayEntryResources();");
   });

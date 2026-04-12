@@ -40,6 +40,7 @@ export const LandingEntryRoute = () => {
         chain={entryRoute.chain}
         isSpectateMode={entryRoute.intent === "spectate"}
         isForgeMode={entryRoute.intent === "forge"}
+        autoSettleEnabled={entryRoute.autoSettle}
         eternumEntryIntent={entryRoute.intent === "settle" ? "settle" : "play"}
         numHyperstructuresLeft={entryRoute.intent === "forge" ? (entryRoute.hyperstructuresLeft ?? 0) : 0}
       />

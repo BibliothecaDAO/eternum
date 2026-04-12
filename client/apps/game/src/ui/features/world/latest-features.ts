@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Auto-Settle Card Switch",
+    description:
+      "Blitz registrations now turn on an Auto-settle switch directly on the game card, so the client can prewarm the entry flow, try settling as soon as the countdown ends, and push you into the game automatically unless you switch it off.",
+    type: "feature",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
     title: "Entry Route Context Fixes",
     description:
       "Route-owned entry now keeps the right landing background and mode behind the modal, market watch opens the correct chain-specific spectate route, and wallet-switch prompts no longer replay blocked actions after you cancel or double-click.",
