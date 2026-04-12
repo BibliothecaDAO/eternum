@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Expanded Play Music Loop",
+    description:
+      "The in-game music rotation now includes Monophonic Mixtape 14, giving standard matches and Blitz one more track in the active background loop.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
     title: "Juicier Move Ghosts",
     description:
       "Destination ghosts now breathe with a soft idle pulse, show a clearer ground ring, and burst into the arriving unit with a brighter handoff so delayed moves stay visible instead of feeling static.",
