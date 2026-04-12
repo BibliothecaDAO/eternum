@@ -27,6 +27,10 @@ on:
       game_start_time:
         description: "Game start time (unix seconds, unix milliseconds, or ISO-8601)"
         required: false
+      config_path:
+        description: "Optional repo-relative YAML config file for game, series, or rotation launches"
+        required: false
+        type: string
       series_name:
         description: "Series name (required when launch_kind=series)"
         required: false
@@ -117,6 +121,7 @@ jobs:
       GAME_LAUNCH_ENVIRONMENT: ${{ github.event.inputs.environment }}
       GAME_LAUNCH_GAME_NAME: ${{ github.event.inputs.game_name }}
       GAME_LAUNCH_START_TIME: ${{ github.event.inputs.game_start_time }}
+      GAME_LAUNCH_CONFIG_PATH: ${{ github.event.inputs.config_path }}
       GAME_LAUNCH_SERIES_NAME: ${{ github.event.inputs.series_name }}
       GAME_LAUNCH_SERIES_GAMES_JSON: ${{ github.event.inputs.series_games_json }}
       GAME_LAUNCH_ROTATION_NAME: ${{ github.event.inputs.rotation_name }}
@@ -175,6 +180,19 @@ jobs:
       - name: Prepare launch arguments
         run: |
           set -euo pipefail
+
+          mkdir -p .context/game-launch
+
+          if [ -n "${GAME_LAUNCH_CONFIG_PATH:-}" ]; then
+            bun config/deployer/clean/cli/print-launch-workflow-env.ts \
+              --config-path "${GAME_LAUNCH_CONFIG_PATH}" \
+              --launch-kind "${GAME_LAUNCH_KIND}" \
+              --environment "${GAME_LAUNCH_ENVIRONMENT}" \
+              > .context/game-launch/launch-config-inputs.sh
+
+            # shellcheck disable=SC1091
+            source .context/game-launch/launch-config-inputs.sh
+          fi
 
           GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
           GAME_LAUNCH_GAME_TYPE="${GAME_LAUNCH_ENVIRONMENT##*.}"
@@ -236,6 +254,8 @@ jobs:
             skipLootChestRoleGrant: "GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT",
             skipBanks: "GAME_LAUNCH_SKIP_BANKS",
             dryRun: "GAME_LAUNCH_DRY_RUN",
+            workflowFile: "GAME_LAUNCH_WORKFLOW_FILE",
+            ref: "GAME_LAUNCH_REF",
           };
 
           function shellQuote(value) {
@@ -255,7 +275,6 @@ jobs:
           NODE
           }
 
-          mkdir -p .context/game-launch
           write_launch_options_shell
 
           # shellcheck disable=SC1091
@@ -325,6 +344,8 @@ jobs:
             append_optional_arg "${args_name}" --skip-lootchest-role-grant "${GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT:-}"
             append_optional_arg "${args_name}" --skip-banks "${GAME_LAUNCH_SKIP_BANKS:-}"
             append_optional_arg "${args_name}" --dry-run "${GAME_LAUNCH_DRY_RUN:-}"
+            append_optional_arg "${args_name}" --workflow-file "${GAME_LAUNCH_WORKFLOW_FILE:-}"
+            append_optional_arg "${args_name}" --ref "${GAME_LAUNCH_REF:-}"
             append_optional_arg "${args_name}" --map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON:-}"
             append_optional_arg "${args_name}" --blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON:-}"
           }

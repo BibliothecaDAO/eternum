@@ -1,0 +1,16 @@
+launchKind: series
+environmentId: slot.blitz
+seriesName: blitz-weekly-example
+autoRetryEnabled: true
+autoRetryIntervalMinutes: 15
+durationSeconds: 86400
+
+games:
+  - gameName: bltz-weekly-01
+    startTime: 2026-05-02T18:00:00Z
+  - gameName: bltz-weekly-02
+    startTime: 2026-05-09T18:00:00Z
+  - gameName: bltz-weekly-03
+    startTime: 2026-05-16T18:00:00Z
+  - gameName: bltz-weekly-04
+    startTime: 2026-05-23T18:00:00Z
