@@ -167,6 +167,7 @@ export class ArmyManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private components?: ClientComponents;
+  private movementStartListeners: Map<number, Set<() => void>> = new Map();
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private pointsRenderers?: {
     player: PointsLabelRenderer;
@@ -1808,8 +1809,9 @@ export class ArmyManager {
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
       // Clean up source bucket tracking since movement won't actually happen
       this.cleanupMovementSourceBucket(entityId);
-      this.runMovementCompleteListeners(numericEntityId);
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      this.runMovementStartListeners(numericEntityId);
+      this.runMovementCompleteListeners(numericEntityId);
       return;
     }
 
@@ -1829,6 +1831,7 @@ export class ArmyManager {
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
+    this.runMovementStartListeners(numericEntityId);
 
     // Create path visualization with player-specific color
     const colorProfile = this.getArmyColorProfile(armyData);
@@ -1991,14 +1994,6 @@ export class ArmyManager {
     };
   }
 
-  public isArmyRenderableInCurrentChunk(entityId: ID): boolean {
-    if (this.suppressedArmies.has(entityId)) {
-      return false;
-    }
-
-    return this.visibleArmyIndices.has(entityId);
-  }
-
   public syncAttachedArmiesOwnerForStructure(params: {
     structureId: ID;
     ownerAddress: bigint;
@@ -2078,6 +2073,28 @@ export class ArmyManager {
     return this.selectedArmyForPath;
   }
 
+  public onMovementStart(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementStartListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementStartListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementStartListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementStartListeners.delete(numericEntityId);
+      }
+    };
+  }
+
   public onMovementComplete(entityId: ID, callback: () => void): () => void {
     const numericEntityId = this.toNumericId(entityId);
     let listeners = this.movementCompleteListeners.get(numericEntityId);
@@ -2102,6 +2119,22 @@ export class ArmyManager {
 
   public hasMovingArmies(): boolean {
     return this.armyModel.hasMovingInstances();
+  }
+
+  private runMovementStartListeners(entityId: number): void {
+    const listeners = this.movementStartListeners.get(entityId);
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    this.movementStartListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement start listener failed", error);
+      }
+    });
   }
 
   private runMovementCompleteListeners(entityId: number): void {
@@ -2931,6 +2964,7 @@ ${
     this.movingArmySourceBuckets.clear();
     this.suppressedArmies.clear();
     this.chunkToArmies.clear();
+    this.movementStartListeners.clear();
     this.movementCompleteListeners.clear();
 
     destroyArmyManagerOwnedResources({

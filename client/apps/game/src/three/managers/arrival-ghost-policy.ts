@@ -30,14 +30,6 @@ export function shouldHideSourceArmyOnTileRemoval(input: {
   return input.reason !== "tile" || !input.hasPendingMovement;
 }
 
-export function shouldResolveArrivalGhost(input: {
-  hasGhost: boolean;
-  hasPendingMovement: boolean;
-  isArmyRenderableInCurrentChunk: boolean;
-}): boolean {
-  return input.hasGhost && !input.hasPendingMovement && input.isArmyRenderableInCurrentChunk;
-}
-
 export function resolveArrivalGhostVisualStyle(input: { armyColor: string }): ArrivalGhostVisualStyle {
   const ghostColor = new Color(input.armyColor);
   const ghostHsl = { h: 0, s: 0, l: 0 };

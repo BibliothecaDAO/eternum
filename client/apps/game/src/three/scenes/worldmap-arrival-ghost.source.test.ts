@@ -14,10 +14,11 @@ describe("Worldmap arrival ghost wiring", () => {
     expect(source).toContain("this.arrivalGhostManager.upsertLocalArrivalGhost");
   });
 
-  it("resolves tracked ghosts only after pending movement clears and the live army is renderable", () => {
+  it("resolves tracked ghosts from movement completion instead of pending-clear heuristics", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
-    expect(source).toContain("shouldResolveArrivalGhost");
-    expect(source).toContain("this.arrivalGhostManager.resolveArrivalGhost(entityId)");
+    expect(source).toContain("this.armyManager.onMovementComplete");
+    expect(source).toContain("this.arrivalGhostManager.resolveArrivalGhost");
+    expect(source).not.toContain("shouldResolveArrivalGhost");
   });
 });

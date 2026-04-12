@@ -3,7 +3,6 @@ import {
   resolveArrivalGhostVisualStyle,
   shouldCreatePredictiveArrivalGhost,
   shouldHideSourceArmyOnTileRemoval,
-  shouldResolveArrivalGhost,
 } from "./arrival-ghost-policy";
 
 describe("arrival-ghost-policy", () => {
@@ -39,24 +38,6 @@ describe("arrival-ghost-policy", () => {
         reason: "tile",
       }),
     ).toBe(true);
-  });
-
-  it("resolves a ghost only after pending movement clears and the live army is renderable", () => {
-    expect(
-      shouldResolveArrivalGhost({
-        hasGhost: true,
-        hasPendingMovement: false,
-        isArmyRenderableInCurrentChunk: true,
-      }),
-    ).toBe(true);
-
-    expect(
-      shouldResolveArrivalGhost({
-        hasGhost: true,
-        hasPendingMovement: true,
-        isArmyRenderableInCurrentChunk: true,
-      }),
-    ).toBe(false);
   });
 
   it("returns the configured ghost visuals", () => {

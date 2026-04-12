@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Synchronized Army Move Handoff",
+    description:
+      "Local army moves now stay locked until the rendered movement actually begins, and destination ghosts wait for the real arrival before resolving, so move confirmations no longer leave units stranded in a stale pre-move state.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
     title: "Arrival Ghost Moves",
     description:
       "Local army moves now leave a ghosted unit at the destination while the world update catches up, so moves stay readable and the real unit can absorb into place on arrival instead of disappearing into a dead gap.",
