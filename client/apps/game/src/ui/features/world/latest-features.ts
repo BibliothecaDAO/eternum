@@ -31,6 +31,14 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-04-12",
+    title: "Cleaner Hero Cards",
+    description:
+      "The Play dashboard hero cards now show a single artwork layer per mode, so hovering between Seasons and Blitz no longer creates a ghosted double-image effect.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
     title: "Auto-Settle Card Switch",
     description:
       "Blitz registrations now turn on an Auto-settle switch directly on the game card, so the client can prewarm the entry flow, try settling as soon as the countdown ends, and push you into the game automatically unless you switch it off.",

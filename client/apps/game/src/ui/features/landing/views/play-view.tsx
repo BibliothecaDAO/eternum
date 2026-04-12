@@ -604,12 +604,6 @@ const ModeCoexistenceHero = ({
               transitionDelay: mounted ? "0ms" : `${index * 150}ms`,
             }}
           >
-            <img
-              src={config.posterSrc}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover scale-105"
-            />
             <video
               autoPlay
               muted
@@ -617,10 +611,7 @@ const ModeCoexistenceHero = ({
               playsInline
               preload="metadata"
               poster={config.posterSrc}
-              className={cn(
-                "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
-                hoveredMode === mode ? "opacity-100" : "opacity-75",
-              )}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             >
               <source src={config.videoSrc} type="video/mp4" />
             </video>
