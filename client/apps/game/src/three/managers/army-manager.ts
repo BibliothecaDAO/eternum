@@ -32,7 +32,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import * as THREE from "three";
-import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
+import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";

@@ -2658,7 +2658,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const trackedEffect = this.travelEffectsByEntity.get(entityId);
-    if (shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason })) {
+    if (trackedEffect && shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason })) {
       trackedEffect.cleanup();
     }
   }

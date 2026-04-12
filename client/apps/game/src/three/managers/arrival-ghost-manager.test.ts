@@ -1,7 +1,8 @@
-import { Position } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Scene } from "three";
 import { ArrivalGhostManager } from "./arrival-ghost-manager";
+
+const hex = (col: number, row: number) => ({ col, row });
 
 function createTemplateScene(): Group {
   const group = new Group();
@@ -19,7 +20,7 @@ describe("ArrivalGhostManager", () => {
     manager.setCurrentChunk("0,0");
     manager.upsertLocalArrivalGhost({
       entityId: 1,
-      hexCoords: new Position({ x: 0, y: 0 }).getNormalized(),
+      hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
       visualStyle: {
         color: "#ffffff",
@@ -42,7 +43,7 @@ describe("ArrivalGhostManager", () => {
     manager.setCurrentChunk("0,0");
     manager.upsertLocalArrivalGhost({
       entityId: 1,
-      hexCoords: new Position({ x: 0, y: 0 }).getNormalized(),
+      hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
       visualStyle: {
         color: "#ffffff",
@@ -53,7 +54,7 @@ describe("ArrivalGhostManager", () => {
     });
     manager.upsertLocalArrivalGhost({
       entityId: 1,
-      hexCoords: new Position({ x: 2, y: 2 }).getNormalized(),
+      hexCoords: hex(2, 2),
       sourceScene: createTemplateScene(),
       visualStyle: {
         color: "#ffffff",
@@ -76,7 +77,7 @@ describe("ArrivalGhostManager", () => {
     manager.setCurrentChunk("0,0");
     manager.upsertLocalArrivalGhost({
       entityId: 1,
-      hexCoords: new Position({ x: 0, y: 0 }).getNormalized(),
+      hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
       visualStyle: {
         color: "#ffffff",
@@ -102,7 +103,7 @@ describe("ArrivalGhostManager", () => {
     manager.setCurrentChunk("0,0");
     manager.upsertLocalArrivalGhost({
       entityId: 1,
-      hexCoords: new Position({ x: 0, y: 0 }).getNormalized(),
+      hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
       visualStyle: {
         color: "#ffffff",
@@ -117,7 +118,7 @@ describe("ArrivalGhostManager", () => {
 
     manager.upsertLocalArrivalGhost({
       entityId: 2,
-      hexCoords: new Position({ x: 0, y: 0 }).getNormalized(),
+      hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
       visualStyle: {
         color: "#ffffff",

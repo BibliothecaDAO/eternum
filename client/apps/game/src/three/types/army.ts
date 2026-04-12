@@ -7,6 +7,7 @@ import {
   InstancedMesh,
   Group,
   Mesh,
+  Object3D,
   AnimationMixer,
   AnimationClip,
   AnimationAction,
