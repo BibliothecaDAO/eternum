@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { primePlayEntryRoute } from "@/game-entry-preload";
+import { primeDashboardPlayAssets, primePlayEntryRoute } from "@/game-entry-preload";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
@@ -987,6 +987,21 @@ export const PlayView = ({
     returnTo: currentLandingHref,
     landingModeFilter: modeFilter,
   };
+
+  useEffect(() => {
+    if (activeTab !== "play") {
+      return;
+    }
+
+    try {
+      performance.mark("dashboard-play-preload-scheduled");
+    } catch {
+      // Ignore duplicate or unsupported marks.
+    }
+
+    primePlayEntryRoute();
+    primeDashboardPlayAssets();
+  }, [activeTab]);
 
   const navigateToEntryRoute = useCallback(
     (

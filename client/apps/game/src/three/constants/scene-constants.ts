@@ -23,6 +23,8 @@ const BIOMES_MODELS_PATH = IS_FLAT_MODE ? BIOMES_FLAT_PATH : BIOMES_BASE_PATH;
 
 const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
 
+const buildUniqueAssetPaths = (assetPaths: readonly string[]) => Object.freeze(Array.from(new Set(assetPaths)));
+
 enum BiomeFilenames {
   Bare = "bare_2_0_baked.glb",
   Beach = "beach.glb",
@@ -83,6 +85,17 @@ enum ChestFilenames {
 }
 
 export const ChestModelPath = "/models/new-buildings-opt/" + ChestFilenames.Chest;
+
+export const SHARED_BIOME_MODEL_PATHS = buildUniqueAssetPaths([
+  ...Object.values(BiomeFilenames).map((fileName) => `${BIOMES_MODELS_PATH}${fileName}`),
+  `${BIOMES_BASE_PATH}${BiomeFilenames.Outline}`,
+]);
+
+export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths(
+  Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
+);
+
+export const SHARED_CHEST_MODEL_PATHS = buildUniqueAssetPaths([ChestModelPath]);
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,

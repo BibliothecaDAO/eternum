@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Faster Play Asset Warmup",
+    description:
+      "Shared play assets now start warming from the dashboard so common world models and textures are more likely to be ready before you enter a game.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
     title: "Auto-Settle Card Switch",
     description:
       "Blitz registrations now turn on an Auto-settle switch directly on the game card, so the client can prewarm the entry flow, try settling as soon as the countdown ends, and push you into the game automatically unless you switch it off.",
