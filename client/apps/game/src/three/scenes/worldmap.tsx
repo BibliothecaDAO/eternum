@@ -55,6 +55,7 @@ import {
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getTileAt,
+  recordArmyMovementLatencyPhase,
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
@@ -676,8 +677,9 @@ export default class WorldmapScene extends WarpTravel {
   private set postCommitManagerCatchUpFrameHandle(value: number | null) {
     this.postCommitManagerCatchUpRuntimeState.frameHandle = value;
   }
+  private handleTransactionComplete?: (...args: any[]) => void;
   private handleTransactionFailed?: (...args: any[]) => void;
-  private readonly stalePendingArmyMovementMs = 10_000;
+  private readonly authoritativePendingArmyMovementMs = 30_000;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager!: StructureManager;
   private memoryMonitor?: MemoryMonitor;
@@ -992,6 +994,25 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindTransactionFailureLifecycle(dojoContext: SetupResult): void {
+    this.handleTransactionComplete = (payload: { details?: { transaction_hash?: string } }) => {
+      const txHash = payload?.details?.transaction_hash;
+      if (!txHash) {
+        return;
+      }
+
+      const entityId = this.pendingArmyMovementTxMap.get(txHash);
+      if (entityId === undefined) {
+        return;
+      }
+
+      recordArmyMovementLatencyPhase({
+        phase: "tx_confirmed",
+        source: "worldmap",
+        entityId,
+        txHash,
+      });
+    };
+
     this.handleTransactionFailed = (_error: any, meta?: any) => {
       const txHash =
         typeof _error === "object" && _error?.transactionHash ? _error.transactionHash : meta?.transactionHash;
@@ -1012,6 +1033,7 @@ export default class WorldmapScene extends WarpTravel {
       this.pendingArmyMovementTxMap.delete(txHash);
     };
 
+    dojoContext.network?.provider?.on("transactionComplete", this.handleTransactionComplete);
     dojoContext.network?.provider?.on("transactionFailed", this.handleTransactionFailed);
   }
 
@@ -1143,6 +1165,15 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
         this.incrementToriiBoundsCounter("explorerTiles");
+        recordArmyMovementLatencyPhase({
+          phase: "worldmap_tile_update_received",
+          source: "worldmap",
+          entityId: update.entityId,
+          details: {
+            col: update.hexCoords.col,
+            row: update.hexCoords.row,
+          },
+        });
         const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId);
         const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
 
@@ -1186,6 +1217,15 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         await this.armyManager.onTileUpdate(update);
+        recordArmyMovementLatencyPhase({
+          phase: "army_manager_tile_update_applied",
+          source: "worldmap",
+          entityId: update.entityId,
+          details: {
+            col: update.hexCoords.col,
+            row: update.hexCoords.row,
+          },
+        });
         this.armyLastTileSyncAt.set(update.entityId, Date.now());
         if (recoveredPendingRemoval) {
           void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
@@ -2388,6 +2428,16 @@ export default class WorldmapScene extends WarpTravel {
 
       // Mark army as having pending movement transaction
       this.markPendingArmyMovement(selectedEntityId);
+      recordArmyMovementLatencyPhase({
+        phase: "move_requested",
+        source: "worldmap",
+        entityId: selectedEntityId,
+        details: {
+          actionType,
+          targetCol: targetHex.col,
+          targetRow: targetHex.row,
+        },
+      });
 
       // Monitor memory usage before army movement action
       this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
@@ -2397,8 +2447,20 @@ export default class WorldmapScene extends WarpTravel {
         .then((result: any) => {
           // Track txHash → entityId so provider transactionFailed events can clear pending state
           const txHash = result?.transaction_hash;
+          recordArmyMovementLatencyPhase({
+            phase: "tx_response_received",
+            source: "worldmap",
+            entityId: selectedEntityId,
+            txHash,
+          });
           if (txHash) {
             this.pendingArmyMovementTxMap.set(txHash, selectedEntityId);
+            recordArmyMovementLatencyPhase({
+              phase: "tx_submitted",
+              source: "worldmap",
+              entityId: selectedEntityId,
+              txHash,
+            });
           }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
@@ -2610,9 +2672,19 @@ export default class WorldmapScene extends WarpTravel {
     this.disposePendingMovementVisualLifecycle(entityId);
 
     const disposeMovementStart = this.armyManager.onMovementStart(entityId, () => {
+      recordArmyMovementLatencyPhase({
+        phase: "movement_started",
+        source: "worldmap",
+        entityId,
+      });
       this.clearPendingArmyMovement(entityId, "movement_started");
     });
     const disposeMovementComplete = this.armyManager.onMovementComplete(entityId, () => {
+      recordArmyMovementLatencyPhase({
+        phase: "movement_completed",
+        source: "worldmap",
+        entityId,
+      });
       if (shouldAnimateArrivalGhostOnCompletion) {
         this.arrivalGhostManager.resolveArrivalGhost(entityId);
       }
@@ -2836,7 +2908,7 @@ export default class WorldmapScene extends WarpTravel {
         hasPendingMovement: this.pendingArmyMovements.has(entityId),
         pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
         nowMs: Date.now(),
-        staleAfterMs: this.stalePendingArmyMovementMs,
+        staleAfterMs: this.authoritativePendingArmyMovementMs,
       });
 
       if (fallbackPlan.shouldDeleteFallbackTimeout) {
@@ -2858,7 +2930,7 @@ export default class WorldmapScene extends WarpTravel {
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] Cleared stale pending movement for army ${entityId} via fallback timeout`);
       }
-    }, this.stalePendingArmyMovementMs);
+    }, this.authoritativePendingArmyMovementMs);
 
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
   }
@@ -2875,7 +2947,7 @@ export default class WorldmapScene extends WarpTravel {
       hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
       pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(selectedEntityId),
       nowMs: Date.now(),
-      staleAfterMs: this.stalePendingArmyMovementMs,
+      staleAfterMs: this.authoritativePendingArmyMovementMs,
     });
 
     if (selectionPlan.shouldClearPendingMovement) {
@@ -7580,6 +7652,9 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingArmyMovements.clear();
+    if (this.handleTransactionComplete) {
+      this.dojo.network?.provider?.off("transactionComplete", this.handleTransactionComplete);
+    }
     if (this.handleTransactionFailed) {
       this.dojo.network?.provider?.off("transactionFailed", this.handleTransactionFailed);
     }

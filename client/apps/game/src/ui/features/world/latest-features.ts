@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Longer Movement Sync Bridge",
+    description:
+      "Army move ghosts and travel effects now stay visible through longer world-sync delays, so confirmed moves no longer drop into an empty dead gap before the real unit catches up.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
     title: "Synchronized Army Move Handoff",
     description:
       "Local army moves now stay locked until the rendered movement actually begins, and destination ghosts wait for the real arrival before resolving, so move confirmations no longer leave units stranded in a stale pre-move state.",
