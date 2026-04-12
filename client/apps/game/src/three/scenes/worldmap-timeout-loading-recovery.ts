@@ -2,12 +2,14 @@ import type { WorldmapChunkPresentationPhase } from "./worldmap-chunk-presentati
 
 interface RecoverWorldmapMapLoadingStateFromChunkTimeoutInput {
   phase: WorldmapChunkPresentationPhase;
+  keepMapLoadingVisible: boolean;
   toriiLoadingCounter: number;
   clearMapLoading: () => void;
 }
 
 export const recoverWorldmapMapLoadingStateFromChunkTimeout = ({
   phase,
+  keepMapLoadingVisible,
   toriiLoadingCounter,
   clearMapLoading,
 }: RecoverWorldmapMapLoadingStateFromChunkTimeoutInput): number => {
@@ -19,6 +21,8 @@ export const recoverWorldmapMapLoadingStateFromChunkTimeout = ({
     return toriiLoadingCounter;
   }
 
-  clearMapLoading();
+  if (!keepMapLoadingVisible) {
+    clearMapLoading();
+  }
   return 0;
 };

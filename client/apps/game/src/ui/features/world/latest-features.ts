@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Map Refresh Feedback",
+    description:
+      "World map zoom now shows a refresh loading state while chunk swaps catch up, so stepping between map bands reads as active loading instead of a jittery terrain hitch.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-12",
     title: "Cleaner Hero Cards",
     description:
       "The Play dashboard hero cards now show a single artwork layer per mode, so hovering between Seasons and Blitz no longer creates a ghosted double-image effect.",

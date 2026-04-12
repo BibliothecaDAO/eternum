@@ -10,7 +10,7 @@ export const WorldLoading = () => {
     const items = [];
     if (loadingStates[LoadingStateKey.Market]) items.push("Gathering Merchants"); // Market
     if (loadingStates[LoadingStateKey.AllPlayerStructures]) items.push("Constructing Settlements"); // Player Structures
-    if (loadingStates[LoadingStateKey.Map]) items.push("Charting Territories"); // Map
+    if (loadingStates[LoadingStateKey.Map]) items.push("Refreshing Territories"); // Map
     if (loadingStates[LoadingStateKey.Hyperstructure]) items.push("Awakening Ancient Powers"); // Hyperstructure
     if (loadingStates[LoadingStateKey.MarketHistory]) items.push("Counting Gold"); // Market History
     if (loadingStates[LoadingStateKey.Leaderboard]) items.push("Ranking Players"); // Leaderboard

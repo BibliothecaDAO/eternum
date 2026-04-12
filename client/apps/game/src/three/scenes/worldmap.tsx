@@ -525,6 +525,7 @@ export default class WorldmapScene extends WarpTravel {
   private chunkTransitionRuntimeState = createWorldmapChunkTransitionRuntimeState<Promise<void>>();
   private chunkRefreshRuntimeState = createWorldmapChunkRefreshRuntimeState();
   private pendingChunkRefreshForce = false;
+  private pendingChunkRefreshShowsMapLoading = false;
   private pendingChunkRefreshUiReason: "default" | "shortcut" = "default";
   private isShortcutArmySelectionInFlight = false;
   private lastControlsCameraDistance: number | null = null;
@@ -546,6 +547,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
   private toriiLoadingCounter = 0;
+  private zoomRefreshLoadingCounter = 0;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
@@ -757,7 +759,7 @@ export default class WorldmapScene extends WarpTravel {
     this.lastControlsCameraDistance = nextCameraDistance;
 
     if (refreshPlan.immediateLevel !== "none") {
-      this.requestChunkRefresh(refreshPlan.immediateLevel === "forced");
+      this.requestChunkRefresh(refreshPlan.immediateLevel === "forced", "default", { showMapLoading: true });
     }
   };
   private isUrlChangedListenerAttached = false;
@@ -3307,6 +3309,7 @@ export default class WorldmapScene extends WarpTravel {
     this.chunkRefreshRunning = resetState.chunkRefreshRunning;
     this.chunkRefreshRerunRequested = resetState.chunkRefreshRerunRequested;
     this.pendingChunkRefreshForce = resetState.pendingChunkRefreshForce;
+    this.pendingChunkRefreshShowsMapLoading = false;
     this.pendingChunkRefreshUiReason = "default";
     this.zeroTerrainFrames = resetState.zeroTerrainFrames;
     this.terrainRecoveryInFlight = resetState.terrainRecoveryInFlight;
@@ -3349,9 +3352,11 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkRecoveryTimeout = null;
     }
 
-    // Clear map loading state so "Charting Territories" doesn't persist
-    // when switching away while fetches are still in-flight.
+    // Clear map loading so the shared world-loading banner cannot persist
+    // when switching away while fetches or zoom refreshes are still in-flight.
     this.toriiLoadingCounter = 0;
+    this.zoomRefreshLoadingCounter = 0;
+    this.pendingChunkRefreshShowsMapLoading = false;
     this.state.setLoading(LoadingStateKey.Map, false);
   }
 
@@ -5373,6 +5378,7 @@ export default class WorldmapScene extends WarpTravel {
     const areaKey = this.clearStalledChunkAreaState(info.chunkKey);
     this.toriiLoadingCounter = recoverWorldmapMapLoadingStateFromChunkTimeout({
       phase: info.phase,
+      keepMapLoadingVisible: this.zoomRefreshLoadingCounter > 0,
       toriiLoadingCounter: this.toriiLoadingCounter,
       clearMapLoading: () => this.state.setLoading(LoadingStateKey.Map, false),
     });
@@ -5484,6 +5490,10 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private syncMapLoadingVisibility(): void {
+    this.state.setLoading(LoadingStateKey.Map, this.toriiLoadingCounter > 0 || this.zoomRefreshLoadingCounter > 0);
+  }
+
   private disposeWorldUpdateSubscriptions() {
     this.worldUpdateUnsubscribes.forEach((unsub) => {
       try {
@@ -5497,10 +5507,8 @@ export default class WorldmapScene extends WarpTravel {
 
   private beginToriiFetch() {
     if (this.isSwitchedOff) return;
-    if (this.toriiLoadingCounter === 0) {
-      this.state.setLoading(LoadingStateKey.Map, true);
-    }
     this.toriiLoadingCounter += 1;
+    this.syncMapLoadingVisibility();
   }
 
   private endToriiFetch() {
@@ -5509,9 +5517,21 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.toriiLoadingCounter -= 1;
-    if (this.toriiLoadingCounter === 0) {
-      this.state.setLoading(LoadingStateKey.Map, false);
+    this.syncMapLoadingVisibility();
+  }
+
+  private beginZoomRefreshLoading(): void {
+    this.zoomRefreshLoadingCounter += 1;
+    this.syncMapLoadingVisibility();
+  }
+
+  private endZoomRefreshLoading(): void {
+    if (this.zoomRefreshLoadingCounter === 0) {
+      return;
     }
+
+    this.zoomRefreshLoadingCounter -= 1;
+    this.syncMapLoadingVisibility();
   }
 
   private async computeTileEntities(chunkKey: string): Promise<boolean> {
@@ -6332,7 +6352,11 @@ export default class WorldmapScene extends WarpTravel {
     return this.cameraGroundIntersectionScratch;
   }
 
-  public requestChunkRefresh(force: boolean = false, reason: WorldmapForceRefreshReason = "default"): number {
+  public requestChunkRefresh(
+    force: boolean = false,
+    reason: WorldmapForceRefreshReason = "default",
+    options?: { showMapLoading?: boolean },
+  ): number {
     if (this.isSwitchedOff) {
       return this.chunkRefreshRequestToken;
     }
@@ -6340,6 +6364,8 @@ export default class WorldmapScene extends WarpTravel {
     incrementWorldmapRenderCounter("chunkRefreshRequests");
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_requested");
     requestWorldmapChunkRefreshToken(this.chunkRefreshRuntimeState);
+    this.pendingChunkRefreshShowsMapLoading =
+      this.pendingChunkRefreshShowsMapLoading || options?.showMapLoading === true;
     this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({
       currentReason: this.pendingChunkRefreshUiReason,
       isShortcutArmySelectionInFlight: this.isShortcutArmySelectionInFlight,
@@ -6379,16 +6405,37 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private async runChunkRefreshWithMapLoading(
+    showMapLoading: boolean,
+    executeRefresh: () => Promise<void>,
+  ): Promise<void> {
+    if (!showMapLoading) {
+      await executeRefresh();
+      return;
+    }
+
+    this.beginZoomRefreshLoading();
+    try {
+      await executeRefresh();
+    } finally {
+      this.endZoomRefreshLoading();
+    }
+  }
+
   private scheduleLegacyChunkRefresh(requestedDelayMs: number): void {
     scheduleWorldmapChunkRefreshTimer({
       clearTimeoutFn: (timeoutId) => window.clearTimeout(timeoutId),
       nowMs: performance.now(),
       onTimer: () => {
         const shouldForce = this.pendingChunkRefreshForce;
+        const showMapLoading = this.pendingChunkRefreshShowsMapLoading;
         const refreshReason = this.pendingChunkRefreshUiReason;
         this.pendingChunkRefreshForce = false;
+        this.pendingChunkRefreshShowsMapLoading = false;
         this.pendingChunkRefreshUiReason = "default";
-        void this.updateVisibleChunks(shouldForce, { reason: refreshReason }).catch((error) => {
+        void this.runChunkRefreshWithMapLoading(showMapLoading, async () => {
+          await this.updateVisibleChunks(shouldForce, { reason: refreshReason });
+        }).catch((error) => {
           console.error("[WorldMap] Legacy chunk refresh failed:", error);
         });
       },
@@ -6414,14 +6461,18 @@ export default class WorldmapScene extends WarpTravel {
 
   private async flushChunkRefresh(scheduledToken: number): Promise<void> {
     const shouldForce = this.pendingChunkRefreshForce;
+    const showMapLoading = this.pendingChunkRefreshShowsMapLoading;
     const refreshReason = this.pendingChunkRefreshUiReason;
     this.pendingChunkRefreshForce = false;
+    this.pendingChunkRefreshShowsMapLoading = false;
     this.pendingChunkRefreshUiReason = "default";
 
     await runWorldmapChunkRefreshExecution({
       executeRefresh: async () => {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_executed");
-        await this.updateVisibleChunks(shouldForce, { reason: refreshReason });
+        await this.runChunkRefreshWithMapLoading(showMapLoading, async () => {
+          await this.updateVisibleChunks(shouldForce, { reason: refreshReason });
+        });
       },
       onError: (error) => {
         console.error("[WorldMap] Chunk refresh failed:", error);
