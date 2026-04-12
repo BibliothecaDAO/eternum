@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Juicier Move Ghosts",
+    description:
+      "Destination ghosts now breathe with a soft idle pulse, show a clearer ground ring, and burst into the arriving unit with a brighter handoff so delayed moves stay visible instead of feeling static.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
     title: "Longer Movement Sync Bridge",
     description:
       "Army move ghosts and travel effects now stay visible through longer world-sync delays, so confirmed moves no longer drop into an empty dead gap before the real unit catches up.",

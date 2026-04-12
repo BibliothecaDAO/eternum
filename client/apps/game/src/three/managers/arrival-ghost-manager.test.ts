@@ -10,6 +10,15 @@ function createTemplateScene(): Group {
   return group;
 }
 
+function createVisualStyle() {
+  return {
+    color: "#b8ffb0",
+    opacity: 0.52,
+    scaleMultiplier: 1,
+    yOffset: 0.05,
+  };
+}
+
 describe("ArrivalGhostManager", () => {
   it("upserts a decorative ghost and tracks it by entity id", () => {
     const manager = new ArrivalGhostManager(new Scene(), {
@@ -22,12 +31,7 @@ describe("ArrivalGhostManager", () => {
       entityId: 1,
       hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
-      visualStyle: {
-        color: "#ffffff",
-        opacity: 0.38,
-        scaleMultiplier: 0.97,
-        yOffset: 0.05,
-      },
+      visualStyle: createVisualStyle(),
     });
 
     expect(manager.hasArrivalGhost(1)).toBe(true);
@@ -45,23 +49,13 @@ describe("ArrivalGhostManager", () => {
       entityId: 1,
       hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
-      visualStyle: {
-        color: "#ffffff",
-        opacity: 0.38,
-        scaleMultiplier: 0.97,
-        yOffset: 0.05,
-      },
+      visualStyle: createVisualStyle(),
     });
     manager.upsertLocalArrivalGhost({
       entityId: 1,
       hexCoords: hex(2, 2),
       sourceScene: createTemplateScene(),
-      visualStyle: {
-        color: "#ffffff",
-        opacity: 0.38,
-        scaleMultiplier: 0.97,
-        yOffset: 0.05,
-      },
+      visualStyle: createVisualStyle(),
     });
 
     expect(manager.getTrackedEntityIds()).toEqual([1]);
@@ -79,19 +73,72 @@ describe("ArrivalGhostManager", () => {
       entityId: 1,
       hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
-      visualStyle: {
-        color: "#ffffff",
-        opacity: 0.38,
-        scaleMultiplier: 0.97,
-        yOffset: 0.05,
-      },
+      visualStyle: createVisualStyle(),
     });
 
     const ghostContainer = scene.children.at(-1) as Group;
-    const ghostMesh = ghostContainer.children[0].children[0] as Mesh;
+    const ghostMesh = ghostContainer.getObjectByName("arrival-ghost-body") as Group;
+    const destinationRing = ghostContainer.getObjectByName("arrival-ghost-ring") as Mesh;
 
     expect(ghostContainer.position.y).toBeCloseTo(0.2);
-    expect(ghostMesh.renderOrder).toBe(10);
+    expect(ghostMesh).toBeDefined();
+    expect(destinationRing).toBeDefined();
+    expect(destinationRing.rotation.x).toBeCloseTo(-Math.PI / 2);
+  });
+
+  it("animates an idle pulse while the ghost waits for arrival", () => {
+    const scene = new Scene();
+    const manager = new ArrivalGhostManager(scene, {
+      chunkStride: 5,
+      renderChunkSize: { width: 10, height: 10 },
+    });
+
+    manager.setCurrentChunk("0,0");
+    manager.upsertLocalArrivalGhost({
+      entityId: 1,
+      hexCoords: hex(0, 0),
+      sourceScene: createTemplateScene(),
+      visualStyle: createVisualStyle(),
+    });
+
+    const ghostContainer = scene.children.at(-1) as Group;
+    const ghostBody = ghostContainer.getObjectByName("arrival-ghost-body") as Group;
+    const destinationRing = ghostContainer.getObjectByName("arrival-ghost-ring") as Mesh;
+    const initialBodyY = ghostBody.position.y;
+    const initialRingScale = destinationRing.scale.x;
+
+    manager.update(0.25);
+
+    expect(ghostBody.position.y).not.toBe(initialBodyY);
+    expect(destinationRing.scale.x).not.toBe(initialRingScale);
+  });
+
+  it("plays an absorb burst before clearing the ghost on arrival", () => {
+    const scene = new Scene();
+    const manager = new ArrivalGhostManager(scene, {
+      chunkStride: 5,
+      renderChunkSize: { width: 10, height: 10 },
+    });
+
+    manager.setCurrentChunk("0,0");
+    manager.upsertLocalArrivalGhost({
+      entityId: 1,
+      hexCoords: hex(0, 0),
+      sourceScene: createTemplateScene(),
+      visualStyle: createVisualStyle(),
+    });
+
+    const ghostContainer = scene.children.at(-1) as Group;
+    const burstRing = ghostContainer.getObjectByName("arrival-ghost-burst-ring") as Mesh;
+
+    manager.resolveArrivalGhost(1);
+    manager.update(0.05);
+
+    expect(burstRing.visible).toBe(true);
+    expect(burstRing.scale.x).toBeGreaterThan(1);
+
+    manager.update(0.3);
+    expect(manager.hasArrivalGhost(1)).toBe(false);
   });
 
   it("clears ghosts by reason and destroys all tracked ghosts", () => {
@@ -105,12 +152,7 @@ describe("ArrivalGhostManager", () => {
       entityId: 1,
       hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
-      visualStyle: {
-        color: "#ffffff",
-        opacity: 0.38,
-        scaleMultiplier: 0.97,
-        yOffset: 0.05,
-      },
+      visualStyle: createVisualStyle(),
     });
 
     manager.clearArrivalGhost(1, "tx_failed");
@@ -120,12 +162,7 @@ describe("ArrivalGhostManager", () => {
       entityId: 2,
       hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
-      visualStyle: {
-        color: "#ffffff",
-        opacity: 0.38,
-        scaleMultiplier: 0.97,
-        yOffset: 0.05,
-      },
+      visualStyle: createVisualStyle(),
     });
     manager.destroy();
     expect(manager.getTrackedEntityIds()).toEqual([]);
