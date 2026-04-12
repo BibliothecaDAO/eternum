@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo } from "react";
 
-import { useGameEntryBootstrapController, type BootstrapStatus, type BootstrapTask } from "@/game-entry/bootstrap-controller";
+import {
+  useGameEntryBootstrapController,
+  type BootstrapStatus,
+  type BootstrapTask,
+} from "@/game-entry/bootstrap-controller";
 import { resolveEntryContextFromPlayRoute } from "@/game-entry/context";
 import type { SetupResult } from "@/init/bootstrap";
 import { markBootMilestone } from "@/ui/modules/boot-loader";
 import { useLocation } from "react-router-dom";
-
 
 export type EagerBootstrapState = {
   status: BootstrapStatus;

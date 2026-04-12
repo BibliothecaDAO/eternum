@@ -60,7 +60,9 @@ describe("game-entry context", () => {
   });
 
   it("parses canonical play routes into direct play context", () => {
-    expect(resolveEntryContextFromPlayRoute(createLocation("/play/sepolia/aurora-blitz/map", "?spectate=true"))).toEqual({
+    expect(
+      resolveEntryContextFromPlayRoute(createLocation("/play/sepolia/aurora-blitz/map", "?spectate=true")),
+    ).toEqual({
       chain: "sepolia",
       worldName: "aurora-blitz",
       intent: "spectate",

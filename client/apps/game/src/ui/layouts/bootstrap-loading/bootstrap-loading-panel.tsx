@@ -4,7 +4,7 @@ import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import { useEffect, useMemo, useState } from "react";
 
-import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
+import type { BootstrapTask } from "@/game-entry/bootstrap-controller";
 import Button from "@/ui/design-system/atoms/button";
 import { getDisplayProgress, getNextStatementIndex } from "./bootstrap-loading-panel.utils";
 import { BOOTSTRAP_LOADING_STATEMENTS } from "./constants";

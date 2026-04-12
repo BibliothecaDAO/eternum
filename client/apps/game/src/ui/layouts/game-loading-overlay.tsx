@@ -7,7 +7,7 @@ import { BootLoaderShell } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
+import type { BootstrapTask } from "@/game-entry/bootstrap-controller";
 import {
   getSceneWarmupProgress,
   resolveEntryOverlayPhase,

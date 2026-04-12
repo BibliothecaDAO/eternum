@@ -27,10 +27,7 @@ import {
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { primeGameEntry } from "@/game-entry-preload";
-import {
-  buildEntryHrefFromEntryContext,
-  resolveEntryContextFromLandingSelection,
-} from "@/game-entry/context";
+import { buildEntryHrefFromEntryContext, resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
@@ -1060,13 +1057,7 @@ export const PlayView = ({
           return;
         }
 
-        setModal(
-          <SignInPromptModal
-            redirectTo={redirectTo}
-            redirectState={entryRedirectState}
-          />,
-          true,
-        );
+        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
         return;
       }
 
@@ -1096,13 +1087,7 @@ export const PlayView = ({
           return;
         }
 
-        setModal(
-          <SignInPromptModal
-            redirectTo={redirectTo}
-            redirectState={entryRedirectState}
-          />,
-          true,
-        );
+        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
         return;
       }
 
@@ -1133,13 +1118,7 @@ export const PlayView = ({
           return;
         }
 
-        setModal(
-          <SignInPromptModal
-            redirectTo={redirectTo}
-            redirectState={entryRedirectState}
-          />,
-          true,
-        );
+        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
         return;
       }
 

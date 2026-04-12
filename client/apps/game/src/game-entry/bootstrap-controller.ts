@@ -74,11 +74,7 @@ const updateTasksForError = (tasks: BootstrapTask[]): BootstrapTask[] => {
   return tasks.map((task) => (task.status === "running" ? { ...task, status: "error" } : task));
 };
 
-const updateTaskStatus = (
-  tasks: BootstrapTask[],
-  taskId: string,
-  status: BootstrapTask["status"],
-): BootstrapTask[] => {
+const updateTaskStatus = (tasks: BootstrapTask[], taskId: string, status: BootstrapTask["status"]): BootstrapTask[] => {
   return tasks.map((task) => (task.id === taskId ? { ...task, status } : task));
 };
 
@@ -151,18 +147,15 @@ export const useGameEntryBootstrapController = ({
     setTasks((previousTasks) => updateTaskStatus(previousTasks, taskId, taskStatus));
   }, []);
 
-  const refreshReadyState = useCallback(
-    (nextContext: ResolvedEntryContext | null) => {
-      const nextState = resolveInitialState(nextContext);
-      setSession(nextState.session);
-      setStatus(nextState.status);
-      setTasks(nextState.tasks);
-      setError(null);
-      activeRunIdRef.current += 1;
-      inFlightRef.current = null;
-    },
-    [],
-  );
+  const refreshReadyState = useCallback((nextContext: ResolvedEntryContext | null) => {
+    const nextState = resolveInitialState(nextContext);
+    setSession(nextState.session);
+    setStatus(nextState.status);
+    setTasks(nextState.tasks);
+    setError(null);
+    activeRunIdRef.current += 1;
+    inFlightRef.current = null;
+  }, []);
 
   const start = useCallback(() => {
     if (!context) {

@@ -5,11 +5,7 @@ import { world } from "@bibliothecadao/types";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
-import {
-  patchManifestWithFactory,
-  applyWorldSelection,
-  type WorldProfile,
-} from "@/runtime/world";
+import { patchManifestWithFactory, applyWorldSelection, type WorldProfile } from "@/runtime/world";
 import {
   resolveEntryContextCacheKey,
   resolveEntryContextFromPlayRoute,
@@ -267,7 +263,7 @@ const resolveBootstrapRpcUrl = (chain: Chain, profile: WorldProfile): string => 
   return profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
 };
 
-const runDojoSetup = async (): Promise<BootstrapResult> => {
+const runDojoSetup = async (): Promise<SetupResult> => {
   markGameEntryMilestone("setup-started");
   const setupResult = await setup(
     { ...dojoConfig },
@@ -295,7 +291,7 @@ const runDojoSetup = async (): Promise<BootstrapResult> => {
   return setupResult;
 };
 
-const runInitialWorldSync = async (setupResult: BootstrapResult, stores: BootstrapStores) => {
+const runInitialWorldSync = async (setupResult: SetupResult, stores: BootstrapStores) => {
   const initialSyncStartedAt = performance.now();
   markGameEntryMilestone("initial-sync-started");
   await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress);
@@ -304,11 +300,11 @@ const runInitialWorldSync = async (setupResult: BootstrapResult, stores: Bootstr
   console.log("[INITIAL SYNC COMPLETED]");
 };
 
-const configureGameSystems = (setupResult: BootstrapResult, chain: Chain) => {
+const configureGameSystems = (setupResult: SetupResult, chain: Chain) => {
   configManager.setDojo(setupResult.components, ETERNUM_CONFIG({ chain, components: setupResult.components }));
 };
 
-const startGameRenderer = async (setupResult: BootstrapResult) => {
+const startGameRenderer = async (setupResult: SetupResult) => {
   bootstrapSession.replaceRendererCleanup(
     await initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true),
   );
