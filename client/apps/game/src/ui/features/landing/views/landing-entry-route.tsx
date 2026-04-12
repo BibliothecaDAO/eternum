@@ -4,56 +4,35 @@ import { primePlayEntryRoute } from "@/game-entry-preload";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { GameEntryModal } from "../components/game-entry-modal";
+import { resolveLandingEntryState, type LandingEntryRouteState } from "../lib/landing-entry-state";
 import { PlayView } from "./play-view";
-
-type EntryRouteState = {
-  returnTo?: string;
-};
-
-const resolveBackgroundTab = (returnTo: string | undefined) => {
-  if (!returnTo) {
-    return "play" as const;
-  }
-
-  if (returnTo.startsWith("/learn")) {
-    return "learn" as const;
-  }
-
-  if (returnTo.startsWith("/news")) {
-    return "news" as const;
-  }
-
-  if (returnTo.startsWith("/factory")) {
-    return "factory" as const;
-  }
-
-  return "play" as const;
-};
 
 export const LandingEntryRoute = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const entryRoute = parseEntryRoute(location);
+  const entryState = resolveLandingEntryState({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
+
+  useEffect(() => {
+    if (entryRoute) {
+      primePlayEntryRoute();
+    }
+  }, [entryRoute]);
 
   if (!entryRoute) {
     return <Navigate to="/" replace />;
   }
 
-  const state = location.state as EntryRouteState | null;
-  const returnTo = state?.returnTo && state.returnTo !== location.pathname ? state.returnTo : "/";
-  const activeTab = resolveBackgroundTab(returnTo);
-
-  useEffect(() => {
-    primePlayEntryRoute();
-  }, []);
-
   const handleClose = () => {
-    navigate(returnTo, { replace: true });
+    navigate(entryState.returnTo, { replace: true });
   };
 
   return (
     <>
-      <PlayView activeTab={activeTab} disableReviewFlow />
+      <PlayView activeTab={entryState.activeTab} disableReviewFlow initialModeFilter={entryState.landingModeFilter} />
       <GameEntryModal
         isOpen
         onClose={handleClose}

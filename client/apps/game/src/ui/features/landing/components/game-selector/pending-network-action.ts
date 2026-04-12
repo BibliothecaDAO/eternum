@@ -26,14 +26,32 @@ export const createPendingNetworkAction = (
 
 export const resolvePendingNetworkSwitchOutcome = ({
   pendingAction,
+  latestPendingAction = null,
   switched,
 }: {
   pendingAction: PendingNetworkAction | null;
+  latestPendingAction?: PendingNetworkAction | null;
   switched: boolean;
 }): PendingNetworkSwitchOutcome => {
-  if (!pendingAction || !switched) {
+  if (!pendingAction) {
     return {
-      pendingAction,
+      pendingAction: latestPendingAction,
+      replay: null,
+      selectedChain: null,
+    };
+  }
+
+  if (!switched) {
+    return {
+      pendingAction: latestPendingAction ?? pendingAction,
+      replay: null,
+      selectedChain: null,
+    };
+  }
+
+  if (latestPendingAction !== pendingAction) {
+    return {
+      pendingAction: latestPendingAction,
       replay: null,
       selectedChain: null,
     };

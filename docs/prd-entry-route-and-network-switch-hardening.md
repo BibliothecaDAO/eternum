@@ -27,6 +27,27 @@ The final system should:
 5. keep connector chain selection aligned with the chosen world chain during sign-in
 6. cover the new flow with executable tests rather than source-only assertions
 
+## Implemented Scope In This Pass
+
+This change set closes the four regressions validated in review and leaves the broader connector-chain alignment work
+for follow-up.
+
+### Shipping now
+
+1. `/enter/:chain/:world` preserves the originating landing shell context instead of defaulting the background chrome to
+   Play.
+2. Route-owned entry keeps the active season-vs-blitz mode behind the modal by serializing that state into
+   `location.state`.
+3. Guarded network-switch prompts are single-flight and cancel-safe, so stale async completions cannot replay blocked
+   actions after dismissal.
+4. Market watch uses the market's actual chain when opening canonical spectate entry routes.
+
+### Explicitly deferred
+
+1. Rebinding the Cartridge connector default chain before first sign-in on a non-startup chain.
+2. Replacing the remaining source-string tests with full jsdom/browser behavior tests once the current vitest/jsdom ESM
+   environment issue is resolved.
+
 ## Non-Goals
 
 - redesigning the visual entry modal
@@ -85,7 +106,7 @@ The final system should:
 - Entry success no longer routes through legacy `/play/map` or `/play/hex`.
 - Successful entry lands directly on `/play/:chain/:world/:scene`.
 - Back from canonical play returns to the originating landing route instead of reopening `/enter/...`.
-- Market watch launches preserve a meaningful close target instead of falling back to `/`.
+- Market watch launches use the canonical entry route for the selected market chain.
 
 ### Landing state and loading
 
@@ -105,6 +126,8 @@ The final system should:
 
 - Sign-in on a chosen non-default chain uses a connector/runtime configuration compatible with that selected chain.
 - Preferred chain, bootstrap selection, and connector chain are observably aligned after selection.
+
+This remains deferred from the current pass.
 
 ### Quality gates
 
@@ -256,9 +279,23 @@ Workstream 4 (connector chain) ──────── (independent, requires m
   - landing play -> enter -> success -> Back
   - learn/news/factory -> sign-in redirect -> close
   - season mode -> enter -> close
-  - market watch in a new tab -> close
+  - market watch in a new tab -> correct chain-specific spectate entry route
   - chain mismatch -> switch -> replay once
-  - chain mismatch -> switch -> cancel before resolution
+
+## TDD Record For This Pass
+
+The fixes landed in red-green-refactor order with focused regression coverage first:
+
+1. Added failing tests for stale network-switch replay, `/enter/...` landing context reconstruction, market-watch chain
+   routing, and sign-in redirect preservation.
+2. Implemented the smallest code changes to pass those tests:
+   - new shared `landing-entry-state` helper
+   - lifted landing mode filter into `PlayView`
+   - cancel-safe/single-flight network-switch replay state
+   - market-watch chain threading from the market modal
+3. Re-ran the targeted regression suite before broader repo verification.
+
+- chain mismatch -> switch -> cancel before resolution
 
 ## Risks
 

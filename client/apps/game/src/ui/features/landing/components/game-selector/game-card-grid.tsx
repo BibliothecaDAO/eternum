@@ -312,8 +312,14 @@ const GameCard = ({
     return Number.isFinite(value) && value > 0;
   }, [marketClaimableDisplay]);
   const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
+  const [isSwitchNetworkPending, setIsSwitchNetworkPending] = useState(false);
   const [pendingNetworkAction, setPendingNetworkAction] = useState<PendingNetworkAction | null>(null);
+  const latestPendingNetworkActionRef = useRef<PendingNetworkAction | null>(null);
   const targetChainLabel = getChainLabel(pendingNetworkAction?.targetChain ?? game.chain);
+
+  useEffect(() => {
+    latestPendingNetworkActionRef.current = pendingNetworkAction;
+  }, [pendingNetworkAction]);
 
   const runWithNetworkGuard = useCallback(
     (action: () => void, targetChain: Chain = game.chain, context: "game" | "market" = "game") => {
@@ -375,16 +381,25 @@ const GameCard = ({
   }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending, runWithNetworkGuard]);
 
   const handleSwitchNetwork = useCallback(async () => {
-    if (!pendingNetworkAction) return;
-    const switched = await switchToPreferredChain(resolvePreferredLandingChain(pendingNetworkAction.targetChain));
-    const outcome = resolvePendingNetworkSwitchOutcome({
-      pendingAction: pendingNetworkAction,
-      switched,
-    });
+    if (!pendingNetworkAction || isSwitchNetworkPending) return;
 
-    setPendingNetworkAction(outcome.pendingAction);
-    outcome.replay?.();
-  }, [pendingNetworkAction, switchToPreferredChain]);
+    const requestedPendingAction = pendingNetworkAction;
+    setIsSwitchNetworkPending(true);
+
+    try {
+      const switched = await switchToPreferredChain(resolvePreferredLandingChain(requestedPendingAction.targetChain));
+      const outcome = resolvePendingNetworkSwitchOutcome({
+        pendingAction: requestedPendingAction,
+        latestPendingAction: latestPendingNetworkActionRef.current,
+        switched,
+      });
+
+      setPendingNetworkAction(outcome.pendingAction);
+      outcome.replay?.();
+    } finally {
+      setIsSwitchNetworkPending(false);
+    }
+  }, [isSwitchNetworkPending, pendingNetworkAction, switchToPreferredChain]);
 
   const handleOpenMarket = useCallback(
     (initialOutcomeIndex?: number) => {
@@ -828,9 +843,13 @@ const GameCard = ({
             : `You're trying to interact with ${game.name} while your wallet is on another chain.`
         }
         hint={`Switch your wallet to ${targetChainLabel} to continue.`}
-        switchLabel={`Switch To ${targetChainLabel}`}
-        onClose={() => setPendingNetworkAction(null)}
+        switchLabel={isSwitchNetworkPending ? "Switching..." : `Switch To ${targetChainLabel}`}
+        onClose={() => {
+          if (isSwitchNetworkPending) return;
+          setPendingNetworkAction(null);
+        }}
         onSwitch={handleSwitchNetwork}
+        busy={isSwitchNetworkPending}
       />
     </div>
   );

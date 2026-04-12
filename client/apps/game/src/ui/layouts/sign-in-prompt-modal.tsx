@@ -3,17 +3,14 @@ import { useEffect } from "react";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useAccount } from "@starknet-react/core";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import type { LandingEntryRouteState } from "@/ui/features/landing/lib/landing-entry-state";
 import { Controller } from "@/ui/modules/controller/controller";
 import { ModalContainer } from "@/ui/shared";
 import { useLocation, useNavigate } from "react-router-dom";
 
-type SignInRedirectState = {
-  returnTo?: string;
-};
-
 interface SignInPromptModalProps {
   redirectTo?: string;
-  redirectState?: SignInRedirectState;
+  redirectState?: LandingEntryRouteState;
 }
 
 export const SignInPromptModal = ({ redirectTo, redirectState }: SignInPromptModalProps) => {

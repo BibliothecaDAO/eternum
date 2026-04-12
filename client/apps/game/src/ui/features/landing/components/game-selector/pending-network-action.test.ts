@@ -10,6 +10,7 @@ describe("pending network action", () => {
 
     const outcome = resolvePendingNetworkSwitchOutcome({
       pendingAction,
+      latestPendingAction: pendingAction,
       switched: true,
     });
 
@@ -31,6 +32,22 @@ describe("pending network action", () => {
     });
 
     expect(outcome.pendingAction).toBe(pendingAction);
+    expect(outcome.selectedChain).toBeNull();
+    expect(outcome.replay).toBeNull();
+    expect(replay).not.toHaveBeenCalled();
+  });
+
+  it("does not replay an action that was dismissed while the wallet switch was in flight", () => {
+    const replay = vi.fn();
+    const pendingAction = createPendingNetworkAction("mainnet", "game", replay);
+
+    const outcome = resolvePendingNetworkSwitchOutcome({
+      pendingAction,
+      latestPendingAction: null,
+      switched: true,
+    });
+
+    expect(outcome.pendingAction).toBeNull();
     expect(outcome.selectedChain).toBeNull();
     expect(outcome.replay).toBeNull();
     expect(replay).not.toHaveBeenCalled();

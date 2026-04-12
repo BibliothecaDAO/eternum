@@ -32,6 +32,7 @@ import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameReviewModal } from "../components/game-review-modal";
+import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-entry-state";
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
 
@@ -39,10 +40,10 @@ interface PlayViewProps {
   className?: string;
   activeTab?: PlayTab;
   disableReviewFlow?: boolean;
+  initialModeFilter?: LandingModeFilter;
 }
 
 type PlayTab = "play" | "learn" | "news" | "factory";
-type LandingModeFilter = "blitz" | "season";
 const FACTORY_TAB_BLEED_CLASS_NAME = "-mx-6 lg:-mx-10";
 const FACTORY_TAB_HEADER_INSET_CLASS_NAME = "px-3 sm:px-4 lg:px-6";
 
@@ -691,6 +692,8 @@ const ModeCoexistenceHero = ({
  * - Vertical scroll within each column
  */
 const PlayTabContent = ({
+  modeFilter,
+  onModeFilterChange,
   onPlayGame,
   onSelectGame,
   onSpectate,
@@ -703,6 +706,8 @@ const PlayTabContent = ({
   disabled = false,
   onEndedGamesResolved,
 }: {
+  modeFilter: LandingModeFilter;
+  onModeFilterChange: (mode: LandingModeFilter) => void;
   onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
@@ -715,11 +720,9 @@ const PlayTabContent = ({
   disabled?: boolean;
   onEndedGamesResolved?: (games: GameData[]) => void;
 }) => {
-  const [modeFilter, setModeFilter] = useState<LandingModeFilter>("blitz");
-
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
-      <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={setModeFilter} />
+      <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={onModeFilterChange} />
 
       {modeFilter === "season" && (
         <div className="flex flex-col gap-4">
@@ -945,7 +948,12 @@ const PlayTabContent = ({
  * Main play view - shows card-based game selector for production games only.
  * This is the default landing page content.
  */
-export const PlayView = ({ className, activeTab = "play", disableReviewFlow = false }: PlayViewProps) => {
+export const PlayView = ({
+  className,
+  activeTab = "play",
+  disableReviewFlow = false,
+  initialModeFilter = "blitz",
+}: PlayViewProps) => {
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -957,13 +965,17 @@ export const PlayView = ({ className, activeTab = "play", disableReviewFlow = fa
 
   // Refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [modeFilter, setModeFilter] = useState<LandingModeFilter>(initialModeFilter);
 
   // Auth state
   const account = useAccountStore((state) => state.account);
   const { isConnected } = useAccount();
   const setModal = useUIStore((state) => state.setModal);
   const currentLandingHref = `${location.pathname}${location.search}`;
-  const entryRedirectState = { returnTo: currentLandingHref };
+  const entryRedirectState: LandingEntryRouteState = {
+    returnTo: currentLandingHref,
+    landingModeFilter: modeFilter,
+  };
 
   const navigateToEntryRoute = useCallback(
     (
@@ -983,10 +995,10 @@ export const PlayView = ({ className, activeTab = "play", disableReviewFlow = fa
       });
 
       navigate(entryHref, {
-        state: { returnTo: currentLandingHref },
+        state: entryRedirectState,
       });
     },
-    [currentLandingHref, navigate],
+    [entryRedirectState, navigate],
   );
 
   const openGameEntryRoute = useCallback(
@@ -1185,6 +1197,8 @@ export const PlayView = ({ className, activeTab = "play", disableReviewFlow = fa
       default:
         return (
           <PlayTabContent
+            modeFilter={modeFilter}
+            onModeFilterChange={setModeFilter}
             onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
             onSpectate={handleSpectate}

@@ -1,6 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NavLink, useLocation } from "react-router-dom";
 import { getSectionFromPath, getActiveSubItem, getSubItemHref } from "../context/navigation-config";
+import { resolveLandingSurfacePath, type LandingEntryRouteState } from "../lib/landing-entry-state";
 
 interface MobileBottomNavProps {
   className?: string;
@@ -14,8 +15,12 @@ interface MobileBottomNavProps {
 export const MobileBottomNav = ({ className }: MobileBottomNavProps) => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const activeSection = getSectionFromPath(location.pathname);
-  const activeSubItem = getActiveSubItem(activeSection, location.pathname, searchParams);
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
+  const activeSection = getSectionFromPath(surfacePath);
+  const activeSubItem = getActiveSubItem(activeSection, surfacePath, searchParams);
 
   return (
     <nav

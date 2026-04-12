@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Entry Route Context Fixes",
+    description:
+      "Route-owned entry now keeps the right landing background and mode behind the modal, market watch opens the correct chain-specific spectate route, and wallet-switch prompts no longer replay blocked actions after you cancel or double-click.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
     title: "Unified Landing Network State",
     description:
       "Landing network controls, game entry prompts, markets, and factory tools now read the same preferred-versus-wallet network state, so switch prompts stay aligned with the header and temporary wallet detection no longer shows the wrong network warning.",

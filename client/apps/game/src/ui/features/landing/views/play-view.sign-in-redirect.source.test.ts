@@ -11,7 +11,8 @@ describe("PlayView sign-in entry redirects", () => {
   it("preserves the originating landing tab when sign-in gates the entry route", () => {
     const source = readSource("src/ui/features/landing/views/play-view.tsx");
 
-    expect(source).toContain("const entryRedirectState = { returnTo: currentLandingHref };");
+    expect(source).toContain("landingModeFilter: modeFilter");
     expect(source).toContain("redirectState={entryRedirectState}");
+    expect(source).toContain("state: entryRedirectState");
   });
 });

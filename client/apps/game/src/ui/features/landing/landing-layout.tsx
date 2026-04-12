@@ -13,6 +13,7 @@ import { LandingSettings } from "./components/landing-settings";
 import { LandingSidebar } from "./components/landing-sidebar";
 import { MobileBottomNav } from "./components/mobile-bottom-nav";
 import { LandingProvider, useLandingContext } from "./context/landing-context";
+import { resolveLandingSurfacePath, type LandingEntryRouteState } from "./lib/landing-entry-state";
 
 // Route to background mapping
 const ROUTE_BACKGROUNDS: Record<string, string> = {
@@ -36,9 +37,13 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
  */
 export const LandingLayout = () => {
   const location = useLocation();
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
 
   // Get default background for current route
-  const routeBackground = ROUTE_BACKGROUNDS[location.pathname] ?? "01";
+  const routeBackground = ROUTE_BACKGROUNDS[surfacePath] ?? "01";
 
   return (
     <LandingProvider defaultBackground={routeBackground}>
@@ -54,13 +59,17 @@ const LandingLayoutContent = () => {
   useBootDocumentState("app-ready");
 
   const location = useLocation();
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { backgroundId, resetBackground } = useLandingContext();
 
   // Reset background when route changes
   useEffect(() => {
     resetBackground();
-  }, [location.pathname, resetBackground]);
+  }, [resetBackground, surfacePath]);
 
   const handleSettingsClick = useCallback(() => {
     setSettingsOpen(true);

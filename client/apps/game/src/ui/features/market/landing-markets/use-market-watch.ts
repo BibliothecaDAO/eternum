@@ -8,7 +8,6 @@ import { Chain, getGameManifest } from "@contracts";
 import { toast } from "sonner";
 
 import { decodePaddedFeltAscii } from "./market-utils";
-import { env } from "../../../../../env";
 
 const FACTORY_WORLD_QUERY = "SELECT name FROM [wf-WorldDeployed] LIMIT 300;";
 const toriiBaseUrlFromName = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
@@ -91,8 +90,7 @@ const resolvePrizeAddressForWorld = async (
   }
 };
 
-const resolveMarketWorldName = async (market: MarketClass): Promise<string | null> => {
-  const chain = env.VITE_PUBLIC_CHAIN as Chain;
+const resolveMarketWorldName = async (market: MarketClass, chain: Chain): Promise<string | null> => {
   const fallbackName = (market.title || "").replace(/<br\s*\/?>/gi, " ").trim() || null;
   const prizeAddress = getPrizeDistributionAddress(market);
   if (!prizeAddress) return fallbackName;
@@ -134,7 +132,7 @@ const resolveMarketWorldName = async (market: MarketClass): Promise<string | nul
   return promise;
 };
 
-export const useMarketWatch = () => {
+export const useMarketWatch = (chain: Chain) => {
   const [watchingMarketId, setWatchingMarketId] = useState<string | null>(null);
   const [watchStates, setWatchStates] = useState<
     Record<string, { status: "idle" | "checking" | "ready" | "offline"; worldName?: string }>
@@ -159,7 +157,7 @@ export const useMarketWatch = () => {
       updateWatchState(marketId, { status: "checking" });
 
       try {
-        const worldName = await resolveMarketWorldName(market);
+        const worldName = await resolveMarketWorldName(market, chain);
         if (!worldName) {
           updateWatchState(marketId, { status: "offline", worldName: undefined });
           return null;
@@ -173,7 +171,7 @@ export const useMarketWatch = () => {
         return null;
       }
     },
-    [updateWatchState],
+    [chain, updateWatchState],
   );
 
   const getWatchState = useCallback(
@@ -198,7 +196,6 @@ export const useMarketWatch = () => {
           return;
         }
 
-        const chain = env.VITE_PUBLIC_CHAIN as Chain;
         await buildWorldProfile(chain, worldName);
 
         const playUrl = buildEntryHref({

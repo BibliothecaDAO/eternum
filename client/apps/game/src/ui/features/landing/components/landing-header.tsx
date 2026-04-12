@@ -4,6 +4,7 @@ import { ArrowLeftRight, Home, Menu, Settings, TrendingUp, Trophy, User, X } fro
 import { useState, useCallback } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { getSectionFromPath, getActiveSubItem, getSubItemHref } from "../context/navigation-config";
+import { resolveLandingSurfacePath, type LandingEntryRouteState } from "../lib/landing-entry-state";
 
 interface LandingHeaderProps {
   walletButton?: React.ReactNode;
@@ -122,9 +123,13 @@ export const LandingHeader = ({ walletButton, onSettingsClick, className }: Land
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchParams = new URLSearchParams(location.search);
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
 
-  const activeSection = getSectionFromPath(location.pathname);
-  const activeSubItem = getActiveSubItem(activeSection, location.pathname, searchParams);
+  const activeSection = getSectionFromPath(surfacePath);
+  const activeSubItem = getActiveSubItem(activeSection, surfacePath, searchParams);
 
   const handleOpenMobileMenu = useCallback(() => {
     setMobileMenuOpen(true);
