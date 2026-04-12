@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { prefetchPlayAssets } from "@/ui/utils/prefetch-play-assets";
+import { prefetchPlayEntryAssets } from "@/ui/utils/prefetch-play-assets";
 import { BootLoaderShell, markBootMilestone, setBootDocumentState } from "@/ui/modules/boot-loader";
 
 interface LoadingScreenProps {
@@ -20,7 +20,7 @@ export const LoadingScreen = ({
     markBootMilestone("boot_react_loader_visible");
 
     if (shouldPrefetch) {
-      prefetchPlayAssets();
+      prefetchPlayEntryAssets();
     }
   }, [shouldPrefetch]);
 

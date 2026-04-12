@@ -1,5 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { buildEntryHref } from "@/play/navigation/play-route";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
@@ -25,22 +26,24 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { primePlayEntryRoute } from "@/game-entry-preload";
+import { primeDashboardPlayAssets, primePlayEntryRoute } from "@/game-entry-preload";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
+import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
-import { GameEntryModal } from "../components/game-entry-modal";
 import { GameReviewModal } from "../components/game-review-modal";
+import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-entry-state";
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
 
 interface PlayViewProps {
   className?: string;
+  activeTab?: PlayTab;
+  disableReviewFlow?: boolean;
+  initialModeFilter?: LandingModeFilter;
 }
 
 type PlayTab = "play" | "learn" | "news" | "factory";
-type LandingModeFilter = "blitz" | "season";
 const FACTORY_TAB_BLEED_CLASS_NAME = "-mx-6 lg:-mx-10";
 const FACTORY_TAB_HEADER_INSET_CLASS_NAME = "px-3 sm:px-4 lg:px-6";
 
@@ -256,6 +259,7 @@ const LearnTierSection = ({ tier }: { tier: LearnGuideTier }) => {
 const LearnContent = ({
   onPlayGame,
   onSelectGame,
+  onAutoSettleGame,
   onSpectate,
   onForgeHyperstructures,
   onSeeScore,
@@ -264,6 +268,7 @@ const LearnContent = ({
 }: {
   onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
+  onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onSeeScore: (selection: WorldSelection) => void;
@@ -319,6 +324,7 @@ const LearnContent = ({
       <UnifiedGameGrid
         onPlayGame={onPlayGame}
         onSelectGame={onSelectGame}
+        onAutoSettleGame={onAutoSettleGame}
         onSpectate={onSpectate}
         onForgeHyperstructures={onForgeHyperstructures}
         onSeeScore={onSeeScore}
@@ -598,12 +604,6 @@ const ModeCoexistenceHero = ({
               transitionDelay: mounted ? "0ms" : `${index * 150}ms`,
             }}
           >
-            <img
-              src={config.posterSrc}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover scale-105"
-            />
             <video
               autoPlay
               muted
@@ -611,10 +611,7 @@ const ModeCoexistenceHero = ({
               playsInline
               preload="metadata"
               poster={config.posterSrc}
-              className={cn(
-                "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
-                hoveredMode === mode ? "opacity-100" : "opacity-75",
-              )}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             >
               <source src={config.videoSrc} type="video/mp4" />
             </video>
@@ -689,8 +686,11 @@ const ModeCoexistenceHero = ({
  * - Vertical scroll within each column
  */
 const PlayTabContent = ({
+  modeFilter,
+  onModeFilterChange,
   onPlayGame,
   onSelectGame,
+  onAutoSettleGame,
   onSpectate,
   onSeeScore,
   onClaimRewards,
@@ -701,8 +701,11 @@ const PlayTabContent = ({
   disabled = false,
   onEndedGamesResolved,
 }: {
+  modeFilter: LandingModeFilter;
+  onModeFilterChange: (mode: LandingModeFilter) => void;
   onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
+  onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
   onClaimRewards: (selection: WorldSelection) => void;
@@ -713,11 +716,9 @@ const PlayTabContent = ({
   disabled?: boolean;
   onEndedGamesResolved?: (games: GameData[]) => void;
 }) => {
-  const [modeFilter, setModeFilter] = useState<LandingModeFilter>("blitz");
-
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
-      <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={setModeFilter} />
+      <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={onModeFilterChange} />
 
       {modeFilter === "season" && (
         <div className="flex flex-col gap-4">
@@ -747,6 +748,7 @@ const PlayTabContent = ({
                   <UnifiedGameGrid
                     onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
+                    onAutoSettleGame={onAutoSettleGame}
                     onSpectate={onSpectate}
                     onForgeHyperstructures={onForgeHyperstructures}
                     onRegistrationComplete={onRegistrationComplete}
@@ -782,6 +784,7 @@ const PlayTabContent = ({
                   <UnifiedGameGrid
                     onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
+                    onAutoSettleGame={onAutoSettleGame}
                     onSpectate={onSpectate}
                     onForgeHyperstructures={onForgeHyperstructures}
                     onRegistrationComplete={onRegistrationComplete}
@@ -808,6 +811,7 @@ const PlayTabContent = ({
                   <UnifiedGameGrid
                     onPlayGame={onPlayGame}
                     onSelectGame={onSelectGame}
+                    onAutoSettleGame={onAutoSettleGame}
                     onSpectate={onSpectate}
                     onSeeScore={onSeeScore}
                     onClaimRewards={onClaimRewards}
@@ -855,6 +859,7 @@ const PlayTabContent = ({
                 <UnifiedGameGrid
                   onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
+                  onAutoSettleGame={onAutoSettleGame}
                   onSpectate={onSpectate}
                   onForgeHyperstructures={onForgeHyperstructures}
                   onRegistrationComplete={onRegistrationComplete}
@@ -890,6 +895,7 @@ const PlayTabContent = ({
                 <UnifiedGameGrid
                   onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
+                  onAutoSettleGame={onAutoSettleGame}
                   onSpectate={onSpectate}
                   onForgeHyperstructures={onForgeHyperstructures}
                   onRegistrationComplete={onRegistrationComplete}
@@ -916,6 +922,7 @@ const PlayTabContent = ({
                 <UnifiedGameGrid
                   onPlayGame={onPlayGame}
                   onSelectGame={onSelectGame}
+                  onAutoSettleGame={onAutoSettleGame}
                   onSpectate={onSpectate}
                   onSeeScore={onSeeScore}
                   onClaimRewards={onClaimRewards}
@@ -943,18 +950,15 @@ const PlayTabContent = ({
  * Main play view - shows card-based game selector for production games only.
  * This is the default landing page content.
  */
-export const PlayView = ({ className }: PlayViewProps) => {
-  const [searchParams] = useSearchParams();
-  const activeTab = (searchParams.get("tab") as PlayTab) || "play";
+export const PlayView = ({
+  className,
+  activeTab = "play",
+  disableReviewFlow = false,
+  initialModeFilter = "blitz",
+}: PlayViewProps) => {
   const queryClient = useQueryClient();
-
-  // Modal state for game entry
-  const [entryModalOpen, setEntryModalOpen] = useState(false);
-  const [selectedWorld, setSelectedWorld] = useState<WorldSelection | null>(null);
-  const [isSpectateMode, setIsSpectateMode] = useState(false);
-  const [isForgeMode, setIsForgeMode] = useState(false);
-  const [eternumEntryIntent, setEternumEntryIntent] = useState<"play" | "settle">("play");
-  const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
@@ -963,21 +967,67 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   // Refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [modeFilter, setModeFilter] = useState<LandingModeFilter>(initialModeFilter);
 
   // Auth state
   const account = useAccountStore((state) => state.account);
   const { isConnected } = useAccount();
   const setModal = useUIStore((state) => state.setModal);
+  const currentLandingHref = `${location.pathname}${location.search}`;
+  const entryRedirectState: LandingEntryRouteState = {
+    returnTo: currentLandingHref,
+    landingModeFilter: modeFilter,
+  };
 
-  const openGameEntryModal = useCallback((selection: WorldSelection, intent: "play" | "settle") => {
-    startGameEntryTimeline();
+  useEffect(() => {
+    if (activeTab !== "play") {
+      return;
+    }
+
+    try {
+      performance.mark("dashboard-play-preload-scheduled");
+    } catch {
+      // Ignore duplicate or unsupported marks.
+    }
+
     primePlayEntryRoute();
-    setSelectedWorld(selection);
-    setIsSpectateMode(false);
-    setIsForgeMode(false);
-    setEternumEntryIntent(intent);
-    setEntryModalOpen(true);
-  }, []);
+    primeDashboardPlayAssets();
+  }, [activeTab]);
+
+  const navigateToEntryRoute = useCallback(
+    (
+      selection: WorldSelection,
+      intent: "play" | "settle" | "spectate" | "forge",
+      hyperstructuresLeft: number | null,
+      autoSettle = false,
+    ) => {
+      if (!selection.chain) {
+        return;
+      }
+
+      const entryHref = buildEntryHref({
+        chain: selection.chain,
+        worldName: selection.name,
+        intent,
+        hyperstructuresLeft,
+        autoSettle,
+      });
+
+      navigate(entryHref, {
+        state: entryRedirectState,
+      });
+    },
+    [entryRedirectState, navigate],
+  );
+
+  const openGameEntryRoute = useCallback(
+    (selection: WorldSelection, intent: "play" | "settle", autoSettle = false) => {
+      startGameEntryTimeline();
+      primePlayEntryRoute();
+      navigateToEntryRoute(selection, intent, null, autoSettle);
+    },
+    [navigateToEntryRoute],
+  );
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
@@ -985,14 +1035,40 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
+        if (!selection.chain) {
+          return;
+        }
+
+        setModal(
+          <SignInPromptModal
+            redirectTo={buildEntryHref({
+              chain: selection.chain,
+              worldName: selection.name,
+              intent: "settle",
+              hyperstructuresLeft: null,
+              autoSettle: false,
+            })}
+            redirectState={entryRedirectState}
+          />,
+          true,
+        );
         return;
       }
 
       // Open settle flow
-      openGameEntryModal(selection, "settle");
+      openGameEntryRoute(selection, "settle", false);
     },
-    [account, isConnected, setModal, openGameEntryModal],
+    [account, entryRedirectState, isConnected, openGameEntryRoute, setModal],
+  );
+
+  const handleAutoSettleGame = useCallback(
+    (selection: WorldSelection) => {
+      const hasAccount = Boolean(account) || isConnected;
+      if (!hasAccount) return;
+
+      openGameEntryRoute(selection, "settle", true);
+    },
+    [account, isConnected, openGameEntryRoute],
   );
 
   const handlePlayGame = useCallback(
@@ -1000,26 +1076,41 @@ export const PlayView = ({ className }: PlayViewProps) => {
       const hasAccount = Boolean(account) || isConnected;
 
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
+        if (!selection.chain) {
+          return;
+        }
+
+        setModal(
+          <SignInPromptModal
+            redirectTo={buildEntryHref({
+              chain: selection.chain,
+              worldName: selection.name,
+              intent: "play",
+              hyperstructuresLeft: null,
+              autoSettle: false,
+            })}
+            redirectState={entryRedirectState}
+          />,
+          true,
+        );
         return;
       }
 
       // Open direct play flow
-      openGameEntryModal(selection, "play");
+      openGameEntryRoute(selection, "play", false);
     },
-    [account, isConnected, setModal, openGameEntryModal],
+    [account, entryRedirectState, isConnected, openGameEntryRoute, setModal],
   );
 
-  const handleSpectate = useCallback((selection: WorldSelection) => {
-    // Open game entry modal in spectate mode (no account required)
-    startGameEntryTimeline();
-    primePlayEntryRoute();
-    setSelectedWorld(selection);
-    setIsSpectateMode(true);
-    setIsForgeMode(false);
-    setEternumEntryIntent("play");
-    setEntryModalOpen(true);
-  }, []);
+  const handleSpectate = useCallback(
+    (selection: WorldSelection) => {
+      // Open game entry modal in spectate mode (no account required)
+      startGameEntryTimeline();
+      primePlayEntryRoute();
+      navigateToEntryRoute(selection, "spectate", null, false);
+    },
+    [navigateToEntryRoute],
+  );
 
   const handleForgeHyperstructures = useCallback(
     (selection: WorldSelection, numLeft: number) => {
@@ -1027,30 +1118,33 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
+        if (!selection.chain) {
+          return;
+        }
+
+        setModal(
+          <SignInPromptModal
+            redirectTo={buildEntryHref({
+              chain: selection.chain,
+              worldName: selection.name,
+              intent: "forge",
+              hyperstructuresLeft: numLeft,
+              autoSettle: false,
+            })}
+            redirectState={entryRedirectState}
+          />,
+          true,
+        );
         return;
       }
 
       // Open game entry modal in forge mode
       startGameEntryTimeline();
       primePlayEntryRoute();
-      setSelectedWorld(selection);
-      setIsSpectateMode(false);
-      setIsForgeMode(true);
-      setEternumEntryIntent("play");
-      setNumHyperstructuresLeft(numLeft);
-      setEntryModalOpen(true);
+      navigateToEntryRoute(selection, "forge", numLeft, false);
     },
-    [account, isConnected, setModal],
+    [account, entryRedirectState, isConnected, navigateToEntryRoute, setModal],
   );
-
-  const handleCloseModal = useCallback(() => {
-    setEntryModalOpen(false);
-    setSelectedWorld(null);
-    setIsForgeMode(false);
-    setEternumEntryIntent("play");
-    setNumHyperstructuresLeft(0);
-  }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
     setReviewInitialStep(undefined);
@@ -1091,16 +1185,17 @@ export const PlayView = ({ className }: PlayViewProps) => {
   }, [dismissReviewForWorld, reviewWorld]);
 
   const handleRequireSignIn = useCallback(() => {
-    setModal(<SignInPromptModal />, true);
-  }, [setModal]);
+    setModal(<SignInPromptModal redirectTo={currentLandingHref} />, true);
+  }, [currentLandingHref, setModal]);
 
   const handleEndedGamesResolved = useCallback((games: GameData[]) => {
     setEndedGames(games);
   }, []);
 
   useEffect(() => {
+    if (disableReviewFlow) return;
     if (activeTab !== "play") return;
-    if (entryModalOpen || reviewWorld) return;
+    if (reviewWorld) return;
     if (endedGames.length === 0) return;
 
     const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
@@ -1110,7 +1205,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
     setReviewInitialStep(undefined);
     setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
-  }, [activeTab, endedGames, entryModalOpen, reviewWorld]);
+  }, [activeTab, disableReviewFlow, endedGames, reviewWorld]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -1119,6 +1214,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
           <LearnContent
             onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
+            onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
             onForgeHyperstructures={handleForgeHyperstructures}
             onSeeScore={handleSeeScore}
@@ -1134,8 +1230,11 @@ export const PlayView = ({ className }: PlayViewProps) => {
       default:
         return (
           <PlayTabContent
+            modeFilter={modeFilter}
+            onModeFilterChange={setModeFilter}
             onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
+            onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
             onClaimRewards={handleClaimRewards}
@@ -1143,7 +1242,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
-            disabled={entryModalOpen || Boolean(reviewWorld)}
+            disabled={Boolean(reviewWorld)}
             onEndedGamesResolved={handleEndedGamesResolved}
           />
         );
@@ -1161,21 +1260,7 @@ export const PlayView = ({ className }: PlayViewProps) => {
     <>
       {shouldMountMarketsProviders ? <MarketsProviders>{content}</MarketsProviders> : content}
 
-      {/* Game Entry Modal - Loading + Settlement + Forge */}
-      {selectedWorld && selectedWorld.chain && (
-        <GameEntryModal
-          isOpen={entryModalOpen}
-          onClose={handleCloseModal}
-          worldName={selectedWorld.name}
-          chain={selectedWorld.chain}
-          isSpectateMode={isSpectateMode}
-          isForgeMode={isForgeMode}
-          eternumEntryIntent={eternumEntryIntent}
-          numHyperstructuresLeft={numHyperstructuresLeft}
-        />
-      )}
-
-      {reviewWorld && (
+      {reviewWorld && !disableReviewFlow && (
         <GameReviewModal
           isOpen={Boolean(reviewWorld)}
           world={reviewWorld}

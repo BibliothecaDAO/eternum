@@ -9,6 +9,7 @@ import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { SetupResult } from "@/init/bootstrap";
+import { parsePlayRoute } from "@/play/navigation/play-route";
 import { getActiveWorld, setActiveWorldName } from "@/runtime/world";
 import { useAccount, useConnect } from "@starknet-react/core";
 
@@ -62,6 +63,7 @@ const NULL_ACCOUNT = {
 
 export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardingState => {
   const bootstrap = useEagerBootstrap();
+  const urlPlayRoute = typeof window !== "undefined" ? parsePlayRoute(window.location) : null;
 
   // Account state from starknet-react
   const { isConnected, isConnecting } = useAccount();
@@ -75,14 +77,12 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   // Check URL for spectate mode
-  const urlSpectateMode =
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("spectate") === "true";
+  const urlSpectateMode = urlPlayRoute?.spectate ?? false;
 
   // Local state - initialize isSpectating from URL param
   const [isSpectating, setIsSpectating] = useState(urlSpectateMode);
   const [selectedWorldName, setSelectedWorldName] = useState<string | null>(() => {
-    const active = getActiveWorld();
-    return active?.name ?? null;
+    return urlPlayRoute?.worldName ?? getActiveWorld()?.name ?? null;
   });
   const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
   const [hasCompletedAvatar, setHasCompletedAvatar] = useState(false);

@@ -1,8 +1,9 @@
-import { ID } from "@bibliothecadao/types";
+import type { ID } from "@bibliothecadao/types";
 
 export type TravelEffectType = "travel" | "compass";
+export type PendingArmyMovementEffectClearReason = "movement_started" | "cleanup_requested";
 
-interface TrackedTravelEffect {
+export interface TrackedTravelEffect {
   key: string;
   effectType: TravelEffectType;
 }
@@ -37,4 +38,19 @@ export function resolveExploreCompletionPendingClearPlan(input: ResolveExploreCo
   }
 
   return pendingEntityIdsToClear;
+}
+
+export function shouldCleanupTrackedTravelEffectOnPendingClear(input: {
+  trackedEffect?: TrackedTravelEffect;
+  reason: PendingArmyMovementEffectClearReason;
+}): boolean {
+  if (!input.trackedEffect) {
+    return false;
+  }
+
+  if (input.reason === "cleanup_requested") {
+    return true;
+  }
+
+  return input.trackedEffect.effectType !== "travel";
 }

@@ -3,6 +3,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Settings } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { NAVIGATION_SECTIONS, getSectionFromPath } from "../context/navigation-config";
+import { resolveLandingSurfacePath, type LandingEntryRouteState } from "../lib/landing-entry-state";
 
 interface LandingSidebarProps {
   onSettingsClick?: () => void;
@@ -15,7 +16,11 @@ interface LandingSidebarProps {
  */
 export const LandingSidebar = ({ onSettingsClick, className }: LandingSidebarProps) => {
   const location = useLocation();
-  const activeSection = getSectionFromPath(location.pathname);
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
+  const activeSection = getSectionFromPath(surfacePath);
 
   return (
     <aside

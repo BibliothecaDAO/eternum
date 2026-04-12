@@ -32,7 +32,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import * as THREE from "three";
-import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
+import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
@@ -167,6 +167,7 @@ export class ArmyManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private components?: ClientComponents;
+  private movementStartListeners: Map<number, Set<() => void>> = new Map();
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private pointsRenderers?: {
     player: PointsLabelRenderer;
@@ -1808,8 +1809,9 @@ export class ArmyManager {
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
       // Clean up source bucket tracking since movement won't actually happen
       this.cleanupMovementSourceBucket(entityId);
-      this.runMovementCompleteListeners(numericEntityId);
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      this.runMovementStartListeners(numericEntityId);
+      this.runMovementCompleteListeners(numericEntityId);
       return;
     }
 
@@ -1829,6 +1831,7 @@ export class ArmyManager {
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
+    this.runMovementStartListeners(numericEntityId);
 
     // Create path visualization with player-specific color
     const colorProfile = this.getArmyColorProfile(armyData);
@@ -1973,6 +1976,24 @@ export class ArmyManager {
     return this.armies.get(entityId);
   }
 
+  public getArrivalGhostSourceSnapshot(entityId: ID): { armyColor: string; sourceScene: Object3D } | null {
+    const army = this.armies.get(entityId);
+    if (!army) {
+      return null;
+    }
+
+    const numericEntityId = this.toNumericId(entityId);
+    const modelData = this.armyModel.getModelForEntity(numericEntityId);
+    if (!modelData) {
+      return null;
+    }
+
+    return {
+      armyColor: army.color,
+      sourceScene: modelData.sourceScene,
+    };
+  }
+
   public syncAttachedArmiesOwnerForStructure(params: {
     structureId: ID;
     ownerAddress: bigint;
@@ -2052,6 +2073,28 @@ export class ArmyManager {
     return this.selectedArmyForPath;
   }
 
+  public onMovementStart(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementStartListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementStartListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementStartListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementStartListeners.delete(numericEntityId);
+      }
+    };
+  }
+
   public onMovementComplete(entityId: ID, callback: () => void): () => void {
     const numericEntityId = this.toNumericId(entityId);
     let listeners = this.movementCompleteListeners.get(numericEntityId);
@@ -2076,6 +2119,22 @@ export class ArmyManager {
 
   public hasMovingArmies(): boolean {
     return this.armyModel.hasMovingInstances();
+  }
+
+  private runMovementStartListeners(entityId: number): void {
+    const listeners = this.movementStartListeners.get(entityId);
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    this.movementStartListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement start listener failed", error);
+      }
+    });
   }
 
   private runMovementCompleteListeners(entityId: number): void {
@@ -2905,6 +2964,7 @@ ${
     this.movingArmySourceBuckets.clear();
     this.suppressedArmies.clear();
     this.chunkToArmies.clear();
+    this.movementStartListeners.clear();
     this.movementCompleteListeners.clear();
 
     destroyArmyManagerOwnedResources({

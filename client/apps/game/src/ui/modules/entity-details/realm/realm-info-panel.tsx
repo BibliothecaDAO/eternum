@@ -334,7 +334,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   }
 
   return (
-    <div className={cn("flex h-full flex-col gap-3 p-3 text-gold", className)}>
+    <div className={cn("flex h-full flex-col gap-2 p-2 text-gold", className)}>
       {canShowProductionCard && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">
           <div className="flex items-center justify-between gap-3">
@@ -541,20 +541,22 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
               </button>
             </div>
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <div className="rounded border border-gold/10 bg-[#1b140f]/80 p-2">
-              <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Field Armies</div>
-              <div className="mt-1 text-sm font-semibold text-gold">
+          <div className="mt-1.5 flex items-center gap-3 text-xxs text-gold/80">
+            <div className="flex items-center gap-1.5 rounded border border-gold/10 bg-[#1b140f]/80 px-2 py-1">
+              <Sword className="h-3 w-3 text-gold/50" />
+              <span className="uppercase tracking-wide text-gold/60">Field</span>
+              <span className="font-semibold text-gold">
                 {attackArmyCount}
-                {maxAttackArmies !== null ? ` / ${maxAttackArmies}` : ""}
-              </div>
+                {maxAttackArmies !== null ? `/${maxAttackArmies}` : ""}
+              </span>
             </div>
-            <div className="rounded border border-gold/10 bg-[#1b140f]/80 p-2">
-              <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Guard Armies</div>
-              <div className="mt-1 text-sm font-semibold text-gold">
+            <div className="flex items-center gap-1.5 rounded border border-gold/10 bg-[#1b140f]/80 px-2 py-1">
+              <Shield className="h-3 w-3 text-gold/50" />
+              <span className="uppercase tracking-wide text-gold/60">Guard</span>
+              <span className="font-semibold text-gold">
                 {guardArmyCount}
-                {maxGuardArmies !== null ? ` / ${maxGuardArmies}` : ""}
-              </div>
+                {maxGuardArmies !== null ? `/${maxGuardArmies}` : ""}
+              </span>
             </div>
           </div>
         </div>

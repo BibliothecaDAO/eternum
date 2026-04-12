@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolveExploreCompletionPendingClearPlan } from "./worldmap-travel-effect-policy";
+import {
+  resolveExploreCompletionPendingClearPlan,
+  shouldCleanupTrackedTravelEffectOnPendingClear,
+} from "./worldmap-travel-effect-policy";
 
 describe("resolveExploreCompletionPendingClearPlan", () => {
   it("returns pending compass effect entities for the explored tile", () => {
@@ -37,5 +40,32 @@ describe("resolveExploreCompletionPendingClearPlan", () => {
     });
 
     expect(plan).toEqual([]);
+  });
+
+  it("preserves travel effects when pending movement clears because movement started", () => {
+    expect(
+      shouldCleanupTrackedTravelEffectOnPendingClear({
+        trackedEffect: { key: "7,8", effectType: "travel" },
+        reason: "movement_started",
+      }),
+    ).toBe(false);
+  });
+
+  it("cleans up compass effects when pending movement clears because exploration resolved", () => {
+    expect(
+      shouldCleanupTrackedTravelEffectOnPendingClear({
+        trackedEffect: { key: "7,8", effectType: "compass" },
+        reason: "movement_started",
+      }),
+    ).toBe(true);
+  });
+
+  it("cleans up tracked effects when pending movement is force-cleared", () => {
+    expect(
+      shouldCleanupTrackedTravelEffectOnPendingClear({
+        trackedEffect: { key: "7,8", effectType: "travel" },
+        reason: "cleanup_requested",
+      }),
+    ).toBe(true);
   });
 });

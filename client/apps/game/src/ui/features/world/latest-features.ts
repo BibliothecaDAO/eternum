@@ -22,6 +22,110 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-12",
+    title: "Juicier Move Ghosts",
+    description:
+      "Destination ghosts now breathe with a soft idle pulse, show a clearer ground ring, and burst into the arriving unit with a brighter handoff so delayed moves stay visible instead of feeling static.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Longer Movement Sync Bridge",
+    description:
+      "Army move ghosts and travel effects now stay visible through longer world-sync delays, so confirmed moves no longer drop into an empty dead gap before the real unit catches up.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Synchronized Army Move Handoff",
+    description:
+      "Local army moves now stay locked until the rendered movement actually begins, and destination ghosts wait for the real arrival before resolving, so move confirmations no longer leave units stranded in a stale pre-move state.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Arrival Ghost Moves",
+    description:
+      "Local army moves now leave a ghosted unit at the destination while the world update catches up, so moves stay readable and the real unit can absorb into place on arrival instead of disappearing into a dead gap.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Smoother Army Move FX",
+    description:
+      "Army move effects now stay visible until the rendered unit actually starts and finishes its travel, so long chunk-sync updates no longer make movement look stalled or broken.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Faster Play Asset Warmup",
+    description:
+      "Shared play assets now start warming from the dashboard so common world models and textures are more likely to be ready before you enter a game.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Cleaner Hero Cards",
+    description:
+      "The Play dashboard hero cards now show a single artwork layer per mode, so hovering between Seasons and Blitz no longer creates a ghosted double-image effect.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Auto-Settle Card Switch",
+    description:
+      "Blitz registrations now turn on an Auto-settle switch directly on the game card, so the client can prewarm the entry flow, try settling as soon as the countdown ends, and push you into the game automatically unless you switch it off.",
+    type: "feature",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Entry Route Context Fixes",
+    description:
+      "Route-owned entry now keeps the right landing background and mode behind the modal, market watch opens the correct chain-specific spectate route, and wallet-switch prompts no longer replay blocked actions after you cancel or double-click.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Unified Landing Network State",
+    description:
+      "Landing network controls, game entry prompts, markets, and factory tools now read the same preferred-versus-wallet network state, so switch prompts stay aligned with the header and temporary wallet detection no longer shows the wrong network warning.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Network Switch State Fix",
+    description:
+      "Preferred network changes now stay aligned with the actual game world lookup, modal wallet-switch prompts keep the landing tag in sync, and the blocked action now continues automatically after a successful switch.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Deep Link Routing Fixes",
+    description:
+      "Canonical world-map links, shared profile links, and the Factory V2 legacy handoff now keep you on the intended destination instead of bouncing through the wrong route or dropping shared context.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Canonical Landing Routes",
+    description:
+      "Landing navigation now uses dedicated URLs for Play, Learn, News, and Factory, so shared links, reloads, and browser back-forward behavior stay aligned without relying on a hidden dashboard tab query.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-10",
     title: "Smoother Map Zoom Steps",
     description:

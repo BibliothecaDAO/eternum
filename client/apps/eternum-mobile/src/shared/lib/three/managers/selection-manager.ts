@@ -1,8 +1,9 @@
-import { ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternum";
+import { ActionPath, ActionPaths } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import useStore from "../../../store";
 import { EntityManager, GameMapObject } from "../entity-managers";
 import { HighlightRenderer } from "./highlight-renderer";
+import { resolveSelectionHighlightColor } from "./selection-highlight-colors";
 
 export class SelectionManager {
   private highlightRenderer: HighlightRenderer;
@@ -13,17 +14,6 @@ export class SelectionManager {
     pulseSpeed: 2.0,
     pulseIntensity: 0.4,
   } as const;
-
-  private readonly HIGHLIGHT_COLORS = {
-    [ActionType.Move]: new THREE.Color().setRGB(0.5, 2.0, 0.0), // Emerald green
-    [ActionType.Attack]: new THREE.Color().setRGB(2.5, 0.5, 0.0), // Fiery orange-red
-    [ActionType.Help]: new THREE.Color().setRGB(1.8, 0.3, 2.0), // Holy purple-pink
-    [ActionType.Explore]: new THREE.Color().setRGB(0.0, 1.2, 2.0), // Arcane blue glow
-    [ActionType.Quest]: new THREE.Color().setRGB(1.0, 1.0, 0.0), // Bright yellow
-    [ActionType.Build]: new THREE.Color().setRGB(1.5, 1.2, 0.0), // Golden amber
-    [ActionType.Chest]: new THREE.Color().setRGB(2.0, 1.5, 0.0), // Treasure gold
-    [ActionType.CreateArmy]: new THREE.Color().setRGB(1.0, 1.5, 2.0), // Ethereal blue-white
-  };
 
   constructor(highlightRenderer: HighlightRenderer) {
     this.highlightRenderer = highlightRenderer;
@@ -133,7 +123,7 @@ export class SelectionManager {
 
       processedHexes.add(hexKey);
 
-      const color = this.HIGHLIGHT_COLORS[hexAction.actionType] || this.HIGHLIGHT_COLORS[ActionType.Move];
+      const color = resolveSelectionHighlightColor(hexAction.actionType);
       highlightsToRender.push({
         col,
         row,

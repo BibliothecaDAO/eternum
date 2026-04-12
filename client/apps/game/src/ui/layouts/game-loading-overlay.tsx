@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { BootLoaderShell, useBootDocumentState } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
@@ -76,7 +77,8 @@ export const GameLoadingOverlay = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isOnWorldMapRoute = location.pathname.startsWith("/play/map");
+  const canonicalPlayRoute = useMemo(() => parsePlayRoute(location), [location]);
+  const isOnWorldMapRoute = canonicalPlayRoute?.scene === "map" || location.pathname.startsWith("/play/map");
   const targetWorldMapPosition = useMemo<WorldMapPosition | null>(() => {
     if (isSpectating && isFiniteWorldMapPosition(worldMapReturnPosition)) {
       return worldMapReturnPosition;
@@ -153,11 +155,19 @@ export const GameLoadingOverlay = () => {
       worldMapPosition: targetWorldMapPosition,
     });
 
-    const url = `/play/map?col=${targetWorldMapPosition.col}&row=${targetWorldMapPosition.row}`;
+    const url = canonicalPlayRoute
+      ? buildPlayHref({
+          ...canonicalPlayRoute,
+          scene: "map",
+          col: targetWorldMapPosition.col,
+          row: targetWorldMapPosition.row,
+          spectate: false,
+        })
+      : `/play/map?col=${targetWorldMapPosition.col}&row=${targetWorldMapPosition.row}`;
     markGameEntryMilestone("worldmap-navigation-started");
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [playerStructures, isOnWorldMapRoute, isSpectating, navigate, targetWorldMapPosition]);
+  }, [canonicalPlayRoute, playerStructures, isOnWorldMapRoute, isSpectating, navigate, targetWorldMapPosition]);
 
   useEffect(() => {
     if (hasDismissed.current) return;

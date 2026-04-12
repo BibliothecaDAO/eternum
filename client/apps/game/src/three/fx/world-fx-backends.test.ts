@@ -267,6 +267,43 @@ describe.each([
 
     expect(scene.children).toHaveLength(0);
   });
+
+  it("disables depth testing for floating icon fx so terrain cannot occlude them", () => {
+    const scene = new THREE.Scene();
+    const backend = createWorldFxBackend({
+      capabilities: resolveRendererFxCapabilities({
+        activeMode,
+      }),
+      scene,
+    });
+
+    backend.spawnIconFx({
+      animate: (fx) => {
+        fx.setOpacity(1);
+        return true;
+      },
+      isInfinite: true,
+      size: 1.25,
+      texture: createTexture(),
+      type: "travel",
+      x: 4,
+      y: 5,
+      z: 6,
+    });
+
+    const mesh = findFirstMesh(scene);
+    if (mesh) {
+      const material = mesh.material as THREE.MeshBasicMaterial;
+      expect(material.depthTest).toBe(false);
+      expect(mesh.renderOrder).toBeGreaterThan(0);
+      return;
+    }
+
+    const sprite = findFirstSprite(scene);
+    expect(sprite).toBeDefined();
+    const material = sprite!.material as THREE.SpriteMaterial;
+    expect(material.depthTest).toBe(false);
+  });
 });
 
 describe("world fx promise teardown", () => {

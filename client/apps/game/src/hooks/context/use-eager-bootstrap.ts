@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SetupResult } from "@/init/bootstrap";
 import { bootstrapGame, getCachedSetupResult } from "@/init/bootstrap";
+import { parsePlayRoute } from "@/play/navigation/play-route";
 import { getActiveWorld } from "@/runtime/world";
 import { markBootMilestone } from "@/ui/modules/boot-loader";
 import { useSyncStore } from "../store/use-sync-store";
@@ -32,6 +33,14 @@ const BOOTSTRAP_TASKS: BootstrapTask[] = [
   { id: "sync", label: "Syncing game state", status: "pending" },
   { id: "renderer", label: "Preparing graphics", status: "pending" },
 ];
+
+const hasRouteSelectedWorld = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return parsePlayRoute(window.location) !== null;
+};
 
 /**
  * Eager bootstrap hook that starts the bootstrap process as soon as possible.
@@ -73,7 +82,7 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
 
     // Check if world is selected
     const activeWorld = getActiveWorld();
-    if (!activeWorld) {
+    if (!activeWorld && !hasRouteSelectedWorld()) {
       setStatus("pending-world");
       return;
     }
@@ -117,7 +126,7 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
     hasStartedRef.current = true;
 
     const activeWorld = getActiveWorld();
-    if (activeWorld) {
+    if (activeWorld || hasRouteSelectedWorld()) {
       beginBootstrap();
     } else {
       setStatus("pending-world");
@@ -130,7 +139,7 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
 
     const checkWorld = () => {
       const activeWorld = getActiveWorld();
-      if (activeWorld) {
+      if (activeWorld || hasRouteSelectedWorld()) {
         beginBootstrap();
       }
     };
@@ -185,7 +194,7 @@ export const useEagerBootstrap = (): EagerBootstrapState => {
   const startBootstrap = useCallback(() => {
     if (status === "pending-world") {
       const activeWorld = getActiveWorld();
-      if (activeWorld) {
+      if (activeWorld || hasRouteSelectedWorld()) {
         beginBootstrap();
       }
     }

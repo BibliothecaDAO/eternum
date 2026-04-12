@@ -12,8 +12,11 @@ import {
   normalizeRpcUrl,
   patchManifestWithFactory,
   resolveChain,
+  setActiveWorldName,
+  setSelectedChain,
   type WorldProfile,
 } from "@/runtime/world";
+import { parsePlayRoute } from "@/play/navigation/play-route";
 import { buildWorldProfile } from "@/runtime/world/profile-builder";
 import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
@@ -51,13 +54,33 @@ export const getCachedSetupResult = (): BootstrapResult | null => {
   return bootstrapSession.getCachedResult();
 };
 
+const resolvePlayRouteSelection = (): { chain: Chain; worldName: string } | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const playRoute = parsePlayRoute(window.location);
+  if (!playRoute) {
+    return null;
+  }
+
+  return {
+    chain: playRoute.chain,
+    worldName: playRoute.worldName,
+  };
+};
+
 const deriveWorldFromPath = (): string | null => {
+  const routeSelection = resolvePlayRouteSelection();
+  if (routeSelection) {
+    return routeSelection.worldName;
+  }
+
   try {
     const match = window.location.pathname.match(/^\/play\/([^/]+)(?:\/|$)/);
     if (!match || !match[1]) return null;
     const candidate = decodeURIComponent(match[1]);
-    // "map" and "hex" are view modes, not world names
-    if (candidate === "map" || candidate === "hex") return null;
+    if (candidate === "map" || candidate === "hex" || candidate === "travel") return null;
     return candidate;
   } catch {
     return null;
@@ -138,6 +161,11 @@ const resolveBootstrapStores = (): BootstrapStores => ({
 });
 
 const resolveBootstrapSelection = (): BootstrapSelection => {
+  const routeSelection = resolvePlayRouteSelection();
+  if (routeSelection) {
+    return routeSelection;
+  }
+
   const currentWorld = getActiveWorld();
   return {
     chain: currentWorld?.chain ?? null,
@@ -167,7 +195,8 @@ const resetBootstrapForSelectionChange = (selection: BootstrapSelection) => {
 };
 
 const resolveBootstrapWorldContext = async (): Promise<BootstrapWorldContext> => {
-  const chain = resolveChain(env.VITE_PUBLIC_CHAIN! as Chain);
+  const routeSelection = resolvePlayRouteSelection();
+  const chain = routeSelection?.chain ?? resolveChain(env.VITE_PUBLIC_CHAIN! as Chain);
   const profile = await resolveBootstrapWorldProfile(chain);
 
   return {
@@ -196,7 +225,10 @@ const resolveWorldProfileFromPath = async (chain: Chain): Promise<WorldProfile |
   }
 
   try {
-    return await buildWorldProfile(chain, pathWorld);
+    const profile = await buildWorldProfile(chain, pathWorld);
+    setSelectedChain(profile.chain);
+    setActiveWorldName(profile.name);
+    return profile;
   } catch (error) {
     console.error("[bootstrap] Failed to apply world from URL", error);
     return null;

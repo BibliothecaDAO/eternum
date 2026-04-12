@@ -82,6 +82,13 @@ describe("GameLoadingOverlay", () => {
   });
 
   it("opens player first load on the world map while selecting the first synced realm", async () => {
+    useLocationMock.mockReturnValue({
+      pathname: "/play/sepolia/aurora-blitz/hex",
+      search: "",
+      hash: "",
+      state: null,
+      key: "test",
+    });
     usePlayerStructuresMock.mockReturnValue([
       {
         entityId: 77,
@@ -97,8 +104,30 @@ describe("GameLoadingOverlay", () => {
       spectator: false,
       worldMapPosition: { col: 4, row: 9 },
     });
-    expect(navigateMock).toHaveBeenCalledWith("/play/map?col=4&row=9");
+    expect(navigateMock).toHaveBeenCalledWith("/play/sepolia/aurora-blitz/map?col=4&row=9");
     expect(container.textContent).toContain("Entering the Realm");
     expect(container.textContent).toContain("Assembling the known world");
+  });
+
+  it("does not redirect away from a canonical world map deep link once player structures sync", async () => {
+    useLocationMock.mockReturnValue({
+      pathname: "/play/sepolia/aurora-blitz/map",
+      search: "?col=12&row=34",
+      hash: "",
+      state: null,
+      key: "test",
+    });
+    usePlayerStructuresMock.mockReturnValue([
+      {
+        entityId: 77,
+        position: { x: 4, y: 9 },
+      },
+    ]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 });

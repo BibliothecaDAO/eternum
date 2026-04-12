@@ -9,7 +9,7 @@ function readSource(relativePath: string): string {
 }
 
 describe("Stage 5: removal visual hide", () => {
-  it("scheduleArmyRemoval calls hideArmyVisual before scheduling timeout", () => {
+  it("scheduleArmyRemoval only hides armies immediately when no pending move is keeping the source visual alive", () => {
     const src = readSource("worldmap.tsx");
 
     // Find the method definition (private scheduleArmyRemoval)
@@ -18,17 +18,11 @@ describe("Stage 5: removal visual hide", () => {
 
     const methodBody = src.slice(methodStart, methodStart + 2000);
 
-    const metaSetPos = methodBody.indexOf("pendingArmyRemovalMeta.set(");
-    const hideVisualPos = methodBody.indexOf("hideArmyVisual(");
-    const schedulePos = methodBody.indexOf("const schedule =");
-
-    expect(metaSetPos).toBeGreaterThan(-1);
-    expect(hideVisualPos).toBeGreaterThan(-1);
-    expect(schedulePos).toBeGreaterThan(-1);
-
-    // hideArmyVisual must appear after pendingArmyRemovalMeta.set and before const schedule
-    expect(hideVisualPos).toBeGreaterThan(metaSetPos);
-    expect(hideVisualPos).toBeLessThan(schedulePos);
+    expect(methodBody).toContain(
+      'const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);',
+    );
+    expect(methodBody).toContain("if (!hasPendingMovement) {");
+    expect(methodBody).toContain("this.armyManager.hideArmyVisual(entityId);");
   });
 
   it("hideArmyVisual is a public method on ArmyManager", () => {

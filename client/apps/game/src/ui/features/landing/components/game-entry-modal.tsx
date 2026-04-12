@@ -28,6 +28,7 @@ import { useNavigate } from "react-router-dom";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
+import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -814,6 +815,7 @@ interface GameEntryModalProps {
   worldName: string;
   chain: Chain;
   isSpectateMode?: boolean;
+  autoSettleEnabled?: boolean;
   /** Eternum entry intent: direct play or settlement flow */
   eternumEntryIntent?: "play" | "settle";
   /** If true, skip settlement and just forge hyperstructures, then close */
@@ -2902,6 +2904,7 @@ export const GameEntryModal = ({
   worldName,
   chain,
   isSpectateMode = false,
+  autoSettleEnabled = false,
   eternumEntryIntent = "play",
   isForgeMode = false,
   numHyperstructuresLeft: initialNumHyperstructuresLeft,
@@ -2911,6 +2914,20 @@ export const GameEntryModal = ({
   const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
   const { usernameFelt } = useUsername();
+  const markOpening = useAutoSettleStore((state) => state.markOpening);
+  const markSettling = useAutoSettleStore((state) => state.markSettling);
+  const markCompleted = useAutoSettleStore((state) => state.markCompleted);
+  const markFailed = useAutoSettleStore((state) => state.markFailed);
+  const setAutoSettleEnabled = useAutoSettleStore((state) => state.setEnabled);
+  const autoSettleAttemptedRef = useRef(false);
+  const autoSettleEntryKey = useMemo(() => {
+    if (!account?.address) return null;
+    return createAutoSettleEntryKey({
+      chain,
+      worldName,
+      walletAddress: account.address,
+    });
+  }, [account?.address, chain, worldName]);
   const playerFeltAddress = useMemo(() => {
     if (!account?.address) return null;
     try {
@@ -4423,34 +4440,22 @@ export const GameEntryModal = ({
     uiStore.setShowBlankOverlay(true);
     markGameEntryMilestone("enter-game-started");
 
-    if (isSpectateMode) {
-      const directEntryTarget = resolveGameEntryTarget({
-        structureEntityId: uiStore.structureEntityId,
-        worldMapReturnPosition: uiStore.worldMapReturnPosition,
-        isSpectateMode: true,
-      });
-
-      if (directEntryTarget) {
-        uiStore.setStructureEntityId(directEntryTarget.structureEntityId, {
-          spectator: directEntryTarget.spectator,
-          worldMapPosition: directEntryTarget.worldMapPosition,
-        });
-
-        navigate(directEntryTarget.url);
-        window.dispatchEvent(new Event("urlChanged"));
-        return;
-      }
-    }
-
-    const setStructureEntityId = uiStore.setStructureEntityId;
-    setStructureEntityId(0, {
-      spectator: isSpectateMode,
+    const entryTarget = resolveGameEntryTarget({
+      chain,
+      worldName,
+      structureEntityId: uiStore.structureEntityId,
+      worldMapReturnPosition: uiStore.worldMapReturnPosition,
+      isSpectateMode,
     });
 
-    const url = isSpectateMode ? `/play/map?col=0&row=0&spectate=true` : `/play/hex?col=0&row=0`;
-    navigate(url);
+    uiStore.setStructureEntityId(entryTarget.structureEntityId, {
+      spectator: entryTarget.spectator,
+      worldMapPosition: entryTarget.worldMapPosition ?? undefined,
+    });
+
+    navigate(entryTarget.url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [navigate, isSpectateMode]);
+  }, [chain, navigate, isSpectateMode, worldName]);
 
   const handleSeasonSettle = useCallback(async () => {
     if (!account?.address) return;
@@ -4847,6 +4852,9 @@ export const GameEntryModal = ({
     if (!setupResult || !account) return;
 
     setIsSettling(true);
+    if (autoSettleEnabled && autoSettleEntryKey) {
+      markSettling(autoSettleEntryKey, Date.now());
+    }
 
     try {
       const { systemCalls } = setupResult;
@@ -4911,6 +4919,9 @@ export const GameEntryModal = ({
       debugLog(worldName, "Settlement complete!");
       setSettleStage("done");
       setNeedsSettlement(false);
+      if (autoSettleEnabled && autoSettleEntryKey) {
+        markCompleted(autoSettleEntryKey);
+      }
 
       // Auto-enter game after successful settlement
       setTimeout(() => {
@@ -4919,20 +4930,45 @@ export const GameEntryModal = ({
     } catch (error) {
       debugLog(worldName, "Settlement failed:", error);
       setSettleStage("error");
+      if (autoSettleEnabled && autoSettleEntryKey) {
+        const message = error instanceof Error ? error.message : "Settlement failed";
+        markFailed(autoSettleEntryKey, message);
+      }
     } finally {
       setIsSettling(false);
     }
   }, [
+    autoSettleEnabled,
+    autoSettleEntryKey,
     setupResult,
     account,
     isBlitzMode,
     handleEnterGame,
+    markCompleted,
+    markFailed,
+    markSettling,
     worldName,
     readSettlementSnapshot,
     syncSettlementStateFromSnapshot,
     waitForSettlementTarget,
     waitForSubmittedTransaction,
   ]);
+
+  useEffect(() => {
+    if (!isOpen || !autoSettleEnabled || !autoSettleEntryKey) return;
+
+    autoSettleAttemptedRef.current = false;
+    markOpening(autoSettleEntryKey, Date.now());
+  }, [autoSettleEnabled, autoSettleEntryKey, isOpen, markOpening]);
+
+  useEffect(() => {
+    if (!autoSettleEnabled || phase !== "settlement" || isSettling || autoSettleAttemptedRef.current) {
+      return;
+    }
+
+    autoSettleAttemptedRef.current = true;
+    void handleSettle();
+  }, [autoSettleEnabled, handleSettle, isSettling, phase]);
 
   // Forge hyperstructures handler - creates new hyperstructures during registration period
   const handleForgeHyperstructures = useCallback(async () => {
@@ -5091,13 +5127,16 @@ export const GameEntryModal = ({
 
   const handleClose = () => {
     debugLog(worldName, "Close button clicked");
+    if (autoSettleEnabled && autoSettleEntryKey) {
+      setAutoSettleEnabled(autoSettleEntryKey, false);
+    }
     onClose();
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       debugLog(worldName, "Backdrop clicked");
-      onClose();
+      handleClose();
     }
   };
 

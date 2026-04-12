@@ -1,5 +1,6 @@
 import { Position } from "@bibliothecadao/eternum";
 import { getGameModeId } from "@/config/game-modes";
+import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 
 import { Structure } from "@bibliothecadao/types";
 import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
@@ -14,17 +15,28 @@ import { SceneName } from "../types";
 const isFastTravelEnabled = (): boolean => getGameModeId() !== "blitz";
 
 function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName): string {
-  const url = new Position({ x: col, y: row });
+  const position = new Position({ x: col, y: row });
+  const playRoute = parsePlayRoute(window.location);
+
+  if (playRoute) {
+    const normalized = position.getNormalized();
+    return buildPlayHref({
+      ...playRoute,
+      scene: targetScene,
+      col: normalized.x,
+      row: normalized.y,
+    });
+  }
 
   if (targetScene === SceneName.Hexception) {
-    return url.toHexLocationUrl();
+    return `/play/hex?col=${col}&row=${row}`;
   }
 
   if (targetScene === SceneName.FastTravel) {
-    return `/${SceneName.FastTravel}?col=${col}&row=${row}`;
+    return `/play/${SceneName.FastTravel}?col=${col}&row=${row}`;
   }
 
-  return url.toMapLocationUrl();
+  return `/play/map?col=${col}&row=${row}`;
 }
 
 function dispatchSceneNavigation(navigationUrl: string): void {
@@ -148,6 +160,7 @@ function navigateOutOfFastTravelSpire(
 export function toggleMapHexView() {
   const currentUrl = new URL(window.location.href);
   const currentPath = currentUrl.pathname;
+  const playRoute = parsePlayRoute(window.location);
 
   // Get current coordinates from URL params
   const col = currentUrl.searchParams.get("col");
@@ -166,6 +179,21 @@ export function toggleMapHexView() {
     newPath = "/hex";
   } else {
     console.warn("Current path is neither /hex nor /map, cannot toggle");
+    return;
+  }
+
+  if (playRoute) {
+    const nextUrl = buildPlayHref({
+      ...playRoute,
+      scene: currentPath.includes("/hex") ? "map" : "hex",
+      col: Number(col),
+      row: Number(row),
+    });
+
+    window.history.pushState({}, "", nextUrl);
+    window.dispatchEvent(new Event("urlChanged"));
+
+    console.log(`Toggled view from ${currentPath} to ${nextUrl}`);
     return;
   }
 

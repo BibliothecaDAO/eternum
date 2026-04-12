@@ -4,7 +4,12 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { sqlApi } from "@/services/api";
-import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
+import {
+  MAP_DATA_REFRESH_INTERVAL,
+  MapDataStore,
+  recordArmyMovementLatencyPhase,
+  tileOptToTile,
+} from "@bibliothecadao/eternum";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
@@ -42,6 +47,66 @@ export const cancelEntityStreamSubscription = () => {
     entityStreamSubscription = null;
   }
 };
+
+function toTraceBigInt(value: unknown): bigint | null {
+  if (typeof value === "bigint") {
+    return value;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return BigInt(Math.trunc(value));
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    try {
+      return BigInt(value);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function recordTileOptStreamTrace(data: ToriiEntity): void {
+  const tileOptModel = (data.models as Record<string, unknown>)["s1_eternum-TileOpt"];
+  if (!tileOptModel || typeof tileOptModel !== "object") {
+    return;
+  }
+
+  const tileOptRecord = tileOptModel as Record<string, unknown>;
+  const tileData = toTraceBigInt(tileOptRecord.data);
+  if (tileData === null) {
+    return;
+  }
+
+  try {
+    const tile = tileOptToTile({
+      alt: Boolean(tileOptRecord.alt),
+      col: Number(tileOptRecord.col ?? 0),
+      row: Number(tileOptRecord.row ?? 0),
+      data: tileData,
+    });
+
+    recordArmyMovementLatencyPhase({
+      phase: "tileopt_stream_received",
+      source: "torii_sync",
+      entityId: typeof tile.occupier_id === "number" ? tile.occupier_id : undefined,
+      tileEntityKey: data.hashed_keys,
+      details: {
+        col: tile.col,
+        row: tile.row,
+        occupierType: tile.occupier_type,
+      },
+    });
+  } catch {
+    recordArmyMovementLatencyPhase({
+      phase: "tileopt_stream_received",
+      source: "torii_sync",
+      tileEntityKey: data.hashed_keys,
+    });
+  }
+}
 
 const GLOBAL_NON_SPATIAL_MODELS: string[] = [
   // Events
@@ -278,6 +343,7 @@ export const syncEntitiesDebounced = async (
       createEntitySubscription: () =>
         client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
           if (logging) console.log("Entity updated", data);
+          recordTileOptStreamTrace(data);
           queueUpdate(data, "entity");
         }),
       createEventSubscription: () =>
