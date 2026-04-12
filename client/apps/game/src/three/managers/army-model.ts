@@ -327,6 +327,7 @@ export class ArmyModel {
 
   private createModelData(gltf: any): ModelData {
     const group = new Group();
+    const sourceScene = this.createRenderableSourceScene(gltf.scene);
     const instancedMeshes: AnimatedInstancedMesh[] = [];
     const baseMeshes: Mesh[] = [];
 
@@ -350,6 +351,7 @@ export class ArmyModel {
 
     return {
       group,
+      sourceScene,
       instancedMeshes,
       contactShadowMesh,
       contactShadowScale,
@@ -366,6 +368,26 @@ export class ArmyModel {
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
     };
+  }
+
+  private createRenderableSourceScene(scene: Object3D): Object3D {
+    const template = new Group();
+    scene.updateMatrixWorld(true);
+    this.dummyMatrix.copy(scene.matrixWorld).invert();
+
+    scene.traverse((child: Object3D) => {
+      if (!(child instanceof Mesh)) {
+        return;
+      }
+
+      const clone = child.clone();
+      clone.raycast = () => {};
+      this.contactShadowMatrix.copy(this.dummyMatrix).multiply(child.matrixWorld);
+      this.contactShadowMatrix.decompose(clone.position, clone.quaternion, clone.scale);
+      template.add(clone);
+    });
+
+    return template;
   }
 
   private computeContactShadowScale(gltf: any): number {

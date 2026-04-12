@@ -23,6 +23,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Arrival Ghost Moves",
+    description:
+      "Local army moves now leave a ghosted unit at the destination while the world update catches up, so moves stay readable and the real unit can absorb into place on arrival instead of disappearing into a dead gap.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Smoother Army Move FX",
+    description:
+      "Army move effects now stay visible until the rendered unit actually starts and finishes its travel, so long chunk-sync updates no longer make movement look stalled or broken.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
     title: "Faster Play Asset Warmup",
     description:
       "Shared play assets now start warming from the dashboard so common world models and textures are more likely to be ready before you enter a game.",

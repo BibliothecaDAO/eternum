@@ -23,6 +23,8 @@ interface FXManagerOptions {
   capabilities?: RendererFxCapabilities;
 }
 
+const buildSharedFxTexturePath = (fileName: string): string => `/textures/${fileName}`;
+
 export class FXManager {
   private readonly backend: WorldFxBackend;
   private readonly defaultSize: number;
@@ -171,7 +173,7 @@ export class FXManager {
 
         return true;
       },
-      textureUrl: "textures/skull.png",
+      textureUrl: buildSharedFxTexturePath("skull.png"),
     });
 
     this.registerFX("compass", {
@@ -180,7 +182,7 @@ export class FXManager {
         fx.setRotation(t * 2);
         return true;
       },
-      textureUrl: "textures/compass.png",
+      textureUrl: buildSharedFxTexturePath("compass.png"),
     });
 
     this.registerFX("travel", {
@@ -196,11 +198,11 @@ export class FXManager {
         return true;
       },
       isInfinite: true,
-      textureUrl: "textures/travel.png",
+      textureUrl: buildSharedFxTexturePath("travel.png"),
     });
 
     this.registerFX("attack", {
-      textureUrl: "textures/attack.png",
+      textureUrl: buildSharedFxTexturePath("attack.png"),
       animate: (fx, t) => {
         const fadeIn = Math.min(t / 0.25, 1);
         fx.setOpacity(0.78 * fadeIn);
@@ -213,7 +215,7 @@ export class FXManager {
     });
 
     this.registerFX("defense", {
-      textureUrl: "textures/defense.png",
+      textureUrl: buildSharedFxTexturePath("defense.png"),
       animate: (fx, t) => {
         const fadeIn = Math.min(t / 0.25, 1);
         fx.setOpacity(0.72 * fadeIn);

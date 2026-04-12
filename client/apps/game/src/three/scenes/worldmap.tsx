@@ -96,6 +96,7 @@ import { playerCosmeticsStore, preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
+import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -181,7 +182,18 @@ import {
   shouldClearPendingCreateArmyEffect,
 } from "./worldmap-pending-action-effect-policy";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
-import { resolveExploreCompletionPendingClearPlan, type TravelEffectType } from "./worldmap-travel-effect-policy";
+import {
+  resolveArrivalGhostVisualStyle,
+  shouldCreatePredictiveArrivalGhost,
+  shouldHideSourceArmyOnTileRemoval,
+  shouldResolveArrivalGhost,
+} from "../managers/arrival-ghost-policy";
+import {
+  resolveExploreCompletionPendingClearPlan,
+  shouldCleanupTrackedTravelEffectOnPendingClear,
+  type PendingArmyMovementEffectClearReason,
+  type TravelEffectType,
+} from "./worldmap-travel-effect-policy";
 import { findSupersededArmyRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
@@ -871,6 +883,7 @@ export default class WorldmapScene extends WarpTravel {
   private deferredChunkRemovals: Map<ID, { reason: "tile" | "zero"; scheduledAt: number }> = new Map();
 
   private fxManager!: FXManager;
+  private arrivalGhostManager!: ArrivalGhostManager;
   private resourceFXManager!: ResourceFXManager;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
@@ -993,6 +1006,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
         this.clearPendingArmyMovement(plan.entityId);
+        this.arrivalGhostManager?.clearArrivalGhost(plan.entityId, "tx_failed");
       }
       this.pendingArmyMovementTxMap.delete(txHash);
     };
@@ -1018,6 +1032,10 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
     );
+    this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
+      chunkStride: this.chunkSize,
+      renderChunkSize: this.renderChunkSize,
+    });
 
     installWorldmapDebugHooks(window, {
       testMaterialSharing: () => this.armyManager.logMaterialSharingStats(),
@@ -2242,6 +2260,7 @@ export default class WorldmapScene extends WarpTravel {
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
+      const selectedArmy = this.armyManager.getArmy(selectedEntityId);
       playUnitCommandSoundForWorldmapAction(actionType);
 
       // Get the target position for the effect
@@ -2283,6 +2302,7 @@ export default class WorldmapScene extends WarpTravel {
         );
 
         let cleaned = false;
+        let unsubscribeFromMovementComplete: (() => void) | undefined;
         const effectStartedAtMs = performance.now();
         let delayedCleanupTimeout: ReturnType<typeof setTimeout> | undefined;
         let maxLifetimeTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -2299,6 +2319,8 @@ export default class WorldmapScene extends WarpTravel {
           }
           end();
           this.travelEffects.delete(key);
+          unsubscribeFromMovementComplete?.();
+          unsubscribeFromMovementComplete = undefined;
 
           const tracked = this.travelEffectsByEntity.get(selectedEntityId);
           if (tracked?.key === key) {
@@ -2327,9 +2349,35 @@ export default class WorldmapScene extends WarpTravel {
 
         // Store the cleanup function with the hex coordinates as key
         this.travelEffects.set(key, cleanup);
+        if (effectType === "travel") {
+          unsubscribeFromMovementComplete = this.armyManager.onMovementComplete(selectedEntityId, cleanup);
+        }
 
         this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup, effectType });
         maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
+      }
+
+      if (
+        shouldCreatePredictiveArrivalGhost({
+          hasTargetHex: true,
+          isLocalArmy: selectedArmy?.isMine ?? false,
+          isTravelAction,
+        })
+      ) {
+        const ghostSource = this.armyManager.getArrivalGhostSourceSnapshot(selectedEntityId);
+        if (ghostSource) {
+          this.arrivalGhostManager.upsertLocalArrivalGhost({
+            entityId: selectedEntityId,
+            hexCoords: {
+              col: targetHex.col - FELT_CENTER(),
+              row: targetHex.row - FELT_CENTER(),
+            },
+            sourceScene: ghostSource.sourceScene,
+            visualStyle: resolveArrivalGhostVisualStyle({
+              armyColor: ghostSource.armyColor,
+            }),
+          });
+        }
       }
 
       // Mark army as having pending movement transaction
@@ -2352,6 +2400,7 @@ export default class WorldmapScene extends WarpTravel {
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
           this.clearPendingArmyMovement(selectedEntityId);
+          this.arrivalGhostManager.clearArrivalGhost(selectedEntityId, "tx_failed");
           cleanup();
           console.error("Army movement failed:", e);
         });
@@ -2519,7 +2568,10 @@ export default class WorldmapScene extends WarpTravel {
     this.updateStructureOwnershipPulses(selectedEntityId, extraHexes);
   }
 
-  private clearPendingArmyMovement(entityId: ID): void {
+  private clearPendingArmyMovement(
+    entityId: ID,
+    reason: PendingArmyMovementEffectClearReason = "cleanup_requested",
+  ): void {
     this.pendingArmyMovements.delete(entityId);
     this.pendingArmyMovementStartedAt.delete(entityId);
 
@@ -2536,9 +2588,10 @@ export default class WorldmapScene extends WarpTravel {
       }
     }
 
-    // Clear any lingering movement fx when pending state is cleared outside
-    // of normal movement-start handling (e.g., stale timeout).
-    this.travelEffectsByEntity.get(entityId)?.cleanup();
+    const trackedEffect = this.travelEffectsByEntity.get(entityId);
+    if (shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason })) {
+      trackedEffect.cleanup();
+    }
   }
 
   private markPendingArmyMovement(entityId: ID): void {
@@ -2755,6 +2808,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       this.clearPendingArmyMovement(entityId);
+      this.arrivalGhostManager.clearArrivalGhost(entityId, "stale_timeout");
       if (fallbackPlan.shouldRequestChunkRefresh) {
         this.requestChunkRefresh(true);
       }
@@ -2784,6 +2838,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (selectionPlan.shouldClearPendingMovement) {
       this.clearPendingArmyMovement(selectedEntityId);
+      this.arrivalGhostManager.clearArrivalGhost(selectedEntityId, "stale_timeout");
     }
 
     if (selectionPlan.shouldRequestChunkRefresh) {
@@ -3432,6 +3487,7 @@ export default class WorldmapScene extends WarpTravel {
   public deleteArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
     const { playDefeatFx = true } = options;
     this.cancelPendingArmyRemoval(entityId);
+    this.arrivalGhostManager.clearArrivalGhost(entityId, "army_removed");
     this.armyManager.removeArmy(entityId, { playDefeatFx });
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {
@@ -3518,9 +3574,17 @@ export default class WorldmapScene extends WarpTravel {
       position: removalPosition,
     });
 
-    // Immediately hide the army visually so it doesn't render at a stale
-    // position during the deferred removal window
-    this.armyManager.hideArmyVisual(entityId);
+    // Preserve the source visual while a move is still pending. Torii can emit
+    // the old-tile removal before the destination tile update, and hiding here
+    // creates a dead zone where the army vanishes until the add catches up.
+    if (
+      shouldHideSourceArmyOnTileRemoval({
+        hasPendingMovement,
+        reason,
+      })
+    ) {
+      this.armyManager.hideArmyVisual(entityId);
+    }
 
     const schedule = (delay: number) => {
       const timeout = setTimeout(() => {
@@ -3736,14 +3800,9 @@ export default class WorldmapScene extends WarpTravel {
 
     const movedToDifferentHex = !!oldPos && (oldPos.col !== newPos.col || oldPos.row !== newPos.row);
 
-    // End travel/explore FX as soon as the army starts moving (first onchain position change).
-    if (movedToDifferentHex) {
-      this.travelEffectsByEntity.get(entityId)?.cleanup();
-    }
-
     // Remove from pending movements only after onchain position change.
     if (movedToDifferentHex && this.pendingArmyMovements.has(entityId)) {
-      this.clearPendingArmyMovement(entityId);
+      this.clearPendingArmyMovement(entityId, "movement_started");
     }
   }
 
@@ -6985,11 +7044,29 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private resolveRenderableArrivalGhosts(): void {
+    this.arrivalGhostManager.setCurrentChunk(this.currentChunk);
+
+    this.arrivalGhostManager.getTrackedEntityIds().forEach((entityId) => {
+      if (
+        shouldResolveArrivalGhost({
+          hasGhost: this.arrivalGhostManager.hasArrivalGhost(entityId),
+          hasPendingMovement: this.pendingArmyMovements.has(entityId),
+          isArmyRenderableInCurrentChunk: this.armyManager.isArmyRenderableInCurrentChunk(entityId),
+        })
+      ) {
+        this.arrivalGhostManager.resolveArrivalGhost(entityId);
+      }
+    });
+  }
+
   update(deltaTime: number) {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
     this.armyManager.update(deltaTime, animationContext);
+    this.resolveRenderableArrivalGhosts();
+    this.arrivalGhostManager.update(deltaTime);
     this.fxManager.update(deltaTime);
     this.resourceFXManager.update(deltaTime);
     this.selectionPulseManager.update(deltaTime);
@@ -7487,6 +7564,7 @@ export default class WorldmapScene extends WarpTravel {
 
     destroyWorldmapOwnedManagers({
       armyManager: this.armyManager,
+      arrivalGhostManager: this.arrivalGhostManager,
       structureManager: this.structureManager,
       chestManager: this.chestManager,
       fxManager: this.fxManager,

@@ -82,6 +82,7 @@ export interface AnimatedInstancedMesh extends InstancedMesh {
 
 export interface ModelData {
   group: Group;
+  sourceScene: Object3D;
   instancedMeshes: AnimatedInstancedMesh[];
   contactShadowMesh?: InstancedMesh;
   contactShadowScale?: number;

@@ -1973,6 +1973,32 @@ export class ArmyManager {
     return this.armies.get(entityId);
   }
 
+  public getArrivalGhostSourceSnapshot(entityId: ID): { armyColor: string; sourceScene: Object3D } | null {
+    const army = this.armies.get(entityId);
+    if (!army) {
+      return null;
+    }
+
+    const numericEntityId = this.toNumericId(entityId);
+    const modelData = this.armyModel.getModelForEntity(numericEntityId);
+    if (!modelData) {
+      return null;
+    }
+
+    return {
+      armyColor: army.color,
+      sourceScene: modelData.sourceScene,
+    };
+  }
+
+  public isArmyRenderableInCurrentChunk(entityId: ID): boolean {
+    if (this.suppressedArmies.has(entityId)) {
+      return false;
+    }
+
+    return this.visibleArmyIndices.has(entityId);
+  }
+
   public syncAttachedArmiesOwnerForStructure(params: {
     structureId: ID;
     ownerAddress: bigint;
