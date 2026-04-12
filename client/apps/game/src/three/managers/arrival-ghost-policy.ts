@@ -24,10 +24,10 @@ export function shouldCreatePredictiveArrivalGhost(input: {
 }
 
 export function shouldHideSourceArmyOnTileRemoval(input: {
-  hasPendingMovement: boolean;
+  hasMovementInFlight: boolean;
   reason: "tile" | "zero";
 }): boolean {
-  return input.reason !== "tile" || !input.hasPendingMovement;
+  return input.reason !== "tile" || !input.hasMovementInFlight;
 }
 
 export function resolveArrivalGhostVisualStyle(input: { armyColor: string }): ArrivalGhostVisualStyle {

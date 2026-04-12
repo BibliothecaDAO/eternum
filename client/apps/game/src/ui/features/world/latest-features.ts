@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-13",
+    title: "Settled Army Render Recovery",
+    description:
+      "Armies now refresh their world-map render bounds when movement fully settles, so multi-army moves no longer disappear at the destination until a chunk refresh happens.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-12",
     title: "Cleaner Game Entry Handoff",
     description:
