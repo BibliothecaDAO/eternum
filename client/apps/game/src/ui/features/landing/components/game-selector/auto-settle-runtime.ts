@@ -14,7 +14,7 @@ type AutoSettleRuntimePhase =
 export interface AutoSettleRuntimeInput {
   enabled: boolean;
   persistedStatus: AutoSettleStatus;
-  settleAtSec: number;
+  triggerAtSec: number;
   nowSec: number;
   hasConnectedWallet: boolean;
   hasCompatibleNetwork: boolean;
@@ -30,10 +30,18 @@ interface AutoSettleRuntimeState {
 const PREWARM_WINDOW_SECONDS = 30;
 const REFRESH_WINDOW_SECONDS = 5;
 
+export const resolveAutoSettleTriggerAtSec = ({
+  startSettlingAt,
+  startMainAt,
+}: {
+  startSettlingAt: number | null;
+  startMainAt: number | null;
+}): number | null => startMainAt ?? startSettlingAt;
+
 export const resolveAutoSettleRuntimeState = ({
   enabled,
   persistedStatus,
-  settleAtSec,
+  triggerAtSec,
   nowSec,
   hasConnectedWallet,
   hasCompatibleNetwork,
@@ -83,9 +91,9 @@ export const resolveAutoSettleRuntimeState = ({
     };
   }
 
-  const isDue = nowSec >= settleAtSec;
-  const inPrewarmWindow = nowSec >= settleAtSec - PREWARM_WINDOW_SECONDS;
-  const inRefreshWindow = nowSec >= settleAtSec - REFRESH_WINDOW_SECONDS;
+  const isDue = nowSec >= triggerAtSec;
+  const inPrewarmWindow = nowSec >= triggerAtSec - PREWARM_WINDOW_SECONDS;
+  const inRefreshWindow = nowSec >= triggerAtSec - REFRESH_WINDOW_SECONDS;
 
   if (!hasConnectedWallet) {
     return {
@@ -147,11 +155,11 @@ const formatCountdown = (secondsLeft: number): string => {
 export const describeAutoSettleRuntimePhase = ({
   phase,
   nowSec,
-  settleAtSec,
+  triggerAtSec,
 }: {
   phase: AutoSettleRuntimePhase;
   nowSec: number;
-  settleAtSec: number;
+  triggerAtSec: number;
 }) => {
   switch (phase) {
     case "off":
@@ -162,12 +170,12 @@ export const describeAutoSettleRuntimePhase = ({
     case "armed":
       return {
         title: "Auto-settle on",
-        detail: `Settles in ${formatCountdown(settleAtSec - nowSec)}`,
+        detail: `Starts in ${formatCountdown(triggerAtSec - nowSec)}`,
       };
     case "prewarming":
       return {
         title: "Prewarming entry",
-        detail: `Settles in ${formatCountdown(settleAtSec - nowSec)}`,
+        detail: `Starts in ${formatCountdown(triggerAtSec - nowSec)}`,
       };
     case "paused-wallet":
       return {

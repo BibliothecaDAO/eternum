@@ -33,7 +33,11 @@ import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { primePlayEntryAssets, primePlayEntryRoute } from "@/game-entry-preload";
-import { describeAutoSettleRuntimePhase, resolveAutoSettleRuntimeState } from "./auto-settle-runtime";
+import {
+  describeAutoSettleRuntimePhase,
+  resolveAutoSettleRuntimeState,
+  resolveAutoSettleTriggerAtSec,
+} from "./auto-settle-runtime";
 import {
   createPendingNetworkAction,
   resolvePendingNetworkSwitchOutcome,
@@ -377,13 +381,16 @@ const GameCard = ({
   const upsertAutoSettleEntry = useAutoSettleStore((state) => state.upsertEntry);
   const setEnabled = useAutoSettleStore((state) => state.setEnabled);
   const showRegistered = game.isRegistered || registrationStage === "done";
-  const startSettlingAt = game.config?.startSettlingAt ?? null;
+  const autoSettleTriggerAt = resolveAutoSettleTriggerAtSec({
+    startSettlingAt: game.config?.startSettlingAt ?? null,
+    startMainAt: game.startMainAt,
+  });
   const canShowAutoSettleControl =
-    isBlitzMode && showRegistered && playerAddress !== null && startSettlingAt !== null && !isEnded;
+    isBlitzMode && showRegistered && playerAddress !== null && autoSettleTriggerAt !== null && !isEnded;
   const autoSettleRuntimeState = resolveAutoSettleRuntimeState({
     enabled: autoSettleEntry?.enabled ?? false,
     persistedStatus: autoSettleEntry?.status ?? "idle",
-    settleAtSec: startSettlingAt ?? 0,
+    triggerAtSec: autoSettleTriggerAt ?? 0,
     nowSec,
     hasConnectedWallet,
     hasCompatibleNetwork: canInteractOnChain(game.chain),
@@ -392,7 +399,7 @@ const GameCard = ({
     ? describeAutoSettleRuntimePhase({
         phase: autoSettleRuntimeState.phase,
         nowSec,
-        settleAtSec: startSettlingAt ?? 0,
+        triggerAtSec: autoSettleTriggerAt ?? 0,
       })
     : null;
   const autoSettleToggleDisabled =
@@ -468,7 +475,7 @@ const GameCard = ({
   );
 
   const handleAutoSettleToggle = useCallback(() => {
-    if (!autoSettleEntryKey || !startSettlingAt || !playerAddress) return;
+    if (!autoSettleEntryKey || !autoSettleTriggerAt || !playerAddress) return;
 
     if (!autoSettleEntry) {
       upsertAutoSettleEntry(autoSettleEntryKey, {
@@ -477,7 +484,7 @@ const GameCard = ({
         chain: game.chain,
         worldName: game.name,
         worldKey: game.worldKey,
-        settleAtSec: startSettlingAt,
+        triggerAtSec: autoSettleTriggerAt,
         armedAtMs: Date.now(),
         status: "armed",
         lastError: null,
@@ -495,7 +502,7 @@ const GameCard = ({
     game.worldKey,
     playerAddress,
     setEnabled,
-    startSettlingAt,
+    autoSettleTriggerAt,
     upsertAutoSettleEntry,
   ]);
 
@@ -511,14 +518,14 @@ const GameCard = ({
 
     if (autoSettleEntryKey && autoSettleEntry) {
       setEnabled(autoSettleEntryKey, true);
-    } else if (autoSettleEntryKey && startSettlingAt) {
+    } else if (autoSettleEntryKey && autoSettleTriggerAt) {
       upsertAutoSettleEntry(autoSettleEntryKey, {
         enabled: true,
         walletAddress: playerAddress!,
         chain: game.chain,
         worldName: game.name,
         worldKey: game.worldKey,
-        settleAtSec: startSettlingAt,
+        triggerAtSec: autoSettleTriggerAt,
         armedAtMs: Date.now(),
         status: "armed",
         lastError: null,
@@ -540,7 +547,7 @@ const GameCard = ({
     playerAddress,
     registrationStage,
     setEnabled,
-    startSettlingAt,
+    autoSettleTriggerAt,
     upsertAutoSettleEntry,
   ]);
 
@@ -1385,8 +1392,11 @@ export const UnifiedGameGrid = ({
     resolvedGames.forEach((game) => {
       if (game.config?.mode !== "blitz" || game.isRegistered !== true) return;
 
-      const settleAtSec = game.config?.startSettlingAt;
-      if (!settleAtSec) return;
+      const triggerAtSec = resolveAutoSettleTriggerAtSec({
+        startSettlingAt: game.config?.startSettlingAt ?? null,
+        startMainAt: game.startMainAt,
+      });
+      if (!triggerAtSec) return;
 
       const autoSettleEntryKey = createAutoSettleEntryKey({
         chain: game.chain,
@@ -1399,7 +1409,7 @@ export const UnifiedGameGrid = ({
       const runtimeState = resolveAutoSettleRuntimeState({
         enabled: autoSettleEntry.enabled,
         persistedStatus: autoSettleEntry.status,
-        settleAtSec,
+        triggerAtSec,
         nowSec,
         hasConnectedWallet: landingNetworkState.hasConnectedWallet,
         hasCompatibleNetwork: canInteractWithLandingChain(

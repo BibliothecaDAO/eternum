@@ -10,7 +10,7 @@ export interface AutoSettleEntryRecord {
   chain: Chain;
   worldName: string;
   worldKey: string;
-  settleAtSec: number;
+  triggerAtSec: number;
   armedAtMs: number;
   status: AutoSettleStatus;
   lastError: string | null;
@@ -70,6 +70,58 @@ const updateEntry = (
     ...entries,
     [key]: updater(current),
   };
+};
+
+const migrateAutoSettleEntries = (persistedState: unknown): Record<string, AutoSettleEntryRecord> => {
+  if (
+    typeof persistedState !== "object" ||
+    persistedState === null ||
+    !("entries" in persistedState) ||
+    typeof (persistedState as { entries?: unknown }).entries !== "object" ||
+    (persistedState as { entries?: unknown }).entries === null
+  ) {
+    return {};
+  }
+
+  const entries = (persistedState as { entries: Record<string, unknown> }).entries;
+
+  return Object.fromEntries(
+    Object.entries(entries).flatMap(([key, entry]) => {
+      if (typeof entry !== "object" || entry === null) {
+        return [];
+      }
+
+      const currentEntry = entry as AutoSettleEntryRecord & { settleAtSec?: unknown };
+      const triggerAtSec =
+        typeof currentEntry.triggerAtSec === "number"
+          ? currentEntry.triggerAtSec
+          : typeof currentEntry.settleAtSec === "number"
+            ? currentEntry.settleAtSec
+            : null;
+
+      if (triggerAtSec == null) {
+        return [];
+      }
+
+      return [
+        [
+          key,
+          {
+            enabled: currentEntry.enabled,
+            walletAddress: currentEntry.walletAddress,
+            chain: currentEntry.chain,
+            worldName: currentEntry.worldName,
+            worldKey: currentEntry.worldKey,
+            triggerAtSec,
+            armedAtMs: currentEntry.armedAtMs,
+            status: currentEntry.status,
+            lastError: currentEntry.lastError,
+            lastAttemptAtMs: currentEntry.lastAttemptAtMs,
+          } satisfies AutoSettleEntryRecord,
+        ],
+      ];
+    }),
+  );
 };
 
 export const useAutoSettleStore = create<AutoSettleStoreState>()(
@@ -140,9 +192,12 @@ export const useAutoSettleStore = create<AutoSettleStoreState>()(
     }),
     {
       name: AUTO_SETTLE_STORAGE_KEY,
-      version: 1,
+      version: 2,
       storage: createJSONStorage(createLocalStorage),
       partialize: (state) => ({ entries: state.entries }),
+      migrate: (persistedState) => ({
+        entries: migrateAutoSettleEntries(persistedState),
+      }),
     },
   ),
 );

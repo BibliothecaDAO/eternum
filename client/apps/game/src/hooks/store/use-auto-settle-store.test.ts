@@ -13,7 +13,7 @@ const baseEntry: AutoSettleEntryRecord = {
   chain: "mainnet",
   worldName: "aurora-blitz",
   worldKey: "mainnet:aurora-blitz",
-  settleAtSec: 1_234,
+  triggerAtSec: 1_234,
   armedAtMs: 100,
   status: "armed",
   lastError: null,

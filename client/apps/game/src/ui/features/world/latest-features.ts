@@ -23,6 +23,30 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "First Entry Handoff Fix",
+    description:
+      "First-time game entry now clears the world handoff overlay as soon as the world map is ready and idle, so the loading screen no longer waits forever after missing an early map-loading pulse.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Forge Session Preflight",
+    description:
+      "Forging Blitz hyperstructures now prepares the correct Cartridge session for the selected world before sending the transaction, so first-click forging opens session approval instead of stalling on a timeout.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Auto-Settle Start Guard",
+    description:
+      "Blitz auto-settle now waits for the actual game start before opening the entry flow, so registering on a dashboard card no longer drops you into onboarding before the match is ready.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
     title: "Expanded Play Music Loop",
     description:
       "The in-game music rotation now includes Monophonic Mixtape 14, giving standard matches and Blitz one more track in the active background loop.",

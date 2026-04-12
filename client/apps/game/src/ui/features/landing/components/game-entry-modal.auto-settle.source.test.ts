@@ -13,7 +13,8 @@ describe("Game entry modal auto-settle", () => {
     );
 
     expect(source).toContain("autoSettleEnabled?: boolean");
-    expect(source).toContain('if (!autoSettleEnabled || phase !== "settlement"');
+    expect(source).toContain("hasReachedBlitzAutoSettleStart");
+    expect(source).toContain("!hasReachedBlitzAutoSettleStart");
     expect(source).toContain("void handleSettle();");
     expect(source).toContain("markCompleted(autoSettleEntryKey)");
     expect(source).toContain("markFailed(autoSettleEntryKey");

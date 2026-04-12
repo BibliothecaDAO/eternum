@@ -10,16 +10,15 @@ import {
   getActiveWorld,
   isRpcUrlCompatibleForChain,
   normalizeRpcUrl,
-  patchManifestWithFactory,
   resolveChain,
   setActiveWorldName,
   setSelectedChain,
   type WorldProfile,
 } from "@/runtime/world";
+import { configureSelectedWorldDojoRuntime } from "@/runtime/world/dojo-runtime-config";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { buildWorldProfile } from "@/runtime/world/profile-builder";
-import { setSqlApiBaseUrl } from "@/services/api";
-import { Chain, getGameManifest } from "@contracts";
+import { Chain } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
 import { env, hasPublicNodeUrl } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
@@ -39,12 +38,6 @@ export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
 type BootstrapResult = SetupResult;
 const bootstrapSession = createBootstrapSession<BootstrapResult>();
-
-type MutableDojoConfig = typeof dojoConfig & {
-  toriiUrl?: string;
-  rpcUrl?: string;
-  manifest?: unknown;
-};
 
 /**
  * Get the cached setup result if bootstrap has already completed.
@@ -112,7 +105,10 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   console.log("[STARTING DOJO SETUP]");
   const stores = resolveBootstrapStores();
   const worldContext = await resolveBootstrapWorldContext();
-  configureDojoRuntime(worldContext);
+  configureSelectedWorldDojoRuntime({
+    chain: worldContext.chain,
+    profile: worldContext.profile,
+  });
   const setupResult = await runDojoSetup();
   await runInitialWorldSync(setupResult, stores);
   configureGameSystems(setupResult, worldContext.chain);
@@ -152,7 +148,6 @@ type BootstrapStores = {
 type BootstrapWorldContext = {
   chain: Chain;
   profile: WorldProfile;
-  toriiUrl: string;
 };
 
 const resolveBootstrapStores = (): BootstrapStores => ({
@@ -202,7 +197,6 @@ const resolveBootstrapWorldContext = async (): Promise<BootstrapWorldContext> =>
   return {
     chain,
     profile,
-    toriiUrl: resolveBootstrapToriiUrl(chain, profile),
   };
 };
 
@@ -293,32 +287,6 @@ const didWorldProfileRefreshChange = (previousProfile: WorldProfile, refreshedPr
     refreshedProfile.rpcUrl !== previousProfile.rpcUrl ||
     (previousProfile.chain !== undefined && refreshedProfile.chain !== previousProfile.chain)
   );
-};
-
-const configureDojoRuntime = ({ chain, profile, toriiUrl }: BootstrapWorldContext) => {
-  const mutableDojoConfig = dojoConfig as MutableDojoConfig;
-
-  mutableDojoConfig.toriiUrl = toriiUrl;
-  mutableDojoConfig.rpcUrl = resolveBootstrapRpcUrl(chain, profile);
-  mutableDojoConfig.manifest = patchManifestWithFactory(
-    getGameManifest(chain),
-    profile.worldAddress,
-    profile.contractsBySelector,
-  );
-
-  setSqlApiBaseUrl(`${toriiUrl}/sql`);
-};
-
-const resolveBootstrapToriiUrl = (chain: Chain, profile: WorldProfile): string => {
-  return chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
-};
-
-const resolveBootstrapRpcUrl = (chain: Chain, profile: WorldProfile): string => {
-  if (chain === "local") {
-    return env.VITE_PUBLIC_NODE_URL;
-  }
-
-  return profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
 };
 
 const runDojoSetup = async (): Promise<BootstrapResult> => {

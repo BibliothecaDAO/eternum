@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
+import { prepareControllerSessionForWorld } from "@/hooks/context/world-controller-session";
 import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -3384,6 +3385,8 @@ export const GameEntryModal = ({
   const seasonHasStarted = seasonStartAt != null && seasonStartAt <= nowSeconds;
   const seasonNotEnded = worldMeta?.endAt == null || worldMeta.endAt === 0 || nowSeconds <= worldMeta.endAt;
   const seasonTimingValid = seasonHasStarted && seasonNotEnded;
+  const hasReachedBlitzAutoSettleStart =
+    !isBlitzMode || !autoSettleEnabled || (worldMeta?.startMainAt != null && nowSeconds >= worldMeta.startMainAt);
   const spiresSettledCount = worldMeta?.spiresSettledCount ?? null;
   const spiresMaxCount = worldMeta?.spiresMaxCount ?? null;
   const spiresSettled =
@@ -4962,13 +4965,19 @@ export const GameEntryModal = ({
   }, [autoSettleEnabled, autoSettleEntryKey, isOpen, markOpening]);
 
   useEffect(() => {
-    if (!autoSettleEnabled || phase !== "settlement" || isSettling || autoSettleAttemptedRef.current) {
+    if (
+      !autoSettleEnabled ||
+      !hasReachedBlitzAutoSettleStart ||
+      phase !== "settlement" ||
+      isSettling ||
+      autoSettleAttemptedRef.current
+    ) {
       return;
     }
 
     autoSettleAttemptedRef.current = true;
     void handleSettle();
-  }, [autoSettleEnabled, handleSettle, isSettling, phase]);
+  }, [autoSettleEnabled, handleSettle, hasReachedBlitzAutoSettleStart, isSettling, phase]);
 
   // Forge hyperstructures handler - creates new hyperstructures during registration period
   const handleForgeHyperstructures = useCallback(async () => {
@@ -4997,6 +5006,13 @@ export const GameEntryModal = ({
       const batchSize = chain === "mainnet" ? 1 : 4;
       const hyperstructureCount = numHyperstructuresLeft > 0 ? Math.min(numHyperstructuresLeft, batchSize) : batchSize;
       const signer = account as unknown as Account;
+      const connector = useAccountStore.getState().connector;
+
+      await prepareControllerSessionForWorld({
+        connector,
+        chain,
+        worldName,
+      });
 
       const { env } = await import("../../../../../env");
       const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
@@ -5114,12 +5130,24 @@ export const GameEntryModal = ({
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
     debugLog(worldName, "Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
+    if (autoSettleEnabled && !hasReachedBlitzAutoSettleStart) {
+      return;
+    }
     const shouldAutoEnter = phase === "ready" && (!isEternumMode || eternumEntryIntent === "play");
     if (shouldAutoEnter) {
       debugLog(worldName, "Auto-entering game...");
       handleEnterGame();
     }
-  }, [phase, handleEnterGame, worldName, isSpectateMode, isEternumMode, eternumEntryIntent]);
+  }, [
+    autoSettleEnabled,
+    eternumEntryIntent,
+    handleEnterGame,
+    hasReachedBlitzAutoSettleStart,
+    isEternumMode,
+    isSpectateMode,
+    phase,
+    worldName,
+  ]);
 
   debugLog(worldName, "Render - isOpen:", isOpen, "phase:", phase, "bootstrapStatus:", bootstrapStatus);
 

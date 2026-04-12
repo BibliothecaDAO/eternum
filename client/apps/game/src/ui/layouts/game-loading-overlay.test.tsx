@@ -2,6 +2,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+
 const navigateMock = vi.fn();
 const setShowBlankOverlayMock = vi.fn();
 const setStructureEntityIdMock = vi.fn();
@@ -60,6 +62,7 @@ describe("GameLoadingOverlay", () => {
 
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    vi.useFakeTimers();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -78,6 +81,7 @@ describe("GameLoadingOverlay", () => {
       root.unmount();
     });
     container.remove();
+    vi.useRealTimers();
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
@@ -129,5 +133,34 @@ describe("GameLoadingOverlay", () => {
     });
 
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("dismisses once the world map scene is ready even if the overlay missed the initial loading edge", async () => {
+    useLocationMock.mockReturnValue({
+      pathname: "/play/sepolia/aurora-blitz/map",
+      search: "?col=12&row=34",
+      hash: "",
+      state: null,
+      key: "test",
+    });
+    uiStoreState.loadingStates = { [LoadingStateKey.Map]: false };
+    usePlayerStructuresMock.mockReturnValue([
+      {
+        entityId: 77,
+        position: { x: 4, y: 9 },
+      },
+    ]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event("worldmap:scene-ready"));
+      await Promise.resolve();
+      vi.runAllTimers();
+    });
+
+    expect(setShowBlankOverlayMock).toHaveBeenCalledWith(false);
   });
 });

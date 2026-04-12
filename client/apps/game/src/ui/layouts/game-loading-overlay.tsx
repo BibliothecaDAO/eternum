@@ -198,7 +198,7 @@ export const GameLoadingOverlay = () => {
       }
       setDidSafetyTimeout(false);
 
-      if (hasSeenMapLoading.current && !mapLoading) {
+      if (!mapLoading) {
         markWorldMapReady(0);
       }
     })();
@@ -226,7 +226,7 @@ export const GameLoadingOverlay = () => {
       hasSeenMapLoading.current = true;
     }
 
-    if (hasSeenMapLoading.current && !mapLoading && hasSeenWorldmapReady.current) {
+    if (hasSeenWorldmapReady.current && !mapLoading) {
       markGameEntryMilestone("worldmap-fetch-completed");
       markWorldMapReady(0);
     }
