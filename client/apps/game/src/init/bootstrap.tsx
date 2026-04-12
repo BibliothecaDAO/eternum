@@ -6,10 +6,7 @@ import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
 import { patchManifestWithFactory, applyWorldSelection, type WorldProfile } from "@/runtime/world";
-import {
-  resolveEntryContextCacheKey,
-  type ResolvedEntryContext,
-} from "@/game-entry/context";
+import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
 import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
@@ -25,6 +22,7 @@ import { NoAccountModal } from "../ui/layouts/no-account-modal";
 import { markGameEntryMilestone, recordGameEntryDuration } from "../ui/layouts/game-entry-timeline";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { createBootstrapSession, type BootstrapSelection } from "./bootstrap-session";
+import { resolveCachedEntrySessionForContext } from "./bootstrap-session-context";
 import { initializeGameRenderer } from "./game-renderer";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
@@ -62,7 +60,9 @@ export const getCachedBootstrappedEntrySession = (context?: ResolvedEntryContext
   }
 
   const trackedSelection = bootstrapSession.getTrackedSelection();
-  return trackedSelection.cacheKey === resolveEntryContextCacheKey(context) ? cachedSession : null;
+  return trackedSelection.cacheKey === resolveEntryContextCacheKey(context)
+    ? resolveCachedEntrySessionForContext(cachedSession, context)
+    : null;
 };
 
 const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSelection => {
