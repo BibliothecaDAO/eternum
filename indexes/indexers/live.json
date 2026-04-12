@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-11T05:42:07.576Z",
+  "updatedAt": "2026-04-12T07:47:09.688Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1189,6 +1189,19 @@
         "describedAt": "2026-04-11T05:42:07.576Z"
       },
       "updatedAt": "2026-04-11T05:42:07.576Z"
+    },
+    "bltz-nova-910": {
+      "gameName": "bltz-nova-910",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-nova-910/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-12T07:47:09.688Z"
+      },
+      "updatedAt": "2026-04-12T07:47:09.688Z"
     }
   }
 }
