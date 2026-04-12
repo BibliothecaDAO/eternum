@@ -5,7 +5,7 @@ import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import {
-  bootstrapGameForEntryContextWithLifecycle,
+  bootstrapGameForEntryContext,
   getCachedBootstrappedEntrySession,
   type BootstrappedEntrySession,
   type SetupResult,
@@ -22,7 +22,7 @@ export type BootstrapTask = {
   status: "pending" | "running" | "complete" | "error";
 };
 
-export const BOOTSTRAP_TASKS: BootstrapTask[] = [
+const BOOTSTRAP_TASKS: BootstrapTask[] = [
   { id: "world", label: "Selecting world", status: "pending" },
   { id: "manifest", label: "Loading game config", status: "pending" },
   { id: "dojo", label: "Connecting to world", status: "pending" },
@@ -180,7 +180,7 @@ export const useGameEntryBootstrapController = ({
     const runId = activeRunIdRef.current + 1;
     activeRunIdRef.current = runId;
 
-    const promise = bootstrapGameForEntryContextWithLifecycle(context, {
+    const promise = bootstrapGameForEntryContext(context, {
       onWorldSelectionStarted: () => {
         setTaskStatus("world", "running");
       },

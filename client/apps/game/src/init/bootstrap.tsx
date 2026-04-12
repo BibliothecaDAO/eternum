@@ -8,7 +8,6 @@ import { ReactNode } from "react";
 import { patchManifestWithFactory, applyWorldSelection, type WorldProfile } from "@/runtime/world";
 import {
   resolveEntryContextCacheKey,
-  resolveEntryContextFromPlayRoute,
   type ResolvedEntryContext,
 } from "@/game-entry/context";
 import { setSqlApiBaseUrl } from "@/services/api";
@@ -24,7 +23,6 @@ import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { NoAccountModal } from "../ui/layouts/no-account-modal";
 import { markGameEntryMilestone, recordGameEntryDuration } from "../ui/layouts/game-entry-timeline";
-import { redirectToLandingWorldSelection } from "../ui/features/world-selector";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { createBootstrapSession, type BootstrapSelection } from "./bootstrap-session";
 import { initializeGameRenderer } from "./game-renderer";
@@ -143,7 +141,7 @@ export const resetBootstrap = () => {
   resetBootstrapUiState();
 };
 
-export const bootstrapGameForEntryContextWithLifecycle = async (
+export const bootstrapGameForEntryContext = async (
   context: ResolvedEntryContext,
   lifecycle: BootstrapLifecycle = {},
 ): Promise<BootstrapResult> => {
@@ -176,28 +174,6 @@ export const bootstrapGameForEntryContextWithLifecycle = async (
     });
     throw error;
   }
-};
-
-export const bootstrapGameForEntryContext = async (context: ResolvedEntryContext): Promise<BootstrapResult> => {
-  return bootstrapGameForEntryContextWithLifecycle(context);
-};
-
-const resolveLegacyBootstrapEntryContext = (): ResolvedEntryContext => {
-  if (typeof window === "undefined") {
-    throw new Error("Cannot resolve the bootstrap entry context without a browser location.");
-  }
-
-  const context = resolveEntryContextFromPlayRoute(window.location);
-  if (!context) {
-    return redirectToLandingWorldSelection();
-  }
-
-  return context;
-};
-
-export const bootstrapGame = async (): Promise<SetupResult> => {
-  const session = await bootstrapGameForEntryContext(resolveLegacyBootstrapEntryContext());
-  return session.setupResult;
 };
 
 type BootstrapStores = {

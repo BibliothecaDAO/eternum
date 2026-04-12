@@ -1,6 +1,6 @@
 import type { Chain } from "@contracts";
 
-export type LandingPrimaryChain = "mainnet" | "slot";
+type LandingPrimaryChain = "mainnet" | "slot";
 export type LandingNetworkChain = LandingPrimaryChain;
 export type LandingNetworkStatus = "disconnected" | "detecting" | "matched" | "mismatched" | "unsupported";
 

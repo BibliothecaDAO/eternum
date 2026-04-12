@@ -105,15 +105,15 @@ export const preloadGameRouteModule = (): Promise<GameRouteModule> => {
   return gameRoutePreloadPromise;
 };
 
-export const primePlayEntryRoute = createPlayEntryRoutePrimer({
+const primePlayEntryRoute = createPlayEntryRoutePrimer({
   preloadGameRouteModule,
 });
 
-export const primePlayEntryAssets = createPlayEntryAssetPrimer({
+const primePlayEntryAssets = createPlayEntryAssetPrimer({
   prefetchPlayAssets: prefetchPlayEntryAssets,
 });
 
-export const primeDashboardPlayAssets = createDashboardPlayAssetPrimer({
+const primeDashboardPlayAssets = createDashboardPlayAssetPrimer({
   prefetchDashboardPlayAssets,
 });
 

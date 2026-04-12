@@ -9,7 +9,7 @@ import {
   type PlayScene,
 } from "@/play/navigation/play-route";
 
-export type LandingPrimaryChain = "mainnet" | "slot";
+type LandingPrimaryChain = "mainnet" | "slot";
 export type EntryIntent = "play" | "settle" | "spectate" | "forge";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
