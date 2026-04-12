@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24301646396-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-04-12T07:40:27.592Z",
-  "updatedAt": "2026-04-12T07:41:04.692Z",
+  "updatedAt": "2026-04-12T07:41:08.696Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-04-12T07:41:08.696Z"
     },
     {
       "id": "configure-world",
@@ -68,5 +69,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-nova-910.json",
     "worldAddress": "0x05e0547439bea4a87d47fed20d8a3e4c99e757711d0851e94d239c5d07ccdef4",
     "createGameTxHash": "0x3311a3797bcc550fd9460c0488fc47a397d3b893c355c05c42eac03fe9ca4d7"
+  },
+  "activeLease": {
+    "launchRequestId": "24301646396-1",
+    "workflowRunId": 24301646396,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-04-12T07:41:08.696Z",
+    "expiresAt": "2026-04-12T08:26:08.696Z"
   }
 }
