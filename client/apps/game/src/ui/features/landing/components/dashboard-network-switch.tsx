@@ -14,6 +14,8 @@ const resolveIndicatorTone = (status: LandingNetworkStatus) => {
       return "bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.45)]";
     case "mismatched":
       return "bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.4)]";
+    case "unsupported":
+      return "bg-rose-300 shadow-[0_0_10px_rgba(253,164,175,0.35)]";
     case "detecting":
       return "bg-sky-300 shadow-[0_0_10px_rgba(125,211,252,0.35)]";
     case "disconnected":
@@ -37,6 +39,10 @@ const resolveWalletStatusLabel = ({
     return "Detecting";
   }
 
+  if (status === "unsupported") {
+    return "Wallet Unsupported";
+  }
+
   return connectedChain ? `Wallet ${getChainLabel(connectedChain)}` : "Wallet Other";
 };
 
@@ -46,6 +52,8 @@ const resolveWalletStatusTone = (status: LandingNetworkStatus) => {
       return "text-emerald-200/85";
     case "mismatched":
       return "text-amber-200/90";
+    case "unsupported":
+      return "text-rose-200/90";
     case "detecting":
       return "text-sky-200/90";
     case "disconnected":

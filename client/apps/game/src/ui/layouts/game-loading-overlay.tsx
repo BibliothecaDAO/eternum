@@ -3,11 +3,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import { BootLoaderShell, useBootDocumentState } from "@/ui/modules/boot-loader";
+import { BootLoaderShell } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
+import type { BootstrapTask } from "@/game-entry/bootstrap-controller";
 import {
   getSceneWarmupProgress,
   resolveEntryOverlayPhase,
@@ -51,8 +51,6 @@ const isFiniteWorldMapPosition = (
  * Falls back to a safety timeout if neither signal fires.
  */
 export const GameLoadingOverlay = () => {
-  useBootDocumentState("app-loading");
-
   useEffect(() => {
     markGameEntryMilestone("overlay-mounted");
   }, []);

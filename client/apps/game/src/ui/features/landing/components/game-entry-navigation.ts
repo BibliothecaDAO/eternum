@@ -1,4 +1,5 @@
-import { buildPlayHref, type PlayScene } from "@/play/navigation/play-route";
+import { buildPlayRouteFromEntryContext } from "@/game-entry/context";
+import type { PlayScene } from "@/play/navigation/play-route";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import type { Chain } from "@contracts";
 
@@ -41,9 +42,15 @@ const buildCanonicalGameEntryUrl = ({
   worldMapPosition: WorldMapPosition;
   isSpectateMode: boolean;
 }) => {
-  return buildPlayHref({
-    chain,
-    worldName,
+  return buildPlayRouteFromEntryContext({
+    context: {
+      chain,
+      worldName,
+      intent: isSpectateMode ? "spectate" : "play",
+      autoSettle: false,
+      hyperstructuresLeft: null,
+      source: "landing",
+    },
     scene,
     col: worldMapPosition.col,
     row: worldMapPosition.row,

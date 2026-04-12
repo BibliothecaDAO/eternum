@@ -31,7 +31,7 @@ describe("prefetch-play-assets", () => {
 
     prefetchDashboardPlayAssets();
 
-    expect(window.sessionStorage.getItem("playDashboardAssetsPrefetched")).toBe("true");
+    expect(window.sessionStorage.getItem("playDashboardAssetsPrefetched")).toBeNull();
 
     await vi.runOnlyPendingTimersAsync();
     const afterFetchBatch = Array.from(document.head.querySelectorAll('link[rel="prefetch"]')).map((node) =>
@@ -47,6 +47,7 @@ describe("prefetch-play-assets", () => {
     expect(afterModelBatch.some((href) => href?.endsWith(".glb"))).toBe(true);
 
     await vi.runAllTimersAsync();
+    expect(window.sessionStorage.getItem("playDashboardAssetsPrefetched")).toBe("true");
     const allPrefetched = Array.from(document.head.querySelectorAll('link[rel="prefetch"]')).map((node) =>
       node.getAttribute("href"),
     );
@@ -61,8 +62,25 @@ describe("prefetch-play-assets", () => {
 
     prefetchPlayEntryAssets();
 
-    expect(window.sessionStorage.getItem("playEntryAssetsPrefetched")).toBe("true");
+    expect(window.sessionStorage.getItem("playEntryAssetsPrefetched")).toBeNull();
     await vi.runAllTimersAsync();
+    expect(window.sessionStorage.getItem("playEntryAssetsPrefetched")).toBe("true");
+
+    vi.useRealTimers();
+  });
+
+  it("does not duplicate work while a session prefetch is already in flight", async () => {
+    const { prefetchDashboardPlayAssets } = await import("./prefetch-play-assets");
+    vi.useFakeTimers();
+
+    prefetchDashboardPlayAssets();
+    prefetchDashboardPlayAssets();
+
+    await vi.runAllTimersAsync();
+
+    const links = document.head.querySelectorAll('link[rel="prefetch"]');
+    expect(links.length).toBeGreaterThan(0);
+    expect(window.sessionStorage.getItem("playDashboardAssetsPrefetched")).toBe("true");
 
     vi.useRealTimers();
   });

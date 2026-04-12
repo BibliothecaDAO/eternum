@@ -4,6 +4,7 @@ import { WorldProfile, WorldProfilesMap } from "./types";
 const ACTIVE_KEY = "ACTIVE_WORLD_NAME";
 const CHAIN_KEY = "ACTIVE_WORLD_CHAIN";
 const PROFILES_KEY = "WORLD_PROFILES";
+const ACTIVE_WORLD_EVENT = "runtime:active-world-changed";
 const SELECTED_CHAIN_EVENT = "runtime:selected-chain-changed";
 
 const safeParse = <T>(raw: string | null, fallback: T): T => {
@@ -54,6 +55,11 @@ const notifySelectedChainChanged = (chain: Chain | null) => {
   window.dispatchEvent(new CustomEvent<Chain | null>(SELECTED_CHAIN_EVENT, { detail: chain }));
 };
 
+const notifyActiveWorldChanged = (name: string | null) => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent<string | null>(ACTIVE_WORLD_EVENT, { detail: name }));
+};
+
 export const setSelectedChain = (chain: Chain) => {
   writeStorageValue(CHAIN_KEY, chain);
   notifySelectedChainChanged(chain);
@@ -93,6 +99,33 @@ export const subscribeSelectedChain = (listener: (chain: Chain | null) => void):
   };
 };
 
+export const subscribeActiveWorldName = (listener: (name: string | null) => void): (() => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleActiveWorldChanged = (event: Event) => {
+    const customEvent = event as CustomEvent<string | null>;
+    listener(customEvent.detail ?? getActiveWorldName());
+  };
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== null && event.key !== ACTIVE_KEY) {
+      return;
+    }
+
+    listener(getActiveWorldName());
+  };
+
+  window.addEventListener(ACTIVE_WORLD_EVENT, handleActiveWorldChanged as EventListener);
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener(ACTIVE_WORLD_EVENT, handleActiveWorldChanged as EventListener);
+    window.removeEventListener("storage", handleStorage);
+  };
+};
+
 export const listWorldNames = (): string[] => {
   const profiles = safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
   return Object.keys(profiles);
@@ -127,11 +160,17 @@ const getWorldProfile = (name: string): WorldProfile | null => {
   return profiles[name] ?? null;
 };
 
-export const getActiveWorldName = (): string | null => localStorage.getItem(ACTIVE_KEY);
+export const getActiveWorldName = (): string | null => readStorageValue(ACTIVE_KEY);
 
-export const setActiveWorldName = (name: string) => localStorage.setItem(ACTIVE_KEY, name);
+export const setActiveWorldName = (name: string) => {
+  writeStorageValue(ACTIVE_KEY, name);
+  notifyActiveWorldChanged(name);
+};
 
-const clearActiveWorld = () => localStorage.removeItem(ACTIVE_KEY);
+const clearActiveWorld = () => {
+  writeStorageValue(ACTIVE_KEY, null);
+  notifyActiveWorldChanged(null);
+};
 
 export const getActiveWorld = (): WorldProfile | null => {
   const name = getActiveWorldName();

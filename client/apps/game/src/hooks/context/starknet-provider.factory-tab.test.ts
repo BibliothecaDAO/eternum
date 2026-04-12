@@ -4,10 +4,11 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("StarknetProvider factory bootstrap guard", () => {
-  it("skips bootstrap on the home factory tab as well as standalone factory routes", () => {
+  it("derives its runtime config from the shared selected-chain state instead of duplicating chain resolution", () => {
     const source = readFileSync(resolve(process.cwd(), "src/hooks/context/starknet-provider.tsx"), "utf8");
 
-    expect(source).toContain('window.location.pathname.startsWith("/factory")');
-    expect(source).toContain('new URLSearchParams(window.location.search).get("tab") === "factory"');
+    expect(source).toContain("resolveStarknetRuntimeConfig");
+    expect(source).toContain("useSelectedRuntimeChain");
+    expect(source).not.toContain("deriveChainFromRpcUrl");
   });
 });

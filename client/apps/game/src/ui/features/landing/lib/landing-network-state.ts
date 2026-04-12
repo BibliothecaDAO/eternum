@@ -1,7 +1,8 @@
 import type { Chain } from "@contracts";
 
-export type LandingNetworkChain = "mainnet" | "slot";
-export type LandingNetworkStatus = "disconnected" | "detecting" | "matched" | "mismatched";
+type LandingPrimaryChain = "mainnet" | "slot";
+export type LandingNetworkChain = LandingPrimaryChain;
+export type LandingNetworkStatus = "disconnected" | "detecting" | "matched" | "mismatched" | "unsupported";
 
 interface LandingNetworkState {
   preferredChain: LandingNetworkChain;
@@ -58,7 +59,12 @@ export const resolveLandingNetworkState = ({
     connectedChain,
     connectedLandingChain,
     hasConnectedWallet,
-    status: connectedLandingChain === resolvedPreferredChain ? "matched" : "mismatched",
+    status:
+      connectedLandingChain === null
+        ? "unsupported"
+        : connectedLandingChain === resolvedPreferredChain
+          ? "matched"
+          : "mismatched",
   };
 };
 
@@ -71,6 +77,10 @@ export const canInteractWithLandingChain = (
   }
 
   if (landingNetworkState.status === "detecting") {
+    return false;
+  }
+
+  if (landingNetworkState.status === "unsupported") {
     return false;
   }
 

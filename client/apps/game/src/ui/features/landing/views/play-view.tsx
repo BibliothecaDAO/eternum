@@ -1,6 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { buildEntryHref } from "@/play/navigation/play-route";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
@@ -27,7 +26,8 @@ import {
 } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { primeDashboardPlayAssets, primePlayEntryRoute } from "@/game-entry-preload";
+import { primeGameEntry } from "@/game-entry-preload";
+import { buildEntryHrefFromEntryContext, resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
@@ -990,8 +990,7 @@ export const PlayView = ({
       // Ignore duplicate or unsupported marks.
     }
 
-    primePlayEntryRoute();
-    primeDashboardPlayAssets();
+    primeGameEntry("dashboard");
   }, [activeTab]);
 
   const navigateToEntryRoute = useCallback(
@@ -1001,19 +1000,18 @@ export const PlayView = ({
       hyperstructuresLeft: number | null,
       autoSettle = false,
     ) => {
-      if (!selection.chain) {
+      const entryContext = resolveEntryContextFromLandingSelection({
+        selection,
+        intent,
+        autoSettle,
+        hyperstructuresLeft,
+      });
+
+      if (!entryContext) {
         return;
       }
 
-      const entryHref = buildEntryHref({
-        chain: selection.chain,
-        worldName: selection.name,
-        intent,
-        hyperstructuresLeft,
-        autoSettle,
-      });
-
-      navigate(entryHref, {
+      navigate(buildEntryHrefFromEntryContext(entryContext), {
         state: entryRedirectState,
       });
     },
@@ -1023,10 +1021,29 @@ export const PlayView = ({
   const openGameEntryRoute = useCallback(
     (selection: WorldSelection, intent: "play" | "settle", autoSettle = false) => {
       startGameEntryTimeline();
-      primePlayEntryRoute();
+      primeGameEntry("entry");
       navigateToEntryRoute(selection, intent, null, autoSettle);
     },
     [navigateToEntryRoute],
+  );
+
+  const buildEntryRedirectHref = useCallback(
+    (
+      selection: WorldSelection,
+      intent: "play" | "settle" | "spectate" | "forge",
+      hyperstructuresLeft: number | null,
+      autoSettle = false,
+    ) => {
+      const entryContext = resolveEntryContextFromLandingSelection({
+        selection,
+        intent,
+        autoSettle,
+        hyperstructuresLeft,
+      });
+
+      return entryContext ? buildEntryHrefFromEntryContext(entryContext) : null;
+    },
+    [],
   );
 
   const handleSelectGame = useCallback(
@@ -1035,30 +1052,19 @@ export const PlayView = ({
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
-        if (!selection.chain) {
+        const redirectTo = buildEntryRedirectHref(selection, "settle", null, false);
+        if (!redirectTo) {
           return;
         }
 
-        setModal(
-          <SignInPromptModal
-            redirectTo={buildEntryHref({
-              chain: selection.chain,
-              worldName: selection.name,
-              intent: "settle",
-              hyperstructuresLeft: null,
-              autoSettle: false,
-            })}
-            redirectState={entryRedirectState}
-          />,
-          true,
-        );
+        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
         return;
       }
 
       // Open settle flow
       openGameEntryRoute(selection, "settle", false);
     },
-    [account, entryRedirectState, isConnected, openGameEntryRoute, setModal],
+    [account, buildEntryRedirectHref, entryRedirectState, isConnected, openGameEntryRoute, setModal],
   );
 
   const handleAutoSettleGame = useCallback(
@@ -1076,37 +1082,26 @@ export const PlayView = ({
       const hasAccount = Boolean(account) || isConnected;
 
       if (!hasAccount) {
-        if (!selection.chain) {
+        const redirectTo = buildEntryRedirectHref(selection, "play", null, false);
+        if (!redirectTo) {
           return;
         }
 
-        setModal(
-          <SignInPromptModal
-            redirectTo={buildEntryHref({
-              chain: selection.chain,
-              worldName: selection.name,
-              intent: "play",
-              hyperstructuresLeft: null,
-              autoSettle: false,
-            })}
-            redirectState={entryRedirectState}
-          />,
-          true,
-        );
+        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
         return;
       }
 
       // Open direct play flow
       openGameEntryRoute(selection, "play", false);
     },
-    [account, entryRedirectState, isConnected, openGameEntryRoute, setModal],
+    [account, buildEntryRedirectHref, entryRedirectState, isConnected, openGameEntryRoute, setModal],
   );
 
   const handleSpectate = useCallback(
     (selection: WorldSelection) => {
       // Open game entry modal in spectate mode (no account required)
       startGameEntryTimeline();
-      primePlayEntryRoute();
+      primeGameEntry("entry");
       navigateToEntryRoute(selection, "spectate", null, false);
     },
     [navigateToEntryRoute],
@@ -1118,32 +1113,21 @@ export const PlayView = ({
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
-        if (!selection.chain) {
+        const redirectTo = buildEntryRedirectHref(selection, "forge", numLeft, false);
+        if (!redirectTo) {
           return;
         }
 
-        setModal(
-          <SignInPromptModal
-            redirectTo={buildEntryHref({
-              chain: selection.chain,
-              worldName: selection.name,
-              intent: "forge",
-              hyperstructuresLeft: numLeft,
-              autoSettle: false,
-            })}
-            redirectState={entryRedirectState}
-          />,
-          true,
-        );
+        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
         return;
       }
 
       // Open game entry modal in forge mode
       startGameEntryTimeline();
-      primePlayEntryRoute();
+      primeGameEntry("entry");
       navigateToEntryRoute(selection, "forge", numLeft, false);
     },
-    [account, entryRedirectState, isConnected, navigateToEntryRoute, setModal],
+    [account, buildEntryRedirectHref, entryRedirectState, isConnected, navigateToEntryRoute, setModal],
   );
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {

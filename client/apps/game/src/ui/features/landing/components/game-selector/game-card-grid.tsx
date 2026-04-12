@@ -32,7 +32,7 @@ import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { primePlayEntryAssets, primePlayEntryRoute } from "@/game-entry-preload";
+import { primeGameEntry } from "@/game-entry-preload";
 import { describeAutoSettleRuntimePhase, resolveAutoSettleRuntimeState } from "./auto-settle-runtime";
 import {
   createPendingNetworkAction,
@@ -1409,8 +1409,7 @@ export const UnifiedGameGrid = ({
       });
 
       if (runtimeState.shouldPrimeAssets) {
-        primePlayEntryRoute();
-        primePlayEntryAssets();
+        primeGameEntry("entry");
       }
 
       if (runtimeState.shouldRefreshAvailability) {
