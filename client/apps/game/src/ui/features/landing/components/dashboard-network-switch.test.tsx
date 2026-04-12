@@ -7,9 +7,8 @@ import { DashboardNetworkSwitch } from "./dashboard-network-switch";
 
 const mocks = vi.hoisted(() => ({
   useAccount: vi.fn(),
-  resolveChain: vi.fn(),
+  useSelectedRuntimeChain: vi.fn(),
   setSelectedChain: vi.fn(),
-  subscribeSelectedChain: vi.fn(),
   switchWalletToChain: vi.fn(),
 }));
 
@@ -18,9 +17,8 @@ vi.mock("@starknet-react/core", () => ({
 }));
 
 vi.mock("@/runtime/world", () => ({
-  resolveChain: mocks.resolveChain,
+  useSelectedRuntimeChain: mocks.useSelectedRuntimeChain,
   setSelectedChain: mocks.setSelectedChain,
-  subscribeSelectedChain: mocks.subscribeSelectedChain,
 }));
 
 vi.mock("@/ui/utils/network-switch", () => ({
@@ -47,12 +45,10 @@ describe("DashboardNetworkSwitch", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-    mocks.resolveChain.mockReturnValue("slot");
+    mocks.useSelectedRuntimeChain.mockReturnValue("slot");
     mocks.setSelectedChain.mockReset();
-    mocks.subscribeSelectedChain.mockReset();
     mocks.switchWalletToChain.mockReset();
     mocks.switchWalletToChain.mockResolvedValue(true);
-    mocks.subscribeSelectedChain.mockReturnValue(() => {});
     mocks.useAccount.mockReturnValue({
       address: "0xabc",
       chainId: "0xslot",

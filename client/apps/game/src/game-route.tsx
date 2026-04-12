@@ -30,8 +30,6 @@ const TransactionListenerBridge = () => {
 };
 
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
-  useBootDocumentState("app-ready", "boot_world_visible");
-
   return (
     <DojoProvider value={setupResult} account={account}>
       <ErrorBoundary>
@@ -82,6 +80,10 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     hasSetupResult: setupResult !== null,
     hasAccount: account !== null,
   });
+  useBootDocumentState(
+    routeView === "loading" ? "app-loading" : routeView === "ready" ? "app-ready" : null,
+    routeView === "ready" ? "boot_world_visible" : routeView === "loading" ? "boot_react_loader_visible" : undefined,
+  );
 
   if (routeView === "redirect") {
     return <Navigate to="/" replace />;

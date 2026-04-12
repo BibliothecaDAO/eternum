@@ -1,19 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
+import { useGameEntryBootstrapController, type BootstrapStatus, type BootstrapTask } from "@/game-entry/bootstrap-controller";
+import { resolveEntryContextFromPlayRoute } from "@/game-entry/context";
 import type { SetupResult } from "@/init/bootstrap";
-import { bootstrapGame, getCachedSetupResult } from "@/init/bootstrap";
-import { parsePlayRoute } from "@/play/navigation/play-route";
-import { getActiveWorld } from "@/runtime/world";
 import { markBootMilestone } from "@/ui/modules/boot-loader";
-import { useSyncStore } from "../store/use-sync-store";
+import { useLocation } from "react-router-dom";
 
-export type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
-
-export type BootstrapTask = {
-  id: string;
-  label: string;
-  status: "pending" | "running" | "complete" | "error";
-};
 
 export type EagerBootstrapState = {
   status: BootstrapStatus;
@@ -26,22 +18,6 @@ export type EagerBootstrapState = {
   startBootstrap: () => void;
 };
 
-const BOOTSTRAP_TASKS: BootstrapTask[] = [
-  { id: "world", label: "Selecting world", status: "pending" },
-  { id: "manifest", label: "Loading game config", status: "pending" },
-  { id: "dojo", label: "Connecting to world", status: "pending" },
-  { id: "sync", label: "Syncing game state", status: "pending" },
-  { id: "renderer", label: "Preparing graphics", status: "pending" },
-];
-
-const hasRouteSelectedWorld = () => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return parsePlayRoute(window.location) !== null;
-};
-
 /**
  * Eager bootstrap hook that starts the bootstrap process as soon as possible.
  * Unlike useGameBootstrap, this hook:
@@ -52,189 +28,41 @@ const hasRouteSelectedWorld = () => {
  * Note: World changes trigger a page reload via bootstrap.tsx for clean state reset.
  */
 export const useEagerBootstrap = (): EagerBootstrapState => {
-  const syncProgress = useSyncStore((state) => state.initialSyncProgress);
+  const location = useLocation();
+  const entryContext = useMemo(() => {
+    return resolveEntryContextFromPlayRoute(location);
+  }, [location]);
+  const controller = useGameEntryBootstrapController({
+    context: entryContext,
+    enabled: entryContext !== null,
+  });
 
-  // Check if bootstrap has already completed (e.g., from GameEntryModal)
-  const cachedResult = getCachedSetupResult();
-  const isAlreadyReady = cachedResult !== null;
-
-  const [status, setStatus] = useState<BootstrapStatus>(isAlreadyReady ? "ready" : "idle");
-  const [setupResult, setSetupResult] = useState<SetupResult | null>(cachedResult);
-  const [error, setError] = useState<Error | null>(null);
-  const [tasks, setTasks] = useState<BootstrapTask[]>(
-    isAlreadyReady ? BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "complete" as const })) : BOOTSTRAP_TASKS,
-  );
-  const [currentTask, setCurrentTask] = useState<string | null>(null);
-  const inFlightRef = useRef<Promise<SetupResult> | null>(null);
-  const hasStartedRef = useRef(isAlreadyReady);
-
-  const updateTask = useCallback((taskId: string, taskStatus: BootstrapTask["status"]) => {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: taskStatus } : t)));
-    if (taskStatus === "running") {
-      setCurrentTask(taskId);
-    }
-  }, []);
-
-  const beginBootstrap = useCallback(() => {
-    if (inFlightRef.current) {
-      return;
-    }
-
-    // Check if world is selected
-    const activeWorld = getActiveWorld();
-    if (!activeWorld && !hasRouteSelectedWorld()) {
-      setStatus("pending-world");
-      return;
-    }
-
-    setError(null);
-    setStatus("loading");
-    setSetupResult(null); // Clear previous result when starting new bootstrap
-    setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
-
-    // Mark world as complete since we have one
-    updateTask("world", "complete");
-    updateTask("manifest", "running");
-
-    const promise = bootstrapGame();
-    inFlightRef.current = promise;
-
-    promise
-      .then((result) => {
-        // Mark all tasks complete
-        setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));
-        setCurrentTask(null);
-        setSetupResult(result);
-        setStatus("ready");
-      })
-      .catch((incomingError: unknown) => {
-        const normalisedError = incomingError instanceof Error ? incomingError : new Error("Unknown bootstrap error");
-        console.error("[EAGER BOOTSTRAP FAILED]", normalisedError);
-        setError(normalisedError);
-        setStatus("error");
-        // Mark current task as error
-        setTasks((prev) => prev.map((t) => (t.status === "running" ? { ...t, status: "error" } : t)));
-      })
-      .finally(() => {
-        inFlightRef.current = null;
-      });
-  }, [updateTask]);
-
-  // Start bootstrap automatically on mount if world is selected
-  useEffect(() => {
-    if (hasStartedRef.current) return;
-    hasStartedRef.current = true;
-
-    const activeWorld = getActiveWorld();
-    if (activeWorld || hasRouteSelectedWorld()) {
-      beginBootstrap();
-    } else {
-      setStatus("pending-world");
-    }
-  }, [beginBootstrap]);
-
-  // Watch for world selection and start bootstrap when it happens
-  useEffect(() => {
-    if (status !== "pending-world") return;
-
-    const checkWorld = () => {
-      const activeWorld = getActiveWorld();
-      if (activeWorld || hasRouteSelectedWorld()) {
-        beginBootstrap();
-      }
-    };
-
-    // Poll for world selection (localStorage doesn't have events)
-    const interval = window.setInterval(checkWorld, 500);
-    return () => window.clearInterval(interval);
-  }, [status, beginBootstrap]);
-
-  // Update task progress based on sync progress
-  useEffect(() => {
-    if (status !== "loading") return;
-
-    if (syncProgress > 0 && syncProgress < 100) {
-      updateTask("manifest", "complete");
-      updateTask("dojo", "complete");
-      updateTask("sync", "running");
-    } else if (syncProgress >= 100) {
-      updateTask("sync", "complete");
-      updateTask("renderer", "running");
-    }
-  }, [syncProgress, status, updateTask]);
+  const currentTask = useMemo(() => {
+    return controller.currentTask ?? controller.tasks.find((task) => task.status === "running")?.id ?? null;
+  }, [controller.currentTask, controller.tasks]);
 
   useEffect(() => {
-    if (status === "loading") {
+    if (controller.status === "loading") {
       markBootMilestone("boot_bootstrap_started");
     }
 
-    if (status === "ready") {
+    if (controller.status === "ready") {
       markBootMilestone("boot_bootstrap_ready");
     }
-  }, [status]);
-
-  // Note: World change detection is handled by bootstrap.tsx which triggers a page reload
-  // This avoids complex state cleanup and ensures a clean re-bootstrap
-
-  const retry = useCallback(() => {
-    if (status === "loading") return;
-    hasStartedRef.current = false;
-    inFlightRef.current = null;
-    setStatus("idle");
-    setError(null);
-    setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
-
-    // Restart
-    setTimeout(() => {
-      hasStartedRef.current = true;
-      beginBootstrap();
-    }, 0);
-  }, [beginBootstrap, status]);
+  }, [controller.status]);
 
   const startBootstrap = useCallback(() => {
-    if (status === "pending-world") {
-      const activeWorld = getActiveWorld();
-      if (activeWorld || hasRouteSelectedWorld()) {
-        beginBootstrap();
-      }
-    }
-  }, [status, beginBootstrap]);
-
-  // Calculate overall progress (memoized to avoid recalculation on unrelated renders)
-  const progress = useMemo(() => {
-    if (status === "ready") return 100;
-    if (status === "error" || status === "idle" || status === "pending-world") return 0;
-
-    // Weight tasks
-    const weights: Record<string, number> = {
-      world: 5,
-      manifest: 10,
-      dojo: 25,
-      sync: 50,
-      renderer: 10,
-    };
-
-    let completed = 0;
-    tasks.forEach((t) => {
-      if (t.status === "complete") {
-        completed += weights[t.id] || 0;
-      } else if (t.status === "running" && t.id === "sync") {
-        // For sync, use the actual progress
-        completed += (weights[t.id] || 0) * (syncProgress / 100);
-      }
-    });
-
-    return Math.min(99, Math.round(completed));
-  }, [status, tasks, syncProgress]);
+    controller.start();
+  }, [controller.start]);
 
   return {
-    status,
-    setupResult,
-    error,
-    progress,
-    tasks,
+    status: entryContext ? controller.status : "pending-world",
+    setupResult: controller.setupResult,
+    error: controller.error,
+    progress: controller.progress,
+    tasks: controller.tasks,
     currentTask,
-    retry,
+    retry: controller.retry,
     startBootstrap,
   };
 };

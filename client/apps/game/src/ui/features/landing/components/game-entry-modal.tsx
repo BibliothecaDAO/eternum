@@ -26,20 +26,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
-import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
-import type { BootstrapTask } from "@/hooks/context/use-eager-bootstrap";
+import { useGameEntryBootstrapController } from "@/game-entry/bootstrap-controller";
+import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/use-season-pass-inventory";
 import { useUsername } from "@/hooks/use-username";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import type { SetupResult } from "@/init/bootstrap";
-import { bootstrapGame } from "@/init/bootstrap";
 import { captureClientEvent } from "@/posthog";
-import { applyWorldSelection } from "@/runtime/world";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
@@ -75,7 +72,6 @@ import {
   SettlementResourceBadges,
   resolvePlannerResourceLabel as resolveResourceLabel,
 } from "./settlement-resource-badges";
-import { primePlayEntryAssets } from "@/game-entry-preload";
 import {
   buildPlannerRealmSelectionDetails,
   resolvePlannerOwnerLabel,
@@ -770,7 +766,6 @@ const buildSeasonPlacementSlots = ({
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
 // Types
-type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
 type EternumSettlementMode = "realm" | "village";
 
@@ -823,14 +818,6 @@ interface GameEntryModalProps {
   /** Number of hyperstructures left to forge (for forge mode) */
   numHyperstructuresLeft?: number;
 }
-
-const BOOTSTRAP_TASKS: BootstrapTask[] = [
-  { id: "world", label: "Selecting world", status: "pending" },
-  { id: "manifest", label: "Loading game config", status: "pending" },
-  { id: "dojo", label: "Connecting to world", status: "pending" },
-  { id: "sync", label: "Syncing game state", status: "pending" },
-  { id: "renderer", label: "Preparing graphics", status: "pending" },
-];
 
 const SETTLEMENT_STEPS = [
   { id: 1, label: "Assign Positions", icon: MapPin, description: "Finding optimal locations for your realms" },
@@ -2911,7 +2898,6 @@ export const GameEntryModal = ({
 }: GameEntryModalProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const syncProgress = useSyncStore((state) => state.initialSyncProgress);
   const account = useAccountStore((state) => state.account);
   const { usernameFelt } = useUsername();
   const markOpening = useAutoSettleStore((state) => state.markOpening);
@@ -2949,14 +2935,29 @@ export const GameEntryModal = ({
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
   const unifiedSettlementPlannerEnabled = env.VITE_PUBLIC_ETERNUM_UNIFIED_SETTLEMENT_PLANNER;
-
-  // Bootstrap state
-  const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>("idle");
-  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
-  const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
-
-  const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
-  const [tasks, setTasks] = useState<BootstrapTask[]>(BOOTSTRAP_TASKS);
+  const entryIntent = isForgeMode ? "forge" : isSpectateMode ? "spectate" : eternumEntryIntent;
+  const entryContext = useMemo(
+    () =>
+      resolveEntryContextFromLandingSelection({
+        selection: {
+          name: worldName,
+          chain,
+        },
+        intent: entryIntent,
+        autoSettle: autoSettleEnabled,
+        hyperstructuresLeft: initialNumHyperstructuresLeft ?? null,
+      }),
+    [autoSettleEnabled, chain, entryIntent, initialNumHyperstructuresLeft, worldName],
+  );
+  const bootstrapController = useGameEntryBootstrapController({
+    context: entryContext,
+    enabled: isOpen && (!isForgeMode || !isBlitzMode),
+  });
+  const bootstrapStatus = bootstrapController.status;
+  const setupResult = bootstrapController.setupResult;
+  const bootstrapError = bootstrapController.error;
+  const tasks = bootstrapController.tasks;
+  const progress = bootstrapController.progress;
 
   // Settlement state
   const [settleStage, setSettleStage] = useState<SettleStage>("idle");
@@ -3002,8 +3003,9 @@ export const GameEntryModal = ({
   const hasEnteredGameRef = useRef(false);
   const plannerOpenedRef = useRef(false);
 
-  const activeWorldProfile = getActiveWorld();
+  const activeWorldProfile = bootstrapController.session?.profile ?? getActiveWorld();
   const selectedWorldRpcUrl = activeWorldProfile?.name === worldName ? (activeWorldProfile.rpcUrl ?? null) : null;
+  const navigationEntryContext = bootstrapController.session?.context ?? entryContext;
   const seasonAddresses = getSeasonAddresses(chain);
   // realm_systems.create reads season_pass_address from world config, so prefer world metadata when available.
   const seasonPassAddress = worldMeta?.seasonPassAddress || seasonAddresses.seasonPass || null;
@@ -3357,27 +3359,35 @@ export const GameEntryModal = ({
     );
   }, [optimisticRealmPlacements.length, settlementPlannerData.snapshot.realms]);
 
-  // Update task status
-  const updateTask = useCallback((taskId: string, status: BootstrapTask["status"]) => {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status } : t)));
+  const resetBootstrapDependentState = useCallback(() => {
+    setNeedsSettlement(false);
+    setSettlementCheckComplete(false);
+    setSettleStage("idle");
+    setHyperstructures([]);
+    setNeedsHyperstructureInit(false);
+    setHyperstructureCheckComplete(false);
+    setIsInitializingHyperstructure(false);
+    setCurrentInitializingId(null);
+    setEternumSettlementMode("realm");
+    setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
+    setSelectedSeasonPassTokenId(null);
+    setIsSubmittingSeasonSettlement(false);
+    setSeasonSettlementError(null);
+    setSeasonSettlementComplete(false);
+    setSelectedVillagePassTokenId(null);
+    setSelectedVillageRealmEntityId(null);
+    setSelectedVillageDirection(null);
+    setIsSendingVillagePassFromDistributor(false);
+    setVillagePassDistributorTransferError(null);
+    setIsSubmittingVillageSettlement(false);
+    setVillageSettlementError(null);
+    setVillageRevealResult(null);
+    setSettlementPlannerTarget(null);
+    setSettlementPlannerConflict(null);
+    setSettlementPlannerSuccess(null);
+    setOptimisticRealmPlacements([]);
+    plannerOpenedRef.current = false;
   }, []);
-
-  // Calculate progress
-  const progress = useMemo(() => {
-    if (bootstrapStatus === "ready") return 100;
-    if (bootstrapStatus === "error" || bootstrapStatus === "idle" || bootstrapStatus === "pending-world") return 0;
-
-    const weights: Record<string, number> = { world: 5, manifest: 10, dojo: 25, sync: 50, renderer: 10 };
-    let completed = 0;
-    tasks.forEach((t) => {
-      if (t.status === "complete") {
-        completed += weights[t.id] || 0;
-      } else if (t.status === "running" && t.id === "sync") {
-        completed += (weights[t.id] || 0) * (syncProgress / 100);
-      }
-    });
-    return Math.min(99, Math.round(completed));
-  }, [bootstrapStatus, tasks, syncProgress]);
 
   const nowSeconds = Date.now() / 1000;
   const seasonStartAt = worldMeta?.startSettlingAt ?? worldMeta?.startMainAt ?? null;
@@ -4048,154 +4058,24 @@ export const GameEntryModal = ({
     checkHyperstructures();
   }, [bootstrapStatus, setupResult, isBlitzMode, isEternumMode, isSpectateMode, isForgeMode, worldName]);
 
-  // Start bootstrap when modal opens
   useEffect(() => {
     if (!isOpen) {
-      debugLog(worldName, "Modal not open, skipping bootstrap");
       return;
     }
+
     if (isForgeMode && isBlitzMode) {
-      debugLog(worldName, "Forge mode active, skipping game bootstrap");
       return;
     }
 
-    debugLog(worldName, "Starting bootstrap for", worldName, "chain:", chain);
-
-    const startBootstrap = async () => {
-      try {
-        setBootstrapStatus("loading");
-        setBootstrapError(null);
-        setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
-        setNeedsSettlement(false);
-        setSettlementCheckComplete(false);
-        setSettleStage("idle");
-        setHyperstructures([]);
-        setNeedsHyperstructureInit(false);
-        setHyperstructureCheckComplete(false);
-        setEternumSettlementMode("realm");
-        setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
-        setSelectedSeasonPassTokenId(null);
-        setIsSubmittingSeasonSettlement(false);
-        setSeasonSettlementError(null);
-        setSeasonSettlementComplete(false);
-        setSelectedVillagePassTokenId(null);
-        setSelectedVillageRealmEntityId(null);
-        setSelectedVillageDirection(null);
-        setIsSendingVillagePassFromDistributor(false);
-        setVillagePassDistributorTransferError(null);
-        setIsSubmittingVillageSettlement(false);
-        setVillageSettlementError(null);
-        setVillageRevealResult(null);
-        setSettlementPlannerTarget(null);
-        setSettlementPlannerConflict(null);
-        setSettlementPlannerSuccess(null);
-        setOptimisticRealmPlacements([]);
-
-        // Apply world selection first
-        debugLog(worldName, "Applying world selection...");
-        markGameEntryMilestone("destination-resolved");
-        markGameEntryMilestone("world-selection-started");
-        updateTask("world", "running");
-        await applyWorldSelection({ name: worldName, chain }, chain);
-        updateTask("world", "complete");
-        markGameEntryMilestone("world-selection-completed");
-        debugLog(worldName, "World selection complete");
-
-        // Start bootstrap
-        debugLog(worldName, "Starting game bootstrap...");
-        updateTask("manifest", "running");
-        markGameEntryMilestone("bootstrap-started");
-        markGameEntryMilestone("asset-prefetch-scheduled");
-        primePlayEntryAssets();
-        const result = await bootstrapGame();
-        markGameEntryMilestone("bootstrap-completed");
-        debugLog(worldName, "Bootstrap complete, got setupResult:", !!result);
-
-        // After bootstrap patches the manifest with the selected world's
-        // contract addresses, refresh the controller's session policies
-        // if they changed. This recreates the keychain iframe with correct
-        // policies and re-probes to restore the user's account.
-        const connector = useAccountStore.getState().connector;
-        if (connector) {
-          markGameEntryMilestone("session-policies-refresh-started");
-          const updated = await refreshSessionPolicies(connector);
-          markGameEntryMilestone("session-policies-refresh-completed");
-          if (updated) {
-            debugLog(worldName, "Session policies refreshed for new world");
-          }
-        } else {
-          markGameEntryMilestone("session-policies-refresh-skipped");
-        }
-
-        // Mark all tasks complete
-        setTasks((prev) => prev.map((t) => ({ ...t, status: "complete" })));
-        setSetupResult(result);
-        setBootstrapStatus("ready");
-        markGameEntryMilestone("entry-ready");
-        debugLog(worldName, "Bootstrap status set to ready");
-      } catch (error) {
-        debugLog(worldName, "Bootstrap failed:", error);
-        setBootstrapError(error instanceof Error ? error : new Error("Bootstrap failed"));
-        setBootstrapStatus("error");
-        setTasks((prev) => prev.map((t) => (t.status === "running" ? { ...t, status: "error" } : t)));
-      }
-    };
-
-    startBootstrap();
-  }, [isOpen, isForgeMode, isBlitzMode, worldName, chain, updateTask, bootstrapAttempt]);
-
-  // Update task progress based on sync
-  useEffect(() => {
-    if (bootstrapStatus !== "loading") return;
-
-    if (syncProgress > 0 && syncProgress < 100) {
-      updateTask("manifest", "complete");
-      updateTask("dojo", "complete");
-      updateTask("sync", "running");
-    } else if (syncProgress >= 100) {
-      updateTask("sync", "complete");
-      updateTask("renderer", "running");
-    }
-  }, [syncProgress, bootstrapStatus, updateTask]);
+    debugLog(worldName, "Resetting modal state for", worldName, "chain:", chain);
+    resetBootstrapDependentState();
+  }, [chain, isBlitzMode, isForgeMode, isOpen, resetBootstrapDependentState, worldName]);
 
   // Retry handler
   const handleRetry = useCallback(() => {
-    setBootstrapStatus("idle");
-    setBootstrapError(null);
-    setSetupResult(null);
-    setTasks(BOOTSTRAP_TASKS.map((t) => ({ ...t, status: "pending" })));
-    setNeedsSettlement(false);
-    setSettlementCheckComplete(false);
-    setSettleStage("idle");
-    setHyperstructures([]);
-    setNeedsHyperstructureInit(false);
-    setHyperstructureCheckComplete(false);
-    setIsInitializingHyperstructure(false);
-    setCurrentInitializingId(null);
-    setEternumSettlementMode("realm");
-    setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
-    setSelectedSeasonPassTokenId(null);
-    setIsSubmittingSeasonSettlement(false);
-    setSeasonSettlementError(null);
-    setSeasonSettlementComplete(false);
-    setSelectedVillagePassTokenId(null);
-    setSelectedVillageRealmEntityId(null);
-    setSelectedVillageDirection(null);
-    setIsSendingVillagePassFromDistributor(false);
-    setVillagePassDistributorTransferError(null);
-    setIsSubmittingVillageSettlement(false);
-    setVillageSettlementError(null);
-    setVillageRevealResult(null);
-    setSettlementPlannerTarget(null);
-    setSettlementPlannerConflict(null);
-    setSettlementPlannerSuccess(null);
-    setOptimisticRealmPlacements([]);
-    plannerOpenedRef.current = false;
-    // Trigger re-bootstrap
-    setTimeout(() => {
-      setBootstrapAttempt((attempt) => attempt + 1);
-    }, 100);
-  }, []);
+    resetBootstrapDependentState();
+    bootstrapController.retry();
+  }, [bootstrapController.retry, resetBootstrapDependentState]);
 
   const handleSettlementPlannerTargetSelect = useCallback(
     (target: SettlementPlannerTarget) => {
@@ -4436,16 +4316,20 @@ export const GameEntryModal = ({
 
   // Enter game handler - navigates to the game.
   const handleEnterGame = useCallback(() => {
+    if (!navigationEntryContext) {
+      return;
+    }
+
     const uiStore = useUIStore.getState();
     uiStore.setShowBlankOverlay(true);
     markGameEntryMilestone("enter-game-started");
 
     const entryTarget = resolveGameEntryTarget({
-      chain,
-      worldName,
+      chain: navigationEntryContext.chain,
+      worldName: navigationEntryContext.worldName,
       structureEntityId: uiStore.structureEntityId,
       worldMapReturnPosition: uiStore.worldMapReturnPosition,
-      isSpectateMode,
+      isSpectateMode: navigationEntryContext.intent === "spectate",
     });
 
     uiStore.setStructureEntityId(entryTarget.structureEntityId, {
@@ -4455,7 +4339,7 @@ export const GameEntryModal = ({
 
     navigate(entryTarget.url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [chain, navigate, isSpectateMode, worldName]);
+  }, [navigate, navigationEntryContext]);
 
   const handleSeasonSettle = useCallback(async () => {
     if (!account?.address) return;

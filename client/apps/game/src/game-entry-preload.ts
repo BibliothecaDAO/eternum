@@ -73,11 +73,33 @@ export const createDashboardPlayAssetPrimer = ({
   };
 };
 
+export const createGameEntryPrimer = ({
+  primeDashboardPlayAssets,
+  primePlayEntryAssets,
+  primePlayEntryRoute,
+}: {
+  primeDashboardPlayAssets: () => void;
+  primePlayEntryAssets: () => void;
+  primePlayEntryRoute: () => void;
+}) => {
+  return (stage: "dashboard" | "entry") => {
+    primePlayEntryRoute();
+    primeDashboardPlayAssets();
+
+    if (stage === "entry") {
+      primePlayEntryAssets();
+    }
+  };
+};
+
 let gameRoutePreloadPromise: Promise<GameRouteModule> | null = null;
 
 export const preloadGameRouteModule = (): Promise<GameRouteModule> => {
   if (!gameRoutePreloadPromise) {
-    gameRoutePreloadPromise = import("./game-route");
+    gameRoutePreloadPromise = import("./game-route").catch((error) => {
+      gameRoutePreloadPromise = null;
+      throw error;
+    });
   }
 
   return gameRoutePreloadPromise;
@@ -93,4 +115,10 @@ export const primePlayEntryAssets = createPlayEntryAssetPrimer({
 
 export const primeDashboardPlayAssets = createDashboardPlayAssetPrimer({
   prefetchDashboardPlayAssets,
+});
+
+export const primeGameEntry = createGameEntryPrimer({
+  primeDashboardPlayAssets,
+  primePlayEntryAssets,
+  primePlayEntryRoute,
 });

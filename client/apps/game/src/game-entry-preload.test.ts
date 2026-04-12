@@ -76,3 +76,39 @@ describe("createDashboardPlayAssetPrimer", () => {
     vi.useRealTimers();
   });
 });
+
+describe("createGameEntryPrimer", () => {
+  it("warms the shared route and dashboard assets for dashboard stage", async () => {
+    const { createGameEntryPrimer } = await import("./game-entry-preload");
+    const primeDashboardPlayAssets = vi.fn();
+    const primePlayEntryAssets = vi.fn();
+    const primePlayEntryRoute = vi.fn();
+
+    createGameEntryPrimer({
+      primeDashboardPlayAssets,
+      primePlayEntryAssets,
+      primePlayEntryRoute,
+    })("dashboard");
+
+    expect(primePlayEntryRoute).toHaveBeenCalledTimes(1);
+    expect(primeDashboardPlayAssets).toHaveBeenCalledTimes(1);
+    expect(primePlayEntryAssets).not.toHaveBeenCalled();
+  });
+
+  it("warms the route plus dashboard and entry assets for entry stage", async () => {
+    const { createGameEntryPrimer } = await import("./game-entry-preload");
+    const primeDashboardPlayAssets = vi.fn();
+    const primePlayEntryAssets = vi.fn();
+    const primePlayEntryRoute = vi.fn();
+
+    createGameEntryPrimer({
+      primeDashboardPlayAssets,
+      primePlayEntryAssets,
+      primePlayEntryRoute,
+    })("entry");
+
+    expect(primePlayEntryRoute).toHaveBeenCalledTimes(1);
+    expect(primeDashboardPlayAssets).toHaveBeenCalledTimes(1);
+    expect(primePlayEntryAssets).toHaveBeenCalledTimes(1);
+  });
+});

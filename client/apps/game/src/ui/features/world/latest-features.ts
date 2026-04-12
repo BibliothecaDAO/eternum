@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-12",
+    title: "Cleaner Game Entry Handoff",
+    description:
+      "Dashboard network switching, game entry bootstrap, and play-route loading now share one handoff flow, so switching networks or entering a world is less likely to drift into stale loading or mismatched wallet state.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
     title: "Expanded Play Music Loop",
     description:
       "The in-game music rotation now includes Monophonic Mixtape 14, giving standard matches and Blitz one more track in the active background loop.",

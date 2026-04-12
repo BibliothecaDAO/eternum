@@ -6,22 +6,19 @@ import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
 import {
-  ensureActiveWorldProfileWithUI,
-  getActiveWorld,
-  isRpcUrlCompatibleForChain,
-  normalizeRpcUrl,
   patchManifestWithFactory,
-  resolveChain,
-  setActiveWorldName,
-  setSelectedChain,
+  applyWorldSelection,
   type WorldProfile,
 } from "@/runtime/world";
-import { parsePlayRoute } from "@/play/navigation/play-route";
-import { buildWorldProfile } from "@/runtime/world/profile-builder";
+import {
+  resolveEntryContextCacheKey,
+  resolveEntryContextFromPlayRoute,
+  type ResolvedEntryContext,
+} from "@/game-entry/context";
 import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
-import { env, hasPublicNodeUrl } from "../../env";
+import { env } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
 import { cancelEntityStreamSubscription, initialSync } from "../dojo/sync";
 import { usePlayerStore } from "../hooks/store/use-player-store";
@@ -31,14 +28,28 @@ import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { NoAccountModal } from "../ui/layouts/no-account-modal";
 import { markGameEntryMilestone, recordGameEntryDuration } from "../ui/layouts/game-entry-timeline";
+import { redirectToLandingWorldSelection } from "../ui/features/world-selector";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { createBootstrapSession, type BootstrapSelection } from "./bootstrap-session";
 import { initializeGameRenderer } from "./game-renderer";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
-type BootstrapResult = SetupResult;
+export interface BootstrappedEntrySession {
+  context: ResolvedEntryContext;
+  profile: WorldProfile;
+  setupResult: SetupResult;
+}
+
+type BootstrapResult = BootstrappedEntrySession;
 const bootstrapSession = createBootstrapSession<BootstrapResult>();
+
+type BootstrapLifecycle = {
+  onBootstrapCompleted?: () => void;
+  onBootstrapStarted?: () => void;
+  onWorldSelectionCompleted?: () => void;
+  onWorldSelectionStarted?: () => void;
+};
 
 type MutableDojoConfig = typeof dojoConfig & {
   toriiUrl?: string;
@@ -46,45 +57,26 @@ type MutableDojoConfig = typeof dojoConfig & {
   manifest?: unknown;
 };
 
-/**
- * Get the cached setup result if bootstrap has already completed.
- * Returns null if bootstrap hasn't run or is still in progress.
- */
-export const getCachedSetupResult = (): BootstrapResult | null => {
-  return bootstrapSession.getCachedResult();
+export const getCachedBootstrappedEntrySession = (context?: ResolvedEntryContext): BootstrappedEntrySession | null => {
+  const cachedSession = bootstrapSession.getCachedResult();
+  if (!cachedSession) {
+    return null;
+  }
+
+  if (!context) {
+    return cachedSession;
+  }
+
+  const trackedSelection = bootstrapSession.getTrackedSelection();
+  return trackedSelection.cacheKey === resolveEntryContextCacheKey(context) ? cachedSession : null;
 };
 
-const resolvePlayRouteSelection = (): { chain: Chain; worldName: string } | null => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const playRoute = parsePlayRoute(window.location);
-  if (!playRoute) {
-    return null;
-  }
-
+const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSelection => {
   return {
-    chain: playRoute.chain,
-    worldName: playRoute.worldName,
+    cacheKey: resolveEntryContextCacheKey(context),
+    chain: context.chain,
+    worldName: context.worldName,
   };
-};
-
-const deriveWorldFromPath = (): string | null => {
-  const routeSelection = resolvePlayRouteSelection();
-  if (routeSelection) {
-    return routeSelection.worldName;
-  }
-
-  try {
-    const match = window.location.pathname.match(/^\/play\/([^/]+)(?:\/|$)/);
-    if (!match || !match[1]) return null;
-    const candidate = decodeURIComponent(match[1]);
-    if (candidate === "map" || candidate === "hex" || candidate === "travel") return null;
-    return candidate;
-  } catch {
-    return null;
-  }
 };
 
 const isSpectateModeFromUrl = (): boolean => {
@@ -108,17 +100,44 @@ const handleNoAccount = (modalContent: ReactNode) => {
   uiStore.setModal(modalContent, true);
 };
 
-const runBootstrap = async (): Promise<BootstrapResult> => {
+const applyWorldSelectionForEntryContext = async (context: ResolvedEntryContext): Promise<WorldProfile> => {
+  const result = await applyWorldSelection(
+    {
+      name: context.worldName,
+      chain: context.chain,
+      worldAddress: context.worldAddress,
+    },
+    context.chain,
+  );
+
+  return result.profile;
+};
+
+const runBootstrap = async ({
+  context,
+  profile,
+}: {
+  context: ResolvedEntryContext;
+  profile: WorldProfile;
+}): Promise<BootstrapResult> => {
   console.log("[STARTING DOJO SETUP]");
   const stores = resolveBootstrapStores();
-  const worldContext = await resolveBootstrapWorldContext();
+  const worldContext = {
+    chain: context.chain,
+    profile,
+    toriiUrl: resolveBootstrapToriiUrl(context.chain, profile),
+  };
   configureDojoRuntime(worldContext);
   const setupResult = await runDojoSetup();
   await runInitialWorldSync(setupResult, stores);
   configureGameSystems(setupResult, worldContext.chain);
   await startGameRenderer(setupResult);
   inject();
-  return setupResult;
+  return {
+    context,
+    profile,
+    setupResult,
+  };
 };
 export const resetBootstrap = () => {
   console.log("[BOOTSTRAP] Resetting bootstrap state");
@@ -128,11 +147,30 @@ export const resetBootstrap = () => {
   resetBootstrapUiState();
 };
 
-export const bootstrapGame = async (): Promise<BootstrapResult> => {
-  const selection = resolveBootstrapSelection();
+export const bootstrapGameForEntryContextWithLifecycle = async (
+  context: ResolvedEntryContext,
+  lifecycle: BootstrapLifecycle = {},
+): Promise<BootstrapResult> => {
+  const cachedSession = getCachedBootstrappedEntrySession(context);
+  if (cachedSession) {
+    return cachedSession;
+  }
+
+  const selection = resolveBootstrapSelection(context);
   resetBootstrapForSelectionChange(selection);
+  markGameEntryMilestone("destination-resolved");
+  markGameEntryMilestone("world-selection-started");
+  lifecycle.onWorldSelectionStarted?.();
+  const profile = await applyWorldSelectionForEntryContext(context);
+  lifecycle.onWorldSelectionCompleted?.();
+  markGameEntryMilestone("world-selection-completed");
+  lifecycle.onBootstrapStarted?.();
+  markGameEntryMilestone("bootstrap-started");
   try {
-    return await bootstrapSession.run(selection, runBootstrap);
+    const result = await bootstrapSession.run(selection, () => runBootstrap({ context, profile }));
+    lifecycle.onBootstrapCompleted?.();
+    markGameEntryMilestone("bootstrap-completed");
+    return result;
   } catch (error) {
     bootstrapSession.clearFailure();
     captureSystemError(error, {
@@ -142,6 +180,28 @@ export const bootstrapGame = async (): Promise<BootstrapResult> => {
     });
     throw error;
   }
+};
+
+export const bootstrapGameForEntryContext = async (context: ResolvedEntryContext): Promise<BootstrapResult> => {
+  return bootstrapGameForEntryContextWithLifecycle(context);
+};
+
+const resolveLegacyBootstrapEntryContext = (): ResolvedEntryContext => {
+  if (typeof window === "undefined") {
+    throw new Error("Cannot resolve the bootstrap entry context without a browser location.");
+  }
+
+  const context = resolveEntryContextFromPlayRoute(window.location);
+  if (!context) {
+    return redirectToLandingWorldSelection();
+  }
+
+  return context;
+};
+
+export const bootstrapGame = async (): Promise<SetupResult> => {
+  const session = await bootstrapGameForEntryContext(resolveLegacyBootstrapEntryContext());
+  return session.setupResult;
 };
 
 type BootstrapStores = {
@@ -159,19 +219,6 @@ const resolveBootstrapStores = (): BootstrapStores => ({
   syncingStore: useSyncStore.getState(),
   uiStore: useUIStore.getState(),
 });
-
-const resolveBootstrapSelection = (): BootstrapSelection => {
-  const routeSelection = resolvePlayRouteSelection();
-  if (routeSelection) {
-    return routeSelection;
-  }
-
-  const currentWorld = getActiveWorld();
-  return {
-    chain: currentWorld?.chain ?? null,
-    worldName: currentWorld?.name ?? null,
-  };
-};
 
 const resetBootstrapForSelectionChange = (selection: BootstrapSelection) => {
   const resetReason = bootstrapSession.getResetReason(selection);
@@ -192,107 +239,6 @@ const resetBootstrapForSelectionChange = (selection: BootstrapSelection) => {
   }
 
   resetBootstrap();
-};
-
-const resolveBootstrapWorldContext = async (): Promise<BootstrapWorldContext> => {
-  const routeSelection = resolvePlayRouteSelection();
-  const chain = routeSelection?.chain ?? resolveChain(env.VITE_PUBLIC_CHAIN! as Chain);
-  const profile = await resolveBootstrapWorldProfile(chain);
-
-  return {
-    chain,
-    profile,
-    toriiUrl: resolveBootstrapToriiUrl(chain, profile),
-  };
-};
-
-const resolveBootstrapWorldProfile = async (chain: Chain): Promise<WorldProfile> => {
-  const profileFromPath = await resolveWorldProfileFromPath(chain);
-  const activeProfile = profileFromPath ?? getActiveWorld();
-  const refreshedProfile = await refreshWorldProfileIfNeeded(chain, activeProfile);
-
-  if (refreshedProfile) {
-    return refreshedProfile;
-  }
-
-  return ensureActiveWorldProfileWithUI(chain);
-};
-
-const resolveWorldProfileFromPath = async (chain: Chain): Promise<WorldProfile | null> => {
-  const pathWorld = deriveWorldFromPath();
-  if (!pathWorld) {
-    return null;
-  }
-
-  try {
-    const profile = await buildWorldProfile(chain, pathWorld);
-    setSelectedChain(profile.chain);
-    setActiveWorldName(profile.name);
-    return profile;
-  } catch (error) {
-    console.error("[bootstrap] Failed to apply world from URL", error);
-    return null;
-  }
-};
-
-const refreshWorldProfileIfNeeded = async (
-  chain: Chain,
-  profile: WorldProfile | null,
-): Promise<WorldProfile | null> => {
-  if (!profile || !shouldRefreshWorldProfile(chain, profile)) {
-    return profile;
-  }
-
-  try {
-    const refreshedProfile = await buildWorldProfile(chain, profile.name);
-    if (didWorldProfileRefreshChange(profile, refreshedProfile)) {
-      console.log("[bootstrap] World profile refreshed, continuing bootstrap without page reload");
-    }
-    return refreshedProfile;
-  } catch (error) {
-    console.error("[bootstrap] Failed to refresh world profile rpcUrl", error);
-    return profile;
-  }
-};
-
-const shouldRefreshWorldProfile = (chain: Chain, candidate: WorldProfile): boolean => {
-  if (candidate.chain && candidate.chain !== chain) {
-    return true;
-  }
-
-  if (!candidate.rpcUrl) {
-    return true;
-  }
-
-  const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
-  if (canUseEnvRpc) {
-    const normalizedProfileRpc = normalizeRpcUrl(candidate.rpcUrl);
-    const normalizedEnvRpc = normalizeRpcUrl(env.VITE_PUBLIC_NODE_URL);
-
-    if (normalizedProfileRpc !== normalizedEnvRpc && normalizedProfileRpc.includes(`/x/${candidate.name}/katana`)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  if (chain === "slot" || chain === "slottest") {
-    return !candidate.rpcUrl.includes(`/x/${candidate.name}/katana`);
-  }
-
-  if (chain === "mainnet" || chain === "sepolia") {
-    return candidate.rpcUrl.includes("/katana") || !candidate.rpcUrl.includes(`/x/starknet/${chain}`);
-  }
-
-  return false;
-};
-
-const didWorldProfileRefreshChange = (previousProfile: WorldProfile, refreshedProfile: WorldProfile): boolean => {
-  return (
-    !previousProfile.rpcUrl ||
-    refreshedProfile.rpcUrl !== previousProfile.rpcUrl ||
-    (previousProfile.chain !== undefined && refreshedProfile.chain !== previousProfile.chain)
-  );
 };
 
 const configureDojoRuntime = ({ chain, profile, toriiUrl }: BootstrapWorldContext) => {
