@@ -3,10 +3,10 @@ import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const useUnifiedOnboardingMock = vi.fn();
+const usePlayRouteBootControllerMock = vi.fn();
 
-vi.mock("./hooks/context/use-unified-onboarding", () => ({
-  useUnifiedOnboarding: (...args: unknown[]) => useUnifiedOnboardingMock(...args),
+vi.mock("./game-entry/play-route-boot", () => ({
+  usePlayRouteBootController: (...args: unknown[]) => usePlayRouteBootControllerMock(...args),
 }));
 
 vi.mock("./hooks/context/dojo-context", () => ({
@@ -73,7 +73,7 @@ describe("GameRoute", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-    useUnifiedOnboardingMock.mockReset();
+    usePlayRouteBootControllerMock.mockReset();
   });
 
   afterEach(async () => {
@@ -85,14 +85,13 @@ describe("GameRoute", () => {
   });
 
   it("keeps direct play-route reconnect grace on the game route instead of redirecting home", async () => {
-    useUnifiedOnboardingMock.mockReturnValue({
-      phase: "account",
-      bootstrap: { status: "loading", progress: 24, retry: vi.fn() },
+    usePlayRouteBootControllerMock.mockReturnValue({
+      phase: "await_account",
+      progress: 24,
       setupResult: null,
       account: null,
       connectWallet: vi.fn(),
-      entrySource: "play-route",
-      isDirectPlayRoute: true,
+      retry: vi.fn(),
       isReconnectRequired: false,
     });
 
@@ -109,14 +108,13 @@ describe("GameRoute", () => {
   });
 
   it("renders an on-route reconnect screen for direct play routes after reconnect grace expires", async () => {
-    useUnifiedOnboardingMock.mockReturnValue({
-      phase: "loading",
-      bootstrap: { status: "error", progress: 0, retry: vi.fn() },
+    usePlayRouteBootControllerMock.mockReturnValue({
+      phase: "reconnect_required",
+      progress: 0,
       setupResult: null,
       account: null,
       connectWallet: vi.fn(),
-      entrySource: "play-route",
-      isDirectPlayRoute: true,
+      retry: vi.fn(),
       isReconnectRequired: true,
     });
 

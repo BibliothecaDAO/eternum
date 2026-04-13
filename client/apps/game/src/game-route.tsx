@@ -7,8 +7,8 @@ import { useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { env } from "../env";
+import { usePlayRouteBootController } from "./game-entry/play-route-boot";
 import { DojoProvider } from "./hooks/context/dojo-context";
-import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
 import { PlayRouteReconnectScreen } from "./ui/layouts/play-route-reconnect-screen";
@@ -75,13 +75,12 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     };
   }, []);
 
-  const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, bootstrap, setupResult, account, connectWallet, entrySource, isReconnectRequired } = state;
+  const state = usePlayRouteBootController();
+  const { phase, progress, setupResult, account, connectWallet, retry, isReconnectRequired } = state;
   const routeView = resolveGameRouteView({
     phase,
     hasSetupResult: setupResult !== null,
     hasAccount: account !== null,
-    entrySource,
     isReconnectRequired,
   });
   useBootDocumentState(
@@ -97,9 +96,9 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     return (
       <PlayRouteReconnectScreen
         onReconnect={connectWallet}
-        onRetry={bootstrap.retry}
+        onRetry={retry}
         onReturnToDashboard={() => navigate("/")}
-        showRetry={bootstrap.status === "error"}
+        showRetry={phase === "error"}
       />
     );
   }
@@ -107,7 +106,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   if (routeView === "loading") {
     return (
       <LoadingScreen
-        progress={bootstrap.status === "loading" ? bootstrap.progress : undefined}
+        progress={progress > 0 ? progress : undefined}
         title="Charting the World"
         subtitle="Following contour lines while world state comes online."
       />

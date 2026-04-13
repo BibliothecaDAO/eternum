@@ -1,15 +1,16 @@
 import { Position, configManager } from "@bibliothecadao/eternum";
 
 import { parsePlayRoute, type PlayRouteDescriptor, type PlayScene } from "./play-route";
+import { resolvePlaySceneTarget } from "./play-scene-target";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
 
-export interface PlayRouteWorldPosition {
+interface PlayRouteWorldPosition {
   col: number;
   row: number;
 }
 
-export interface ResolvedPlayRouteTarget {
+interface ResolvedPlayRouteTarget {
   scene: PlayScene;
   requestedScene: PlayScene | null;
   routeWorldPosition: PlayRouteWorldPosition | null;
@@ -60,20 +61,9 @@ const resolveRouteWorldPositionFromPlayRoute = (
   }
 
   return normalizeWorldMapRoutePosition({
-    col: playRoute.col,
-    row: playRoute.row,
+    col: playRoute.col ?? undefined,
+    row: playRoute.row ?? undefined,
   });
-};
-
-export const resolvePlaySceneTarget = (
-  requestedScene: PlayScene | null | undefined,
-  fastTravelEnabled: boolean,
-): PlayScene => {
-  if (requestedScene === "travel" && !fastTravelEnabled) {
-    return "map";
-  }
-
-  return requestedScene ?? "map";
 };
 
 export const resolvePlayRouteWorldPosition = (location: LocationLike): PlayRouteWorldPosition | null => {

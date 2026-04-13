@@ -1,4 +1,5 @@
 import { AudioManager } from "@/audio/core/AudioManager";
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
@@ -1132,6 +1133,10 @@ export default class HexceptionScene extends HexagonScene {
       console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
       if (typeof window !== "undefined") {
+        usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
+          col: this.centerColRow[0],
+          row: this.centerColRow[1],
+        });
         rememberHexceptionGridReady({ col: this.centerColRow[0], row: this.centerColRow[1] });
         window.dispatchEvent(
           new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {

@@ -12,6 +12,7 @@ import {
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
@@ -3325,6 +3326,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private announceWorldmapSceneReady(): void {
+    usePlayRouteReadinessStore.getState().markWorldmapReady(getCurrentPlayRouteBootToken());
+
     if (typeof window === "undefined") {
       return;
     }
@@ -6970,6 +6973,13 @@ export default class WorldmapScene extends WarpTravel {
 
       if (!committed) {
         return;
+      }
+
+      if (oldChunk === "null") {
+        // Cold-start chunk commits can land before exact-fetch results are applied.
+        // Queue one same-chunk hydrated refresh so a hard reload converges like
+        // the post-overlay/dashboard path instead of switching on stale terrain.
+        this.scheduleHydratedChunkRefresh(chunkKey);
       }
 
       // Track memory usage after chunk switch

@@ -1,27 +1,23 @@
-import type { OnboardingPhase } from "@/hooks/context/use-unified-onboarding";
+import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
 
 type GameRouteView = "loading" | "ready" | "reconnect" | "redirect";
-
-const REDIRECT_PHASES: ReadonlySet<OnboardingPhase> = new Set(["world-select"]);
 
 export const resolveGameRouteView = ({
   phase,
   hasSetupResult,
   hasAccount,
-  entrySource,
   isReconnectRequired = false,
 }: {
-  phase: OnboardingPhase;
+  phase: PlayRouteBootPhase;
   hasSetupResult: boolean;
   hasAccount: boolean;
-  entrySource: "play-route" | null;
   isReconnectRequired?: boolean;
 }): GameRouteView => {
   if (hasSetupResult && hasAccount) {
     return "ready";
   }
 
-  if (entrySource !== "play-route" || REDIRECT_PHASES.has(phase)) {
+  if (phase === "normalize_route") {
     return "redirect";
   }
 
