@@ -8041,10 +8041,16 @@ export default class WorldmapScene extends WarpTravel {
           }
 
           this.moveCameraToURLLocation();
-          this.requestChunkRefresh(true, "default");
+          this.refreshRouteOwnedChunkState();
         },
       ),
     );
+  }
+
+  private refreshRouteOwnedChunkState(): void {
+    void this.updateVisibleChunks(true, { reason: "default" }).catch((error) => {
+      console.error("[WorldMap] Route-owned refresh failed:", error);
+    });
   }
 
   private disposeStoreSubscriptions() {
