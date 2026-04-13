@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-14",
+    title: "Sidebar Structure Values Fix",
+    description:
+      "Realm and village cards in the left sidebar now derive population and building capacity from one authoritative status snapshot, so synced structures stop showing inflated or invented values.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-14",
     title: "Reliable Auto-Settle Entry",
     description:
       "Auto-settle now keeps freshly registered Blitz players on the settlement path until their realm setup is ready, so dashboard handoffs stop dropping new entrants into the game as spectators.",

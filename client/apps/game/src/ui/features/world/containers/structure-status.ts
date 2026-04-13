@@ -1,8 +1,18 @@
-import { BUILDINGS_CENTER } from "@bibliothecadao/types";
+import { StructureType, BUILDINGS_CENTER } from "@bibliothecadao/types";
+import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 
 const normalizeNonNegativeInteger = (value: number) => {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.trunc(value));
+};
+
+const normalizeOptionalNonNegativeInteger = (value: bigint | number | null | undefined) => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const normalizedValue = typeof value === "bigint" ? Number(value) : value;
+  return Number.isFinite(normalizedValue) ? Math.max(0, Math.trunc(normalizedValue)) : null;
 };
 
 const resolveBuildRadius = (level: number) => normalizeNonNegativeInteger(level) + 1;
@@ -53,5 +63,86 @@ export const resolveAvailableBuildingTiles = ({
     available: total - occupied,
     occupied,
     total,
+  };
+};
+
+type StructureBuildingsLike = {
+  population?: {
+    current?: bigint | number | null;
+    max?: bigint | number | null;
+  } | null;
+} | null;
+
+export type StructureStatusSnapshot = {
+  populationCurrent: number | null;
+  populationCapacityRaw: number | null;
+  populationCapacityTotal: number | null;
+  populationLabel: string | null;
+  buildingTilesAvailable: number | null;
+  buildingTilesTotal: number | null;
+  buildingTilesLabel: string | null;
+  hasAuthoritativePopulation: boolean;
+  hasAuthoritativeBuildingTiles: boolean;
+};
+
+const buildEmptyStructureStatusSnapshot = (): StructureStatusSnapshot => ({
+  populationCurrent: null,
+  populationCapacityRaw: null,
+  populationCapacityTotal: null,
+  populationLabel: null,
+  buildingTilesAvailable: null,
+  buildingTilesTotal: null,
+  buildingTilesLabel: null,
+  hasAuthoritativePopulation: false,
+  hasAuthoritativeBuildingTiles: false,
+});
+
+export const resolveStructureStatusSnapshot = ({
+  structureCategory,
+  structureLevel,
+  structureBuildings,
+  occupiedBuildingTiles,
+  basePopulationCapacity,
+}: {
+  structureCategory: StructureType | undefined;
+  structureLevel: number;
+  structureBuildings: StructureBuildingsLike | undefined;
+  occupiedBuildingTiles: number | null | undefined;
+  basePopulationCapacity: number;
+}): StructureStatusSnapshot => {
+  if (!resolveStructureUiCapabilities({ category: structureCategory }).hasPopulationDetails) {
+    return buildEmptyStructureStatusSnapshot();
+  }
+
+  const populationCurrent = normalizeOptionalNonNegativeInteger(structureBuildings?.population?.current);
+  const populationCapacityRaw = normalizeOptionalNonNegativeInteger(structureBuildings?.population?.max);
+  const normalizedBasePopulationCapacity = normalizeNonNegativeInteger(basePopulationCapacity);
+  const populationCapacityTotal =
+    populationCapacityRaw === null ? null : populationCapacityRaw + normalizedBasePopulationCapacity;
+  const hasAuthoritativePopulation = populationCurrent !== null && populationCapacityTotal !== null;
+
+  const buildingTileSummary =
+    occupiedBuildingTiles === null || occupiedBuildingTiles === undefined
+      ? null
+      : resolveAvailableBuildingTiles({
+          level: structureLevel,
+          occupiedBuildingTiles,
+        });
+
+  return {
+    populationCurrent,
+    populationCapacityRaw,
+    populationCapacityTotal,
+    populationLabel:
+      hasAuthoritativePopulation && populationCapacityTotal !== null
+        ? formatPopulationStatusLabel(populationCurrent, populationCapacityTotal)
+        : null,
+    buildingTilesAvailable: buildingTileSummary?.available ?? null,
+    buildingTilesTotal: buildingTileSummary?.total ?? null,
+    buildingTilesLabel: buildingTileSummary
+      ? formatAvailableBuildingTilesLabel(buildingTileSummary.available, buildingTileSummary.total)
+      : null,
+    hasAuthoritativePopulation,
+    hasAuthoritativeBuildingTiles: Boolean(buildingTileSummary),
   };
 };

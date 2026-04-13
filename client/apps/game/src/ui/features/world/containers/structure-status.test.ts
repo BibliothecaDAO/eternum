@@ -1,10 +1,11 @@
-import { BUILDINGS_CENTER, RealmLevels } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, RealmLevels, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import {
   countOccupiedBuildingTilesByStructure,
   formatAvailableBuildingTilesLabel,
   formatPopulationStatusLabel,
   resolveAvailableBuildingTiles,
+  resolveStructureStatusSnapshot,
 } from "./structure-status";
 
 describe("structure-status", () => {
@@ -62,6 +63,82 @@ describe("structure-status", () => {
       available: 0,
       occupied: 6,
       total: 6,
+    });
+  });
+
+  it("resolves population totals by adding base capacity exactly once", () => {
+    expect(
+      resolveStructureStatusSnapshot({
+        structureCategory: StructureType.Realm,
+        structureLevel: RealmLevels.City,
+        basePopulationCapacity: 6,
+        occupiedBuildingTiles: 3,
+        structureBuildings: {
+          population: {
+            current: 25,
+            max: 24,
+          },
+        },
+      }),
+    ).toMatchObject({
+      populationCurrent: 25,
+      populationCapacityRaw: 24,
+      populationCapacityTotal: 30,
+      populationLabel: "25/30",
+      buildingTilesAvailable: 15,
+      buildingTilesTotal: 18,
+      buildingTilesLabel: "15/18",
+      hasAuthoritativePopulation: true,
+      hasAuthoritativeBuildingTiles: true,
+    });
+  });
+
+  it("withholds population stats when structure buildings have not synced", () => {
+    expect(
+      resolveStructureStatusSnapshot({
+        structureCategory: StructureType.Realm,
+        structureLevel: RealmLevels.City,
+        basePopulationCapacity: 6,
+        occupiedBuildingTiles: 0,
+        structureBuildings: null,
+      }),
+    ).toMatchObject({
+      populationCurrent: null,
+      populationCapacityRaw: null,
+      populationCapacityTotal: null,
+      populationLabel: null,
+      hasAuthoritativePopulation: false,
+      buildingTilesAvailable: 18,
+      buildingTilesTotal: 18,
+      buildingTilesLabel: "18/18",
+      hasAuthoritativeBuildingTiles: true,
+    });
+  });
+
+  it("omits all compact stats for structures without population details", () => {
+    expect(
+      resolveStructureStatusSnapshot({
+        structureCategory: StructureType.FragmentMine,
+        structureLevel: 0,
+        basePopulationCapacity: 6,
+        occupiedBuildingTiles: 0,
+        structureBuildings: {
+          population: {
+            current: 5,
+            max: 7,
+          },
+        },
+      }),
+    ).toEqual({
+      populationCurrent: null,
+      populationCapacityRaw: null,
+      populationCapacityTotal: null,
+      populationLabel: null,
+      buildingTilesAvailable: null,
+      buildingTilesTotal: null,
+      buildingTilesLabel: null,
+      hasAuthoritativePopulation: false,
+      hasAuthoritativeBuildingTiles: false,
     });
   });
 });

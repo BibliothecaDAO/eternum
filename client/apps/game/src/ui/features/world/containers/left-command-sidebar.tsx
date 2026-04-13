@@ -33,9 +33,8 @@ import {
 } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   countOccupiedBuildingTilesByStructure,
-  formatAvailableBuildingTilesLabel,
-  formatPopulationStatusLabel,
-  resolveAvailableBuildingTiles,
+  resolveStructureStatusSnapshot,
+  type StructureStatusSnapshot,
 } from "@/ui/features/world/containers/structure-status";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
@@ -104,11 +103,8 @@ type StructureWithMetadata = Structure & {
   displayName: string;
   originalName: string;
   realmLevel: number;
-  realmLevelLabel: string | null;
-  population: number;
-  populationCapacity: number;
-  buildingTilesAvailable: number | null;
-  buildingTilesTotal: number | null;
+  occupiedBuildingTiles: number | null;
+  statusSnapshot: StructureStatusSnapshot;
   groupColor: StructureGroupColor | null;
   isFavorite: boolean;
   canUpgrade: boolean;
@@ -220,16 +216,50 @@ const StructureStatusStats = ({
   populationLabel,
   buildingTilesLabel,
 }: {
-  populationLabel: string;
+  populationLabel: string | null;
   buildingTilesLabel: string | null;
 }) => (
   <div className="flex flex-wrap items-center gap-1.5">
-    <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" />
+    {populationLabel ? <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" /> : null}
     {buildingTilesLabel ? (
       <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Available / total building tiles" />
     ) : null}
   </div>
 );
+
+const normalizeStructureLevel = (value: bigint | number | null | undefined) =>
+  typeof value === "bigint" ? Number(value) : Number(value ?? 0);
+
+const resolveSidebarStructureStatus = ({
+  structureCategory,
+  structureLevel,
+  structureBuildings,
+  occupiedBuildingTiles,
+  fallbackStatus,
+}: {
+  structureCategory: StructureType | undefined;
+  structureLevel: number;
+  structureBuildings: { population?: { current?: bigint | number | null; max?: bigint | number | null } | null } | null;
+  occupiedBuildingTiles: number | null | undefined;
+  fallbackStatus?: StructureStatusSnapshot;
+}) => {
+  if (!structureBuildings && fallbackStatus) {
+    return fallbackStatus;
+  }
+
+  const structureCapabilities = resolveStructureUiCapabilities({ category: structureCategory });
+  const basePopulationCapacity = structureCapabilities.hasPopulationDetails
+    ? Math.max(Number(configManager.getBasePopulationCapacity() ?? 0), 6)
+    : 0;
+
+  return resolveStructureStatusSnapshot({
+    structureCategory,
+    structureLevel,
+    structureBuildings,
+    occupiedBuildingTiles,
+    basePopulationCapacity,
+  });
+};
 
 const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] => {
   // Panel width is 420px, padding is 24px (px-3 on each side), available ~396px
@@ -335,34 +365,22 @@ const LeftPanelHeader = memo(
     const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
       // Force recomputation when a local rename occurs.
       void nameUpdateVersion;
-      const basePopulationCapacityValue = configManager.getBasePopulationCapacity();
       const maxRealmLevel = configManager.getMaxLevel(StructureType.Realm);
       return structures.map((structure) => {
         const { name, originalName } = mode.structure.getName(structure.structure);
-        const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
         const baseLevel = structure.structure.base?.level;
-        const normalizedLevel =
-          typeof baseLevel === "number" ? baseLevel : typeof baseLevel === "bigint" ? Number(baseLevel) : 0;
-        const realmLevelLabel = structureCapabilities.hasPopulationDetails
-          ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-          : null;
+        const normalizedLevel = normalizeStructureLevel(baseLevel);
         const structureEntity = getEntityIdFromKeys([BigInt(structure.entityId)]);
         const structureBuildings = components.StructureBuildings
           ? getComponentValue(components.StructureBuildings, structureEntity)
           : null;
-        const population = Number(structureBuildings?.population.current ?? 0);
-        const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
-          ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
-          : 0;
-        const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
-        const occupiedBuildingTiles = buildingTileCountsByStructure[structure.entityId];
-        const buildingTileSummary =
-          structureCapabilities.hasPopulationDetails && occupiedBuildingTiles !== undefined
-            ? resolveAvailableBuildingTiles({
-                level: normalizedLevel,
-                occupiedBuildingTiles,
-              })
-            : null;
+        const occupiedBuildingTiles = buildingTileCountsByStructure[structure.entityId] ?? null;
+        const statusSnapshot = resolveSidebarStructureStatus({
+          structureCategory: structure.category,
+          structureLevel: normalizedLevel,
+          structureBuildings,
+          occupiedBuildingTiles,
+        });
         const groupColor = structureGroups[structure.entityId] ?? null;
 
         const isFavorite = favoritesSet.has(structure.entityId);
@@ -372,11 +390,8 @@ const LeftPanelHeader = memo(
           displayName: name,
           originalName,
           realmLevel: normalizedLevel,
-          realmLevelLabel,
-          population,
-          populationCapacity,
-          buildingTilesAvailable: buildingTileSummary?.available ?? null,
-          buildingTilesTotal: buildingTileSummary?.total ?? null,
+          occupiedBuildingTiles,
+          statusSnapshot,
           groupColor,
           isFavorite,
           canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
@@ -428,38 +443,24 @@ const LeftPanelHeader = memo(
       selectedStructureMetadata?.realmLevel ??
       selectedStructureMetadata?.structure.base?.level ??
       0;
-    const normalizedLevel =
-      typeof normalizedLevelRaw === "bigint" ? Number(normalizedLevelRaw) : Number(normalizedLevelRaw ?? 0);
+    const normalizedLevel = normalizeStructureLevel(normalizedLevelRaw);
     const selectedStructureCapabilities = resolveStructureUiCapabilities(selectedStructureMetadata?.structure);
     const levelLabel = selectedStructureCapabilities.hasPopulationDetails
       ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
       : selectedStructureMetadata
         ? `Level ${normalizedLevel}`
         : "Level —";
-    const basePopulationCapacity = selectedStructureCapabilities.hasPopulationDetails
-      ? configManager.getBasePopulationCapacity()
-      : 0;
-    const normalizedBasePopulationCapacity = selectedStructureCapabilities.hasPopulationDetails
-      ? Math.max(Number(basePopulationCapacity ?? 0), 6)
-      : 0;
-    const livePopulation = Number(
-      liveStructureBuildings?.population.current ?? selectedStructureMetadata?.population ?? 0,
-    );
-    const livePopulationCapacity =
-      Number(liveStructureBuildings?.population.max ?? selectedStructureMetadata?.populationCapacity ?? 0) +
-      normalizedBasePopulationCapacity;
-    const populationStatusLabel = selectedStructureMetadata
-      ? formatPopulationStatusLabel(livePopulation, livePopulationCapacity)
+    const selectedStructureStatus = selectedStructureMetadata
+      ? resolveSidebarStructureStatus({
+          structureCategory: selectedStructureMetadata.category,
+          structureLevel: normalizedLevel,
+          structureBuildings: liveStructureBuildings,
+          occupiedBuildingTiles: selectedStructureMetadata.occupiedBuildingTiles,
+          fallbackStatus: selectedStructureMetadata.statusSnapshot,
+        })
       : null;
-    const buildingTilesStatusLabel =
-      selectedStructureMetadata &&
-      selectedStructureMetadata.buildingTilesAvailable !== null &&
-      selectedStructureMetadata.buildingTilesTotal !== null
-        ? formatAvailableBuildingTilesLabel(
-            selectedStructureMetadata.buildingTilesAvailable,
-            selectedStructureMetadata.buildingTilesTotal,
-          )
-        : null;
+    const populationStatusLabel = selectedStructureStatus?.populationLabel ?? null;
+    const buildingTilesStatusLabel = selectedStructureStatus?.buildingTilesLabel ?? null;
     const showDetailedStats = Boolean(selectedStructureMetadata && selectedStructureCapabilities.hasPopulationDetails);
     const headerTitle =
       selectedStructureMetadata?.displayName ??
@@ -496,15 +497,19 @@ const LeftPanelHeader = memo(
               >
                 {headerTitle}
               </p>
-              {showDetailedStats && populationStatusLabel && (
+              {showDetailedStats && (
                 <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gold/70">
                   <span className="text-gold/40">•</span>
                   <span>{levelLabel}</span>
-                  <span className="text-gold/40">•</span>
-                  <StructureStatusStats
-                    populationLabel={populationStatusLabel}
-                    buildingTilesLabel={buildingTilesStatusLabel}
-                  />
+                  {(populationStatusLabel || buildingTilesStatusLabel) && (
+                    <>
+                      <span className="text-gold/40">•</span>
+                      <StructureStatusStats
+                        populationLabel={populationStatusLabel}
+                        buildingTilesLabel={buildingTilesStatusLabel}
+                      />
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -633,29 +638,21 @@ const StructureListItem = memo(
 
     const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
     const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
-    const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);
+    const normalizedLevel = normalizeStructureLevel(rawLevel);
     const levelLabel = structureCapabilities.hasPopulationDetails
       ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
       : null;
-
-    const basePopulationCapacity = structureCapabilities.hasPopulationDetails
-      ? configManager.getBasePopulationCapacity()
-      : 0;
-    const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
-      ? Math.max(Number(basePopulationCapacity ?? 0), 6)
-      : 0;
-
-    const population = Number(liveStructureBuildings?.population.current ?? structure.population ?? 0);
-    const populationCapacity =
-      Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) +
-      normalizedBasePopulationCapacity;
+    const structureStatus = resolveSidebarStructureStatus({
+      structureCategory: structure.category,
+      structureLevel: normalizedLevel,
+      structureBuildings: liveStructureBuildings,
+      occupiedBuildingTiles: structure.occupiedBuildingTiles,
+      fallbackStatus: structure.statusSnapshot,
+    });
 
     const showInfoLine = structureCapabilities.hasPopulationDetails;
-    const populationStatusLabel = formatPopulationStatusLabel(population, populationCapacity);
-    const buildingTilesStatusLabel =
-      structure.buildingTilesAvailable !== null && structure.buildingTilesTotal !== null
-        ? formatAvailableBuildingTilesLabel(structure.buildingTilesAvailable, structure.buildingTilesTotal)
-        : null;
+    const populationStatusLabel = structureStatus.populationLabel;
+    const buildingTilesStatusLabel = structureStatus.buildingTilesLabel;
     const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
 
     const handleSelectStructure = useCallback(
