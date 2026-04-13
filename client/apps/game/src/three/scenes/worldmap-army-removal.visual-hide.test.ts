@@ -9,19 +9,36 @@ function readSource(relativePath: string): string {
 }
 
 describe("Stage 5: removal visual hide", () => {
-  it("scheduleArmyRemoval only hides armies immediately when no pending move is keeping the source visual alive", () => {
+  it("scheduleArmyRemoval keeps source visuals alive while movement is still in flight", () => {
     const src = readSource("worldmap.tsx");
 
     // Find the method definition (private scheduleArmyRemoval)
     const methodStart = src.indexOf("private scheduleArmyRemoval(");
     expect(methodStart).toBeGreaterThan(-1);
 
-    const methodBody = src.slice(methodStart, methodStart + 2000);
+    const methodBody = src.slice(methodStart, methodStart + 2600);
 
     expect(methodBody).toContain(
       'const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);',
     );
-    expect(methodBody).toContain("if (!hasPendingMovement) {");
+    expect(methodBody).toContain("this.armyManager.isArmyMoving(entityId)");
+    expect(methodBody).toContain("hasMovementInFlight");
+    expect(methodBody).toContain("shouldHideSourceArmyOnTileRemoval({");
+    expect(methodBody).toContain("hasMovementInFlight");
+    expect(methodBody).not.toContain("if (!hasPendingMovement) {");
+    expect(methodBody).toContain("this.armyManager.hideArmyVisual(entityId);");
+  });
+
+  it("scheduleArmyRemoval ignores stale tile removals after the tracked army already moved", () => {
+    const src = readSource("worldmap.tsx");
+
+    const methodStart = src.indexOf("private scheduleArmyRemoval(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodBody = src.slice(methodStart, methodStart + 2600);
+    expect(methodBody).toContain("isStaleTrackedArmyTileRemoval({");
+    expect(methodBody).toContain("this.armyManager.unsuppressArmy(entityId)");
+    expect(methodBody).toContain("restoreArmyVisualIfVisible(entityId)");
     expect(methodBody).toContain("this.armyManager.hideArmyVisual(entityId);");
   });
 

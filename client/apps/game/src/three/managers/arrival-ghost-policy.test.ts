@@ -24,17 +24,17 @@ describe("arrival-ghost-policy", () => {
     ).toBe(false);
   });
 
-  it("keeps the source army visible for pending tile removals", () => {
+  it("keeps the source army visible while movement is still in flight", () => {
     expect(
       shouldHideSourceArmyOnTileRemoval({
-        hasPendingMovement: true,
+        hasMovementInFlight: true,
         reason: "tile",
       }),
     ).toBe(false);
 
     expect(
       shouldHideSourceArmyOnTileRemoval({
-        hasPendingMovement: false,
+        hasMovementInFlight: false,
         reason: "tile",
       }),
     ).toBe(true);

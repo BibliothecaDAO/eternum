@@ -194,7 +194,7 @@ import {
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
-import { findSupersededArmyRemoval } from "./worldmap-army-removal";
+import { findSupersededArmyRemoval, isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
@@ -3668,19 +3668,35 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);
+    const hasMovementInFlight = reason === "tile" && (hasPendingMovement || this.armyManager.isArmyMoving(entityId));
     // Tile removals wait longer (1500ms) to ensure movement updates arrive
     // Zero troop removals are immediate (0ms) since they're confirmed deaths
     const baseDelay = reason === "tile" ? 1500 : 0;
-    const initialDelay = hasPendingMovement ? 3000 : baseDelay;
+    const initialDelay = hasMovementInFlight ? 3000 : baseDelay;
     const retryDelay = 500;
     const maxPendingWaitMs = 10000;
 
     const scheduledAt = Date.now();
     const removalPosition = context?.position ?? this.armiesPositions.get(entityId);
+    const trackedPosition = this.armiesPositions.get(entityId);
     const removalOwnerAddress =
       context?.ownerAddress ??
       (removalPosition ? this.armyHexes.get(removalPosition.col)?.get(removalPosition.row)?.owner : undefined);
     const removalOwnerStructureId = context?.ownerStructureId ?? this.armyStructureOwners.get(entityId);
+
+    if (
+      isStaleTrackedArmyTileRemoval({
+        reason,
+        trackedPosition,
+        removalPosition,
+      })
+    ) {
+      this.pendingArmyRemovalMeta.delete(entityId);
+      this.armyManager.unsuppressArmy(entityId);
+      void this.armyManager.restoreArmyVisualIfVisible(entityId);
+      return;
+    }
+
     this.pendingArmyRemovalMeta.set(entityId, {
       scheduledAt,
       chunkKey: this.currentChunk,
@@ -3690,12 +3706,13 @@ export default class WorldmapScene extends WarpTravel {
       position: removalPosition,
     });
 
-    // Preserve the source visual while a move is still pending. Torii can emit
-    // the old-tile removal before the destination tile update, and hiding here
-    // creates a dead zone where the army vanishes until the add catches up.
+    // Preserve the source visual while the move is still pending or actively
+    // rendering. Torii can emit the old-tile removal before or during the
+    // destination handoff, and hiding here creates a dead zone where the army
+    // vanishes until the add catches up.
     if (
       shouldHideSourceArmyOnTileRemoval({
-        hasPendingMovement,
+        hasMovementInFlight,
         reason,
       })
     ) {
@@ -3725,7 +3742,7 @@ export default class WorldmapScene extends WarpTravel {
             return;
           }
 
-          if (this.pendingArmyMovements.has(entityId)) {
+          if (this.pendingArmyMovements.has(entityId) || this.armyManager.isArmyMoving(entityId)) {
             const elapsed = Date.now() - meta.scheduledAt;
             if (elapsed < maxPendingWaitMs) {
               schedule(retryDelay);
