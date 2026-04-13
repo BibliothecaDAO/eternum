@@ -1,0 +1,104 @@
+launchKind: series
+environmentId: slot.blitz
+seriesName: blitz-rotation
+autoRetryEnabled: true
+autoRetryIntervalMinutes: 15
+durationSeconds: 3600
+
+games:
+  - gameName: na-gladiator-20-04-26
+    startTime: 2026-04-20T01:00:00Z
+  - gameName: apac-gladiator-21-04-26
+    startTime: 2026-04-21T11:00:00Z
+  - gameName: na-gladiator-22-04-26
+    startTime: 2026-04-22T02:00:00Z
+  - gameName: apac-gladiator-22-04-26
+    startTime: 2026-04-22T10:00:00Z
+  - gameName: eu-gladiator-22-04-26
+    startTime: 2026-04-22T19:00:00Z
+  - gameName: na-gladiator-24-04-26
+    startTime: 2026-04-24T01:00:00Z
+  - gameName: eu-gladiator-24-04-26
+    startTime: 2026-04-24T18:00:00Z
+  - gameName: apac-gladiator-25-04-26
+    startTime: 2026-04-25T12:00:00Z
+  - gameName: eu-gladiator-25-04-26
+    startTime: 2026-04-25T20:00:00Z
+  - gameName: na-gladiator-26-04-26
+    startTime: 2026-04-26T03:00:00Z
+  - gameName: apac-gladiator-26-04-26
+    startTime: 2026-04-26T11:00:00Z
+  - gameName: eu-gladiator-26-04-26
+    startTime: 2026-04-26T19:00:00Z
+  - gameName: na-gladiator-27-04-26
+    startTime: 2026-04-27T01:00:00Z
+  - gameName: apac-gladiator-28-04-26
+    startTime: 2026-04-28T11:00:00Z
+  - gameName: na-gladiator-29-04-26
+    startTime: 2026-04-29T02:00:00Z
+  - gameName: apac-gladiator-29-04-26
+    startTime: 2026-04-29T10:00:00Z
+  - gameName: eu-gladiator-29-04-26
+    startTime: 2026-04-29T19:00:00Z
+  - gameName: na-gladiator-01-05-26
+    startTime: 2026-05-01T01:00:00Z
+  - gameName: eu-gladiator-01-05-26
+    startTime: 2026-05-01T18:00:00Z
+  - gameName: apac-gladiator-02-05-26
+    startTime: 2026-05-02T12:00:00Z
+  - gameName: eu-gladiator-02-05-26
+    startTime: 2026-05-02T20:00:00Z
+  - gameName: na-gladiator-03-05-26
+    startTime: 2026-05-03T03:00:00Z
+  - gameName: apac-gladiator-03-05-26
+    startTime: 2026-05-03T11:00:00Z
+  - gameName: eu-gladiator-03-05-26
+    startTime: 2026-05-03T19:00:00Z
+  - gameName: na-gladiator-04-05-26
+    startTime: 2026-05-04T01:00:00Z
+  - gameName: apac-gladiator-05-05-26
+    startTime: 2026-05-05T11:00:00Z
+  - gameName: na-gladiator-06-05-26
+    startTime: 2026-05-06T02:00:00Z
+  - gameName: apac-gladiator-06-05-26
+    startTime: 2026-05-06T10:00:00Z
+  - gameName: eu-gladiator-06-05-26
+    startTime: 2026-05-06T19:00:00Z
+  - gameName: na-gladiator-08-05-26
+    startTime: 2026-05-08T01:00:00Z
+  - gameName: eu-gladiator-08-05-26
+    startTime: 2026-05-08T18:00:00Z
+  - gameName: apac-gladiator-09-05-26
+    startTime: 2026-05-09T12:00:00Z
+  - gameName: eu-gladiator-09-05-26
+    startTime: 2026-05-09T20:00:00Z
+  - gameName: na-gladiator-10-05-26
+    startTime: 2026-05-10T03:00:00Z
+  - gameName: apac-gladiator-10-05-26
+    startTime: 2026-05-10T11:00:00Z
+  - gameName: eu-gladiator-10-05-26
+    startTime: 2026-05-10T19:00:00Z
+  - gameName: na-gladiator-11-05-26
+    startTime: 2026-05-11T01:00:00Z
+  - gameName: apac-gladiator-12-05-26
+    startTime: 2026-05-12T11:00:00Z
+  - gameName: na-gladiator-13-05-26
+    startTime: 2026-05-13T02:00:00Z
+  - gameName: apac-gladiator-13-05-26
+    startTime: 2026-05-13T10:00:00Z
+  - gameName: eu-gladiator-13-05-26
+    startTime: 2026-05-13T19:00:00Z
+  - gameName: na-gladiator-15-05-26
+    startTime: 2026-05-15T01:00:00Z
+  - gameName: eu-gladiator-15-05-26
+    startTime: 2026-05-15T18:00:00Z
+  - gameName: apac-gladiator-16-05-26
+    startTime: 2026-05-16T12:00:00Z
+  - gameName: eu-gladiator-16-05-26
+    startTime: 2026-05-16T20:00:00Z
+  - gameName: na-gladiator-17-05-26
+    startTime: 2026-05-17T03:00:00Z
+  - gameName: apac-gladiator-17-05-26
+    startTime: 2026-05-17T11:00:00Z
+  - gameName: eu-gladiator-17-05-26
+    startTime: 2026-05-17T19:00:00Z
