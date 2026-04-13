@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyAutoSettleRegistrationHint,
   buildSettlementExecutionPlan,
   deriveSettlementStatus,
   getExpectedSettlementCount,
@@ -61,6 +62,58 @@ describe("deriveSettlementStatus", () => {
     expect(result.remainingToSettle).toBe(0);
     expect(result.canPlay).toBe(true);
     expect(result.needsSettlement).toBe(false);
+  });
+});
+
+describe("applyAutoSettleRegistrationHint", () => {
+  it("treats auto-settle entry handoffs as registered while the settlement index catches up", () => {
+    const hintedSnapshot = applyAutoSettleRegistrationHint({
+      snapshot: snapshot(),
+      autoSettleEnabled: true,
+      entryIntent: "settle",
+      hasAutoSettleEntry: true,
+    });
+
+    expect(hintedSnapshot.registered).toBe(true);
+    expect(deriveSettlementStatus(hintedSnapshot).needsSettlement).toBe(true);
+  });
+
+  it("does not invent registration outside the auto-settle settle flow", () => {
+    expect(
+      applyAutoSettleRegistrationHint({
+        snapshot: snapshot(),
+        autoSettleEnabled: false,
+        entryIntent: "settle",
+        hasAutoSettleEntry: true,
+      }).registered,
+    ).toBe(false);
+
+    expect(
+      applyAutoSettleRegistrationHint({
+        snapshot: snapshot(),
+        autoSettleEnabled: true,
+        entryIntent: "play",
+        hasAutoSettleEntry: true,
+      }).registered,
+    ).toBe(false);
+  });
+
+  it("keeps indexed settlement progress unchanged", () => {
+    const progressedSnapshot = snapshot({
+      registered: false,
+      onceRegistered: true,
+      coordsCount: 2,
+      settledCount: 1,
+    });
+
+    expect(
+      applyAutoSettleRegistrationHint({
+        snapshot: progressedSnapshot,
+        autoSettleEnabled: true,
+        entryIntent: "settle",
+        hasAutoSettleEntry: true,
+      }),
+    ).toEqual(progressedSnapshot);
   });
 });
 

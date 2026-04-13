@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-14",
+    title: "Reliable Auto-Settle Entry",
+    description:
+      "Auto-settle now keeps freshly registered Blitz players on the settlement path until their realm setup is ready, so dashboard handoffs stop dropping new entrants into the game as spectators.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-13",
     title: "Stable Reload Chunk Refresh",
     description:
