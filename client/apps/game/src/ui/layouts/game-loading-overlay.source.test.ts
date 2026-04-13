@@ -8,25 +8,26 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("GameLoadingOverlay source", () => {
-  it("waits for the worldmap ready signal instead of the fixed post-map delay", () => {
+  it("reads the shared play-route boot snapshot and readiness store instead of session handoff state", () => {
     const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
 
-    expect(source).toContain("waitForWorldmapSceneReady");
-    expect(source).not.toContain("POST_WORLD_MAP_LOAD_DELAY_MS = 3_000");
+    expect(source).toContain("usePlayRouteBootSnapshot");
+    expect(source).toContain("usePlayRouteReadinessStore");
+    expect(source).not.toContain("consumePlayRouteHandoff");
   });
 
   it("keeps the loading shell open on safety timeout instead of dismissing into a dead map", () => {
     const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
 
     expect(source).toContain("setDidSafetyTimeout(true);");
-    expect(source).toContain('if (phase === "timed_out") return ["World map startup is still blocked."];');
+    expect(source).toContain('"World map startup is still blocked."');
   });
 
-  it("records canonical renderer and handoff milestones around overlay dismissal", () => {
+  it("records canonical renderer and dismissal milestones around the shared boot readiness flow", () => {
     const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
 
-    expect(source).toContain("const didReceiveSceneReadySignal = await waitForWorldmapSceneReady");
-    expect(source).toContain("if (didReceiveSceneReadySignal) {");
+    expect(source).toContain("readiness.worldmapReady");
+    expect(source).toContain("buildPlayHref");
     expect(source).toContain('markGameEntryMilestone("renderer-scene-ready")');
     expect(source).toContain('markGameEntryMilestone("overlay-dismissed")');
     expect(source).toContain('markGameEntryMilestone("world-interactive")');

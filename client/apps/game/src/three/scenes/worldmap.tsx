@@ -12,7 +12,10 @@ import {
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { parsePlayRoute } from "@/play/navigation/play-route";
+import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
   PendingWorldmapFxStartPayload,
   PendingWorldmapFxStopPayload,
@@ -1757,9 +1760,9 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   public moveCameraToURLLocation() {
-    const col = this.locationManager.getCol();
-    const row = this.locationManager.getRow();
-    if (col !== undefined && row !== undefined) {
+    const routeWorldPosition = resolvePlayRouteWorldPosition(window.location);
+    if (routeWorldPosition) {
+      const { col, row } = routeWorldPosition;
       this.moveCameraToColRow(col, row, 0);
       this.requestChunkRefresh(true, "default");
     }
@@ -3323,6 +3326,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private announceWorldmapSceneReady(): void {
+    usePlayRouteReadinessStore.getState().markWorldmapReady(getCurrentPlayRouteBootToken());
+
     if (typeof window === "undefined") {
       return;
     }
@@ -6987,6 +6992,13 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
+      if (oldChunk === "null") {
+        // Cold-start chunk commits can land before exact-fetch results are applied.
+        // Queue one same-chunk hydrated refresh so a hard reload converges like
+        // the post-overlay/dashboard path instead of switching on stale terrain.
+        this.scheduleHydratedChunkRefresh(chunkKey);
+      }
+
       // Track memory usage after chunk switch
       if (memoryMonitor) {
         const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
@@ -8005,12 +8017,34 @@ export default class WorldmapScene extends WarpTravel {
       },
       onMapZoomPolicyChanged: () => this.applyStoreControlledZoomLock(),
     });
+    this.bindRouteOwnedRefreshLifecycle();
 
     this.logInteractionDebug("store_subscriptions_registered", {
       registeredSubscriptionCount: this.storeSubscriptions.length,
       ...this.getInteractionDebugSnapshot(),
     });
     this.syncStateFromStore();
+  }
+
+  private bindRouteOwnedRefreshLifecycle(): void {
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.showBlankOverlay,
+        (showBlankOverlay) => {
+          if (showBlankOverlay) {
+            return;
+          }
+
+          const playRoute = parsePlayRoute(window.location);
+          if (playRoute?.scene !== "map" || playRoute.col === null || playRoute.row === null) {
+            return;
+          }
+
+          this.moveCameraToURLLocation();
+          this.requestChunkRefresh(true, "default");
+        },
+      ),
+    );
   }
 
   private disposeStoreSubscriptions() {

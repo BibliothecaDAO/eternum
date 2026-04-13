@@ -4,13 +4,14 @@
  */
 import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { env } from "../env";
+import { usePlayRouteBootController } from "./game-entry/play-route-boot";
 import { DojoProvider } from "./hooks/context/dojo-context";
-import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
+import { PlayRouteReconnectScreen } from "./ui/layouts/play-route-reconnect-screen";
 import { NewsHeadlineBridge } from "./ui/features/news-headlines";
 import { StoryEventToastBridge } from "./ui/features/story-events";
 import { LoadingScreen } from "./ui/modules/loading-screen";
@@ -46,6 +47,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
 };
 
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
+  const navigate = useNavigate();
   useEffect(() => {
     if (!env.VITE_TRACING_ENABLED) {
       return;
@@ -73,12 +75,13 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     };
   }, []);
 
-  const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, bootstrap, setupResult, account } = state;
+  const state = usePlayRouteBootController();
+  const { phase, progress, setupResult, account, connectWallet, retry, isReconnectRequired } = state;
   const routeView = resolveGameRouteView({
     phase,
     hasSetupResult: setupResult !== null,
     hasAccount: account !== null,
+    isReconnectRequired,
   });
   useBootDocumentState(
     routeView === "loading" ? "app-loading" : routeView === "ready" ? "app-ready" : null,
@@ -89,10 +92,21 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     return <Navigate to="/" replace />;
   }
 
+  if (routeView === "reconnect") {
+    return (
+      <PlayRouteReconnectScreen
+        onReconnect={connectWallet}
+        onRetry={retry}
+        onReturnToDashboard={() => navigate("/")}
+        showRetry={phase === "error"}
+      />
+    );
+  }
+
   if (routeView === "loading") {
     return (
       <LoadingScreen
-        progress={bootstrap.status === "loading" ? bootstrap.progress : undefined}
+        progress={progress > 0 ? progress : undefined}
         title="Charting the World"
         subtitle="Following contour lines while world state comes online."
       />

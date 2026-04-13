@@ -30,6 +30,30 @@ const allLatestFeatures: LatestFeature[] = [
     gameSlug: "eternum",
   },
   {
+    date: "2026-04-13",
+    title: "Unified Play Route Boot",
+    description:
+      "Dashboard entry and hard reload now follow the same map-first world boot flow, so fresh reloads stop diverging into stale sync state before the world becomes interactive.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-13",
+    title: "Stable Route Scene Resume",
+    description:
+      "Direct map and local-view play routes now agree on which realm to load and how to resume the camera, so reloads and dashboard handoffs stay on the intended route instead of drifting into the wrong scene state.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-13",
+    title: "Play Route Reload Resume",
+    description:
+      "Reloading a live game route now keeps you on that same world route and reconnects in place, so a desync refresh no longer sends you back through the dashboard entry flow.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-12",
     title: "Cleaner Game Entry Handoff",
     description:

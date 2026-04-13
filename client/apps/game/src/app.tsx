@@ -6,8 +6,10 @@ import { cleanupTracing } from "@/tracing/cleanup";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { env } from "../env";
+import { useUIStore } from "./hooks/store/use-ui-store";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import { normalizeLegacyPlayLocation } from "./play/navigation/play-route";
+import { normalizePlayBootLocation } from "./play/navigation/play-route-boot-normalization";
 import { getActiveWorld } from "./runtime/world";
 import "./index.css";
 import { preloadGameRouteModule } from "./game-entry-preload";
@@ -50,10 +52,16 @@ const LandingHomeRoute = () => {
 
 const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
   const location = useLocation();
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const normalizedLegacyHref = normalizeLegacyPlayLocation(location, getActiveWorld());
 
   if (normalizedLegacyHref) {
     return <Navigate to={normalizedLegacyHref} replace />;
+  }
+
+  const normalizedBootHref = showBlankOverlay ? normalizePlayBootLocation(location) : null;
+  if (normalizedBootHref) {
+    return <Navigate to={normalizedBootHref} replace />;
   }
 
   return (

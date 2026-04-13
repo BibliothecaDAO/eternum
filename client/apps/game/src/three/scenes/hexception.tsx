@@ -1,7 +1,9 @@
 import { AudioManager } from "@/audio/core/AudioManager";
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -37,7 +39,11 @@ import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
 import type { QualityLevel } from "@/three/systems/hexception-ambience-system";
 import { GRAPHICS_SETTING, IS_FLAT_MODE } from "@/ui/config";
-import { HEXCEPTION_GRID_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
+import {
+  HEXCEPTION_GRID_READY_EVENT,
+  clearRememberedHexceptionGridReady,
+  rememberHexceptionGridReady,
+} from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -418,10 +424,16 @@ export default class HexceptionScene extends HexagonScene {
 
   setup() {
     this.bootstrapSceneOwnership();
-    const col = this.locationManager.getCol();
-    const row = this.locationManager.getRow();
-    const contractPosition = new Position({ x: col, y: row }).getContract();
-    const realmKey = `${contractPosition.x},${contractPosition.y}`;
+    const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
+    const routeWorldPosition = routeTarget.routeWorldPosition;
+    const contractPosition = routeTarget.hexRealmPosition;
+
+    if (routeWorldPosition == null || contractPosition == null) {
+      return;
+    }
+
+    const { col, row } = routeWorldPosition;
+    const realmKey = `${contractPosition.col},${contractPosition.row}`;
     const realmChanged = !this.isInitialized || this.lastRealmKey !== realmKey;
 
     if (realmChanged) {
@@ -438,7 +450,7 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     if (realmChanged) {
-      this.centerColRow = [contractPosition.x, contractPosition.y];
+      this.centerColRow = [contractPosition.col, contractPosition.row];
       this.tileManager.setTile({ col, row });
 
       // remove all previous building instances
@@ -521,6 +533,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    clearRememberedHexceptionGridReady();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
 
@@ -854,7 +867,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   public moveCameraToURLLocation() {
-    this.moveCameraToColRow(10, 10, 0);
+    this.moveCameraToColRow(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], 0);
   }
 
   updateCastleLevel() {
@@ -1120,6 +1133,11 @@ export default class HexceptionScene extends HexagonScene {
       console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
       if (typeof window !== "undefined") {
+        usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
+          col: this.centerColRow[0],
+          row: this.centerColRow[1],
+        });
+        rememberHexceptionGridReady({ col: this.centerColRow[0], row: this.centerColRow[1] });
         window.dispatchEvent(
           new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {
             detail: { col: this.centerColRow[0], row: this.centerColRow[1] },

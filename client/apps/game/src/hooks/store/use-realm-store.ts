@@ -1,3 +1,4 @@
+import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-target";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
@@ -119,7 +120,7 @@ export const createRealmStoreSlice = (set: any) => ({
       };
 
       if (options?.worldMapPosition) {
-        updates.worldMapReturnPosition = options.worldMapPosition;
+        updates.worldMapReturnPosition = normalizeWorldMapRoutePosition(options.worldMapPosition);
       }
 
       if (shouldSpectate) {

@@ -1,3 +1,6 @@
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
+import { FAST_TRAVEL_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { PathRenderer } from "../managers/path-renderer";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
@@ -97,11 +100,23 @@ export default class FastTravelScene extends WarpTravel {
       registerStoreSubscriptions: () => this.registerFastTravelStoreSubscriptions(),
       setupCameraZoomHandler: () => this.setupFastTravelCameraZoomHandler(),
       refreshScene: () => this.refreshFastTravelScene(),
+      onInitialSetupComplete: () => this.announceFastTravelSceneReady(),
+      onResumeComplete: () => this.announceFastTravelSceneReady(),
       reportSetupError: (error, phase) => this.reportFastTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeFastTravelStoreSubscriptions(),
       detachLabelGroupsFromScene: () => this.detachFastTravelLabelGroupsFromScene(),
       detachManagerLabels: () => this.detachFastTravelManagerLabels(),
     };
+  }
+
+  private announceFastTravelSceneReady(): void {
+    usePlayRouteReadinessStore.getState().markFastTravelReady(getCurrentPlayRouteBootToken());
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.dispatchEvent(new Event(FAST_TRAVEL_SCENE_READY_EVENT));
   }
 
   private configureFastTravelSetupStart(): void {
@@ -213,14 +228,12 @@ export default class FastTravelScene extends WarpTravel {
   }
 
   public moveCameraToURLLocation(): void {
-    const url = new URL(window.location.href);
-    const col = Number(url.searchParams.get("col"));
-    const row = Number(url.searchParams.get("row"));
-
-    if (!Number.isFinite(col) || !Number.isFinite(row)) {
+    const routeWorldPosition = resolvePlayRouteWorldPosition(window.location);
+    if (!routeWorldPosition) {
       return;
     }
 
+    const { col, row } = routeWorldPosition;
     this.moveCameraToColRow(col, row, 0);
   }
 
