@@ -54,15 +54,15 @@ export const FactoryV2DeveloperConfig = ({
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">Factory config</div>
-              <h3 className="mt-1 text-base font-semibold text-black/80">One multicall</h3>
-              <p className="mt-1 text-[13px] leading-5 text-black/48">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-gold/42">Factory config</div>
+              <h3 className="mt-1 text-base font-semibold text-gold/80">One multicall</h3>
+              <p className="mt-1 text-[13px] leading-5 text-gold/48">
                 Pick the factory setters and send one wallet call.
               </p>
             </div>
             <div
               className={cn(
-                "rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-black/56",
+                "rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/56",
                 appearance.quietSurfaceClassName,
               )}
             >
@@ -72,41 +72,39 @@ export const FactoryV2DeveloperConfig = ({
 
           <div className="grid gap-2 md:grid-cols-[minmax(0,1.4fr)_minmax(120px,150px)_minmax(120px,160px)]">
             <label className="block">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-black/42">Factory</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/42">Factory</span>
               <input
                 type="text"
                 value={developerConfig.draft.factoryAddress || "Not configured for this chain"}
                 readOnly
                 className={cn(
-                  "mt-1.5 block h-10 w-full rounded-[16px] border bg-white/60 px-3 text-[12px] text-black/60 outline-none",
+                  "mt-1.5 block h-10 w-full rounded-[16px] border bg-black/20 px-3 text-[12px] text-gold/60 outline-none",
                   appearance.listItemClassName,
                 )}
               />
             </label>
 
             <label className="block">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-black/42">Version</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/42">Version</span>
               <input
                 type="text"
                 value={developerConfig.draft.version}
                 onChange={(event) => developerConfig.setVersion(event.target.value)}
                 className={cn(
-                  "mt-1.5 block h-10 w-full rounded-[16px] border bg-white/80 px-3 text-[12px] font-medium text-black outline-none transition-colors",
+                  "mt-1.5 block h-10 w-full rounded-[16px] border bg-black/25 px-3 text-[12px] font-medium text-gold outline-none transition-colors",
                   appearance.listItemClassName,
                 )}
               />
             </label>
 
             <label className="block">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-black/42">
-                Namespace
-              </span>
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/42">Namespace</span>
               <input
                 type="text"
                 value={developerConfig.draft.namespace}
                 readOnly
                 className={cn(
-                  "mt-1.5 block h-10 w-full rounded-[16px] border bg-white/60 px-3 text-[12px] text-black/60 outline-none",
+                  "mt-1.5 block h-10 w-full rounded-[16px] border bg-black/20 px-3 text-[12px] text-gold/60 outline-none",
                   appearance.listItemClassName,
                 )}
               />
@@ -115,7 +113,7 @@ export const FactoryV2DeveloperConfig = ({
 
           {developerConfig.isVersionCustomized ? (
             <div className="rounded-[18px] border border-amber-500/24 bg-amber-500/8 px-3 py-2.5">
-              <p className="text-[12px] leading-5 text-amber-900/84">
+              <p className="text-[12px] leading-5 text-amber-400/84">
                 This version differs from the default for {mode}.
               </p>
             </div>
@@ -124,8 +122,8 @@ export const FactoryV2DeveloperConfig = ({
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-black/42">Setters</div>
-                <p className="mt-1 text-[12px] leading-5 text-black/48">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/42">Setters</div>
+                <p className="mt-1 text-[12px] leading-5 text-gold/48">
                   {developerConfig.selectedSections.length} selected · one wallet multicall
                 </p>
               </div>
@@ -168,25 +166,25 @@ export const FactoryV2DeveloperConfig = ({
                       "rounded-[18px] border px-3 py-3 text-left transition-all",
                       appearance.listItemClassName,
                       isSelected
-                        ? "border-black/35 bg-white/78 shadow-[0_10px_22px_rgba(39,25,16,0.11)]"
-                        : "border-black/10 bg-white/38 opacity-80",
+                        ? "border-gold/40 bg-black/25 shadow-[0_10px_22px_rgba(0,0,0,0.18)]"
+                        : "border-gold/15 bg-black/20 opacity-80",
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-black/40">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/40">
                           {section.label}
                         </div>
-                        <div className="mt-1 text-[11px] font-medium text-black/62">
+                        <div className="mt-1 text-[11px] font-medium text-gold/62">
                           {formatFactoryEntrypointLabel(section.entrypoint)}
                         </div>
                       </div>
-                      <div className="rounded-full border border-black/10 bg-white/60 px-2 py-0.5 text-[10px] font-medium text-black/58">
+                      <div className="rounded-full border border-gold/15 bg-black/20 px-2 py-0.5 text-[10px] font-medium text-gold/58">
                         {resolveSectionCountLabel(section.itemCount)}
                       </div>
                     </div>
 
-                    <p className="mt-2 text-[12px] leading-5 text-black/50">{section.description}</p>
+                    <p className="mt-2 text-[12px] leading-5 text-gold/50">{section.description}</p>
                   </button>
                 );
               })}
@@ -196,7 +194,7 @@ export const FactoryV2DeveloperConfig = ({
           {developerConfig.isManifestLoading ? (
             <div
               className={cn(
-                "rounded-[18px] border px-3 py-2.5 text-[12px] text-black/56",
+                "rounded-[18px] border px-3 py-2.5 text-[12px] text-gold/56",
                 appearance.quietSurfaceClassName,
               )}
             >
@@ -205,8 +203,8 @@ export const FactoryV2DeveloperConfig = ({
           ) : null}
 
           {developerConfig.manifestErrorMessage ? (
-            <div className="rounded-[18px] border border-rose-500/18 bg-rose-500/6 px-3 py-2.5">
-              <p className="text-[12px] leading-5 text-rose-800">{developerConfig.manifestErrorMessage}</p>
+            <div className="rounded-[18px] border border-rose-500/18 bg-rose-500/10 px-3 py-2.5">
+              <p className="text-[12px] leading-5 text-rose-400">{developerConfig.manifestErrorMessage}</p>
             </div>
           ) : null}
 
@@ -227,7 +225,7 @@ export const FactoryV2DeveloperConfig = ({
                 targetChainLabel: developerConfig.targetChainLabel,
               })}
             </button>
-            <span className="text-[11px] leading-5 text-black/42">
+            <span className="text-[11px] leading-5 text-gold/42">
               {!developerConfig.account
                 ? "Connect your wallet to send factory setters."
                 : developerConfig.canSubmitOnCurrentNetwork
@@ -240,15 +238,15 @@ export const FactoryV2DeveloperConfig = ({
             <div className={cn("rounded-[18px] border px-3 py-3", appearance.quietSurfaceClassName)}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-black/42">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/42">
                     {submittedExecutionState.status === "confirmed" ? "Multicall confirmed" : "Multicall submitted"}
                   </div>
-                  <div className="mt-1 text-[12px] leading-5 text-black/56">
+                  <div className="mt-1 text-[12px] leading-5 text-gold/56">
                     {submittedExecutionState.status === "confirmed"
                       ? "Factory setters confirmed onchain."
                       : "Awaiting confirmation. You can track the transaction below."}
                   </div>
-                  <div className="mt-2 break-all text-[12px] font-semibold text-black/82">
+                  <div className="mt-2 break-all text-[12px] font-semibold text-gold/82">
                     {submittedExecutionState.txHash}
                   </div>
                 </div>
@@ -270,8 +268,8 @@ export const FactoryV2DeveloperConfig = ({
           ) : null}
 
           {errorExecutionState ? (
-            <div className="rounded-[18px] border border-rose-500/18 bg-rose-500/6 px-3 py-2.5">
-              <p className="text-[12px] leading-5 text-rose-800">{errorExecutionState.message}</p>
+            <div className="rounded-[18px] border border-rose-500/18 bg-rose-500/10 px-3 py-2.5">
+              <p className="text-[12px] leading-5 text-rose-400">{errorExecutionState.message}</p>
               {errorExecutionState.txHash && developerConfig.txExplorerUrl ? (
                 <a
                   href={developerConfig.txExplorerUrl}

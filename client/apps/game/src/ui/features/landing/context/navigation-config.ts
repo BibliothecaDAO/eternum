@@ -8,6 +8,8 @@ interface SubMenuItem {
   /** Tab parameter value (used in URL query string) */
   tab: string | null;
   href: string;
+  /** When true, the nav item is rendered with a prominent call-to-action style */
+  primary?: boolean;
 }
 
 interface SectionConfig {
@@ -29,7 +31,7 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
       { id: "play", label: "PLAY", tab: null, href: "/" },
       { id: "learn", label: "LEARN", tab: "learn", href: "/learn" },
       { id: "news", label: "NEWS", tab: "news", href: "/news" },
-      { id: "factory", label: "FACTORY", tab: "factory", href: "/factory" },
+      { id: "factory", label: "CREATE GAME", tab: "factory", href: "/factory", primary: true },
     ],
   },
   {

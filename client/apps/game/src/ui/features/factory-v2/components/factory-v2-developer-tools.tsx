@@ -24,7 +24,7 @@ export const FactoryV2DeveloperTools = ({
         <button
           type="button"
           onClick={developerPanel.registerRevealTap}
-          className="rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-black/32 transition-colors hover:text-black/50"
+          className="rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-gold/32 transition-colors hover:text-gold/50"
         >
           fv2/dev
         </button>
@@ -32,7 +32,7 @@ export const FactoryV2DeveloperTools = ({
 
       {developerPanel.isVisible ? (
         <div className="mt-3 space-y-4 md:mt-4">
-          <div className="px-1 text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">
+          <div className="px-1 text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-gold/42">
             Developer tools
           </div>
 
