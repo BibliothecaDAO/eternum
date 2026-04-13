@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-12T10:42:09.417Z",
+  "updatedAt": "2026-04-13T04:22:26.285Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1104,13 +1104,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-blink-770/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-04-08T03:42:21.967Z"
+        "describedAt": "2026-04-13T04:22:26.284Z"
       },
-      "updatedAt": "2026-04-08T03:42:21.967Z"
+      "updatedAt": "2026-04-13T04:22:26.285Z"
     },
     "bltz-spark-702": {
       "gameName": "bltz-spark-702",
