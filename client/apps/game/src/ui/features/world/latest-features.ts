@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-13",
+    title: "Stable Reload Chunk Refresh",
+    description:
+      "Direct world-map reloads now force their route-owned chunk refresh immediately after the entry overlay clears, so crossing into nearby map chunks no longer drops terrain out from under the camera.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-13",
     title: "Settled Army Render Recovery",
     description:
       "Armies now refresh their world-map render bounds when movement fully settles, so multi-army moves no longer disappear at the destination until a chunk refresh happens.",
