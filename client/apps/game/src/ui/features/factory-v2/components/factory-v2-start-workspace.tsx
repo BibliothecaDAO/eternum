@@ -714,7 +714,9 @@ const FactoryV2PresetField = ({
       <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#fbf4ea]/45" />
     </div>
     <p className="mt-3 text-sm leading-6 text-[#fbf4ea]/48">{selectedPreset.description}</p>
-    {presetFacts ? <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#fbf4ea]/40">{presetFacts}</p> : null}
+    {presetFacts ? (
+      <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#fbf4ea]/40">{presetFacts}</p>
+    ) : null}
   </div>
 );
 
@@ -1760,7 +1762,9 @@ const FactoryV2InlineOptionField = ({
           className="h-7 w-16 border-0 bg-transparent p-0 text-right text-[13px] font-semibold text-[#fbf4ea] outline-none"
         />
         {field.unitLabel ? (
-          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#fbf4ea]/42">{field.unitLabel}</span>
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#fbf4ea]/42">
+            {field.unitLabel}
+          </span>
         ) : null}
       </div>
     </div>

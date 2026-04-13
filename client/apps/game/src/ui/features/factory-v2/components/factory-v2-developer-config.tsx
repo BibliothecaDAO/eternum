@@ -54,7 +54,9 @@ export const FactoryV2DeveloperConfig = ({
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">Factory config</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">
+                Factory config
+              </div>
               <h3 className="mt-1 text-base font-semibold text-[#fbf4ea]/80">One multicall</h3>
               <p className="mt-1 text-[13px] leading-5 text-[#fbf4ea]/48">
                 Pick the factory setters and send one wallet call.
@@ -72,7 +74,9 @@ export const FactoryV2DeveloperConfig = ({
 
           <div className="grid gap-2 md:grid-cols-[minmax(0,1.4fr)_minmax(120px,150px)_minmax(120px,160px)]">
             <label className="block">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#fbf4ea]/42">Factory</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#fbf4ea]/42">
+                Factory
+              </span>
               <input
                 type="text"
                 value={developerConfig.draft.factoryAddress || "Not configured for this chain"}
@@ -85,7 +89,9 @@ export const FactoryV2DeveloperConfig = ({
             </label>
 
             <label className="block">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#fbf4ea]/42">Version</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#fbf4ea]/42">
+                Version
+              </span>
               <input
                 type="text"
                 value={developerConfig.draft.version}

@@ -192,8 +192,7 @@ export const getRunStatusMeta = (status: FactoryRunStatus) => {
     default:
       return {
         label: "In progress",
-        className:
-          "border border-white/12 bg-[rgba(32,27,22,0.9)] text-[#dfaa54] shadow-[0_8px_18px_rgba(0,0,0,0.18)]",
+        className: "border border-white/12 bg-[rgba(32,27,22,0.9)] text-[#dfaa54] shadow-[0_8px_18px_rgba(0,0,0,0.18)]",
       };
   }
 };

@@ -739,9 +739,7 @@ const FactoryV2IndexerRow = ({
       onClick={onToggle}
       className={cn(
         "w-full rounded-[22px] border px-4 py-4 text-left transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-55",
-        isSelected
-          ? "border-white/14 bg-white/12 shadow-[0_12px_28px_rgba(0,0,0,0.16)]"
-          : appearanceClassName,
+        isSelected ? "border-white/14 bg-white/12 shadow-[0_12px_28px_rgba(0,0,0,0.16)]" : appearanceClassName,
       )}
     >
       <div className="flex items-start gap-3">
@@ -798,7 +796,9 @@ const FactoryV2ManageIndexerWatcherCard = ({
       watcherStatus.tone === "warm" ? "border-[#dfaa54]/15 bg-[#dfaa54]/10" : "border-white/8 bg-white/8",
     )}
   >
-    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/44">{watcherStatus.eyebrow}</div>
+    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/44">
+      {watcherStatus.eyebrow}
+    </div>
     <div className="mt-1 text-sm font-semibold text-[#fbf4ea]/74">{watcherStatus.title}</div>
     <p className="mt-1 text-sm leading-6 text-[#fbf4ea]/58">{watcherStatus.detail}</p>
   </div>

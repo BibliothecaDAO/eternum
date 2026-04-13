@@ -1217,7 +1217,9 @@ const FactoryV2WatchPendingCard = ({
 const FactoryV2WatchEmptyCard = ({ appearanceClassName }: { appearanceClassName: string }) => (
   <FactoryV2WatchSurfaceCard appearanceClassName={appearanceClassName} dataTestId="factory-watch-empty-panel">
     <div className="mx-auto max-w-sm space-y-3 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">{WATCH_SEARCH_EYEBROW}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">
+        {WATCH_SEARCH_EYEBROW}
+      </div>
       <h3 className="text-[1.15rem] font-semibold tracking-tight text-[#fbf4ea]">{WATCH_SEARCH_TITLE}</h3>
       <p className="text-sm leading-6 text-[#fbf4ea]/56">{WATCH_EMPTY_DESCRIPTION}</p>
     </div>
@@ -1336,7 +1338,9 @@ const FactoryV2WatchSearchPanel = ({
     )}
   >
     <div className="mx-auto max-w-sm space-y-2 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">{WATCH_SEARCH_EYEBROW}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">
+        {WATCH_SEARCH_EYEBROW}
+      </div>
       <h3 className="text-[1.15rem] font-semibold tracking-tight text-[#fbf4ea]">{WATCH_SEARCH_TITLE}</h3>
       <p className="text-sm leading-6 text-[#fbf4ea]/54">{WATCH_SEARCH_DESCRIPTION}</p>
     </div>

@@ -113,7 +113,9 @@ export const FactoryV2MoreOptions = ({
                 className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/6"
               >
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/58">{section.title}</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/58">
+                    {section.title}
+                  </div>
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-[#fbf4ea]/42">
                     <span>{section.description}</span>
                     <span>•</span>
@@ -152,7 +154,9 @@ export const FactoryV2MoreOptions = ({
                     <label key={field.id} className="block rounded-[16px] border border-white/8 bg-white/10 px-3 py-2">
                       <div className="flex items-center gap-3">
                         <div className="min-w-0 flex-1">
-                          <span className="block text-[13px] font-medium leading-5 text-[#fbf4ea]/74">{field.label}</span>
+                          <span className="block text-[13px] font-medium leading-5 text-[#fbf4ea]/74">
+                            {field.label}
+                          </span>
                           <span className="block text-[11px] leading-4 text-[#fbf4ea]/38">{field.helperText}</span>
                         </div>
                         {field.inputType === "number" ? (

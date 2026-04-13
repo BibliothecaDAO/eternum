@@ -77,7 +77,9 @@ export const FactoryV2PrizeFundingCard = ({
   return (
     <div className="space-y-3 rounded-[24px] border border-white/8 bg-white/5 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.14)]">
       <div className="mx-auto max-w-sm space-y-1 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">Admin prize funding</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
+          Admin prize funding
+        </div>
         <p className="text-[13px] leading-5 text-[#fbf4ea]/52">
           Send prizes to each game&apos;s trusted prize distribution address as soon as world setup is ready.
         </p>

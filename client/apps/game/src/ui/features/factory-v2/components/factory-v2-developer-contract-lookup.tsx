@@ -31,7 +31,9 @@ export const FactoryV2DeveloperContractLookup = ({
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">Contract lookup</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">
+              Contract lookup
+            </div>
             <h3 className="mt-2 text-lg font-semibold text-[#fbf4ea]/80">Resolve contract address</h3>
             <p className="mt-1 text-sm leading-6 text-[#fbf4ea]/48">
               Look up a Factory-deployed contract address from the selected environment without touching the game
@@ -50,7 +52,9 @@ export const FactoryV2DeveloperContractLookup = ({
 
         <div className="grid gap-3 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           <label className="block">
-            <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">Game name</span>
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
+              Game name
+            </span>
             <input
               type="text"
               value={developerLookup.gameName}
@@ -213,10 +217,14 @@ export const FactoryV2DeveloperContractLookup = ({
               </div>
               <div>
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/38">Tag</dt>
-                <dd className="mt-1 break-all font-medium text-[#fbf4ea]/72">{developerLookup.lookupResult.resolvedTag}</dd>
+                <dd className="mt-1 break-all font-medium text-[#fbf4ea]/72">
+                  {developerLookup.lookupResult.resolvedTag}
+                </dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/38">World address</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/38">
+                  World address
+                </dt>
                 <dd className="mt-1 flex items-start gap-2 break-all font-medium text-[#fbf4ea]/72">
                   <span className="min-w-0 flex-1">{developerLookup.lookupResult.worldAddress}</span>
                   <button
