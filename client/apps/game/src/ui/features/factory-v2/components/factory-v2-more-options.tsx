@@ -74,49 +74,47 @@ export const FactoryV2MoreOptions = ({
         onClick={onToggle}
         aria-expanded={isOpen}
         className={cn(
-          "w-full rounded-[20px] border border-white/10 bg-white/6 px-4 py-3 text-left transition-colors hover:border-white/20",
-          mode === "blitz" ? "hover:bg-white/8" : "hover:bg-white/8",
+          "w-full rounded-[20px] border border-gold/15 bg-black/20 px-4 py-3 text-left transition-colors hover:border-gold/25",
+          mode === "blitz" ? "hover:bg-gold/10" : "hover:bg-gold/10",
         )}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-[#fbf4ea]">More options</span>
+              <span className="text-sm font-semibold text-gold">More options</span>
               {invalidReason ? (
                 <span className="rounded-full bg-rose-500/12 px-2 py-0.5 text-[10px] font-semibold text-rose-400">
                   Needs review
                 </span>
               ) : null}
             </div>
-            <p className="mt-1 text-[11px] text-[#fbf4ea]/45">
+            <p className="mt-1 text-[11px] text-gold/45">
               Chance fields use percentages. Time fields use minutes where shown. Prize amounts use human values.
             </p>
           </div>
           <ChevronDown
-            className={cn("h-4 w-4 flex-shrink-0 text-[#fbf4ea]/55 transition-transform", isOpen && "rotate-180")}
+            className={cn("h-4 w-4 flex-shrink-0 text-gold/55 transition-transform", isOpen && "rotate-180")}
           />
         </div>
       </button>
 
       {isOpen ? (
-        <div className="space-y-2 rounded-[20px] border border-white/10 bg-white/5 p-3 text-left">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-[#fbf4ea]/40">
+        <div className="space-y-2 rounded-[20px] border border-gold/15 bg-black/20 p-3 text-left">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-gold/40">
             Compact overrides for this launch only.
           </p>
 
           {sections.map((section) => (
-            <div key={section.id} className="overflow-hidden rounded-[18px] border border-white/10 bg-white/6">
+            <div key={section.id} className="overflow-hidden rounded-[18px] border border-gold/15 bg-black/20">
               <button
                 type="button"
                 onClick={() => toggleSection(section.id)}
                 aria-expanded={expandedSectionIds.includes(section.id)}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/6"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-gold/10"
               >
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/58">
-                    {section.title}
-                  </div>
-                  <div className="mt-1 flex items-center gap-2 text-[11px] text-[#fbf4ea]/42">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-gold/58">{section.title}</div>
+                  <div className="mt-1 flex items-center gap-2 text-[11px] text-gold/42">
                     <span>{section.description}</span>
                     <span>•</span>
                     <span>{describeSectionContents(section)}</span>
@@ -130,40 +128,38 @@ export const FactoryV2MoreOptions = ({
                 </div>
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 flex-shrink-0 text-[#fbf4ea]/45 transition-transform",
+                    "h-4 w-4 flex-shrink-0 text-gold/45 transition-transform",
                     expandedSectionIds.includes(section.id) && "rotate-180",
                   )}
                 />
               </button>
 
               {expandedSectionIds.includes(section.id) ? (
-                <div className="space-y-2 border-t border-white/8 px-3 py-2.5">
+                <div className="space-y-2 border-t border-gold/10 px-3 py-2.5">
                   {section.previewRows?.map((row) => (
                     <div
                       key={row.id}
-                      className="flex items-center justify-between gap-3 rounded-[16px] border border-white/8 bg-white/10 px-3 py-2"
+                      className="flex items-center justify-between gap-3 rounded-[16px] border border-gold/10 bg-black/25 px-3 py-2"
                     >
                       <div className="min-w-0">
-                        <div className="text-[13px] font-medium leading-5 text-[#fbf4ea]/74">{row.label}</div>
-                        <div className="text-[11px] leading-4 text-[#fbf4ea]/38">{row.probabilityLabel} chance</div>
+                        <div className="text-[13px] font-medium leading-5 text-gold/74">{row.label}</div>
+                        <div className="text-[11px] leading-4 text-gold/38">{row.probabilityLabel} chance</div>
                       </div>
-                      <div className="text-right text-[13px] font-semibold text-[#fbf4ea]/74">{row.amountLabel}</div>
+                      <div className="text-right text-[13px] font-semibold text-gold/74">{row.amountLabel}</div>
                     </div>
                   ))}
                   {section.fields.map((field) => (
-                    <label key={field.id} className="block rounded-[16px] border border-white/8 bg-white/10 px-3 py-2">
+                    <label key={field.id} className="block rounded-[16px] border border-gold/10 bg-black/25 px-3 py-2">
                       <div className="flex items-center gap-3">
                         <div className="min-w-0 flex-1">
-                          <span className="block text-[13px] font-medium leading-5 text-[#fbf4ea]/74">
-                            {field.label}
-                          </span>
-                          <span className="block text-[11px] leading-4 text-[#fbf4ea]/38">{field.helperText}</span>
+                          <span className="block text-[13px] font-medium leading-5 text-gold/74">{field.label}</span>
+                          <span className="block text-[11px] leading-4 text-gold/38">{field.helperText}</span>
                         </div>
                         {field.inputType === "number" ? (
                           <div
                             className={cn(
-                              "flex h-8 items-center gap-1 rounded-full border bg-white/10 px-2.5 shadow-[0_1px_0_rgba(255,255,255,0.06)]",
-                              errors[field.id] ? "border-rose-400/70" : "border-white/10",
+                              "flex h-8 items-center gap-1 rounded-full border bg-black/25 px-2.5 shadow-none",
+                              errors[field.id] ? "border-rose-400/70" : "border-gold/15",
                             )}
                           >
                             <input
@@ -175,12 +171,12 @@ export const FactoryV2MoreOptions = ({
                               value={draft[field.id]}
                               onChange={(event) => onValueChange(field.id, event.target.value)}
                               className={cn(
-                                "h-7 border-0 bg-transparent p-0 text-right text-[13px] font-semibold text-[#fbf4ea] outline-none",
+                                "h-7 border-0 bg-transparent p-0 text-right text-[13px] font-semibold text-gold outline-none",
                                 field.inputMode === "decimal" ? "w-16" : "w-20",
                               )}
                             />
                             {field.unitLabel ? (
-                              <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#fbf4ea]/42">
+                              <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-gold/42">
                                 {field.unitLabel}
                               </span>
                             ) : null}
@@ -195,8 +191,8 @@ export const FactoryV2MoreOptions = ({
                           placeholder={field.placeholder}
                           onChange={(event) => onValueChange(field.id, event.target.value)}
                           className={cn(
-                            "mt-2 block h-10 w-full rounded-[14px] border bg-white/10 px-3 text-[13px] text-[#fbf4ea] outline-none transition-colors placeholder:text-[#fbf4ea]/25",
-                            errors[field.id] ? "border-rose-400/70" : "border-white/10",
+                            "mt-2 block h-10 w-full rounded-[14px] border bg-black/25 px-3 text-[13px] text-gold outline-none transition-colors placeholder:text-gold/25",
+                            errors[field.id] ? "border-rose-400/70" : "border-gold/15",
                           )}
                         />
                       ) : null}

@@ -241,12 +241,12 @@ export const FactoryV2ManageIndexersWorkspace = ({
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <div className="text-sm font-semibold text-[#fbf4ea]/76">
+                    <div className="text-sm font-semibold text-gold/76">
                       {hasSelectedGames
                         ? `${selectedGameNames.length} selected`
                         : `${filteredLiveIndexers.length} shown`}
                     </div>
-                    <div className="text-xs font-medium text-[#fbf4ea]/52">
+                    <div className="text-xs font-medium text-gold/52">
                       {resolveLiveIndexerSnapshotStatusLine({ liveSummary, liveIndexersUpdatedAt })}
                     </div>
                   </div>
@@ -257,7 +257,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
                     title="Check Slot"
                     disabled={!canLoadIndexers}
                     onClick={refreshLiveIndexerList}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/10 text-[#fbf4ea]/64 transition-colors hover:bg-white/14 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gold/15 bg-black/25 text-gold/64 transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <RotateCw className={cn("h-4 w-4", accessWatcherStatus ? "animate-spin" : "")} aria-hidden="true" />
                   </button>
@@ -266,7 +266,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
                 {accessWatcherStatus ? <FactoryV2ManageIndexerWatcherCard watcherStatus={accessWatcherStatus} /> : null}
 
                 {notice && notice !== deleteFeedback?.message ? (
-                  <div className="rounded-[18px] border border-white/8 bg-white/8 px-4 py-3 text-sm text-[#fbf4ea]/62">
+                  <div className="rounded-[18px] border border-gold/10 bg-black/25 px-4 py-3 text-sm text-gold/62">
                     {notice}
                   </div>
                 ) : null}
@@ -294,14 +294,14 @@ export const FactoryV2ManageIndexersWorkspace = ({
                 ) : null}
 
                 {hasSelectedGames ? (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-[18px] border border-white/8 bg-white/6 px-3 py-2">
-                    <div className="text-sm font-semibold text-[#fbf4ea]/76">{selectedGameNames.length} selected</div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-[18px] border border-gold/10 bg-black/20 px-3 py-2">
+                    <div className="text-sm font-semibold text-gold/76">{selectedGameNames.length} selected</div>
                     <button
                       type="button"
                       data-testid="factory-indexer-clear-selection"
                       disabled={isBusy}
                       onClick={() => setSelectedGameNames([])}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#fbf4ea]/64 transition-colors hover:bg-white/14 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center justify-center rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-xs font-semibold text-gold/64 transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Clear
                     </button>
@@ -313,7 +313,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
                       data-testid="factory-indexer-select-all"
                       disabled={isBusy}
                       onClick={() => setSelectedGameNames(filteredGameNames)}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#fbf4ea]/64 transition-colors hover:bg-white/14 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center justify-center rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-xs font-semibold text-gold/64 transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Select visible
                     </button>
@@ -347,13 +347,13 @@ export const FactoryV2ManageIndexersWorkspace = ({
                   )}
                 </div>
 
-                <div className="border-t border-white/8 pt-2">
+                <div className="border-t border-gold/10 pt-2">
                   <button
                     type="button"
                     data-testid="factory-indexer-open-lookup"
                     disabled={isBusy}
                     onClick={() => setShowsLookupPanel((currentValue) => !currentValue)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold text-[#fbf4ea]/64 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-black/25 px-4 py-2 text-xs font-semibold text-gold/64 transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Recreate by name
                     <ChevronDown
@@ -363,9 +363,9 @@ export const FactoryV2ManageIndexersWorkspace = ({
                 </div>
 
                 {showsLookupPanel ? (
-                  <div className="space-y-2 rounded-[20px] border border-white/8 bg-white/6 p-3">
+                  <div className="space-y-2 rounded-[20px] border border-gold/10 bg-black/20 p-3">
                     <label className="block">
-                      <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/44">
+                      <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-gold/44">
                         Game names
                       </span>
                       <textarea
@@ -374,11 +374,11 @@ export const FactoryV2ManageIndexersWorkspace = ({
                         onChange={(event) => setLookupNamesText(event.target.value)}
                         placeholder={"bltz-franky-01\nbltz-franky-02"}
                         rows={3}
-                        className="mt-2 block min-h-[88px] w-full rounded-[18px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-[#fbf4ea] outline-none transition-colors focus:border-white/22"
+                        className="mt-2 block min-h-[88px] w-full rounded-[18px] border border-gold/15 bg-black/25 px-4 py-3 text-sm text-gold outline-none transition-colors focus:border-gold/25"
                       />
                     </label>
                     {lookupGameNames.length > 0 ? (
-                      <div className="text-xs font-medium text-[#fbf4ea]/52">
+                      <div className="text-xs font-medium text-gold/52">
                         {lookupGameNames.length} {lookupGameNames.length === 1 ? "name" : "names"}
                       </div>
                     ) : null}
@@ -428,7 +428,7 @@ export const FactoryV2ManageIndexersWorkspace = ({
                 )}
 
                 {notice && notice !== deleteFeedback?.message ? (
-                  <div className="rounded-[18px] border border-white/8 bg-white/8 px-4 py-3 text-sm text-[#fbf4ea]/62">
+                  <div className="rounded-[18px] border border-gold/10 bg-black/25 px-4 py-3 text-sm text-gold/62">
                     {notice}
                   </div>
                 ) : null}
@@ -481,13 +481,13 @@ const FactoryV2ManageIndexersSectionCard = ({
 }) => (
   <section
     className={cn(
-      "space-y-3 rounded-[24px] border border-white/8 px-4 py-4 text-left sm:px-5 sm:py-5",
+      "space-y-3 rounded-[24px] border border-gold/10 px-4 py-4 text-left sm:px-5 sm:py-5",
       appearanceClassName,
     )}
   >
     <div className="space-y-1">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">{title}</div>
-      {description ? <p className="text-sm leading-5 text-[#fbf4ea]/50">{description}</p> : null}
+      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">{title}</div>
+      {description ? <p className="text-sm leading-5 text-gold/50">{description}</p> : null}
     </div>
     {children}
   </section>
@@ -540,15 +540,15 @@ const FactoryV2ManageIndexersActionBar = ({
     <div
       data-testid="factory-indexer-action-panel"
       className={cn(
-        "sticky bottom-3 z-10 space-y-3 rounded-[24px] border border-white/10 px-4 pb-[calc(0.875rem+env(safe-area-inset-bottom))] pt-4 text-left shadow-[0_18px_42px_rgba(0,0,0,0.22)] backdrop-blur-xl md:static md:rounded-[22px] md:border-white/8 md:px-4 md:py-4 md:shadow-none md:backdrop-blur-0",
+        "sticky bottom-3 z-10 space-y-3 rounded-[24px] border border-gold/15 px-4 pb-[calc(0.875rem+env(safe-area-inset-bottom))] pt-4 text-left shadow-[0_18px_42px_rgba(0,0,0,0.22)] backdrop-blur-xl md:static md:rounded-[22px] md:border-gold/10 md:px-4 md:py-4 md:shadow-none md:backdrop-blur-0",
         appearance.quietSurfaceClassName,
       )}
     >
       {hasSelectedGames ? (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">Action</div>
-            <div className="text-sm font-semibold text-[#fbf4ea]/78">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">Action</div>
+            <div className="text-sm font-semibold text-gold/78">
               {selectedGameNames.length} indexer{selectedGameNames.length === 1 ? "" : "s"} selected
             </div>
           </div>
@@ -589,8 +589,8 @@ const FactoryV2ManageIndexersActionBar = ({
                     className={cn(
                       "rounded-[18px] border px-3 py-3 text-sm font-semibold capitalize transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                       selectedTier === tier
-                        ? "border-white/16 bg-white/12 text-[#fbf4ea] shadow-[0_8px_20px_rgba(0,0,0,0.16)]"
-                        : "border-white/10 bg-white/10 text-[#fbf4ea]/68 hover:bg-white/10",
+                        ? "border-gold/25 bg-black/30 text-gold shadow-[0_8px_20px_rgba(0,0,0,0.16)]"
+                        : "border-gold/15 bg-black/25 text-gold/68 hover:bg-gold/10",
                     )}
                   >
                     {tier}
@@ -613,11 +613,11 @@ const FactoryV2ManageIndexersActionBar = ({
           ) : null}
 
           {actionTargets.deletableEntries.length > 0 ? (
-            <div className="rounded-[20px] border border-white/8 bg-white/6 p-3">
+            <div className="rounded-[20px] border border-gold/10 bg-black/20 p-3">
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <div className="text-sm font-semibold text-[#fbf4ea]/78">Delete</div>
-                  <p className="text-sm leading-5 text-[#fbf4ea]/56">
+                  <div className="text-sm font-semibold text-gold/78">Delete</div>
+                  <p className="text-sm leading-5 text-gold/56">
                     {resolveSelectionPreviewText(actionTargets.deletableEntries)}
                   </p>
                 </div>
@@ -643,7 +643,7 @@ const FactoryV2ManageIndexersActionBar = ({
                         data-testid="factory-indexer-confirm-delete"
                         disabled={!canDelete}
                         onClick={onConfirmDelete}
-                        className="inline-flex w-full items-center justify-center rounded-full border border-[#a62f28]/20 bg-white/10 px-4 py-3 text-sm font-semibold text-[#8d2a23] transition-colors hover:bg-[#2a1512] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex w-full items-center justify-center rounded-full border border-[#a62f28]/20 bg-black/25 px-4 py-3 text-sm font-semibold text-[#8d2a23] transition-colors hover:bg-[#2a1512] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         I understand, enable delete
                       </button>
@@ -654,7 +654,7 @@ const FactoryV2ManageIndexersActionBar = ({
                       data-testid="factory-indexer-cancel-delete"
                       disabled={isBusy}
                       onClick={onCancelDelete}
-                      className="inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-[#fbf4ea]/64 transition-colors hover:bg-white/14 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex w-full items-center justify-center rounded-full border border-gold/15 bg-black/25 px-4 py-3 text-sm font-semibold text-gold/64 transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Keep these indexers
                     </button>
@@ -674,7 +674,7 @@ const FactoryV2ManageIndexersActionBar = ({
           data-testid="factory-indexer-action-delete"
           disabled={!canDelete}
           onClick={onDelete}
-          className="inline-flex w-full items-center justify-center rounded-full bg-[#a62f28] px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#92261f] disabled:cursor-not-allowed disabled:bg-[#a62f28]/45"
+          className="inline-flex w-full items-center justify-center rounded-full bg-[#a62f28] px-6 py-3.5 text-sm font-semibold text-gold transition-colors hover:bg-[#92261f] disabled:cursor-not-allowed disabled:bg-[#a62f28]/45"
         >
           {resolveDeleteActionLabel(actionTargets.deletableGameNames.length)}
         </button>
@@ -707,10 +707,10 @@ const FactoryV2ManageIndexerActionCard = ({
   description: string;
   children: ReactNode;
 }) => (
-  <div className="space-y-3 rounded-[20px] border border-white/8 bg-white/6 p-3">
+  <div className="space-y-3 rounded-[20px] border border-gold/10 bg-black/20 p-3">
     <div className="space-y-1">
-      <div className="text-sm font-semibold text-[#fbf4ea]/78">{title}</div>
-      <p className="text-sm leading-5 text-[#fbf4ea]/56">{description}</p>
+      <div className="text-sm font-semibold text-gold/78">{title}</div>
+      <p className="text-sm leading-5 text-gold/56">{description}</p>
     </div>
     <div className="space-y-3">{children}</div>
   </div>
@@ -739,7 +739,7 @@ const FactoryV2IndexerRow = ({
       onClick={onToggle}
       className={cn(
         "w-full rounded-[22px] border px-4 py-4 text-left transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-55",
-        isSelected ? "border-white/14 bg-white/12 shadow-[0_12px_28px_rgba(0,0,0,0.16)]" : appearanceClassName,
+        isSelected ? "border-gold/20 bg-black/30 shadow-[0_12px_28px_rgba(0,0,0,0.16)]" : appearanceClassName,
       )}
     >
       <div className="flex items-start gap-3">
@@ -747,7 +747,7 @@ const FactoryV2IndexerRow = ({
           aria-hidden="true"
           className={cn(
             "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors",
-            isSelected ? "border-[#fbf4ea] bg-[#fbf4ea] text-white" : "border-white/12 bg-white/10 text-transparent",
+            isSelected ? "border-gold bg-gold text-gold" : "border-gold/20 bg-black/25 text-transparent",
           )}
         >
           ✓
@@ -755,10 +755,10 @@ const FactoryV2IndexerRow = ({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm font-semibold text-[#fbf4ea]/82">{entry.gameName}</span>
+            <span className="truncate text-sm font-semibold text-gold/82">{entry.gameName}</span>
             <FactoryV2IndexerStateBadge label={resolveLiveIndexerPrimaryBadge(entry)} tone={tone} />
           </div>
-          <div className="mt-1 text-[12px] leading-5 text-[#fbf4ea]/56">{resolveLiveIndexerStatusLabel(entry)}</div>
+          <div className="mt-1 text-[12px] leading-5 text-gold/56">{resolveLiveIndexerStatusLabel(entry)}</div>
         </div>
       </div>
     </button>
@@ -771,7 +771,7 @@ const FactoryV2IndexerStateBadge = ({ label, tone }: { label: string; tone: "neu
       "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]",
       tone === "warm" && "border-[#dfaa54]/15 bg-[#dfaa54]/10 text-[#dfaa54]",
       tone === "danger" && "border-[#a62f28]/15 bg-[#a62f28]/10 text-[#a62f28]",
-      tone === "neutral" && "border-white/10 bg-white/10 text-[#fbf4ea]/52",
+      tone === "neutral" && "border-gold/15 bg-black/25 text-gold/52",
     )}
   >
     {label}
@@ -779,7 +779,7 @@ const FactoryV2IndexerStateBadge = ({ label, tone }: { label: string; tone: "neu
 );
 
 const FactoryV2IndexerEmptyState = ({ children }: { children: ReactNode }) => (
-  <div className="rounded-[22px] border border-dashed border-white/10 bg-white/8 px-4 py-8 text-center text-sm leading-6 text-[#fbf4ea]/54">
+  <div className="rounded-[22px] border border-dashed border-gold/15 bg-black/25 px-4 py-8 text-center text-sm leading-6 text-gold/54">
     {children}
   </div>
 );
@@ -793,14 +793,12 @@ const FactoryV2ManageIndexerWatcherCard = ({
     data-testid="factory-indexer-watcher"
     className={cn(
       "rounded-[18px] border px-4 py-3",
-      watcherStatus.tone === "warm" ? "border-[#dfaa54]/15 bg-[#dfaa54]/10" : "border-white/8 bg-white/8",
+      watcherStatus.tone === "warm" ? "border-[#dfaa54]/15 bg-[#dfaa54]/10" : "border-gold/10 bg-black/25",
     )}
   >
-    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/44">
-      {watcherStatus.eyebrow}
-    </div>
-    <div className="mt-1 text-sm font-semibold text-[#fbf4ea]/74">{watcherStatus.title}</div>
-    <p className="mt-1 text-sm leading-6 text-[#fbf4ea]/58">{watcherStatus.detail}</p>
+    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold/44">{watcherStatus.eyebrow}</div>
+    <div className="mt-1 text-sm font-semibold text-gold/74">{watcherStatus.title}</div>
+    <p className="mt-1 text-sm leading-6 text-gold/58">{watcherStatus.detail}</p>
   </div>
 );
 

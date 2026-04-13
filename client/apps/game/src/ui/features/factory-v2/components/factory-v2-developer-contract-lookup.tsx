@@ -31,18 +31,16 @@ export const FactoryV2DeveloperContractLookup = ({
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#fbf4ea]/42">
-              Contract lookup
-            </div>
-            <h3 className="mt-2 text-lg font-semibold text-[#fbf4ea]/80">Resolve contract address</h3>
-            <p className="mt-1 text-sm leading-6 text-[#fbf4ea]/48">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-gold/42">Contract lookup</div>
+            <h3 className="mt-2 text-lg font-semibold text-gold/80">Resolve contract address</h3>
+            <p className="mt-1 text-sm leading-6 text-gold/48">
               Look up a Factory-deployed contract address from the selected environment without touching the game
               indexer.
             </p>
           </div>
           <div
             className={cn(
-              "rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/56",
+              "rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold/56",
               appearance.quietSurfaceClassName,
             )}
           >
@@ -52,23 +50,21 @@ export const FactoryV2DeveloperContractLookup = ({
 
         <div className="grid gap-3 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           <label className="block">
-            <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
-              Game name
-            </span>
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">Game name</span>
             <input
               type="text"
               value={developerLookup.gameName}
               onChange={(event) => developerLookup.setGameName(event.target.value)}
               placeholder="etrn-sunrise-01"
               className={cn(
-                "mt-2 block h-11 w-full rounded-[18px] border bg-white/10 px-3 text-[13px] text-[#fbf4ea] outline-none transition-colors placeholder:text-[#fbf4ea]/25",
+                "mt-2 block h-11 w-full rounded-[18px] border bg-black/25 px-3 text-[13px] text-gold outline-none transition-colors placeholder:text-gold/25",
                 appearance.listItemClassName,
               )}
             />
           </label>
 
           <label className="block">
-            <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">
               Contract target
             </span>
             <select
@@ -77,7 +73,7 @@ export const FactoryV2DeveloperContractLookup = ({
                 developerLookup.setSelectedTargetId(event.target.value as typeof developerLookup.selectedTargetId)
               }
               className={cn(
-                "mt-2 block h-11 w-full rounded-[18px] border bg-white/10 px-3 text-[13px] font-medium text-[#fbf4ea] outline-none transition-colors",
+                "mt-2 block h-11 w-full rounded-[18px] border bg-black/25 px-3 text-[13px] font-medium text-gold outline-none transition-colors",
                 appearance.listItemClassName,
               )}
             >
@@ -92,7 +88,7 @@ export const FactoryV2DeveloperContractLookup = ({
 
         {developerLookup.usesCustomContractInput ? (
           <label className="block">
-            <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">
               Manifest contract
             </span>
             <input
@@ -101,11 +97,11 @@ export const FactoryV2DeveloperContractLookup = ({
               onChange={(event) => developerLookup.setCustomContractName(event.target.value)}
               placeholder="prize_distribution_systems"
               className={cn(
-                "mt-2 block h-11 w-full rounded-[18px] border bg-white/10 px-3 text-[13px] text-[#fbf4ea] outline-none transition-colors placeholder:text-[#fbf4ea]/25",
+                "mt-2 block h-11 w-full rounded-[18px] border bg-black/25 px-3 text-[13px] text-gold outline-none transition-colors placeholder:text-gold/25",
                 appearance.listItemClassName,
               )}
             />
-            <p className="mt-2 text-[12px] leading-5 text-[#fbf4ea]/42">
+            <p className="mt-2 text-[12px] leading-5 text-gold/42">
               Accepts raw names like <code>prize_distribution_systems</code>, wrapped values like{" "}
               <code>{"{prize_distribution_systems}"}</code>, or full manifest tags.
             </p>
@@ -126,8 +122,8 @@ export const FactoryV2DeveloperContractLookup = ({
           >
             {developerLookup.isSubmitting ? "Resolving..." : "Resolve address"}
           </button>
-          <span className="text-[12px] leading-5 text-[#fbf4ea]/42">
-            Default target: <span className="font-medium text-[#fbf4ea]/60">Prize address</span>
+          <span className="text-[12px] leading-5 text-gold/42">
+            Default target: <span className="font-medium text-gold/60">Prize address</span>
           </span>
         </div>
 
@@ -148,7 +144,7 @@ export const FactoryV2DeveloperContractLookup = ({
                       onClick={() => {
                         void developerLookup.applyWorldSuggestion(worldSuggestion);
                       }}
-                      className="rounded-full border border-rose-600/18 bg-white/6 px-3 py-1.5 text-[12px] font-medium text-rose-400 transition-colors hover:bg-white/10"
+                      className="rounded-full border border-rose-600/18 bg-black/20 px-3 py-1.5 text-[12px] font-medium text-rose-400 transition-colors hover:bg-gold/10"
                     >
                       {worldSuggestion}
                     </button>
@@ -170,7 +166,7 @@ export const FactoryV2DeveloperContractLookup = ({
                       onClick={() => {
                         void developerLookup.applyContractSuggestion(contractSuggestion);
                       }}
-                      className="rounded-full border border-rose-600/18 bg-white/6 px-3 py-1.5 text-[12px] font-medium text-rose-400 transition-colors hover:bg-white/10"
+                      className="rounded-full border border-rose-600/18 bg-black/20 px-3 py-1.5 text-[12px] font-medium text-rose-400 transition-colors hover:bg-gold/10"
                     >
                       {resolveFactoryDeveloperContractSuggestionLabel(contractSuggestion)}
                     </button>
@@ -185,10 +181,10 @@ export const FactoryV2DeveloperContractLookup = ({
           <div className={cn("rounded-[20px] border px-4 py-4", appearance.quietSurfaceClassName)}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#fbf4ea]/42">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gold/42">
                   {developerLookup.selectedTarget.label}
                 </div>
-                <div className="mt-2 text-lg font-semibold text-[#fbf4ea]/82">
+                <div className="mt-2 text-lg font-semibold text-gold/82">
                   {developerLookup.lookupResult.contractAddress}
                 </div>
               </div>
@@ -210,22 +206,18 @@ export const FactoryV2DeveloperContractLookup = ({
               </button>
             </div>
 
-            <dl className="mt-4 grid gap-3 text-sm text-[#fbf4ea]/58 md:grid-cols-3">
+            <dl className="mt-4 grid gap-3 text-sm text-gold/58 md:grid-cols-3">
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/38">World</dt>
-                <dd className="mt-1 font-medium text-[#fbf4ea]/72">{developerLookup.lookupResult.worldName}</dd>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold/38">World</dt>
+                <dd className="mt-1 font-medium text-gold/72">{developerLookup.lookupResult.worldName}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/38">Tag</dt>
-                <dd className="mt-1 break-all font-medium text-[#fbf4ea]/72">
-                  {developerLookup.lookupResult.resolvedTag}
-                </dd>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold/38">Tag</dt>
+                <dd className="mt-1 break-all font-medium text-gold/72">{developerLookup.lookupResult.resolvedTag}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/38">
-                  World address
-                </dt>
-                <dd className="mt-1 flex items-start gap-2 break-all font-medium text-[#fbf4ea]/72">
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold/38">World address</dt>
+                <dd className="mt-1 flex items-start gap-2 break-all font-medium text-gold/72">
                   <span className="min-w-0 flex-1">{developerLookup.lookupResult.worldAddress}</span>
                   <button
                     type="button"

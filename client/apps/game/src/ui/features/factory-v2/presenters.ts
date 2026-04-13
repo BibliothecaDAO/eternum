@@ -181,18 +181,18 @@ export const getRunStatusMeta = (status: FactoryRunStatus) => {
     case "waiting":
       return {
         label: "Getting Ready",
-        className: "border border-white/8 bg-white/6 text-[#fbf4ea]/62",
+        className: "border border-gold/10 bg-black/20 text-gold/62",
       };
     case "complete":
       return {
         label: "Ready",
-        className: "border border-white/8 bg-white/8 text-[#fbf4ea]/70",
+        className: "border border-gold/10 bg-black/25 text-gold/70",
       };
     case "running":
     default:
       return {
         label: "In progress",
-        className: "border border-white/12 bg-[rgba(32,27,22,0.9)] text-[#dfaa54] shadow-[0_8px_18px_rgba(0,0,0,0.18)]",
+        className: "border border-gold/20 bg-[rgba(32,27,22,0.9)] text-[#dfaa54] shadow-[0_8px_18px_rgba(0,0,0,0.18)]",
       };
   }
 };
@@ -202,20 +202,19 @@ export const getStepStatusMeta = (status: FactoryStepStatus) => {
     case "succeeded":
       return {
         label: "Done",
-        className: "border border-white/8 bg-white/6 text-[#fbf4ea]/58",
-        railClassName: "bg-white/18",
+        className: "border border-gold/10 bg-black/20 text-gold/58",
+        railClassName: "bg-gold/25",
       };
     case "already_done":
       return {
         label: "Done",
-        className: "border border-white/8 bg-white/6 text-[#fbf4ea]/52",
-        railClassName: "bg-white/16",
+        className: "border border-gold/10 bg-black/20 text-gold/52",
+        railClassName: "bg-gold/20",
       };
     case "running":
       return {
         label: "Current",
-        className:
-          "border border-white/12 bg-[rgba(32,27,22,0.92)] text-[#dfaa54] shadow-[0_8px_18px_rgba(0,0,0,0.18)]",
+        className: "border border-gold/20 bg-[rgba(32,27,22,0.92)] text-[#dfaa54] shadow-[0_8px_18px_rgba(0,0,0,0.18)]",
         railClassName: "bg-[#dfaa54]",
       };
     case "blocked":
@@ -234,8 +233,8 @@ export const getStepStatusMeta = (status: FactoryStepStatus) => {
     default:
       return {
         label: "Up next",
-        className: "border border-white/8 bg-white/5 text-[#fbf4ea]/52",
-        railClassName: "bg-white/12",
+        className: "border border-gold/10 bg-black/20 text-gold/52",
+        railClassName: "bg-black/30",
       };
   }
 };
