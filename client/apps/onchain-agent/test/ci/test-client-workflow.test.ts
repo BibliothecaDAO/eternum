@@ -26,4 +26,15 @@ describe("test-client workflow", () => {
     expect(workflow).toContain("--base-url http://127.0.0.1:4173");
     expect(workflow).toContain("--scenes map,hex");
   });
+
+  it("sets up pnpm before enabling pnpm caching in setup-node", () => {
+    const workflow = readWorkflow();
+    const pnpmSetupIndex = workflow.indexOf("uses: pnpm/action-setup@v4");
+    const nodeSetupIndex = workflow.indexOf("uses: actions/setup-node@v4");
+
+    expect(pnpmSetupIndex).toBeGreaterThanOrEqual(0);
+    expect(nodeSetupIndex).toBeGreaterThanOrEqual(0);
+    expect(pnpmSetupIndex).toBeLessThan(nodeSetupIndex);
+    expect(workflow).toContain("cache: pnpm");
+  });
 });

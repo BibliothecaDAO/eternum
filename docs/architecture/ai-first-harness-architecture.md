@@ -135,8 +135,8 @@ These are user-facing or operator-facing products.
 
 - `packages/*`
 
-These should hold shared domain logic, world/factory resolution, typed contracts, and agent primitives whenever logic
-is reused across products.
+These should hold shared domain logic, world/factory resolution, typed contracts, and agent primitives whenever logic is
+reused across products.
 
 ### Operational Control Plane
 
@@ -300,8 +300,8 @@ High-priority candidates:
 - environment and release metadata
 - incident and health event schemas
 
-If game client and onchain agent need the same concept, the default assumption should be a shared package unless there is
-clear product-specific behavior.
+If game client and onchain agent need the same concept, the default assumption should be a shared package unless there
+is clear product-specific behavior.
 
 ## Phased Migration Plan
 
