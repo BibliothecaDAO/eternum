@@ -6,6 +6,9 @@ export type SettlementSnapshot = {
   settledCount: number;
 };
 
+const hasIndexedSettlementProgress = (snapshot: SettlementSnapshot): boolean =>
+  snapshot.hasSettledStructure || snapshot.coordsCount > 0 || snapshot.settledCount > 0;
+
 type SettlementStatus = {
   assignedCount: number;
   settledCount: number;
@@ -31,6 +34,35 @@ export const deriveSettlementStatus = (snapshot: SettlementSnapshot): Settlement
     remainingToSettle,
     canPlay,
     needsSettlement,
+  };
+};
+
+export const applyAutoSettleRegistrationHint = ({
+  snapshot,
+  autoSettleEnabled,
+  entryIntent,
+  hasAutoSettleEntry,
+}: {
+  snapshot: SettlementSnapshot;
+  autoSettleEnabled: boolean;
+  entryIntent: "play" | "settle";
+  hasAutoSettleEntry: boolean;
+}): SettlementSnapshot => {
+  const shouldHintRegistration =
+    autoSettleEnabled &&
+    entryIntent === "settle" &&
+    hasAutoSettleEntry &&
+    !snapshot.registered &&
+    !snapshot.onceRegistered &&
+    !hasIndexedSettlementProgress(snapshot);
+
+  if (!shouldHintRegistration) {
+    return snapshot;
+  }
+
+  return {
+    ...snapshot,
+    registered: true,
   };
 };
 

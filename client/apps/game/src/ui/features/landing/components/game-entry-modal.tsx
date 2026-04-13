@@ -53,6 +53,7 @@ import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@b
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
 import {
+  applyAutoSettleRegistrationHint,
   buildSettlementExecutionPlan,
   deriveSettlementStatus,
   type SettlementSnapshot,
@@ -2949,6 +2950,9 @@ export const GameEntryModal = ({
       walletAddress: account.address,
     });
   }, [account?.address, chain, worldName]);
+  const autoSettleEntry = useAutoSettleStore((state) =>
+    autoSettleEntryKey ? state.entries[autoSettleEntryKey] : undefined,
+  );
   const playerFeltAddress = useMemo(() => {
     if (!account?.address) return null;
     try {
@@ -3772,14 +3776,19 @@ export const GameEntryModal = ({
     const playerRegister = registerRows[0] ?? null;
     const settleFinish = settleFinishRows[0] ?? null;
 
-    return {
-      registered: playerRegister?.registered === true,
-      onceRegistered: playerRegister?.once_registered === true,
-      hasSettledStructure: playerStructures.length > 0,
-      coordsCount: parseSpanLength(settleFinish?.coords),
-      settledCount: parseSpanLength(settleFinish?.structure_ids),
-    };
-  }, [account, selectedWorldSqlApi, selectedWorldSqlBaseUrl]);
+    return applyAutoSettleRegistrationHint({
+      snapshot: {
+        registered: playerRegister?.registered === true,
+        onceRegistered: playerRegister?.once_registered === true,
+        hasSettledStructure: playerStructures.length > 0,
+        coordsCount: parseSpanLength(settleFinish?.coords),
+        settledCount: parseSpanLength(settleFinish?.structure_ids),
+      },
+      autoSettleEnabled,
+      entryIntent: eternumEntryIntent,
+      hasAutoSettleEntry: autoSettleEntry != null,
+    });
+  }, [account, autoSettleEnabled, autoSettleEntry, eternumEntryIntent, selectedWorldSqlApi, selectedWorldSqlBaseUrl]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {

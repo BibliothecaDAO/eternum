@@ -30,7 +30,8 @@ jobs:
       - name: Collect changed files
         id: changed-files
         run: |
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR "${{ github.event.pull_request.base.sha }}...${{ github.sha }}" | grep -E '\.(cjs|mjs|js|jsx|ts|tsx|json|md|mdx|yaml|yml|css|scss|html)$' || true)
+          # Diff against the PR head SHA so we only lint files introduced by the pull request.
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" | grep -E '\.(cjs|mjs|js|jsx|ts|tsx|json|md|mdx|yaml|yml|css|scss|html)$' || true)
 
           if [ "${#files[@]}" -eq 0 ]; then
             echo "has_files=false" >> "$GITHUB_OUTPUT"
