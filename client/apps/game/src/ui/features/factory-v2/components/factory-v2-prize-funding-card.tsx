@@ -75,10 +75,10 @@ export const FactoryV2PrizeFundingCard = ({
   };
 
   return (
-    <div className="space-y-3 rounded-[24px] border border-black/8 bg-white/40 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+    <div className="space-y-3 rounded-[24px] border border-white/8 bg-white/5 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.14)]">
       <div className="mx-auto max-w-sm space-y-1 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Admin prize funding</div>
-        <p className="text-[13px] leading-5 text-black/52">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">Admin prize funding</div>
+        <p className="text-[13px] leading-5 text-[#fbf4ea]/52">
           Send prizes to each game&apos;s trusted prize distribution address as soon as world setup is ready.
         </p>
       </div>
@@ -100,7 +100,7 @@ export const FactoryV2PrizeFundingCard = ({
 
       <div>
         <label className="space-y-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/44">Prize amount</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/44">Prize amount</span>
           <input
             data-testid="factory-prize-amount"
             type="text"
@@ -108,7 +108,7 @@ export const FactoryV2PrizeFundingCard = ({
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
             placeholder={isSeriesFunding ? "Per selected game" : "Token amount"}
-            className="w-full rounded-[18px] border border-black/10 bg-white/72 px-3 py-3 text-sm text-black shadow-[0_10px_24px_rgba(15,23,42,0.04)] outline-none transition-colors focus:border-[#9d6c35]/50"
+            className="w-full rounded-[18px] border border-white/10 bg-white/8 px-3 py-3 text-sm text-[#fbf4ea] shadow-[0_10px_24px_rgba(0,0,0,0.12)] outline-none transition-colors focus:border-[#dfaa54]/50"
           />
         </label>
       </div>
@@ -131,12 +131,12 @@ export const FactoryV2PrizeFundingCard = ({
 
       <div className="space-y-2 text-center">
         {isSeriesFunding ? (
-          <p className="text-[13px] leading-5 text-black/52">
+          <p className="text-[13px] leading-5 text-[#fbf4ea]/52">
             This sends one multicall with one transfer per selected game. Already funded games stay visible so you can
             explicitly resend them when needed, and games that are not ready stay visible until configuration finishes.
           </p>
         ) : (
-          <p className="text-[13px] leading-5 text-black/52">
+          <p className="text-[13px] leading-5 text-[#fbf4ea]/52">
             This sends one ERC20 transfer to the trusted prize distribution address for {run.name}.
           </p>
         )}
@@ -147,7 +147,7 @@ export const FactoryV2PrizeFundingCard = ({
           onClick={() => {
             void submitFundingRequest();
           }}
-          className="inline-flex w-full items-center justify-center rounded-full border border-black/10 bg-[#7a4b22] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#6d411c] disabled:cursor-not-allowed disabled:bg-[#7a4b22]/45"
+          className="inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-[#dfaa54] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#c89540] disabled:cursor-not-allowed disabled:bg-[#dfaa54]/45"
         >
           {isCoolingDown
             ? `Wait ${cooldownSecondsRemaining}s`
@@ -159,7 +159,7 @@ export const FactoryV2PrizeFundingCard = ({
           <div
             data-testid="factory-prize-success"
             aria-live="polite"
-            className="rounded-[18px] border border-emerald-700/15 bg-emerald-50/80 px-3 py-2 text-left text-[12px] leading-5 text-emerald-950"
+            className="rounded-[18px] border border-emerald-700/15 bg-emerald-950/30 px-3 py-2 text-left text-[12px] leading-5 text-emerald-300"
           >
             {successMessage}
           </div>
@@ -182,10 +182,10 @@ const FactoryV2PrizeFundingSeriesSelector = ({
   isBusy: boolean;
   onToggleGame: (gameName: string) => void;
 }) => (
-  <div className="space-y-2 rounded-[20px] border border-black/8 bg-white/52 p-3">
+  <div className="space-y-2 rounded-[20px] border border-white/8 bg-white/6 p-3">
     <div className="mx-auto max-w-sm space-y-1 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/42">{gameGroupLabel}</div>
-      <p className="text-[13px] leading-5 text-black/52">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/42">{gameGroupLabel}</div>
+      <p className="text-[13px] leading-5 text-[#fbf4ea]/52">
         Eligible unfunded games are selected by default. Funded games stay reselectable and not-ready games stay
         visible.
       </p>
@@ -198,7 +198,7 @@ const FactoryV2PrizeFundingSeriesSelector = ({
         return (
           <label
             key={game.gameName}
-            className="flex items-center gap-3 rounded-[18px] border border-black/8 bg-white/72 px-3 py-3 text-left"
+            className="flex items-center gap-3 rounded-[18px] border border-white/8 bg-white/8 px-3 py-3 text-left"
           >
             <input
               data-testid={`factory-prize-game-${game.gameName}`}
@@ -206,11 +206,11 @@ const FactoryV2PrizeFundingSeriesSelector = ({
               checked={isSelected}
               disabled={!isSelectable || isBusy}
               onChange={() => onToggleGame(game.gameName)}
-              className="h-4 w-4 rounded border-black/20 text-[#7a4b22] focus:ring-[#7a4b22]/40"
+              className="h-4 w-4 rounded border-white/20 text-[#dfaa54] focus:ring-[#dfaa54]/40"
             />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-black">{game.gameName}</div>
-              <div className="text-[12px] text-black/48">{resolvePrizeFundingGameStatusLabel(game)}</div>
+              <div className="truncate text-sm font-semibold text-[#fbf4ea]">{game.gameName}</div>
+              <div className="text-[12px] text-[#fbf4ea]/48">{resolvePrizeFundingGameStatusLabel(game)}</div>
             </div>
           </label>
         );
@@ -220,9 +220,9 @@ const FactoryV2PrizeFundingSeriesSelector = ({
 );
 
 const FactoryV2PrizeFundingMetric = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-center">
-    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-black/40">{label}</div>
-    <div className="mt-1 text-[13px] font-semibold text-black">{value}</div>
+  <div className="rounded-[18px] border border-white/8 bg-white/6 px-3 py-3 text-center">
+    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/40">{label}</div>
+    <div className="mt-1 text-[13px] font-semibold text-[#fbf4ea]">{value}</div>
   </div>
 );
 

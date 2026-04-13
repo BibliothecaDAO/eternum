@@ -51,23 +51,23 @@ const getPresetFacts = (preset: FactoryLaunchPreset) =>
   ].filter(Boolean);
 
 const FACTORY_FIELD_CONTROL_CLASS_NAME =
-  "mt-2 block h-11 w-full min-w-0 max-w-full rounded-[18px] border border-black/10 bg-white/78 px-3 text-left text-[13px] text-black outline-none transition-colors focus:border-black/25 md:px-4 md:text-center md:text-sm";
+  "mt-2 block h-11 w-full min-w-0 max-w-full rounded-[18px] border border-white/10 bg-white/8 px-3 text-left text-[13px] text-[#fbf4ea] outline-none transition-colors focus:border-white/25 md:px-4 md:text-center md:text-sm";
 
 const FACTORY_SELECT_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} appearance-none pr-11 font-medium`;
 
 const FACTORY_SCHEDULE_PANEL_CLASS_NAME =
-  "block min-w-0 overflow-hidden rounded-[20px] border border-black/8 bg-white/48 px-3 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)] transition-colors focus-within:border-black/16";
+  "block min-w-0 overflow-hidden rounded-[20px] border border-white/8 bg-white/6 px-3 py-3 shadow-[0_8px_22px_rgba(0,0,0,0.10)] transition-colors focus-within:border-white/16";
 
 const FACTORY_MOBILE_PICKER_INPUT_CLASS_NAME =
   "absolute inset-0 h-full w-full min-w-0 max-w-full cursor-pointer opacity-0";
 
 const FACTORY_DESKTOP_PICKER_INPUT_CLASS_NAME =
-  "sm:static sm:mt-2 sm:block sm:h-11 sm:w-full sm:min-w-0 sm:max-w-full sm:rounded-[18px] sm:border sm:border-black/10 sm:bg-white/78 sm:px-4 sm:text-left sm:text-sm sm:font-medium sm:text-black sm:opacity-100 sm:outline-none sm:transition-colors sm:focus:border-black/25 sm:[color-scheme:light]";
+  "sm:static sm:mt-2 sm:block sm:h-11 sm:w-full sm:min-w-0 sm:max-w-full sm:rounded-[18px] sm:border sm:border-white/10 sm:bg-white/8 sm:px-4 sm:text-left sm:text-sm sm:font-medium sm:text-[#fbf4ea] sm:opacity-100 sm:outline-none sm:transition-colors sm:focus:border-white/25 sm:[color-scheme:dark]";
 
 const FACTORY_NATIVE_PICKER_INPUT_CLASS_NAME = `${FACTORY_MOBILE_PICKER_INPUT_CLASS_NAME} ${FACTORY_DESKTOP_PICKER_INPUT_CLASS_NAME}`;
 
 const FACTORY_SCHEDULE_VALUE_SURFACE_CLASS_NAME =
-  "pointer-events-none mt-2 flex h-11 items-center gap-3 rounded-[18px] border border-black/10 bg-white/78 px-4 text-left text-[13px] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] sm:hidden";
+  "pointer-events-none mt-2 flex h-11 items-center gap-3 rounded-[18px] border border-white/10 bg-white/8 px-4 text-left text-[13px] text-[#fbf4ea] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:hidden";
 
 const FACTORY_SERIES_RETRY_OPTIONS: FactorySeriesRetryIntervalMinutes[] = [5, 15, 30, 60];
 const FACTORY_ROTATION_EVALUATION_OPTIONS: FactoryRotationEvaluationIntervalMinutes[] = [5, 15, 30, 60];
@@ -273,7 +273,7 @@ function resolveStartWorkspaceState(
 const FactoryV2StartWorkspaceEmptyState = ({ appearanceClassName }: { appearanceClassName: string }) => (
   <article className="w-full md:mx-auto md:max-w-xl">
     <div className={cn("px-4 py-5 md:rounded-[28px] md:border md:p-7", appearanceClassName)}>
-      <div className="text-sm leading-6 text-black/58">Pick a preset first.</div>
+      <div className="text-sm leading-6 text-[#fbf4ea]/58">Pick a preset first.</div>
     </div>
   </article>
 );
@@ -694,7 +694,7 @@ const FactoryV2PresetField = ({
   <div className="min-w-0">
     <label
       htmlFor="factory-preset"
-      className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+      className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42"
     >
       Preset
     </label>
@@ -711,10 +711,10 @@ const FactoryV2PresetField = ({
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/45" />
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#fbf4ea]/45" />
     </div>
-    <p className="mt-3 text-sm leading-6 text-black/48">{selectedPreset.description}</p>
-    {presetFacts ? <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-black/40">{presetFacts}</p> : null}
+    <p className="mt-3 text-sm leading-6 text-[#fbf4ea]/48">{selectedPreset.description}</p>
+    {presetFacts ? <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#fbf4ea]/40">{presetFacts}</p> : null}
   </div>
 );
 
@@ -741,7 +741,7 @@ const FactoryV2SingleGameBasics = ({
     <div className="flex items-center justify-between gap-3">
       <label
         htmlFor="factory-game-name"
-        className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+        className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42"
       >
         Game name
       </label>
@@ -762,16 +762,16 @@ const FactoryV2SingleGameBasics = ({
       value={gameName}
       onChange={(event) => onGameNameChange(event.target.value)}
       placeholder={mode === "eternum" ? "etrn-sunrise-01" : "bltz-sprint-01"}
-      className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} placeholder:text-black/30`}
+      className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} placeholder:text-[#fbf4ea]/30`}
     />
     {existingRunName ? (
-      <p className="mt-2 text-sm leading-6 text-black/50">
+      <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">
         That name is already in use. We will open that run instead.
       </p>
     ) : null}
-    {!existingRunName && notice ? <p className="mt-2 text-sm leading-6 text-black/50">{notice}</p> : null}
+    {!existingRunName && notice ? <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">{notice}</p> : null}
     {!existingRunName && launchDisabledReason ? (
-      <p className="mt-2 text-sm leading-6 text-black/50">{launchDisabledReason}</p>
+      <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">{launchDisabledReason}</p>
     ) : null}
   </div>
 );
@@ -861,8 +861,8 @@ const FactoryV2BlitzSetupSection = ({
     ) : null}
 
     <div className="space-y-1">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Play style</div>
-      <p className="text-sm leading-5 text-black/50">Choose how players and realms are arranged for this game.</p>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">Play style</div>
+      <p className="text-sm leading-5 text-[#fbf4ea]/50">Choose how players and realms are arranged for this game.</p>
     </div>
     <div className="space-y-1.5">
       {blitzPlayStyleOptions.map((playStyle) => (
@@ -936,12 +936,12 @@ const FactoryV2LaunchTargetButton = ({
     className={cn(
       "rounded-[20px] border px-4 py-3 text-left transition-colors",
       isSelected
-        ? "border-black/14 bg-[rgba(255,252,247,0.82)] text-[#1b140f] shadow-[0_8px_20px_rgba(44,28,15,0.08)]"
+        ? "border-white/14 bg-white/12 text-[#fbf4ea] shadow-[0_8px_20px_rgba(0,0,0,0.16)]"
         : appearanceClassName,
     )}
   >
     <div className="text-[13px] font-semibold leading-5">{label}</div>
-    <div className="mt-1 text-[11px] leading-5 text-black/48">{description}</div>
+    <div className="mt-1 text-[11px] leading-5 text-[#fbf4ea]/48">{description}</div>
   </button>
 );
 
@@ -1160,7 +1160,7 @@ const FactoryV2SeriesBasics = ({
     <div className="min-w-0">
       <label
         htmlFor="factory-series-name"
-        className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+        className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42"
       >
         Series name
       </label>
@@ -1169,7 +1169,7 @@ const FactoryV2SeriesBasics = ({
         value={seriesName}
         onChange={(event) => onSeriesNameChange(event.target.value)}
         placeholder={mode === "eternum" ? "etrn-season-run" : "bltz-weekend-cup"}
-        className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} placeholder:text-black/30`}
+        className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} placeholder:text-[#fbf4ea]/30`}
       />
       {seriesSuggestions.length > 0 ? (
         <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -1178,31 +1178,31 @@ const FactoryV2SeriesBasics = ({
               key={series.name}
               type="button"
               onClick={() => onSelectSeriesSuggestion(series.name)}
-              className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] font-medium text-black/58 transition-colors hover:bg-white"
+              className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-medium text-[#fbf4ea]/58 transition-colors hover:bg-white/10"
             >
               {series.name} · next {series.nextGameNumber}
             </button>
           ))}
         </div>
       ) : null}
-      {isLoadingSeries ? <p className="mt-2 text-sm leading-6 text-black/50">Loading your series…</p> : null}
+      {isLoadingSeries ? <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">Loading your series…</p> : null}
       {!isLoadingSeries && seriesLookupError ? (
-        <p className="mt-2 text-sm leading-6 text-black/50">{seriesLookupError}</p>
+        <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">{seriesLookupError}</p>
       ) : null}
       {existingRunName ? (
-        <p className="mt-2 text-sm leading-6 text-black/50">
+        <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">
           This series already has a parent run. Launching again will append any new games and resume that shared run.
         </p>
       ) : null}
-      {notice ? <p className="mt-2 text-sm leading-6 text-black/50">{notice}</p> : null}
-      {launchDisabledReason ? <p className="mt-2 text-sm leading-6 text-black/50">{launchDisabledReason}</p> : null}
+      {notice ? <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">{notice}</p> : null}
+      {launchDisabledReason ? <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">{launchDisabledReason}</p> : null}
     </div>
 
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="min-w-0">
         <label
           htmlFor="factory-series-count"
-          className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+          className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42"
         >
           Game count
         </label>
@@ -1219,7 +1219,7 @@ const FactoryV2SeriesBasics = ({
       <div className="min-w-0">
         <label
           htmlFor="factory-series-retry-interval"
-          className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+          className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42"
         >
           Retry interval
         </label>
@@ -1238,7 +1238,7 @@ const FactoryV2SeriesBasics = ({
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/45" />
+          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#fbf4ea]/45" />
         </div>
       </div>
     </div>
@@ -1296,7 +1296,7 @@ const FactoryV2RotationBasics = ({
     <div className="min-w-0">
       <label
         htmlFor="factory-rotation-name"
-        className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+        className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42"
       >
         Rotation name
       </label>
@@ -1305,16 +1305,16 @@ const FactoryV2RotationBasics = ({
         value={rotationName}
         onChange={(event) => onRotationNameChange(event.target.value)}
         placeholder={mode === "eternum" ? "etrn-hourly-rotation" : "bltz-ladder-loop"}
-        className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} placeholder:text-black/30`}
+        className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} placeholder:text-[#fbf4ea]/30`}
       />
       {existingRunName ? (
-        <p className="mt-2 text-sm leading-6 text-black/50">
+        <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">
           This rotation already exists. Open it from Watch to continue it or run it now.
         </p>
       ) : null}
-      {!existingRunName && notice ? <p className="mt-2 text-sm leading-6 text-black/50">{notice}</p> : null}
+      {!existingRunName && notice ? <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">{notice}</p> : null}
       {!existingRunName && launchDisabledReason ? (
-        <p className="mt-2 text-sm leading-6 text-black/50">{launchDisabledReason}</p>
+        <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/50">{launchDisabledReason}</p>
       ) : null}
     </div>
 
@@ -1401,12 +1401,12 @@ const FactoryV2SeriesGameRow = ({
   const startTime = resolveFactoryStartTimePart(game.startAt);
 
   return (
-    <div className="rounded-[20px] border border-black/8 bg-white/65 p-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+    <div className="rounded-[20px] border border-white/8 bg-white/6 p-3 shadow-[0_8px_20px_rgba(0,0,0,0.12)]">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
           Game {game.seriesGameNumber}
         </div>
-        <div className="rounded-full border border-black/8 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-black/46">
+        <div className="rounded-full border border-white/8 bg-white/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/46">
           Series
         </div>
       </div>
@@ -1414,7 +1414,7 @@ const FactoryV2SeriesGameRow = ({
         <div className="min-w-0">
           <label
             htmlFor={`factory-series-game-name-${game.id}`}
-            className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38"
+            className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/38"
           >
             Game name
           </label>
@@ -1422,7 +1422,7 @@ const FactoryV2SeriesGameRow = ({
             id={`factory-series-game-name-${game.id}`}
             value={game.gameName}
             onChange={(event) => onGameNameChange(game.id, event.target.value)}
-            className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} mt-2 placeholder:text-black/30`}
+            className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} mt-2 placeholder:text-[#fbf4ea]/30`}
           />
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -1432,7 +1432,7 @@ const FactoryV2SeriesGameRow = ({
             type="date"
             value={startDate}
             displayValue={formatFactoryStartDateLabel(startDate)}
-            icon={<CalendarDays className="h-4 w-4 text-black/36" />}
+            icon={<CalendarDays className="h-4 w-4 text-[#fbf4ea]/36" />}
             displayTestId={`factory-series-start-date-display-${game.id}`}
             onChange={(value) => onStartAtChange(game.id, buildFactoryStartAtValue(value, startTime, game.startAt))}
           />
@@ -1442,7 +1442,7 @@ const FactoryV2SeriesGameRow = ({
             type="time"
             value={startTime}
             displayValue={formatFactoryStartTimeLabel(startTime)}
-            icon={<Clock3 className="h-4 w-4 text-black/36" />}
+            icon={<Clock3 className="h-4 w-4 text-[#fbf4ea]/36" />}
             displayTestId={`factory-series-start-time-display-${game.id}`}
             onChange={(value) => onStartAtChange(game.id, buildFactoryStartAtValue(startDate, value, game.startAt))}
           />
@@ -1457,20 +1457,20 @@ const FactoryV2RotationPreviewRow = ({ game }: { game: FactoryRotationPreviewGam
   const startTime = resolveFactoryStartTimePart(game.startAt);
 
   return (
-    <div className="rounded-[20px] border border-black/8 bg-white/65 p-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+    <div className="rounded-[20px] border border-white/8 bg-white/6 p-3 shadow-[0_8px_20px_rgba(0,0,0,0.12)]">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
           Game {game.seriesGameNumber}
         </div>
-        <div className="rounded-full border border-black/8 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-black/46">
+        <div className="rounded-full border border-white/8 bg-white/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/46">
           Rotation
         </div>
       </div>
       <div className="space-y-2">
-        <div className="text-[13px] font-semibold text-black">{game.gameName}</div>
-        <div className="flex flex-wrap items-center gap-2 text-[12px] text-black/50">
+        <div className="text-[13px] font-semibold text-[#fbf4ea]">{game.gameName}</div>
+        <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#fbf4ea]/50">
           <span>{formatFactoryStartDateLabel(startDate)}</span>
-          <span className="text-black/28">·</span>
+          <span className="text-[#fbf4ea]/28">·</span>
           <span>{formatFactoryStartTimeLabel(startTime)}</span>
         </div>
       </div>
@@ -1491,13 +1491,13 @@ const FactoryV2StartSectionCard = ({
 }) => (
   <section
     className={cn(
-      "space-y-4 rounded-[24px] border border-black/8 px-4 py-4 text-left sm:px-5 sm:py-5",
+      "space-y-4 rounded-[24px] border border-white/8 px-4 py-4 text-left sm:px-5 sm:py-5",
       appearanceClassName,
     )}
   >
     <div className="mx-auto max-w-sm space-y-1 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{title}</div>
-      <p className="text-sm leading-5 text-black/50">{description}</p>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">{title}</div>
+      <p className="text-sm leading-5 text-[#fbf4ea]/50">{description}</p>
     </div>
     {children}
   </section>
@@ -1520,11 +1520,11 @@ const FactoryV2StartTimeField = ({
       <div className="space-y-1 sm:flex sm:items-end sm:justify-between sm:gap-3 sm:space-y-0">
         <label
           htmlFor="factory-start-date"
-          className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+          className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42"
         >
           Start time
         </label>
-        <span className="text-[11px] leading-5 text-black/38">Your local time</span>
+        <span className="text-[11px] leading-5 text-[#fbf4ea]/38">Your local time</span>
       </div>
       <div className="grid min-w-0 gap-2 sm:grid-cols-2">
         <FactoryV2NativePickerField
@@ -1533,7 +1533,7 @@ const FactoryV2StartTimeField = ({
           type="date"
           value={startDate}
           displayValue={formatFactoryStartDateLabel(startDate)}
-          icon={<CalendarDays className="h-4 w-4 text-black/36" />}
+          icon={<CalendarDays className="h-4 w-4 text-[#fbf4ea]/36" />}
           displayTestId="factory-start-date-display"
           onChange={(value) => onChange(buildFactoryStartAtValue(value, startTime, startAt))}
         />
@@ -1543,12 +1543,12 @@ const FactoryV2StartTimeField = ({
           type="time"
           value={startTime}
           displayValue={formatFactoryStartTimeLabel(startTime)}
-          icon={<Clock3 className="h-4 w-4 text-black/36" />}
+          icon={<Clock3 className="h-4 w-4 text-[#fbf4ea]/36" />}
           displayTestId="factory-start-time-display"
           onChange={(value) => onChange(buildFactoryStartAtValue(startDate, value, startAt))}
         />
       </div>
-      <p className="mt-2 text-sm leading-6 text-black/48">{helperText}</p>
+      <p className="mt-2 text-sm leading-6 text-[#fbf4ea]/48">{helperText}</p>
     </div>
   );
 };
@@ -1571,7 +1571,7 @@ const FactoryV2NumberField = ({
   onChange: (value: number) => void;
 }) => (
   <div className="min-w-0">
-    <label htmlFor={inputId} className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
+    <label htmlFor={inputId} className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
       {label}
     </label>
     <div className="relative mt-2">
@@ -1585,7 +1585,7 @@ const FactoryV2NumberField = ({
         className={`${FACTORY_FIELD_CONTROL_CLASS_NAME} text-center font-medium`}
       />
       {suffix ? (
-        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] uppercase tracking-[0.12em] text-black/36">
+        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] uppercase tracking-[0.12em] text-[#fbf4ea]/36">
           {suffix}
         </span>
       ) : null}
@@ -1609,7 +1609,7 @@ const FactoryV2SelectField = ({
   onChange: (value: string) => void;
 }) => (
   <div className="min-w-0">
-    <label htmlFor={inputId} className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
+    <label htmlFor={inputId} className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42">
       {label}
     </label>
     <div className="relative mt-2">
@@ -1621,7 +1621,7 @@ const FactoryV2SelectField = ({
       >
         {children}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/45" />
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#fbf4ea]/45" />
     </div>
   </div>
 );
@@ -1634,7 +1634,7 @@ const FactoryV2ScheduleMeaningList = ({
     description: string;
   }>;
 }) => (
-  <div className="space-y-2 rounded-[20px] border border-black/8 bg-white/58 px-4 py-3">
+  <div className="space-y-2 rounded-[20px] border border-white/8 bg-white/6 px-4 py-3">
     {items.map((item) => (
       <FactoryV2ScheduleMeaningItem key={item.label} label={item.label} description={item.description} />
     ))}
@@ -1643,12 +1643,12 @@ const FactoryV2ScheduleMeaningList = ({
 
 const FactoryV2ScheduleMeaningItem = ({ label, description }: { label: string; description: string }) => (
   <div className="flex items-start gap-3 text-left">
-    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-black/10 bg-white/72 text-black/42">
+    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-[#fbf4ea]/42">
       <Info className="h-3.5 w-3.5" />
     </span>
     <div className="min-w-0">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/42">{label}</div>
-      <p className="mt-1 text-[13px] leading-5 text-black/54">{description}</p>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/42">{label}</div>
+      <p className="mt-1 text-[13px] leading-5 text-[#fbf4ea]/54">{description}</p>
     </div>
   </div>
 );
@@ -1673,11 +1673,11 @@ const FactoryV2NativePickerField = ({
   onChange: (value: string) => void;
 }) => (
   <label className={FACTORY_SCHEDULE_PANEL_CLASS_NAME}>
-    <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-black/38">{label}</span>
+    <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#fbf4ea]/38">{label}</span>
     <div className="relative min-w-0">
       <div data-testid={displayTestId} className={FACTORY_SCHEDULE_VALUE_SURFACE_CLASS_NAME}>
         {icon}
-        <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-black/72">{displayValue}</span>
+        <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-[#fbf4ea]/72">{displayValue}</span>
       </div>
       <input
         id={inputId}
@@ -1704,7 +1704,7 @@ const FactoryV2DurationField = ({
   <div className="min-w-0">
     <label
       htmlFor="factory-duration"
-      className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42"
+      className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[#fbf4ea]/42"
     >
       Duration
     </label>
@@ -1721,7 +1721,7 @@ const FactoryV2DurationField = ({
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/45" />
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#fbf4ea]/45" />
     </div>
   </div>
 );
@@ -1737,16 +1737,16 @@ const FactoryV2InlineOptionField = ({
   error: string | null;
   onChange: (value: string) => void;
 }) => (
-  <label className="block rounded-[20px] border border-black/8 bg-white/72 px-4 py-3.5">
+  <label className="block rounded-[20px] border border-white/8 bg-white/8 px-4 py-3.5">
     <div className="flex items-center gap-3">
       <div className="min-w-0 flex-1">
-        <span className="block text-[13px] font-medium leading-5 text-black/74">{field.label}</span>
-        <span className="block text-[11px] leading-4 text-black/38">{field.helperText}</span>
+        <span className="block text-[13px] font-medium leading-5 text-[#fbf4ea]/74">{field.label}</span>
+        <span className="block text-[11px] leading-4 text-[#fbf4ea]/38">{field.helperText}</span>
       </div>
       <div
         className={cn(
-          "flex h-9 items-center gap-1 rounded-full border bg-white px-2.5 shadow-[0_1px_0_rgba(255,255,255,0.55)]",
-          error ? "border-rose-400/70" : "border-black/10",
+          "flex h-9 items-center gap-1 rounded-full border bg-white/10 px-2.5 shadow-[0_1px_0_rgba(255,255,255,0.06)]",
+          error ? "border-rose-400/70" : "border-white/10",
         )}
       >
         <input
@@ -1757,10 +1757,10 @@ const FactoryV2InlineOptionField = ({
           step={field.step}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-7 w-16 border-0 bg-transparent p-0 text-right text-[13px] font-semibold text-black outline-none"
+          className="h-7 w-16 border-0 bg-transparent p-0 text-right text-[13px] font-semibold text-[#fbf4ea] outline-none"
         />
         {field.unitLabel ? (
-          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-black/42">{field.unitLabel}</span>
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#fbf4ea]/42">{field.unitLabel}</span>
         ) : null}
       </div>
     </div>
@@ -1786,8 +1786,8 @@ const FactoryV2PlayStyleOption = ({
     className={cn(
       "w-full rounded-[18px] border px-4 py-3 text-left transition-all duration-200",
       isEnabled
-        ? "border-black/16 bg-[rgba(255,252,247,0.82)] text-[#1b140f] shadow-[0_8px_20px_rgba(44,28,15,0.08)]"
-        : cn(appearanceClassName, "text-black/70 shadow-none"),
+        ? "border-white/16 bg-white/12 text-[#fbf4ea] shadow-[0_8px_20px_rgba(0,0,0,0.16)]"
+        : cn(appearanceClassName, "text-[#fbf4ea]/70 shadow-none"),
     )}
   >
     <div className="flex items-center gap-3">
@@ -1795,13 +1795,13 @@ const FactoryV2PlayStyleOption = ({
         aria-hidden="true"
         className={cn(
           "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-200",
-          isEnabled ? "border-[#1b140f] bg-[#1b140f]" : "border-black/18 bg-transparent",
+          isEnabled ? "border-[#fbf4ea] bg-[#fbf4ea]" : "border-white/18 bg-transparent",
         )}
       >
         <span
           className={cn(
             "h-1.5 w-1.5 rounded-full transition-colors duration-200",
-            isEnabled ? "bg-[#fff7ec]" : "bg-transparent",
+            isEnabled ? "bg-[#15110f]" : "bg-transparent",
           )}
         />
       </span>
@@ -1828,7 +1828,7 @@ const FactoryV2LaunchActionBar = ({
   <div
     data-testid="factory-start-action-bar"
     className={cn(
-      "sticky bottom-3 z-10 space-y-3 rounded-[24px] border border-black/10 px-4 pb-[calc(0.875rem+env(safe-area-inset-bottom))] pt-4 text-left shadow-[0_18px_42px_rgba(23,15,8,0.16)] backdrop-blur-xl md:static md:rounded-[22px] md:border-black/8 md:px-4 md:py-4 md:shadow-none md:backdrop-blur-0",
+      "sticky bottom-3 z-10 space-y-3 rounded-[24px] border border-white/10 px-4 pb-[calc(0.875rem+env(safe-area-inset-bottom))] pt-4 text-left shadow-[0_18px_42px_rgba(0,0,0,0.22)] backdrop-blur-xl md:static md:rounded-[22px] md:border-white/8 md:px-4 md:py-4 md:shadow-none md:backdrop-blur-0",
       appearanceClassName,
     )}
   >
@@ -1836,7 +1836,7 @@ const FactoryV2LaunchActionBar = ({
       {launchSummaryItems.map((item) => (
         <span
           key={item}
-          className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] font-medium text-black/56"
+          className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-medium text-[#fbf4ea]/56"
         >
           {item}
         </span>

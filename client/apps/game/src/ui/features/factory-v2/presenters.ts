@@ -176,24 +176,24 @@ export const getRunStatusMeta = (status: FactoryRunStatus) => {
     case "attention":
       return {
         label: "Needs attention",
-        className: "border border-rose-300/50 bg-rose-50 text-rose-700",
+        className: "border border-rose-300/50 bg-rose-950/30 text-rose-400",
       };
     case "waiting":
       return {
         label: "Getting Ready",
-        className: "border border-black/8 bg-white/55 text-black/62",
+        className: "border border-white/8 bg-white/6 text-[#fbf4ea]/62",
       };
     case "complete":
       return {
         label: "Ready",
-        className: "border border-black/8 bg-white/68 text-black/70",
+        className: "border border-white/8 bg-white/8 text-[#fbf4ea]/70",
       };
     case "running":
     default:
       return {
         label: "In progress",
         className:
-          "border border-[#d4b487]/65 bg-[rgba(255,249,239,0.9)] text-[#8a5416] shadow-[0_8px_18px_rgba(186,129,44,0.12)]",
+          "border border-white/12 bg-[rgba(32,27,22,0.9)] text-[#dfaa54] shadow-[0_8px_18px_rgba(0,0,0,0.18)]",
       };
   }
 };
@@ -203,40 +203,40 @@ export const getStepStatusMeta = (status: FactoryStepStatus) => {
     case "succeeded":
       return {
         label: "Done",
-        className: "border border-black/8 bg-white/58 text-black/58",
-        railClassName: "bg-black/18",
+        className: "border border-white/8 bg-white/6 text-[#fbf4ea]/58",
+        railClassName: "bg-white/18",
       };
     case "already_done":
       return {
         label: "Done",
-        className: "border border-black/8 bg-white/52 text-black/52",
-        railClassName: "bg-black/16",
+        className: "border border-white/8 bg-white/6 text-[#fbf4ea]/52",
+        railClassName: "bg-white/16",
       };
     case "running":
       return {
         label: "Current",
         className:
-          "border border-[#d4b487]/65 bg-[rgba(255,249,239,0.92)] text-[#8a5416] shadow-[0_8px_18px_rgba(186,129,44,0.12)]",
-        railClassName: "bg-[#d9b16f]",
+          "border border-white/12 bg-[rgba(32,27,22,0.92)] text-[#dfaa54] shadow-[0_8px_18px_rgba(0,0,0,0.18)]",
+        railClassName: "bg-[#dfaa54]",
       };
     case "blocked":
       return {
         label: "Needs attention",
-        className: "border border-rose-300/50 bg-rose-50 text-rose-700",
+        className: "border border-rose-300/50 bg-rose-950/30 text-rose-400",
         railClassName: "bg-rose-300",
       };
     case "failed":
       return {
         label: "Needs attention",
-        className: "border border-rose-300/50 bg-rose-50 text-rose-700",
+        className: "border border-rose-300/50 bg-rose-950/30 text-rose-400",
         railClassName: "bg-rose-400",
       };
     case "pending":
     default:
       return {
         label: "Up next",
-        className: "border border-black/8 bg-white/40 text-black/52",
-        railClassName: "bg-black/12",
+        className: "border border-white/8 bg-white/5 text-[#fbf4ea]/52",
+        railClassName: "bg-white/12",
       };
   }
 };
