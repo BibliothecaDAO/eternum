@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-13T04:22:26.285Z",
+  "updatedAt": "2026-04-13T19:47:23.582Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1215,6 +1215,19 @@
         "describedAt": "2026-04-12T10:42:09.417Z"
       },
       "updatedAt": "2026-04-12T10:42:09.417Z"
+    },
+    "bltz-jolt-121": {
+      "gameName": "bltz-jolt-121",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-jolt-121/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-13T19:47:23.582Z"
+      },
+      "updatedAt": "2026-04-13T19:47:23.582Z"
     }
   }
 }
