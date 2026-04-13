@@ -7,6 +7,7 @@ import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { ENTRY_TOKEN_LOCK_ID } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
@@ -159,6 +160,31 @@ const fetchAvailableEntryTokenId = async (
     console.error("Failed to fetch entry token:", error);
     return null;
   }
+};
+
+const waitForSubmittedRegistrationTransaction = async ({
+  result,
+  chain,
+  label,
+  account,
+}: {
+  result: unknown;
+  chain: Chain;
+  label: string;
+  account: Account;
+}) => {
+  const txHash = extractTransactionHash(result);
+  if (!txHash) {
+    throw new Error(`Missing transaction hash for ${label}`);
+  }
+
+  const provider = new RpcProvider({ nodeUrl: getRpcUrlForChain(chain) });
+  await waitForTransactionConfirmation({
+    txHash,
+    account: account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> },
+    label,
+    provider: provider as unknown as { waitForTransactionWithCheck?: (txHash: string) => Promise<unknown> },
+  });
 };
 
 export const useWorldRegistration = ({
@@ -419,10 +445,16 @@ export const useWorldRegistration = ({
           const point = params?.point ?? 0;
 
           setRegistrationStage("registering");
-          await starknetAccount.execute({
+          const createResult = await starknetAccount.execute({
             contractAddress: realmSystemsAddress,
             entrypoint: "create",
             calldata: CallData.compile([owner, realmId, frontend, side, layer, point]),
+          });
+          await waitForSubmittedRegistrationTransaction({
+            result: createResult,
+            chain,
+            label: "realm_systems.create",
+            account: starknetAccount,
           });
           setRegistrationStage("done");
           return;
@@ -484,12 +516,24 @@ export const useWorldRegistration = ({
           // Step 3: Register with token
           setRegistrationStage("registering");
           const registerCalls = buildRegisterCalls(blitzSystemsAddress, tokenId);
-          await starknetAccount.execute(registerCalls);
+          const registerResult = await starknetAccount.execute(registerCalls);
+          await waitForSubmittedRegistrationTransaction({
+            result: registerResult,
+            chain,
+            label: "blitz_realm_systems.register",
+            account: starknetAccount,
+          });
         } else {
           // No entry token required - direct registration
           setRegistrationStage("registering");
           const registerCalls = buildRegisterCalls(blitzSystemsAddress, 0n);
-          await starknetAccount.execute(registerCalls);
+          const registerResult = await starknetAccount.execute(registerCalls);
+          await waitForSubmittedRegistrationTransaction({
+            result: registerResult,
+            chain,
+            label: "blitz_realm_systems.register",
+            account: starknetAccount,
+          });
         }
 
         setRegistrationStage("done");
