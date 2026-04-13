@@ -4331,6 +4331,7 @@ export const GameEntryModal = ({
       structureEntityId: uiStore.structureEntityId,
       worldMapReturnPosition: uiStore.worldMapReturnPosition,
       isSpectateMode: navigationEntryContext.intent === "spectate",
+      mapCenterOffset: worldMeta?.mapCenterOffset ?? null,
     });
 
     uiStore.setStructureEntityId(entryTarget.structureEntityId, {

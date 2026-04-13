@@ -1,8 +1,9 @@
 import clsx from "clsx";
 import { consumePlayRouteHandoff } from "@/play/navigation/play-route-handoff";
+import { resolvePlayRouteTarget, type ResolvedPlayRouteTarget } from "@/play/navigation/play-route-target";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
+import { buildPlayHref } from "@/play/navigation/play-route";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { BootLoaderShell } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
@@ -29,6 +30,8 @@ type WorldMapPosition = {
   row: number;
 };
 
+type OverlaySceneFlow = "map" | "hex" | "travel";
+
 const isFiniteWorldMapPosition = (
   position: { col?: number | null; row?: number | null } | null | undefined,
 ): position is WorldMapPosition => {
@@ -39,6 +42,74 @@ const isFiniteWorldMapPosition = (
     typeof position.row === "number" &&
     Number.isFinite(position.row)
   );
+};
+
+const shouldFallbackToWorldMapResume = ({
+  isSpectating,
+  isLandingEntryHandoff,
+  routeTarget,
+}: {
+  isSpectating: boolean;
+  isLandingEntryHandoff: boolean;
+  routeTarget: ResolvedPlayRouteTarget;
+}): boolean => {
+  return (
+    !isSpectating &&
+    !isLandingEntryHandoff &&
+    (routeTarget.requestedScene === "hex" || routeTarget.requestedScene === "travel") &&
+    routeTarget.routeWorldPosition === null
+  );
+};
+
+const resolveOverlaySceneFlow = ({
+  isSpectating,
+  isLandingEntryHandoff,
+  routeTarget,
+}: {
+  isSpectating: boolean;
+  isLandingEntryHandoff: boolean;
+  routeTarget: ResolvedPlayRouteTarget;
+}): OverlaySceneFlow => {
+  if (isSpectating) {
+    return "map";
+  }
+
+  if (
+    isLandingEntryHandoff ||
+    shouldFallbackToWorldMapResume({
+      isSpectating,
+      isLandingEntryHandoff,
+      routeTarget,
+    })
+  ) {
+    return "map";
+  }
+
+  return routeTarget.scene;
+};
+
+const resolveOverlayHasNavigatedToTarget = ({
+  activeSceneFlow,
+  isOnWorldMapRoute,
+  isSpectating,
+  elapsedMs,
+  playerStructureCount,
+}: {
+  activeSceneFlow: OverlaySceneFlow;
+  isOnWorldMapRoute: boolean;
+  isSpectating: boolean;
+  elapsedMs: number;
+  playerStructureCount: number;
+}): boolean => {
+  if (activeSceneFlow !== "map") {
+    return true;
+  }
+
+  if (isSpectating) {
+    return elapsedMs >= TICK_INTERVAL_MS;
+  }
+
+  return isOnWorldMapRoute || playerStructureCount > 0;
 };
 
 /**
@@ -78,41 +149,29 @@ export const GameLoadingOverlay = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const canonicalPlayRoute = useMemo(() => parsePlayRoute(location), [location]);
-  const routeSceneTarget = useMemo<WorldMapPosition | null>(() => {
-    if (!canonicalPlayRoute) {
-      return null;
-    }
-
-    return isFiniteWorldMapPosition({
-      col: canonicalPlayRoute.col,
-      row: canonicalPlayRoute.row,
-    })
-      ? { col: canonicalPlayRoute.col, row: canonicalPlayRoute.row }
-      : null;
-  }, [canonicalPlayRoute]);
-  const routeHexceptionGridTarget = useMemo<WorldMapPosition | null>(() => {
-    if (canonicalPlayRoute?.scene !== "hex" || routeSceneTarget == null) {
-      return null;
-    }
-
-    const contractPosition = new Position({ x: routeSceneTarget.col, y: routeSceneTarget.row }).getContract();
-    return { col: contractPosition.x, row: contractPosition.y };
-  }, [canonicalPlayRoute?.scene, routeSceneTarget]);
+  const routeTarget = useMemo(
+    () =>
+      resolvePlayRouteTarget(location, {
+        fastTravelEnabled: true,
+      }),
+    [location],
+  );
+  const canonicalPlayRoute = routeTarget.playRoute;
+  const routeSceneTarget = routeTarget.routeWorldPosition;
+  const routeHexceptionGridTarget = routeTarget.hexRealmPosition;
   const [isLandingEntryHandoff] = useState(() => {
     return canonicalPlayRoute ? consumePlayRouteHandoff(canonicalPlayRoute) : false;
   });
-  const isOnWorldMapRoute = canonicalPlayRoute?.scene === "map" || location.pathname.startsWith("/play/map");
-  const shouldFallbackToWorldMapResume =
-    !isSpectating &&
-    !isLandingEntryHandoff &&
-    (canonicalPlayRoute?.scene === "hex" || canonicalPlayRoute?.scene === "travel") &&
-    routeSceneTarget === null;
-  const activeSceneFlow = isSpectating
-    ? "map"
-    : isLandingEntryHandoff || shouldFallbackToWorldMapResume
-      ? "map"
-      : (canonicalPlayRoute?.scene ?? "map");
+  const isOnWorldMapRoute = canonicalPlayRoute?.scene === "map";
+  const activeSceneFlow = useMemo(
+    () =>
+      resolveOverlaySceneFlow({
+        isSpectating,
+        isLandingEntryHandoff,
+        routeTarget,
+      }),
+    [isLandingEntryHandoff, isSpectating, routeTarget],
+  );
   const landingHandoffTargetWorldMapPosition = isLandingEntryHandoff ? routeSceneTarget : null;
   const targetWorldMapPosition = useMemo<WorldMapPosition | null>(() => {
     if (isSpectating && isFiniteWorldMapPosition(worldMapReturnPosition)) {
@@ -356,12 +415,13 @@ export const GameLoadingOverlay = () => {
   }, []);
 
   const isSlow = !isReady && elapsedMs >= SLOW_THRESHOLD_MS;
-  const hasNavigatedToTarget =
-    activeSceneFlow === "map"
-      ? isSpectating
-        ? elapsedMs >= TICK_INTERVAL_MS
-        : isOnWorldMapRoute || playerStructures.length > 0
-      : true;
+  const hasNavigatedToTarget = resolveOverlayHasNavigatedToTarget({
+    activeSceneFlow,
+    isOnWorldMapRoute: Boolean(isOnWorldMapRoute),
+    isSpectating,
+    elapsedMs,
+    playerStructureCount: playerStructures.length,
+  });
   const phase = resolveEntryOverlayPhase({
     isReady,
     hasNavigated: hasNavigatedToTarget,

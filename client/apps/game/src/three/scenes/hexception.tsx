@@ -2,6 +2,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -422,10 +423,16 @@ export default class HexceptionScene extends HexagonScene {
 
   setup() {
     this.bootstrapSceneOwnership();
-    const col = this.locationManager.getCol();
-    const row = this.locationManager.getRow();
-    const contractPosition = new Position({ x: col, y: row }).getContract();
-    const realmKey = `${contractPosition.x},${contractPosition.y}`;
+    const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
+    const routeWorldPosition = routeTarget.routeWorldPosition;
+    const contractPosition = routeTarget.hexRealmPosition;
+
+    if (routeWorldPosition == null || contractPosition == null) {
+      return;
+    }
+
+    const { col, row } = routeWorldPosition;
+    const realmKey = `${contractPosition.col},${contractPosition.row}`;
     const realmChanged = !this.isInitialized || this.lastRealmKey !== realmKey;
 
     if (realmChanged) {
@@ -442,7 +449,7 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     if (realmChanged) {
-      this.centerColRow = [contractPosition.x, contractPosition.y];
+      this.centerColRow = [contractPosition.col, contractPosition.row];
       this.tileManager.setTile({ col, row });
 
       // remove all previous building instances
@@ -859,7 +866,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   public moveCameraToURLLocation() {
-    this.moveCameraToColRow(10, 10, 0);
+    this.moveCameraToColRow(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], 0);
   }
 
   updateCastleLevel() {

@@ -1,4 +1,5 @@
 import { buildPlayRouteFromEntryContext } from "@/game-entry/context";
+import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-target";
 import type { PlayScene } from "@/play/navigation/play-route";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import type { Chain } from "@contracts";
@@ -14,6 +15,7 @@ type ResolveGameEntryTargetInput = {
   structureEntityId: number;
   worldMapReturnPosition: WorldMapPosition | null;
   isSpectateMode: boolean;
+  mapCenterOffset?: number | null;
 };
 
 type ResolvedGameEntryTarget = {
@@ -24,9 +26,18 @@ type ResolvedGameEntryTarget = {
 };
 
 const isFiniteCoordinate = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+const CONTRACT_MAP_CENTER = 2147483646;
 
 const resolveFallbackScene = (isSpectateMode: boolean): PlayScene => {
   return isSpectateMode ? "map" : "hex";
+};
+
+const resolveMapCenter = (mapCenterOffset?: number | null): number | null => {
+  if (typeof mapCenterOffset !== "number" || !Number.isFinite(mapCenterOffset)) {
+    return null;
+  }
+
+  return CONTRACT_MAP_CENTER - mapCenterOffset;
 };
 
 const buildCanonicalGameEntryUrl = ({
@@ -65,18 +76,25 @@ const resolveBootstrappedWorldMapTarget = (
     return null;
   }
 
-  const { col, row } = input.worldMapReturnPosition;
+  const normalizedWorldMapPosition = normalizeWorldMapRoutePosition(input.worldMapReturnPosition, {
+    mapCenter: resolveMapCenter(input.mapCenterOffset),
+  });
+  if (normalizedWorldMapPosition == null) {
+    return null;
+  }
+
+  const { col, row } = normalizedWorldMapPosition;
   if (!isFiniteCoordinate(col) || !isFiniteCoordinate(row)) {
     return null;
   }
 
   return {
     structureEntityId: input.structureEntityId,
-    worldMapPosition: { col, row },
+    worldMapPosition: normalizedWorldMapPosition,
   };
 };
 
-const buildDirectGameEntryTarget = (
+const buildWorldMapEntryTargetFromBootstrappedSelection = (
   input: ResolveGameEntryTargetInput,
   target: { structureEntityId: number; worldMapPosition: WorldMapPosition },
 ): ResolvedGameEntryTarget => {
@@ -117,6 +135,7 @@ export const resolveGameEntryTarget = ({
   structureEntityId,
   worldMapReturnPosition,
   isSpectateMode,
+  mapCenterOffset,
 }: ResolveGameEntryTargetInput): ResolvedGameEntryTarget => {
   const input = {
     chain,
@@ -124,11 +143,12 @@ export const resolveGameEntryTarget = ({
     structureEntityId,
     worldMapReturnPosition,
     isSpectateMode,
+    mapCenterOffset,
   };
   const bootstrappedWorldMapTarget = resolveBootstrappedWorldMapTarget(input);
 
   if (bootstrappedWorldMapTarget) {
-    return buildDirectGameEntryTarget(input, bootstrappedWorldMapTarget);
+    return buildWorldMapEntryTargetFromBootstrappedSelection(input, bootstrappedWorldMapTarget);
   }
 
   return buildFallbackGameEntryTarget(input);

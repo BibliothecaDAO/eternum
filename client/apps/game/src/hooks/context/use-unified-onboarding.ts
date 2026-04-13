@@ -186,8 +186,8 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     }
   }, [cartridgeUsername, setAccountName]);
 
-  // Note: World change detection is handled by bootstrap.tsx which triggers a page reload
-  // This avoids complex state cleanup and ensures a clean re-bootstrap
+  // World changes flow through the shared bootstrap reset path, so route-driven
+  // entry can recover without relying on a browser reload.
 
   // Actions
   const selectWorld = useCallback(

@@ -28,7 +28,7 @@ export type EagerBootstrapState = {
  * 2. Provides granular task status for better UX
  * 3. Waits for world selection if not already set
  *
- * Note: World changes trigger a page reload via bootstrap.tsx for clean state reset.
+ * World changes are handled by the shared bootstrap session reset path rather than a hard reload.
  */
 export const useEagerBootstrap = (): EagerBootstrapState => {
   const location = useLocation();

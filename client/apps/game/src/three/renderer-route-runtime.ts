@@ -1,5 +1,4 @@
-import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
-import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
+import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { SceneName } from "./types";
 
 export interface RendererRouteRuntime {
@@ -42,13 +41,15 @@ class GameRendererRouteRuntime implements RendererRouteRuntime {
 
   public syncFromLocation(href: string = window.location.href): void {
     const url = new URL(href);
-    const pathSegments = url.pathname.split("/").filter(Boolean);
-    const sceneSlug = pathSegments.pop();
-    const targetScene = resolveNavigationSceneTarget({
-      currentPath: url.pathname,
-      fastTravelEnabled: this.input.fastTravelEnabled(),
-      requestedScene: resolveSceneNameFromRouteSegment(sceneSlug),
-    });
+    const targetScene = resolvePlayRouteTarget(
+      {
+        pathname: url.pathname,
+        search: url.search,
+      },
+      {
+        fastTravelEnabled: this.input.fastTravelEnabled(),
+      },
+    ).scene as SceneName;
 
     if (this.shouldMoveCameraForActiveRoute(targetScene)) {
       this.input.moveCameraForScene();

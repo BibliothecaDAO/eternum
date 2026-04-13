@@ -1,3 +1,4 @@
+import { resolvePlaySceneTarget } from "@/play/navigation/play-route-target";
 import { SceneName } from "./types";
 
 interface ResolveNavigationSceneTargetInput {
@@ -10,22 +11,13 @@ const FAST_TRAVEL_BOUNDARY_ENABLED = false;
 
 export function resolveNavigationSceneTarget(input: ResolveNavigationSceneTargetInput): SceneName {
   const fastTravelEnabled = input.fastTravelEnabled ?? FAST_TRAVEL_BOUNDARY_ENABLED;
+  const requestedScene =
+    input.requestedScene ??
+    (fastTravelEnabled && input.currentPath.includes("/travel")
+      ? SceneName.FastTravel
+      : input.currentPath.includes("/hex")
+        ? SceneName.Hexception
+        : SceneName.WorldMap);
 
-  if (input.requestedScene === SceneName.WorldMap || input.requestedScene === SceneName.Hexception) {
-    return input.requestedScene;
-  }
-
-  if (input.requestedScene === SceneName.FastTravel) {
-    return fastTravelEnabled ? SceneName.FastTravel : SceneName.WorldMap;
-  }
-
-  if (fastTravelEnabled && input.currentPath.includes("/travel")) {
-    return SceneName.FastTravel;
-  }
-
-  if (input.currentPath.includes("/hex")) {
-    return SceneName.Hexception;
-  }
-
-  return SceneName.WorldMap;
+  return resolvePlaySceneTarget(requestedScene, fastTravelEnabled) as SceneName;
 }

@@ -1,27 +1,19 @@
+import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
+
 export class LocationManager {
-  private urlParams: URLSearchParams;
-
-  constructor() {
-    this.urlParams = new URLSearchParams(window.location.search);
+  private resolveWorldPosition() {
+    return resolvePlayRouteWorldPosition(window.location);
   }
 
-  private updateUrlParams(): void {
-    this.urlParams = new URLSearchParams(window.location.search);
+  public getCol(): number | null {
+    return this.resolveWorldPosition()?.col ?? null;
   }
 
-  public getCol(): number {
-    this.updateUrlParams();
-    return Number(this.urlParams.get("col"));
+  public getRow(): number | null {
+    return this.resolveWorldPosition()?.row ?? null;
   }
 
-  public getRow(): number {
-    this.updateUrlParams();
-    return Number(this.urlParams.get("row"));
-  }
-
-  // check row and col exist
   public checkRowColExist(): boolean {
-    this.updateUrlParams();
-    return this.urlParams.has("row") && this.urlParams.has("col");
+    return this.resolveWorldPosition() !== null;
   }
 }

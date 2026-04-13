@@ -42,6 +42,10 @@ vi.mock("@bibliothecadao/react", () => ({
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
+  FELT_CENTER: () => 0,
+  configManager: {
+    getMapCenter: () => 0,
+  },
   Position: class MockPosition {
     private readonly x: number;
     private readonly y: number;
