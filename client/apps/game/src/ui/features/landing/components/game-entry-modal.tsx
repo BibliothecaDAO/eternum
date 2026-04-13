@@ -26,7 +26,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
-import { useGameEntryBootstrapController } from "@/game-entry/bootstrap-controller";
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -35,14 +34,11 @@ import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/us
 import { useUsername } from "@/hooks/use-username";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
-import type { SetupResult } from "@/init/bootstrap";
 import { captureClientEvent } from "@/posthog";
-import { recordPlayRouteHandoffFromHref } from "@/play/navigation/play-route-handoff";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
-import { getActiveWorld } from "@/runtime/world/store";
-import { sqlApi } from "@/services/api";
+import { createSqlApi, resolveWorldSqlBaseUrl } from "@/services/api";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -50,10 +46,11 @@ import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
+import { buildApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getSeasonAddresses, type Chain } from "@contracts";
+import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
 import {
   buildSettlementExecutionPlan,
@@ -84,12 +81,10 @@ import {
   type SettlementPlannerTarget,
 } from "./settlement-planner-utils";
 import { useSettlementPlannerData } from "./use-settlement-planner-data";
+import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { env } from "../../../../../env";
 
 const DEBUG_MODAL = false;
-const BLITZ_REALM_SYSTEMS_SELECTOR = "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742";
-const REALM_SYSTEMS_SELECTOR = "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2";
-const SPIRE_SYSTEMS_SELECTOR = "0x3c0936482acd769add8a662a6f1390e50b010607b2995892c17212e37c6afb3";
 const ETERNUM_NAMESPACE = "s1_eternum";
 const SETTLEMENT_PROGRESS_POLL_MS = 1000;
 const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
@@ -498,6 +493,45 @@ const mapVillagePassDistributorTransferError = (error: unknown): string => {
   }
 
   return "Failed to send village pass from distributor wallet.";
+};
+
+type DirectSettlementSnapshotRow = {
+  coords?: unknown;
+  once_registered?: boolean | null;
+  registered?: boolean | null;
+  structure_ids?: unknown;
+};
+
+type ResolvedWorldSystemAddresses = {
+  blitzRealmSystemsAddress: string | null;
+  hyperstructureSystemsAddress: string | null;
+  nameSystemsAddress: string | null;
+  realmSystemsAddress: string | null;
+  spireSystemsAddress: string | null;
+  villageSystemsAddress: string | null;
+};
+
+const parseSpanLength = (value: unknown): number => {
+  if (Array.isArray(value)) {
+    return value.length;
+  }
+
+  if (typeof value !== "string") {
+    return 0;
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed === "[]") {
+    return 0;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    const compact = trimmed.replace(/^\[/, "").replace(/\]$/, "");
+    return compact.length === 0 ? 0 : compact.split(",").length;
+  }
 };
 
 const getNormalizedErrorMessage = (error: unknown): string =>
@@ -2020,7 +2054,7 @@ const SettlementPlannerPhase = ({
   seasonSettlementError: string | null;
   villageSettlementError: string | null;
   onEnterGame: () => void;
-  plannerComponents: SetupResult["components"] | null;
+  plannerComponents: any;
 }) => {
   const selectedRealmInfo = selectedTarget?.type === "realm" ? selectedTarget.realm : null;
   const selectedRealmSlot = selectedTarget?.type === "realm_slot" ? selectedTarget.slot : null;
@@ -2950,15 +2984,9 @@ export const GameEntryModal = ({
       }),
     [autoSettleEnabled, chain, entryIntent, initialNumHyperstructuresLeft, worldName],
   );
-  const bootstrapController = useGameEntryBootstrapController({
-    context: entryContext,
-    enabled: isOpen && (!isForgeMode || !isBlitzMode),
-  });
-  const bootstrapStatus = bootstrapController.status;
-  const setupResult = bootstrapController.setupResult;
-  const bootstrapError = bootstrapController.error;
-  const tasks = bootstrapController.tasks;
-  const progress = bootstrapController.progress;
+  const [preflightError, setPreflightError] = useState<Error | null>(null);
+  const [preflightRetryNonce, setPreflightRetryNonce] = useState(0);
+  const [settlementCheckComplete, setSettlementCheckComplete] = useState(false);
 
   // Settlement state
   const [settleStage, setSettleStage] = useState<SettleStage>("idle");
@@ -2966,14 +2994,13 @@ export const GameEntryModal = ({
   const [assignedRealmCount, setAssignedRealmCount] = useState(0);
   const [settledRealmCount, setSettledRealmCount] = useState(0);
   const [needsSettlement, setNeedsSettlement] = useState(false);
-  const [settlementCheckComplete, setSettlementCheckComplete] = useState(false);
 
   // Hyperstructure state
   const [hyperstructures, setHyperstructures] = useState<HyperstructureInfo[]>([]);
-  const [needsHyperstructureInit, setNeedsHyperstructureInit] = useState(false);
-  const [hyperstructureCheckComplete, setHyperstructureCheckComplete] = useState(false);
   const [isInitializingHyperstructure, setIsInitializingHyperstructure] = useState(false);
   const [currentInitializingId, setCurrentInitializingId] = useState<number | null>(null);
+  const needsHyperstructureInit = false;
+  const hyperstructureCheckComplete = true;
 
   // Forge hyperstructures state (for creating new ones during registration)
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
@@ -3004,14 +3031,73 @@ export const GameEntryModal = ({
   const hasEnteredGameRef = useRef(false);
   const plannerOpenedRef = useRef(false);
 
-  const activeWorldProfile = bootstrapController.session?.profile ?? getActiveWorld();
-  const selectedWorldRpcUrl = activeWorldProfile?.name === worldName ? (activeWorldProfile.rpcUrl ?? null) : null;
-  const navigationEntryContext = bootstrapController.session?.context ?? entryContext;
+  const navigationEntryContext = entryContext;
+  const selectedWorldRpcUrl = useMemo(() => getRpcUrlForChain(chain), [chain]);
+  const selectedWorldSqlBaseUrl = useMemo(() => resolveWorldSqlBaseUrl({ chain, worldName }), [chain, worldName]);
+  const selectedWorldSqlApi = useMemo(() => createSqlApi(selectedWorldSqlBaseUrl), [selectedWorldSqlBaseUrl]);
   const seasonAddresses = getSeasonAddresses(chain);
   // realm_systems.create reads season_pass_address from world config, so prefer world metadata when available.
   const seasonPassAddress = worldMeta?.seasonPassAddress || seasonAddresses.seasonPass || null;
   const villagePassAddress = worldMeta?.villagePassAddress || seasonAddresses.villagePass || null;
   const realmsAddress = seasonAddresses.realms;
+  const systemManifest = useMemo(() => getGameManifest(chain), [chain]);
+  const resolvedSystemSelectors = useMemo(() => {
+    const resolveSelector = (systemName: string): string | null => {
+      try {
+        const contract = getContractByName(systemManifest, ETERNUM_NAMESPACE, systemName) as { selector?: string };
+        return contract.selector ? normalizeSelector(contract.selector) : null;
+      } catch {
+        return null;
+      }
+    };
+
+    return {
+      blitzRealmSystemsSelector: resolveSelector("blitz_realm_systems"),
+      hyperstructureSystemsSelector: resolveSelector("hyperstructure_systems"),
+      nameSystemsSelector: resolveSelector("name_systems"),
+      realmSystemsSelector: resolveSelector("realm_systems"),
+      spireSystemsSelector: resolveSelector("spire_systems"),
+      villageSystemsSelector: resolveSelector("village_systems"),
+    };
+  }, [systemManifest]);
+  const {
+    data: resolvedWorldSystemAddresses,
+    isLoading: isLoadingWorldSystemAddresses,
+    error: worldSystemAddressError,
+    refetch: refetchWorldSystemAddresses,
+  } = useQuery<ResolvedWorldSystemAddresses>({
+    queryKey: ["worldSystemAddresses", chain, worldName],
+    enabled: isOpen && Boolean(worldName),
+    queryFn: async () => {
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
+      if (!factorySqlBaseUrl) {
+        throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
+      }
+
+      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+      return {
+        blitzRealmSystemsAddress: resolvedSystemSelectors.blitzRealmSystemsSelector
+          ? (contracts[resolvedSystemSelectors.blitzRealmSystemsSelector] ?? null)
+          : null,
+        hyperstructureSystemsAddress: resolvedSystemSelectors.hyperstructureSystemsSelector
+          ? (contracts[resolvedSystemSelectors.hyperstructureSystemsSelector] ?? null)
+          : null,
+        nameSystemsAddress: resolvedSystemSelectors.nameSystemsSelector
+          ? (contracts[resolvedSystemSelectors.nameSystemsSelector] ?? null)
+          : null,
+        realmSystemsAddress: resolvedSystemSelectors.realmSystemsSelector
+          ? (contracts[resolvedSystemSelectors.realmSystemsSelector] ?? null)
+          : null,
+        spireSystemsAddress: resolvedSystemSelectors.spireSystemsSelector
+          ? (contracts[resolvedSystemSelectors.spireSystemsSelector] ?? null)
+          : null,
+        villageSystemsAddress: resolvedSystemSelectors.villageSystemsSelector
+          ? (contracts[resolvedSystemSelectors.villageSystemsSelector] ?? null)
+          : null,
+      };
+    },
+    staleTime: 60_000,
+  });
   const {
     seasonPassBalance,
     seasonPasses,
@@ -3061,10 +3147,10 @@ export const GameEntryModal = ({
     refetch: refetchOwnedStructures,
   } = useQuery({
     queryKey: ["eternumOwnedStructures", chain, worldName, account?.address],
-    enabled: isOpen && isEternumMode && bootstrapStatus === "ready" && Boolean(account?.address),
+    enabled: isOpen && isEternumMode && Boolean(account?.address),
     queryFn: async () => {
       if (!account?.address) return [];
-      return await sqlApi.fetchPlayerStructures(account.address);
+      return await selectedWorldSqlApi.fetchPlayerStructures(account.address);
     },
     staleTime: 10_000,
     refetchInterval: 15_000,
@@ -3075,8 +3161,8 @@ export const GameEntryModal = ({
     refetch: refetchRealmVillageSlots,
   } = useQuery({
     queryKey: ["eternumRealmVillageSlots", chain, worldName],
-    enabled: isOpen && isEternumMode && bootstrapStatus === "ready",
-    queryFn: async () => await sqlApi.fetchRealmVillageSlots(),
+    enabled: isOpen && isEternumMode,
+    queryFn: async () => await selectedWorldSqlApi.fetchRealmVillageSlots(),
     staleTime: 10_000,
     refetchInterval: 15_000,
   });
@@ -3089,11 +3175,10 @@ export const GameEntryModal = ({
     enabled:
       isOpen &&
       isEternumMode &&
-      bootstrapStatus === "ready" &&
       (worldMeta?.settlementLayerMax ?? null) != null &&
       (worldMeta?.settlementBaseDistance ?? null) != null,
     queryFn: async () => {
-      const settlements = await sqlApi.fetchRealmSettlements();
+      const settlements = await selectedWorldSqlApi.fetchRealmSettlements();
       const coordKeys = new Set<string>();
       for (const settlement of settlements) {
         coordKeys.add(`${settlement.coord_x}:${settlement.coord_y}`);
@@ -3108,7 +3193,7 @@ export const GameEntryModal = ({
   const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
   const villageSlotsError = villageSlotsErrorRaw instanceof Error ? villageSlotsErrorRaw.message : null;
   const settlementPlannerData = useSettlementPlannerData({
-    enabled: isOpen && isEternumMode && bootstrapStatus === "ready" && unifiedSettlementPlannerEnabled,
+    enabled: isOpen && isEternumMode && unifiedSettlementPlannerEnabled,
     chain,
     worldName,
     layerMax: worldMeta?.settlementLayerMax ?? null,
@@ -3361,12 +3446,11 @@ export const GameEntryModal = ({
   }, [optimisticRealmPlacements.length, settlementPlannerData.snapshot.realms]);
 
   const resetBootstrapDependentState = useCallback(() => {
+    setPreflightError(null);
     setNeedsSettlement(false);
     setSettlementCheckComplete(false);
     setSettleStage("idle");
     setHyperstructures([]);
-    setNeedsHyperstructureInit(false);
-    setHyperstructureCheckComplete(false);
     setIsInitializingHyperstructure(false);
     setCurrentInitializingId(null);
     setEternumSettlementMode("realm");
@@ -3406,10 +3490,40 @@ export const GameEntryModal = ({
   const canAttemptSeasonSettle = seasonTimingValid && hasSeasonPass;
   const isLoadingEternumPrereqs =
     isCheckingWorldAvailability ||
+    isLoadingWorldSystemAddresses ||
     isLoadingSeasonPassInventory ||
     isLoadingVillagePassInventory ||
     isLoadingOwnedStructures ||
     !worldMeta;
+  const bootstrapStatus: "idle" | "pending-world" | "loading" | "ready" | "error" = preflightError
+    ? "error"
+    : isCheckingWorldAvailability || isLoadingWorldSystemAddresses || (!isEternumMode && !settlementCheckComplete)
+      ? "loading"
+      : "ready";
+  const tasks = useMemo(
+    () => [
+      {
+        id: "world",
+        label: "Loading world metadata",
+        status: worldMeta ? ("complete" as const) : ("running" as const),
+      },
+      {
+        id: "contracts",
+        label: "Resolving world systems",
+        status: resolvedWorldSystemAddresses ? ("complete" as const) : ("running" as const),
+      },
+      {
+        id: "preflight",
+        label: isBlitzMode ? "Checking blitz settlement state" : "Checking world entry state",
+        status: settlementCheckComplete || isEternumMode ? ("complete" as const) : ("running" as const),
+      },
+    ],
+    [isBlitzMode, isEternumMode, resolvedWorldSystemAddresses, settlementCheckComplete, worldMeta],
+  );
+  const progress = useMemo(() => {
+    const completed = tasks.filter((task) => task.status === "complete").length;
+    return Math.round((completed / tasks.length) * 100);
+  }, [tasks]);
   const seasonPlacementValidationErrors = useMemo(
     () =>
       validateSeasonPlacement({
@@ -3475,13 +3589,14 @@ export const GameEntryModal = ({
     });
   }, [isEternumMode, hasSeasonPass, hasVillagePass, unifiedSettlementPlannerEnabled]);
 
-  // Both checks must complete before we can determine the final phase
-  const checksComplete = settlementCheckComplete && hyperstructureCheckComplete;
+  // Blitz entry preflight only needs settlement readiness. Hyperstructure initialization no longer blocks /enter.
+  const checksComplete = settlementCheckComplete;
   const worldAvailabilityErrorMessage =
     worldAvailability?.error instanceof Error ? worldAvailability.error.message : null;
   const phaseError = useMemo(
     () =>
-      bootstrapError ??
+      preflightError ??
+      (worldSystemAddressError instanceof Error ? worldSystemAddressError : null) ??
       resolveGameEntryBlockingError({
         worldAvailabilityErrorMessage,
         isCheckingWorldAvailability,
@@ -3490,10 +3605,11 @@ export const GameEntryModal = ({
         worldMode,
       }),
     [
-      bootstrapError,
+      preflightError,
       worldAvailabilityErrorMessage,
       isCheckingWorldAvailability,
       worldAvailability?.isAvailable,
+      worldSystemAddressError,
       worldMeta,
       worldMode,
     ],
@@ -3623,30 +3739,47 @@ export const GameEntryModal = ({
   }, [phase, unifiedSettlementPlannerEnabled, worldName, chain, eternumEntryIntent]);
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
-    if (!setupResult || !account?.address) return null;
+    if (!account?.address) return null;
 
-    const { components } = setupResult;
-    const playerAddress = account.address;
-
-    const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
-    const { getComponentValue, HasValue, runQuery } = await import("@dojoengine/recs");
-
-    const entityId = getEntityIdFromKeys([BigInt(playerAddress)]);
-    const playerRegister = getComponentValue(components.BlitzRealmPlayerRegister, entityId) as {
-      registered?: boolean;
-      once_registered?: boolean;
-    } | null;
-    const settleFinish = getComponentValue(components.BlitzRealmSettleFinish, entityId) as SettleFinishValue | null;
-    const playerStructures = runQuery([HasValue(components.Structure, { owner: BigInt(playerAddress) })]);
+    const playerAddress = formatAddressForQuery(account.address);
+    const [registerRows, settleFinishRows, playerStructures] = await Promise.all([
+      fetchWithErrorHandling<DirectSettlementSnapshotRow>(
+        buildApiUrl(
+          selectedWorldSqlBaseUrl,
+          `
+            SELECT registered, once_registered
+            FROM "s1_eternum-BlitzRealmPlayerRegister"
+            WHERE player = '${playerAddress}'
+            LIMIT 1;
+          `,
+        ),
+        "Failed to fetch blitz settlement registration",
+      ),
+      fetchWithErrorHandling<DirectSettlementSnapshotRow>(
+        buildApiUrl(
+          selectedWorldSqlBaseUrl,
+          `
+            SELECT coords, structure_ids
+            FROM "s1_eternum-BlitzRealmSettleFinish"
+            WHERE player = '${playerAddress}'
+            LIMIT 1;
+          `,
+        ),
+        "Failed to fetch blitz settlement state",
+      ),
+      selectedWorldSqlApi.fetchPlayerStructures(account.address),
+    ]);
+    const playerRegister = registerRows[0] ?? null;
+    const settleFinish = settleFinishRows[0] ?? null;
 
     return {
       registered: playerRegister?.registered === true,
       onceRegistered: playerRegister?.once_registered === true,
-      hasSettledStructure: playerStructures.size > 0,
-      coordsCount: settleFinish?.coords?.length ?? 0,
-      settledCount: settleFinish?.structure_ids?.length ?? 0,
+      hasSettledStructure: playerStructures.length > 0,
+      coordsCount: parseSpanLength(settleFinish?.coords),
+      settledCount: parseSpanLength(settleFinish?.structure_ids),
     };
-  }, [setupResult, account]);
+  }, [account, selectedWorldSqlApi, selectedWorldSqlBaseUrl]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -3697,51 +3830,50 @@ export const GameEntryModal = ({
         throw new Error(`Missing transaction hash for ${label}`);
       }
 
-      const provider = setupResult?.network?.provider as
-        | {
-            waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
-          }
-        | undefined;
+      const provider = new RpcProvider({ nodeUrl: selectedWorldRpcUrl });
+      await waitForTransactionConfirmation({
+        txHash,
+        account: account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> },
+        label,
+        provider: provider as unknown as { waitForTransactionWithCheck?: (txHash: string) => Promise<unknown> },
+      }).catch(async () => {
+        if (fallbackWaitAccount && typeof fallbackWaitAccount.waitForTransaction === "function") {
+          await fallbackWaitAccount.waitForTransaction(txHash);
+          return;
+        }
 
-      if (provider && typeof provider.waitForTransactionWithCheck === "function") {
-        await provider.waitForTransactionWithCheck(txHash);
-        return;
-      }
+        if (
+          typeof (provider as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> })
+            .waitForTransaction === "function"
+        ) {
+          await (
+            provider as unknown as { waitForTransaction: (txHash: string) => Promise<unknown> }
+          ).waitForTransaction(txHash);
+          return;
+        }
 
-      const accountWithWait = account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> };
-      if (typeof accountWithWait.waitForTransaction === "function") {
-        await accountWithWait.waitForTransaction(txHash);
-        return;
-      }
-
-      if (fallbackWaitAccount && typeof fallbackWaitAccount.waitForTransaction === "function") {
-        await fallbackWaitAccount.waitForTransaction(txHash);
-        return;
-      }
-
-      throw new Error(`Unable to confirm ${label}: no transaction wait method available`);
+        throw new Error(`Unable to confirm ${label}: no transaction wait method available`);
+      });
     },
-    [setupResult, account],
+    [account, selectedWorldRpcUrl],
   );
 
   const resolveWorldSystemAddress = useCallback(
     (systemName: string): string => {
-      if (!setupResult) {
-        throw new Error("Game setup is still loading.");
-      }
-
-      const providerWithManifest = setupResult.network.provider as unknown as { manifest?: unknown };
-      if (!providerWithManifest.manifest) {
-        throw new Error("World manifest unavailable.");
-      }
-
-      const contract = getContractByName(providerWithManifest.manifest as any, ETERNUM_NAMESPACE, systemName);
       const contractAddress =
-        typeof contract === "string"
-          ? contract
-          : contract && typeof contract === "object" && "address" in contract
-            ? (contract as { address?: string }).address
-            : null;
+        systemName === "blitz_realm_systems"
+          ? resolvedWorldSystemAddresses?.blitzRealmSystemsAddress
+          : systemName === "hyperstructure_systems"
+            ? resolvedWorldSystemAddresses?.hyperstructureSystemsAddress
+            : systemName === "name_systems"
+              ? resolvedWorldSystemAddresses?.nameSystemsAddress
+              : systemName === "realm_systems"
+                ? resolvedWorldSystemAddresses?.realmSystemsAddress
+                : systemName === "spire_systems"
+                  ? resolvedWorldSystemAddresses?.spireSystemsAddress
+                  : systemName === "village_systems"
+                    ? resolvedWorldSystemAddresses?.villageSystemsAddress
+                    : null;
 
       if (!contractAddress) {
         throw new Error(`${systemName} contract not found for selected world`);
@@ -3749,19 +3881,26 @@ export const GameEntryModal = ({
 
       return contractAddress;
     },
-    [setupResult],
+    [resolvedWorldSystemAddresses],
   );
 
   const resolveOptionalPlayerNameForSettlement = useCallback(async (): Promise<string | null> => {
-    if (!setupResult || !account?.address) return null;
+    if (!account?.address) return null;
 
-    const { getEntityIdFromKeys } = await import("@bibliothecadao/eternum");
-    const { getComponentValue } = await import("@dojoengine/recs");
-
-    const playerEntityId = getEntityIdFromKeys([BigInt(account.address)]);
-    const addressName = getComponentValue(setupResult.components.AddressName, playerEntityId) as {
-      name?: unknown;
-    } | null;
+    const playerAddress = formatAddressForQuery(account.address);
+    const rows = await fetchWithErrorHandling<{ name?: unknown }>(
+      buildApiUrl(
+        selectedWorldSqlBaseUrl,
+        `
+          SELECT name
+          FROM "s1_eternum-AddressName"
+          WHERE address = '${playerAddress}'
+          LIMIT 1;
+        `,
+      ),
+      "Failed to fetch player name",
+    );
+    const addressName = rows[0] ?? null;
 
     if (hasAddressNameValue(addressName?.name)) {
       return null;
@@ -3772,7 +3911,7 @@ export const GameEntryModal = ({
     }
 
     return usernameFelt;
-  }, [setupResult, account?.address, usernameFelt]);
+  }, [account?.address, selectedWorldSqlBaseUrl, usernameFelt]);
 
   const buildSetAddressNameCall = useCallback(
     (playerName: string): Call => ({
@@ -3812,8 +3951,7 @@ export const GameEntryModal = ({
         calldata: CallData.compile([villageSystemsAddress, true]),
       });
 
-      const providerWithVrf = setupResult?.network.provider as unknown as { VRF_PROVIDER_ADDRESS?: string } | null;
-      const vrfProviderAddress = providerWithVrf?.VRF_PROVIDER_ADDRESS;
+      const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
       if (hasNonZeroNumericValue(vrfProviderAddress)) {
         calls.push({
           contractAddress: vrfProviderAddress as string,
@@ -3830,7 +3968,7 @@ export const GameEntryModal = ({
 
       return calls;
     },
-    [buildSetAddressNameCall, resolveWorldSystemAddress, setupResult?.network.provider],
+    [buildSetAddressNameCall, resolveWorldSystemAddress],
   );
 
   const waitForVillageResourceReveal = useCallback(
@@ -3845,7 +3983,7 @@ export const GameEntryModal = ({
     }): Promise<VillageRevealResult> => {
       const startedAt = Date.now();
       while (Date.now() - startedAt < timeoutMs) {
-        const structures = await sqlApi.fetchPlayerStructures(ownerAddress);
+        const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
         const newVillage = structures
           .filter(
             (structure) => structure.category === StructureType.Village && !existingVillageIds.has(structure.entity_id),
@@ -3869,28 +4007,16 @@ export const GameEntryModal = ({
 
       throw new Error("Village created but resource assignment is not indexed in Torii yet.");
     },
-    [],
+    [selectedWorldSqlApi],
   );
 
   // Check settlement status after bootstrap completes
   useEffect(() => {
-    debugLog(
-      worldName,
-      "Settlement check effect - bootstrapStatus:",
-      bootstrapStatus,
-      "hasSetupResult:",
-      !!setupResult,
-      "isSpectateMode:",
-      isSpectateMode,
-    );
-
-    if (bootstrapStatus !== "ready" || !setupResult) {
-      debugLog(worldName, "Skipping settlement check - bootstrap not ready");
+    if (!isOpen) {
       return;
     }
 
     if (isEternumMode) {
-      debugLog(worldName, "Skipping settlement check - Eternum mode");
       setNeedsSettlement(false);
       setSettlementCheckComplete(true);
       return;
@@ -3902,17 +4028,14 @@ export const GameEntryModal = ({
     }
 
     if (isSpectateMode || (isForgeMode && isBlitzMode)) {
-      debugLog(worldName, "Skipping settlement check - spectate or forge mode");
+      setNeedsSettlement(false);
       setSettlementCheckComplete(true);
       return;
     }
 
-    // Query player's settlement status from Dojo components
     const checkSettlementStatus = async () => {
-      debugLog(worldName, "Running settlement status check...");
       try {
         if (!account?.address) {
-          debugLog(worldName, "No player address, skipping settlement check");
           setNeedsSettlement(false);
           setSettlementCheckComplete(true);
           return;
@@ -3926,138 +4049,36 @@ export const GameEntryModal = ({
         }
         const status = syncSettlementStateFromSnapshot(snapshot);
 
-        debugLog(worldName, "Settlement check result:", {
-          registered: snapshot.registered,
-          onceRegistered: snapshot.onceRegistered,
-          hasSettledStructure: snapshot.hasSettledStructure,
-          coordsCount: snapshot.coordsCount,
-          settledCount: snapshot.settledCount,
-          assignedCount: status.assignedCount,
-          canPlay: status.canPlay,
-          needsSettlement: status.needsSettlement,
-        });
-
         setSettlementCheckComplete(true);
       } catch (error) {
-        debugLog(worldName, "Failed to check settlement status:", error);
-        // On error, assume no settlement needed and let user enter game
+        setPreflightError(error instanceof Error ? error : new Error("Failed to check settlement status."));
         setNeedsSettlement(false);
         setSettlementCheckComplete(true);
       }
     };
 
-    // Run the check
-    checkSettlementStatus();
+    void checkSettlementStatus();
   }, [
-    bootstrapStatus,
-    setupResult,
     account,
     isBlitzMode,
     isEternumMode,
+    isOpen,
     isSpectateMode,
     isForgeMode,
     worldName,
+    preflightRetryNonce,
     readSettlementSnapshot,
     syncSettlementStateFromSnapshot,
   ]);
 
-  // Check hyperstructure initialization status after bootstrap completes
+  // Hyperstructure initialization no longer blocks /enter. It can be handled after entering the world.
   useEffect(() => {
-    debugLog(
-      worldName,
-      "Hyperstructure check effect - bootstrapStatus:",
-      bootstrapStatus,
-      "hasSetupResult:",
-      !!setupResult,
-      "isSpectateMode:",
-      isSpectateMode,
-      "isForgeMode:",
-      isForgeMode,
-    );
-
-    if (bootstrapStatus !== "ready" || !setupResult) {
-      debugLog(worldName, "Skipping hyperstructure check - bootstrap not ready");
+    if (!isOpen) {
       return;
     }
 
-    if (isEternumMode) {
-      debugLog(worldName, "Skipping hyperstructure check - Eternum mode");
-      setNeedsHyperstructureInit(false);
-      setHyperstructureCheckComplete(true);
-      return;
-    }
-
-    if (!isBlitzMode) {
-      debugLog(worldName, "Skipping hyperstructure check - world mode unresolved");
-      return;
-    }
-
-    if (isSpectateMode || (isForgeMode && isBlitzMode)) {
-      debugLog(worldName, "Skipping hyperstructure check - spectate or forge mode");
-      setHyperstructureCheckComplete(true);
-      return;
-    }
-
-    const checkHyperstructures = async () => {
-      debugLog(worldName, "Running hyperstructure status check...");
-      try {
-        const { components } = setupResult;
-
-        // Import Dojo utilities
-        const { getHyperstructureProgress, getHyperstructureName } = await import("@bibliothecadao/eternum");
-        const { getComponentValue, Has, runQuery } = await import("@dojoengine/recs");
-
-        // Get all hyperstructures
-        const hyperstructureEntities = runQuery([Has(components.Hyperstructure)]);
-        debugLog(worldName, "Found hyperstructure entities:", hyperstructureEntities.size);
-
-        const hsInfoList: HyperstructureInfo[] = [];
-
-        for (const entity of hyperstructureEntities) {
-          const structure = getComponentValue(components.Structure, entity);
-          if (!structure) continue;
-
-          const entityId = Number(structure.entity_id);
-          const progress = getHyperstructureProgress(entityId, components);
-          const name = getHyperstructureName(structure);
-
-          hsInfoList.push({
-            entityId,
-            initialized: progress.initialized,
-            name,
-          });
-
-          debugLog(worldName, "Hyperstructure:", name, "entityId:", entityId, "initialized:", progress.initialized);
-        }
-
-        debugLog(worldName, "Hyperstructure info:", hsInfoList);
-        setHyperstructures(hsInfoList);
-
-        // Check if any hyperstructures need initialization
-        const uninitializedCount = hsInfoList.filter((h) => !h.initialized).length;
-        const needsInit = uninitializedCount > 0;
-
-        debugLog(
-          worldName,
-          "Hyperstructures need initialization:",
-          needsInit,
-          "uninitialized count:",
-          uninitializedCount,
-          "total:",
-          hsInfoList.length,
-        );
-        setNeedsHyperstructureInit(needsInit);
-        setHyperstructureCheckComplete(true);
-      } catch (error) {
-        debugLog(worldName, "Failed to check hyperstructure status:", error);
-        // On error, assume no initialization needed
-        setNeedsHyperstructureInit(false);
-        setHyperstructureCheckComplete(true);
-      }
-    };
-
-    checkHyperstructures();
-  }, [bootstrapStatus, setupResult, isBlitzMode, isEternumMode, isSpectateMode, isForgeMode, worldName]);
+    setHyperstructures([]);
+  }, [isOpen, worldName]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -4075,8 +4096,20 @@ export const GameEntryModal = ({
   // Retry handler
   const handleRetry = useCallback(() => {
     resetBootstrapDependentState();
-    bootstrapController.retry();
-  }, [bootstrapController.retry, resetBootstrapDependentState]);
+    setPreflightError(null);
+    setPreflightRetryNonce((current) => current + 1);
+    void refetchWorldSystemAddresses();
+    if (isEternumMode) {
+      void refetchOwnedStructures();
+      void refetchRealmVillageSlots();
+    }
+  }, [
+    isEternumMode,
+    refetchOwnedStructures,
+    refetchRealmVillageSlots,
+    refetchWorldSystemAddresses,
+    resetBootstrapDependentState,
+  ]);
 
   const handleSettlementPlannerTargetSelect = useCallback(
     (target: SettlementPlannerTarget) => {
@@ -4321,28 +4354,20 @@ export const GameEntryModal = ({
       return;
     }
 
-    const uiStore = useUIStore.getState();
-    uiStore.setShowBlankOverlay(true);
     markGameEntryMilestone("enter-game-started");
 
     const entryTarget = resolveGameEntryTarget({
       chain: navigationEntryContext.chain,
       worldName: navigationEntryContext.worldName,
-      structureEntityId: uiStore.structureEntityId,
-      worldMapReturnPosition: uiStore.worldMapReturnPosition,
+      structureEntityId: useUIStore.getState().structureEntityId,
+      worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
       isSpectateMode: navigationEntryContext.intent === "spectate",
       mapCenterOffset: worldMeta?.mapCenterOffset ?? null,
     });
 
-    uiStore.setStructureEntityId(entryTarget.structureEntityId, {
-      spectator: entryTarget.spectator,
-      worldMapPosition: entryTarget.worldMapPosition ?? undefined,
-    });
-
-    recordPlayRouteHandoffFromHref(entryTarget.url);
     navigate(entryTarget.url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [navigate, navigationEntryContext]);
+  }, [navigate, navigationEntryContext, worldMeta?.mapCenterOffset]);
 
   const handleSeasonSettle = useCallback(async () => {
     if (!account?.address) return;
@@ -4412,7 +4437,6 @@ export const GameEntryModal = ({
         throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
       }
 
-      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
       const signer = account as unknown as Account;
 
       if (!spiresSettled) {
@@ -4428,8 +4452,7 @@ export const GameEntryModal = ({
         });
 
         if (spirePlan.remainingCount > 0) {
-          const spireSelector = normalizeSelector(SPIRE_SYSTEMS_SELECTOR);
-          const spireSystemsAddress = contracts[spireSelector];
+          const spireSystemsAddress = resolveWorldSystemAddress("spire_systems");
           if (!spireSystemsAddress) {
             throw new Error("spire_systems contract not found for selected world");
           }
@@ -4466,8 +4489,7 @@ export const GameEntryModal = ({
         }
       }
 
-      const selector = normalizeSelector(REALM_SYSTEMS_SELECTOR);
-      const realmSystemsAddress = contracts[selector];
+      const realmSystemsAddress = resolveWorldSystemAddress("realm_systems");
       if (!realmSystemsAddress) {
         throw new Error("realm_systems contract not found for selected world");
       }
@@ -4595,10 +4617,6 @@ export const GameEntryModal = ({
       setVillageSettlementError("Connect your wallet first.");
       return;
     }
-    if (!setupResult) {
-      setVillageSettlementError("Game setup is still loading.");
-      return;
-    }
     if (!seasonTimingValid) {
       setVillageSettlementError("Season timing invalid. Village settlement is currently unavailable.");
       return;
@@ -4696,7 +4714,6 @@ export const GameEntryModal = ({
     }
   }, [
     account,
-    setupResult,
     unifiedSettlementPlannerEnabled,
     settlementPlannerVillageTarget,
     seasonTimingValid,
@@ -4731,12 +4748,11 @@ export const GameEntryModal = ({
 
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
-    debugLog(worldName, "handleSettle called - hasSetupResult:", !!setupResult, "hasAccount:", !!account);
     if (!isBlitzMode) {
       debugLog(worldName, "Skipping blitz settlement call outside blitz mode");
       return;
     }
-    if (!setupResult || !account) return;
+    if (!account) return;
 
     setIsSettling(true);
     if (autoSettleEnabled && autoSettleEntryKey) {
@@ -4744,14 +4760,11 @@ export const GameEntryModal = ({
     }
 
     try {
-      const { systemCalls } = setupResult;
-      const { configManager } = await import("@bibliothecadao/eternum");
-
       const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
-      const blitzConfig = configManager.getBlitzConfig?.();
-      const singleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
-
-      debugLog(worldName, "Settlement config:", { isMainnet, singleRealmMode, blitzConfig });
+      const singleRealmMode = chain === "mainnet";
+      const blitzRealmSystemsAddress = resolveWorldSystemAddress("blitz_realm_systems");
+      const signer = account as unknown as Account;
+      const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
 
       const initialSnapshot = await readSettlementSnapshot();
       if (!initialSnapshot) {
@@ -4773,11 +4786,25 @@ export const GameEntryModal = ({
 
       if (plan.shouldAssignAndSettle && plan.initialSettleCount > 0) {
         setSettleStage("assigning");
-        debugLog(worldName, "Submitting assign + settle call:", { settlement_count: plan.initialSettleCount });
-        const assignResult = await systemCalls.blitz_realm_assign_and_settle_realms({
-          signer: account,
-          settlement_count: plan.initialSettleCount,
+        const assignCalls: Call[] = [];
+        if (hasNonZeroNumericValue(vrfProviderAddress)) {
+          assignCalls.push({
+            contractAddress: vrfProviderAddress as string,
+            entrypoint: "request_random",
+            calldata: [blitzRealmSystemsAddress, 0, signer.address],
+          });
+        }
+        assignCalls.push({
+          contractAddress: blitzRealmSystemsAddress,
+          entrypoint: "assign_realm_positions",
+          calldata: [],
         });
+        assignCalls.push({
+          contractAddress: blitzRealmSystemsAddress,
+          entrypoint: "settle_realms",
+          calldata: [plan.initialSettleCount],
+        });
+        const assignResult = await signer.execute(assignCalls);
         await waitForSubmittedTransaction(assignResult, "assign_and_settle_realms");
         targetProgress = Math.min(plan.targetSettleCount, targetProgress + plan.initialSettleCount);
         await waitForSettlementTarget(targetProgress);
@@ -4786,8 +4813,11 @@ export const GameEntryModal = ({
       if (plan.extraSettleCalls > 0) {
         setSettleStage("settling");
         for (let i = 0; i < plan.extraSettleCalls; i++) {
-          debugLog(worldName, `Extra settle call ${i + 1}/${plan.extraSettleCalls}`);
-          const settleResult = await systemCalls.blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+          const settleResult = await signer.execute({
+            contractAddress: blitzRealmSystemsAddress,
+            entrypoint: "settle_realms",
+            calldata: [1],
+          });
           await waitForSubmittedTransaction(settleResult, `settle_realms ${i + 1}/${plan.extraSettleCalls}`);
           targetProgress = Math.min(plan.targetSettleCount, targetProgress + 1);
           await waitForSettlementTarget(targetProgress);
@@ -4827,8 +4857,8 @@ export const GameEntryModal = ({
   }, [
     autoSettleEnabled,
     autoSettleEntryKey,
-    setupResult,
     account,
+    chain,
     isBlitzMode,
     handleEnterGame,
     markCompleted,
@@ -4836,6 +4866,7 @@ export const GameEntryModal = ({
     markSettling,
     worldName,
     readSettlementSnapshot,
+    resolveWorldSystemAddress,
     syncSettlementStateFromSnapshot,
     waitForSettlementTarget,
     waitForSubmittedTransaction,
@@ -4874,9 +4905,7 @@ export const GameEntryModal = ({
         throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
       }
 
-      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
-      const selector = normalizeSelector(BLITZ_REALM_SYSTEMS_SELECTOR);
-      const blitzRealmSystemsAddress = contracts[selector];
+      const blitzRealmSystemsAddress = resolveWorldSystemAddress("blitz_realm_systems");
       if (!blitzRealmSystemsAddress) {
         throw new Error("blitz_realm_systems contract not found for selected world");
       }
@@ -4923,17 +4952,16 @@ export const GameEntryModal = ({
   const handleInitializeHyperstructure = useCallback(
     async (entityId: number) => {
       debugLog(worldName, "handleInitializeHyperstructure called for entityId:", entityId);
-      if (!setupResult || !account) return;
+      if (!account) return;
 
       setIsInitializingHyperstructure(true);
       setCurrentInitializingId(entityId);
 
       try {
-        const { systemCalls } = setupResult;
-
-        await systemCalls.initialize_hyperstructure({
-          signer: account,
-          hyperstructure_id: entityId,
+        await (account as unknown as Account).execute({
+          contractAddress: resolveWorldSystemAddress("hyperstructure_systems"),
+          entrypoint: "initialize",
+          calldata: [entityId],
         });
 
         debugLog(worldName, "Hyperstructure initialized:", entityId);
@@ -4945,7 +4973,6 @@ export const GameEntryModal = ({
         const remaining = hyperstructures.filter((h) => !h.initialized && h.entityId !== entityId);
         if (remaining.length === 0) {
           debugLog(worldName, "All hyperstructures initialized!");
-          setNeedsHyperstructureInit(false);
         }
       } catch (error) {
         debugLog(worldName, "Failed to initialize hyperstructure:", error);
@@ -4954,13 +4981,13 @@ export const GameEntryModal = ({
         setCurrentInitializingId(null);
       }
     },
-    [setupResult, account, hyperstructures, worldName],
+    [account, hyperstructures, resolveWorldSystemAddress, worldName],
   );
 
   // Initialize all hyperstructures
   const handleInitializeAllHyperstructures = useCallback(async () => {
     debugLog(worldName, "handleInitializeAllHyperstructures called");
-    if (!setupResult || !account) return;
+    if (!account) return;
 
     const uninitialized = hyperstructures.filter((h) => !h.initialized);
     if (uninitialized.length === 0) return;
@@ -4968,16 +4995,15 @@ export const GameEntryModal = ({
     setIsInitializingHyperstructure(true);
 
     try {
-      const { systemCalls } = setupResult;
-
       for (const hs of uninitialized) {
         setCurrentInitializingId(hs.entityId);
         debugLog(worldName, "Initializing hyperstructure:", hs.entityId);
 
         try {
-          await systemCalls.initialize_hyperstructure({
-            signer: account,
-            hyperstructure_id: hs.entityId,
+          await (account as unknown as Account).execute({
+            contractAddress: resolveWorldSystemAddress("hyperstructure_systems"),
+            entrypoint: "initialize",
+            calldata: [hs.entityId],
           });
 
           // Update local state
@@ -4989,14 +5015,13 @@ export const GameEntryModal = ({
       }
 
       debugLog(worldName, "All hyperstructures initialization complete!");
-      setNeedsHyperstructureInit(false);
     } catch (error) {
       debugLog(worldName, "Failed to initialize hyperstructures:", error);
     } finally {
       setIsInitializingHyperstructure(false);
       setCurrentInitializingId(null);
     }
-  }, [setupResult, account, hyperstructures, worldName]);
+  }, [account, hyperstructures, resolveWorldSystemAddress, worldName]);
 
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
@@ -5237,7 +5262,7 @@ export const GameEntryModal = ({
                   seasonSettlementError={seasonSettlementError}
                   villageSettlementError={villageSettlementError ?? ownedStructuresError}
                   onEnterGame={handleEnterGame}
-                  plannerComponents={setupResult?.components ?? null}
+                  plannerComponents={null}
                 />
               </motion.div>
             )}

@@ -25,11 +25,13 @@ describe("resolvePlayRouteTarget", () => {
       spectate: false,
       isCanonical: true,
       playRoute: {
+        bootMode: "direct",
         chain: "sepolia",
         worldName: "aurora",
         scene: "map",
         col: 12,
         row: 34,
+        resumeScene: null,
         spectate: false,
       },
     });
@@ -47,11 +49,13 @@ describe("resolvePlayRouteTarget", () => {
       spectate: false,
       isCanonical: true,
       playRoute: {
+        bootMode: "direct",
         chain: "sepolia",
         worldName: "aurora",
         scene: "hex",
         col: 4,
         row: 9,
+        resumeScene: null,
         spectate: false,
       },
     });
@@ -71,11 +75,13 @@ describe("resolvePlayRouteTarget", () => {
       spectate: false,
       isCanonical: true,
       playRoute: {
+        bootMode: "direct",
         chain: "sepolia",
         worldName: "aurora",
         scene: "travel",
         col: 7,
         row: 11,
+        resumeScene: null,
         spectate: false,
       },
     });
@@ -95,11 +101,13 @@ describe("resolvePlayRouteTarget", () => {
       spectate: false,
       isCanonical: true,
       playRoute: {
+        bootMode: "direct",
         chain: "sepolia",
         worldName: "aurora",
         scene: "travel",
         col: 7,
         row: 11,
+        resumeScene: null,
         spectate: false,
       },
     });
@@ -117,11 +125,13 @@ describe("resolvePlayRouteTarget", () => {
       spectate: true,
       isCanonical: true,
       playRoute: {
+        bootMode: "direct",
         chain: "sepolia",
         worldName: "aurora",
         scene: "map",
         col: null,
         row: null,
+        resumeScene: null,
         spectate: true,
       },
     });

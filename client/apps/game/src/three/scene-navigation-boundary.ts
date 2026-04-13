@@ -1,4 +1,4 @@
-import { resolvePlaySceneTarget } from "@/play/navigation/play-route-target";
+import { resolvePlaySceneTarget } from "@/play/navigation/play-scene-target";
 import { SceneName } from "./types";
 
 interface ResolveNavigationSceneTargetInput {
