@@ -1,7 +1,7 @@
 interface CatchUpCommittedWorldmapChunkManagersInput {
   runImmediateFullManagerCatchUp: () => Promise<void>;
-  runImmediateStructureCatchUp: () => Promise<void>;
-  scheduleDeferredRemainingManagerCatchUp: () => void;
+  runImmediateCriticalManagerCatchUp: () => Promise<void>;
+  scheduleDeferredNonCriticalManagerCatchUp: () => void;
   stagedPathEnabled: boolean;
 }
 
@@ -13,9 +13,9 @@ export async function catchUpCommittedWorldmapChunkManagers(
     return;
   }
 
-  // Terrain commits before the staged manager fanout. Keep structure presentation
-  // in lockstep with that terrain commit so buildings do not cull against stale
-  // chunk bounds while the new biome slice is already visible.
-  await input.runImmediateStructureCatchUp();
-  input.scheduleDeferredRemainingManagerCatchUp();
+  // Terrain commits before the staged manager fanout. Keep critical visible
+  // managers in lockstep with that terrain commit so the current chunk
+  // does not present mixed terrain/entity state while deferred work drains.
+  await input.runImmediateCriticalManagerCatchUp();
+  input.scheduleDeferredNonCriticalManagerCatchUp();
 }
