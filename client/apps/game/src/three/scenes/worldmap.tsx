@@ -168,6 +168,10 @@ import {
 import { handleWorldmapRefreshCommitRuntime } from "./worldmap-refresh-commit-runtime";
 import { runWorldmapRefreshRuntime } from "./worldmap-refresh-runtime";
 import {
+  handleWorldmapCriticalManagerCatchUpFailures,
+  type WorldmapCriticalManagerCatchUpFailure,
+} from "./worldmap-critical-manager-catchup-runtime";
+import {
   commitWorldmapPreparedTerrainPresentation,
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
@@ -4545,7 +4549,7 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private deferManagerCatchUpForChunk(
+  private deferNonCriticalManagerCatchUpForChunk(
     chunkKey: string,
     options?: {
       force?: boolean;
@@ -4553,17 +4557,14 @@ export default class WorldmapScene extends WarpTravel {
     },
   ): void {
     if (!WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
-      void this.updateManagersForChunk(chunkKey, options).catch((error) => {
-        console.error("[WorldMap] Legacy manager catch-up failed:", error);
+      void this.updateNonCriticalManagersForChunk(chunkKey, options).catch((error) => {
+        console.error("[WorldMap] Legacy non-critical manager catch-up failed:", error);
       });
       return;
     }
 
     const uploadWork = classifyWorldmapUploadWork({
-      matrixInstanceCount:
-        this.armyManager.getVisibleCount() +
-        this.structureManager.getVisibleCount() +
-        this.chestManager.getVisibleCount(),
+      matrixInstanceCount: this.chestManager.getVisibleCount(),
       colorInstanceCount: 0,
       isCachedReplay: false,
       stage: "visible_commit",
@@ -4599,18 +4600,17 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private deferRemainingManagerCatchUpForChunk(
+  private deferNonCriticalManagerCatchUpForCommittedChunk(
     chunkKey: string,
     options?: {
       force?: boolean;
       transitionToken?: number;
     },
   ): void {
-    this.deferManagerCatchUpForChunk(chunkKey, {
+    this.deferNonCriticalManagerCatchUpForChunk(chunkKey, {
       ...options,
-      // Structure presentation already caught up to the committed chunk. Let the
-      // deferred fanout refresh the remaining managers without forcing structure
-      // through the same rebuild again.
+      // Critical visible managers already caught up to the committed chunk.
+      // Let the deferred fanout refresh only the remaining non-critical work.
       force: false,
     });
   }
@@ -4627,7 +4627,7 @@ export default class WorldmapScene extends WarpTravel {
       onTaskError: (_task, error) => {
         console.error("[WorldMap] Deferred manager catch-up failed:", error);
       },
-      runTask: (task) => this.updateManagersForChunk(task.chunkKey, task.options),
+      runTask: (task) => this.updateNonCriticalManagersForChunk(task.chunkKey, task.options),
       scheduleDrain: () => {
         this.schedulePostCommitManagerCatchUpDrain();
       },
@@ -5535,6 +5535,15 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private scheduleChunkRecovery(reason: string, chunkKey: string, details: Record<string, unknown> = {}): void {
+    this.scheduleChunkRecoveryWithReason(reason, chunkKey, details, "default");
+  }
+
+  private scheduleChunkRecoveryWithReason(
+    reason: string,
+    chunkKey: string,
+    details: Record<string, unknown> = {},
+    refreshReason: WorldmapForceRefreshReason,
+  ): void {
     if (this.isSwitchedOff || !chunkKey || chunkKey === "null") {
       return;
     }
@@ -5558,7 +5567,7 @@ export default class WorldmapScene extends WarpTravel {
         chunkKey,
         ...details,
       });
-      this.requestChunkRefresh(true, "default");
+      this.requestChunkRefresh(true, refreshReason);
     }, 0);
   }
 
@@ -6816,9 +6825,9 @@ export default class WorldmapScene extends WarpTravel {
     return catchUpCommittedWorldmapChunkManagers({
       stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
       runImmediateFullManagerCatchUp: () => this.updateManagersForChunk(targetChunkKey, managerOptions),
-      runImmediateStructureCatchUp: () => this.updateStructureManagerForChunk(targetChunkKey, managerOptions),
-      scheduleDeferredRemainingManagerCatchUp: () =>
-        this.deferRemainingManagerCatchUpForChunk(targetChunkKey, managerOptions),
+      runImmediateCriticalManagerCatchUp: () => this.updateCriticalManagersForChunk(targetChunkKey, managerOptions),
+      scheduleDeferredNonCriticalManagerCatchUp: () =>
+        this.deferNonCriticalManagerCatchUpForCommittedChunk(targetChunkKey, managerOptions),
     });
   }
 
@@ -7058,9 +7067,12 @@ export default class WorldmapScene extends WarpTravel {
           preparedTerrain,
           recordChunkDiagnosticsEvent,
           refreshDecision: commitDecision,
-          runImmediateManagerCatchUp: (targetChunkKey, options) => this.updateManagersForChunk(targetChunkKey, options),
-          scheduleDeferredManagerCatchUp: (targetChunkKey, options) =>
-            this.deferManagerCatchUpForChunk(targetChunkKey, options),
+          runImmediateFullManagerCatchUp: (targetChunkKey, options) =>
+            this.updateManagersForChunk(targetChunkKey, options),
+          runImmediateCriticalManagerCatchUp: (targetChunkKey, options) =>
+            this.updateCriticalManagersForChunk(targetChunkKey, options),
+          scheduleDeferredNonCriticalManagerCatchUp: (targetChunkKey, options) =>
+            this.deferNonCriticalManagerCatchUpForChunk(targetChunkKey, options),
           stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
           tileFetchSucceeded,
           transitionToken,
@@ -7170,17 +7182,116 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private async updateStructureManagerForChunk(
+  private async updateCriticalManagersForChunk(
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
   ) {
+    if (
+      !shouldRunManagerUpdate({
+        transitionToken: options?.transitionToken,
+        expectedTransitionToken: this.chunkTransitionToken,
+        currentChunk: this.currentChunk,
+        targetChunk: chunkKey,
+      })
+    ) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_skipped_stale");
+      return;
+    }
+
+    const managerStartedAt = performance.now();
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_started");
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "critical_manager_catch_up_started");
+
+    let failures: WorldmapCriticalManagerCatchUpFailure[] = [];
+
     try {
-      await this.structureManager.updateChunk(chunkKey, options);
+      const [armyResult, structureResult] = await Promise.allSettled([
+        this.armyManager.updateChunk(chunkKey, options),
+        this.structureManager.updateChunk(chunkKey, options),
+      ]);
+
+      failures = [armyResult, structureResult].flatMap((result, index) =>
+        result.status === "rejected"
+          ? [
+              {
+                label: index === 0 ? "army" : "structure",
+                reason: result.reason,
+              },
+            ]
+          : [],
+      );
+    } finally {
+      const durationMs = performance.now() - managerStartedAt;
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
+        durationMs,
+      });
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_catch_up_duration_recorded", {
+        durationMs,
+      });
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "critical_manager_catch_up_duration_recorded", {
+        durationMs,
+      });
+      recordWorldmapRenderDuration("chunkManagerCatchUpMs", durationMs);
+      recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
+      setWorldmapRenderGauge("visibleArmies", this.armyManager.getVisibleCount());
+      setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
+      setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
+      setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
+    }
+
+    handleWorldmapCriticalManagerCatchUpFailures({
+      chunkKey,
+      failures,
+      onManagerFailure: (failure) => {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "critical_manager_catch_up_failed");
+        console.error(`[CHUNK SYNC] Critical ${failure.label} manager failed for chunk ${chunkKey}`, failure.reason);
+      },
+      scheduleRecovery: (failedChunkKey, failingManagers) => {
+        this.scheduleChunkRecoveryWithReason(
+          "critical_manager_failure",
+          failedChunkKey,
+          { failingManagers },
+          "visibility_recovery",
+        );
+      },
+    });
+  }
+
+  private async updateNonCriticalManagersForChunk(
+    chunkKey: string,
+    options?: { force?: boolean; transitionToken?: number },
+  ) {
+    if (
+      !shouldRunManagerUpdate({
+        transitionToken: options?.transitionToken,
+        expectedTransitionToken: this.chunkTransitionToken,
+        currentChunk: this.currentChunk,
+        targetChunk: chunkKey,
+      })
+    ) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_skipped_stale");
+      return;
+    }
+
+    const managerStartedAt = performance.now();
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_started");
+
+    try {
+      await this.chestManager.updateChunk(chunkKey, options);
     } catch (reason) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_update_failed");
-      console.error(`[CHUNK SYNC] structure manager failed for chunk ${chunkKey}`, reason);
+      console.error(`[CHUNK SYNC] chest manager failed for chunk ${chunkKey}`, reason);
     } finally {
-      setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
+      const durationMs = performance.now() - managerStartedAt;
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
+        durationMs,
+      });
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_catch_up_duration_recorded", {
+        durationMs,
+      });
+      recordWorldmapRenderDuration("chunkManagerCatchUpMs", durationMs);
+      recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
     }
   }
 

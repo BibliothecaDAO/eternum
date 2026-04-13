@@ -174,6 +174,56 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     expect(unregisterPreviousChunkOnNextFrame).toHaveBeenCalledWith("0,0");
   });
 
+  it("keeps manager scheduling after visibility work so the visible commit can await critical convergence later", async () => {
+    const phaseOrder: string[] = [];
+
+    await finalizeWarpTravelChunkSwitch({
+      fetchSucceeded: true,
+      isCurrentTransition: true,
+      targetChunk: "24,24",
+      previousChunk: "0,0",
+      currentChunk: "0,0",
+      previousPinnedChunks: [],
+      hasFiniteOldChunkCoordinates: false,
+      oldChunkCoordinates: null,
+      startRow: 24,
+      startCol: 24,
+      force: true,
+      transitionToken: 23,
+      preparedTerrain: { chunkKey: "24,24" },
+      applyPreparedTerrain: vi.fn(() => {
+        phaseOrder.push("terrain");
+      }),
+      setCurrentChunk: vi.fn(() => {
+        phaseOrder.push("authority");
+      }),
+      updatePinnedChunks: vi.fn(),
+      unregisterChunk: vi.fn(),
+      restorePreviousChunkVisuals: async () => undefined,
+      clearSceneChunkBounds: vi.fn(),
+      forceVisibilityUpdate: vi.fn(() => {
+        phaseOrder.push("visibility");
+      }),
+      updateCurrentChunkBounds: vi.fn(() => {
+        phaseOrder.push("bounds");
+      }),
+      scheduleManagerCatchUp: vi.fn(() => {
+        phaseOrder.push("critical-manager-catch-up");
+        phaseOrder.push("deferred-non-critical-scheduled");
+      }),
+      unregisterPreviousChunkOnNextFrame: vi.fn(),
+    });
+
+    expect(phaseOrder).toEqual([
+      "authority",
+      "terrain",
+      "bounds",
+      "visibility",
+      "critical-manager-catch-up",
+      "deferred-non-critical-scheduled",
+    ]);
+  });
+
   it("advances chunk authority before manager fanout on committed switches", async () => {
     let currentChunk = "0,0";
     const setCurrentChunk = vi.fn((chunkKey: string) => {

@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-14",
+    title: "Map Chunk Sync Fix",
+    description:
+      "World-map chunk repairs now wait for visible armies and structures to catch up before they settle, so terrain self-heals and reload recovery stop leaving ghost units or buildings behind.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-14",
     title: "Reliable Auto-Settle Entry",
     description:
       "Auto-settle now keeps freshly registered Blitz players on the settlement path until their realm setup is ready, so dashboard handoffs stop dropping new entrants into the game as spectators.",
