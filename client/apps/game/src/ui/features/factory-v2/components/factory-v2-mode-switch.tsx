@@ -37,7 +37,7 @@ export const FactoryV2ModeSwitch = ({
         <FactoryV2ToggleGroup title="Network">
           <div
             data-testid="factory-network-switch"
-            className="mx-auto grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-black/8 bg-white/55 p-1.5 shadow-[0_10px_24px_rgba(34,24,14,0.06)] md:max-w-[18rem]"
+            className="mx-auto grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-gold/10 bg-black/20 p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.12)] md:max-w-[18rem]"
           >
             {environmentOptions.map((environment) => {
               const isSelected = environment.id === selectedEnvironmentId;
@@ -63,7 +63,7 @@ export const FactoryV2ModeSwitch = ({
         <FactoryV2ToggleGroup title="Game">
           <div
             data-testid="factory-game-switch"
-            className="mx-auto grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-black/8 bg-white/45 p-1.5 shadow-[0_10px_24px_rgba(34,24,14,0.05)] md:max-w-[18rem]"
+            className="mx-auto grid w-full grid-cols-2 gap-1.5 rounded-[22px] border border-gold/10 bg-black/20 p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.10)] md:max-w-[18rem]"
           >
             {modes.map((mode) => {
               const isSelected = mode.id === selectedMode;
@@ -92,7 +92,7 @@ export const FactoryV2ModeSwitch = ({
 
 const FactoryV2ToggleGroup = ({ title, children }: { title: string; children: ReactNode }) => (
   <div className="space-y-2 text-center">
-    <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-black/42">{title}</div>
+    <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold/42">{title}</div>
     {children}
   </div>
 );

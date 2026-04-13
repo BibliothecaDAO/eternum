@@ -170,13 +170,20 @@ export const LandingHeader = ({ walletButton, onSettingsClick, className }: Land
                 className={cn(
                   "relative px-4 py-2 text-sm font-medium uppercase tracking-wider",
                   "transition-all duration-200",
-                  "hover:text-gold",
-                  isActive ? "text-gold" : "text-gold/50",
-                  // Underline effect on hover and active
-                  "after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-0 after:-translate-x-1/2",
-                  "after:bg-gold after:transition-all after:duration-200",
-                  "hover:after:w-1/2",
-                  isActive && "after:w-3/4 after:shadow-[0_0_8px_rgba(223,170,84,0.5)]",
+                  item.primary
+                    ? cn(
+                        "rounded-full border border-gold/40 bg-gold/10 px-5 text-gold",
+                        "hover:bg-gold/20 hover:border-gold/60",
+                        isActive && "border-gold/60 bg-gold/20 shadow-[0_0_12px_rgba(223,170,84,0.25)]",
+                      )
+                    : cn(
+                        "hover:text-gold",
+                        isActive ? "text-gold" : "text-gold/50",
+                        "after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-0 after:-translate-x-1/2",
+                        "after:bg-gold after:transition-all after:duration-200",
+                        "hover:after:w-1/2",
+                        isActive && "after:w-3/4 after:shadow-[0_0_8px_rgba(223,170,84,0.5)]",
+                      ),
                 )}
               >
                 {item.label}
