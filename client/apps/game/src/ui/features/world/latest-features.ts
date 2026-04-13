@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-13",
+    title: "Settled Army Render Recovery",
+    description:
+      "Armies now refresh their world-map render bounds when movement fully settles, so multi-army moves no longer disappear at the destination until a chunk refresh happens.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-13",
     title: "Unified Play Route Boot",
     description:
       "Dashboard entry and hard reload now follow the same map-first world boot flow, so fresh reloads stop diverging into stale sync state before the world becomes interactive.",
