@@ -4,14 +4,17 @@ import type { WorldProfile } from "@/runtime/world/types";
 
 export type PlayScene = "map" | "hex" | "travel";
 type EntryIntent = "play" | "settle" | "spectate" | "forge";
+export type PlayBootMode = "direct" | "map-first";
 
-interface PlayRouteDescriptor {
+export interface PlayRouteDescriptor {
   chain: Chain;
   worldName: string;
   scene: PlayScene;
   col: number | null;
   row: number | null;
   spectate: boolean;
+  bootMode?: PlayBootMode;
+  resumeScene?: PlayScene | null;
 }
 
 interface EntryRouteDescriptor {
@@ -27,10 +30,12 @@ type LocationLike = Pick<Location, "pathname" | "search">;
 const CHAIN_VALUES: Chain[] = ["sepolia", "mainnet", "slot", "slottest", "local"];
 const PLAY_SCENES: PlayScene[] = ["map", "hex", "travel"];
 const ENTRY_INTENTS: EntryIntent[] = ["play", "settle", "spectate", "forge"];
+const PLAY_BOOT_MODES: PlayBootMode[] = ["direct", "map-first"];
 
 const isValidChain = (value: string): value is Chain => CHAIN_VALUES.includes(value as Chain);
 const isPlayScene = (value: string): value is PlayScene => PLAY_SCENES.includes(value as PlayScene);
 const isEntryIntent = (value: string): value is EntryIntent => ENTRY_INTENTS.includes(value as EntryIntent);
+const isPlayBootMode = (value: string): value is PlayBootMode => PLAY_BOOT_MODES.includes(value as PlayBootMode);
 
 const parseOptionalNumber = (searchParams: URLSearchParams, key: string): number | null => {
   const value = searchParams.get(key);
@@ -59,6 +64,10 @@ export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | nu
   }
 
   const searchParams = new URLSearchParams(location.search);
+  const rawBootMode = searchParams.get("boot");
+  const bootMode = rawBootMode && isPlayBootMode(rawBootMode) ? rawBootMode : "direct";
+  const rawResumeScene = searchParams.get("resumeScene");
+  const resumeScene = bootMode === "map-first" && rawResumeScene && isPlayScene(rawResumeScene) ? rawResumeScene : null;
 
   return {
     chain: rawChain,
@@ -67,10 +76,14 @@ export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | nu
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
     spectate: searchParams.get("spectate") === "true",
+    bootMode,
+    resumeScene,
   };
 };
 
 export const buildPlayHref = (route: PlayRouteDescriptor): string => {
+  const bootMode = route.bootMode ?? "direct";
+  const resumeScene = bootMode === "map-first" ? (route.resumeScene ?? null) : null;
   const searchParams = new URLSearchParams();
 
   if (route.col !== null) {
@@ -83,6 +96,14 @@ export const buildPlayHref = (route: PlayRouteDescriptor): string => {
 
   if (route.spectate) {
     searchParams.set("spectate", "true");
+  }
+
+  if (bootMode === "map-first") {
+    searchParams.set("boot", bootMode);
+  }
+
+  if (bootMode === "map-first" && resumeScene) {
+    searchParams.set("resumeScene", resumeScene);
   }
 
   return `/play/${route.chain}/${encodeURIComponent(route.worldName)}/${route.scene}${buildSearch(searchParams)}`;
@@ -148,6 +169,8 @@ const resolveLegacySceneRoute = (location: LocationLike, fallbackWorld?: WorldPr
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
     spectate: searchParams.get("spectate") === "true",
+    bootMode: "direct",
+    resumeScene: null,
   });
 };
 
@@ -171,6 +194,8 @@ const resolveLegacyWorldRoute = (location: LocationLike, fallbackWorld?: WorldPr
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
     spectate: searchParams.get("spectate") === "true",
+    bootMode: "direct",
+    resumeScene: null,
   });
 };
 
@@ -190,6 +215,8 @@ const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: WorldProf
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
     spectate: searchParams.get("spectate") === "true",
+    bootMode: "direct",
+    resumeScene: null,
   });
 };
 

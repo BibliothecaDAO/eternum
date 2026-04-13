@@ -1,11 +1,14 @@
 // @vitest-environment node
 
+import { configManager } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 
+configManager.mapCenter = 2010831280;
+
 describe("resolveGameEntryTarget", () => {
-  it("keeps player entry on the canonical hex route even when bootstrap seeded a world-map target", () => {
+  it("routes player entry through the bootstrapped world-map target when one is available", () => {
     expect(
       resolveGameEntryTarget({
         chain: "mainnet",
@@ -16,9 +19,9 @@ describe("resolveGameEntryTarget", () => {
       }),
     ).toEqual({
       spectator: false,
-      structureEntityId: 0,
-      url: "/play/mainnet/kingdom-1/hex?col=0&row=0",
-      worldMapPosition: null,
+      structureEntityId: 77,
+      url: "/play/mainnet/kingdom-1/map?col=12&row=34",
+      worldMapPosition: { col: 12, row: 34 },
     });
   });
 
@@ -36,6 +39,27 @@ describe("resolveGameEntryTarget", () => {
       structureEntityId: 91,
       url: "/play/slot/blitz-slot-4/map?col=7&row=9&spectate=true",
       worldMapPosition: { col: 7, row: 9 },
+    });
+  });
+
+  it("normalizes contract-space world-map selections before building a canonical dashboard entry URL", () => {
+    const result = resolveGameEntryTarget({
+      chain: "slot",
+      worldName: "bltz-spark-702",
+      structureEntityId: 91,
+      worldMapReturnPosition: { col: 2010831286, row: 2010831278 },
+      isSpectateMode: false,
+      mapCenterOffset: 136652366,
+    });
+
+    expect(result).toEqual({
+      spectator: false,
+      structureEntityId: 91,
+      url: "/play/slot/bltz-spark-702/map?col=6&row=-2",
+      worldMapPosition: {
+        col: 6,
+        row: -2,
+      },
     });
   });
 

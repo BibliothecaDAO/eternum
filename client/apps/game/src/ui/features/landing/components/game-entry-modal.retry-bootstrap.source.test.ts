@@ -8,11 +8,11 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("Game entry modal retry bootstrap", () => {
-  it("retries through the shared bootstrap controller instead of managing a local attempt token", () => {
+  it("bumps an explicit preflight retry token so blitz settlement checks rerun after retry", () => {
     const source = readSource("src/ui/features/landing/components/game-entry-modal.tsx");
 
-    expect(source).toContain("useGameEntryBootstrapController");
-    expect(source).toContain("bootstrapController.retry()");
-    expect(source).not.toContain("bootstrapAttempt");
+    expect(source).toContain("const [preflightRetryNonce, setPreflightRetryNonce] = useState(0);");
+    expect(source).toContain("setPreflightRetryNonce((current) => current + 1);");
+    expect(source).toContain("preflightRetryNonce,");
   });
 });

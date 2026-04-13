@@ -182,6 +182,7 @@ export class ArmyManager {
   // Keep moving-army culling bounds fresh without paying a full recompute every frame.
   private lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
   private readonly movingBoundsRefreshIntervalMs = 1000 / 20;
+  private hadMovingArmiesLastFrame = false;
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
@@ -2121,6 +2122,10 @@ export class ArmyManager {
     return this.armyModel.hasMovingInstances();
   }
 
+  public isArmyMoving(entityId: ID): boolean {
+    return this.armyModel.isEntityMoving(this.toNumericId(entityId));
+  }
+
   private runMovementStartListeners(entityId: number): void {
     const listeners = this.movementStartListeners.get(entityId);
     if (!listeners || listeners.size === 0) {
@@ -2176,7 +2181,7 @@ export class ArmyManager {
     // Batch update: single pass over visible armies for all per-frame operations
     // This consolidates point icons, attachment transforms, and indicators
     this.updateVisibleArmiesBatched();
-    this.refreshMovingArmyBoundsIfNeeded();
+    this.syncArmyBoundsForMovementState();
 
     if (this.frustumVisibilityDirty) {
       const now = performance.now();
@@ -2189,6 +2194,22 @@ export class ArmyManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+  }
+
+  private syncArmyBoundsForMovementState() {
+    const hasMovingArmies = this.hasMovingArmies();
+
+    if (hasMovingArmies) {
+      this.refreshMovingArmyBoundsIfNeeded();
+      this.hadMovingArmiesLastFrame = true;
+      return;
+    }
+
+    if (this.hadMovingArmiesLastFrame) {
+      this.refreshSettledArmyBounds();
+    }
+
+    this.hadMovingArmiesLastFrame = false;
   }
 
   private refreshMovingArmyBoundsIfNeeded() {
@@ -2205,6 +2226,15 @@ export class ArmyManager {
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
     this.playerIndicatorManager.computeBoundingSphere();
+    this.frustumVisibilityDirty = true;
+  }
+
+  private refreshSettledArmyBounds() {
+    this.lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
+    this.armyModel.requestBoundsUpdate();
+    this.armyModel.applyPendingBounds();
+    this.playerIndicatorManager.computeBoundingSphere();
+    this.frustumVisibilityDirty = true;
   }
 
   /**
