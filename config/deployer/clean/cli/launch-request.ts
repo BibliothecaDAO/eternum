@@ -26,6 +26,7 @@ import type {
   SeriesLaunchWorkflowScope,
 } from "../run-store";
 import { parseArgs, resolveOptionalArg, type CliArgs as Args } from "./args";
+import { resolveLaunchRequestArgs } from "./launch-config-file";
 
 export { parseArgs };
 
@@ -159,7 +160,8 @@ function validateBlitzRegistrationStringOverride(key: string, value: unknown): v
 }
 
 export function resolveLaunchKind(args: Args): LaunchTargetKind {
-  const rawLaunchKind = args["launch-kind"] || process.env.GAME_LAUNCH_KIND || "game";
+  const resolvedArgs = resolveLaunchRequestArgs(args);
+  const rawLaunchKind = resolvedArgs["launch-kind"] || process.env.GAME_LAUNCH_KIND || "game";
 
   if (rawLaunchKind === "game" || rawLaunchKind === "series" || rawLaunchKind === "rotation") {
     return rawLaunchKind;
@@ -394,7 +396,8 @@ function resolveSharedLaunchRequestOptions(args: Args) {
 }
 
 export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
-  const requiredArgs = requireGameLaunchArgs(args);
+  const resolvedArgs = resolveLaunchRequestArgs(args);
+  const requiredArgs = requireGameLaunchArgs(resolvedArgs);
   const environment = resolveDeploymentEnvironment(requiredArgs.environmentId);
 
   return {
@@ -402,15 +405,16 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     environmentId: requiredArgs.environmentId,
     gameName: requiredArgs.gameName,
     startTime: requiredArgs.startTime,
-    ...resolveSharedLaunchRequestOptions(args),
-    maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,
-    seriesName: args["series-name"],
-    seriesGameNumber: resolveOptionalNumber(args["series-game-number"], "series game number"),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
+    seriesName: resolvedArgs["series-name"],
+    seriesGameNumber: resolveOptionalNumber(resolvedArgs["series-game-number"], "series game number"),
   };
 }
 
 export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
-  const requiredArgs = requireSeriesLaunchArgs(args);
+  const resolvedArgs = resolveLaunchRequestArgs(args);
+  const requiredArgs = requireSeriesLaunchArgs(resolvedArgs);
   const environment = resolveDeploymentEnvironment(requiredArgs.environmentId);
 
   return {
@@ -418,20 +422,22 @@ export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
     environmentId: requiredArgs.environmentId,
     seriesName: requiredArgs.seriesName,
     games: requiredArgs.games,
-    targetGameNames: resolveTargetGameNamesJson(args),
-    ...resolveSharedLaunchRequestOptions(args),
-    maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,
-    autoRetryEnabled: resolveOptionalBooleanArg(args, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
+    targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
+    autoRetryEnabled:
+      resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
     autoRetryIntervalMinutes:
       resolveOptionalNumber(
-        args["auto-retry-interval-minutes"] || process.env.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES,
+        resolvedArgs["auto-retry-interval-minutes"] || process.env.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES,
         "auto retry interval minutes",
       ) ?? undefined,
   };
 }
 
 export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
-  const requiredArgs = requireRotationLaunchArgs(args);
+  const resolvedArgs = resolveLaunchRequestArgs(args);
+  const requiredArgs = requireRotationLaunchArgs(resolvedArgs);
   const environment = resolveDeploymentEnvironment(requiredArgs.environmentId);
 
   return {
@@ -442,14 +448,15 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     gameIntervalMinutes: requiredArgs.gameIntervalMinutes,
     maxGames: requiredArgs.maxGames,
     advanceWindowGames: requiredArgs.advanceWindowGames,
-    targetGameNames: resolveTargetGameNamesJson(args),
+    targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
-    ...resolveSharedLaunchRequestOptions(args),
-    maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,
-    autoRetryEnabled: resolveOptionalBooleanArg(args, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
+    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
+    autoRetryEnabled:
+      resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
     autoRetryIntervalMinutes:
       resolveOptionalNumber(
-        args["auto-retry-interval-minutes"] || process.env.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES,
+        resolvedArgs["auto-retry-interval-minutes"] || process.env.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES,
         "auto retry interval minutes",
       ) ?? undefined,
   };
