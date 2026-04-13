@@ -15,29 +15,80 @@ concurrency:
 jobs:
   test-client:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       VITE_PUBLIC_MASTER_ADDRESS: "0x0"
       VITE_PUBLIC_MASTER_PRIVATE_KEY: "0x0"
       VITE_PUBLIC_ACCOUNT_CLASS_HASH: "0x0"
 
-    strategy:
-      matrix:
-        node-version: [21.x]
-
     steps:
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          node-version: ${{ matrix.node-version }}
-      - uses: pnpm/action-setup@v4
+          fetch-depth: 0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 9.7.0
 
-      - uses: actions/checkout@v4
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --frozen-lockfile
+
       - name: Build packages
         run: pnpm run build:packages
-      - name: Execute Unit tests
-        if: false # Temporarily disabled
-        run: pnpm run test
+
+      - name: Typecheck game client
+        run: pnpm --dir ./client/apps/game typecheck
+
+      - name: Run game client tests
+        run: pnpm --dir ./client/apps/game test
+
+      - name: Build game client
+        run: pnpm --dir ./client/apps/game build
+
+      - name: Start game client preview server
+        run: |
+          pnpm --dir ./client/apps/game preview --host 127.0.0.1 --port 4173 > /tmp/eternum-game-preview.log 2>&1 &
+          echo $! > /tmp/eternum-game-preview.pid
+
+      - name: Wait for game client preview server
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173 >/dev/null; then
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          echo "Game client preview server did not become ready" >&2
+          cat /tmp/eternum-game-preview.log >&2 || true
+          exit 1
+
+      - name: Run renderer scene smoke
+        run: |
+          node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
+            --base-url http://127.0.0.1:4173 \
+            --scenes map,hex
+
+      - name: Upload game client preview server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-client-preview-server-log
+          path: /tmp/eternum-game-preview.log
+
+      - name: Stop game client preview server
+        if: always()
+        run: |
+          if [ -f /tmp/eternum-game-preview.pid ]; then
+            kill "$(cat /tmp/eternum-game-preview.pid)" || true
+          fi
