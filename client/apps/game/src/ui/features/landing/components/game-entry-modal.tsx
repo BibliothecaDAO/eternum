@@ -37,6 +37,7 @@ import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import type { SetupResult } from "@/init/bootstrap";
 import { captureClientEvent } from "@/posthog";
+import { recordPlayRouteHandoffFromHref } from "@/play/navigation/play-route-handoff";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
@@ -4337,6 +4338,7 @@ export const GameEntryModal = ({
       worldMapPosition: entryTarget.worldMapPosition ?? undefined,
     });
 
+    recordPlayRouteHandoffFromHref(entryTarget.url);
     navigate(entryTarget.url);
     window.dispatchEvent(new Event("urlChanged"));
   }, [navigate, navigationEntryContext]);

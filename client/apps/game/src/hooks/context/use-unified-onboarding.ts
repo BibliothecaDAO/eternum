@@ -28,6 +28,10 @@ export type OnboardingPhase =
   | "settlement" // User picks realm/blitz setup (bootstrap complete, account connected)
   | "ready"; // All done, can enter game
 
+const PLAY_ROUTE_RECONNECT_GRACE_MS = 4000;
+
+type EntrySource = "play-route" | null;
+
 type UnifiedOnboardingState = {
   // Current phase (what UI to show)
   phase: OnboardingPhase;
@@ -40,6 +44,9 @@ type UnifiedOnboardingState = {
   isConnected: boolean;
   isConnecting: boolean;
   isSpectating: boolean;
+  entrySource: EntrySource;
+  isDirectPlayRoute: boolean;
+  isReconnectRequired: boolean;
 
   // World state
   hasSelectedWorld: boolean;
@@ -56,6 +63,60 @@ type UnifiedOnboardingState = {
   setupResult: SetupResult | null;
 };
 
+const resolveUnifiedOnboardingPhase = ({
+  selectedWorldName,
+  connected,
+  isSpectating,
+  showBlankOverlay,
+  bootstrapStatus,
+  hasCompletedAvatar,
+  isDirectPlayRoute,
+  hasResolvedAccount,
+}: {
+  selectedWorldName: string | null;
+  connected: boolean;
+  isSpectating: boolean;
+  showBlankOverlay: boolean;
+  bootstrapStatus: EagerBootstrapState["status"];
+  hasCompletedAvatar: boolean;
+  isDirectPlayRoute: boolean;
+  hasResolvedAccount: boolean;
+}): OnboardingPhase => {
+  if (!selectedWorldName) {
+    return "world-select";
+  }
+
+  if (isDirectPlayRoute && !isSpectating && !hasResolvedAccount) {
+    return "loading";
+  }
+
+  if (!isDirectPlayRoute && !connected && !isSpectating && showBlankOverlay) {
+    return "account";
+  }
+
+  if (!isDirectPlayRoute && connected && !isSpectating && !hasCompletedAvatar && showBlankOverlay) {
+    return "avatar";
+  }
+
+  if (bootstrapStatus !== "ready" && bootstrapStatus !== "error") {
+    if (!isDirectPlayRoute && !connected && !isSpectating) {
+      return "account";
+    }
+
+    return "loading";
+  }
+
+  if (bootstrapStatus === "error") {
+    return "loading";
+  }
+
+  if (showBlankOverlay && (connected || isSpectating)) {
+    return "settlement";
+  }
+
+  return "ready";
+};
+
 const NULL_ACCOUNT = {
   address: "0x0",
   privateKey: "0x0",
@@ -64,6 +125,8 @@ const NULL_ACCOUNT = {
 export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardingState => {
   const bootstrap = useEagerBootstrap();
   const urlPlayRoute = typeof window !== "undefined" ? parsePlayRoute(window.location) : null;
+  const entrySource: EntrySource = urlPlayRoute ? "play-route" : null;
+  const isDirectPlayRoute = entrySource === "play-route";
 
   // Account state from starknet-react
   const { isConnected, isConnecting } = useAccount();
@@ -86,6 +149,7 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   });
   const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
   const [hasCompletedAvatar, setHasCompletedAvatar] = useState(false);
+  const [hasReconnectGraceElapsed, setHasReconnectGraceElapsed] = useState(false);
 
   // If URL has spectate param and we have a world, auto-trigger spectate mode
   useEffect(() => {
@@ -172,6 +236,26 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
   // Normalize boolean values (starknet-react may return undefined)
   const connected = isConnected === true;
   const connecting = isConnecting === true;
+  const hasResolvedAccount = resolvedAccount !== null;
+  const shouldTrackReconnectGrace = isDirectPlayRoute && !isSpectating && !hasResolvedAccount;
+
+  useEffect(() => {
+    if (!shouldTrackReconnectGrace) {
+      setHasReconnectGraceElapsed(false);
+      return;
+    }
+
+    setHasReconnectGraceElapsed(false);
+    const timeoutId = window.setTimeout(() => {
+      setHasReconnectGraceElapsed(true);
+    }, PLAY_ROUTE_RECONNECT_GRACE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [shouldTrackReconnectGrace, urlPlayRoute?.chain, urlPlayRoute?.worldName, urlPlayRoute?.scene]);
+
+  const isReconnectRequired = shouldTrackReconnectGrace && hasReconnectGraceElapsed;
 
   // Determine current phase
   const phase: OnboardingPhase = useMemo(() => {
@@ -182,56 +266,32 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
       showBlankOverlay,
       bootstrapStatus: bootstrap.status,
       hasCompletedAvatar,
+      isDirectPlayRoute,
+      hasResolvedAccount,
+    });
+    const nextPhase = resolveUnifiedOnboardingPhase({
+      selectedWorldName,
+      connected,
+      isSpectating,
+      showBlankOverlay,
+      bootstrapStatus: bootstrap.status,
+      hasCompletedAvatar,
+      isDirectPlayRoute,
+      hasResolvedAccount,
     });
 
-    // 1. No world selected - must select world first
-    if (!selectedWorldName) {
-      console.log("[useUnifiedOnboarding] -> world-select (no world)");
-      return "world-select";
-    }
-
-    // 2. World selected but not connected and not spectating
-    //    Show account panel, bootstrap runs in background
-    if (!connected && !isSpectating && showBlankOverlay) {
-      console.log("[useUnifiedOnboarding] -> account (not connected, not spectating, showBlankOverlay)");
-      return "account";
-    }
-
-    // 2.5. Connected but haven't completed avatar creation (optional step)
-    //      Only show avatar phase if connected (not spectating) and haven't completed it yet
-    if (connected && !isSpectating && !hasCompletedAvatar && showBlankOverlay) {
-      console.log("[useUnifiedOnboarding] -> avatar (connected, no avatar, showBlankOverlay)");
-      return "avatar";
-    }
-
-    // 3. Bootstrap still loading - show loading if it's blocking
-    //    (Connected/spectating but bootstrap not ready)
-    if (bootstrap.status !== "ready" && bootstrap.status !== "error") {
-      // If we're in account phase, stay there while bootstrap runs in background
-      if (!connected && !isSpectating) {
-        console.log("[useUnifiedOnboarding] -> account (bootstrap loading, not connected)");
-        return "account";
-      }
-      console.log("[useUnifiedOnboarding] -> loading (bootstrap not ready)");
-      return "loading";
-    }
-
-    // 4. Bootstrap errored
-    if (bootstrap.status === "error") {
-      console.log("[useUnifiedOnboarding] -> loading (bootstrap error)");
-      return "loading"; // Show error in loading panel
-    }
-
-    // 5. Bootstrap ready, show onboarding/settlement if needed
-    if (showBlankOverlay && (connected || isSpectating)) {
-      console.log("[useUnifiedOnboarding] -> settlement (ready, showBlankOverlay)");
-      return "settlement";
-    }
-
-    // 6. All done
-    console.log("[useUnifiedOnboarding] -> ready");
-    return "ready";
-  }, [selectedWorldName, connected, isSpectating, showBlankOverlay, bootstrap.status, hasCompletedAvatar]);
+    console.log(`[useUnifiedOnboarding] -> ${nextPhase}`);
+    return nextPhase;
+  }, [
+    selectedWorldName,
+    connected,
+    isSpectating,
+    showBlankOverlay,
+    bootstrap.status,
+    hasCompletedAvatar,
+    isDirectPlayRoute,
+    hasResolvedAccount,
+  ]);
 
   // Can enter game check
   const canEnterGame = useMemo(() => {
@@ -250,6 +310,9 @@ export const useUnifiedOnboarding = (_backgroundImage: string): UnifiedOnboardin
     isConnected: connected,
     isConnecting: connecting,
     isSpectating,
+    entrySource,
+    isDirectPlayRoute,
+    isReconnectRequired,
     hasSelectedWorld: selectedWorldName !== null,
     selectedWorldName,
     selectWorld,

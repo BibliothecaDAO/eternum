@@ -127,7 +127,7 @@ export const resolveGameEntryTarget = ({
   };
   const bootstrappedWorldMapTarget = resolveBootstrappedWorldMapTarget(input);
 
-  if (input.isSpectateMode && bootstrappedWorldMapTarget) {
+  if (bootstrappedWorldMapTarget) {
     return buildDirectGameEntryTarget(input, bootstrappedWorldMapTarget);
   }
 

@@ -37,7 +37,11 @@ import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
 import type { QualityLevel } from "@/three/systems/hexception-ambience-system";
 import { GRAPHICS_SETTING, IS_FLAT_MODE } from "@/ui/config";
-import { HEXCEPTION_GRID_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
+import {
+  HEXCEPTION_GRID_READY_EVENT,
+  clearRememberedHexceptionGridReady,
+  rememberHexceptionGridReady,
+} from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -521,6 +525,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    clearRememberedHexceptionGridReady();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
 
@@ -1120,6 +1125,7 @@ export default class HexceptionScene extends HexagonScene {
       console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
       if (typeof window !== "undefined") {
+        rememberHexceptionGridReady({ col: this.centerColRow[0], row: this.centerColRow[1] });
         window.dispatchEvent(
           new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {
             detail: { col: this.centerColRow[0], row: this.centerColRow[1] },

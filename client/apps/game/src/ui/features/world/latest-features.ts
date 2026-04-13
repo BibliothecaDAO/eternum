@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-13",
+    title: "Play Route Reload Resume",
+    description:
+      "Reloading a live game route now keeps you on that same world route and reconnects in place, so a desync refresh no longer sends you back through the dashboard entry flow.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-12",
     title: "Cleaner Game Entry Handoff",
     description:

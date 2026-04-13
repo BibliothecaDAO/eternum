@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 
 describe("resolveGameEntryTarget", () => {
-  it("keeps player entry on the canonical hex route even when bootstrap seeded a world-map target", () => {
+  it("routes player entry through the bootstrapped world-map target when one is available", () => {
     expect(
       resolveGameEntryTarget({
         chain: "mainnet",
@@ -16,9 +16,9 @@ describe("resolveGameEntryTarget", () => {
       }),
     ).toEqual({
       spectator: false,
-      structureEntityId: 0,
-      url: "/play/mainnet/kingdom-1/hex?col=0&row=0",
-      worldMapPosition: null,
+      structureEntityId: 77,
+      url: "/play/mainnet/kingdom-1/map?col=12&row=34",
+      worldMapPosition: { col: 12, row: 34 },
     });
   });
 

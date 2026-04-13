@@ -1,3 +1,4 @@
+import { FAST_TRAVEL_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { PathRenderer } from "../managers/path-renderer";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
@@ -97,11 +98,21 @@ export default class FastTravelScene extends WarpTravel {
       registerStoreSubscriptions: () => this.registerFastTravelStoreSubscriptions(),
       setupCameraZoomHandler: () => this.setupFastTravelCameraZoomHandler(),
       refreshScene: () => this.refreshFastTravelScene(),
+      onInitialSetupComplete: () => this.announceFastTravelSceneReady(),
+      onResumeComplete: () => this.announceFastTravelSceneReady(),
       reportSetupError: (error, phase) => this.reportFastTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeFastTravelStoreSubscriptions(),
       detachLabelGroupsFromScene: () => this.detachFastTravelLabelGroupsFromScene(),
       detachManagerLabels: () => this.detachFastTravelManagerLabels(),
     };
+  }
+
+  private announceFastTravelSceneReady(): void {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.dispatchEvent(new Event(FAST_TRAVEL_SCENE_READY_EVENT));
   }
 
   private configureFastTravelSetupStart(): void {

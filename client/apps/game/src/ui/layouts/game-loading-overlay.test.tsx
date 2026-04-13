@@ -2,6 +2,16 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { recordPlayRouteHandoff } from "@/play/navigation/play-route-handoff";
+
+const { waitForHexceptionGridReadyMock, waitForFastTravelSceneReadyMock, waitForWorldmapSceneReadyMock } = vi.hoisted(
+  () => ({
+    waitForHexceptionGridReadyMock: vi.fn(),
+    waitForFastTravelSceneReadyMock: vi.fn(),
+    waitForWorldmapSceneReadyMock: vi.fn(),
+  }),
+);
+
 const navigateMock = vi.fn();
 const setShowBlankOverlayMock = vi.fn();
 const setStructureEntityIdMock = vi.fn();
@@ -44,6 +54,10 @@ vi.mock("@bibliothecadao/eternum", () => ({
     getNormalized() {
       return { x: this.x, y: this.y };
     }
+
+    getContract() {
+      return { x: this.x + 100, y: this.y + 100 };
+    }
   },
 }));
 
@@ -52,7 +66,28 @@ vi.mock("react-router-dom", () => ({
   useLocation: () => useLocationMock(),
 }));
 
+vi.mock("./game-loading-overlay.utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./game-loading-overlay.utils")>();
+  return {
+    ...actual,
+    waitForHexceptionGridReady: (...args: Parameters<typeof actual.waitForHexceptionGridReady>) =>
+      waitForHexceptionGridReadyMock(...args),
+    waitForFastTravelSceneReady: (...args: Parameters<typeof actual.waitForFastTravelSceneReady>) =>
+      waitForFastTravelSceneReadyMock(...args),
+    waitForWorldmapSceneReady: (...args: Parameters<typeof actual.waitForWorldmapSceneReady>) =>
+      waitForWorldmapSceneReadyMock(...args),
+  };
+});
+
 const { GameLoadingOverlay } = await import("./game-loading-overlay");
+
+const flushOverlayTimers = async () => {
+  await act(async () => {
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 0);
+    });
+  });
+};
 
 describe("GameLoadingOverlay", () => {
   let container: HTMLDivElement;
@@ -68,8 +103,15 @@ describe("GameLoadingOverlay", () => {
     setStructureEntityIdMock.mockReset();
     usePlayerStructuresMock.mockReset();
     useLocationMock.mockReset();
+    waitForHexceptionGridReadyMock.mockReset();
+    waitForFastTravelSceneReadyMock.mockReset();
+    waitForWorldmapSceneReadyMock.mockReset();
     uiStoreState.isSpectating = false;
     uiStoreState.loadingStates = {};
+    sessionStorage.clear();
+    waitForHexceptionGridReadyMock.mockResolvedValue(true);
+    waitForFastTravelSceneReadyMock.mockResolvedValue(true);
+    waitForWorldmapSceneReadyMock.mockResolvedValue(true);
     useLocationMock.mockReturnValue({ pathname: "/play/hex", search: "", hash: "", state: null, key: "test" });
   });
 
@@ -81,10 +123,10 @@ describe("GameLoadingOverlay", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("opens player first load on the world map while selecting the first synced realm", async () => {
+  it("preserves a canonical player hex resume route on reload", async () => {
     useLocationMock.mockReturnValue({
       pathname: "/play/sepolia/aurora-blitz/hex",
-      search: "",
+      search: "?col=4&row=9",
       hash: "",
       state: null,
       key: "test",
@@ -99,14 +141,14 @@ describe("GameLoadingOverlay", () => {
     await act(async () => {
       root.render(<GameLoadingOverlay />);
     });
+    await flushOverlayTimers();
 
+    expect(navigateMock).not.toHaveBeenCalled();
     expect(setStructureEntityIdMock).toHaveBeenCalledWith(77, {
       spectator: false,
       worldMapPosition: { col: 4, row: 9 },
     });
-    expect(navigateMock).toHaveBeenCalledWith("/play/sepolia/aurora-blitz/map?col=4&row=9");
-    expect(container.textContent).toContain("Entering the Realm");
-    expect(container.textContent).toContain("Assembling the known world");
+    expect(waitForHexceptionGridReadyMock).toHaveBeenCalledWith({ col: 104, row: 109 }, 1200);
   });
 
   it("does not redirect away from a canonical world map deep link once player structures sync", async () => {
@@ -127,7 +169,154 @@ describe("GameLoadingOverlay", () => {
     await act(async () => {
       root.render(<GameLoadingOverlay />);
     });
+    await flushOverlayTimers();
 
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("dismisses a canonical world map resume once the scene is ready even before player structures sync", async () => {
+    useLocationMock.mockReturnValue({
+      pathname: "/play/sepolia/aurora-blitz/map",
+      search: "?col=12&row=34",
+      hash: "",
+      state: null,
+      key: "test",
+    });
+    usePlayerStructuresMock.mockReturnValue([]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+    await flushOverlayTimers();
+
+    expect(setShowBlankOverlayMock).toHaveBeenCalledWith(false);
+  });
+
+  it("still rewrites first landing entry into the world map handoff", async () => {
+    recordPlayRouteHandoff({
+      chain: "sepolia",
+      worldName: "aurora-blitz",
+      scene: "hex",
+      col: 4,
+      row: 9,
+      spectate: false,
+    });
+    useLocationMock.mockReturnValue({
+      pathname: "/play/sepolia/aurora-blitz/hex",
+      search: "?col=4&row=9",
+      hash: "",
+      state: null,
+      key: "test",
+    });
+    usePlayerStructuresMock.mockReturnValue([
+      {
+        entityId: 77,
+        position: { x: 4, y: 9 },
+      },
+    ]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+    await flushOverlayTimers();
+
+    expect(navigateMock).toHaveBeenCalledWith("/play/sepolia/aurora-blitz/map?col=4&row=9");
+  });
+
+  it("rewrites the first landing handoff into the world map immediately when the route already has coordinates", async () => {
+    recordPlayRouteHandoff({
+      chain: "mainnet",
+      worldName: "bltz-blink-770",
+      scene: "hex",
+      col: 0,
+      row: 0,
+      spectate: false,
+    });
+    useLocationMock.mockReturnValue({
+      pathname: "/play/mainnet/bltz-blink-770/hex",
+      search: "?col=0&row=0",
+      hash: "",
+      state: null,
+      key: "test",
+    });
+    usePlayerStructuresMock.mockReturnValue([]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+    await flushOverlayTimers();
+
+    expect(navigateMock).toHaveBeenCalledWith("/play/mainnet/bltz-blink-770/map?col=0&row=0");
+  });
+
+  it("preserves a canonical fast-travel resume route on reload", async () => {
+    useLocationMock.mockReturnValue({
+      pathname: "/play/sepolia/aurora-blitz/travel",
+      search: "?col=4&row=9",
+      hash: "",
+      state: null,
+      key: "test",
+    });
+    usePlayerStructuresMock.mockReturnValue([
+      {
+        entityId: 77,
+        position: { x: 4, y: 9 },
+      },
+    ]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+    await flushOverlayTimers();
+
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the overlay up when a hex resume never reports scene readiness", async () => {
+    waitForHexceptionGridReadyMock.mockResolvedValue(false);
+    useLocationMock.mockReturnValue({
+      pathname: "/play/sepolia/aurora-blitz/hex",
+      search: "?col=4&row=9",
+      hash: "",
+      state: null,
+      key: "test",
+    });
+    usePlayerStructuresMock.mockReturnValue([
+      {
+        entityId: 77,
+        position: { x: 4, y: 9 },
+      },
+    ]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+    await flushOverlayTimers();
+
+    expect(setShowBlankOverlayMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the overlay up when a fast-travel resume times out waiting for scene readiness", async () => {
+    waitForFastTravelSceneReadyMock.mockResolvedValue(false);
+    useLocationMock.mockReturnValue({
+      pathname: "/play/sepolia/aurora-blitz/travel",
+      search: "?col=4&row=9",
+      hash: "",
+      state: null,
+      key: "test",
+    });
+    usePlayerStructuresMock.mockReturnValue([
+      {
+        entityId: 77,
+        position: { x: 4, y: 9 },
+      },
+    ]);
+
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+    await flushOverlayTimers();
+
+    expect(setShowBlankOverlayMock).not.toHaveBeenCalled();
   });
 });

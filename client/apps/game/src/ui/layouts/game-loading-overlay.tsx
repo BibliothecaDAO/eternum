@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { consumePlayRouteHandoff } from "@/play/navigation/play-route-handoff";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
@@ -11,6 +12,8 @@ import type { BootstrapTask } from "@/game-entry/bootstrap-controller";
 import {
   getSceneWarmupProgress,
   resolveEntryOverlayPhase,
+  waitForFastTravelSceneReady,
+  waitForHexceptionGridReady,
   waitForWorldmapSceneReady,
 } from "./game-loading-overlay.utils";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -76,7 +79,41 @@ export const GameLoadingOverlay = () => {
   const location = useLocation();
 
   const canonicalPlayRoute = useMemo(() => parsePlayRoute(location), [location]);
+  const routeSceneTarget = useMemo<WorldMapPosition | null>(() => {
+    if (!canonicalPlayRoute) {
+      return null;
+    }
+
+    return isFiniteWorldMapPosition({
+      col: canonicalPlayRoute.col,
+      row: canonicalPlayRoute.row,
+    })
+      ? { col: canonicalPlayRoute.col, row: canonicalPlayRoute.row }
+      : null;
+  }, [canonicalPlayRoute]);
+  const routeHexceptionGridTarget = useMemo<WorldMapPosition | null>(() => {
+    if (canonicalPlayRoute?.scene !== "hex" || routeSceneTarget == null) {
+      return null;
+    }
+
+    const contractPosition = new Position({ x: routeSceneTarget.col, y: routeSceneTarget.row }).getContract();
+    return { col: contractPosition.x, row: contractPosition.y };
+  }, [canonicalPlayRoute?.scene, routeSceneTarget]);
+  const [isLandingEntryHandoff] = useState(() => {
+    return canonicalPlayRoute ? consumePlayRouteHandoff(canonicalPlayRoute) : false;
+  });
   const isOnWorldMapRoute = canonicalPlayRoute?.scene === "map" || location.pathname.startsWith("/play/map");
+  const shouldFallbackToWorldMapResume =
+    !isSpectating &&
+    !isLandingEntryHandoff &&
+    (canonicalPlayRoute?.scene === "hex" || canonicalPlayRoute?.scene === "travel") &&
+    routeSceneTarget === null;
+  const activeSceneFlow = isSpectating
+    ? "map"
+    : isLandingEntryHandoff || shouldFallbackToWorldMapResume
+      ? "map"
+      : (canonicalPlayRoute?.scene ?? "map");
+  const landingHandoffTargetWorldMapPosition = isLandingEntryHandoff ? routeSceneTarget : null;
   const targetWorldMapPosition = useMemo<WorldMapPosition | null>(() => {
     if (isSpectating && isFiniteWorldMapPosition(worldMapReturnPosition)) {
       return worldMapReturnPosition;
@@ -91,20 +128,24 @@ export const GameLoadingOverlay = () => {
     return { col: normalized.x, row: normalized.y };
   }, [isSpectating, playerStructures, worldMapReturnPosition]);
 
-  const dismiss = useCallback(
-    (delayMs: number) => {
-      if (hasDismissed.current) return;
-      hasDismissed.current = true;
-      markGameEntryMilestone("overlay-dismissed");
-      setTimeout(() => {
-        markGameEntryMilestone("world-interactive");
-        setShowBlankOverlay(false);
-      }, delayMs);
-    },
-    [setShowBlankOverlay],
-  );
+  useEffect(() => {
+    if (isSpectating || targetWorldMapPosition == null || playerStructures.length === 0) {
+      return;
+    }
 
-  const markWorldMapReady = useCallback(
+    const first = playerStructures[0];
+    const uiStore = useUIStore.getState();
+    if (uiStore.structureEntityId === first.entityId) {
+      return;
+    }
+
+    uiStore.setStructureEntityId(first.entityId, {
+      spectator: false,
+      worldMapPosition: targetWorldMapPosition,
+    });
+  }, [isSpectating, playerStructures, targetWorldMapPosition]);
+
+  const markRouteReady = useCallback(
     (delayMs: number) => {
       if (hasQueuedWorldMapReady.current) {
         return;
@@ -116,9 +157,15 @@ export const GameLoadingOverlay = () => {
         worldMapReadyTimeoutId.current = null;
         setIsReady(true);
       }, 0);
-      dismiss(delayMs);
+      if (hasDismissed.current) return;
+      hasDismissed.current = true;
+      markGameEntryMilestone("overlay-dismissed");
+      setTimeout(() => {
+        markGameEntryMilestone("world-interactive");
+        setShowBlankOverlay(false);
+      }, delayMs);
     },
-    [dismiss],
+    [setShowBlankOverlay],
   );
 
   useEffect(() => {
@@ -131,44 +178,56 @@ export const GameLoadingOverlay = () => {
     return () => window.clearInterval(interval);
   }, []);
 
-  // --- Player path: navigate to the world map centered on the first synced structure ---
+  // --- Player path: landing entry still hands off through the world map ---
   useEffect(() => {
-    if (hasDismissed.current || isSpectating || hasStartedPlayerFlow.current) return;
-    if (targetWorldMapPosition == null) return;
+    if (hasDismissed.current || activeSceneFlow !== "map" || isSpectating || hasStartedPlayerFlow.current) return;
 
     if (isOnWorldMapRoute) {
       hasStartedPlayerFlow.current = true;
       return;
     }
 
-    if (playerStructures.length === 0) return;
+    const resolvedWorldMapTarget = landingHandoffTargetWorldMapPosition ?? targetWorldMapPosition;
+    if (resolvedWorldMapTarget == null) return;
 
     hasStartedPlayerFlow.current = true;
-    markGameEntryMilestone("player-structures-synced");
+    if (playerStructures.length > 0) {
+      markGameEntryMilestone("player-structures-synced");
 
-    const first = playerStructures[0];
-    const setStructureEntityId = useUIStore.getState().setStructureEntityId;
-    setStructureEntityId(first.entityId, {
-      spectator: false,
-      worldMapPosition: targetWorldMapPosition,
-    });
+      const first = playerStructures[0];
+      const setStructureEntityId = useUIStore.getState().setStructureEntityId;
+      setStructureEntityId(first.entityId, {
+        spectator: false,
+        worldMapPosition: resolvedWorldMapTarget,
+      });
+    }
 
     const url = canonicalPlayRoute
       ? buildPlayHref({
           ...canonicalPlayRoute,
           scene: "map",
-          col: targetWorldMapPosition.col,
-          row: targetWorldMapPosition.row,
+          col: resolvedWorldMapTarget.col,
+          row: resolvedWorldMapTarget.row,
           spectate: false,
         })
-      : `/play/map?col=${targetWorldMapPosition.col}&row=${targetWorldMapPosition.row}`;
+      : `/play/map?col=${resolvedWorldMapTarget.col}&row=${resolvedWorldMapTarget.row}`;
     markGameEntryMilestone("worldmap-navigation-started");
     navigate(url);
     window.dispatchEvent(new Event("urlChanged"));
-  }, [canonicalPlayRoute, playerStructures, isOnWorldMapRoute, isSpectating, navigate, targetWorldMapPosition]);
+  }, [
+    activeSceneFlow,
+    canonicalPlayRoute,
+    landingHandoffTargetWorldMapPosition,
+    playerStructures,
+    isOnWorldMapRoute,
+    isSpectating,
+    navigate,
+    targetWorldMapPosition,
+  ]);
 
   useEffect(() => {
     if (hasDismissed.current) return;
+    if (activeSceneFlow !== "map") return;
 
     const hasStartedWorldMapFlow = isSpectating ? hasStartedSpectatorFlow.current : hasStartedPlayerFlow.current;
     if (!hasStartedWorldMapFlow) {
@@ -196,8 +255,9 @@ export const GameLoadingOverlay = () => {
       }
       setDidSafetyTimeout(false);
 
-      if (hasSeenMapLoading.current && !mapLoading) {
-        markWorldMapReady(0);
+      if (!mapLoading) {
+        markGameEntryMilestone("worldmap-fetch-completed");
+        markRouteReady(0);
       }
     })();
 
@@ -205,11 +265,12 @@ export const GameLoadingOverlay = () => {
       cancelled = true;
       isWaitingForWorldmapReady.current = false;
     };
-  }, [isSpectating, mapLoading, markWorldMapReady]);
+  }, [activeSceneFlow, isSpectating, mapLoading, markRouteReady]);
 
   // --- World-map path: dismiss once the initial map fetch completes ---
   useEffect(() => {
     if (hasDismissed.current) return;
+    if (activeSceneFlow !== "map") return;
 
     if (isSpectating && !hasStartedSpectatorFlow.current) {
       hasStartedSpectatorFlow.current = true;
@@ -226,9 +287,55 @@ export const GameLoadingOverlay = () => {
 
     if (hasSeenMapLoading.current && !mapLoading && hasSeenWorldmapReady.current) {
       markGameEntryMilestone("worldmap-fetch-completed");
-      markWorldMapReady(0);
+      markRouteReady(0);
     }
-  }, [isSpectating, mapLoading, markWorldMapReady]);
+  }, [activeSceneFlow, isSpectating, mapLoading, markRouteReady]);
+
+  useEffect(() => {
+    if (hasDismissed.current || activeSceneFlow !== "hex" || routeHexceptionGridTarget === null) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const didReachSceneReady = await waitForHexceptionGridReady(routeHexceptionGridTarget, WORLDMAP_READY_TIMEOUT_MS);
+      if (cancelled || !didReachSceneReady) {
+        return;
+      }
+
+      markGameEntryMilestone("renderer-scene-ready");
+      setDidSafetyTimeout(false);
+      markRouteReady(0);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSceneFlow, markRouteReady, routeHexceptionGridTarget]);
+
+  useEffect(() => {
+    if (hasDismissed.current || activeSceneFlow !== "travel" || routeSceneTarget === null) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const didReachSceneReady = await waitForFastTravelSceneReady(WORLDMAP_READY_TIMEOUT_MS);
+      if (cancelled || !didReachSceneReady) {
+        return;
+      }
+
+      markGameEntryMilestone("renderer-scene-ready");
+      setDidSafetyTimeout(false);
+      markRouteReady(0);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSceneFlow, markRouteReady, routeSceneTarget]);
 
   useEffect(() => {
     return () => {
@@ -249,9 +356,12 @@ export const GameLoadingOverlay = () => {
   }, []);
 
   const isSlow = !isReady && elapsedMs >= SLOW_THRESHOLD_MS;
-  const hasNavigatedToTarget = isSpectating
-    ? elapsedMs >= TICK_INTERVAL_MS
-    : isOnWorldMapRoute || playerStructures.length > 0;
+  const hasNavigatedToTarget =
+    activeSceneFlow === "map"
+      ? isSpectating
+        ? elapsedMs >= TICK_INTERVAL_MS
+        : isOnWorldMapRoute || playerStructures.length > 0
+      : true;
   const phase = resolveEntryOverlayPhase({
     isReady,
     hasNavigated: hasNavigatedToTarget,
