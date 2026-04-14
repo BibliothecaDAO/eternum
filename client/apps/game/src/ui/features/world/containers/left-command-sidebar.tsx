@@ -221,7 +221,9 @@ const StructureStatusStats = ({
   buildingTilesLabel: string | null;
 }) => (
   <div className="flex flex-wrap items-center gap-1.5">
-    {populationLabel ? <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" /> : null}
+    {populationLabel ? (
+      <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" />
+    ) : null}
     {buildingTilesLabel ? (
       <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Available / total building tiles" />
     ) : null}
