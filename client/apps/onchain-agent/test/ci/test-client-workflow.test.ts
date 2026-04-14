@@ -36,5 +36,6 @@ describe("test-client workflow", () => {
     expect(nodeSetupIndex).toBeGreaterThanOrEqual(0);
     expect(pnpmSetupIndex).toBeLessThan(nodeSetupIndex);
     expect(workflow).toContain("cache: pnpm");
+    expect(workflow).not.toContain("version: 9.7.0");
   });
 });
