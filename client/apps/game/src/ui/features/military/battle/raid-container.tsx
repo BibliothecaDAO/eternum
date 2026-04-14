@@ -3,6 +3,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Panel } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import {
+  isStaminaRecharging,
+  STAMINA_RECHARGING_FILL_CLASS,
+  STAMINA_RECHARGING_TEXT_CLASS,
+  STAMINA_RECHARGING_TRACK_CLASS,
+} from "@/ui/shared/lib/stamina-visuals";
 import { BiomeInfoPanel } from "@/ui/features";
 import { formatStringNumber } from "@/ui/utils/utils";
 import {
@@ -96,6 +103,8 @@ export const RaidContainer = ({
       },
     };
   }, [account.address, attackerEntityId, components, currentArmiesTick]);
+  const attackerCurrentStaminaValue = Number(attackerArmyData?.troops.stamina.amount ?? 0n);
+  const attackerRecharging = isStaminaRecharging(attackerCurrentStaminaValue, combatConfig.stamina_attack_req);
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
@@ -332,10 +341,23 @@ export const RaidContainer = ({
 
                           <div className="mt-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="text-gold/70">Current Stamina:</span>
-                              <div className="w-28 h-3 bg-brown-800 rounded-full overflow-hidden">
+                              <span className={cn("text-gold/70", attackerRecharging && STAMINA_RECHARGING_TEXT_CLASS)}>
+                                Current Stamina:
+                              </span>
+                              <div
+                                className={cn(
+                                  "w-28 h-3 bg-brown-800 rounded-full overflow-hidden",
+                                  attackerRecharging && STAMINA_RECHARGING_TRACK_CLASS,
+                                )}
+                              >
                                 <div
-                                  className={`h-full ${Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req ? "bg-green-600" : "bg-red-600"}`}
+                                  className={cn(
+                                    "h-full",
+                                    Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req
+                                      ? "bg-green-600"
+                                      : "bg-red-600",
+                                    attackerRecharging && STAMINA_RECHARGING_FILL_CLASS,
+                                  )}
                                   style={{
                                     width: `${Math.min(100, (Number(attackerArmyData.troops.stamina.amount) / 100) * 100)}%`,
                                   }}
@@ -343,7 +365,13 @@ export const RaidContainer = ({
                               </div>
                             </div>
                             <span
-                              className={`text-sm font-medium ${Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req ? "text-green-400" : "text-red-400"}`}
+                              className={cn(
+                                "text-sm font-medium",
+                                Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req
+                                  ? "text-green-400"
+                                  : "text-red-400",
+                                attackerRecharging && STAMINA_RECHARGING_TEXT_CLASS,
+                              )}
                             >
                               {Number(attackerArmyData.troops.stamina.amount)} / {combatConfig.stamina_attack_req}{" "}
                               required

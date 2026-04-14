@@ -1,4 +1,10 @@
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import {
+  isStaminaRecharging,
+  STAMINA_RECHARGING_FILL_CLASS,
+  STAMINA_RECHARGING_TEXT_CLASS,
+  STAMINA_RECHARGING_TRACK_CLASS,
+} from "@/ui/shared/lib/stamina-visuals";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { BANDITS_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
@@ -286,6 +292,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
  */
 export const createStaminaBar = (currentStamina: number, maxStamina: number, inputView: CameraView): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
+  const recharging = isStaminaRecharging(currentStamina, maxStamina);
   const container = document.createElement("div");
   container.setAttribute("data-component", "stamina-bar");
 
@@ -295,11 +302,17 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
     const icon = document.createElement("span");
     icon.textContent = "⚡";
     icon.classList.add("text-yellow-400");
+    if (recharging) {
+      icon.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
+    }
     container.appendChild(icon);
 
     const percent = document.createElement("span");
     percent.textContent = formatStaminaPercent(currentStamina, maxStamina);
     percent.classList.add("font-semibold", "tracking-tight");
+    if (recharging) {
+      percent.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
+    }
     percent.style.color = SOFT_LABEL_COLOR;
     percent.setAttribute("data-role", "stamina-percent");
     container.appendChild(percent);
@@ -328,6 +341,9 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   progressBar.style.overflow = "hidden";
   progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
   progressBar.setAttribute("data-role", "progress-container");
+  if (recharging) {
+    progressBar.classList.add(STAMINA_RECHARGING_TRACK_CLASS);
+  }
 
   const progressFill = document.createElement("div");
   progressFill.style.position = "absolute";
@@ -337,6 +353,9 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   progressFill.style.borderRadius = "9999px";
   progressFill.style.transition = "width 0.3s ease-in-out";
   progressFill.setAttribute("data-role", "progress-fill");
+  if (recharging) {
+    progressFill.classList.add(STAMINA_RECHARGING_FILL_CLASS);
+  }
 
   const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
   progressFill.style.width = `${percentage}%`;
@@ -358,6 +377,9 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   text.style.fontFamily = "monospace";
   text.style.fontSize = "10px";
   text.style.fontWeight = "500";
+  if (recharging) {
+    text.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
+  }
   text.setAttribute("data-role", "stamina-text");
   container.appendChild(text);
 
@@ -803,20 +825,30 @@ export const updateIncomingTroopDisplay = (
  */
 export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina: number, maxStamina: number): void => {
   const percentElement = staminaBarElement.querySelector("[data-role='stamina-percent']") as HTMLElement | null;
+  const progressContainer = staminaBarElement.querySelector("[data-role='progress-container']") as HTMLElement | null;
   const progressFill = staminaBarElement.querySelector("[data-role='progress-fill']") as HTMLElement;
   const textElement = staminaBarElement.querySelector("[data-role='stamina-text']") as HTMLElement;
+  const recharging = isStaminaRecharging(currentStamina, maxStamina);
 
   if (percentElement) {
     percentElement.textContent = formatStaminaPercent(currentStamina, maxStamina);
+    percentElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
   }
 
   if (textElement) {
     textElement.textContent = `${currentStamina}/${maxStamina}`;
+    textElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
+  }
+
+  const iconElement = staminaBarElement.firstElementChild as HTMLElement | null;
+  if (iconElement) {
+    iconElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
   }
 
   if (progressFill) {
     const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
     progressFill.style.width = `${percentage}%`;
+    progressFill.classList.toggle(STAMINA_RECHARGING_FILL_CLASS, recharging);
 
     // Color based on stamina level
     if (percentage > 66) {
@@ -826,6 +858,10 @@ export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina:
     } else {
       progressFill.style.backgroundColor = "#ef4444"; // red-500
     }
+  }
+
+  if (progressContainer) {
+    progressContainer.classList.toggle(STAMINA_RECHARGING_TRACK_CLASS, recharging);
   }
 };
 
