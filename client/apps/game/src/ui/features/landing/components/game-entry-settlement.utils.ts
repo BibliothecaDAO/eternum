@@ -19,9 +19,9 @@ export type SettlementStatus = {
 
 export type SettleStage = "idle" | "assigning" | "settling" | "syncing" | "done" | "error";
 
-export type SettlementStepStatus = "pending" | "active" | "complete";
+type SettlementStepStatus = "pending" | "active" | "complete";
 
-export type SettlementPhaseViewModel = {
+type SettlementPhaseViewModel = {
   progress: number;
   remainingToSettle: number;
   isComplete: boolean;

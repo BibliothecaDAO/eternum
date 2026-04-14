@@ -35,7 +35,7 @@ type BlitzSettlementFlowSyncing = {
   recoveryStatus: SettlementStatus | null;
 };
 
-export type BlitzSettlementFlowResult = BlitzSettlementFlowSuccess | BlitzSettlementFlowSyncing | BlitzSettlementFlowFailure;
+type BlitzSettlementFlowResult = BlitzSettlementFlowSuccess | BlitzSettlementFlowSyncing | BlitzSettlementFlowFailure;
 
 type RunBlitzSettlementFlowParams = {
   isMainnet: boolean;
@@ -196,7 +196,12 @@ export const runBlitzSettlementFlow = async ({
         : plan;
     const targetSettleCount = recoveryPlan?.targetSettleCount ?? getExpectedSettlementCount(singleRealmMode);
 
-    if (recoveryPlan && recoverySnapshot && recoveryStatus && hasReachedSettlementTarget(recoveryStatus, targetSettleCount)) {
+    if (
+      recoveryPlan &&
+      recoverySnapshot &&
+      recoveryStatus &&
+      hasReachedSettlementTarget(recoveryStatus, targetSettleCount)
+    ) {
       return buildCompletedResult({
         recovered: true,
         plan: recoveryPlan,

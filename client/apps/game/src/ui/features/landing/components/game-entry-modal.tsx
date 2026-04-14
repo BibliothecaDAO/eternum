@@ -894,14 +894,18 @@ const SettlementPhase = ({
       <div className="text-center mb-4">
         <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Settlement" />
         <h2 className="text-lg font-semibold text-gold">
-          {viewModel.isComplete ? "Settlement Complete!" : isSettlementSyncing ? "Finalizing Settlement" : "Settlement Progress"}
+          {viewModel.isComplete
+            ? "Settlement Complete!"
+            : isSettlementSyncing
+              ? "Finalizing Settlement"
+              : "Settlement Progress"}
         </h2>
         <p className="text-xs text-gold/60 mt-1">
           {viewModel.isComplete
             ? "Your realms are ready. Enter the arena!"
             : isSettlementSyncing
               ? "Your settlement was submitted. Waiting for world sync to catch up."
-            : "Your realm location will be automatically assigned for balanced gameplay"}
+              : "Your realm location will be automatically assigned for balanced gameplay"}
         </p>
       </div>
 
@@ -2986,12 +2990,12 @@ export const GameEntryModal = ({
   const [assignedRealmCount, setAssignedRealmCount] = useState(0);
   const [settledRealmCount, setSettledRealmCount] = useState(0);
   const [needsSettlement, setNeedsSettlement] = useState(false);
-  const [pendingSettlementVerificationTargetCount, setPendingSettlementVerificationTargetCount] = useState<number | null>(
-    null,
-  );
-  const [pendingSettlementVerificationStartedAtMs, setPendingSettlementVerificationStartedAtMs] = useState<number | null>(
-    null,
-  );
+  const [pendingSettlementVerificationTargetCount, setPendingSettlementVerificationTargetCount] = useState<
+    number | null
+  >(null);
+  const [pendingSettlementVerificationStartedAtMs, setPendingSettlementVerificationStartedAtMs] = useState<
+    number | null
+  >(null);
 
   // Hyperstructure state
   const [hyperstructures, setHyperstructures] = useState<HyperstructureInfo[]>([]);
@@ -4774,7 +4778,14 @@ export const GameEntryModal = ({
         handleEnterGame();
       }, 1000);
     },
-    [autoSettleEnabled, autoSettleEntryKey, clearBlitzSettlementVerification, handleEnterGame, markCompleted, worldName],
+    [
+      autoSettleEnabled,
+      autoSettleEntryKey,
+      clearBlitzSettlementVerification,
+      handleEnterGame,
+      markCompleted,
+      worldName,
+    ],
   );
 
   const finalizeFailedBlitzSettlement = useCallback(
@@ -4958,10 +4969,7 @@ export const GameEntryModal = ({
 
         if (snapshot) {
           const status = syncSettlementStateFromSnapshot(snapshot);
-          if (
-            status.canPlay ||
-            hasReachedSettlementTarget(status, pendingSettlementVerificationTargetCount)
-          ) {
+          if (status.canPlay || hasReachedSettlementTarget(status, pendingSettlementVerificationTargetCount)) {
             finalizeSuccessfulBlitzSettlement({ recovered: true });
             return;
           }

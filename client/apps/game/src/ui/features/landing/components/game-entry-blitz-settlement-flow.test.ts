@@ -20,9 +20,9 @@ describe("runBlitzSettlementFlow", () => {
       .mockResolvedValueOnce(snapshot({ onceRegistered: true, settledCount: 1 }));
     const runAssignAndSettle = vi.fn<(_: number) => Promise<void>>().mockResolvedValue(undefined);
     const runSingleSettle = vi.fn<(_: number, __: number) => Promise<void>>().mockResolvedValue(undefined);
-    const waitForSettlementTarget = vi.fn<(_: number) => Promise<SettlementSnapshot | null>>().mockRejectedValue(
-      new Error("verification timeout"),
-    );
+    const waitForSettlementTarget = vi
+      .fn<(_: number) => Promise<SettlementSnapshot | null>>()
+      .mockRejectedValue(new Error("verification timeout"));
     const onStageChange = vi.fn();
 
     const result = await runBlitzSettlementFlow({
@@ -54,9 +54,9 @@ describe("runBlitzSettlementFlow", () => {
       .fn<() => Promise<SettlementSnapshot | null>>()
       .mockResolvedValueOnce(snapshot({ registered: true }))
       .mockResolvedValueOnce(snapshot({ onceRegistered: true, settledCount: 0 }));
-    const waitForSettlementTarget = vi.fn<(_: number) => Promise<SettlementSnapshot | null>>().mockRejectedValue(
-      new Error("verification timeout"),
-    );
+    const waitForSettlementTarget = vi
+      .fn<(_: number) => Promise<SettlementSnapshot | null>>()
+      .mockRejectedValue(new Error("verification timeout"));
 
     const result = await runBlitzSettlementFlow({
       isMainnet: true,
@@ -81,9 +81,9 @@ describe("runBlitzSettlementFlow", () => {
   });
 
   it("fails when verification breaks before any settlement submission is confirmed", async () => {
-    const readSettlementSnapshot = vi.fn<() => Promise<SettlementSnapshot | null>>().mockResolvedValue(
-      snapshot({ registered: false }),
-    );
+    const readSettlementSnapshot = vi
+      .fn<() => Promise<SettlementSnapshot | null>>()
+      .mockResolvedValue(snapshot({ registered: false }));
 
     const result = await runBlitzSettlementFlow({
       isMainnet: true,
