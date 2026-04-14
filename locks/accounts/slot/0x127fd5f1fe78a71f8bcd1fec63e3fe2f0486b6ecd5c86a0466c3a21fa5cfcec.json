@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-dash-157",
-    "launchRequestId": "24419218476-1",
+    "gameName": "bltz-clash-671",
+    "launchRequestId": "24423116372-2",
     "workflowName": "Game Launch",
-    "workflowRunId": 24419218476,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "fab355b6-e96f-44db-9b77-e3eeb84f7e92"
+    "workflowRunId": 24423116372,
+    "workflowRunAttempt": 2,
+    "stepId": "create-world",
+    "leaseId": "220119d1-c7b2-48f6-abc8-62252fd30c8c"
   },
-  "acquiredAt": "2026-04-14T19:43:38.186Z",
-  "heartbeatAt": "2026-04-14T19:43:54.785Z",
-  "expiresAt": "2026-04-14T19:43:54.785Z",
-  "releasedAt": "2026-04-14T19:43:54.785Z"
+  "acquiredAt": "2026-04-14T21:17:19.647Z",
+  "heartbeatAt": "2026-04-14T21:17:19.647Z",
+  "expiresAt": "2026-04-14T21:27:19.647Z"
 }
