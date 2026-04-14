@@ -26,7 +26,16 @@ type BlitzSettlementFlowSuccess = {
   finalStatus: SettlementStatus;
 };
 
-export type BlitzSettlementFlowResult = BlitzSettlementFlowSuccess | BlitzSettlementFlowFailure;
+type BlitzSettlementFlowSyncing = {
+  status: "syncing";
+  error: Error;
+  plan: SettlementExecutionPlan;
+  pendingTargetSettleCount: number;
+  recoverySnapshot: SettlementSnapshot | null;
+  recoveryStatus: SettlementStatus | null;
+};
+
+export type BlitzSettlementFlowResult = BlitzSettlementFlowSuccess | BlitzSettlementFlowSyncing | BlitzSettlementFlowFailure;
 
 type RunBlitzSettlementFlowParams = {
   isMainnet: boolean;
@@ -87,6 +96,27 @@ const buildFailedResult = ({
   recoveryStatus,
 });
 
+const buildSyncingResult = ({
+  error,
+  plan,
+  pendingTargetSettleCount,
+  recoverySnapshot,
+  recoveryStatus,
+}: {
+  error: unknown;
+  plan: SettlementExecutionPlan;
+  pendingTargetSettleCount: number;
+  recoverySnapshot: SettlementSnapshot | null;
+  recoveryStatus: SettlementStatus | null;
+}): BlitzSettlementFlowSyncing => ({
+  status: "syncing",
+  error: toError(error),
+  plan,
+  pendingTargetSettleCount,
+  recoverySnapshot,
+  recoveryStatus,
+});
+
 export const runBlitzSettlementFlow = async ({
   isMainnet,
   singleRealmMode,
@@ -98,6 +128,7 @@ export const runBlitzSettlementFlow = async ({
   runSingleSettle,
 }: RunBlitzSettlementFlowParams): Promise<BlitzSettlementFlowResult> => {
   let plan: SettlementExecutionPlan | null = null;
+  let hasConfirmedSettlementSubmission = false;
 
   try {
     const initialSnapshot = await readSettlementSnapshot();
@@ -121,6 +152,7 @@ export const runBlitzSettlementFlow = async ({
     if (plan.shouldAssignAndSettle && plan.initialSettleCount > 0) {
       onStageChange("assigning");
       await runAssignAndSettle(plan.initialSettleCount);
+      hasConfirmedSettlementSubmission = true;
       targetProgress = Math.min(plan.targetSettleCount, targetProgress + plan.initialSettleCount);
       await waitForSettlementTarget(targetProgress);
     }
@@ -129,6 +161,7 @@ export const runBlitzSettlementFlow = async ({
       onStageChange("settling");
       for (let stepIndex = 0; stepIndex < plan.extraSettleCalls; stepIndex++) {
         await runSingleSettle(stepIndex, plan.extraSettleCalls);
+        hasConfirmedSettlementSubmission = true;
         targetProgress = Math.min(plan.targetSettleCount, targetProgress + 1);
         await waitForSettlementTarget(targetProgress);
       }
@@ -169,6 +202,16 @@ export const runBlitzSettlementFlow = async ({
         plan: recoveryPlan,
         finalSnapshot: recoverySnapshot,
         finalStatus: recoveryStatus,
+      });
+    }
+
+    if (recoveryPlan && hasConfirmedSettlementSubmission) {
+      return buildSyncingResult({
+        error,
+        plan: recoveryPlan,
+        pendingTargetSettleCount: targetSettleCount,
+        recoverySnapshot,
+        recoveryStatus,
       });
     }
 

@@ -49,7 +49,7 @@ describe("runBlitzSettlementFlow", () => {
     expect(runSingleSettle).not.toHaveBeenCalled();
   });
 
-  it("fails when recovery still shows an incomplete settlement target", async () => {
+  it("keeps confirmed settlement submissions in syncing state while indexing catches up", async () => {
     const readSettlementSnapshot = vi
       .fn<() => Promise<SettlementSnapshot | null>>()
       .mockResolvedValueOnce(snapshot({ registered: true }))
@@ -70,12 +70,38 @@ describe("runBlitzSettlementFlow", () => {
     });
 
     expect(result).toMatchObject({
+      status: "syncing",
+    });
+    if (result.status !== "syncing") {
+      throw new Error("expected syncing settlement recovery");
+    }
+    expect(result.pendingTargetSettleCount).toBe(1);
+    expect(result.error.message).toContain("verification timeout");
+    expect(result.recoveryStatus?.canPlay).toBe(false);
+  });
+
+  it("fails when verification breaks before any settlement submission is confirmed", async () => {
+    const readSettlementSnapshot = vi.fn<() => Promise<SettlementSnapshot | null>>().mockResolvedValue(
+      snapshot({ registered: false }),
+    );
+
+    const result = await runBlitzSettlementFlow({
+      isMainnet: true,
+      singleRealmMode: true,
+      readSettlementSnapshot,
+      syncSettlementStateFromSnapshot: deriveSettlementStatus,
+      waitForSettlementTarget: vi.fn<(_: number) => Promise<SettlementSnapshot | null>>(),
+      onStageChange: vi.fn(),
+      runAssignAndSettle: vi.fn<(_: number) => Promise<void>>().mockResolvedValue(undefined),
+      runSingleSettle: vi.fn<(_: number, __: number) => Promise<void>>().mockResolvedValue(undefined),
+    });
+
+    expect(result).toMatchObject({
       status: "failed",
     });
     if (result.status !== "failed") {
-      throw new Error("expected failed settlement recovery");
+      throw new Error("expected failed settlement without confirmed submission");
     }
-    expect(result.error.message).toContain("verification timeout");
-    expect(result.recoveryStatus?.canPlay).toBe(false);
+    expect(result.error.message).toContain("registered state");
   });
 });

@@ -131,6 +131,20 @@ describe("deriveSettlementPhaseViewModel", () => {
     expect(viewModel.showError).toBe(true);
     expect(viewModel.stepStatuses[3]).toBe("pending");
   });
+
+  it("shows a syncing state without an error banner after settlement submission", () => {
+    const viewModel = deriveSettlementPhaseViewModel({
+      stage: "syncing",
+      assignedCount: 0,
+      settledCount: 0,
+    });
+
+    expect(viewModel.isComplete).toBe(false);
+    expect(viewModel.showError).toBe(false);
+    expect(viewModel.stepStatuses[1]).toBe("complete");
+    expect(viewModel.stepStatuses[2]).toBe("complete");
+    expect(viewModel.stepStatuses[3]).toBe("active");
+  });
 });
 
 describe("applyAutoSettleRegistrationHint", () => {

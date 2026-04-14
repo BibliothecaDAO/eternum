@@ -17,7 +17,7 @@ export type SettlementStatus = {
   needsSettlement: boolean;
 };
 
-export type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
+export type SettleStage = "idle" | "assigning" | "settling" | "syncing" | "done" | "error";
 
 export type SettlementStepStatus = "pending" | "active" | "complete";
 
@@ -85,6 +85,20 @@ export const deriveSettlementPhaseViewModel = ({
       isComplete: true,
       showError: false,
       stepStatuses: buildCompletedStepStatuses(),
+    };
+  }
+
+  if (stage === "syncing") {
+    return {
+      progress,
+      remainingToSettle,
+      isComplete: false,
+      showError: false,
+      stepStatuses: {
+        1: "complete",
+        2: "complete",
+        3: "active",
+      },
     };
   }
 

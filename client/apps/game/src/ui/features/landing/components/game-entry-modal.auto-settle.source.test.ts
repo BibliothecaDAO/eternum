@@ -17,6 +17,8 @@ describe("Game entry modal auto-settle", () => {
     expect(source).toContain("void handleSettle();");
     expect(source).toContain("runBlitzSettlementFlow({");
     expect(source).toContain('if (result.status === "completed")');
+    expect(source).toContain('if (result.status === "syncing")');
+    expect(source).toContain("beginBlitzSettlementVerification(result.pendingTargetSettleCount);");
     expect(source).toContain("finalizeSuccessfulBlitzSettlement({ recovered: result.recovered });");
     expect(source).toContain("finalizeFailedBlitzSettlement(result.error);");
     expect(source).toContain("markCompleted(autoSettleEntryKey)");

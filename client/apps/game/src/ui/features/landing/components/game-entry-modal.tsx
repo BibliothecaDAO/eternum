@@ -56,6 +56,7 @@ import {
   applyAutoSettleRegistrationHint,
   deriveSettlementPhaseViewModel,
   deriveSettlementStatus,
+  hasReachedSettlementTarget,
   type SettleStage,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
@@ -91,6 +92,7 @@ const DEBUG_MODAL = false;
 const ETERNUM_NAMESPACE = "s1_eternum";
 const SETTLEMENT_PROGRESS_POLL_MS = 1000;
 const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
+const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
 const CONTRACT_MAP_CENTER = 2147483646;
 const NEXT_FREE_REALM_ID_SCAN_LIMIT = 512;
 const REALM_OWNER_LOOKUP_ENTRYPOINTS = ["owner_of", "ownerOf"] as const;
@@ -885,17 +887,20 @@ const SettlementPhase = ({
     assignedCount,
     settledCount,
   });
+  const isSettlementSyncing = stage === "syncing";
 
   return (
     <div className="flex flex-col">
       <div className="text-center mb-4">
         <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Settlement" />
         <h2 className="text-lg font-semibold text-gold">
-          {viewModel.isComplete ? "Settlement Complete!" : "Settlement Progress"}
+          {viewModel.isComplete ? "Settlement Complete!" : isSettlementSyncing ? "Finalizing Settlement" : "Settlement Progress"}
         </h2>
         <p className="text-xs text-gold/60 mt-1">
           {viewModel.isComplete
             ? "Your realms are ready. Enter the arena!"
+            : isSettlementSyncing
+              ? "Your settlement was submitted. Waiting for world sync to catch up."
             : "Your realm location will be automatically assigned for balanced gameplay"}
         </p>
       </div>
@@ -988,14 +993,14 @@ const SettlementPhase = ({
       ) : (
         <Button
           onClick={onSettle}
-          disabled={isSettling}
+          disabled={isSettling || isSettlementSyncing}
           className="w-full h-11 !text-brown !bg-gold rounded-md"
           forceUppercase={false}
         >
-          {isSettling ? (
+          {isSettling || isSettlementSyncing ? (
             <div className="flex items-center justify-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Settling...</span>
+              <span>{isSettlementSyncing ? "Checking settlement..." : "Settling..."}</span>
             </div>
           ) : viewModel.remainingToSettle > 0 ? (
             <div className="flex items-center justify-center gap-2">
@@ -2981,6 +2986,12 @@ export const GameEntryModal = ({
   const [assignedRealmCount, setAssignedRealmCount] = useState(0);
   const [settledRealmCount, setSettledRealmCount] = useState(0);
   const [needsSettlement, setNeedsSettlement] = useState(false);
+  const [pendingSettlementVerificationTargetCount, setPendingSettlementVerificationTargetCount] = useState<number | null>(
+    null,
+  );
+  const [pendingSettlementVerificationStartedAtMs, setPendingSettlementVerificationStartedAtMs] = useState<number | null>(
+    null,
+  );
 
   // Hyperstructure state
   const [hyperstructures, setHyperstructures] = useState<HyperstructureInfo[]>([]);
@@ -3440,6 +3451,8 @@ export const GameEntryModal = ({
     setIsSettling(false);
     setAssignedRealmCount(0);
     setSettledRealmCount(0);
+    setPendingSettlementVerificationTargetCount(null);
+    setPendingSettlementVerificationStartedAtMs(null);
     setHyperstructures([]);
     setIsInitializingHyperstructure(false);
     setCurrentInitializingId(null);
@@ -4742,9 +4755,15 @@ export const GameEntryModal = ({
     void settlementPlannerData.refetch();
   }, [refetchOwnedStructures, refetchRealmVillageSlots, refetchVillagePassInventory, settlementPlannerData]);
 
+  const clearBlitzSettlementVerification = useCallback(() => {
+    setPendingSettlementVerificationTargetCount(null);
+    setPendingSettlementVerificationStartedAtMs(null);
+  }, []);
+
   const finalizeSuccessfulBlitzSettlement = useCallback(
     ({ recovered }: { recovered: boolean }) => {
       debugLog(worldName, recovered ? "Settlement verification recovered to success." : "Settlement complete!");
+      clearBlitzSettlementVerification();
       setSettleStage("done");
       setNeedsSettlement(false);
       if (autoSettleEnabled && autoSettleEntryKey) {
@@ -4755,18 +4774,29 @@ export const GameEntryModal = ({
         handleEnterGame();
       }, 1000);
     },
-    [autoSettleEnabled, autoSettleEntryKey, handleEnterGame, markCompleted, worldName],
+    [autoSettleEnabled, autoSettleEntryKey, clearBlitzSettlementVerification, handleEnterGame, markCompleted, worldName],
   );
 
   const finalizeFailedBlitzSettlement = useCallback(
     (error: Error) => {
       debugLog(worldName, "Settlement failed:", error);
+      clearBlitzSettlementVerification();
       setSettleStage("error");
       if (autoSettleEnabled && autoSettleEntryKey) {
         markFailed(autoSettleEntryKey, error.message);
       }
     },
-    [autoSettleEnabled, autoSettleEntryKey, markFailed, worldName],
+    [autoSettleEnabled, autoSettleEntryKey, clearBlitzSettlementVerification, markFailed, worldName],
+  );
+
+  const beginBlitzSettlementVerification = useCallback(
+    (targetSettleCount: number) => {
+      debugLog(worldName, "Settlement submitted. Waiting for indexed confirmation.", { targetSettleCount });
+      setPendingSettlementVerificationTargetCount(targetSettleCount);
+      setPendingSettlementVerificationStartedAtMs(Date.now());
+      setSettleStage("syncing");
+    },
+    [worldName],
   );
 
   const submitAssignedRealmSettlement = useCallback(
@@ -4879,6 +4909,11 @@ export const GameEntryModal = ({
         return;
       }
 
+      if (result.status === "syncing") {
+        beginBlitzSettlementVerification(result.pendingTargetSettleCount);
+        return;
+      }
+
       finalizeFailedBlitzSettlement(result.error);
     } finally {
       setIsSettling(false);
@@ -4887,6 +4922,7 @@ export const GameEntryModal = ({
     autoSettleEnabled,
     autoSettleEntryKey,
     account,
+    beginBlitzSettlementVerification,
     chain,
     finalizeFailedBlitzSettlement,
     finalizeSuccessfulBlitzSettlement,
@@ -4899,6 +4935,63 @@ export const GameEntryModal = ({
     resolveWorldSystemAddress,
     syncSettlementStateFromSnapshot,
     waitForSettlementTarget,
+  ]);
+
+  useEffect(() => {
+    if (
+      !isOpen ||
+      settleStage !== "syncing" ||
+      pendingSettlementVerificationTargetCount == null ||
+      pendingSettlementVerificationStartedAtMs == null
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const reconcileSettlementVerification = async () => {
+      while (!cancelled) {
+        const snapshot = await readSettlementSnapshot().catch(() => null);
+        if (cancelled) {
+          return;
+        }
+
+        if (snapshot) {
+          const status = syncSettlementStateFromSnapshot(snapshot);
+          if (
+            status.canPlay ||
+            hasReachedSettlementTarget(status, pendingSettlementVerificationTargetCount)
+          ) {
+            finalizeSuccessfulBlitzSettlement({ recovered: true });
+            return;
+          }
+        }
+
+        if (Date.now() - pendingSettlementVerificationStartedAtMs >= SETTLEMENT_SYNC_TIMEOUT_MS) {
+          finalizeFailedBlitzSettlement(
+            new Error("Settlement is still syncing. Please try again if the world does not unlock shortly."),
+          );
+          return;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, SETTLEMENT_PROGRESS_POLL_MS));
+      }
+    };
+
+    void reconcileSettlementVerification();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    finalizeFailedBlitzSettlement,
+    finalizeSuccessfulBlitzSettlement,
+    isOpen,
+    pendingSettlementVerificationStartedAtMs,
+    pendingSettlementVerificationTargetCount,
+    readSettlementSnapshot,
+    settleStage,
+    syncSettlementStateFromSnapshot,
   ]);
 
   useEffect(() => {
