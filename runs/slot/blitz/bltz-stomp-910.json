@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24388852297-2",
   "currentStepId": null,
   "createdAt": "2026-04-14T08:33:03.861Z",
-  "updatedAt": "2026-04-14T08:40:33.705Z",
+  "updatedAt": "2026-04-14T08:42:13.312Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x3230f7d722382d4b6df3c9c23488ac27e59c822a68705587f80250431b778f6",
     "lootChestRoleTxHash": "0x63ca056f65cb166ba2ef14d332e2a26166c88c7e48afce23f7a874b74e459ac",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-stomp-910/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-14T08:36:01.849Z",
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-04-14T08:40:32.107Z"
+    "lastIndexerDescribeAt": "2026-04-14T08:42:13.312Z"
   },
   "completedAt": "2026-04-14T08:36:03.688Z"
 }
