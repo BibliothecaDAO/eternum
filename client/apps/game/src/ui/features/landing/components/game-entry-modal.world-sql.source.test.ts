@@ -14,6 +14,7 @@ describe("GameEntryModal world-scoped SQL reads", () => {
     expect(source).toContain("createSqlApi");
     expect(source).toContain("resolveWorldSqlBaseUrl");
     expect(source).toContain("selectedWorldSqlApi");
+    expect(source).toContain("selectedWorldSqlApi.fetchPlayerStructures(account.address).catch(() => [])");
     expect(source).not.toContain("const sqlBaseUrl = getSqlApiBaseUrl();");
   });
 });

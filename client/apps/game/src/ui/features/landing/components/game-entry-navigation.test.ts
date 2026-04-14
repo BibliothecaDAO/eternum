@@ -63,7 +63,7 @@ describe("resolveGameEntryTarget", () => {
     });
   });
 
-  it("falls back to a canonical hex route when bootstrap did not seed a structure target", () => {
+  it("falls back to a canonical map route when bootstrap did not seed a structure target", () => {
     expect(
       resolveGameEntryTarget({
         chain: "slot",
@@ -75,7 +75,7 @@ describe("resolveGameEntryTarget", () => {
     ).toEqual({
       spectator: false,
       structureEntityId: 0,
-      url: "/play/slot/etrn-sun/hex?col=0&row=0",
+      url: "/play/slot/etrn-sun/map",
       worldMapPosition: null,
     });
   });
@@ -92,7 +92,7 @@ describe("resolveGameEntryTarget", () => {
     ).toEqual({
       spectator: true,
       structureEntityId: 0,
-      url: "/play/mainnet/etrn-dawn/map?col=0&row=0&spectate=true",
+      url: "/play/mainnet/etrn-dawn/map?spectate=true",
       worldMapPosition: null,
     });
   });

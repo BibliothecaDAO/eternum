@@ -9,12 +9,24 @@ export type SettlementSnapshot = {
 const hasIndexedSettlementProgress = (snapshot: SettlementSnapshot): boolean =>
   snapshot.hasSettledStructure || snapshot.coordsCount > 0 || snapshot.settledCount > 0;
 
-type SettlementStatus = {
+export type SettlementStatus = {
   assignedCount: number;
   settledCount: number;
   remainingToSettle: number;
   canPlay: boolean;
   needsSettlement: boolean;
+};
+
+export type SettleStage = "idle" | "assigning" | "settling" | "syncing" | "done" | "error";
+
+type SettlementStepStatus = "pending" | "active" | "complete";
+
+type SettlementPhaseViewModel = {
+  progress: number;
+  remainingToSettle: number;
+  isComplete: boolean;
+  showError: boolean;
+  stepStatuses: Record<1 | 2 | 3, SettlementStepStatus>;
 };
 
 export const getExpectedSettlementCount = (singleRealmMode: boolean): number => (singleRealmMode ? 1 : 3);
@@ -24,7 +36,9 @@ export const deriveSettlementStatus = (snapshot: SettlementSnapshot): Settlement
   const settledCount = Math.max(0, snapshot.settledCount);
   const assignedCount = coordsCount + settledCount;
   const remainingToSettle = Math.max(0, assignedCount - settledCount);
-  const canPlay = snapshot.hasSettledStructure && assignedCount > 0 && remainingToSettle === 0;
+  // Settle-finish rows can index ahead of the structure ownership query during Blitz entry.
+  const hasIndexedCompletion = snapshot.hasSettledStructure || settledCount > 0;
+  const canPlay = hasIndexedCompletion && assignedCount > 0 && remainingToSettle === 0;
   const isRegisteredForSettlement = snapshot.registered || snapshot.onceRegistered;
   const needsSettlement = isRegisteredForSettlement && !canPlay;
 
@@ -34,6 +48,75 @@ export const deriveSettlementStatus = (snapshot: SettlementSnapshot): Settlement
     remainingToSettle,
     canPlay,
     needsSettlement,
+  };
+};
+
+export const hasReachedSettlementTarget = (
+  progress: Pick<SettlementSnapshot, "settledCount"> | Pick<SettlementStatus, "settledCount">,
+  targetSettleCount: number,
+): boolean => Math.max(0, progress.settledCount) >= Math.max(0, targetSettleCount);
+
+const buildCompletedStepStatuses = (): SettlementPhaseViewModel["stepStatuses"] => ({
+  1: "complete",
+  2: "complete",
+  3: "complete",
+});
+
+export const deriveSettlementPhaseViewModel = ({
+  stage,
+  assignedCount,
+  settledCount,
+}: {
+  stage: SettleStage;
+  assignedCount: number;
+  settledCount: number;
+}): SettlementPhaseViewModel => {
+  const normalizedAssignedCount = Math.max(0, assignedCount);
+  const normalizedSettledCount = Math.max(0, settledCount);
+  const remainingToSettle = Math.max(0, normalizedAssignedCount - normalizedSettledCount);
+  const progress =
+    normalizedAssignedCount > 0 ? Math.min(100, (normalizedSettledCount / normalizedAssignedCount) * 100) : 0;
+  const isComplete = stage === "done" || (normalizedAssignedCount > 0 && remainingToSettle === 0);
+
+  if (isComplete) {
+    return {
+      progress,
+      remainingToSettle,
+      isComplete: true,
+      showError: false,
+      stepStatuses: buildCompletedStepStatuses(),
+    };
+  }
+
+  if (stage === "syncing") {
+    return {
+      progress,
+      remainingToSettle,
+      isComplete: false,
+      showError: false,
+      stepStatuses: {
+        1: "complete",
+        2: "complete",
+        3: "active",
+      },
+    };
+  }
+
+  return {
+    progress,
+    remainingToSettle,
+    isComplete: false,
+    showError: stage === "error",
+    stepStatuses: {
+      1: normalizedAssignedCount > 0 ? "complete" : stage === "assigning" ? "active" : "pending",
+      2:
+        normalizedAssignedCount === 0
+          ? "pending"
+          : stage === "settling" || (remainingToSettle > 0 && normalizedSettledCount > 0)
+            ? "active"
+            : "pending",
+      3: stage === "settling" && remainingToSettle <= 1 ? "active" : "pending",
+    },
   };
 };
 
@@ -66,7 +149,7 @@ export const applyAutoSettleRegistrationHint = ({
   };
 };
 
-type SettlementExecutionPlan = {
+export type SettlementExecutionPlan = {
   targetSettleCount: number;
   shouldAssignAndSettle: boolean;
   initialSettleCount: number;
