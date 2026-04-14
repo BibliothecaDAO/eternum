@@ -4,6 +4,7 @@ import {
   countOccupiedBuildingTilesByStructure,
   formatAvailableBuildingTilesLabel,
   formatPopulationStatusLabel,
+  resolveOccupiedBuildingTilesForStructureStatus,
   resolveAvailableBuildingTiles,
   resolveStructureStatusSnapshot,
 } from "./structure-status";
@@ -64,6 +65,15 @@ describe("structure-status", () => {
       occupied: 6,
       total: 6,
     });
+  });
+
+  it("treats missing building rows as zero occupied tiles once structure buildings have synced", () => {
+    expect(
+      resolveOccupiedBuildingTilesForStructureStatus({ occupiedBuildingTiles: undefined, hasStructureBuildings: true }),
+    ).toBe(0);
+    expect(
+      resolveOccupiedBuildingTilesForStructureStatus({ occupiedBuildingTiles: undefined, hasStructureBuildings: false }),
+    ).toBeNull();
   });
 
   it("resolves population totals by adding base capacity exactly once", () => {

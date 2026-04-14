@@ -33,6 +33,7 @@ import {
 } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   countOccupiedBuildingTilesByStructure,
+  resolveOccupiedBuildingTilesForStructureStatus,
   resolveStructureStatusSnapshot,
   type StructureStatusSnapshot,
 } from "@/ui/features/world/containers/structure-status";
@@ -377,7 +378,10 @@ const LeftPanelHeader = memo(
         const structureBuildings = components.StructureBuildings
           ? getComponentValue(components.StructureBuildings, structureEntity)
           : null;
-        const occupiedBuildingTiles = buildingTileCountsByStructure[structure.entityId] ?? null;
+        const occupiedBuildingTiles = resolveOccupiedBuildingTilesForStructureStatus({
+          occupiedBuildingTiles: buildingTileCountsByStructure[structure.entityId],
+          hasStructureBuildings: Boolean(structureBuildings),
+        });
         const statusSnapshot = resolveSidebarStructureStatus({
           structureCategory: structure.category,
           structureLevel: normalizedLevel,

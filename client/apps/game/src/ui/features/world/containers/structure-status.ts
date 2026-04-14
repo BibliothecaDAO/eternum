@@ -73,6 +73,20 @@ type StructureBuildingsLike = {
   } | null;
 } | null;
 
+export const resolveOccupiedBuildingTilesForStructureStatus = ({
+  occupiedBuildingTiles,
+  hasStructureBuildings,
+}: {
+  occupiedBuildingTiles: number | null | undefined;
+  hasStructureBuildings: boolean;
+}) => {
+  if (occupiedBuildingTiles !== null && occupiedBuildingTiles !== undefined) {
+    return occupiedBuildingTiles;
+  }
+
+  return hasStructureBuildings ? 0 : null;
+};
+
 export type StructureStatusSnapshot = {
   populationCurrent: number | null;
   populationCapacityRaw: number | null;
