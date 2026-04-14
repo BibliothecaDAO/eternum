@@ -22,6 +22,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-15",
+    title: "Animated Stamina Recharge",
+    description:
+      "Recharging army stamina now shows a soft pulse and sweep across world-map bars, labels, and attack panels, so it is clearer at a glance when stamina is actively refilling over time.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-15",
+    title: "Live Army Stamina Refresh",
+    description:
+      "Army stamina now stays in sync across world-map labels, selected-army details, and attack screens, so passive regeneration appears over time without waiting for another action to refresh the display.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-14",
     title: "Blitz Settlement Status Fix",
     description:

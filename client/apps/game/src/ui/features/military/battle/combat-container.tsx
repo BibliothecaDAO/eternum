@@ -64,6 +64,27 @@ enum AttackerType {
   Army,
 }
 
+const buildProjectedTroopSnapshot = (input: {
+  troops: Troops;
+  stamina: { amount: bigint; updated_tick: bigint };
+}): Troops => ({
+  count: input.troops.count || 0n,
+  category: input.troops.category as TroopType,
+  tier: input.troops.tier as TroopTier,
+  stamina: input.stamina,
+  boosts: input.troops.boosts || {
+    incr_damage_dealt_percent_num: 0,
+    incr_damage_dealt_end_tick: 0,
+    decr_damage_gotten_percent_num: 0,
+    decr_damage_gotten_end_tick: 0,
+    incr_stamina_regen_percent_num: 0,
+    incr_stamina_regen_tick_count: 0,
+    incr_explore_reward_percent_num: 0,
+    incr_explore_reward_end_tick: 0,
+  },
+  battle_cooldown_end: input.troops.battle_cooldown_end || 0,
+});
+
 // Add the new function before the CombatContainer component
 const getFormattedCombatTweet = ({
   attackerArmyData,
@@ -200,73 +221,53 @@ export const CombatContainer = ({
 
       const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
       if (!selectedGuard) return null;
+      const staminaSnapshot = getGuardStaminaSnapshot(selectedGuard.troops, currentArmiesTick);
+      const stamina = BigInt(Math.floor(staminaSnapshot?.current ?? Number(selectedGuard.troops.stamina.amount ?? 0n)));
 
       return {
-        troops: {
-          count: selectedGuard.troops.count || 0n,
-          category: selectedGuard.troops.category as TroopType,
-          tier: selectedGuard.troops.tier as TroopTier,
-          stamina: selectedGuard.troops.stamina || { amount: 0n, updated_tick: 0n },
-          boosts: selectedGuard.troops.boosts || {
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
+        troops: buildProjectedTroopSnapshot({
+          troops: selectedGuard.troops,
+          stamina: {
+            amount: stamina,
+            updated_tick: BigInt(currentArmiesTick),
           },
-          battle_cooldown_end: 0,
-        },
+        }),
       };
     } else {
       // attacker always synced already
       const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+      if (!army) {
+        return null;
+      }
 
       return {
-        troops: {
-          count: army?.troops.count || 0n,
-          category: army?.troops.category as TroopType,
-          tier: army?.troops.tier as TroopTier,
-          stamina: army?.troops.stamina || { amount: 0n, updated_tick: 0n },
-          boosts: army?.troops.boosts || {
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
+        troops: buildProjectedTroopSnapshot({
+          troops: army.troops,
+          stamina: {
+            amount: attackerStamina,
+            updated_tick: BigInt(currentArmiesTick),
           },
-          battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
-        },
+        }),
       };
     }
-  }, [attackerEntityId, attackerType, selectedGuardSlot, structureGuards]);
+  }, [
+    ExplorerTroops,
+    attackerEntityId,
+    attackerStamina,
+    attackerType,
+    currentArmiesTick,
+    selectedGuardSlot,
+    structureGuards,
+  ]);
 
   const targetArmyData: { troops: Troops } | null = useMemo(() => {
     if (!target?.info[0]) return null;
 
     return {
-      troops: {
-        count: target.info[0].count || 0n,
-        category: target.info[0].category as TroopType,
-        tier: target.info[0].tier as TroopTier,
+      troops: buildProjectedTroopSnapshot({
+        troops: target.info[0],
         stamina: target.info[0].stamina,
-        boosts: target.info[0].boosts || {
-          incr_damage_dealt_percent_num: 0,
-          incr_damage_dealt_end_tick: 0,
-          decr_damage_gotten_percent_num: 0,
-          decr_damage_gotten_end_tick: 0,
-          incr_stamina_regen_percent_num: 0,
-          incr_stamina_regen_tick_count: 0,
-          incr_explore_reward_percent_num: 0,
-          incr_explore_reward_end_tick: 0,
-        },
-        battle_cooldown_end: target.info[0].battle_cooldown_end || 0,
-      },
+      }),
     };
   }, [target]);
 

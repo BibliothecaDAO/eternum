@@ -29,6 +29,7 @@ export interface ArmyLabelData extends LabelData {
   troopCount: number;
   currentStamina: number;
   maxStamina: number;
+  displayStaminaRatio?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleTimerLeft?: number;
@@ -92,14 +93,14 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       data.maxStamina !== undefined &&
       data.maxStamina > 0
     ) {
-      const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
+      const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView, data.displayStaminaRatio);
       troopCountDisplay.appendChild(staminaBar);
       staminaHandledInline = true;
     }
 
     if (!staminaHandledInline) {
       if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
-        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
+        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView, data.displayStaminaRatio);
         textContainer.appendChild(staminaBar);
       } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
         const staminaInfo = document.createElement("div");
@@ -237,14 +238,19 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         data.maxStamina !== undefined &&
         data.maxStamina > 0
       ) {
-        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
+        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView, data.displayStaminaRatio);
         troopCountDisplay.appendChild(staminaBar);
         staminaHandledInline = true;
       }
 
       if (!staminaHandledInline) {
         if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
-          const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
+          const staminaBar = createStaminaBar(
+            data.currentStamina,
+            data.maxStamina,
+            cameraView,
+            data.displayStaminaRatio,
+          );
           contentContainer.appendChild(staminaBar);
         } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
           const staminaInfo = document.createElement("div");
@@ -275,7 +281,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     const staminaBar = element.querySelector('[data-component="stamina-bar"]');
     if (staminaBar && data.currentStamina !== undefined && data.maxStamina !== undefined) {
-      updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina);
+      updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina, data.displayStaminaRatio);
     }
 
     const directionIndicators = updateDirectionIndicators(

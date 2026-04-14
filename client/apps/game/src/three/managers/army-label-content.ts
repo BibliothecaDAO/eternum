@@ -11,6 +11,7 @@ export type ArmyLabelContentFields = Pick<
   ArmyData,
   | "troopCount"
   | "currentStamina"
+  | "displayStaminaRatio"
   | "battleTimerLeft"
   | "isMine"
   | "owner"
@@ -19,7 +20,7 @@ export type ArmyLabelContentFields = Pick<
 >;
 
 export function buildArmyLabelDataKey(army: ArmyLabelContentFields): string {
-  return `${army.troopCount}-${army.currentStamina}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}`;
+  return `${army.troopCount}-${army.currentStamina}-${Math.round((army.displayStaminaRatio ?? 0) * 1000)}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}`;
 }
 
 export function syncArmyLabelContentState(input: {

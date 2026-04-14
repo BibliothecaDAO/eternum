@@ -19,6 +19,7 @@ export function createArmyRecord(input: ArmyData): ArmyData {
     troopCount: input.troopCount,
     currentStamina: input.currentStamina,
     maxStamina: input.maxStamina,
+    displayStaminaRatio: input.displayStaminaRatio,
     onChainStamina: input.onChainStamina,
     attackedFromDegrees: input.attackedFromDegrees,
     attackedTowardDegrees: input.attackedTowardDegrees,

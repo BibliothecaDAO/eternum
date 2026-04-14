@@ -1,4 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { usePendingStaminaStore } from "@/hooks/store/use-pending-stamina-store";
+import { buildProjectedStaminaDisplayModel, type ProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
@@ -8,7 +11,6 @@ import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useQuery } from "@tanstack/react-query";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useCallback, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
@@ -18,6 +20,7 @@ interface UseArmyEntityDetailOptions {
 interface DerivedArmyData {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
+  staminaDisplay: ProjectedStaminaDisplayModel | null;
   playerGuild?: { name: string } | undefined;
   addressName?: string;
   isMine: boolean;
@@ -40,11 +43,12 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   } = useDojo();
   const mode = useGameModeConfig();
 
-  const currentArmiesTick = useCurrentArmiesTick();
+  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const pendingStamina = usePendingStaminaStore((state) => state.overlays[String(armyEntityId)]);
   const liveExplorerTroops = useComponentValue(
     components.ExplorerTroops,
     getEntityIdFromKeys([BigInt(armyEntityId)]),
@@ -71,8 +75,15 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
         currentArmiesTick,
         snapshotTroops: explorer?.troops,
         liveTroops: liveExplorerTroops,
+        pendingStamina:
+          pendingStamina && Date.now() - pendingStamina.createdAt <= 60_000
+            ? {
+                amount: pendingStamina.amount,
+                updatedTick: pendingStamina.updatedTick,
+              }
+            : null,
       }),
-    [currentArmiesTick, explorer?.troops, liveExplorerTroops],
+    [currentArmiesTick, explorer?.troops, liveExplorerTroops, pendingStamina],
   );
   const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(
@@ -118,6 +129,15 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
 
     const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
     const maxStamina = staminaSnapshot?.max ?? 0;
+    const staminaDisplay = staminaSnapshot
+      ? buildProjectedStaminaDisplayModel({
+          committedCurrent: Number(stamina.amount),
+          committedMax: maxStamina,
+          armiesTickTimeRemaining,
+          currentArmiesTick,
+          troops: staminaSnapshot.troops,
+        })
+      : null;
 
     const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
     const isMine = structure?.owner === userAddress;
@@ -131,12 +151,23 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     return {
       stamina,
       maxStamina,
+      staminaDisplay,
       playerGuild: guild,
       addressName,
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [explorer, structure, components, userAddress, armyEntityId, mode, staminaSnapshot]);
+  }, [
+    armiesTickTimeRemaining,
+    armyEntityId,
+    components,
+    currentArmiesTick,
+    explorer,
+    mode,
+    staminaSnapshot,
+    structure,
+    userAddress,
+  ]);
 
   const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
     if (!derivedData) return undefined;
