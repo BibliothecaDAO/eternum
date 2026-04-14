@@ -1,0 +1,81 @@
+import { describe, expect, it, vi } from "vitest";
+
+import { runBlitzSettlementFlow } from "./game-entry-blitz-settlement-flow";
+import { deriveSettlementStatus, type SettlementSnapshot } from "./game-entry-settlement.utils";
+
+const snapshot = (partial: Partial<SettlementSnapshot> = {}): SettlementSnapshot => ({
+  registered: false,
+  onceRegistered: false,
+  hasSettledStructure: false,
+  coordsCount: 0,
+  settledCount: 0,
+  ...partial,
+});
+
+describe("runBlitzSettlementFlow", () => {
+  it("recovers to success when indexed completion appears after a verification error", async () => {
+    const readSettlementSnapshot = vi
+      .fn<() => Promise<SettlementSnapshot | null>>()
+      .mockResolvedValueOnce(snapshot({ registered: true }))
+      .mockResolvedValueOnce(snapshot({ onceRegistered: true, settledCount: 1 }));
+    const runAssignAndSettle = vi.fn<(_: number) => Promise<void>>().mockResolvedValue(undefined);
+    const runSingleSettle = vi.fn<(_: number, __: number) => Promise<void>>().mockResolvedValue(undefined);
+    const waitForSettlementTarget = vi.fn<(_: number) => Promise<SettlementSnapshot | null>>().mockRejectedValue(
+      new Error("verification timeout"),
+    );
+    const onStageChange = vi.fn();
+
+    const result = await runBlitzSettlementFlow({
+      isMainnet: true,
+      singleRealmMode: true,
+      readSettlementSnapshot,
+      syncSettlementStateFromSnapshot: deriveSettlementStatus,
+      waitForSettlementTarget,
+      onStageChange,
+      runAssignAndSettle,
+      runSingleSettle,
+    });
+
+    expect(result).toMatchObject({
+      status: "completed",
+      recovered: true,
+    });
+    if (result.status !== "completed") {
+      throw new Error("expected recovered settlement success");
+    }
+    expect(result.finalStatus.canPlay).toBe(true);
+    expect(onStageChange).toHaveBeenCalledWith("assigning");
+    expect(runAssignAndSettle).toHaveBeenCalledWith(1);
+    expect(runSingleSettle).not.toHaveBeenCalled();
+  });
+
+  it("fails when recovery still shows an incomplete settlement target", async () => {
+    const readSettlementSnapshot = vi
+      .fn<() => Promise<SettlementSnapshot | null>>()
+      .mockResolvedValueOnce(snapshot({ registered: true }))
+      .mockResolvedValueOnce(snapshot({ onceRegistered: true, settledCount: 0 }));
+    const waitForSettlementTarget = vi.fn<(_: number) => Promise<SettlementSnapshot | null>>().mockRejectedValue(
+      new Error("verification timeout"),
+    );
+
+    const result = await runBlitzSettlementFlow({
+      isMainnet: true,
+      singleRealmMode: true,
+      readSettlementSnapshot,
+      syncSettlementStateFromSnapshot: deriveSettlementStatus,
+      waitForSettlementTarget,
+      onStageChange: vi.fn(),
+      runAssignAndSettle: vi.fn<(_: number) => Promise<void>>().mockResolvedValue(undefined),
+      runSingleSettle: vi.fn<(_: number, __: number) => Promise<void>>().mockResolvedValue(undefined),
+    });
+
+    expect(result).toMatchObject({
+      status: "failed",
+    });
+    if (result.status !== "failed") {
+      throw new Error("expected failed settlement recovery");
+    }
+    expect(result.error.message).toContain("verification timeout");
+    expect(result.recoveryStatus?.canPlay).toBe(false);
+  });
+});

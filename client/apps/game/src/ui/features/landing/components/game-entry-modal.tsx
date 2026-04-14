@@ -54,10 +54,12 @@ import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
 import {
   applyAutoSettleRegistrationHint,
-  buildSettlementExecutionPlan,
+  deriveSettlementPhaseViewModel,
   deriveSettlementStatus,
+  type SettleStage,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
+import { runBlitzSettlementFlow } from "./game-entry-blitz-settlement-flow";
 import {
   resolveGameEntryBlockingError,
   resolveGameEntryModalPhase,
@@ -802,7 +804,6 @@ const buildSeasonPlacementSlots = ({
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
 // Types
-type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
 type EternumSettlementMode = "realm" | "village";
 
 type OwnedRealmOption = {
@@ -879,39 +880,21 @@ const SettlementPhase = ({
   onSettle: () => void;
   onEnterGame: () => void;
 }) => {
-  const remainingToSettle = Math.max(0, assignedCount - settledCount);
-  const progress = assignedCount > 0 ? (settledCount / assignedCount) * 100 : 0;
-  const isComplete = stage === "done" || (assignedCount > 0 && remainingToSettle === 0);
-
-  const getStepStatus = (stepId: number): "pending" | "active" | "complete" => {
-    if (stepId === 1) {
-      if (assignedCount > 0) return "complete";
-      if (stage === "assigning") return "active";
-      return "pending";
-    }
-    if (stepId === 2) {
-      if (assignedCount === 0) return "pending";
-      if (remainingToSettle === 0 && settledCount > 0) return "complete";
-      if (stage === "settling" || (remainingToSettle > 0 && settledCount > 0)) return "active";
-      return "pending";
-    }
-    if (stepId === 3) {
-      if (remainingToSettle === 0 && settledCount > 0 && stage === "done") return "complete";
-      if (stage === "settling" && remainingToSettle <= 1) return "active";
-      return "pending";
-    }
-    return "pending";
-  };
+  const viewModel = deriveSettlementPhaseViewModel({
+    stage,
+    assignedCount,
+    settledCount,
+  });
 
   return (
     <div className="flex flex-col">
       <div className="text-center mb-4">
         <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Settlement" />
         <h2 className="text-lg font-semibold text-gold">
-          {isComplete ? "Settlement Complete!" : "Settlement Progress"}
+          {viewModel.isComplete ? "Settlement Complete!" : "Settlement Progress"}
         </h2>
         <p className="text-xs text-gold/60 mt-1">
-          {isComplete
+          {viewModel.isComplete
             ? "Your realms are ready. Enter the arena!"
             : "Your realm location will be automatically assigned for balanced gameplay"}
         </p>
@@ -923,7 +906,7 @@ const SettlementPhase = ({
           <motion.div
             className="h-full bg-gradient-to-r from-gold/80 to-gold rounded-full"
             initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
+            animate={{ width: `${viewModel.progress}%` }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           />
         </div>
@@ -932,7 +915,7 @@ const SettlementPhase = ({
             <span>
               {settledCount} / {assignedCount} realms settled
             </span>
-            <span>{Math.round(progress)}%</span>
+            <span>{Math.round(viewModel.progress)}%</span>
           </div>
         )}
       </div>
@@ -940,7 +923,7 @@ const SettlementPhase = ({
       {/* Steps */}
       <div className="space-y-3 mb-4">
         {SETTLEMENT_STEPS.map((step) => {
-          const status = getStepStatus(step.id);
+          const status = viewModel.stepStatuses[step.id as 1 | 2 | 3];
           const Icon = step.icon;
 
           return (
@@ -995,7 +978,7 @@ const SettlementPhase = ({
       </div>
 
       {/* Action button */}
-      {isComplete ? (
+      {viewModel.isComplete ? (
         <Button onClick={onEnterGame} className="w-full h-11 !text-brown !bg-gold rounded-md" forceUppercase={false}>
           <div className="flex items-center justify-center gap-2">
             <Play className="w-4 h-4" />
@@ -1014,10 +997,10 @@ const SettlementPhase = ({
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Settling...</span>
             </div>
-          ) : remainingToSettle > 0 ? (
+          ) : viewModel.remainingToSettle > 0 ? (
             <div className="flex items-center justify-center gap-2">
               <Castle className="w-4 h-4" />
-              <span>Continue Settlement ({remainingToSettle} remaining)</span>
+              <span>Continue Settlement ({viewModel.remainingToSettle} remaining)</span>
             </div>
           ) : (
             <div className="flex items-center justify-center gap-2">
@@ -1028,7 +1011,7 @@ const SettlementPhase = ({
         </Button>
       )}
 
-      {stage === "error" && (
+      {viewModel.showError && (
         <p className="text-xs text-red-300 text-center mt-2">Settlement failed. Please try again.</p>
       )}
     </div>
@@ -3454,6 +3437,9 @@ export const GameEntryModal = ({
     setNeedsSettlement(false);
     setSettlementCheckComplete(false);
     setSettleStage("idle");
+    setIsSettling(false);
+    setAssignedRealmCount(0);
+    setSettledRealmCount(0);
     setHyperstructures([]);
     setIsInitializingHyperstructure(false);
     setCurrentInitializingId(null);
@@ -3771,7 +3757,8 @@ export const GameEntryModal = ({
         ),
         "Failed to fetch blitz settlement state",
       ),
-      selectedWorldSqlApi.fetchPlayerStructures(account.address),
+      // Owned-structure indexing can lag behind settle-finish rows right after submission.
+      selectedWorldSqlApi.fetchPlayerStructures(account.address).catch(() => []),
     ]);
     const playerRegister = registerRows[0] ?? null;
     const settleFinish = settleFinishRows[0] ?? null;
@@ -4755,6 +4742,92 @@ export const GameEntryModal = ({
     void settlementPlannerData.refetch();
   }, [refetchOwnedStructures, refetchRealmVillageSlots, refetchVillagePassInventory, settlementPlannerData]);
 
+  const finalizeSuccessfulBlitzSettlement = useCallback(
+    ({ recovered }: { recovered: boolean }) => {
+      debugLog(worldName, recovered ? "Settlement verification recovered to success." : "Settlement complete!");
+      setSettleStage("done");
+      setNeedsSettlement(false);
+      if (autoSettleEnabled && autoSettleEntryKey) {
+        markCompleted(autoSettleEntryKey);
+      }
+
+      setTimeout(() => {
+        handleEnterGame();
+      }, 1000);
+    },
+    [autoSettleEnabled, autoSettleEntryKey, handleEnterGame, markCompleted, worldName],
+  );
+
+  const finalizeFailedBlitzSettlement = useCallback(
+    (error: Error) => {
+      debugLog(worldName, "Settlement failed:", error);
+      setSettleStage("error");
+      if (autoSettleEnabled && autoSettleEntryKey) {
+        markFailed(autoSettleEntryKey, error.message);
+      }
+    },
+    [autoSettleEnabled, autoSettleEntryKey, markFailed, worldName],
+  );
+
+  const submitAssignedRealmSettlement = useCallback(
+    async ({
+      blitzRealmSystemsAddress,
+      initialSettleCount,
+      signer,
+      vrfProviderAddress,
+    }: {
+      blitzRealmSystemsAddress: string;
+      initialSettleCount: number;
+      signer: Account;
+      vrfProviderAddress: string | undefined;
+    }) => {
+      const assignCalls: Call[] = [];
+      if (hasNonZeroNumericValue(vrfProviderAddress)) {
+        assignCalls.push({
+          contractAddress: vrfProviderAddress as string,
+          entrypoint: "request_random",
+          calldata: [blitzRealmSystemsAddress, 0, signer.address],
+        });
+      }
+      assignCalls.push({
+        contractAddress: blitzRealmSystemsAddress,
+        entrypoint: "assign_realm_positions",
+        calldata: [],
+      });
+      assignCalls.push({
+        contractAddress: blitzRealmSystemsAddress,
+        entrypoint: "settle_realms",
+        calldata: [initialSettleCount],
+      });
+
+      const assignResult = await signer.execute(assignCalls);
+      await waitForSubmittedTransaction(assignResult, "assign_and_settle_realms");
+    },
+    [waitForSubmittedTransaction],
+  );
+
+  const submitRemainingRealmSettlement = useCallback(
+    async ({
+      blitzRealmSystemsAddress,
+      signer,
+      stepIndex,
+      totalSteps,
+    }: {
+      blitzRealmSystemsAddress: string;
+      signer: Account;
+      stepIndex: number;
+      totalSteps: number;
+    }) => {
+      const settleResult = await signer.execute({
+        contractAddress: blitzRealmSystemsAddress,
+        entrypoint: "settle_realms",
+        calldata: [1],
+      });
+      await waitForSubmittedTransaction(settleResult, `settle_realms ${stepIndex + 1}/${totalSteps}`);
+    },
+    [waitForSubmittedTransaction],
+  );
+
   // Settlement handler - calls actual Dojo system calls
   const handleSettle = useCallback(async () => {
     if (!isBlitzMode) {
@@ -4774,92 +4847,39 @@ export const GameEntryModal = ({
       const blitzRealmSystemsAddress = resolveWorldSystemAddress("blitz_realm_systems");
       const signer = account as unknown as Account;
       const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
-
-      const initialSnapshot = await readSettlementSnapshot();
-      if (!initialSnapshot) {
-        throw new Error("Unable to read settlement status for current player.");
-      }
-      const initialStatus = syncSettlementStateFromSnapshot(initialSnapshot);
-      let targetProgress = initialStatus.settledCount;
-
-      const plan = buildSettlementExecutionPlan({
+      const result = await runBlitzSettlementFlow({
         isMainnet,
         singleRealmMode,
-        snapshot: initialSnapshot,
+        readSettlementSnapshot,
+        syncSettlementStateFromSnapshot,
+        waitForSettlementTarget,
+        onStageChange: setSettleStage,
+        runAssignAndSettle: async (initialSettleCount) => {
+          await submitAssignedRealmSettlement({
+            blitzRealmSystemsAddress,
+            initialSettleCount,
+            signer,
+            vrfProviderAddress,
+          });
+        },
+        runSingleSettle: async (stepIndex, totalSteps) => {
+          await submitRemainingRealmSettlement({
+            blitzRealmSystemsAddress,
+            signer,
+            stepIndex,
+            totalSteps,
+          });
+        },
       });
-      debugLog(worldName, "Settlement execution plan:", plan);
 
-      if (plan.missingAssignmentRegistration) {
-        throw new Error("Cannot assign realm positions because the player is no longer in registered state.");
-      }
+      debugLog(worldName, "Settlement execution result:", result);
 
-      if (plan.shouldAssignAndSettle && plan.initialSettleCount > 0) {
-        setSettleStage("assigning");
-        const assignCalls: Call[] = [];
-        if (hasNonZeroNumericValue(vrfProviderAddress)) {
-          assignCalls.push({
-            contractAddress: vrfProviderAddress as string,
-            entrypoint: "request_random",
-            calldata: [blitzRealmSystemsAddress, 0, signer.address],
-          });
-        }
-        assignCalls.push({
-          contractAddress: blitzRealmSystemsAddress,
-          entrypoint: "assign_realm_positions",
-          calldata: [],
-        });
-        assignCalls.push({
-          contractAddress: blitzRealmSystemsAddress,
-          entrypoint: "settle_realms",
-          calldata: [plan.initialSettleCount],
-        });
-        const assignResult = await signer.execute(assignCalls);
-        await waitForSubmittedTransaction(assignResult, "assign_and_settle_realms");
-        targetProgress = Math.min(plan.targetSettleCount, targetProgress + plan.initialSettleCount);
-        await waitForSettlementTarget(targetProgress);
+      if (result.status === "completed") {
+        finalizeSuccessfulBlitzSettlement({ recovered: result.recovered });
+        return;
       }
 
-      if (plan.extraSettleCalls > 0) {
-        setSettleStage("settling");
-        for (let i = 0; i < plan.extraSettleCalls; i++) {
-          const settleResult = await signer.execute({
-            contractAddress: blitzRealmSystemsAddress,
-            entrypoint: "settle_realms",
-            calldata: [1],
-          });
-          await waitForSubmittedTransaction(settleResult, `settle_realms ${i + 1}/${plan.extraSettleCalls}`);
-          targetProgress = Math.min(plan.targetSettleCount, targetProgress + 1);
-          await waitForSettlementTarget(targetProgress);
-        }
-      }
-
-      const finalSnapshot = await waitForSettlementTarget(plan.targetSettleCount);
-      if (!finalSnapshot) {
-        throw new Error("Timed out waiting for settlement progress.");
-      }
-      const finalStatus = syncSettlementStateFromSnapshot(finalSnapshot);
-      if (finalStatus.settledCount < plan.targetSettleCount) {
-        throw new Error(`Settlement incomplete: ${finalStatus.settledCount}/${plan.targetSettleCount} realms settled.`);
-      }
-
-      debugLog(worldName, "Settlement complete!");
-      setSettleStage("done");
-      setNeedsSettlement(false);
-      if (autoSettleEnabled && autoSettleEntryKey) {
-        markCompleted(autoSettleEntryKey);
-      }
-
-      // Auto-enter game after successful settlement
-      setTimeout(() => {
-        handleEnterGame();
-      }, 1000);
-    } catch (error) {
-      debugLog(worldName, "Settlement failed:", error);
-      setSettleStage("error");
-      if (autoSettleEnabled && autoSettleEntryKey) {
-        const message = error instanceof Error ? error.message : "Settlement failed";
-        markFailed(autoSettleEntryKey, message);
-      }
+      finalizeFailedBlitzSettlement(result.error);
     } finally {
       setIsSettling(false);
     }
@@ -4868,17 +4888,17 @@ export const GameEntryModal = ({
     autoSettleEntryKey,
     account,
     chain,
+    finalizeFailedBlitzSettlement,
+    finalizeSuccessfulBlitzSettlement,
     isBlitzMode,
-    handleEnterGame,
-    markCompleted,
-    markFailed,
     markSettling,
+    submitAssignedRealmSettlement,
+    submitRemainingRealmSettlement,
     worldName,
     readSettlementSnapshot,
     resolveWorldSystemAddress,
     syncSettlementStateFromSnapshot,
     waitForSettlementTarget,
-    waitForSubmittedTransaction,
   ]);
 
   useEffect(() => {
