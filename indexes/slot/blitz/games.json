@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-14T19:43:58.043Z",
+  "updatedAt": "2026-04-14T19:44:07.561Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -389,12 +389,13 @@
       "path": "runs/slot/blitz/bltz-dash-157.json",
       "inputPath": "inputs/slot/blitz/bltz-dash-157/24419218476-1.json",
       "status": "running",
-      "updatedAt": "2026-04-14T19:43:58.043Z",
+      "updatedAt": "2026-04-14T19:44:07.561Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-04-14T20:29:07.561Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-indexer",
+      "recoverablePendingStepId": null,
       "startTime": 1776196800,
       "durationSeconds": 3600,
       "artifacts": {}
