@@ -66,7 +66,6 @@ describe("findSupersededArmyRemoval", () => {
     const result = findSupersededArmyRemoval({
       incomingEntityId: 2,
       incomingOwnerAddress: 123n,
-      incomingOwnerStructureId: 99,
       incomingPosition: { col: 11, row: 10 },
       pending: [
         {
@@ -75,7 +74,6 @@ describe("findSupersededArmyRemoval", () => {
           reason: "tile",
           chunkKey: "0,0",
           ownerAddress: 123n,
-          ownerStructureId: 99,
           position: { col: 11, row: 11 },
         },
       ],
