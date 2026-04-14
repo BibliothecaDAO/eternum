@@ -106,7 +106,7 @@ export interface FactoryWorldProfile {
 export type IndexerTier = "basic" | "pro" | "legendary" | "epic";
 export type IndexerResolutionState = "existing" | "missing" | "indeterminate";
 export type IndexerResolutionSource = "describe" | "describe-not-found" | "list" | "describe-and-list-failed";
-export type IndexerCreationMode = "github-actions" | "slot-direct";
+export type IndexerCreationMode = "github-actions" | "slot-direct" | "railway-cli";
 
 export interface IndexerRequest {
   env: string;

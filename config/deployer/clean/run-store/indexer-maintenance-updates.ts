@@ -1,8 +1,8 @@
-import { resolveIndexerArtifactState, resolveSlotToriiLiveState } from "../indexing/slot-torii";
-import type { IndexerTier, SeriesLaunchGameArtifacts, SeriesLaunchGameSummary } from "../types";
+import { resolveIndexerArtifactState } from "../indexing/managed-indexer";
+import type { IndexerLiveState, IndexerTier, SeriesLaunchGameArtifacts, SeriesLaunchGameSummary } from "../types";
 import type { FactoryRotationRunRecord, FactoryRunArtifacts, FactoryRunRecord, FactorySeriesRunRecord } from "./types";
 
-type SlotToriiLiveState = ReturnType<typeof resolveSlotToriiLiveState>;
+type ManagedIndexerLiveState = IndexerLiveState;
 type IndexerMaintenanceRunRecord = FactoryRunRecord | FactorySeriesRunRecord | FactoryRotationRunRecord | null;
 
 interface IndexerMaintenanceRunTarget {
@@ -18,13 +18,13 @@ interface BaseIndexerMaintenanceRunUpdate {
 
 export interface RefreshIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
   kind: "refresh";
-  liveState: SlotToriiLiveState;
+  liveState: ManagedIndexerLiveState;
 }
 
 export interface TierSuccessIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
   kind: "tier-success";
   tier: IndexerTier;
-  liveState: SlotToriiLiveState;
+  liveState: ManagedIndexerLiveState;
 }
 
 export interface TierFailureIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
@@ -32,17 +32,17 @@ export interface TierFailureIndexerMaintenanceRunUpdate extends BaseIndexerMaint
   tier: IndexerTier;
   failedAt: string;
   errorMessage: string;
-  liveState: SlotToriiLiveState;
+  liveState: ManagedIndexerLiveState;
 }
 
 export interface DeleteSuccessIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
   kind: "delete-success";
-  liveState: SlotToriiLiveState;
+  liveState: ManagedIndexerLiveState;
 }
 
 export interface DeleteFailureIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
   kind: "delete-failure";
-  liveState: SlotToriiLiveState;
+  liveState: ManagedIndexerLiveState;
 }
 
 export type IndexerMaintenanceRunUpdate =
@@ -132,7 +132,7 @@ function buildNextArtifacts(
 
 function buildRefreshedArtifacts(
   currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  liveState: SlotToriiLiveState,
+  liveState: ManagedIndexerLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
@@ -152,7 +152,7 @@ function buildRefreshedArtifacts(
 function buildTierSuccessArtifacts(
   currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
   tier: IndexerTier,
-  liveState: SlotToriiLiveState,
+  liveState: ManagedIndexerLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
@@ -170,7 +170,7 @@ function buildTierFailureArtifacts(
   tier: IndexerTier,
   failedAt: string,
   errorMessage: string,
-  liveState: SlotToriiLiveState,
+  liveState: ManagedIndexerLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
@@ -185,7 +185,7 @@ function buildTierFailureArtifacts(
 
 function buildDeleteSuccessArtifacts(
   currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  liveState: SlotToriiLiveState,
+  liveState: ManagedIndexerLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
@@ -205,7 +205,7 @@ function buildDeleteSuccessArtifacts(
 
 function buildDeleteFailureArtifacts(
   currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  liveState: SlotToriiLiveState,
+  liveState: ManagedIndexerLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,

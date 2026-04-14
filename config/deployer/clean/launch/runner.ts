@@ -30,7 +30,7 @@ import {
   resolveFactoryWorldProfile,
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
-import { ensureSlotIndexerDeployment, resolveIndexerArtifactState } from "../indexing/slot-torii";
+import { resolveIndexerArtifactState, resolveManagedIndexerProvider } from "../indexing/managed-indexer";
 import { syncPaymasterPolicy } from "../paymaster";
 import { buildLootChestMinterRoleGrantCall, grantRoles, resolveLootChestMinterRoleGrantTarget } from "../role-grants";
 import { resolveAccountCredentials } from "../shared/credentials";
@@ -886,15 +886,22 @@ async function createIndexerIfNeeded(
     workflowFile: request.workflowFile,
     ref: request.ref,
   });
+  const managedIndexerProvider = resolveManagedIndexerProvider();
   const result = await runtime.progress.run(
     "create indexer",
-    async () => ensureSlotIndexerDeployment(indexerRequest, { onProgress: (message) => runtime.progress.log(message) }),
+    async () =>
+      managedIndexerProvider.ensureDeployment(indexerRequest, {
+        onProgress: (message: string) => runtime.progress.log(message),
+      }),
     {
       start: `Creating indexer for ${shortenHash(worldAddress)}`,
       success: (indexerResult, elapsedMs) => {
         const liveTier = indexerResult.liveState.currentTier || indexerResult.requestedTier;
         const liveUrl = indexerResult.liveState.url;
-        const outcome = indexerResult.action === "already-live" ? "Indexer already live" : "Indexer deployed via Slot";
+        const outcome =
+          indexerResult.action === "already-live"
+            ? "Indexer already live"
+            : `Indexer deployed via ${indexerResult.mode === "railway-cli" ? "Railway" : "Slot"}`;
         return `${outcome} in ${formatDuration(elapsedMs)} (${liveTier}${liveUrl ? `, ${liveUrl}` : ""})`;
       },
     },

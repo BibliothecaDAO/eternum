@@ -1,15 +1,12 @@
-import * as fs from "node:fs";
 import * as path from "node:path";
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import { DEFAULT_TORII_SLOT_TEAM, DEFAULT_TORII_VERSION } from "../constants";
-import { ensureRepoDirectory, resolveRepoPath } from "../shared/repo";
 import type { IndexerCreationMode, IndexerLiveState, IndexerRequest, IndexerTier } from "../types";
+import { renderToriiConfigArtifact } from "./torii-config";
 
 const SLOT_COMMAND_MAX_BUFFER_BYTES = 10 * 1024 * 1024;
 const MAX_INDTERMINATE_TORII_STATE_DETAILS_CHARS = 1200;
-const TORII_TEMPLATE_PATH = "contracts/game/torii-template.toml";
 const TORII_OUTPUT_DIRECTORY = ".context/torii";
-const DEFAULT_WORLD_BLOCK = "0";
 
 type SlotCommandRunner = (args: string[]) => SpawnSyncReturns<string>;
 
@@ -262,54 +259,6 @@ export function resolveSlotToriiLiveState(
   };
 }
 
-function renderToriiConfig(request: IndexerRequest): string {
-  const templatePath = resolveRepoPath(TORII_TEMPLATE_PATH);
-  if (!fs.existsSync(templatePath)) {
-    throw new Error(`Missing Torii template: ${TORII_TEMPLATE_PATH}`);
-  }
-
-  const relativeDirectory = path.join(TORII_OUTPUT_DIRECTORY, request.env, request.worldName);
-  const outputDirectory = ensureRepoDirectory(relativeDirectory);
-  const outputPath = path.resolve(outputDirectory, "torii.toml");
-  const template = fs.readFileSync(templatePath, "utf8");
-  const namespaces = request.namespaces
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .map((value) => `"${value}"`)
-    .join(", ");
-  const contracts = (request.externalContracts || []).map((value) => value.trim()).filter(Boolean);
-  const rendered = replaceToriiContractsPlaceholder(
-    template
-      .replaceAll("{RPC_URL}", request.rpcUrl)
-      .replaceAll("{WORLD_ADDRESS}", request.worldAddress)
-      .replaceAll("{WORLD_BLOCK}", DEFAULT_WORLD_BLOCK)
-      .replaceAll("{NAMESPACE}", namespaces),
-    contracts,
-  );
-
-  fs.writeFileSync(outputPath, rendered);
-  return outputPath;
-}
-
-function replaceToriiContractsPlaceholder(template: string, contracts: string[]): string {
-  return template
-    .split(/\r?\n/)
-    .map((line) => {
-      if (!line.includes("{CONTRACTS}")) {
-        return line;
-      }
-
-      const indent = line.match(/^\s*/)?.[0] || "";
-      if (contracts.length === 0) {
-        return indent;
-      }
-
-      return contracts.map((value) => `${indent}"${value}",`).join("\n");
-    })
-    .join("\n");
-}
-
 function requireExistingToriiState(
   name: string,
   options: Pick<EnsureSlotIndexerOptions, "onProgress" | "slotCommandRunner">,
@@ -372,7 +321,10 @@ export function ensureSlotIndexerDeployment(
     throw new Error(buildIndeterminateToriiStateMessage("create", request.worldName, preExistingState));
   }
 
-  const configPath = renderToriiConfig(request);
+  const { configPath } = renderToriiConfigArtifact(
+    request,
+    path.join(TORII_OUTPUT_DIRECTORY, request.env, request.worldName),
+  );
   const slotTeam = options.slotTeam || DEFAULT_TORII_SLOT_TEAM;
   const toriiVersion = options.toriiVersion || DEFAULT_TORII_VERSION;
   const createResult = slotCommandRunner([
@@ -480,5 +432,20 @@ export function deleteSlotIndexerDeployment(
     action: "deleted",
     liveState,
     previousTier: currentState.currentTier,
+  };
+}
+
+export function createSlotManagedIndexerProvider() {
+  return {
+    kind: "slot" as const,
+    ensureDeployment: (request: IndexerRequest, options?: Pick<EnsureSlotIndexerOptions, "onProgress">) =>
+      ensureSlotIndexerDeployment(request, options),
+    resolveLiveState: resolveSlotToriiLiveState,
+    resolveLiveStates: resolveSlotToriiLiveStates,
+    ensureTier: (options: { name: string; tier: IndexerTier; onProgress?: (message: string) => void }) =>
+      ensureSlotIndexerTier(options),
+    deleteDeployment: (options: { name: string; onProgress?: (message: string) => void }) =>
+      deleteSlotIndexerDeployment(options),
+    listDeploymentNames: () => listSlotToriiDeploymentNames(),
   };
 }

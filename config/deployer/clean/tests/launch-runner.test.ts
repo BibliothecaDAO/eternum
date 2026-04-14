@@ -131,6 +131,14 @@ mock.module("starknet", () => ({
   shortString: {
     encodeShortString: (value: string) => `felt:${value}`,
   },
+  hash: {
+    computePoseidonHashOnElements: () => "0xhash",
+    starknetKeccak: () => "0xkeccak",
+    getSelectorFromName: (value: string) => `selector:${value}`,
+  },
+  byteArray: {
+    byteArrayFromString: (value: string) => value,
+  },
 }));
 
 mock.module("../config/config-loader", () => ({
@@ -160,8 +168,10 @@ mock.module("../factory/discovery", () => ({
   waitForFactoryWorldProfile: waitForFactoryWorldProfileMock,
 }));
 
-mock.module("../indexing/slot-torii", () => ({
-  ensureSlotIndexerDeployment: ensureSlotIndexerDeploymentMock,
+mock.module("../indexing/managed-indexer", () => ({
+  resolveManagedIndexerProvider: () => ({
+    ensureDeployment: ensureSlotIndexerDeploymentMock,
+  }),
   resolveIndexerArtifactState: (liveState: {
     state: string;
     currentTier?: string;
