@@ -49,7 +49,7 @@ describe("worldmap army tile-sync recovery", () => {
     expect(scheduleStart).toBeGreaterThan(-1);
     expect(retryStart).toBeGreaterThan(-1);
 
-    const scheduleBody = src.slice(scheduleStart, scheduleStart + 2600);
+    const scheduleBody = src.slice(scheduleStart, scheduleStart + 3800);
     const retryBody = src.slice(retryStart, retryStart + 900);
 
     expect(scheduleBody).toContain("this.armyLastTileSyncAt.get(entityId)");

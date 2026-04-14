@@ -93,11 +93,31 @@ describe("findSupersededArmyRemoval", () => {
     expect(result).toBe(3);
   });
 
-  it("supersedes on nearby-only match when there is exactly one candidate", () => {
+  it("does not supersede on nearby-only match when there is exactly one candidate", () => {
     const result = findSupersededArmyRemoval({
       incomingEntityId: 2,
       incomingOwnerAddress: 123n,
       incomingPosition: { col: 11, row: 10 },
+      pending: [
+        {
+          entityId: 1,
+          scheduledAt: Date.now(),
+          reason: "tile",
+          chunkKey: "0,0",
+          ownerAddress: 123n,
+          position: { col: 10, row: 10 },
+        },
+      ],
+    });
+
+    expect(result).toBeUndefined();
+  });
+
+  it("supersedes on exact-position match when there is exactly one candidate", () => {
+    const result = findSupersededArmyRemoval({
+      incomingEntityId: 2,
+      incomingOwnerAddress: 123n,
+      incomingPosition: { col: 10, row: 10 },
       pending: [
         {
           entityId: 1,

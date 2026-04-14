@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-15",
+    title: "Safer Group Move Recovery",
+    description:
+      "Moving several nearby armies at once no longer risks a valid unit being mistaken for a stale replacement and disappearing until a chunk reload brings it back.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-15",
     title: "Animated Stamina Recharge",
     description:
       "Recharging army stamina now shows a soft pulse and sweep across world-map bars, labels, and attack panels, so it is clearer at a glance when stamina is actively refilling over time.",

@@ -108,9 +108,5 @@ export function findSupersededArmyRemoval<TArmyId>(
     return undefined;
   }
 
-  if (candidatePool.length === 1) {
-    return candidatePool[0].entityId;
-  }
-
   return undefined;
 }
