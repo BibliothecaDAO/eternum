@@ -9,7 +9,14 @@ export enum GraphicsSettings {
   HIGH = "HIGH",
 }
 
+const hasBrowserStorage = typeof localStorage !== "undefined";
+const hasBrowserNavigator = typeof navigator !== "undefined";
+
 const checkGraphicsSettings = async () => {
+  if (!hasBrowserStorage) {
+    return GraphicsSettings.HIGH;
+  }
+
   // Handle migration from old LOW_GRAPHICS_FLAG
   const oldLowGraphicsFlag = localStorage.getItem("LOW_GRAPHICS_FLAG");
   if (oldLowGraphicsFlag !== null) {
@@ -44,6 +51,10 @@ const checkGraphicsSettings = async () => {
 };
 
 const getFlatMode = () => {
+  if (!hasBrowserStorage) {
+    return false;
+  }
+
   const flatMode = localStorage.getItem("FLAT_MODE");
   return flatMode === null ? false : flatMode === "true";
 };
@@ -51,7 +62,9 @@ const getFlatMode = () => {
 export const GRAPHICS_SETTING = await checkGraphicsSettings();
 export const IS_FLAT_MODE = getFlatMode();
 
-export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+export const IS_MOBILE = hasBrowserNavigator
+  ? /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  : false;
 
 export const CONTEXT_MENU_CONFIG = {
   radial: {

@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getChainLabel } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useLandingNetworkState } from "../hooks/use-landing-network-state";
 import type { LandingNetworkChain, LandingNetworkStatus } from "../lib/landing-network-state";
@@ -66,7 +66,8 @@ export const DashboardNetworkSwitch = ({ className }: { className?: string }) =>
   const { connectedChain, hasConnectedWallet, preferredChain, status, selectPreferredChain, switchToPreferredChain } =
     useLandingNetworkState();
   const [pendingChain, setPendingChain] = useState<LandingNetworkChain | null>(null);
-  const displayedPreferredChain = pendingChain ?? preferredChain;
+  const [optimisticPreferredChain, setOptimisticPreferredChain] = useState<LandingNetworkChain | null>(null);
+  const displayedPreferredChain = pendingChain ?? optimisticPreferredChain ?? preferredChain;
   const renderedStatus = hasConnectedWallet && pendingChain ? "detecting" : status;
   const indicatorTone = useMemo(() => resolveIndicatorTone(renderedStatus), [renderedStatus]);
   const walletStatusLabel = useMemo(
@@ -81,6 +82,10 @@ export const DashboardNetworkSwitch = ({ className }: { className?: string }) =>
   );
   const walletStatusTone = useMemo(() => resolveWalletStatusTone(renderedStatus), [renderedStatus]);
 
+  useEffect(() => {
+    setOptimisticPreferredChain(null);
+  }, [preferredChain]);
+
   const handleSelectChain = useCallback(
     async (nextChain: LandingNetworkChain) => {
       if (nextChain === preferredChain || pendingChain) {
@@ -88,6 +93,7 @@ export const DashboardNetworkSwitch = ({ className }: { className?: string }) =>
       }
 
       if (!hasConnectedWallet) {
+        setOptimisticPreferredChain(nextChain);
         selectPreferredChain(nextChain);
         return;
       }

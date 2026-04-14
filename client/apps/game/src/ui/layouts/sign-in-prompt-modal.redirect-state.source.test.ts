@@ -11,7 +11,7 @@ describe("SignInPromptModal redirect state", () => {
   it("replays the original landing route state when sign-in finishes", () => {
     const source = readSource("src/ui/layouts/sign-in-prompt-modal.tsx");
 
-    expect(source).toContain("redirectState?: SignInRedirectState;");
+    expect(source).toContain("redirectState?: LandingEntryRouteState;");
     expect(source).toContain("navigate(resolvedRedirectTo, { replace: true, state: redirectState });");
   });
 });

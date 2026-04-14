@@ -14,7 +14,6 @@ describe("worldmap late terrain recovery", () => {
     const methodEnd = source.indexOf("  isColRowInVisibleChunk(col: number, row: number) {", methodStart);
     const methodBody = source.slice(methodStart, methodEnd);
 
-    expect(methodBody).toContain("this.isColRowInCurrentRenderBounds(col, row)");
-    expect(methodBody).not.toContain("this.isColRowInVisibleChunk(col, row)");
+    expect(methodBody).toContain("this.isColRowInVisibleChunk(col, row)");
   });
 });

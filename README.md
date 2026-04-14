@@ -142,7 +142,8 @@ Key entry points for developers:
 - **Packages Index** → [`packages/README.md`](./packages/README.md) — shared SDKs, client libraries, and agent tooling
 - **Contracts** → [`contracts/`](./contracts) — Cairo game logic
 - **Game Client** → [`client/apps/game/README.md`](./client/apps/game/README.md) — React/Three.js app entrypoint
-- **Docs App** → [`client/apps/game-docs/README.md`](./client/apps/game-docs/README.md) — Vocs site for player and dev docs
+- **Docs App** → [`client/apps/game-docs/README.md`](./client/apps/game-docs/README.md) — Vocs site for player and dev
+  docs
 
 ## Links
 

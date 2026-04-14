@@ -23,12 +23,14 @@ const FALLBACK_WORLD: WorldProfile = {
 describe("play-route", () => {
   it("parses a canonical play route descriptor from the URL", () => {
     expect(parsePlayRoute(createLocation("/play/sepolia/aurora-blitz/map", "?col=12&row=34&spectate=true"))).toEqual({
+      bootMode: "direct",
       chain: "sepolia",
-      worldName: "aurora-blitz",
-      scene: "map",
       col: 12,
       row: 34,
+      resumeScene: null,
+      scene: "map",
       spectate: true,
+      worldName: "aurora-blitz",
     });
   });
 

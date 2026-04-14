@@ -94,6 +94,9 @@ jobs:
       VITE_PUBLIC_MASTER_ADDRESS: "0x0"
       VITE_PUBLIC_MASTER_PRIVATE_KEY: "0x0"
       VITE_PUBLIC_ACCOUNT_CLASS_HASH: "0x0"
+      VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x0"
+      VITE_PUBLIC_CLIENT_FEE_RECIPIENT: "0x0"
+      VITE_PUBLIC_SLOT: "eternum"
 
     steps:
       - name: Checkout repository

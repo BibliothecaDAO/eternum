@@ -83,5 +83,7 @@ ${
 export const hexGeometryDebugger = HexGeometryDebugger.getInstance();
 
 // Global debug functions
-(window as any).logHexGeometryStats = () => hexGeometryDebugger.logSummary();
-(window as any).resetHexGeometryStats = () => hexGeometryDebugger.reset();
+if (typeof window !== "undefined") {
+  (window as any).logHexGeometryStats = () => hexGeometryDebugger.logSummary();
+  (window as any).resetHexGeometryStats = () => hexGeometryDebugger.reset();
+}

@@ -322,6 +322,11 @@ describe("FactoryV2DeveloperConfig", () => {
   });
 
   it("shows the switch network prompt instead of sending when the wallet is on the wrong chain", async () => {
+    mocks.useAccount.mockReturnValue({
+      address: "0xabc",
+      chainId: "0xmainnet",
+      connector: mocks.connector,
+    });
     mocks.resolveConnectedTxChainFromRuntime.mockReturnValue("mainnet");
 
     await renderDeveloperConfig({ chain: "slot" });

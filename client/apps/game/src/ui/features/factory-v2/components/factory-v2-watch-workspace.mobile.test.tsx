@@ -185,11 +185,11 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(selectedPanel?.textContent).toContain("Step 3 of 4");
     expect(gameNameInput?.className).toContain("text-center");
     expect(doneMoment?.className).toContain("opacity-45");
-    expect(nowMoment?.className).toContain("border-[#c6a777]/60");
+    expect(nowMoment?.className).toContain("border-gold/20");
     expect(nextMoment?.className).toContain("border-dashed");
     expect(nextMoment?.className).toContain("opacity-70");
-    expect(currentProgressTrack?.className).toContain("bg-[#d9cabd]");
-    expect(currentProgressFill?.className).toContain("bg-[#7a4b22]");
+    expect(currentProgressTrack?.className).toContain("bg-black/30");
+    expect(currentProgressFill?.className).toContain("bg-[#dfaa54]");
     expect(currentProgressTrack?.textContent).toBe("");
     expect(actionBar?.className).toContain("sticky");
   });

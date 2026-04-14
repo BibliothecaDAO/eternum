@@ -35,7 +35,8 @@ This directory holds internal architecture notes, PRDs, plans, and roadmap docum
 
 ### PRDs
 
-- Coarse default tick regression: [`docs/prd-coarse-default-tick-regression.md`](./prd-coarse-default-tick-regression.md)
+- Coarse default tick regression:
+  [`docs/prd-coarse-default-tick-regression.md`](./prd-coarse-default-tick-regression.md)
 - Entry route and network switch hardening:
   [`docs/prd-entry-route-and-network-switch-hardening.md`](./prd-entry-route-and-network-switch-hardening.md)
 - Loading stall recovery: [`docs/prd-loading-stall-recovery.md`](./prd-loading-stall-recovery.md)
