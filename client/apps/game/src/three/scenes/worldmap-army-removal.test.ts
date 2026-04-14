@@ -62,7 +62,7 @@ describe("findSupersededArmyRemoval", () => {
     expect(result).toBeUndefined();
   });
 
-  it("prefers matching owner-structure when multiple nearby candidates exist", () => {
+  it("does not supersede on owner-structure-only nearby matches", () => {
     const result = findSupersededArmyRemoval({
       incomingEntityId: 2,
       incomingOwnerAddress: 123n,
@@ -75,22 +75,13 @@ describe("findSupersededArmyRemoval", () => {
           reason: "tile",
           chunkKey: "0,0",
           ownerAddress: 123n,
-          ownerStructureId: 88,
-          position: { col: 10, row: 10 },
-        },
-        {
-          entityId: 3,
-          scheduledAt: Date.now(),
-          reason: "tile",
-          chunkKey: "0,0",
-          ownerAddress: 123n,
           ownerStructureId: 99,
           position: { col: 11, row: 11 },
         },
       ],
     });
 
-    expect(result).toBe(3);
+    expect(result).toBeUndefined();
   });
 
   it("does not supersede on nearby-only match when there is exactly one candidate", () => {

@@ -15,14 +15,12 @@ interface PendingArmyRemovalCandidate<TArmyId> {
   chunkKey: string;
   reason: "tile" | "zero";
   ownerAddress?: bigint;
-  ownerStructureId?: unknown;
   position?: ArmyHexPosition;
 }
 
 interface FindSupersededArmyRemovalInput<TArmyId> {
   incomingEntityId: TArmyId;
   incomingOwnerAddress?: bigint;
-  incomingOwnerStructureId?: unknown;
   incomingPosition: ArmyHexPosition;
   pending: PendingArmyRemovalCandidate<TArmyId>[];
 }
@@ -31,10 +29,6 @@ function isWithinReplacementRadius(a: ArmyHexPosition, b: ArmyHexPosition): bool
   const colDelta = Math.abs(a.col - b.col);
   const rowDelta = Math.abs(a.row - b.row);
   return Math.max(colDelta, rowDelta) <= 1;
-}
-
-function hasUsableStructureId(structureId: unknown): boolean {
-  return structureId !== undefined && structureId !== null && structureId !== 0 && structureId !== 0n;
 }
 
 function isExactPosition(a: ArmyHexPosition, b: ArmyHexPosition): boolean {
@@ -58,7 +52,7 @@ export function isStaleTrackedArmyTileRemoval(input: StaleTrackedArmyTileRemoval
 export function findSupersededArmyRemoval<TArmyId>(
   input: FindSupersededArmyRemovalInput<TArmyId>,
 ): TArmyId | undefined {
-  const { incomingEntityId, incomingOwnerAddress, incomingOwnerStructureId, incomingPosition, pending } = input;
+  const { incomingEntityId, incomingOwnerAddress, incomingPosition, pending } = input;
 
   if (incomingOwnerAddress === undefined || incomingOwnerAddress === 0n) {
     return undefined;
@@ -84,19 +78,6 @@ export function findSupersededArmyRemoval<TArmyId>(
     }
     return true;
   });
-
-  if (hasUsableStructureId(incomingOwnerStructureId)) {
-    const structureMatches = candidatePool.filter(
-      (candidate) =>
-        hasUsableStructureId(candidate.ownerStructureId) && candidate.ownerStructureId === incomingOwnerStructureId,
-    );
-    if (structureMatches.length === 1) {
-      return structureMatches[0].entityId;
-    }
-    if (structureMatches.length > 1) {
-      return undefined;
-    }
-  }
 
   const exactPositionMatches = candidatePool.filter(
     (candidate) => candidate.position && isExactPosition(candidate.position, incomingPosition),

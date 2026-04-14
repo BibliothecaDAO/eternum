@@ -886,7 +886,6 @@ export default class WorldmapScene extends WarpTravel {
       chunkKey: string;
       reason: "tile" | "zero";
       ownerAddress?: bigint;
-      ownerStructureId?: ID | null;
       position?: HexPosition;
     }
   > = new Map();
@@ -1189,13 +1188,12 @@ export default class WorldmapScene extends WarpTravel {
         if (update.removed) {
           this.scheduleArmyRemoval(update.entityId, "tile", {
             ownerAddress: update.ownerAddress,
-            ownerStructureId: update.ownerStructureId,
             position: { col: normalizedPos.x, row: normalizedPos.y },
           });
           return;
         }
 
-        this.resolveSupersededPendingArmyRemoval(update.entityId, update.ownerAddress, update.ownerStructureId, {
+        this.resolveSupersededPendingArmyRemoval(update.entityId, update.ownerAddress, {
           col: normalizedPos.x,
           row: normalizedPos.y,
         });
@@ -3672,7 +3670,6 @@ export default class WorldmapScene extends WarpTravel {
   private resolveSupersededPendingArmyRemoval(
     incomingEntityId: ID,
     incomingOwnerAddress: bigint | undefined,
-    incomingOwnerStructureId: ID | null | undefined,
     incomingPosition: HexPosition,
   ): void {
     const pending = Array.from(this.pendingArmyRemovalMeta.entries()).map(([entityId, meta]) => ({
@@ -3681,14 +3678,12 @@ export default class WorldmapScene extends WarpTravel {
       chunkKey: meta.chunkKey,
       reason: meta.reason,
       ownerAddress: meta.ownerAddress,
-      ownerStructureId: meta.ownerStructureId,
       position: meta.position,
     }));
 
     const supersededEntityId = findSupersededArmyRemoval({
       incomingEntityId,
       incomingOwnerAddress,
-      incomingOwnerStructureId,
       incomingPosition,
       pending,
     });
@@ -3704,7 +3699,7 @@ export default class WorldmapScene extends WarpTravel {
   private scheduleArmyRemoval(
     entityId: ID,
     reason: "tile" | "zero" = "tile",
-    context?: { ownerAddress?: bigint; ownerStructureId?: ID | null; position?: HexPosition },
+    context?: { ownerAddress?: bigint; position?: HexPosition },
   ) {
     const existing = this.pendingArmyRemovals.get(entityId);
     if (existing) {
@@ -3726,8 +3721,6 @@ export default class WorldmapScene extends WarpTravel {
     const removalOwnerAddress =
       context?.ownerAddress ??
       (removalPosition ? this.armyHexes.get(removalPosition.col)?.get(removalPosition.row)?.owner : undefined);
-    const removalOwnerStructureId = context?.ownerStructureId ?? this.armyStructureOwners.get(entityId);
-
     if (
       isStaleTrackedArmyTileRemoval({
         reason,
@@ -3746,7 +3739,6 @@ export default class WorldmapScene extends WarpTravel {
       chunkKey: this.currentChunk,
       reason,
       ownerAddress: removalOwnerAddress,
-      ownerStructureId: removalOwnerStructureId,
       position: removalPosition,
     });
 
