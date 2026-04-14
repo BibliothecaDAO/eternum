@@ -5,8 +5,9 @@ import { resolveAutoSettleRuntimeState, type AutoSettleRuntimeInput } from "./au
 const createInput = (overrides: Partial<AutoSettleRuntimeInput> = {}): AutoSettleRuntimeInput => ({
   enabled: true,
   persistedStatus: "armed",
-  settleAtSec: 130,
+  unlockAtSec: 130,
   nowSec: 100,
+  opensOnUnlockEdge: true,
   hasConnectedWallet: true,
   hasCompatibleNetwork: true,
   ...overrides,
@@ -57,6 +58,28 @@ describe("resolveAutoSettleRuntimeState", () => {
     });
   });
 
+  it("keeps auto-settle armed without auto-opening when the entry was armed after unlock", () => {
+    expect(
+      resolveAutoSettleRuntimeState(
+        createInput({
+          nowSec: 130,
+          opensOnUnlockEdge: false,
+        }),
+      ),
+    ).toMatchObject({
+      phase: "ready-manual",
+      shouldOpenEntry: false,
+      shouldPrimeAssets: false,
+    });
+  });
+
+  it("stays armed while the visible game countdown is still running", () => {
+    expect(resolveAutoSettleRuntimeState(createInput({ nowSec: 124 }))).toMatchObject({
+      phase: "prewarming",
+      shouldOpenEntry: false,
+    });
+  });
+
   it("stops automatic reopening after a failed attempt until the user intervenes", () => {
     expect(
       resolveAutoSettleRuntimeState(
@@ -67,6 +90,21 @@ describe("resolveAutoSettleRuntimeState", () => {
       ),
     ).toMatchObject({
       phase: "failed",
+      shouldOpenEntry: false,
+    });
+  });
+
+  it("keeps paused wallet/network logic for unlock-edge armed entries", () => {
+    expect(
+      resolveAutoSettleRuntimeState(
+        createInput({
+          nowSec: 130,
+          opensOnUnlockEdge: true,
+          hasConnectedWallet: false,
+        }),
+      ),
+    ).toMatchObject({
+      phase: "paused-wallet",
       shouldOpenEntry: false,
     });
   });

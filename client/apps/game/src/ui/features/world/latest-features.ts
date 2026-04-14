@@ -39,6 +39,14 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-04-14",
+    title: "Blitz Auto-Settle Timer Gate",
+    description:
+      "Blitz auto-settle and manual entry now wait for the visible game countdown to finish before showing realm settlement, so registering early no longer pushes you into settling before the timer ends.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-14",
     title: "Blitz Settlement Status Fix",
     description:
       "Blitz settlement now treats indexed realm creation as a successful finish and keeps the progress UI in sync, so completed entries no longer flash a false failure warning before you enter the game.",

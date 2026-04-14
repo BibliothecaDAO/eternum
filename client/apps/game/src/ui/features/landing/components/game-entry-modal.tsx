@@ -66,6 +66,7 @@ import {
   resolveGameEntryModalPhase,
   type GameEntryModalPhase as ModalPhase,
 } from "./game-entry-phase";
+import { resolveBlitzSettlementAvailability } from "./game-entry-blitz-timing";
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
 import { SeasonPassOptionCard } from "./season-pass-option-card";
 import { SettlementPlannerMap } from "./settlement-planner-map";
@@ -112,6 +113,19 @@ const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
     console.log("[GameEntryModal]", ..._args);
   }
+};
+
+const formatUnlockCountdown = (secondsLeft: number): string => {
+  const total = Math.max(0, Math.floor(secondsLeft));
+  const hours = Math.floor(total / 3600)
+    .toString()
+    .padStart(2, "0");
+  const minutes = Math.floor((total % 3600) / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (total % 60).toString().padStart(2, "0");
+
+  return `${hours}:${minutes}:${seconds}`;
 };
 
 const extractTransactionHash = (value: unknown): string | null => {
@@ -1023,6 +1037,36 @@ const SettlementPhase = ({
       {viewModel.showError && (
         <p className="text-xs text-red-300 text-center mt-2">Settlement failed. Please try again.</p>
       )}
+    </div>
+  );
+};
+
+const SettlementWaitingPhase = ({ secondsUntilUnlock }: { secondsUntilUnlock: number | null }) => {
+  const countdownLabel =
+    secondsUntilUnlock == null
+      ? "Waiting for the game timer to unlock settlement."
+      : formatUnlockCountdown(secondsUntilUnlock);
+
+  return (
+    <div className="flex flex-col">
+      <div className="text-center mb-4">
+        <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Settlement pending" />
+        <h2 className="text-lg font-semibold text-gold">Settlement Opens Soon</h2>
+        <p className="text-xs text-gold/60 mt-1">
+          You are registered, but realm settlement stays locked until the visible game timer ends.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-gold/20 bg-black/25 px-4 py-5 text-center">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-gold/30 bg-gold/10">
+          <AlertCircle className="h-5 w-5 text-gold" />
+        </div>
+        <p className="text-[10px] uppercase tracking-[0.14em] text-gold/60">Settlement Unlock</p>
+        <p className="mt-2 font-mono text-2xl text-gold">{countdownLabel}</p>
+        <p className="mt-2 text-xs text-white/60">
+          This entry flow will switch to settlement automatically once the countdown reaches zero.
+        </p>
+      </div>
     </div>
   );
 };
@@ -2983,6 +3027,7 @@ export const GameEntryModal = ({
   const [preflightError, setPreflightError] = useState<Error | null>(null);
   const [preflightRetryNonce, setPreflightRetryNonce] = useState(0);
   const [settlementCheckComplete, setSettlementCheckComplete] = useState(false);
+  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
 
   // Settlement state
   const [settleStage, setSettleStage] = useState<SettleStage>("idle");
@@ -3481,7 +3526,24 @@ export const GameEntryModal = ({
     plannerOpenedRef.current = false;
   }, []);
 
-  const nowSeconds = Date.now() / 1000;
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setNowSec(Math.floor(Date.now() / 1000));
+    const id = window.setInterval(() => {
+      setNowSec(Math.floor(Date.now() / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, [isOpen]);
+
+  const blitzSettlementAvailability = resolveBlitzSettlementAvailability({
+    startMainAt: worldMeta?.startMainAt ?? null,
+    nowSec,
+  });
+  const nowSeconds = nowSec;
   const seasonStartAt = worldMeta?.startSettlingAt ?? worldMeta?.startMainAt ?? null;
   const seasonHasStarted = seasonStartAt != null && seasonStartAt <= nowSeconds;
   const seasonNotEnded = worldMeta?.endAt == null || worldMeta.endAt === 0 || nowSeconds <= worldMeta.endAt;
@@ -3646,6 +3708,7 @@ export const GameEntryModal = ({
       checksComplete,
       needsHyperstructureInit,
       needsSettlement,
+      isBlitzSettlementUnlocked: blitzSettlementAvailability.isUnlocked,
     });
 
     debugLog(worldName, "Phase determined:", result, {
@@ -3659,6 +3722,7 @@ export const GameEntryModal = ({
       hyperstructureCheckComplete,
       needsHyperstructureInit,
       needsSettlement,
+      isBlitzSettlementUnlocked: blitzSettlementAvailability.isUnlocked,
       worldMode,
       startSettlingAt: worldMeta?.startSettlingAt,
       startMainAt: worldMeta?.startMainAt,
@@ -3704,6 +3768,7 @@ export const GameEntryModal = ({
     hyperstructureCheckComplete,
     needsHyperstructureInit,
     needsSettlement,
+    blitzSettlementAvailability.isUnlocked,
     isEternumMode,
     isLoadingEternumPrereqs,
     isCheckingWorldAvailability,
@@ -5317,6 +5382,16 @@ export const GameEntryModal = ({
                   onInitialize={handleInitializeHyperstructure}
                   onInitializeAll={handleInitializeAllHyperstructures}
                 />
+              </motion.div>
+            )}
+            {phase === "settlement-waiting" && (
+              <motion.div
+                key="settlement-waiting"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <SettlementWaitingPhase secondsUntilUnlock={blitzSettlementAvailability.secondsUntilUnlock} />
               </motion.div>
             )}
             {phase === "settlement" && (
