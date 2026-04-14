@@ -1,9 +1,9 @@
-export interface ResolveBlitzSettlementAvailabilityInput {
+interface ResolveBlitzSettlementAvailabilityInput {
   startMainAt: number | null;
   nowSec: number;
 }
 
-export interface BlitzSettlementAvailability {
+interface BlitzSettlementAvailability {
   unlockAtSec: number | null;
   isUnlocked: boolean;
   secondsUntilUnlock: number | null;
