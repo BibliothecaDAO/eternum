@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-14T19:47:46.785Z",
+  "updatedAt": "2026-04-14T21:32:43.141Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1254,6 +1254,19 @@
         "describedAt": "2026-04-14T19:47:46.785Z"
       },
       "updatedAt": "2026-04-14T19:47:46.785Z"
+    },
+    "bltz-clash-671": {
+      "gameName": "bltz-clash-671",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-clash-671/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-14T21:32:43.141Z"
+      },
+      "updatedAt": "2026-04-14T21:32:43.141Z"
     }
   }
 }
