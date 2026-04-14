@@ -5,7 +5,7 @@
   "scripts": {
     "build": "pnpm --dir ./apps/game build",
     "build:docs": "pnpm --dir ./apps/game-docs build",
-    "build:packages": "pnpm --dir ../packages/types build && pnpm --dir ../packages/amm-sdk build && pnpm --dir ../packages/ammv2-sdk build && pnpm --dir ../packages/torii build && pnpm --dir ../packages/provider build && pnpm --dir ../packages/dojo build && pnpm --dir ../packages/core build && pnpm --dir ../packages/react build",
+    "build:packages": "pnpm --dir ../packages/types build && pnpm --dir ../packages/ammv2-sdk build && pnpm --dir ../packages/torii build && pnpm --dir ../packages/provider build && pnpm --dir ../packages/dojo build && pnpm --dir ../packages/core build && pnpm --dir ../packages/react build",
     "dev": "pnpm --dir ./apps/game dev",
     "dev:docs": "cd ./apps/game-docs && vocs dev",
     "format": "npx prettier --write . --root=..",

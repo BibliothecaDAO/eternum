@@ -4,8 +4,6 @@ This directory contains the shared SDKs, client libraries, and agent tooling use
 
 ## Package Index
 
-- `@bibliothecadao/amm-sdk` → [`packages/amm-sdk`](./amm-sdk)
-  - SDK for interacting with the Eternum AMM contract on Starknet
 - `@bibliothecadao/ammv2-sdk` → [`packages/ammv2-sdk`](./ammv2-sdk)
   - SDK for interacting with the Eternum AMMv2 indexer and pair math
 - `@bibliothecadao/client` → [`packages/client`](./client)

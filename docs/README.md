@@ -24,10 +24,6 @@ This directory holds internal architecture notes, PRDs, plans, and roadmap docum
 - AI-first harness architecture:
   [`docs/architecture/ai-first-harness-architecture.md`](./architecture/ai-first-harness-architecture.md)
 
-### Reference Notes
-
-- Agora / AMM architecture notes: [`docs/agora.md`](./agora.md)
-
 ### Plans
 
 - Factory wiring: [`docs/plans/factory-wiring.md`](./plans/factory-wiring.md)
