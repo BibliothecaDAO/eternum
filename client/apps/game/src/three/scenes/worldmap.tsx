@@ -11,7 +11,7 @@ import {
 } from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { usePendingStaminaStore } from "@/hooks/store/use-pending-stamina-store";
+import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -1035,7 +1035,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
         this.clearPendingArmyMovement(plan.entityId);
-        usePendingStaminaStore.getState().clearPendingStamina(plan.entityId);
+        useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
         this.disposePendingMovementVisualLifecycle(plan.entityId);
         this.arrivalGhostManager?.clearArrivalGhost(plan.entityId, "tx_failed");
       }
@@ -2487,7 +2487,7 @@ export default class WorldmapScene extends WarpTravel {
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
           this.clearPendingArmyMovement(selectedEntityId);
-          usePendingStaminaStore.getState().clearPendingStamina(selectedEntityId);
+          useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
           this.arrivalGhostManager.clearArrivalGhost(selectedEntityId, "tx_failed");
           cleanup();
@@ -2745,12 +2745,12 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    usePendingStaminaStore.getState().setPendingStamina({
+    useArmyStaminaSourceStore.getState().setPendingStaminaSource({
+      source: "pending",
       entityId: input.entityId,
       amount: BigInt(Math.max(0, Math.floor(input.currentStamina) - Math.floor(staminaCost))),
       updatedTick: input.currentArmiesTick,
-      createdAt: Date.now(),
-      actionKind: input.actionKind,
+      capturedAtMs: Date.now(),
     });
   }
 
@@ -2962,7 +2962,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       this.clearPendingArmyMovement(entityId);
-      usePendingStaminaStore.getState().clearPendingStamina(entityId);
+      useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
       this.arrivalGhostManager.clearArrivalGhost(entityId, "stale_timeout");
       if (fallbackPlan.shouldRequestChunkRefresh) {

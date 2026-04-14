@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-import { getFreshPendingStaminaOverlay } from "@/hooks/store/use-pending-stamina-store";
+import { getFreshPendingStaminaSource } from "@/lib/army-stamina/source-store";
 import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { ArmyModel } from "@/three/managers/army-model";
@@ -2764,7 +2764,7 @@ ${
     tier: TroopTier;
   }): { current: number; max: number; displayRatio: number } | null {
     const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
-    const pendingStamina = getFreshPendingStaminaOverlay(input.entityId);
+    const pendingStamina = getFreshPendingStaminaSource(input.entityId);
     const staminaSnapshot = getExplorerStaminaSnapshot({
       currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroops(input.entityId),

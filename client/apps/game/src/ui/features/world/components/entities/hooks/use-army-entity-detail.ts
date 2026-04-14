@@ -1,7 +1,8 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
+import { getFreshPendingStaminaSource, useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { usePendingStaminaStore } from "@/hooks/store/use-pending-stamina-store";
-import { buildProjectedStaminaDisplayModel, type ProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
+import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
@@ -11,7 +12,7 @@ import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
@@ -20,7 +21,7 @@ interface UseArmyEntityDetailOptions {
 interface DerivedArmyData {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
-  staminaDisplay: ProjectedStaminaDisplayModel | null;
+  staminaDisplay: ArmyStaminaPresentation | null;
   playerGuild?: { name: string } | undefined;
   addressName?: string;
   isMine: boolean;
@@ -48,7 +49,8 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const pendingStamina = usePendingStaminaStore((state) => state.overlays[String(armyEntityId)]);
+  const setAuthoritativeTroopsSnapshot = useArmyStaminaSourceStore((state) => state.setAuthoritativeTroopsSnapshot);
+  const pendingStamina = useArmyStaminaSourceStore((state) => state.pendingSources[String(armyEntityId)]);
   const liveExplorerTroops = useComponentValue(
     components.ExplorerTroops,
     getEntityIdFromKeys([BigInt(armyEntityId)]),
@@ -69,19 +71,32 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
 
   const explorer = explorerData?.explorer;
   const explorerResources = explorerData?.resources;
+
+  useEffect(() => {
+    if (!explorer?.troops) {
+      return;
+    }
+
+    setAuthoritativeTroopsSnapshot({
+      entityId: armyEntityId,
+      source: "snapshot",
+      troops: explorer.troops,
+    });
+  }, [armyEntityId, explorer?.troops, setAuthoritativeTroopsSnapshot]);
+
   const staminaSnapshot = useMemo(
     () =>
       getExplorerStaminaSnapshot({
+        entityId: armyEntityId,
         currentArmiesTick,
         snapshotTroops: explorer?.troops,
         liveTroops: liveExplorerTroops,
-        pendingStamina:
-          pendingStamina && Date.now() - pendingStamina.createdAt <= 60_000
-            ? {
-                amount: pendingStamina.amount,
-                updatedTick: pendingStamina.updatedTick,
-              }
-            : null,
+        pendingStamina: getFreshPendingStaminaSource(armyEntityId)
+          ? {
+              amount: getFreshPendingStaminaSource(armyEntityId)!.amount,
+              updatedTick: getFreshPendingStaminaSource(armyEntityId)!.updatedTick,
+            }
+          : null,
       }),
     [currentArmiesTick, explorer?.troops, liveExplorerTroops, pendingStamina],
   );
