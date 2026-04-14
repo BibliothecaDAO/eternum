@@ -239,7 +239,10 @@ const resolveSidebarStructureStatus = ({
 }: {
   structureCategory: StructureType | undefined;
   structureLevel: number;
-  structureBuildings: { population?: { current?: bigint | number | null; max?: bigint | number | null } | null } | null;
+  structureBuildings:
+    | { population?: { current?: bigint | number | null; max?: bigint | number | null } | null }
+    | null
+    | undefined;
   occupiedBuildingTiles: number | null | undefined;
   fallbackStatus?: StructureStatusSnapshot;
 }) => {
