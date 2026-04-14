@@ -132,4 +132,61 @@ describe("ArmyManager stamina sync", () => {
     expect(getComponentValueMock).toHaveBeenCalled();
     expect(army.currentStamina).toBe(50);
   });
+
+  it("falls back to cached on-chain stamina when the live explorer snapshot is older", () => {
+    const army = {
+      entityId: 1,
+      troopCount: 10,
+      category: "Knight",
+      tier: 1,
+      onChainStamina: { amount: 40n, updatedTick: 6 },
+      currentStamina: 0,
+    };
+
+    const staleLiveTroops = {
+      category: "Knight",
+      tier: 1,
+      count: 10n,
+      stamina: {
+        amount: 10n,
+        updated_tick: 3n,
+      },
+      boosts: {
+        incr_stamina_regen_percent_num: 0,
+        incr_stamina_regen_tick_count: 0,
+        incr_explore_reward_percent_num: 0,
+        incr_explore_reward_end_tick: 0,
+        incr_damage_dealt_percent_num: 0,
+        incr_damage_dealt_end_tick: 0,
+        decr_damage_gotten_percent_num: 0,
+        decr_damage_gotten_end_tick: 0,
+      },
+      battle_cooldown_end: 0,
+    };
+
+    getComponentValueMock.mockReturnValue({
+      troops: staleLiveTroops,
+    });
+
+    getStaminaMock.mockImplementation((troops: typeof staleLiveTroops) => ({
+      amount: troops.stamina.updated_tick === 3n ? 10n : 40n,
+      updated_tick: troops.stamina.updated_tick,
+    }));
+
+    const fakeManager = {
+      armies: new Map([[1, army]]),
+      entityIdLabels: new Map(),
+      components: {
+        ExplorerTroops: {},
+      },
+      resolveLiveExplorerTroops(entityId: number) {
+        return ArmyManager.prototype["resolveLiveExplorerTroops"].call(this, entityId);
+      },
+      updateArmyLabelData: vi.fn(),
+    };
+
+    ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager);
+
+    expect(army.currentStamina).toBe(40);
+  });
 });

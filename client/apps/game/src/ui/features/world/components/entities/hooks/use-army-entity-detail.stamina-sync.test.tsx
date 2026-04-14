@@ -188,4 +188,65 @@ describe("useArmyEntityDetail stamina sync", () => {
 
     expect(container.textContent).toContain("20/120");
   });
+
+  it("prefers the newer Torii troop stamina when the live troop snapshot is stale", async () => {
+    const newerSnapshotTroops = {
+      ...snapshotTroops,
+      stamina: { amount: 65n, updated_tick: 9n },
+    };
+    const staleLiveTroops = {
+      ...liveTroops,
+      stamina: { amount: 20n, updated_tick: 5n },
+    };
+
+    useQueryMock.mockImplementation(({ queryKey }: { queryKey: [string] }) => {
+      if (queryKey[0] === "explorer") {
+        return {
+          data: {
+            explorer: {
+              troops: newerSnapshotTroops,
+              owner: "0x123",
+            },
+            resources: [],
+            relicEffects: [],
+          },
+          isLoading: false,
+          refetch: vi.fn(),
+        };
+      }
+
+      return {
+        data: {
+          structure: {
+            owner: "0x123",
+          },
+          resources: [],
+        },
+        isLoading: false,
+        refetch: vi.fn(),
+      };
+    });
+
+    useComponentValueMock.mockReturnValue({
+      troops: staleLiveTroops,
+    });
+
+    getStaminaMock.mockImplementation((troops: typeof snapshotTroops) => {
+      if (troops === staleLiveTroops) {
+        return { amount: 20n, updated_tick: 5n };
+      }
+
+      if (troops === newerSnapshotTroops) {
+        return { amount: 65n, updated_tick: 9n };
+      }
+
+      return { amount: 80n, updated_tick: 5n };
+    });
+
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    expect(container.textContent).toContain("65/120");
+  });
 });

@@ -15,49 +15,58 @@ interface ExplorerStaminaSnapshotInput {
   fallbackArmy?: ExplorerArmyFallback | null;
 }
 
-const resolveExplorerTroopsForStamina = (input: {
+const buildFallbackTroopsSnapshot = (fallbackArmy: ExplorerArmyFallback): Troops => ({
+  category: fallbackArmy.category,
+  tier: fallbackArmy.tier,
+  count: BigInt(fallbackArmy.troopCount),
+  stamina: {
+    amount: fallbackArmy.onChainStamina.amount,
+    updated_tick: BigInt(fallbackArmy.onChainStamina.updatedTick),
+  },
+  boosts: {
+    incr_damage_dealt_percent_num: 0,
+    incr_damage_dealt_end_tick: 0,
+    decr_damage_gotten_percent_num: 0,
+    decr_damage_gotten_end_tick: 0,
+    incr_stamina_regen_percent_num: 0,
+    incr_stamina_regen_tick_count: 0,
+    incr_explore_reward_percent_num: 0,
+    incr_explore_reward_end_tick: 0,
+  },
+  battle_cooldown_end: 0,
+});
+
+export const getTroopsStaminaUpdatedTick = (troops: Troops | null | undefined): bigint => {
+  const updatedTick = troops?.stamina?.updated_tick;
+  return typeof updatedTick === "bigint" ? updatedTick : 0n;
+};
+
+export const selectFreshestTroopsSnapshot = (input: {
   snapshotTroops?: Troops | null;
   liveTroops?: Troops | null;
   fallbackArmy?: ExplorerArmyFallback | null;
 }): Troops | null => {
-  if (input.liveTroops) {
-    return input.liveTroops;
-  }
+  const fallbackTroops = input.fallbackArmy ? buildFallbackTroopsSnapshot(input.fallbackArmy) : null;
+  const candidates = [input.liveTroops ?? null, input.snapshotTroops ?? null, fallbackTroops];
+  const availableCandidates = candidates.filter((candidate): candidate is Troops => candidate !== null);
 
-  if (input.snapshotTroops) {
-    return input.snapshotTroops;
-  }
-
-  if (!input.fallbackArmy) {
+  if (availableCandidates.length === 0) {
     return null;
   }
 
-  return {
-    category: input.fallbackArmy.category,
-    tier: input.fallbackArmy.tier,
-    count: BigInt(input.fallbackArmy.troopCount),
-    stamina: {
-      amount: input.fallbackArmy.onChainStamina.amount,
-      updated_tick: BigInt(input.fallbackArmy.onChainStamina.updatedTick),
-    },
-    boosts: {
-      incr_damage_dealt_percent_num: 0,
-      incr_damage_dealt_end_tick: 0,
-      decr_damage_gotten_percent_num: 0,
-      decr_damage_gotten_end_tick: 0,
-      incr_stamina_regen_percent_num: 0,
-      incr_stamina_regen_tick_count: 0,
-      incr_explore_reward_percent_num: 0,
-      incr_explore_reward_end_tick: 0,
-    },
-    battle_cooldown_end: 0,
-  };
+  return availableCandidates.reduce((freshest, candidate) => {
+    if (getTroopsStaminaUpdatedTick(candidate) > getTroopsStaminaUpdatedTick(freshest)) {
+      return candidate;
+    }
+
+    return freshest;
+  });
 };
 
 export const getExplorerStaminaSnapshot = (
   input: ExplorerStaminaSnapshotInput,
 ): { current: number; max: number; stamina: { amount: bigint; updated_tick: bigint }; troops: Troops } | null => {
-  const troops = resolveExplorerTroopsForStamina(input);
+  const troops = selectFreshestTroopsSnapshot(input);
   if (!troops) {
     return null;
   }
