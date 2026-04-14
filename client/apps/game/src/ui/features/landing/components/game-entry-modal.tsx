@@ -1041,11 +1041,7 @@ const SettlementPhase = ({
   );
 };
 
-const SettlementWaitingPhase = ({
-  secondsUntilUnlock,
-}: {
-  secondsUntilUnlock: number | null;
-}) => {
+const SettlementWaitingPhase = ({ secondsUntilUnlock }: { secondsUntilUnlock: number | null }) => {
   const countdownLabel =
     secondsUntilUnlock == null
       ? "Waiting for the game timer to unlock settlement."
