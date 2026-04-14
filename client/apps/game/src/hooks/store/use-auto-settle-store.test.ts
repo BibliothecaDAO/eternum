@@ -146,7 +146,6 @@ describe("useAutoSettleStore", () => {
       }),
     );
 
-    useAutoSettleStore.setState({ entries: {} });
     await useAutoSettleStore.persist.rehydrate();
 
     expect(useAutoSettleStore.getState().getEntry(key)?.opensOnUnlockEdge).toBe(true);
