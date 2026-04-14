@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-14T05:57:01.906Z",
+  "updatedAt": "2026-04-14T08:42:16.067Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1228,6 +1228,19 @@
         "describedAt": "2026-04-13T21:42:14.891Z"
       },
       "updatedAt": "2026-04-13T21:42:14.891Z"
+    },
+    "bltz-stomp-910": {
+      "gameName": "bltz-stomp-910",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-stomp-910/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-14T08:42:16.066Z"
+      },
+      "updatedAt": "2026-04-14T08:42:16.067Z"
     }
   }
 }
