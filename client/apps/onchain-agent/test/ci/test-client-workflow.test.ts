@@ -25,7 +25,9 @@ describe("test-client workflow", () => {
     expect(workflow).toContain("detect-scope:");
     expect(workflow).toContain("workflow-contract:");
     expect(workflow).toContain("has_workflow_contract_changes");
-    expect(workflow).toContain("pnpm --dir ./client/apps/onchain-agent exec vitest run test/ci/test-client-workflow.test.ts");
+    expect(workflow).toContain(
+      "pnpm --dir ./client/apps/onchain-agent exec vitest run test/ci/test-client-workflow.test.ts",
+    );
   });
 
   it("runs the client quality gates instead of skipping the test suite", () => {
