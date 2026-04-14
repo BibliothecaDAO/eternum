@@ -12,8 +12,18 @@ interface HandleWorldmapRefreshCommitRuntimeInput {
     shouldCommit: boolean;
     shouldDropAsStale: boolean;
   };
-  runImmediateManagerCatchUp: (chunkKey: string, options: { force: boolean; transitionToken: number }) => Promise<void>;
-  scheduleDeferredManagerCatchUp: (chunkKey: string, options: { force: boolean; transitionToken: number }) => void;
+  runImmediateFullManagerCatchUp: (
+    chunkKey: string,
+    options: { force: boolean; transitionToken: number },
+  ) => Promise<void>;
+  runImmediateCriticalManagerCatchUp: (
+    chunkKey: string,
+    options: { force: boolean; transitionToken: number },
+  ) => Promise<void>;
+  scheduleDeferredNonCriticalManagerCatchUp: (
+    chunkKey: string,
+    options: { force: boolean; transitionToken: number },
+  ) => void;
   stagedPathEnabled: boolean;
   tileFetchSucceeded: boolean;
   transitionToken: number;
@@ -38,12 +48,16 @@ export async function handleWorldmapRefreshCommitRuntime(
 
   input.commitPreparedTerrain(input.preparedTerrain);
   if (input.stagedPathEnabled) {
-    input.scheduleDeferredManagerCatchUp(input.chunkKey, {
+    await input.runImmediateCriticalManagerCatchUp(input.chunkKey, {
+      force: input.force,
+      transitionToken: input.transitionToken,
+    });
+    input.scheduleDeferredNonCriticalManagerCatchUp(input.chunkKey, {
       force: input.force,
       transitionToken: input.transitionToken,
     });
   } else {
-    await input.runImmediateManagerCatchUp(input.chunkKey, {
+    await input.runImmediateFullManagerCatchUp(input.chunkKey, {
       force: input.force,
       transitionToken: input.transitionToken,
     });
