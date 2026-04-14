@@ -375,7 +375,7 @@ const GameCard = ({
   const autoSettleEntry = useAutoSettleStore((state) =>
     autoSettleEntryKey ? state.entries[autoSettleEntryKey] : undefined,
   );
-  const upsertAutoSettleEntry = useAutoSettleStore((state) => state.upsertEntry);
+  const armEntry = useAutoSettleStore((state) => state.armEntry);
   const setEnabled = useAutoSettleStore((state) => state.setEnabled);
   const showRegistered = game.isRegistered || registrationStage === "done";
   const blitzSettlementAvailability = resolveBlitzSettlementAvailability({
@@ -390,6 +390,7 @@ const GameCard = ({
     persistedStatus: autoSettleEntry?.status ?? "idle",
     unlockAtSec,
     nowSec,
+    opensOnUnlockEdge: autoSettleEntry?.opensOnUnlockEdge ?? false,
     hasConnectedWallet,
     hasCompatibleNetwork: canInteractOnChain(game.chain),
   });
@@ -474,9 +475,10 @@ const GameCard = ({
 
   const handleAutoSettleToggle = useCallback(() => {
     if (!autoSettleEntryKey || unlockAtSec == null || !playerAddress) return;
+    const opensOnUnlockEdge = nowSec < unlockAtSec;
 
-    if (!autoSettleEntry) {
-      upsertAutoSettleEntry(autoSettleEntryKey, {
+    if (!autoSettleEntry || !autoSettleEntry.enabled) {
+      armEntry(autoSettleEntryKey, {
         enabled: true,
         walletAddress: playerAddress,
         chain: game.chain,
@@ -484,6 +486,7 @@ const GameCard = ({
         worldKey: game.worldKey,
         unlockAtSec,
         armedAtMs: Date.now(),
+        opensOnUnlockEdge,
         status: "armed",
         lastError: null,
         lastAttemptAtMs: null,
@@ -498,10 +501,11 @@ const GameCard = ({
     game.chain,
     game.name,
     game.worldKey,
+    nowSec,
     playerAddress,
+    armEntry,
     setEnabled,
     unlockAtSec,
-    upsertAutoSettleEntry,
   ]);
 
   // Show success toast when registration completes
@@ -514,10 +518,9 @@ const GameCard = ({
     if (handledRegistrationStageRef.current) return;
     handledRegistrationStageRef.current = true;
 
-    if (autoSettleEntryKey && autoSettleEntry) {
-      setEnabled(autoSettleEntryKey, true);
-    } else if (autoSettleEntryKey && unlockAtSec != null) {
-      upsertAutoSettleEntry(autoSettleEntryKey, {
+    if (autoSettleEntryKey && unlockAtSec != null) {
+      const opensOnUnlockEdge = nowSec < unlockAtSec;
+      armEntry(autoSettleEntryKey, {
         enabled: true,
         walletAddress: playerAddress!,
         chain: game.chain,
@@ -525,6 +528,7 @@ const GameCard = ({
         worldKey: game.worldKey,
         unlockAtSec,
         armedAtMs: Date.now(),
+        opensOnUnlockEdge,
         status: "armed",
         lastError: null,
         lastAttemptAtMs: null,
@@ -536,17 +540,16 @@ const GameCard = ({
     });
     onRegistrationComplete?.(game.worldKey);
   }, [
-    autoSettleEntry,
     autoSettleEntryKey,
     game.chain,
     game.name,
     game.worldKey,
+    nowSec,
     onRegistrationComplete,
     playerAddress,
     registrationStage,
-    setEnabled,
+    armEntry,
     unlockAtSec,
-    upsertAutoSettleEntry,
   ]);
 
   // Status colors - enhanced yellow for upcoming
@@ -1406,6 +1409,7 @@ export const UnifiedGameGrid = ({
         persistedStatus: autoSettleEntry.status,
         unlockAtSec,
         nowSec,
+        opensOnUnlockEdge: autoSettleEntry.opensOnUnlockEdge,
         hasConnectedWallet: landingNetworkState.hasConnectedWallet,
         hasCompatibleNetwork: canInteractWithLandingChain(
           landingNetworkState,

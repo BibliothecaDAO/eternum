@@ -12,6 +12,7 @@ export interface AutoSettleEntryRecord {
   worldKey: string;
   unlockAtSec: number;
   armedAtMs: number;
+  opensOnUnlockEdge: boolean;
   status: AutoSettleStatus;
   lastError: string | null;
   lastAttemptAtMs: number | null;
@@ -20,6 +21,7 @@ export interface AutoSettleEntryRecord {
 interface AutoSettleStoreState {
   entries: Record<string, AutoSettleEntryRecord>;
   getEntry: (key: string) => AutoSettleEntryRecord | undefined;
+  armEntry: (key: string, entry: AutoSettleEntryRecord) => void;
   upsertEntry: (key: string, entry: AutoSettleEntryRecord) => void;
   setEnabled: (key: string, enabled: boolean) => void;
   markOpening: (key: string, attemptedAtMs: number) => void;
@@ -72,6 +74,17 @@ const updateEntry = (
   };
 };
 
+const resolveMigratedUnlockEdgePolicy = (entry: Record<string, unknown>): boolean => {
+  if (typeof entry.opensOnUnlockEdge === "boolean") {
+    return entry.opensOnUnlockEdge;
+  }
+
+  const unlockAtSec = typeof entry.unlockAtSec === "number" ? entry.unlockAtSec : entry.settleAtSec;
+  const armedAtMs = typeof entry.armedAtMs === "number" ? entry.armedAtMs : 0;
+
+  return typeof unlockAtSec === "number" && unlockAtSec > armedAtMs / 1000;
+};
+
 const migrateAutoSettleEntries = (persistedState: unknown): Record<string, AutoSettleEntryRecord> => {
   if (!persistedState || typeof persistedState !== "object") {
     return {};
@@ -93,6 +106,7 @@ const migrateAutoSettleEntries = (persistedState: unknown): Record<string, AutoS
             : typeof entry.settleAtSec === "number"
               ? entry.settleAtSec
               : 0,
+        opensOnUnlockEdge: resolveMigratedUnlockEdgePolicy(entry),
       },
     ]),
   ) as Record<string, AutoSettleEntryRecord>;
@@ -103,6 +117,19 @@ export const useAutoSettleStore = create<AutoSettleStoreState>()(
     (set, get) => ({
       entries: {},
       getEntry: (key) => get().entries[key],
+      armEntry: (key, entry) =>
+        set((state) => ({
+          entries: {
+            ...state.entries,
+            [key]: {
+              ...entry,
+              enabled: true,
+              status: "armed",
+              lastError: null,
+              lastAttemptAtMs: null,
+            },
+          },
+        })),
       upsertEntry: (key, entry) =>
         set((state) => ({
           entries: {
@@ -166,7 +193,7 @@ export const useAutoSettleStore = create<AutoSettleStoreState>()(
     }),
     {
       name: AUTO_SETTLE_STORAGE_KEY,
-      version: 2,
+      version: 3,
       storage: createJSONStorage(createLocalStorage),
       partialize: (state) => ({ entries: state.entries }),
       migrate: (persistedState) => ({

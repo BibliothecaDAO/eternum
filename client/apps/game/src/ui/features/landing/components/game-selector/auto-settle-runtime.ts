@@ -6,6 +6,7 @@ type AutoSettleRuntimePhase =
   | "off"
   | "armed"
   | "prewarming"
+  | "ready-manual"
   | "paused-wallet"
   | "paused-network"
   | "opening"
@@ -18,6 +19,7 @@ export interface AutoSettleRuntimeInput {
   persistedStatus: AutoSettleStatus;
   unlockAtSec: number | null;
   nowSec: number;
+  opensOnUnlockEdge: boolean;
   hasConnectedWallet: boolean;
   hasCompatibleNetwork: boolean;
 }
@@ -37,6 +39,7 @@ export const resolveAutoSettleRuntimeState = ({
   persistedStatus,
   unlockAtSec,
   nowSec,
+  opensOnUnlockEdge,
   hasConnectedWallet,
   hasCompatibleNetwork,
 }: AutoSettleRuntimeInput): AutoSettleRuntimeState => {
@@ -91,10 +94,17 @@ export const resolveAutoSettleRuntimeState = ({
   });
   const resolvedUnlockAtSec = availability.unlockAtSec;
   const isDue = availability.isUnlocked;
-  const inPrewarmWindow =
-    resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec - PREWARM_WINDOW_SECONDS;
-  const inRefreshWindow =
-    resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec - REFRESH_WINDOW_SECONDS;
+  const inPrewarmWindow = resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec - PREWARM_WINDOW_SECONDS;
+  const inRefreshWindow = resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec - REFRESH_WINDOW_SECONDS;
+
+  if (!opensOnUnlockEdge && isDue) {
+    return {
+      phase: "ready-manual",
+      shouldPrimeAssets: false,
+      shouldRefreshAvailability: false,
+      shouldOpenEntry: false,
+    };
+  }
 
   if (!hasConnectedWallet) {
     return {
@@ -183,6 +193,11 @@ export const describeAutoSettleRuntimePhase = ({
       return {
         title: "Prewarming entry",
         detail: `Settles in ${formatCountdown(secondsUntilUnlock)}`,
+      };
+    case "ready-manual":
+      return {
+        title: "Settlement ready",
+        detail: "Auto-settle is armed, but this registration stays on the dashboard.",
       };
     case "paused-wallet":
       return {

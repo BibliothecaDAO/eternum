@@ -15,6 +15,7 @@ const baseEntry: AutoSettleEntryRecord = {
   worldKey: "mainnet:aurora-blitz",
   unlockAtSec: 1_234,
   armedAtMs: 100,
+  opensOnUnlockEdge: true,
   status: "armed",
   lastError: null,
   lastAttemptAtMs: null,
@@ -40,7 +41,7 @@ describe("useAutoSettleStore", () => {
   it("arms auto-settle by default and lets the player turn it off again", () => {
     const key = createAutoSettleEntryKey(baseEntry);
 
-    useAutoSettleStore.getState().upsertEntry(key, baseEntry);
+    useAutoSettleStore.getState().armEntry(key, baseEntry);
     expect(useAutoSettleStore.getState().getEntry(key)).toEqual(baseEntry);
 
     useAutoSettleStore.getState().setEnabled(key, false);
@@ -53,7 +54,7 @@ describe("useAutoSettleStore", () => {
 
   it("tracks opening, failure, and completion for a single armed entry", () => {
     const key = createAutoSettleEntryKey(baseEntry);
-    useAutoSettleStore.getState().upsertEntry(key, baseEntry);
+    useAutoSettleStore.getState().armEntry(key, baseEntry);
 
     useAutoSettleStore.getState().markOpening(key, 200);
     expect(useAutoSettleStore.getState().getEntry(key)).toMatchObject({
@@ -78,7 +79,7 @@ describe("useAutoSettleStore", () => {
 
   it("persists armed entries in local storage so reloads can resume the watcher", () => {
     const key = createAutoSettleEntryKey(baseEntry);
-    useAutoSettleStore.getState().upsertEntry(key, baseEntry);
+    useAutoSettleStore.getState().armEntry(key, baseEntry);
 
     const persisted = window.localStorage.getItem(AUTO_SETTLE_STORAGE_KEY);
     expect(persisted).toContain('"mainnet:aurora-blitz:0x123"');
@@ -89,5 +90,66 @@ describe("useAutoSettleStore", () => {
         },
       },
     });
+  });
+
+  it("stores arming policy for entries that should wait for a future unlock edge", () => {
+    const key = createAutoSettleEntryKey(baseEntry);
+
+    useAutoSettleStore.getState().armEntry(key, {
+      ...baseEntry,
+      opensOnUnlockEdge: true,
+    });
+
+    expect(useAutoSettleStore.getState().getEntry(key)).toMatchObject({
+      status: "armed",
+      enabled: true,
+      opensOnUnlockEdge: true,
+    });
+  });
+
+  it("stores manual-ready entries without future auto-open eligibility", () => {
+    const key = createAutoSettleEntryKey(baseEntry);
+
+    useAutoSettleStore.getState().armEntry(key, {
+      ...baseEntry,
+      opensOnUnlockEdge: false,
+    });
+
+    expect(useAutoSettleStore.getState().getEntry(key)).toMatchObject({
+      status: "armed",
+      enabled: true,
+      opensOnUnlockEdge: false,
+    });
+  });
+
+  it("migrates persisted entries by backfilling unlock-edge policy from unlock timing", async () => {
+    const key = createAutoSettleEntryKey(baseEntry);
+    window.localStorage.setItem(
+      AUTO_SETTLE_STORAGE_KEY,
+      JSON.stringify({
+        state: {
+          entries: {
+            [key]: {
+              ...baseEntry,
+              opensOnUnlockEdge: undefined,
+            },
+            stale: {
+              ...baseEntry,
+              worldName: "late-world",
+              worldKey: "mainnet:late-world",
+              unlockAtSec: 50,
+              armedAtMs: 100_000,
+            },
+          },
+        },
+        version: 2,
+      }),
+    );
+
+    useAutoSettleStore.setState({ entries: {} });
+    await useAutoSettleStore.persist.rehydrate();
+
+    expect(useAutoSettleStore.getState().getEntry(key)?.opensOnUnlockEdge).toBe(true);
+    expect(useAutoSettleStore.getState().getEntry("stale")?.opensOnUnlockEdge).toBe(false);
   });
 });

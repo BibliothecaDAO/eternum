@@ -14,8 +14,9 @@ describe("Game card auto-settle wiring", () => {
     expect(source).toContain("resolveAutoSettleRuntimeState");
     expect(source).toContain("resolveBlitzSettlementAvailability");
     expect(source).toContain("const unlockAtSec = game.startMainAt;");
+    expect(source).toContain("const opensOnUnlockEdge = nowSec < unlockAtSec;");
     expect(source).toContain("Auto-settle");
-    expect(source).toContain("setEnabled(autoSettleEntryKey, true");
+    expect(source).toContain("armEntry(autoSettleEntryKey");
     expect(source).toContain("markOpening(autoSettleEntryKey");
   });
 });
