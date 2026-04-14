@@ -9,6 +9,25 @@ function readWorkflow(): string {
 }
 
 describe("test-client workflow", () => {
+  it("triggers on client-impacting files and its own workflow contract files", () => {
+    const workflow = readWorkflow();
+
+    expect(workflow).toContain("paths:");
+    expect(workflow).toContain('- ".github/workflows/test-client.yml"');
+    expect(workflow).toContain('- "client/apps/game/**"');
+    expect(workflow).toContain('- "client/apps/onchain-agent/test/ci/test-client-workflow.test.ts"');
+    expect(workflow).not.toContain("paths-ignore:");
+  });
+
+  it("runs a lightweight workflow-contract job for workflow-only changes", () => {
+    const workflow = readWorkflow();
+
+    expect(workflow).toContain("detect-scope:");
+    expect(workflow).toContain("workflow-contract:");
+    expect(workflow).toContain("has_workflow_contract_changes");
+    expect(workflow).toContain("pnpm --dir ./client/apps/onchain-agent exec vitest run test/ci/test-client-workflow.test.ts");
+  });
+
   it("runs the client quality gates instead of skipping the test suite", () => {
     const workflow = readWorkflow();
 
