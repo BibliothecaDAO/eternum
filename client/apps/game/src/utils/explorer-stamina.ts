@@ -1,6 +1,11 @@
 import { StaminaManager } from "@bibliothecadao/eternum";
 import { Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 
+interface PendingStaminaCandidate {
+  amount: bigint;
+  updatedTick: number;
+}
+
 interface ExplorerArmyFallback {
   category: TroopType;
   tier: TroopTier;
@@ -13,6 +18,7 @@ interface ExplorerStaminaSnapshotInput {
   snapshotTroops?: Troops | null;
   liveTroops?: Troops | null;
   fallbackArmy?: ExplorerArmyFallback | null;
+  pendingStamina?: PendingStaminaCandidate | null;
 }
 
 const buildFallbackTroopsSnapshot = (fallbackArmy: ExplorerArmyFallback): Troops => ({
@@ -41,26 +47,82 @@ export const getTroopsStaminaUpdatedTick = (troops: Troops | null | undefined): 
   return typeof updatedTick === "bigint" ? updatedTick : 0n;
 };
 
+const buildPendingTroopsSnapshot = (input: {
+  snapshotTroops?: Troops | null;
+  liveTroops?: Troops | null;
+  fallbackTroops?: Troops | null;
+  pendingStamina?: PendingStaminaCandidate | null;
+}): Troops | null => {
+  if (!input.pendingStamina) {
+    return null;
+  }
+
+  const baseTroops = input.snapshotTroops ?? input.liveTroops ?? input.fallbackTroops;
+  if (!baseTroops) {
+    return null;
+  }
+
+  const pendingTick = BigInt(input.pendingStamina.updatedTick);
+  const pendingAmount = input.pendingStamina.amount;
+  const authoritativeTick = getTroopsStaminaUpdatedTick(baseTroops);
+  const authoritativeAmount = baseTroops.stamina?.amount ?? 0n;
+
+  if (authoritativeTick > pendingTick) {
+    return null;
+  }
+
+  if (authoritativeTick === pendingTick && authoritativeAmount === pendingAmount) {
+    return null;
+  }
+
+  return {
+    ...baseTroops,
+    stamina: {
+      ...(baseTroops.stamina ?? { amount: 0n, updated_tick: 0n }),
+      amount: pendingAmount,
+      updated_tick: pendingTick,
+    },
+  };
+};
+
 export const selectFreshestTroopsSnapshot = (input: {
   snapshotTroops?: Troops | null;
   liveTroops?: Troops | null;
   fallbackArmy?: ExplorerArmyFallback | null;
+  pendingStamina?: PendingStaminaCandidate | null;
 }): Troops | null => {
   const fallbackTroops = input.fallbackArmy ? buildFallbackTroopsSnapshot(input.fallbackArmy) : null;
-  const candidates = [input.liveTroops ?? null, input.snapshotTroops ?? null, fallbackTroops];
-  const availableCandidates = candidates.filter((candidate): candidate is Troops => candidate !== null);
+  const pendingTroops = buildPendingTroopsSnapshot({
+    snapshotTroops: input.snapshotTroops,
+    liveTroops: input.liveTroops,
+    fallbackTroops,
+    pendingStamina: input.pendingStamina,
+  });
+  const candidates = [
+    { troops: pendingTroops, priority: 0 },
+    { troops: input.snapshotTroops ?? null, priority: 1 },
+    { troops: input.liveTroops ?? null, priority: 2 },
+    { troops: fallbackTroops, priority: 3 },
+  ].filter((candidate): candidate is { troops: Troops; priority: number } => candidate.troops !== null);
 
-  if (availableCandidates.length === 0) {
+  if (candidates.length === 0) {
     return null;
   }
 
-  return availableCandidates.reduce((freshest, candidate) => {
-    if (getTroopsStaminaUpdatedTick(candidate) > getTroopsStaminaUpdatedTick(freshest)) {
+  return candidates.reduce((freshest, candidate) => {
+    const freshestTick = getTroopsStaminaUpdatedTick(freshest.troops);
+    const candidateTick = getTroopsStaminaUpdatedTick(candidate.troops);
+
+    if (candidateTick > freshestTick) {
+      return candidate;
+    }
+
+    if (candidateTick === freshestTick && candidate.priority < freshest.priority) {
       return candidate;
     }
 
     return freshest;
-  });
+  }).troops;
 };
 
 export const getExplorerStaminaSnapshot = (

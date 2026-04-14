@@ -366,6 +366,83 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     );
   });
 
+  it("uses enhanced stamina when updated ticks tie but amounts differ", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockReturnValue({
+      occupier_type: 1,
+      occupier_id: 779,
+      col: 12,
+      row: 34,
+    });
+    getExplorerInfoFromTileOccupierMock.mockReturnValue({
+      troopType: "Knight",
+      troopTier: "T1",
+      isDaydreamsAgent: false,
+    });
+    getComponentValueMock.mockReturnValue({
+      owner: 99,
+      troops: {
+        count: 500n,
+        category: "Knight",
+        tier: "T1",
+        stamina: {
+          amount: 80n,
+          updated_tick: 7n,
+        },
+        boosts: {
+          incr_damage_dealt_percent_num: 0,
+          incr_damage_dealt_end_tick: 0,
+          decr_damage_gotten_percent_num: 0,
+          decr_damage_gotten_end_tick: 0,
+          incr_stamina_regen_percent_num: 0,
+          incr_stamina_regen_tick_count: 0,
+          incr_explore_reward_percent_num: 0,
+          incr_explore_reward_end_tick: 0,
+        },
+        battle_cooldown_end: 0,
+      },
+    });
+    enhanceArmyDataMock.mockResolvedValue({
+      troopCount: 500,
+      currentStamina: 45,
+      onChainStamina: {
+        amount: 45n,
+        updatedTick: 7,
+      },
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+      ownerStructureId: 99,
+      battleData: undefined,
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          ExplorerTroops: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Army.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({ value: [{ value: "tile" }, undefined] });
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: 779,
+        currentStamina: 45,
+        onChainStamina: {
+          amount: 45n,
+          updatedTick: 7,
+        },
+      }),
+    );
+  });
+
   it("falls back to type-based structure name when Structure component is unavailable", async () => {
     isComponentUpdateMock.mockReturnValue(true);
     tileOptToTileMock.mockReturnValue({

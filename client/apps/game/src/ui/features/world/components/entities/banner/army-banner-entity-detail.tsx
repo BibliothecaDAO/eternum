@@ -125,7 +125,12 @@ const ArmyBannerEntityDetailContent = memo(
         <div className="flex flex-col gap-2">
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
-            <InlineStaminaBar stamina={derivedData.stamina} maxStamina={derivedData.maxStamina} />
+            <InlineStaminaBar
+              stamina={derivedData.stamina}
+              maxStamina={derivedData.maxStamina}
+              displayRatio={derivedData.staminaDisplay?.displayRatio}
+              isRecharging={derivedData.staminaDisplay?.isRecharging}
+            />
           ) : null}
         </div>
 
@@ -188,15 +193,23 @@ ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 const InlineStaminaBar = ({
   stamina,
   maxStamina,
+  displayRatio,
+  isRecharging,
 }: {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
+  displayRatio?: number;
+  isRecharging?: boolean | null;
 }) => {
   if (!stamina || maxStamina === 0) return null;
   const staminaValue = Number(stamina.amount);
   const percentage = (staminaValue / maxStamina) * 100;
+  const projectedPercentage = Math.max(
+    percentage,
+    Math.min(100, Math.max(0, (displayRatio ?? percentage / 100) * 100)),
+  );
   const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
-  const recharging = isStaminaRecharging(staminaValue, maxStamina);
+  const recharging = isRecharging ?? isStaminaRecharging(staminaValue, maxStamina);
 
   let fillClass = "bg-progress-bar-danger";
   if (staminaValue >= minTravelCost) {
@@ -214,12 +227,16 @@ const InlineStaminaBar = ({
         )}
       >
         <div
+          className={cn(fillClass, "h-full rounded-full opacity-45 transition-all duration-300")}
+          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+        />
+        <div
           className={cn(
             fillClass,
-            "h-full rounded-full transition-all duration-300",
+            "h-full rounded-full transition-all duration-1000 -mt-2",
             recharging && STAMINA_RECHARGING_FILL_CLASS,
           )}
-          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+          style={{ width: `${projectedPercentage}%` }}
         />
       </div>
       <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>

@@ -124,6 +124,15 @@ describe("ArmyManager stamina sync", () => {
       resolveLiveExplorerTroops(entityId: number) {
         return ArmyManager.prototype["resolveLiveExplorerTroops"].call(this, entityId);
       },
+      resolveArmyStaminaSnapshot(input: {
+        entityId: number;
+        troopCount: number;
+        onChainStamina: { amount: bigint; updatedTick: number };
+        category: any;
+        tier: any;
+      }) {
+        return ArmyManager.prototype["resolveArmyStaminaSnapshot"].call(this, input);
+      },
       updateArmyLabelData: vi.fn(),
     };
 
@@ -181,6 +190,15 @@ describe("ArmyManager stamina sync", () => {
       },
       resolveLiveExplorerTroops(entityId: number) {
         return ArmyManager.prototype["resolveLiveExplorerTroops"].call(this, entityId);
+      },
+      resolveArmyStaminaSnapshot(input: {
+        entityId: number;
+        troopCount: number;
+        onChainStamina: { amount: bigint; updatedTick: number };
+        category: any;
+        tier: any;
+      }) {
+        return ArmyManager.prototype["resolveArmyStaminaSnapshot"].call(this, input);
       },
       updateArmyLabelData: vi.fn(),
     };

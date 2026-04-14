@@ -26,7 +26,7 @@ export const resolveFreshestArmyStaminaSource = (input: {
     return "live";
   }
 
-  return getArmyStaminaUpdatedTick(input.liveSnapshot) >= getArmyStaminaUpdatedTick(input.enhancedSnapshot)
+  return getArmyStaminaUpdatedTick(input.liveSnapshot) > getArmyStaminaUpdatedTick(input.enhancedSnapshot)
     ? "live"
     : "enhanced";
 };

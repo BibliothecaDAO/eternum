@@ -57,7 +57,7 @@ describe("explorer stamina source selection", () => {
     ).toBe(snapshotTroops);
   });
 
-  it("prefers live troops when both snapshots are equally fresh", () => {
+  it("prefers the authoritative snapshot when both snapshots are equally fresh", () => {
     const liveTroops = buildTroops(6n, 10n);
     const snapshotTroops = buildTroops(6n, 25n);
 
@@ -66,7 +66,19 @@ describe("explorer stamina source selection", () => {
         liveTroops: liveTroops as never,
         snapshotTroops: snapshotTroops as never,
       }),
-    ).toBe(liveTroops);
+    ).toBe(snapshotTroops);
+  });
+
+  it("prefers the authoritative snapshot when stamina amount differs at the same tick", () => {
+    const liveTroops = buildTroops(6n, 80n);
+    const snapshotTroops = buildTroops(6n, 50n);
+
+    expect(
+      selectFreshestTroopsSnapshot({
+        liveTroops: liveTroops as never,
+        snapshotTroops: snapshotTroops as never,
+      }),
+    ).toBe(snapshotTroops);
   });
 
   it("falls back to synthesized troops when no troop snapshot is available", () => {
@@ -87,6 +99,27 @@ describe("explorer stamina source selection", () => {
       stamina: {
         amount: 33n,
         updated_tick: 9n,
+      },
+    });
+  });
+
+  it("prefers a pending local stamina overlay over same-tick remote snapshots", () => {
+    const liveTroops = buildTroops(6n, 80n);
+    const snapshotTroops = buildTroops(6n, 50n);
+
+    expect(
+      selectFreshestTroopsSnapshot({
+        liveTroops: liveTroops as never,
+        snapshotTroops: snapshotTroops as never,
+        pendingStamina: {
+          amount: 20n,
+          updatedTick: 6,
+        },
+      }),
+    ).toMatchObject({
+      stamina: {
+        amount: 20n,
+        updated_tick: 6n,
       },
     });
   });

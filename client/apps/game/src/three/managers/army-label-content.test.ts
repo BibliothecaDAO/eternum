@@ -15,6 +15,7 @@ function createArmyLabelData(overrides: Partial<ArmyLabelContentFields> = {}): A
   return {
     troopCount: 10,
     currentStamina: 9,
+    displayStaminaRatio: 0.4,
     battleTimerLeft: 8,
     isMine: true,
     owner: {
@@ -30,7 +31,7 @@ function createArmyLabelData(overrides: Partial<ArmyLabelContentFields> = {}): A
 
 describe("buildArmyLabelDataKey", () => {
   it("includes the label fields that drive army label content", () => {
-    expect(buildArmyLabelDataKey(createArmyLabelData())).toBe("10-9-8-true-Alice-45-90");
+    expect(buildArmyLabelDataKey(createArmyLabelData())).toBe("10-9-400-8-true-Alice-45-90");
   });
 });
 
@@ -76,7 +77,7 @@ describe("syncArmyLabelContentState", () => {
       renderLabel,
     });
 
-    expect(label.userData.lastDataKey).toBe("22-9-8-true-Alice-45-90");
+    expect(label.userData.lastDataKey).toBe("22-9-400-8-true-Alice-45-90");
     expect(renderLabel).toHaveBeenCalledTimes(1);
   });
 });
