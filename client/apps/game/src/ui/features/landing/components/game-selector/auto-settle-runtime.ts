@@ -1,9 +1,12 @@
 import type { AutoSettleStatus } from "@/hooks/store/use-auto-settle-store";
 
+import { resolveBlitzSettlementAvailability } from "../game-entry-blitz-timing";
+
 type AutoSettleRuntimePhase =
   | "off"
   | "armed"
   | "prewarming"
+  | "ready-manual"
   | "paused-wallet"
   | "paused-network"
   | "opening"
@@ -14,8 +17,9 @@ type AutoSettleRuntimePhase =
 export interface AutoSettleRuntimeInput {
   enabled: boolean;
   persistedStatus: AutoSettleStatus;
-  settleAtSec: number;
+  unlockAtSec: number | null;
   nowSec: number;
+  opensOnUnlockEdge: boolean;
   hasConnectedWallet: boolean;
   hasCompatibleNetwork: boolean;
 }
@@ -33,8 +37,9 @@ const REFRESH_WINDOW_SECONDS = 5;
 export const resolveAutoSettleRuntimeState = ({
   enabled,
   persistedStatus,
-  settleAtSec,
+  unlockAtSec,
   nowSec,
+  opensOnUnlockEdge,
   hasConnectedWallet,
   hasCompatibleNetwork,
 }: AutoSettleRuntimeInput): AutoSettleRuntimeState => {
@@ -83,9 +88,23 @@ export const resolveAutoSettleRuntimeState = ({
     };
   }
 
-  const isDue = nowSec >= settleAtSec;
-  const inPrewarmWindow = nowSec >= settleAtSec - PREWARM_WINDOW_SECONDS;
-  const inRefreshWindow = nowSec >= settleAtSec - REFRESH_WINDOW_SECONDS;
+  const availability = resolveBlitzSettlementAvailability({
+    startMainAt: unlockAtSec,
+    nowSec,
+  });
+  const resolvedUnlockAtSec = availability.unlockAtSec;
+  const isDue = availability.isUnlocked;
+  const inPrewarmWindow = resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec - PREWARM_WINDOW_SECONDS;
+  const inRefreshWindow = resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec - REFRESH_WINDOW_SECONDS;
+
+  if (!opensOnUnlockEdge && isDue) {
+    return {
+      phase: "ready-manual",
+      shouldPrimeAssets: false,
+      shouldRefreshAvailability: false,
+      shouldOpenEntry: false,
+    };
+  }
 
   if (!hasConnectedWallet) {
     return {
@@ -147,12 +166,18 @@ const formatCountdown = (secondsLeft: number): string => {
 export const describeAutoSettleRuntimePhase = ({
   phase,
   nowSec,
-  settleAtSec,
+  unlockAtSec,
 }: {
   phase: AutoSettleRuntimePhase;
   nowSec: number;
-  settleAtSec: number;
+  unlockAtSec: number | null;
 }) => {
+  const availability = resolveBlitzSettlementAvailability({
+    startMainAt: unlockAtSec,
+    nowSec,
+  });
+  const secondsUntilUnlock = availability.secondsUntilUnlock ?? 0;
+
   switch (phase) {
     case "off":
       return {
@@ -162,12 +187,17 @@ export const describeAutoSettleRuntimePhase = ({
     case "armed":
       return {
         title: "Auto-settle on",
-        detail: `Settles in ${formatCountdown(settleAtSec - nowSec)}`,
+        detail: `Settles in ${formatCountdown(secondsUntilUnlock)}`,
       };
     case "prewarming":
       return {
         title: "Prewarming entry",
-        detail: `Settles in ${formatCountdown(settleAtSec - nowSec)}`,
+        detail: `Settles in ${formatCountdown(secondsUntilUnlock)}`,
+      };
+    case "ready-manual":
+      return {
+        title: "Settlement ready",
+        detail: "Auto-settle is armed, but this registration stays on the dashboard.",
       };
     case "paused-wallet":
       return {

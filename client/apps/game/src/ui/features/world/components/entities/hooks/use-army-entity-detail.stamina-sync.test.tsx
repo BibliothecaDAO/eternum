@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { useArmyEntityDetail } from "./use-army-entity-detail";
 
 const {
@@ -40,7 +41,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
     currentBlockTimestamp: 0,
     currentDefaultTick: 0,
     currentArmiesTick: 5,
-    armiesTickTimeRemaining: 0,
+    armiesTickTimeRemaining: 5,
   }),
 }));
 
@@ -62,6 +63,9 @@ vi.mock("@bibliothecadao/torii", () => ({
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
+  configManager: {
+    getTick: () => 10,
+  },
   ContractAddress: (value: string | bigint) => value,
   getAddressName: getAddressNameMock,
   getArmyRelicEffects: () => [],
@@ -100,9 +104,25 @@ const liveTroops = {
   stamina: { amount: 20n, updated_tick: 5n },
 };
 
+const sameTickLiveTroops = {
+  ...snapshotTroops,
+  stamina: { amount: 80n, updated_tick: 5n },
+};
+
+const sameTickSnapshotTroops = {
+  ...snapshotTroops,
+  stamina: { amount: 20n, updated_tick: 5n },
+};
+
 const Probe = () => {
   const { derivedData } = useArmyEntityDetail({ armyEntityId: 1 as never });
-  return <div>{derivedData ? `${Number(derivedData.stamina.amount)}/${derivedData.maxStamina}` : "loading"}</div>;
+  return (
+    <div>
+      {derivedData
+        ? `${Number(derivedData.stamina.amount)}/${derivedData.maxStamina}:${derivedData.staminaDisplay?.displayCurrent ?? 0}`
+        : "loading"}
+    </div>
+  );
 };
 
 describe("useArmyEntityDetail stamina sync", () => {
@@ -114,6 +134,10 @@ describe("useArmyEntityDetail stamina sync", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
+    useArmyStaminaSourceStore.setState({
+      pendingSources: {},
+      authoritativeSources: {},
+    });
 
     useDojoMock.mockReturnValue({
       network: { toriiClient: {} },
@@ -186,6 +210,119 @@ describe("useArmyEntityDetail stamina sync", () => {
       root.render(<Probe />);
     });
 
-    expect(container.textContent).toContain("20/120");
+    expect(container.textContent).toContain("20/120:");
+  });
+
+  it("prefers the newer Torii troop stamina when the live troop snapshot is stale", async () => {
+    const newerSnapshotTroops = {
+      ...snapshotTroops,
+      stamina: { amount: 65n, updated_tick: 9n },
+    };
+    const staleLiveTroops = {
+      ...liveTroops,
+      stamina: { amount: 20n, updated_tick: 5n },
+    };
+
+    useQueryMock.mockImplementation(({ queryKey }: { queryKey: [string] }) => {
+      if (queryKey[0] === "explorer") {
+        return {
+          data: {
+            explorer: {
+              troops: newerSnapshotTroops,
+              owner: "0x123",
+            },
+            resources: [],
+            relicEffects: [],
+          },
+          isLoading: false,
+          refetch: vi.fn(),
+        };
+      }
+
+      return {
+        data: {
+          structure: {
+            owner: "0x123",
+          },
+          resources: [],
+        },
+        isLoading: false,
+        refetch: vi.fn(),
+      };
+    });
+
+    useComponentValueMock.mockReturnValue({
+      troops: staleLiveTroops,
+    });
+
+    getStaminaMock.mockImplementation((troops: typeof snapshotTroops) => {
+      if (troops === staleLiveTroops) {
+        return { amount: 20n, updated_tick: 5n };
+      }
+
+      if (troops === newerSnapshotTroops) {
+        return { amount: 65n, updated_tick: 9n };
+      }
+
+      return { amount: 80n, updated_tick: 5n };
+    });
+
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    expect(container.textContent).toContain("65/120:");
+  });
+
+  it("prefers the Torii snapshot when both snapshots share the same tick but differ in amount", async () => {
+    useQueryMock.mockImplementation(({ queryKey }: { queryKey: [string] }) => {
+      if (queryKey[0] === "explorer") {
+        return {
+          data: {
+            explorer: {
+              troops: sameTickSnapshotTroops,
+              owner: "0x123",
+            },
+            resources: [],
+            relicEffects: [],
+          },
+          isLoading: false,
+          refetch: vi.fn(),
+        };
+      }
+
+      return {
+        data: {
+          structure: {
+            owner: "0x123",
+          },
+          resources: [],
+        },
+        isLoading: false,
+        refetch: vi.fn(),
+      };
+    });
+
+    useComponentValueMock.mockReturnValue({
+      troops: sameTickLiveTroops,
+    });
+
+    getStaminaMock.mockImplementation((troops: typeof snapshotTroops, currentTick: number) => {
+      if (troops === sameTickSnapshotTroops) {
+        return { amount: currentTick === 5 ? 20n : 40n, updated_tick: BigInt(currentTick) };
+      }
+
+      if (troops === sameTickLiveTroops) {
+        return { amount: 80n, updated_tick: 5n };
+      }
+
+      return { amount: 80n, updated_tick: 5n };
+    });
+
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    expect(container.textContent).toContain("20/120:30");
   });
 });

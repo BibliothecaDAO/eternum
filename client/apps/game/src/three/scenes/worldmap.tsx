@@ -11,6 +11,7 @@ import {
 } from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -1034,6 +1035,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
         this.clearPendingArmyMovement(plan.entityId);
+        useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
         this.disposePendingMovementVisualLifecycle(plan.entityId);
         this.arrivalGhostManager?.clearArrivalGhost(plan.entityId, "tx_failed");
       }
@@ -2448,9 +2450,19 @@ export default class WorldmapScene extends WarpTravel {
 
       // Monitor memory usage before army movement action
       this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
+      const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
+      if (selectedArmy) {
+        this.queuePendingMovementStamina({
+          entityId: selectedEntityId,
+          currentStamina: selectedArmy.currentStamina,
+          currentArmiesTick,
+          actionPath,
+          actionKind: isTravelAction ? "travel" : "explore",
+        });
+      }
 
       armyActionManager
-        .moveArmy(account!, actionPath, isTravelAction, getBlockTimestamp().currentArmiesTick)
+        .moveArmy(account!, actionPath, isTravelAction, currentArmiesTick)
         .then((result: any) => {
           // Track txHash → entityId so provider transactionFailed events can clear pending state
           const txHash = result?.transaction_hash;
@@ -2475,6 +2487,7 @@ export default class WorldmapScene extends WarpTravel {
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
           this.clearPendingArmyMovement(selectedEntityId);
+          useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
           this.arrivalGhostManager.clearArrivalGhost(selectedEntityId, "tx_failed");
           cleanup();
@@ -2720,6 +2733,27 @@ export default class WorldmapScene extends WarpTravel {
     this.schedulePendingArmyMovementFallback(entityId);
   }
 
+  private queuePendingMovementStamina(input: {
+    entityId: ID;
+    currentStamina: number;
+    currentArmiesTick: number;
+    actionPath: ActionPath[];
+    actionKind: "travel" | "explore";
+  }): void {
+    const staminaCost = input.actionPath.reduce((total, pathStep) => total + (pathStep.staminaCost ?? 0), 0);
+    if (!Number.isFinite(staminaCost) || staminaCost <= 0) {
+      return;
+    }
+
+    useArmyStaminaSourceStore.getState().setPendingStaminaSource({
+      source: "pending",
+      entityId: input.entityId,
+      amount: BigInt(Math.max(0, Math.floor(input.currentStamina) - Math.floor(staminaCost))),
+      updatedTick: input.currentArmiesTick,
+      capturedAtMs: Date.now(),
+    });
+  }
+
   private hasPendingTravelEffectForHex(key: string): boolean {
     for (const [entityId, trackedEffect] of this.travelEffectsByEntity.entries()) {
       if (trackedEffect.key === key && this.pendingArmyMovements.has(entityId)) {
@@ -2928,6 +2962,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       this.clearPendingArmyMovement(entityId);
+      useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
       this.arrivalGhostManager.clearArrivalGhost(entityId, "stale_timeout");
       if (fallbackPlan.shouldRequestChunkRefresh) {

@@ -34,6 +34,7 @@ import { getStructureName } from "../utils/entities";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { DataEnhancer } from "./data-enhancer";
 import { recordArmyMovementLatencyPhase } from "./army-movement-latency-trace";
+import { resolveFreshestArmyStaminaSource } from "./army-stamina-source";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
@@ -109,7 +110,20 @@ export class WorldUpdateListener {
     // console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
   }
 
-  private resolveLiveArmySnapshot(entityId: ID, currentArmiesTick: number) {
+  private resolveLiveArmySnapshot(
+    entityId: ID,
+    currentArmiesTick: number,
+  ):
+    | {
+        troopCount: number;
+        currentStamina: number;
+        onChainStamina?: {
+          amount: bigint;
+          updatedTick: number;
+        };
+        ownerStructureId?: ID;
+      }
+    | undefined {
     try {
       const explorerTroops = getComponentValue(
         this.setup.components.ExplorerTroops,
@@ -369,6 +383,12 @@ export class WorldUpdateListener {
                   normalizedStructureOwnerId,
                 );
                 const liveArmySnapshot = this.resolveLiveArmySnapshot(rawOccupierId, currentArmiesTick);
+                const freshestArmyStaminaSource = resolveFreshestArmyStaminaSource({
+                  liveSnapshot: liveArmySnapshot,
+                  enhancedSnapshot: enhancedData,
+                });
+                const freshestArmyStaminaSnapshot =
+                  freshestArmyStaminaSource === "live" ? liveArmySnapshot : enhancedData;
 
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
@@ -389,8 +409,8 @@ export class WorldUpdateListener {
                     null,
                   // Enhanced data from DataEnhancer
                   troopCount: liveArmySnapshot?.troopCount ?? enhancedData.troopCount,
-                  currentStamina: liveArmySnapshot?.currentStamina ?? enhancedData.currentStamina,
-                  onChainStamina: liveArmySnapshot?.onChainStamina ?? enhancedData.onChainStamina,
+                  currentStamina: freshestArmyStaminaSnapshot?.currentStamina ?? enhancedData.currentStamina,
+                  onChainStamina: freshestArmyStaminaSnapshot?.onChainStamina ?? enhancedData.onChainStamina,
                   battleData: enhancedData.battleData,
                   maxStamina,
                 };
