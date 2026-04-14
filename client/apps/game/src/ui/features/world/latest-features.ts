@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-14",
+    title: "Blitz Settlement Status Fix",
+    description:
+      "Blitz settlement now treats indexed realm creation as a successful finish and keeps the progress UI in sync, so completed entries no longer flash a false failure warning before you enter the game.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-14",
     title: "Map Chunk Sync Fix",
     description:
       "World-map chunk repairs now wait for visible armies and structures to catch up before they settle, so terrain self-heals and reload recovery stop leaving ghost units or buildings behind.",
