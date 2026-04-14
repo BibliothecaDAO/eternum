@@ -4,14 +4,14 @@ RealmsSwap AMMv2 is the Cairo AMM core in this package.
 
 Main contracts:
 
-- [Factory](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/contracts/factory.cairo)
-- [Pair](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/contracts/pair.cairo)
-- [Router](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/contracts/router.cairo)
+- [Factory](./src/packages/core/contracts/factory.cairo)
+- [Pair](./src/packages/core/contracts/pair.cairo)
+- [Router](./src/packages/core/contracts/router.cairo)
 
 ## Deviation From Uniswap v2
 
 The main intentional economic deviation is in
-[pair.cairo](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/components/pair.cairo),
+[pair.cairo](./src/packages/core/components/pair.cairo),
 inside protocol fee minting.
 
 Classic Uniswap v2:
@@ -61,7 +61,7 @@ Examples:
 ### 2. Protocol share of fee growth
 
 This is controlled in
-[pair.cairo](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/src/packages/core/components/pair.cairo)
+[pair.cairo](./src/packages/core/components/pair.cairo)
 by the coefficient in:
 
 - `root_k * N + root_k_last`
@@ -101,7 +101,7 @@ per-swap token transfer.
 ## Deployment Notes
 
 The deployment scripts live under
-[scripts](/Users/credence/conductor/workspaces/eternum2-v3/denver/contracts/ammv2/scripts).
+[scripts](./scripts).
 
 When the deployment config says `setFeeAmountNumeratorAssumeDivIs1000`, it is setting the total trader-visible swap fee
 numerator over `1000`.

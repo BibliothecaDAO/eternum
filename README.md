@@ -54,6 +54,8 @@ Think of Eternum as the sandbox. Blitz is the arena.
 
 ## Architecture
 
+This is a high-level repo map for orientation, not a full directory listing.
+
 ```
 eternum/
 ├── client/                    # Frontend applications
@@ -136,10 +138,11 @@ We welcome contributions! See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for guideli
 
 Key entry points for developers:
 
+- **Repo Docs Index** → [`docs/README.md`](./docs/README.md) — architecture notes, PRDs, plans, and roadmap docs
+- **Packages Index** → [`packages/README.md`](./packages/README.md) — shared SDKs, client libraries, and agent tooling
 - **Contracts** → [`contracts/`](./contracts) — Cairo game logic
-- **SDK** → [`packages/`](./packages) — shared libraries ([package docs](./packages/README.md))
-- **Game Client** → [`client/apps/game/`](./client/apps/game) — React/Three.js frontend
-- **Architecture** → [`docs/`](./docs) — internal design notes
+- **Game Client** → [`client/apps/game/README.md`](./client/apps/game/README.md) — React/Three.js app entrypoint
+- **Docs App** → [`client/apps/game-docs/README.md`](./client/apps/game-docs/README.md) — Vocs site for player and dev docs
 
 ## Links
 

@@ -1,28 +1,46 @@
-# Eternum packages / SDK
+# Eternum Packages
 
-These packages support client + tooling integration with the Eternum world.
+This directory contains the shared SDKs, client libraries, and agent tooling used across the repository.
 
-## Packages
+## Package Index
 
+- `@bibliothecadao/amm-sdk` → [`packages/amm-sdk`](./amm-sdk)
+  - SDK for interacting with the Eternum AMM contract on Starknet
+- `@bibliothecadao/ammv2-sdk` → [`packages/ammv2-sdk`](./ammv2-sdk)
+  - SDK for interacting with the Eternum AMMv2 indexer and pair math
+- `@bibliothecadao/client` → [`packages/client`](./client)
+  - Headless Eternum client for bots, agents, and custom UIs
 - `@bibliothecadao/eternum` → [`packages/core`](./core)
+  - Core Eternum SDK for Starknet and Dojo integrations
+- `@bibliothecadao/dojo` → [`packages/dojo`](./dojo)
+  - Dojo-facing provider utilities and integration helpers
+- `@bibliothecadao/game-agent` → [`packages/game-agent`](./game-agent)
+  - Autonomous agent framework and templates for onchain game play
 - `@bibliothecadao/provider` → [`packages/provider`](./provider)
+  - Provider layer for contract interaction and game actions
 - `@bibliothecadao/react` → [`packages/react`](./react)
+  - React bindings and hooks for consuming Eternum packages in apps
 - `@bibliothecadao/torii` → [`packages/torii`](./torii)
+  - Torii client helpers and query utilities
 - `@bibliothecadao/types` → [`packages/types`](./types)
+  - Shared Eternum types and constants
 
-### Development
+## Workspace Development
 
-From the root to install all the packages deps
+Install dependencies from the repo root:
 
-```
+```bash
 pnpm install
 ```
 
-### Building packages
+Build the shared packages from the repo root:
 
-Navigate to a package and run the following. This will launch bun and watch for local changes, automatically compiling
-and updating.
-
+```bash
+pnpm run build:packages
 ```
-pnpm run build --watch
+
+To work on a single package, run its local build script from that package directory:
+
+```bash
+pnpm run build
 ```

@@ -1,84 +1,51 @@
 # Game Documentation
 
-The official documentation site for Eternum, built with Vocs - a React-based documentation framework.
+This app is the Vocs-based documentation site for Eternum.
 
 ## Getting Started
 
-To install dependencies:
+From the repo root:
 
 ```bash
 pnpm install
+pnpm dev:docs
 ```
 
-To run the development server:
+From this directory:
 
 ```bash
 pnpm run dev
 ```
 
-To build for production:
+Production build:
 
 ```bash
 pnpm run build
 ```
 
-## Architecture
+## Doc Structure
 
-The documentation site follows a structured organization to provide clear and accessible game information:
+The content under `docs/pages` is organized by audience and game mode:
 
-```
-game-docs/
-├── docs/
-│   ├── pages/               # Documentation content
-│   │   ├── development/     # Developer guides
-│   │   │   ├── client.mdx   # Client development guide
-│   │   │   ├── contracts.mdx # Smart contract documentation
-│   │   │   ├── sdk.mdx      # SDK usage guide
-│   │   │   └── llm.mdx      # LLM integration docs
-│   │   ├── mechanics/       # Game mechanics documentation
-│   │   │   ├── achievements.mdx
-│   │   │   ├── agents.mdx
-│   │   │   ├── tribes.mdx
-│   │   │   └── world-structures.mdx
-│   │   └── overview/        # General game information
-│   │       ├── introduction.mdx
-│   │       ├── bridging.mdx
-│   │       └── world-physics.mdx
-│   ├── components/          # React components for documentation
-│   │   ├── BiomeCombat.tsx  # Combat mechanics by biome
-│   │   ├── BuildingCosts.tsx # Building cost tables
-│   │   ├── ResourceTable.tsx # Resource information
-│   │   └── [other game data components]
-│   └── utils/               # Utilities and constants
-│       ├── resources.ts     # Resource definitions
-│       ├── constants.ts     # Game constants
-│       └── formatting.ts    # Display formatting utilities
-├── vocs.config.ts           # Vocs configuration
-└── vite-plugin-llm-txt.mjs  # Plugin for LLM documentation generation
-```
+- `overview/`: shared product and ecosystem pages
+- `blitz/`: Blitz-specific gameplay and rules
+- `eternum/`: Eternum season documentation and legacy mode details
+- `development/`: developer documentation for the client, contracts, SDK, collaborators, and Axis
+- `changelog/`: dated release notes
 
-### Key Components
+The site also includes:
 
-- **Documentation Pages (MDX)**: Written in MDX format, allowing for interactive React components within markdown
-- **Interactive Components**: React components that display game data dynamically (building costs, resource tables,
-  etc.)
-- **Vocs Framework**: Provides navigation, search, and theming capabilities
-- **LLM Integration**: Custom Vite plugin that generates documentation for AI/LLM consumption
+- `docs/components/`: reusable React components embedded in MDX pages
+- `docs/utils/`: resource metadata, formatting helpers, and shared config inputs
+- `vocs.config.ts`: navigation, theme, and site configuration
+- `vite-plugin-llm-txt.mjs`: LLM-friendly output generation
 
-### Documentation Structure
+## Operating Model
 
-The documentation is organized into three main sections:
+Use this README for docs app setup and structure.
 
-1. **Overview**: General game information, getting started guides, and world mechanics
-2. **Mechanics**: Detailed explanations of game systems (combat, achievements, tribes, etc.)
-3. **Development**: Technical documentation for developers building on Eternum
+Use these entrypoints for content ownership:
 
-### Building and Deployment
-
-The documentation site is built as a static site that can be deployed to any static hosting service. The build process
-includes:
-
-- MDX compilation
-- Component bundling
-- Static site generation
-- Search index creation
+- Repo docs index: [`docs/README.md`](../../../docs/README.md)
+- Game client README: [`client/apps/game/README.md`](../game/README.md)
+- Repo overview: [`README.md`](../../../README.md)
