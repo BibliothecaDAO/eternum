@@ -5,7 +5,7 @@ import { resolveAutoSettleRuntimeState, type AutoSettleRuntimeInput } from "./au
 const createInput = (overrides: Partial<AutoSettleRuntimeInput> = {}): AutoSettleRuntimeInput => ({
   enabled: true,
   persistedStatus: "armed",
-  settleAtSec: 130,
+  unlockAtSec: 130,
   nowSec: 100,
   hasConnectedWallet: true,
   hasCompatibleNetwork: true,
@@ -54,6 +54,13 @@ describe("resolveAutoSettleRuntimeState", () => {
       phase: "opening",
       shouldOpenEntry: true,
       shouldRefreshAvailability: true,
+    });
+  });
+
+  it("stays armed while the visible game countdown is still running", () => {
+    expect(resolveAutoSettleRuntimeState(createInput({ nowSec: 124 }))).toMatchObject({
+      phase: "prewarming",
+      shouldOpenEntry: false,
     });
   });
 

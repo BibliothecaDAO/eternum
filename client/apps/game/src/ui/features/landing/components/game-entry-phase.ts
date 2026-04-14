@@ -4,6 +4,7 @@ export type GameEntryModalPhase =
   | "loading"
   | "forge"
   | "hyperstructure"
+  | "settlement-waiting"
   | "settlement"
   | "settlement-planner"
   | "season-pass-required"
@@ -44,6 +45,7 @@ interface ResolveGameEntryModalPhaseInput {
   checksComplete: boolean;
   needsHyperstructureInit: boolean;
   needsSettlement: boolean;
+  isBlitzSettlementUnlocked: boolean;
 }
 
 export const resolveGameEntryBlockingError = ({
@@ -94,6 +96,7 @@ export const resolveGameEntryModalPhase = ({
   checksComplete,
   needsHyperstructureInit,
   needsSettlement,
+  isBlitzSettlementUnlocked,
 }: ResolveGameEntryModalPhaseInput): GameEntryModalPhase => {
   if (isForgeMode && isBlitzMode) {
     return "forge";
@@ -150,6 +153,10 @@ export const resolveGameEntryModalPhase = ({
   }
 
   if (needsSettlement) {
+    if (isBlitzMode && !isBlitzSettlementUnlocked) {
+      return "settlement-waiting";
+    }
+
     return "settlement";
   }
 

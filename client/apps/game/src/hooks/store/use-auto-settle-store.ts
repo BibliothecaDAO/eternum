@@ -10,7 +10,7 @@ export interface AutoSettleEntryRecord {
   chain: Chain;
   worldName: string;
   worldKey: string;
-  settleAtSec: number;
+  unlockAtSec: number;
   armedAtMs: number;
   status: AutoSettleStatus;
   lastError: string | null;
@@ -70,6 +70,32 @@ const updateEntry = (
     ...entries,
     [key]: updater(current),
   };
+};
+
+const migrateAutoSettleEntries = (persistedState: unknown): Record<string, AutoSettleEntryRecord> => {
+  if (!persistedState || typeof persistedState !== "object") {
+    return {};
+  }
+
+  const entries =
+    "entries" in persistedState && persistedState.entries && typeof persistedState.entries === "object"
+      ? (persistedState.entries as Record<string, Record<string, unknown>>)
+      : {};
+
+  return Object.fromEntries(
+    Object.entries(entries).map(([key, entry]) => [
+      key,
+      {
+        ...entry,
+        unlockAtSec:
+          typeof entry.unlockAtSec === "number"
+            ? entry.unlockAtSec
+            : typeof entry.settleAtSec === "number"
+              ? entry.settleAtSec
+              : 0,
+      },
+    ]),
+  ) as Record<string, AutoSettleEntryRecord>;
 };
 
 export const useAutoSettleStore = create<AutoSettleStoreState>()(
@@ -140,9 +166,12 @@ export const useAutoSettleStore = create<AutoSettleStoreState>()(
     }),
     {
       name: AUTO_SETTLE_STORAGE_KEY,
-      version: 1,
+      version: 2,
       storage: createJSONStorage(createLocalStorage),
       partialize: (state) => ({ entries: state.entries }),
+      migrate: (persistedState) => ({
+        entries: migrateAutoSettleEntries(persistedState),
+      }),
     },
   ),
 );

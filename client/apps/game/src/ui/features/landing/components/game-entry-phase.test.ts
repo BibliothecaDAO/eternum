@@ -41,8 +41,67 @@ describe("game entry phase resolution", () => {
       checksComplete: true,
       needsHyperstructureInit: false,
       needsSettlement: false,
+      isBlitzSettlementUnlocked: false,
     });
 
     expect(phase).toBe("error");
+  });
+
+  it("holds registered blitz players in a waiting phase before settlement unlocks", () => {
+    const phase = resolveGameEntryModalPhase({
+      bootstrapStatus: "ready",
+      hasPhaseError: false,
+      isForgeMode: false,
+      isBlitzMode: true,
+      isSpectateMode: false,
+      worldMode: "blitz",
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isEternumMode: false,
+      isLoadingEternumPrereqs: false,
+      hasVillageRevealResult: false,
+      unifiedSettlementPlannerEnabled: false,
+      hasSettledRealm: false,
+      eternumEntryIntent: "play",
+      seasonSettlementComplete: false,
+      eternumSettlementMode: "realm",
+      hasVillagePass: false,
+      hasSeasonPass: false,
+      checksComplete: true,
+      needsHyperstructureInit: false,
+      needsSettlement: true,
+      isBlitzSettlementUnlocked: false,
+    });
+
+    expect(phase).toBe("settlement-waiting");
+  });
+
+  it("moves registered blitz players into settlement once the unlock timer ends", () => {
+    const phase = resolveGameEntryModalPhase({
+      bootstrapStatus: "ready",
+      hasPhaseError: false,
+      isForgeMode: false,
+      isBlitzMode: true,
+      isSpectateMode: false,
+      worldMode: "blitz",
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isEternumMode: false,
+      isLoadingEternumPrereqs: false,
+      hasVillageRevealResult: false,
+      unifiedSettlementPlannerEnabled: false,
+      hasSettledRealm: false,
+      eternumEntryIntent: "play",
+      seasonSettlementComplete: false,
+      eternumSettlementMode: "realm",
+      hasVillagePass: false,
+      hasSeasonPass: false,
+      checksComplete: true,
+      needsHyperstructureInit: false,
+      needsSettlement: true,
+      isBlitzSettlementUnlocked: true,
+    });
+
+    expect(phase).toBe("settlement");
   });
 });

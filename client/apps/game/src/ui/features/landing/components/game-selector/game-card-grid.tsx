@@ -34,6 +34,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { primeGameEntry } from "@/game-entry-preload";
 import { describeAutoSettleRuntimePhase, resolveAutoSettleRuntimeState } from "./auto-settle-runtime";
+import { resolveBlitzSettlementAvailability } from "../game-entry-blitz-timing";
 import {
   createPendingNetworkAction,
   resolvePendingNetworkSwitchOutcome,
@@ -377,13 +378,17 @@ const GameCard = ({
   const upsertAutoSettleEntry = useAutoSettleStore((state) => state.upsertEntry);
   const setEnabled = useAutoSettleStore((state) => state.setEnabled);
   const showRegistered = game.isRegistered || registrationStage === "done";
-  const startSettlingAt = game.config?.startSettlingAt ?? null;
+  const blitzSettlementAvailability = resolveBlitzSettlementAvailability({
+    startMainAt: game.startMainAt,
+    nowSec,
+  });
+  const unlockAtSec = blitzSettlementAvailability.unlockAtSec;
   const canShowAutoSettleControl =
-    isBlitzMode && showRegistered && playerAddress !== null && startSettlingAt !== null && !isEnded;
+    isBlitzMode && showRegistered && playerAddress !== null && unlockAtSec !== null && !isEnded;
   const autoSettleRuntimeState = resolveAutoSettleRuntimeState({
     enabled: autoSettleEntry?.enabled ?? false,
     persistedStatus: autoSettleEntry?.status ?? "idle",
-    settleAtSec: startSettlingAt ?? 0,
+    unlockAtSec,
     nowSec,
     hasConnectedWallet,
     hasCompatibleNetwork: canInteractOnChain(game.chain),
@@ -392,7 +397,7 @@ const GameCard = ({
     ? describeAutoSettleRuntimePhase({
         phase: autoSettleRuntimeState.phase,
         nowSec,
-        settleAtSec: startSettlingAt ?? 0,
+        unlockAtSec,
       })
     : null;
   const autoSettleToggleDisabled =
@@ -468,7 +473,7 @@ const GameCard = ({
   );
 
   const handleAutoSettleToggle = useCallback(() => {
-    if (!autoSettleEntryKey || !startSettlingAt || !playerAddress) return;
+    if (!autoSettleEntryKey || unlockAtSec == null || !playerAddress) return;
 
     if (!autoSettleEntry) {
       upsertAutoSettleEntry(autoSettleEntryKey, {
@@ -477,7 +482,7 @@ const GameCard = ({
         chain: game.chain,
         worldName: game.name,
         worldKey: game.worldKey,
-        settleAtSec: startSettlingAt,
+        unlockAtSec,
         armedAtMs: Date.now(),
         status: "armed",
         lastError: null,
@@ -495,7 +500,7 @@ const GameCard = ({
     game.worldKey,
     playerAddress,
     setEnabled,
-    startSettlingAt,
+    unlockAtSec,
     upsertAutoSettleEntry,
   ]);
 
@@ -511,14 +516,14 @@ const GameCard = ({
 
     if (autoSettleEntryKey && autoSettleEntry) {
       setEnabled(autoSettleEntryKey, true);
-    } else if (autoSettleEntryKey && startSettlingAt) {
+    } else if (autoSettleEntryKey && unlockAtSec != null) {
       upsertAutoSettleEntry(autoSettleEntryKey, {
         enabled: true,
         walletAddress: playerAddress!,
         chain: game.chain,
         worldName: game.name,
         worldKey: game.worldKey,
-        settleAtSec: startSettlingAt,
+        unlockAtSec,
         armedAtMs: Date.now(),
         status: "armed",
         lastError: null,
@@ -540,7 +545,7 @@ const GameCard = ({
     playerAddress,
     registrationStage,
     setEnabled,
-    startSettlingAt,
+    unlockAtSec,
     upsertAutoSettleEntry,
   ]);
 
@@ -1385,8 +1390,8 @@ export const UnifiedGameGrid = ({
     resolvedGames.forEach((game) => {
       if (game.config?.mode !== "blitz" || game.isRegistered !== true) return;
 
-      const settleAtSec = game.config?.startSettlingAt;
-      if (!settleAtSec) return;
+      const unlockAtSec = game.startMainAt;
+      if (unlockAtSec == null) return;
 
       const autoSettleEntryKey = createAutoSettleEntryKey({
         chain: game.chain,
@@ -1399,7 +1404,7 @@ export const UnifiedGameGrid = ({
       const runtimeState = resolveAutoSettleRuntimeState({
         enabled: autoSettleEntry.enabled,
         persistedStatus: autoSettleEntry.status,
-        settleAtSec,
+        unlockAtSec,
         nowSec,
         hasConnectedWallet: landingNetworkState.hasConnectedWallet,
         hasCompatibleNetwork: canInteractWithLandingChain(

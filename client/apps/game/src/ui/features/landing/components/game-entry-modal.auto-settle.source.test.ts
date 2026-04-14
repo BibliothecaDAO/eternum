@@ -13,6 +13,9 @@ describe("Game entry modal auto-settle", () => {
     );
 
     expect(source).toContain("autoSettleEnabled?: boolean");
+    expect(source).toContain('"settlement-waiting"');
+    expect(source).toContain("resolveBlitzSettlementAvailability");
+    expect(source).toContain("Settlement Opens Soon");
     expect(source).toContain('if (!autoSettleEnabled || phase !== "settlement"');
     expect(source).toContain("void handleSettle();");
     expect(source).toContain("runBlitzSettlementFlow({");
