@@ -7,7 +7,6 @@ import * as Sentry from "@sentry/react";
 
 import App from "./app";
 import { BootLoaderCrashFallback, markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader";
-import { env } from "../env";
 
 declare global {
   interface Window {
@@ -22,19 +21,46 @@ if (!rootElement) {
   throw new Error("React root not found");
 }
 
-const sentryEnabled = import.meta.env.PROD && Boolean(env.VITE_PUBLIC_SENTRY_DSN);
+const sentryEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_SENTRY_DSN);
+
+interface BootCrashBoundaryProps {
+  children: React.ReactNode;
+  fallback: React.ReactNode;
+}
+
+interface BootCrashBoundaryState {
+  hasError: boolean;
+}
+
+class BootCrashBoundary extends React.Component<BootCrashBoundaryProps, BootCrashBoundaryState> {
+  public state: BootCrashBoundaryState = {
+    hasError: false,
+  };
+
+  public static getDerivedStateFromError(): BootCrashBoundaryState {
+    return { hasError: true };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("BootCrashBoundary caught an error:", error, errorInfo);
+  }
+
+  public render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
 
 if (sentryEnabled) {
   Sentry.init({
-    dsn: env.VITE_PUBLIC_SENTRY_DSN,
-    sendDefaultPii: env.VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII,
+    dsn: import.meta.env.VITE_PUBLIC_SENTRY_DSN,
+    sendDefaultPii: readBooleanEnv("VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII", false),
     integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
-    tracesSampleRate: env.VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE,
+    tracesSampleRate: readNumberEnv("VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE", 0),
     tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
-    replaysSessionSampleRate: env.VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE,
-    replaysOnErrorSampleRate: env.VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE,
-    environment: env.VITE_PUBLIC_SENTRY_ENVIRONMENT || env.VITE_PUBLIC_CHAIN || "development",
-    release: env.VITE_PUBLIC_GAME_VERSION || undefined,
+    replaysSessionSampleRate: readNumberEnv("VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE", 0),
+    replaysOnErrorSampleRate: readNumberEnv("VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE", 0),
+    environment: import.meta.env.VITE_PUBLIC_SENTRY_ENVIRONMENT || import.meta.env.VITE_PUBLIC_CHAIN || "development",
+    release: import.meta.env.VITE_PUBLIC_GAME_VERSION || undefined,
   });
 }
 
@@ -60,9 +86,23 @@ root.render(
         <App />
       </Sentry.ErrorBoundary>
     ) : (
-      <Sentry.ErrorBoundary fallback={<BootLoaderCrashFallback />}>
+      <BootCrashBoundary fallback={<BootLoaderCrashFallback />}>
         <App />
-      </Sentry.ErrorBoundary>
+      </BootCrashBoundary>
     )}
   </React.StrictMode>,
 );
+
+function readBooleanEnv(key: string, fallback: boolean): boolean {
+  const value = import.meta.env[key];
+  if (value == null) return fallback;
+  return value === "true";
+}
+
+function readNumberEnv(key: string, fallback: number): number {
+  const value = import.meta.env[key];
+  if (value == null || value === "") return fallback;
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
