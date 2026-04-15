@@ -33,7 +33,7 @@ export const LandingEntryRoute = () => {
         isSpectateMode={entryContext.intent === "spectate"}
         isForgeMode={entryContext.intent === "forge"}
         autoSettleEnabled={entryContext.autoSettle}
-        eternumEntryIntent={entryContext.intent === "settle" ? "settle" : "play"}
+        entryIntent={entryContext.intent === "settle" ? "settle" : "play"}
         numHyperstructuresLeft={entryContext.intent === "forge" ? (entryContext.hyperstructuresLeft ?? 0) : 0}
       />
     </>
