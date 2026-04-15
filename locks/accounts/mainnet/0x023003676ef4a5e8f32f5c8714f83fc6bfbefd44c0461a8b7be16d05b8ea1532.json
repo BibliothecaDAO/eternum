@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-swish-872",
-    "launchRequestId": "24273643351-1",
+    "gameName": "bltz-crisp-657",
+    "launchRequestId": "24440354200-2",
     "workflowName": "Game Launch",
-    "workflowRunId": 24273643351,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "799fa906-1207-4728-b551-8c511b1aca20"
+    "workflowRunId": 24440354200,
+    "workflowRunAttempt": 2,
+    "stepId": "create-world",
+    "leaseId": "5b734275-00e6-4024-8a9a-c409e8a4f49b"
   },
-  "acquiredAt": "2026-04-11T03:32:24.112Z",
-  "heartbeatAt": "2026-04-11T03:32:29.307Z",
-  "expiresAt": "2026-04-11T03:32:29.307Z",
-  "releasedAt": "2026-04-11T03:32:29.307Z"
+  "acquiredAt": "2026-04-15T07:05:51.678Z",
+  "heartbeatAt": "2026-04-15T07:05:51.678Z",
+  "expiresAt": "2026-04-15T07:15:51.678Z"
 }
