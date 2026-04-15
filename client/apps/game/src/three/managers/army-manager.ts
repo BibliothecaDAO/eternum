@@ -2781,6 +2781,7 @@ ${
     const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
     const pendingStamina = getFreshPendingStaminaSource(input.entityId);
     const staminaSnapshot = getExplorerStaminaSnapshot({
+      entityId: input.entityId,
       currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroops(input.entityId),
       fallbackArmy: {
