@@ -22,6 +22,9 @@ function createLabelStub() {
 describe("initializeArmyLabelState", () => {
   it("positions the label above the army and resets pooled label metadata", () => {
     const label = createLabelStub();
+    label.userData.lastDataKey = "old-combined-key";
+    label.userData.lastLayoutDataKey = "old-layout-key";
+    label.userData.lastStaminaDataKey = "old-stamina-key";
     const position = { x: 1, y: 2, z: 3 };
 
     initializeArmyLabelState({
@@ -34,6 +37,8 @@ describe("initializeArmyLabelState", () => {
     expect(label.position.y).toBe(5.1);
     expect(label.userData.entityId).toBe(42);
     expect(label.userData.lastDataKey).toBeNull();
+    expect(label.userData.lastLayoutDataKey).toBeNull();
+    expect(label.userData.lastStaminaDataKey).toBeNull();
   });
 });
 
