@@ -1,6 +1,6 @@
 import { CameraView } from "./camera-view";
 
-const WORLDMAP_CAMERA_FOV_DEGREES = 38;
+const WORLDMAP_CAMERA_FOV_DEGREES = 36;
 
 interface WorldmapCameraViewProfile {
   angleDegrees: number;
@@ -20,7 +20,7 @@ export function resolveWorldmapCameraViewProfiles(): Record<CameraView, Worldmap
   return {
     [CameraView.Close]: createWorldmapCameraViewProfile(10, 42),
     [CameraView.Medium]: createWorldmapCameraViewProfile(20, 52),
-    [CameraView.Far]: createWorldmapCameraViewProfile(40, 58),
+    [CameraView.Far]: createWorldmapCameraViewProfile(36, 56),
   };
 }
 

@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-15",
+    title: "Stable Far Map Framing",
+    description:
+      "World-map far zoom now stays inside the terrain presentation window on portrait screens, so camera pans stop exposing black cutoff wedges along the map edge.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-15",
     title: "Group Move Slot Rebind Fix",
     description:
       "Armies that move together in one transaction now keep distinct world-map anchors through slot compaction and pre-render sync, so adjacent convoy moves stop collapsing several units onto one survivor.",

@@ -522,7 +522,7 @@ export default class WorldmapScene extends WarpTravel {
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private readonly worldmapMinZoomDistance = 10;
-  private readonly worldmapMaxZoomDistance = 40;
+  private readonly worldmapMaxZoomDistance = resolveWorldmapCameraViewProfile(CameraView.Far).distance;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelEventTarget: HTMLElement | null = null;
   private zoomControllerState = createWorldmapZoomControllerState(CameraView.Medium);
@@ -4085,7 +4085,9 @@ export default class WorldmapScene extends WarpTravel {
       currentChunk: this.currentChunk,
       isChunkTransitioning: this.isChunkTransitioning,
       isVisibleInCurrentChunk:
-        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
+        this.currentChunk !== "null" && !this.isChunkTransitioning
+          ? this.isColRowInCurrentRenderBounds(col, row)
+          : false,
     };
     const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
 
@@ -4179,8 +4181,9 @@ export default class WorldmapScene extends WarpTravel {
 
     this.invalidateAllChunkCachesContainingHex(col, row);
 
-    // if the hex is within the chunk, add it to the interactive hex manager and to the biome
-    if (this.isColRowInVisibleChunk(col, row)) {
+    // Late terrain repair should follow the current render window, even when the
+    // tile sits just outside the active frustum during camera movement.
+    if (this.isColRowInCurrentRenderBounds(col, row)) {
       await this.updateHexagonGridPromise;
       const chunkWidth = this.renderChunkSize.width;
       const chunkHeight = this.renderChunkSize.height;
@@ -4251,14 +4254,15 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  isColRowInVisibleChunk(col: number, row: number) {
+  private isColRowInCurrentRenderBounds(col: number, row: number): boolean {
     const startRow = parseInt(this.currentChunk.split(",")[0]);
     const startCol = parseInt(this.currentChunk.split(",")[1]);
     const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    const insideChunkBounds =
-      col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
+    return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
+  }
 
-    if (!insideChunkBounds) {
+  isColRowInVisibleChunk(col: number, row: number) {
+    if (!this.isColRowInCurrentRenderBounds(col, row)) {
       return false;
     }
 

@@ -30,7 +30,7 @@ describe("worldmap zoom wiring", () => {
   it("caps worldmap max zoom distance at the far presentation band", () => {
     const source = readSceneSource("worldmap.tsx");
 
-    expect(source).toMatch(/worldmapMaxZoomDistance = 40/);
+    expect(source).toMatch(/worldmapMaxZoomDistance = resolveWorldmapCameraViewProfile\(CameraView\.Far\)\.distance/);
     expect(source).toMatch(/maxDistance: this\.worldmapMaxZoomDistance/);
     expect(source).toMatch(/this\.controls\.maxDistance = this\.worldmapMaxZoomDistance/);
   });

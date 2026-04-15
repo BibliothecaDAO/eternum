@@ -15,20 +15,20 @@ describe("resolveWorldmapCameraViewProfiles", () => {
     expect(profiles[CameraView.Medium].angleRadians).toBeLessThan(profiles[CameraView.Far].angleRadians);
   });
 
-  it("keeps the existing coarse distance bands while making far view the most tactical angle", () => {
+  it("uses the tightened far camera band to keep the worldmap inside the presentation window", () => {
     const closeProfile = resolveWorldmapCameraViewProfile(CameraView.Close);
     const mediumProfile = resolveWorldmapCameraViewProfile(CameraView.Medium);
     const farProfile = resolveWorldmapCameraViewProfile(CameraView.Far);
 
     expect(closeProfile.distance).toBe(10);
     expect(mediumProfile.distance).toBe(20);
-    expect(farProfile.distance).toBe(40);
+    expect(farProfile.distance).toBe(36);
     expect(closeProfile.angleDegrees).toBe(42);
     expect(mediumProfile.angleDegrees).toBe(52);
-    expect(farProfile.angleDegrees).toBe(58);
+    expect(farProfile.angleDegrees).toBe(56);
   });
 
   it("uses a narrower worldmap field of view to reduce perspective skew", () => {
-    expect(resolveWorldmapCameraFieldOfViewDegrees()).toBe(38);
+    expect(resolveWorldmapCameraFieldOfViewDegrees()).toBe(36);
   });
 });
