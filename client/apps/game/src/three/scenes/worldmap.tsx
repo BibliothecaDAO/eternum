@@ -1761,6 +1761,18 @@ export default class WorldmapScene extends WarpTravel {
       snapshot.status === "zooming" ? "transitioning" : "idle";
     if (nextTransitionStatus !== this.lastPublishedZoomStatus) {
       this.lastPublishedZoomStatus = nextTransitionStatus;
+      // Show loading indicator during zoom transitions to mask chunk loading lag
+      if (nextTransitionStatus === "transitioning") {
+        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
+      } else {
+        // Delay clearing so the indicator covers the deferred chunk refresh work
+        // that fires immediately after zoom settles
+        setTimeout(() => {
+          if (!this.isChunkTransitioning) {
+            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
+          }
+        }, 300);
+      }
       this.worldmapCameraTransitionListeners.forEach((listener) => listener(nextTransitionStatus));
     }
   }
@@ -3568,6 +3580,7 @@ export default class WorldmapScene extends WarpTravel {
     // when switching away while fetches are still in-flight.
     this.toriiLoadingCounter = 0;
     this.state.setLoading(LoadingStateKey.Map, false);
+    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
   }
 
   private resetWorldmapInteractionForSwitchOff(nextSceneName?: SceneName): void {
@@ -6743,8 +6756,10 @@ export default class WorldmapScene extends WarpTravel {
         const transitionToken = ++this.chunkTransitionToken;
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
+        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
           onFinally: () => {
+            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
               durationMs: performance.now() - switchStartedAt,
             });
@@ -6781,7 +6796,11 @@ export default class WorldmapScene extends WarpTravel {
           nextTransitionToken: transitionToken,
           previousTransitionToken: this.actionPathsTransitionToken,
         });
+        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
+          onFinally: () => {
+            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
+          },
           onResolved: () => {
             this.retryDeferredChunkRemovals();
             return true;
