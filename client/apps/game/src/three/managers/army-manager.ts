@@ -384,8 +384,8 @@ export class ArmyManager {
         // Update stamina and battle timers every second
         this.recomputeStaminaForAllArmies();
         this.recomputeBattleTimersForAllArmies();
-      } catch (err) {
-        console.error("[stamina-debug] scheduleTickCheck crashed:", err);
+      } catch {
+        // Swallow errors to keep the tick loop alive
       }
       // Always schedule next check even if current cycle threw
       this.scheduleTickCheck();
@@ -2784,13 +2784,12 @@ ${
   }): { current: number; max: number; displayRatio: number } | null {
     const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
     const pendingStamina = getFreshPendingStaminaSource(input.entityId);
-    const liveTroops = this.resolveLiveExplorerTroops(input.entityId);
     let staminaSnapshot;
     try {
       staminaSnapshot = getExplorerStaminaSnapshot({
         entityId: input.entityId,
         currentArmiesTick,
-        liveTroops,
+        liveTroops: this.resolveLiveExplorerTroops(input.entityId),
         fallbackArmy: {
           category: input.category,
           tier: input.tier,
@@ -2804,13 +2803,7 @@ ${
             }
           : null,
       });
-    } catch (err) {
-      console.warn(`[stamina-debug] resolveArmyStaminaSnapshot threw for entity ${input.entityId}:`, err, {
-        currentArmiesTick,
-        onChainStamina: input.onChainStamina,
-        hasLiveTroops: !!liveTroops,
-        liveTroopsUpdatedTick: liveTroops?.stamina?.updated_tick,
-      });
+    } catch {
       return null;
     }
     if (!staminaSnapshot) {
@@ -2835,43 +2828,30 @@ ${
   /**
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
-  private _staminaDebugLogged = false;
   private recomputeStaminaForAllArmies(): void {
     // Update all army data in cache
     this.armies.forEach((army, entityId) => {
-      if (!this._staminaDebugLogged && this.armies.size > 0) {
-        const { currentArmiesTick } = useBlockTimestampStore.getState();
-        const liveTroops = this.resolveLiveExplorerTroops(entityId);
-        console.log(`[stamina-debug] first army recompute:`, {
+      try {
+        const staminaSnapshot = this.resolveArmyStaminaSnapshot({
           entityId,
-          currentArmiesTick,
-          onChainStamina: { amount: String(army.onChainStamina.amount), updatedTick: army.onChainStamina.updatedTick },
-          currentStamina: army.currentStamina,
-          maxStamina: army.maxStamina,
-          hasLiveTroops: !!liveTroops,
-          liveTroopsStamina: liveTroops
-            ? { amount: String(liveTroops.stamina?.amount), updatedTick: String(liveTroops.stamina?.updated_tick) }
-            : null,
+          troopCount: army.troopCount,
+          onChainStamina: army.onChainStamina,
+          category: army.category,
+          tier: army.tier,
         });
-        this._staminaDebugLogged = true;
-      }
-      const staminaSnapshot = this.resolveArmyStaminaSnapshot({
-        entityId,
-        troopCount: army.troopCount,
-        onChainStamina: army.onChainStamina,
-        category: army.category,
-        tier: army.tier,
-      });
 
-      // Update cached army data with new stamina
-      army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
-      army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
-      army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
+        // Update cached army data with new stamina
+        army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
+        army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
+        army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
 
-      // Update visible label if it exists
-      const label = this.entityIdLabels.get(entityId);
-      if (label) {
-        this.updateArmyLabelData(entityId, army, label);
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateArmyLabelData(entityId, army, label);
+        }
+      } catch {
+        // Skip this army — don't let one bad entity block all others
       }
     });
   }
