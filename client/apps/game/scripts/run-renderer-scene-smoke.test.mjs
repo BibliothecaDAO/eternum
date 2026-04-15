@@ -9,6 +9,7 @@ import {
   evaluateSceneSmokeResult,
   normalizeRendererDiagnosticsSnapshot,
   normalizeSceneList,
+  resolveAgentBrowserWorkingDirectory,
 } from "./run-renderer-scene-smoke.mjs";
 
 describe("glow repro matrix", () => {
@@ -51,6 +52,13 @@ describe("buildSceneSmokeUrl", () => {
         scene: "hex",
       }),
     ).toBe("https://127.0.0.1:4173/play/hex?col=0&row=0&rendererMode=legacy-webgl");
+  });
+});
+
+describe("resolveAgentBrowserWorkingDirectory", () => {
+  it("runs npx outside the repository workspace to avoid npm duplicate workspace-name failures", () => {
+    expect(resolveAgentBrowserWorkingDirectory({ RUNNER_TEMP: "/runner-temp", TMPDIR: "/tmp" })).toBe("/runner-temp");
+    expect(resolveAgentBrowserWorkingDirectory({ TMPDIR: "/tmp" })).toBe("/tmp");
   });
 });
 

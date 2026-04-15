@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
@@ -119,6 +120,10 @@ function readOption(args, name, fallback) {
   return args[index + 1] ?? fallback;
 }
 
+export function resolveAgentBrowserWorkingDirectory(env = process.env) {
+  return env.RUNNER_TEMP || env.TMPDIR || tmpdir();
+}
+
 function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
   const baseArgs = ["-y", "agent-browser", "--session", session];
   if (headed) {
@@ -126,6 +131,7 @@ function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
   }
 
   const result = spawnSync("npx", [...baseArgs, ...commandArgs], {
+    cwd: resolveAgentBrowserWorkingDirectory(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
