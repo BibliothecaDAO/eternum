@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 const TEST_CAMERA_VIEW = {
   Close: 1,
@@ -56,7 +56,9 @@ describe("StructureLabelType realm army generation", () => {
   it("creates a realm army generation badge above the owner row", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
-        activeArmyProduction: [{ resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 }],
+        activeArmyProduction: [
+          { resourceId: ResourcesIds.Knight, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 2 },
+        ],
       }),
       TEST_CAMERA_VIEW.Close,
     );
@@ -75,7 +77,9 @@ describe("StructureLabelType realm army generation", () => {
     const nonRealm = StructureLabelType.createElement(
       buildStructureLabelData({
         structureType: StructureType.Village,
-        activeArmyProduction: [{ resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 }],
+        activeArmyProduction: [
+          { resourceId: ResourcesIds.Knight, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 2 },
+        ],
       }),
       TEST_CAMERA_VIEW.Close,
     );
@@ -88,10 +92,10 @@ describe("StructureLabelType realm army generation", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
         activeArmyProduction: [
-          { resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 },
-          { resourceId: ResourcesIds.CrossbowmanT2, outputPerTick: 1n, buildingCount: 1 },
-          { resourceId: ResourcesIds.PaladinT3, outputPerTick: 4n, buildingCount: 4 },
-          { resourceId: ResourcesIds.KnightT3, outputPerTick: 3n, buildingCount: 3 },
+          { resourceId: ResourcesIds.Knight, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 2 },
+          { resourceId: ResourcesIds.CrossbowmanT2, outputPerTick: 1n * BigInt(RESOURCE_PRECISION), buildingCount: 1 },
+          { resourceId: ResourcesIds.PaladinT3, outputPerTick: 4n * BigInt(RESOURCE_PRECISION), buildingCount: 4 },
+          { resourceId: ResourcesIds.KnightT3, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 3 },
         ],
       }),
       TEST_CAMERA_VIEW.Close,
@@ -103,7 +107,9 @@ describe("StructureLabelType realm army generation", () => {
     StructureLabelType.updateElement?.(
       element,
       buildStructureLabelData({
-        activeArmyProduction: [{ resourceId: ResourcesIds.Paladin, outputPerTick: 5n, buildingCount: 5 }],
+        activeArmyProduction: [
+          { resourceId: ResourcesIds.Paladin, outputPerTick: 5n * BigInt(RESOURCE_PRECISION), buildingCount: 5 },
+        ],
       }),
       TEST_CAMERA_VIEW.Close,
     );
@@ -117,7 +123,9 @@ describe("StructureLabelType realm army generation", () => {
   it("removes a stale realm army generation badge when the label updates to a non-realm", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
-        activeArmyProduction: [{ resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 }],
+        activeArmyProduction: [
+          { resourceId: ResourcesIds.Knight, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 2 },
+        ],
       }),
       TEST_CAMERA_VIEW.Close,
     );

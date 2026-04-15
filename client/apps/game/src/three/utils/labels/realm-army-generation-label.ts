@@ -1,9 +1,32 @@
 import { CameraView } from "../../scenes/hexagon-scene";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { StructureArmyProduction } from "../../types";
 import { resolveCameraView } from "./label-view";
 
 const MAX_VISIBLE_GENERATION_CHIPS = 3;
 const SOFT_LABEL_COLOR = "#f6f1e5";
+const DISPLAY_DECIMAL_SCALE = 100n;
+
+export const formatArmyProductionPerTick = (outputPerTick: bigint): string => {
+  if (outputPerTick <= 0n) {
+    return "0";
+  }
+
+  const precision = BigInt(RESOURCE_PRECISION);
+  const whole = outputPerTick / precision;
+  const remainder = outputPerTick % precision;
+
+  if (remainder === 0n) {
+    return whole.toString();
+  }
+
+  const fractional = (remainder * DISPLAY_DECIMAL_SCALE) / precision;
+  if (fractional === 0n) {
+    return whole.toString();
+  }
+
+  return `${whole.toString()}.${fractional.toString().padStart(2, "0").replace(/0+$/, "")}`;
+};
 
 const createGenerationChip = (entry: StructureArmyProduction, inputView: CameraView): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
@@ -35,7 +58,7 @@ const createGenerationChip = (entry: StructureArmyProduction, inputView: CameraV
   const count = document.createElement("span");
   count.classList.add(cameraView === CameraView.Medium ? "text-[10px]" : "text-xxs", "font-semibold");
   count.style.color = SOFT_LABEL_COLOR;
-  count.textContent = `+${entry.outputPerTick.toString()}/tick`;
+  count.textContent = `+${formatArmyProductionPerTick(entry.outputPerTick)}/tick`;
   chip.appendChild(count);
 
   return chip;
