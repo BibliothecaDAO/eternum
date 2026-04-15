@@ -133,7 +133,7 @@ jobs:
       - name: Wait for game client preview server
         run: |
           for attempt in $(seq 1 60); do
-            if curl --fail --silent --show-error http://127.0.0.1:4173 >/dev/null; then
+            if curl --fail --silent --show-error --insecure https://127.0.0.1:4173 >/dev/null; then
               exit 0
             fi
 
@@ -147,7 +147,7 @@ jobs:
       - name: Run renderer scene smoke
         run: |
           node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
-            --base-url http://127.0.0.1:4173 \
+            --base-url https://127.0.0.1:4173 \
             --scenes map,hex
 
       - name: Upload game client preview server log
