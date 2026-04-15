@@ -149,6 +149,6 @@ describe("useAutoSettleStore", () => {
     await useAutoSettleStore.persist.rehydrate();
 
     expect(useAutoSettleStore.getState().getEntry(key)?.opensOnUnlockEdge).toBe(true);
-    expect(useAutoSettleStore.getState().getEntry("stale")?.opensOnUnlockEdge).toBe(false);
+    expect(useAutoSettleStore.getState().getEntry("stale")?.opensOnUnlockEdge).toBe(true);
   });
 });

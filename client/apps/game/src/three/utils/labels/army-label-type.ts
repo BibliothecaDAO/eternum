@@ -1,6 +1,6 @@
 import { getCharacterName } from "@/utils/agent";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { CameraView } from "../../scenes/hexagon-scene";
+import { CameraView } from "../../scenes/camera-view";
 import {
   createContentContainer,
   createDirectionIndicators,

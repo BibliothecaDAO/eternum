@@ -9,6 +9,7 @@ import {
   evaluateSceneSmokeResult,
   normalizeRendererDiagnosticsSnapshot,
   normalizeSceneList,
+  resolveAgentBrowserWorkingDirectory,
 } from "./run-renderer-scene-smoke.mjs";
 
 describe("glow repro matrix", () => {
@@ -40,17 +41,28 @@ describe("buildSceneSmokeUrl", () => {
         rendererMode: "experimental-webgpu-auto",
         scene: "map",
       }),
-    ).toBe("https://127.0.0.1:4173/play/map?col=0&row=0&spectate=true&rendererMode=experimental-webgpu-auto");
+    ).toBe(
+      "https://127.0.0.1:4173/play/slot/eternum-blitz-slot-4/map?col=0&row=0&spectate=true&rendererMode=experimental-webgpu-auto",
+    );
   });
 
-  it("builds the hexception url without spectate mode", () => {
+  it("builds the hexception url as a canonical spectator route", () => {
     expect(
       buildSceneSmokeUrl({
+        chain: "mainnet",
         baseUrl: "https://127.0.0.1:4173",
         rendererMode: "legacy-webgl",
         scene: "hex",
+        worldName: "etrn-dawn",
       }),
-    ).toBe("https://127.0.0.1:4173/play/hex?col=0&row=0&rendererMode=legacy-webgl");
+    ).toBe("https://127.0.0.1:4173/play/mainnet/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=legacy-webgl");
+  });
+});
+
+describe("resolveAgentBrowserWorkingDirectory", () => {
+  it("runs npx outside the repository workspace to avoid npm duplicate workspace-name failures", () => {
+    expect(resolveAgentBrowserWorkingDirectory({ RUNNER_TEMP: "/runner-temp", TMPDIR: "/tmp" })).toBe("/runner-temp");
+    expect(resolveAgentBrowserWorkingDirectory({ TMPDIR: "/tmp" })).toBe("/tmp");
   });
 });
 

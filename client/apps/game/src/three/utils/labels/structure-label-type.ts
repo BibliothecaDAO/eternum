@@ -3,7 +3,8 @@ import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { CameraView } from "../../scenes/hexagon-scene";
+import type { StructureInfo } from "../../types/common";
+import { CameraView } from "../../scenes/camera-view";
 import {
   createContentContainer,
   createDirectionIndicators,
@@ -67,28 +68,7 @@ interface StructureLabelData extends LabelData {
   battleTimerLeft?: number;
 }
 
-// For backward compatibility with existing StructureInfo type
-export interface StructureInfoCompat {
-  entityId: number;
-  structureName: string;
-  hexCoords: { col: number; row: number };
-  structureType: StructureType;
-  stage: number;
-  initialized: boolean;
-  level: number;
-  isMine: boolean;
-  hasWonder: boolean;
-  owner: {
-    address: bigint;
-    ownerName: string;
-    guildName: string;
-  };
-  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
-  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
-  incomingTroopArrivals?: IncomingTroopArrival[];
-}
-
-export const convertStructureInfo = (structure: StructureInfoCompat): StructureLabelData => {
+export const convertStructureInfo = (structure: StructureInfo): StructureLabelData => {
   return {
     ...structure,
     hexCoords: new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }),

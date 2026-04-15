@@ -92,7 +92,9 @@ export interface RealmStore {
   removeRelicFromEntity: (params: { entityId: ID; resourceId: ID; recipientType: RelicRecipientType }) => void;
 }
 
-export const createRealmStoreSlice = (set: any) => ({
+export const createRealmStoreSlice = (
+  set: (partial: Partial<RealmStore> | ((state: RealmStore) => Partial<RealmStore>)) => void,
+) => ({
   structureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   isSpectating: false,

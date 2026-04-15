@@ -1,4 +1,4 @@
-import { CameraView } from "../../scenes/hexagon-scene";
+import { CameraView } from "../../scenes/camera-view";
 
 // Central toggle to keep label visuals locked to a single camera view
 const FORCE_LABEL_CAMERA_VIEW = true;

@@ -3,7 +3,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
-import { ConfirmationPopup } from "@/ui/features/economy/banking";
+import { ConfirmationPopup } from "./confirmation-popup";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber } from "@/ui/utils/utils";
