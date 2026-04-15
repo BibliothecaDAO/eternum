@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24423116372-2",
   "currentStepId": null,
   "createdAt": "2026-04-14T21:17:10.533Z",
-  "updatedAt": "2026-04-14T21:32:40.600Z",
+  "updatedAt": "2026-04-15T00:10:56.019Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -84,7 +84,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-clash-671/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-14T21:32:40.600Z"
+    "lastIndexerDescribeAt": "2026-04-14T21:32:40.600Z",
+    "pendingIndexerTierTarget": "pro",
+    "pendingIndexerTierRequestedAt": "2026-04-15T00:10:54.767Z"
   },
   "completedAt": "2026-04-14T21:19:58.371Z"
 }
