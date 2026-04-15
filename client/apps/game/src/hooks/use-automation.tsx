@@ -31,6 +31,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Account as StarknetAccount } from "starknet";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -427,11 +428,14 @@ export const useAutomation = () => {
           } else {
             const rejection = result.reason;
             const rawError = rejection.error;
-            const errorMessage = rawError instanceof Error ? rawError.message : String(rawError);
+            const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
             const realmConfig = rejection.realmConfig;
             const realmLabel = rejection.realmLabel;
 
-            console.error(`Automation: Failed to execute plan for ${realmLabel}`, errorMessage);
+            console.error(`Automation: Failed to execute plan for ${realmLabel}`, {
+              error: rawError,
+              message: errorMessage,
+            });
 
             if (realmConfig) {
               const prev = getRealmConfig(realmConfig.realmId);
