@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  applyAutoSettleRegistrationHint,
+  applyDashboardRegistrationHint,
   buildSettlementExecutionPlan,
   deriveSettlementPhaseViewModel,
   deriveSettlementStatus,
@@ -147,35 +147,51 @@ describe("deriveSettlementPhaseViewModel", () => {
   });
 });
 
-describe("applyAutoSettleRegistrationHint", () => {
-  it("treats auto-settle entry handoffs as registered while the settlement index catches up", () => {
-    const hintedSnapshot = applyAutoSettleRegistrationHint({
+describe("applyDashboardRegistrationHint", () => {
+  it("treats dashboard play handoffs as registered while the settlement index catches up", () => {
+    const hintedSnapshot = applyDashboardRegistrationHint({
       snapshot: snapshot(),
-      autoSettleEnabled: true,
-      entryIntent: "settle",
-      hasAutoSettleEntry: true,
+      entryIntent: "play",
+      hasDashboardRegistrationEntry: true,
     });
 
     expect(hintedSnapshot.registered).toBe(true);
     expect(deriveSettlementStatus(hintedSnapshot).needsSettlement).toBe(true);
   });
 
-  it("does not invent registration outside the auto-settle settle flow", () => {
+  it("also treats dashboard settle handoffs as registered while the settlement index catches up", () => {
+    const hintedSnapshot = applyDashboardRegistrationHint({
+      snapshot: snapshot(),
+      entryIntent: "settle",
+      hasDashboardRegistrationEntry: true,
+    });
+
+    expect(hintedSnapshot.registered).toBe(true);
+    expect(deriveSettlementStatus(hintedSnapshot).needsSettlement).toBe(true);
+  });
+
+  it("does not invent registration outside dashboard play or settle flows", () => {
     expect(
-      applyAutoSettleRegistrationHint({
+      applyDashboardRegistrationHint({
         snapshot: snapshot(),
-        autoSettleEnabled: false,
-        entryIntent: "settle",
-        hasAutoSettleEntry: true,
+        entryIntent: "spectate",
+        hasDashboardRegistrationEntry: true,
       }).registered,
     ).toBe(false);
 
     expect(
-      applyAutoSettleRegistrationHint({
+      applyDashboardRegistrationHint({
         snapshot: snapshot(),
-        autoSettleEnabled: true,
-        entryIntent: "play",
-        hasAutoSettleEntry: true,
+        entryIntent: "forge",
+        hasDashboardRegistrationEntry: true,
+      }).registered,
+    ).toBe(false);
+
+    expect(
+      applyDashboardRegistrationHint({
+        snapshot: snapshot(),
+        entryIntent: "settle",
+        hasDashboardRegistrationEntry: false,
       }).registered,
     ).toBe(false);
   });
@@ -189,11 +205,10 @@ describe("applyAutoSettleRegistrationHint", () => {
     });
 
     expect(
-      applyAutoSettleRegistrationHint({
+      applyDashboardRegistrationHint({
         snapshot: progressedSnapshot,
-        autoSettleEnabled: true,
-        entryIntent: "settle",
-        hasAutoSettleEntry: true,
+        entryIntent: "play",
+        hasDashboardRegistrationEntry: true,
       }),
     ).toEqual(progressedSnapshot);
   });
