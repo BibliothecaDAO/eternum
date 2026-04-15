@@ -34,7 +34,8 @@ import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager"
 import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
-import { CAMERA_CONFIG } from "@/three/constants";
+import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { processExplorerTroopsUpdate } from "@/three/scenes/worldmap-update-helpers";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -1254,16 +1255,13 @@ export default class WorldmapScene extends WarpTravel {
 
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-        this.incrementToriiBoundsCounter("explorerTroops");
-
-        if (update.troopCount <= 0) {
-          this.scheduleArmyRemoval(update.entityId, "zero");
-          return;
-        }
-
-        this.updateArmyHexes(update);
-        this.resolvePendingCreateArmyFxOnArmyUpdate(update);
-        this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
+        processExplorerTroopsUpdate(update, {
+          cancelPendingArmyRemoval: (entityId) => this.cancelPendingArmyRemoval(entityId),
+          scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
+          updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
+          updateArmyFromExplorerTroopsUpdate: (troopsUpdate) =>
+            this.armyManager.updateArmyFromExplorerTroopsUpdate(troopsUpdate),
+        });
       }),
     );
 
@@ -3725,11 +3723,10 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);
-    const hasMovementInFlight = reason === "tile" && (hasPendingMovement || this.armyManager.isArmyMoving(entityId));
-    // Tile removals wait longer (1500ms) to ensure movement updates arrive
-    // Zero troop removals are immediate (0ms) since they're confirmed deaths
-    const baseDelay = reason === "tile" ? 1500 : 0;
-    const initialDelay = hasMovementInFlight ? 3000 : baseDelay;
+    // Tile removals wait longer (1500ms) to ensure movement updates arrive.
+    // Zero troop removals wait briefly so death animations can be visible before cleanup.
+    const baseDelay = reason === "tile" ? 1500 : 1000;
+    const initialDelay = hasPendingMovement ? 3000 : baseDelay;
     const retryDelay = 500;
     const maxPendingWaitMs = 10000;
 

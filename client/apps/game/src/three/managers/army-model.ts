@@ -66,6 +66,7 @@ import {
 } from "../utils/spline-path";
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
+import { findAnimationByName } from "./animation-clip-matcher";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
@@ -348,6 +349,16 @@ export class ArmyModel {
     this.scene.add(group);
 
     const mixer = new AnimationMixer(gltf.scene);
+
+    // Name-based animation lookup with fallbacks
+    const idleClip = findAnimationByName(gltf.animations, ["idle", "stand", "rest"]) ?? gltf.animations[0];
+    const runClip =
+      findAnimationByName(gltf.animations, ["run", "walk", "moving"]) ??
+      gltf.animations[1] ??
+      idleClip?.clone();
+    const attackClip = findAnimationByName(gltf.animations, ["attack", "strike", "combat"]);
+    const deathClip = findAnimationByName(gltf.animations, ["death", "die", "dead", "defeat"]);
+
 
     return {
       group,
