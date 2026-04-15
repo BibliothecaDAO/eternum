@@ -38,6 +38,26 @@ const rotationMatrix = new Matrix4();
 const zeroMatrix = new Matrix4().makeScale(0, 0, 0);
 const DEFAULT_INITIAL_CAPACITY = 32;
 
+function shouldApplyStructureAlphaCutoutFallback(material: MeshStandardMaterial): boolean {
+  return !material.depthWrite && !material.transparent;
+}
+
+function applyStructureMaterialOverrides(material: MeshStandardMaterial, modelName: string): void {
+  if (modelName.includes("Quest") || modelName.includes("Chest")) {
+    if (shouldApplyStructureAlphaCutoutFallback(material)) {
+      material.depthWrite = true;
+      material.alphaTest = 0.075;
+    }
+    if (material.emissiveIntensity > 1) {
+      material.emissiveIntensity = 1.5;
+    }
+  }
+
+  if (modelName.includes("FragmentMine") && material.emissiveIntensity > 1) {
+    material.emissiveIntensity = 15;
+  }
+}
+
 interface AnimatedInstancedMesh extends InstancedMesh {
   animated: boolean;
 }
@@ -100,22 +120,8 @@ export default class InstancedModel {
         if (child.scale.x !== 1) {
           return;
         }
-        let material = child.material;
-        if (name.includes("Quest") || name.includes("Chest")) {
-          if (!material.depthWrite) {
-            material.depthWrite = true;
-            material.alphaTest = 0.075;
-          }
-          if (material.emissiveIntensity > 1) {
-            material.emissiveIntensity = 1.5;
-          }
-        }
-        //name.includes("FragmentMine")
-        if (name.includes("FragmentMine")) {
-          if (material.emissiveIntensity > 1) {
-            material.emissiveIntensity = 15;
-          }
-        }
+        let material = child.material as MeshStandardMaterial;
+        applyStructureMaterialOverrides(material, name);
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
