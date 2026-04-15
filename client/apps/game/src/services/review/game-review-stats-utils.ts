@@ -181,7 +181,6 @@ const EMPTY_COMPETITIVE_METRICS: GameReviewCompetitiveMetrics = {
   biggestStructuresOwned: null,
 };
 
-
 const incrementMetric = (metrics: Map<string, number>, key: string, value: number): void => {
   if (!Number.isFinite(value) || value <= 0) {
     return;
