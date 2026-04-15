@@ -209,6 +209,8 @@ export class ArmyManager {
   private isDestroyed = false;
   private isArmyChunkTransitioning = false;
   private deferredArmyQueue: Set<ID> = new Set();
+  // Armies that arrived before any chunk was committed — drained on first executeRenderForChunk
+  private preCommitArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
@@ -1280,6 +1282,7 @@ export class ArmyManager {
     } finally {
       this.isArmyChunkTransitioning = false;
       this.drainDeferredArmyQueue();
+      this.drainPreCommitArmyQueue();
       recordWorldmapRenderDuration("executeRenderForChunk", performance.now() - renderStartedAt);
       setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
       setWorldmapRenderGauge("activePaths", this.getActivePathCount());
@@ -1543,6 +1546,17 @@ export class ArmyManager {
     }
   }
 
+  private drainPreCommitArmyQueue(): void {
+    if (this.preCommitArmyQueue.size === 0) return;
+    const queued = [...this.preCommitArmyQueue];
+    this.preCommitArmyQueue.clear();
+    for (const entityId of queued) {
+      if (!this.suppressedArmies.has(entityId)) {
+        void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      }
+    }
+  }
+
   private async renderArmyIntoCurrentChunkIfVisible(entityId: ID): Promise<boolean> {
     if (this.isArmyChunkTransitioning) {
       this.deferredArmyQueue.add(entityId);
@@ -1550,6 +1564,7 @@ export class ArmyManager {
     }
 
     if (!isCommittedManagerChunk(this.currentChunkKey)) {
+      this.preCommitArmyQueue.add(entityId);
       return false;
     }
 
@@ -3027,6 +3042,7 @@ ${
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
     this.suppressedArmies.clear();
+    this.preCommitArmyQueue.clear();
     this.chunkToArmies.clear();
     this.movementStartListeners.clear();
     this.movementCompleteListeners.clear();

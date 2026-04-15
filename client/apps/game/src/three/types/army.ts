@@ -39,6 +39,7 @@ export interface SplineMovementData {
   isAnticipating: boolean;
   isSettling: boolean;
   finalTangent: Vector3 | null;
+  endpointCache: Vector3;
   // Terrain speed
   currentSpeedMultiplier: number;
   // Rhythmic bob + arrival slam
