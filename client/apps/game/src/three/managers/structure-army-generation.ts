@@ -1,6 +1,6 @@
 import { ResourceManager } from "@bibliothecadao/eternum";
 import { type ClientComponents, type ID, ResourcesIds } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { StructureArmyGeneration } from "../types";
 
