@@ -1,3 +1,4 @@
+import type GUI from "lil-gui";
 import { Vector2 } from "three";
 
 /**
@@ -251,7 +252,7 @@ export class WindSystem {
   /**
    * Add GUI controls for debugging
    */
-  addGUIControls(guiFolder: any): void {
+  addGUIControls(guiFolder: GUI): void {
     const windFolder = guiFolder.addFolder("Wind System");
 
     // Display current values

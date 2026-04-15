@@ -3,7 +3,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ProductionModal } from "@/ui/features/settlement";
+import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import {
   calculateDonkeysNeeded,
   configManager,

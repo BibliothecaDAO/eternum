@@ -33,7 +33,7 @@ import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
-import { CameraView } from "@/three/scenes/hexagon-scene";
+import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";

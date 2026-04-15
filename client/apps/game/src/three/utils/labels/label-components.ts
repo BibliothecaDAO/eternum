@@ -7,7 +7,7 @@ import {
 } from "@/ui/shared/lib/stamina-visuals";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { BANDITS_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
-import { CameraView } from "../../scenes/hexagon-scene";
+import { CameraView } from "../../scenes/camera-view";
 import { resolveOwnerDisplayName } from "./owner-display-name";
 import { resolveCameraView } from "./label-view";
 

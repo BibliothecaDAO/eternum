@@ -41,7 +41,10 @@ interface EntityActions {
   selectedEntityId: ID | null;
 }
 
-export const createThreeStoreSlice = (set: any, _get: any) => ({
+export const createThreeStoreSlice = (
+  set: (partial: Partial<ThreeStore> | ((state: ThreeStore) => Partial<ThreeStore>)) => void,
+  _get: () => ThreeStore,
+) => ({
   navigationTarget: null,
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
   cameraTargetHex: null,

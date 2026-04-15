@@ -1,3 +1,4 @@
+import type GUI from "lil-gui";
 import { RainEffect } from "@/three/effects/rain-effect";
 import { WindSystem } from "@/three/systems/wind-system";
 import { Scene, Vector3 } from "three";
@@ -533,7 +534,7 @@ export class WeatherManager {
   /**
    * Add GUI controls
    */
-  addGUIControls(guiFolder: any): void {
+  addGUIControls(guiFolder: GUI): void {
     const weatherFolder = guiFolder.addFolder("Weather System");
 
     // Status display

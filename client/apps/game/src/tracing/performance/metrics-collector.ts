@@ -106,8 +106,8 @@ class MetricsCollector {
         const layoutShiftObserver = new PerformanceObserver((list) => {
           let clsValue = 0;
           for (const entry of list.getEntries()) {
-            if (!(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
+            if (!(entry as LayoutShift).hadRecentInput) {
+              clsValue += (entry as LayoutShift).value;
             }
           }
           if (clsValue > 0.1) {
@@ -404,7 +404,6 @@ class MetricsCollector {
   }
 }
 
-// Export singleton instance
 export const metricsCollector = MetricsCollector.getInstance();
 
 // Convenience functions (used internally)
