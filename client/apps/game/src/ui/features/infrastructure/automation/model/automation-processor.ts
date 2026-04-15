@@ -52,6 +52,8 @@ interface BuildRealmProductionPlanArgs {
   snapshot: RealmResourceSnapshot;
 }
 
+type AutomationSkipEntry = RealmAutomationExecutionSummary["skipped"][number];
+
 const ZERO_PLAN: RealmProductionPlan = {
   realmId: 0,
   realmKey: "",
@@ -83,6 +85,107 @@ const clampPercent = (value: number): number => {
 const DEFAULT_PLAN_CALLSET: RealmProductionCallset = {
   resourceToResource: [],
   laborToResource: [],
+};
+
+const TROOP_PLANNING_ORDER = new Map<ResourcesIds, number>([
+  [ResourcesIds.Knight, 1],
+  [ResourcesIds.Crossbowman, 2],
+  [ResourcesIds.Paladin, 3],
+  [ResourcesIds.KnightT2, 4],
+  [ResourcesIds.CrossbowmanT2, 5],
+  [ResourcesIds.PaladinT2, 6],
+  [ResourcesIds.KnightT3, 7],
+  [ResourcesIds.CrossbowmanT3, 8],
+  [ResourcesIds.PaladinT3, 9],
+]);
+
+const isTroopResource = (resourceId: ResourcesIds): boolean => TROOP_PLANNING_ORDER.has(resourceId);
+
+const compareAutomationResources = (left: ResourcesIds, right: ResourcesIds): number => {
+  const leftTroopOrder = TROOP_PLANNING_ORDER.get(left);
+  const rightTroopOrder = TROOP_PLANNING_ORDER.get(right);
+
+  if (leftTroopOrder !== undefined && rightTroopOrder !== undefined) {
+    return leftTroopOrder - rightTroopOrder;
+  }
+
+  return left - right;
+};
+
+const isResourceActiveInSnapshot = (snapshot: RealmResourceSnapshot, resourceId: ResourcesIds): boolean =>
+  snapshot.get(resourceId)?.hasActiveProduction === true;
+
+const buildResourceIdsToEvaluate = (
+  producedResourceIds: ResourcesIds[],
+  configuredCustomIds: ResourcesIds[],
+): ResourcesIds[] => Array.from(new Set<ResourcesIds>([...producedResourceIds, ...configuredCustomIds]));
+
+const canFundOneCycle = (
+  recipeInputs: Array<{ resource: ResourcesIds; amount: number }>,
+  getTotal: (resourceId: ResourcesIds) => number,
+  getBudget: (resourceId: ResourcesIds) => number,
+): boolean => {
+  const requiredInputs = recipeInputs.filter((input) => input.amount > 0);
+  if (!requiredInputs.length) return false;
+
+  return requiredInputs.every((input) => getTotal(input.resource) > 0 && getBudget(input.resource) >= input.amount);
+};
+
+const shouldUseSmartMinimumTroopCycle = ({
+  presetId,
+  resourceId,
+  resourceToResource,
+  recipeInputs,
+  getTotal,
+  getBudget,
+}: {
+  presetId: string;
+  resourceId: ResourcesIds;
+  resourceToResource: number;
+  recipeInputs: Array<{ resource: ResourcesIds; amount: number }>;
+  getTotal: (resourceId: ResourcesIds) => number;
+  getBudget: (resourceId: ResourcesIds) => number;
+}): boolean => {
+  if (presetId !== "smart") return false;
+  if (!isTroopResource(resourceId)) return false;
+  if (resourceToResource <= 0) return false;
+  return canFundOneCycle(recipeInputs, getTotal, getBudget);
+};
+
+const resolveResourceLabel = (resourceId: ResourcesIds): string => {
+  const label = ResourcesIds[resourceId];
+  return typeof label === "string" ? label : `Resource ${resourceId}`;
+};
+
+export const buildAutomationSkipMessage = (skip: AutomationSkipEntry): string => {
+  const resource = resolveResourceLabel(skip.resourceId);
+
+  switch (skip.reason) {
+    case "No active production building":
+      return `${resource} has no active production building`;
+    case "Insufficient complex recipe inputs":
+      return `${resource} waiting for recipe inputs`;
+    case "Missing complex recipe configuration":
+      return `${resource} missing resource recipe`;
+    case "Resource budget exhausted for complex recipe":
+      return `${resource} resource budget exhausted`;
+    case "Missing labor recipe configuration":
+      return `${resource} missing labor recipe`;
+    case "Insufficient labor recipe inputs":
+      return `${resource} waiting for labor inputs`;
+    case "Resource budget exhausted for labor recipe":
+      return `${resource} labor budget exhausted`;
+    default:
+      return `${resource}: ${skip.reason}`;
+  }
+};
+
+export const buildAutomationPlanSkipMessage = (plan: RealmProductionPlan): string => {
+  const firstSkip = plan.skipped[0];
+  if (!firstSkip) return "No executable calls";
+
+  const suffix = plan.skipped.length > 1 ? ` (+${plan.skipped.length - 1} more)` : "";
+  return `${buildAutomationSkipMessage(firstSkip)}${suffix}`;
 };
 
 interface BuildRealmResourceSnapshotArgs {
@@ -165,14 +268,9 @@ export const buildRealmProductionPlan = ({
   const configuredCustomIds = Object.keys(realmConfig.customPercentages ?? {}).map(
     (key) => Number(key) as ResourcesIds,
   );
-  const resourceIdsToProcess = new Set<ResourcesIds>(producedResourceIds);
+  const resourceIdsToEvaluate = buildResourceIdsToEvaluate(producedResourceIds, configuredCustomIds);
 
-  // Reliability fallback: if snapshot misses active production, keep configured custom resources in scope.
-  if (resourceIdsToProcess.size === 0) {
-    configuredCustomIds.forEach((resourceId) => resourceIdsToProcess.add(resourceId));
-  }
-
-  if (resourceIdsToProcess.size === 0) {
+  if (resourceIdsToEvaluate.length === 0) {
     return {
       realmId: realmIdNumber,
       realmKey: realmConfig.realmId,
@@ -188,10 +286,10 @@ export const buildRealmProductionPlan = ({
   }
 
   const presetId = realmConfig.presetId ?? "smart";
-  const smartDefaults = calculatePresetAllocations(Array.from(resourceIdsToProcess), "smart", entityType);
+  const smartDefaults = calculatePresetAllocations(resourceIdsToEvaluate, "smart", entityType);
   const presetAllocations =
     presetId === "smart" || presetId === "idle"
-      ? calculatePresetAllocations(Array.from(resourceIdsToProcess), presetId, entityType)
+      ? calculatePresetAllocations(resourceIdsToEvaluate, presetId, entityType)
       : new Map<number, ResourceAutomationPercentages>();
 
   const baselinePercentages = (resourceId: ResourcesIds): ResourceAutomationPercentages => {
@@ -201,13 +299,14 @@ export const buildRealmProductionPlan = ({
     return { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
   };
 
-  const resourceDefinitions = Array.from(resourceIdsToProcess)
+  const resourceDefinitions = resourceIdsToEvaluate
     .filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))
-    .toSorted((a, b) => a - b)
+    .toSorted(compareAutomationResources)
     .map((resourceId) => {
       const customPercentages = realmConfig.customPercentages?.[resourceId];
       const presetPercentages = presetAllocations.get(resourceId);
       const smartPercentages = smartDefaults.get(resourceId) ?? baselinePercentages(resourceId);
+      const hasActiveProduction = isResourceActiveInSnapshot(snapshot, resourceId);
 
       const source =
         presetId === "custom"
@@ -219,15 +318,25 @@ export const buildRealmProductionPlan = ({
         laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource ?? 0),
       };
 
-      return { resourceId, percentages };
+      return { resourceId, percentages, hasActiveProduction };
     });
 
+  const skipped: RealmAutomationExecutionSummary["skipped"] = [];
   const resourcesToTrack = new Set<ResourcesIds>();
   for (const definition of resourceDefinitions) {
     const {
       resourceId,
       percentages: { resourceToResource, laborToResource },
+      hasActiveProduction,
     } = definition;
+
+    if (!hasActiveProduction) {
+      skipped.push({
+        resourceId,
+        reason: "No active production building",
+      });
+      continue;
+    }
 
     const hasActivity = ensurePositiveNumber(resourceToResource) || ensurePositiveNumber(laborToResource);
 
@@ -279,7 +388,6 @@ export const buildRealmProductionPlan = ({
   };
   const resourceExecutions: RealmAutomationExecutionSummary["resourceToResource"] = [];
   const laborExecutions: RealmAutomationExecutionSummary["laborToResource"] = [];
-  const skipped: RealmAutomationExecutionSummary["skipped"] = [];
 
   const reserveAmount = (resourceId: ResourcesIds, amount: number) => {
     if (!Number.isFinite(amount) || amount <= 0) return false;
@@ -300,7 +408,12 @@ export const buildRealmProductionPlan = ({
     const {
       resourceId,
       percentages: { resourceToResource, laborToResource },
+      hasActiveProduction,
     } = definition;
+
+    if (!hasActiveProduction) {
+      continue;
+    }
 
     const hasConfig = ensurePositiveNumber(resourceToResource) || ensurePositiveNumber(laborToResource);
     if (!hasConfig) {
@@ -339,6 +452,20 @@ export const buildRealmProductionPlan = ({
           const permitted = Math.min(desired, budget);
           const cyclesForInput = Math.floor(permitted / input.amount);
           maxCycles = Math.min(maxCycles, cyclesForInput);
+        }
+
+        if (
+          (!Number.isFinite(maxCycles) || maxCycles <= 0) &&
+          shouldUseSmartMinimumTroopCycle({
+            presetId,
+            resourceId,
+            resourceToResource,
+            recipeInputs,
+            getTotal,
+            getBudget,
+          })
+        ) {
+          maxCycles = 1;
         }
 
         if (!Number.isFinite(maxCycles) || maxCycles <= 0) {

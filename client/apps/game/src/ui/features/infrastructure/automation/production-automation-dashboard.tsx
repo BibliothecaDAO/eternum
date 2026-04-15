@@ -1,4 +1,4 @@
-import { useAutomationStore } from "@/hooks/store/use-automation-store";
+import { useAutomationStore, type RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OSWindow, productionAutomation } from "@/ui/features/world";
@@ -10,7 +10,10 @@ import {
   getRealmStatusLabel,
   timeAgo,
 } from "@/utils/automation-status";
-import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import {
+  buildAutomationSkipMessage,
+  PROCESS_INTERVAL_MS,
+} from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { Bot } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -45,6 +48,9 @@ const getStatusDotBg = (statusStr?: string): string => {
       return "bg-gold/50";
   }
 };
+
+const getVisibleSkipMessages = (realm: RealmAutomationConfig): string[] =>
+  (realm.lastExecution?.skipped ?? []).slice(0, 2).map(buildAutomationSkipMessage);
 
 interface ProductionAutomationContentProps {
   compact?: boolean;
@@ -138,6 +144,7 @@ const ProductionAutomationContent = ({ compact = false }: ProductionAutomationCo
           {list.map((realm) => {
             const severity = getFailureSeverity(realm.lastStatus);
             const isCritical = severity === "critical";
+            const skipMessages = getVisibleSkipMessages(realm);
 
             return (
               <div
@@ -198,6 +205,12 @@ const ProductionAutomationContent = ({ compact = false }: ProductionAutomationCo
                     <span className="text-[10px] text-red-400">
                       {realm.lastStatus.consecutiveFailures} consecutive failures: {realm.lastStatus.message}
                     </span>
+                  </div>
+                )}
+
+                {realm.lastStatus?.status === "skipped" && skipMessages.length > 0 && (
+                  <div className="mt-1.5 rounded border border-amber-500/30 bg-amber-500/5 px-2 py-1">
+                    <span className="text-[10px] text-amber-300">{skipMessages.join("; ")}</span>
                   </div>
                 )}
               </div>

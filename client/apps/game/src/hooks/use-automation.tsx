@@ -1,4 +1,5 @@
 import {
+  buildAutomationPlanSkipMessage,
   buildExecutionSummary,
   buildRealmProductionPlan,
   buildRealmResourceSnapshot,
@@ -7,6 +8,10 @@ import {
   type RealmProductionPlan,
   type RealmResourceSnapshot,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import {
+  executeProductionPlansSequentially,
+  type ExecutableProductionPlan,
+} from "@/ui/features/infrastructure/automation/model/automation-runner";
 import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import {
   useAutomationStore,
@@ -93,7 +98,6 @@ export const useAutomation = () => {
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
   const recordStatus = useAutomationStore((state) => state.recordStatus);
-  const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
   const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
@@ -222,15 +226,11 @@ export const useAutomation = () => {
       const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
 
       // Phase 1: Build all plans synchronously (no awaits, so no event loop yields)
-      const executablePlans: Array<{
-        plan: RealmProductionPlan;
-        realmConfig: (typeof realmList)[0];
-        realmLabel: string;
-        planLogPayload: Record<string, unknown>;
-      }> = [];
+      const executablePlans: ExecutableProductionPlan[] = [];
 
       for (const realmConfig of realmList) {
         let activeRealmConfig = realmConfig;
+        let runStatusNote: string | undefined;
         const realmIdNum = Number(activeRealmConfig.realmId);
         const realmLabel = activeRealmConfig.realmName ?? `Realm ${activeRealmConfig.realmId}`;
 
@@ -273,10 +273,12 @@ export const useAutomation = () => {
 
         if (activeRealmConfig.presetId === "custom" && activeRealmConfig.autoBalance) {
           try {
-            const resourceIdsForCheck =
-              producedResourceIds.length > 0
-                ? producedResourceIds
-                : Object.keys(activeRealmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds);
+            const resourceIdsForCheck = Array.from(
+              new Set<ResourcesIds>([
+                ...producedResourceIds,
+                ...Object.keys(activeRealmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds),
+              ]),
+            );
 
             const effectivePercentages: Record<number, ResourceAutomationPercentages> = {};
             const smartDefaults = calculatePresetAllocations(
@@ -300,7 +302,8 @@ export const useAutomation = () => {
             );
 
             if (resourceOver || laborOver) {
-              console.log("[Automation] Auto-switching to smart preset due to over-allocation", {
+              runStatusNote = "Custom allocation over budget; used Smart for this run";
+              console.log("[Automation] Using smart preset for this run due to over-allocation", {
                 realmId: activeRealmConfig.realmId,
                 realmName: realmLabel,
                 producedResourceIds,
@@ -308,11 +311,11 @@ export const useAutomation = () => {
                 laborOver,
               });
 
-              setRealmPreset(activeRealmConfig.realmId, "smart");
-              const refreshed = getRealmConfig(activeRealmConfig.realmId);
-              if (refreshed) {
-                activeRealmConfig = refreshed;
-              }
+              activeRealmConfig = {
+                ...activeRealmConfig,
+                presetId: "smart",
+                customPercentages: {},
+              };
             }
           } catch (error) {
             console.error("[Automation] Failed to auto-balance custom allocations", activeRealmConfig.realmId, error);
@@ -348,55 +351,43 @@ export const useAutomation = () => {
 
         if (!planHasExecutableCalls(plan)) {
           console.log("[Automation] No executable automation calls detected", planLogPayload);
+          recordExecution(activeRealmConfig.realmId, buildExecutionSummary(plan, Date.now()));
           recordStatus(activeRealmConfig.realmId, {
             status: "skipped",
-            message: "No executable calls",
+            message: [runStatusNote, buildAutomationPlanSkipMessage(plan)].filter(Boolean).join("; "),
             attemptedAt: Date.now(),
             consecutiveFailures: 0,
           });
           continue;
         }
 
-        // Collect executable plans for parallel execution
+        // Collect executable plans for isolated execution.
         executablePlans.push({
           plan,
           realmConfig: activeRealmConfig,
           realmLabel,
-          planLogPayload,
+          planLogPayload: {
+            ...planLogPayload,
+            runStatusNote,
+          },
         });
       }
 
-      // Phase 2: Execute all plans in parallel (each realm gets its own independent transaction)
+      // Phase 2: Execute all plans sequentially so isolated per-realm txs do not race the same signer nonce.
       console.log(
         `[Automation] Planning complete: ${executablePlans.length} executable out of ${realmList.length} realms`,
       );
       if (executablePlans.length > 0) {
-        console.log(`[Automation] Executing ${executablePlans.length} production plans in parallel`);
+        console.log(`[Automation] Executing ${executablePlans.length} production plans sequentially`);
 
-        const results = await Promise.allSettled(
-          executablePlans.map(async ({ plan, realmConfig, realmLabel, planLogPayload }) => {
-            try {
-              console.log("[Automation] Executing production plan", planLogPayload);
-              const callset = plan.callset;
-              await execute_realm_production_plan({
-                signer: starknetSignerAccount as StarknetAccount,
-                realm_entity_id: plan.realmId,
-                skipQueue: true,
-                resource_to_resource: callset.resourceToResource.map((item) => ({
-                  resource_id: item.resourceId,
-                  cycles: item.cycles,
-                })),
-                labor_to_resource: callset.laborToResource.map((item) => ({
-                  resource_id: item.resourceId,
-                  cycles: item.cycles,
-                })),
-              });
-              return { plan, realmConfig, realmLabel, planLogPayload };
-            } catch (error) {
-              throw { error, realmConfig, realmLabel };
-            }
-          }),
-        );
+        const results = await executeProductionPlansSequentially({
+          executablePlans,
+          signer: starknetSignerAccount as StarknetAccount,
+          executeRealmProductionPlan: execute_realm_production_plan,
+          onBeforeExecute: ({ planLogPayload }) => {
+            console.log("[Automation] Executing production plan", planLogPayload);
+          },
+        });
 
         // Phase 3: Process results
         for (const result of results) {
@@ -406,7 +397,7 @@ export const useAutomation = () => {
             recordExecution(realmConfig.realmId, summary);
             recordStatus(realmConfig.realmId, {
               status: "success",
-              message: undefined,
+              message: typeof planLogPayload.runStatusNote === "string" ? planLogPayload.runStatusNote : undefined,
               attemptedAt: Date.now(),
               consecutiveFailures: 0,
             });
@@ -434,15 +425,11 @@ export const useAutomation = () => {
               toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
             }
           } else {
-            const rejection = result.reason as {
-              error?: unknown;
-              realmConfig?: (typeof executablePlans)[0]["realmConfig"];
-              realmLabel?: string;
-            };
-            const rawError = rejection?.error ?? result.reason;
+            const rejection = result.reason;
+            const rawError = rejection.error;
             const errorMessage = rawError instanceof Error ? rawError.message : String(rawError);
-            const realmConfig = rejection?.realmConfig;
-            const realmLabel = rejection?.realmLabel ?? "Unknown realm";
+            const realmConfig = rejection.realmConfig;
+            const realmLabel = rejection.realmLabel;
 
             console.error(`Automation: Failed to execute plan for ${realmLabel}`, errorMessage);
 
@@ -471,7 +458,6 @@ export const useAutomation = () => {
     recordExecution,
     recordStatus,
     starknetSignerAccount,
-    setRealmPreset,
     getRealmConfig,
     isGameOver,
   ]);
