@@ -12,6 +12,7 @@ import {
   STAMINA_RECHARGING_TEXT_CLASS,
   STAMINA_RECHARGING_TRACK_CLASS,
 } from "@/ui/shared/lib/stamina-visuals";
+import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
@@ -19,7 +20,6 @@ import { ArmyWarning } from "../../armies/army-warning";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
-import { resolveDisplayedStaminaValue } from "./army-stamina-display";
 
 interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
@@ -206,19 +206,23 @@ const InlineStaminaBar = ({
   projectedCurrent?: number;
 }) => {
   if (!stamina || maxStamina === 0) return null;
-  const staminaValue = resolveDisplayedStaminaValue({ stamina, projectedCurrent });
-  const percentage = (staminaValue / maxStamina) * 100;
-  const projectedPercentage = Math.max(
-    percentage,
-    Math.min(100, Math.max(0, (displayRatio ?? percentage / 100) * 100)),
-  );
+  const { committedPercentage, projectedPercentage, displayedCurrent } = resolveStaminaDisplay({
+    current: Number(stamina.amount),
+    max: maxStamina,
+    displayRatio,
+    projectedCurrent,
+  });
   const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
-  const recharging = isRecharging ?? isStaminaRecharging(staminaValue, maxStamina);
+  const recharging = isRecharging ?? isStaminaRecharging(displayedCurrent, maxStamina);
 
   let fillClass = "bg-progress-bar-danger";
-  if (staminaValue >= minTravelCost) {
+  if (displayedCurrent >= minTravelCost) {
     fillClass =
-      percentage > 66 ? "bg-progress-bar-good" : percentage > 33 ? "bg-progress-bar-medium" : "bg-progress-bar-danger";
+      projectedPercentage > 66
+        ? "bg-progress-bar-good"
+        : projectedPercentage > 33
+          ? "bg-progress-bar-medium"
+          : "bg-progress-bar-danger";
   }
 
   return (
@@ -232,7 +236,7 @@ const InlineStaminaBar = ({
       >
         <div
           className={cn(fillClass, "h-full rounded-full opacity-45 transition-all duration-300")}
-          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+          style={{ width: `${committedPercentage}%` }}
         />
         <div
           className={cn(
@@ -244,7 +248,7 @@ const InlineStaminaBar = ({
         />
       </div>
       <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>
-        {`${staminaValue}/${maxStamina}`}
+        {`${displayedCurrent}/${maxStamina}`}
       </span>
     </div>
   );

@@ -58,6 +58,7 @@ import { getRenderBounds } from "../utils/chunk-geometry";
 import { trackGuiFolder, type TrackableGuiFolder } from "../utils/gui-folder-lifecycle";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
+import { updateStaminaBar } from "../utils/labels/label-components";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
@@ -70,7 +71,11 @@ import {
   syncArmyIndicatorPresentationState,
   syncMovingArmyIndicatorPresentationState,
 } from "./army-indicator-presentation";
-import { buildArmyLabelDataKey, syncArmyLabelContentState } from "./army-label-content";
+import {
+  buildArmyLabelLayoutDataKey,
+  buildArmyLabelStaminaDataKey,
+  syncArmyLabelContentState,
+} from "./army-label-content";
 import {
   configureArmyLabelHoverPriority,
   initializeArmyLabelState,
@@ -2882,14 +2887,27 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    const dataKey = buildArmyLabelDataKey(army);
+    const layoutDataKey = buildArmyLabelLayoutDataKey(army);
+    const staminaDataKey = buildArmyLabelStaminaDataKey(army);
 
     syncArmyLabelContentState({
       label: existingLabel,
-      dataKey,
+      layoutDataKey,
+      staminaDataKey,
       labelsAttachedToScene: this.labelsGroup.parent !== null,
       renderLabel: () => updateArmyLabel(existingLabel.element, army, this.currentCameraView),
+      renderStamina: () => this.updateArmyLabelStamina(existingLabel.element, army),
     });
+  }
+
+  private updateArmyLabelStamina(labelElement: HTMLElement, army: ArmyData): void {
+    const staminaBar = labelElement.querySelector('[data-component="stamina-bar"]');
+    if (!staminaBar) {
+      updateArmyLabel(labelElement, army, this.currentCameraView);
+      return;
+    }
+
+    updateStaminaBar(staminaBar as HTMLElement, army.currentStamina, army.maxStamina, army.displayStaminaRatio);
   }
 
   /**

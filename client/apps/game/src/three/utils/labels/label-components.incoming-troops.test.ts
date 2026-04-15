@@ -37,9 +37,10 @@ describe("incoming troop label helpers", () => {
 });
 
 describe("stamina label helpers", () => {
-  it("uses projected stamina for medium-view recharge text", () => {
+  it("uses the shared projected stamina display helper", () => {
     const source = readLabelComponentsSource();
 
-    expect(source).toMatch(/percent\.textContent = formatStaminaPercent\(displayedStamina, maxStamina\)/);
+    expect(source).toMatch(/resolveStaminaDisplay\(\{/);
+    expect(source).toMatch(/percent\.textContent = formatStaminaPercent\(displayedCurrent, maxStamina\)/);
   });
 });
