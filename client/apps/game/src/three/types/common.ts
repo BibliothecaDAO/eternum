@@ -47,6 +47,7 @@ export interface StructureInfo {
 export interface StructureArmyProduction {
   resourceId: ResourcesIds;
   outputPerTick: bigint;
+  outputAmountLeft: bigint;
   buildingCount: number;
 }
 

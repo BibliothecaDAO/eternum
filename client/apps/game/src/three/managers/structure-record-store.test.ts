@@ -50,11 +50,11 @@ describe("StructureRecordStore", () => {
       false,
       undefined,
       undefined,
-      [{ resourceId: 26 as any, outputPerTick: 3n, buildingCount: 2 }],
+      [{ resourceId: 26 as any, outputPerTick: 3n, outputAmountLeft: 27n, buildingCount: 2 }],
     );
 
     expect(store.getStructureByEntityId(7 as any)?.activeArmyProduction).toEqual([
-      { resourceId: 26, outputPerTick: 3n, buildingCount: 2 },
+      { resourceId: 26, outputPerTick: 3n, outputAmountLeft: 27n, buildingCount: 2 },
     ]);
   });
 

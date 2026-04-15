@@ -57,7 +57,12 @@ describe("StructureLabelType realm army generation", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
         activeArmyProduction: [
-          { resourceId: ResourcesIds.Knight, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 2 },
+          {
+            resourceId: ResourcesIds.Knight,
+            outputPerTick: 3n * BigInt(RESOURCE_PRECISION),
+            outputAmountLeft: 27n * BigInt(RESOURCE_PRECISION),
+            buildingCount: 2,
+          },
         ],
       }),
       TEST_CAMERA_VIEW.Close,
@@ -69,6 +74,7 @@ describe("StructureLabelType realm army generation", () => {
     expect(badge).not.toBeNull();
     expect(badge?.textContent).toContain("ARMY GEN");
     expect(badge?.textContent).toContain("+3/tick");
+    expect(badge?.textContent).toContain("· 27");
     expect(badge?.nextElementSibling).toBe(owner);
   });
 
@@ -78,7 +84,12 @@ describe("StructureLabelType realm army generation", () => {
       buildStructureLabelData({
         structureType: StructureType.Village,
         activeArmyProduction: [
-          { resourceId: ResourcesIds.Knight, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 2 },
+          {
+            resourceId: ResourcesIds.Knight,
+            outputPerTick: 3n * BigInt(RESOURCE_PRECISION),
+            outputAmountLeft: 27n * BigInt(RESOURCE_PRECISION),
+            buildingCount: 2,
+          },
         ],
       }),
       TEST_CAMERA_VIEW.Close,
@@ -92,10 +103,30 @@ describe("StructureLabelType realm army generation", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
         activeArmyProduction: [
-          { resourceId: ResourcesIds.Knight, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 2 },
-          { resourceId: ResourcesIds.CrossbowmanT2, outputPerTick: 1n * BigInt(RESOURCE_PRECISION), buildingCount: 1 },
-          { resourceId: ResourcesIds.PaladinT3, outputPerTick: 4n * BigInt(RESOURCE_PRECISION), buildingCount: 4 },
-          { resourceId: ResourcesIds.KnightT3, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 3 },
+          {
+            resourceId: ResourcesIds.Knight,
+            outputPerTick: 3n * BigInt(RESOURCE_PRECISION),
+            outputAmountLeft: 27n * BigInt(RESOURCE_PRECISION),
+            buildingCount: 2,
+          },
+          {
+            resourceId: ResourcesIds.CrossbowmanT2,
+            outputPerTick: 1n * BigInt(RESOURCE_PRECISION),
+            outputAmountLeft: 8n * BigInt(RESOURCE_PRECISION),
+            buildingCount: 1,
+          },
+          {
+            resourceId: ResourcesIds.PaladinT3,
+            outputPerTick: 4n * BigInt(RESOURCE_PRECISION),
+            outputAmountLeft: 40n * BigInt(RESOURCE_PRECISION),
+            buildingCount: 4,
+          },
+          {
+            resourceId: ResourcesIds.KnightT3,
+            outputPerTick: 3n * BigInt(RESOURCE_PRECISION),
+            outputAmountLeft: 12n * BigInt(RESOURCE_PRECISION),
+            buildingCount: 3,
+          },
         ],
       }),
       TEST_CAMERA_VIEW.Close,
@@ -108,7 +139,12 @@ describe("StructureLabelType realm army generation", () => {
       element,
       buildStructureLabelData({
         activeArmyProduction: [
-          { resourceId: ResourcesIds.Paladin, outputPerTick: 5n * BigInt(RESOURCE_PRECISION), buildingCount: 5 },
+          {
+            resourceId: ResourcesIds.Paladin,
+            outputPerTick: 5n * BigInt(RESOURCE_PRECISION),
+            outputAmountLeft: 25n * BigInt(RESOURCE_PRECISION),
+            buildingCount: 5,
+          },
         ],
       }),
       TEST_CAMERA_VIEW.Close,
@@ -117,6 +153,7 @@ describe("StructureLabelType realm army generation", () => {
     const nextBadge = element.querySelector('[data-component="realm-army-generation"]') as HTMLElement | null;
     expect(nextBadge).toBe(badge);
     expect(nextBadge?.textContent).toContain("+5/tick");
+    expect(nextBadge?.textContent).toContain("· 25");
     expect(nextBadge?.textContent).not.toContain("+1");
   });
 
@@ -124,7 +161,12 @@ describe("StructureLabelType realm army generation", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
         activeArmyProduction: [
-          { resourceId: ResourcesIds.Knight, outputPerTick: 3n * BigInt(RESOURCE_PRECISION), buildingCount: 2 },
+          {
+            resourceId: ResourcesIds.Knight,
+            outputPerTick: 3n * BigInt(RESOURCE_PRECISION),
+            outputAmountLeft: 27n * BigInt(RESOURCE_PRECISION),
+            buildingCount: 2,
+          },
         ],
       }),
       TEST_CAMERA_VIEW.Close,

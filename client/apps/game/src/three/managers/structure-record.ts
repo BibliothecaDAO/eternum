@@ -18,7 +18,12 @@ interface CreateStructureRecordInput {
   isAddressMine: (address: bigint) => boolean;
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
-  activeArmyProduction?: Array<{ resourceId: ResourcesIds; outputPerTick: bigint; buildingCount: number }>;
+  activeArmyProduction?: Array<{
+    resourceId: ResourcesIds;
+    outputPerTick: bigint;
+    outputAmountLeft: bigint;
+    buildingCount: number;
+  }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
   attackedFromDegrees?: number;

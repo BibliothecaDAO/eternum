@@ -76,7 +76,10 @@ export const buildStructureLabelDataKey = (structure: StructureInfo, nowSeconds:
       .join(",") ?? "";
   const armyProductionKey =
     structure.activeArmyProduction
-      ?.map((production) => `${production.resourceId}:${production.outputPerTick.toString()}`)
+      ?.map(
+        (production) =>
+          `${production.resourceId}:${production.outputPerTick.toString()}:${production.outputAmountLeft.toString()}`,
+      )
       .join(",") ?? "";
   const productionKey =
     structure.activeProductions

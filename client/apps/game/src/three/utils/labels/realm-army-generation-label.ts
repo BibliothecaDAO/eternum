@@ -61,6 +61,12 @@ const createGenerationChip = (entry: StructureArmyProduction, inputView: CameraV
   count.textContent = `+${formatArmyProductionPerTick(entry.outputPerTick)}/tick`;
   chip.appendChild(count);
 
+  const pending = document.createElement("span");
+  pending.classList.add(cameraView === CameraView.Medium ? "text-[10px]" : "text-xxs", "font-medium", "opacity-70");
+  pending.style.color = SOFT_LABEL_COLOR;
+  pending.textContent = `· ${formatArmyProductionPerTick(entry.outputAmountLeft)}`;
+  chip.appendChild(pending);
+
   return chip;
 };
 

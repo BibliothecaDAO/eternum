@@ -811,6 +811,16 @@
           count.textContent = `+${entry.outputPerTick}/tick`;
           chip.appendChild(count);
 
+          const pending = document.createElement("span");
+          pending.classList.add(
+            cameraView === CameraView.Medium ? "text-[10px]" : "text-xxs",
+            "font-medium",
+            "opacity-70",
+          );
+          pending.style.color = SOFT_LABEL_COLOR;
+          pending.textContent = `· ${entry.outputAmountLeft}`;
+          chip.appendChild(pending);
+
           container.appendChild(chip);
         });
 
@@ -1392,10 +1402,10 @@
                   { buildingCount: 3, buildingType: BuildingType.ResourceStone },
                 ],
                 activeArmyProduction: [
-                  { resourceId: ResourcesIds.Knight, outputPerTick: 3000000000n, buildingCount: 2 },
-                  { resourceId: ResourcesIds.CrossbowmanT2, outputPerTick: 1000000000n, buildingCount: 1 },
-                  { resourceId: ResourcesIds.PaladinT3, outputPerTick: 4000000000n, buildingCount: 3 },
-                  { resourceId: ResourcesIds.KnightT3, outputPerTick: 2000000000n, buildingCount: 1 },
+                  { resourceId: ResourcesIds.Knight, outputPerTick: 3, outputAmountLeft: 27, buildingCount: 2 },
+                  { resourceId: ResourcesIds.CrossbowmanT2, outputPerTick: 1, outputAmountLeft: 8, buildingCount: 1 },
+                  { resourceId: ResourcesIds.PaladinT3, outputPerTick: 4, outputAmountLeft: 40, buildingCount: 3 },
+                  { resourceId: ResourcesIds.KnightT3, outputPerTick: 2, outputAmountLeft: 12, buildingCount: 1 },
                 ],
                 attackedTowardDegrees: 180,
               },
@@ -1420,7 +1430,7 @@
                 guardArmies: [],
                 activeProductions: [{ buildingCount: 2, buildingType: BuildingType.ResourceStone }],
                 activeArmyProduction: [
-                  { resourceId: ResourcesIds.Crossbowman, outputPerTick: 2000000000n, buildingCount: 2 },
+                  { resourceId: ResourcesIds.Crossbowman, outputPerTick: 2, outputAmountLeft: 20, buildingCount: 2 },
                 ],
               },
             },
@@ -1446,7 +1456,7 @@
                   { slot: 2, category: "Crossbowman", tier: 2, count: 310, stamina: 70 },
                 ],
                 activeArmyProduction: [
-                  { resourceId: ResourcesIds.PaladinT2, outputPerTick: 1000000000n, buildingCount: 1 },
+                  { resourceId: ResourcesIds.PaladinT2, outputPerTick: 1, outputAmountLeft: 10, buildingCount: 1 },
                 ],
                 attackedFromDegrees: 315,
               },

@@ -101,7 +101,7 @@ describe("resolveActiveArmyProductionFromResource", () => {
     } as any;
 
     expect(resolveActiveArmyProductionFromResource({ resource, currentDefaultTick: 1 })).toEqual([
-      { resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 },
+      { resourceId: ResourcesIds.Knight, outputPerTick: 3n, outputAmountLeft: 27n, buildingCount: 2 },
     ]);
   });
 
@@ -128,7 +128,7 @@ describe("resolveActiveArmyProductionFromResource", () => {
     } as any;
 
     expect(resolveActiveArmyProductionFromResource({ resource, currentDefaultTick: 1 })).toEqual([
-      { resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 },
+      { resourceId: ResourcesIds.Knight, outputPerTick: 3n, outputAmountLeft: 27n, buildingCount: 2 },
     ]);
   });
 
@@ -144,7 +144,7 @@ describe("resolveActiveArmyProductionFromResource", () => {
     } as any;
 
     expect(resolveActiveArmyProductionFromResource({ resource, currentDefaultTick: 2 })).toEqual([
-      { resourceId: ResourcesIds.Knight, outputPerTick: 10n, buildingCount: 2 },
+      { resourceId: ResourcesIds.Knight, outputPerTick: 10n, outputAmountLeft: 10n, buildingCount: 2 },
     ]);
     expect(resolveActiveArmyProductionFromResource({ resource, currentDefaultTick: 3 })).toEqual([]);
   });

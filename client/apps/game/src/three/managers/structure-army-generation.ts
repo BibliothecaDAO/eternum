@@ -16,6 +16,20 @@ const TROOP_PRODUCTION_RESOURCE_IDS: readonly ResourcesIds[] = [
   ResourcesIds.PaladinT3,
 ];
 
+const resolvePendingTroopOutputAmount = (
+  production: { output_amount_left: bigint; production_rate: bigint; last_updated_at: number } | undefined,
+  currentDefaultTick: number,
+): bigint => {
+  if (!production) {
+    return 0n;
+  }
+
+  const elapsedTicks = Math.max(0, currentDefaultTick - production.last_updated_at);
+  const producedAmount = BigInt(elapsedTicks) * production.production_rate;
+  const pendingAmount = production.output_amount_left - producedAmount;
+  return pendingAmount > 0n ? pendingAmount : 0n;
+};
+
 export const resolveActiveArmyProductionFromResource = (input: {
   resource: ComponentValue<ClientComponents["Resource"]["schema"]> | null | undefined;
   currentDefaultTick: number;
@@ -39,6 +53,7 @@ export const resolveActiveArmyProductionFromResource = (input: {
     );
     const buildingCount = Number(productionInfo.production?.building_count ?? 0);
     const outputPerTick = productionInfo.production?.production_rate ?? 0n;
+    const outputAmountLeft = resolvePendingTroopOutputAmount(productionInfo.production, input.currentDefaultTick);
 
     if (!productionData.isProducing || !Number.isFinite(buildingCount) || buildingCount <= 0 || outputPerTick <= 0n) {
       return;
@@ -47,6 +62,7 @@ export const resolveActiveArmyProductionFromResource = (input: {
     activeArmyProduction.push({
       resourceId,
       outputPerTick,
+      outputAmountLeft,
       buildingCount,
     });
   });
@@ -85,6 +101,7 @@ export const isSameStructureArmyProduction = (
     (entry, index) =>
       entry.resourceId === safeRight[index]?.resourceId &&
       entry.outputPerTick === safeRight[index]?.outputPerTick &&
+      entry.outputAmountLeft === safeRight[index]?.outputAmountLeft &&
       entry.buildingCount === safeRight[index]?.buildingCount,
   );
 };
