@@ -69,6 +69,22 @@ describe("SignInPromptModal redirect state", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
+  it("does not redirect while wallet connectivity is true but the controller account is unresolved", async () => {
+    isConnectedValue = true;
+
+    await act(async () => {
+      root.render(
+        <SignInPromptModal
+          redirectTo="/enter/mainnet/aurora-blitz?intent=play"
+          redirectState={{ returnTo: "/learn?ref=hero" }}
+        />,
+      );
+    });
+
+    expect(setModalMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
   it("replays the original landing route state when sign-in finishes", async () => {
     await act(async () => {
       root.render(

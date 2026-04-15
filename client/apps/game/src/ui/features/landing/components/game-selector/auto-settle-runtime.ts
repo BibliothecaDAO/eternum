@@ -197,7 +197,7 @@ export const describeAutoSettleRuntimePhase = ({
     case "ready-manual":
       return {
         title: "Settlement ready",
-        detail: "Auto-settle is armed, but this registration stays on the dashboard.",
+        detail: "Auto-settle is armed, but this registration stays on the dashboard. Click Play to settle manually.",
       };
     case "paused-wallet":
       return {

@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-15",
+    title: "Blitz Settlement Handoff Fix",
+    description:
+      "Fresh Blitz registrations now stay on the settlement path even before indexing catches up, and sign-in handoffs wait for the full controller account so clicking Play no longer skips past settlement options.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-15",
     title: "Animated Stamina Recharge",
     description:
       "Recharging army stamina now shows a soft pulse and sweep across world-map bars, labels, and attack panels, so it is clearer at a glance when stamina is actively refilling over time.",
