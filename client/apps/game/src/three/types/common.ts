@@ -1,7 +1,7 @@
 import { Position } from "@bibliothecadao/eternum";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 
-import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, ID, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
 
 export enum SceneName {
@@ -35,12 +35,18 @@ export interface StructureInfo {
   // Enhanced data from MapDataStore
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  activeArmyGeneration?: StructureArmyGeneration[];
   incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
   attackedFromDegrees?: number; // Degrees from which this structure has been attacked
   attackedTowardDegrees?: number; // Degrees in which this structure has attacked someone
   battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends
   battleTimerLeft?: number; // Time left in seconds before battle penalty is over
+}
+
+export interface StructureArmyGeneration {
+  resourceId: ResourcesIds;
+  buildingCount: number;
 }
 
 export interface ArmyData {

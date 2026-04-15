@@ -4,6 +4,7 @@ import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
+import type { StructureArmyGeneration } from "../../types";
 import {
   createContentContainer,
   createDirectionIndicators,
@@ -18,6 +19,7 @@ import {
 import { getOwnershipStyle, LABEL_TYPE_CONFIGS } from "./label-config";
 import { LabelData, LabelTypeDefinition } from "./label-types";
 import { resolveCameraView } from "./label-view";
+import { upsertRealmArmyGenerationDisplay } from "./realm-army-generation-label";
 import { attachDirectionIndicators, createLabelBase } from "./label-shared";
 
 /**
@@ -60,6 +62,7 @@ interface StructureLabelData extends LabelData {
   };
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  activeArmyGeneration?: StructureArmyGeneration[];
   incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
   attackedFromDegrees?: number;
@@ -85,6 +88,7 @@ export interface StructureInfoCompat {
   };
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  activeArmyGeneration?: StructureArmyGeneration[];
   incomingTroopArrivals?: IncomingTroopArrival[];
 }
 
@@ -145,6 +149,13 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     });
 
     contentContainer.appendChild(ownerText);
+    if (data.structureType === StructureType.Realm) {
+      upsertRealmArmyGenerationDisplay({
+        contentContainer,
+        activeArmyGeneration: data.activeArmyGeneration,
+        cameraView,
+      });
+    }
 
     // Add guard armies display
     if (Array.isArray(data.guardArmies)) {
@@ -392,6 +403,14 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       });
 
       ownerDisplay.replaceWith(updatedOwnerDisplay);
+    }
+
+    if (contentContainer) {
+      upsertRealmArmyGenerationDisplay({
+        contentContainer,
+        activeArmyGeneration: data.structureType === StructureType.Realm ? data.activeArmyGeneration : undefined,
+        cameraView,
+      });
     }
 
     if (contentContainer) {

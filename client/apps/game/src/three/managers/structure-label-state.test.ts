@@ -99,6 +99,7 @@ describe("structure label state", () => {
       isMine: false,
       owner: { ownerName: "Alice" },
       guardArmies: [{ slot: 1, category: "infantry", tier: 1, count: 10 }],
+      activeArmyGeneration: [{ resourceId: 26, buildingCount: 2 }],
       battleTimerLeft: 15,
       attackedFromDegrees: 30,
       attackedTowardDegrees: 120,
@@ -113,6 +114,33 @@ describe("structure label state", () => {
       {
         ...baseStructure,
         activeProductions: [{ buildingType: 2, buildingCount: 4 }],
+      },
+      100,
+    );
+
+    expect(first).not.toBe(second);
+  });
+
+  it("changes the label data key when active army generation changes", () => {
+    const baseStructure = {
+      isMine: false,
+      owner: { ownerName: "Alice" },
+      guardArmies: [],
+      activeArmyGeneration: [{ resourceId: 26, buildingCount: 2 }],
+      battleTimerLeft: 0,
+      attackedFromDegrees: undefined,
+      attackedTowardDegrees: undefined,
+      activeProductions: [],
+      incomingTroopArrivals: [],
+      level: 4,
+      stage: 2,
+    } as any;
+
+    const first = buildStructureLabelDataKey(baseStructure, 100);
+    const second = buildStructureLabelDataKey(
+      {
+        ...baseStructure,
+        activeArmyGeneration: [{ resourceId: 26, buildingCount: 3 }],
       },
       100,
     );

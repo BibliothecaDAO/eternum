@@ -31,6 +31,33 @@ describe("StructureRecordStore", () => {
     });
   });
 
+  it("stores active army generation summaries when provided", () => {
+    const store = new StructureRecordStore({
+      isAddressMine: () => false,
+    });
+
+    store.addStructure(
+      7 as any,
+      "Camp",
+      "Realm" as any,
+      { col: 1, row: 2 },
+      true,
+      1,
+      3,
+      { address: 123n, ownerName: "Alice", guildName: "Guild" },
+      false,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      [{ resourceId: 26 as any, buildingCount: 2 }],
+    );
+
+    expect(store.getStructureByEntityId(7 as any)?.activeArmyGeneration).toEqual([
+      { resourceId: 26, buildingCount: 2 },
+    ]);
+  });
+
   it("removes structures by position and calls lifecycle hooks", () => {
     const onRemove = vi.fn();
     const onStructuresChanged = vi.fn();

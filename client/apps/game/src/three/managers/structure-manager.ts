@@ -9,7 +9,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import type { IncomingTroopArrival, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, type IncomingTroopArrival, type StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -79,6 +79,7 @@ import {
   queuePendingStructureLabelUpdate,
 } from "./structure-pending-label-updates";
 import { StructureRecordStore } from "./structure-record-store";
+import { isSameStructureArmyGeneration, resolveStructureActiveArmyGeneration } from "./structure-army-generation";
 import {
   resolveStructureTileUpdateRecord,
   takeFreshPendingLabelUpdate,
@@ -921,6 +922,7 @@ export class StructureManager {
       input.update.isAlly,
       input.resolvedUpdate.guardArmies,
       input.resolvedUpdate.activeProductions,
+      input.existingStructure?.activeArmyGeneration,
       input.existingStructure?.incomingTroopArrivals,
       input.update.hyperstructureRealmCount,
       input.resolvedUpdate.battle.attackedFromDegrees,
@@ -938,6 +940,7 @@ export class StructureManager {
     structureRecord.cosmeticAssetPaths = input.cosmetic.skin.assetPaths;
     structureRecord.usesFallbackCosmeticSkin = input.cosmetic.skin.isFallback;
     structureRecord.attachments = input.cosmetic.attachments;
+    this.syncStructureArmyGenerationState(structureRecord);
 
     return structureRecord;
   }
@@ -947,6 +950,7 @@ export class StructureManager {
       return;
     }
 
+    this.syncStructureArmyGenerationState(structureRecord);
     this.updateTimedLabelTracking(entityId, structureRecord.battleCooldownEnd, structureRecord.incomingTroopArrivals);
 
     const existingLabel = this.entityIdLabels.get(entityId);
@@ -1725,6 +1729,8 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: Vector3) {
+    this.syncStructureArmyGenerationState(structure);
+
     const { label } = this.labelPool.acquire(() => {
       const element = createStructureLabel(structure, this.currentCameraView);
       const cssLabel = new CSS2DObject(element);
@@ -1852,7 +1858,8 @@ export class StructureManager {
 
     const structure = this.structures.getStructureByEntityId(entityId);
     if (structure) {
-      updateStructureLabel(label.element, structure, this.currentCameraView);
+      this.syncStructureArmyGenerationState(structure);
+      this.updateStructureLabelData(structure, label);
     }
   }
 
@@ -1866,6 +1873,7 @@ export class StructureManager {
     const position = this.resolveStructureLabelPosition(structure);
     position.y += 1.95;
     label.position.copy(position);
+    this.syncStructureArmyGenerationState(structure);
     this.updateStructureLabelData(structure, label);
   }
 
@@ -2112,7 +2120,23 @@ export class StructureManager {
   private startTimedLabelUpdates(): void {
     this.timedLabelInterval = setInterval(() => {
       this.recomputeTimedLabelDataForAllStructures();
+      this.refreshVisibleRealmArmyGenerationLabels();
     }, 1000);
+  }
+
+  private refreshVisibleRealmArmyGenerationLabels(): void {
+    for (const [entityId, label] of this.entityIdLabels.entries()) {
+      const structure = this.structures.getStructureByEntityId(entityId);
+      if (!structure || structure.structureType !== StructureType.Realm) {
+        continue;
+      }
+
+      if (!this.syncStructureArmyGenerationState(structure)) {
+        continue;
+      }
+
+      this.updateStructureLabelData(structure, label);
+    }
   }
 
   /**
@@ -2157,6 +2181,31 @@ export class StructureManager {
     for (const entityId of inactiveTimedLabels) {
       this.structuresWithActiveTimedLabels.delete(entityId);
     }
+  }
+
+  private syncStructureArmyGenerationState(structure: StructureInfo): boolean {
+    if (structure.structureType !== StructureType.Realm) {
+      if (structure.activeArmyGeneration === undefined) {
+        return false;
+      }
+
+      structure.activeArmyGeneration = undefined;
+      return true;
+    }
+
+    const nextArmyGeneration = resolveStructureActiveArmyGeneration({
+      components: this.components,
+      structureEntityId: structure.entityId,
+      currentDefaultTick: getBlockTimestamp().currentDefaultTick,
+    });
+    const normalizedNextArmyGeneration = nextArmyGeneration.length > 0 ? nextArmyGeneration : undefined;
+
+    if (isSameStructureArmyGeneration(structure.activeArmyGeneration, normalizedNextArmyGeneration)) {
+      return false;
+    }
+
+    structure.activeArmyGeneration = normalizedNextArmyGeneration;
+    return true;
   }
 
   /**

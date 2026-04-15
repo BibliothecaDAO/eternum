@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-15",
+    title: "Realm Army Production Labels",
+    description:
+      "Realm labels on the world map now show when troop buildings are actively producing armies, so it is easier to spot which realms are currently generating military strength at a glance.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-15",
     title: "Animated Stamina Recharge",
     description:
       "Recharging army stamina now shows a soft pulse and sweep across world-map bars, labels, and attack panels, so it is clearer at a glance when stamina is actively refilling over time.",

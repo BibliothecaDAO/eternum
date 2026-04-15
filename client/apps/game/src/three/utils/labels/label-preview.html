@@ -759,6 +759,76 @@
         return container;
       }
 
+      function createRealmArmyGenerationDisplay(activeArmyGeneration, cameraView) {
+        const container = document.createElement("div");
+        container.setAttribute("data-component", "realm-army-generation");
+        container.classList.add("flex", "items-center", "flex-wrap", "gap-1");
+
+        const accent = document.createElement("span");
+        accent.classList.add(
+          "rounded",
+          "border",
+          "border-gold/20",
+          "bg-black/45",
+          "px-1.5",
+          "py-0.5",
+          "font-semibold",
+          "uppercase",
+          "tracking-[0.14em]",
+        );
+        accent.classList.add(cameraView === CameraView.Medium ? "text-[9px]" : "text-[10px]");
+        accent.textContent = "ARMY GEN";
+        accent.style.color = "rgba(251, 191, 36, 0.85)";
+        container.appendChild(accent);
+
+        activeArmyGeneration.slice(0, 3).forEach((entry) => {
+          const chip = document.createElement("div");
+          chip.classList.add(
+            "flex",
+            "items-center",
+            "gap-1",
+            "rounded",
+            "border",
+            "border-gold/15",
+            "bg-black/35",
+            "px-1.5",
+            "py-0.5",
+          );
+
+          const iconContainer = document.createElement("div");
+          iconContainer.classList.add("flex", "items-center", "justify-center", "flex-shrink-0");
+          iconContainer.classList.add(...(cameraView === CameraView.Medium ? ["w-3.5", "h-3.5"] : ["w-4", "h-4"]));
+
+          const icon = document.createElement("img");
+          icon.src = getAssetUrl(`/images/resources/${entry.resourceId}.png`);
+          icon.classList.add("w-full", "h-full", "object-contain");
+          iconContainer.appendChild(icon);
+          chip.appendChild(iconContainer);
+
+          const count = document.createElement("span");
+          count.classList.add(cameraView === CameraView.Medium ? "text-[10px]" : "text-xxs", "font-semibold");
+          count.style.color = SOFT_LABEL_COLOR;
+          count.textContent = `x${entry.buildingCount}`;
+          chip.appendChild(count);
+
+          container.appendChild(chip);
+        });
+
+        const overflowCount = activeArmyGeneration.length - Math.min(activeArmyGeneration.length, 3);
+        if (overflowCount > 0) {
+          const overflow = document.createElement("span");
+          overflow.classList.add(
+            cameraView === CameraView.Medium ? "text-[10px]" : "text-xxs",
+            "font-medium",
+            "text-gold/70",
+          );
+          overflow.textContent = `+${overflowCount}`;
+          container.appendChild(overflow);
+        }
+
+        return container;
+      }
+
       function formatTime(seconds) {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
@@ -1079,6 +1149,15 @@
         });
         contentContainer.appendChild(ownerText);
 
+        if (
+          data.structureType === StructureType.Realm &&
+          data.activeArmyGeneration &&
+          data.activeArmyGeneration.length > 0
+        ) {
+          const armyGenerationDisplay = createRealmArmyGenerationDisplay(data.activeArmyGeneration, cameraView);
+          contentContainer.insertBefore(armyGenerationDisplay, ownerText);
+        }
+
         if (Array.isArray(data.guardArmies)) {
           const guardArmiesDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
           contentContainer.appendChild(guardArmiesDisplay);
@@ -1312,6 +1391,12 @@
                   { buildingCount: 5, buildingType: BuildingType.ResourceWood },
                   { buildingCount: 3, buildingType: BuildingType.ResourceStone },
                 ],
+                activeArmyGeneration: [
+                  { resourceId: ResourcesIds.Knight, buildingCount: 2 },
+                  { resourceId: ResourcesIds.CrossbowmanT2, buildingCount: 1 },
+                  { resourceId: ResourcesIds.PaladinT3, buildingCount: 3 },
+                  { resourceId: ResourcesIds.KnightT3, buildingCount: 1 },
+                ],
                 attackedTowardDegrees: 180,
               },
             },
@@ -1334,6 +1419,7 @@
                 },
                 guardArmies: [],
                 activeProductions: [{ buildingCount: 2, buildingType: BuildingType.ResourceStone }],
+                activeArmyGeneration: [{ resourceId: ResourcesIds.Crossbowman, buildingCount: 2 }],
               },
             },
             {
@@ -1357,6 +1443,7 @@
                   { slot: 1, category: "Knight", tier: 1, count: 540, stamina: 80 },
                   { slot: 2, category: "Crossbowman", tier: 2, count: 310, stamina: 70 },
                 ],
+                activeArmyGeneration: [{ resourceId: ResourcesIds.PaladinT2, buildingCount: 1 }],
                 attackedFromDegrees: 315,
               },
             },

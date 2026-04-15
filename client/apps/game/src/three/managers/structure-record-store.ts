@@ -1,5 +1,5 @@
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
-import type { BuildingType, ID, StructureType } from "@bibliothecadao/types";
+import type { BuildingType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import type { CosmeticAttachmentTemplate } from "../cosmetics";
 import type { StructureInfo } from "../types";
 import { normalizeStructureEntityId } from "./structure-entity-id";
@@ -31,6 +31,7 @@ export class StructureRecordStore {
     isAlly: boolean,
     guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
     activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>,
+    activeArmyGeneration?: Array<{ resourceId: ResourcesIds; buildingCount: number }>,
     incomingTroopArrivals?: IncomingTroopArrival[],
     hyperstructureRealmCount?: number,
     attackedFromDegrees?: number,
@@ -68,6 +69,7 @@ export class StructureRecordStore {
         isAddressMine: this.options.isAddressMine,
         guardArmies,
         activeProductions,
+        activeArmyGeneration,
         incomingTroopArrivals,
         hyperstructureRealmCount,
         attackedFromDegrees,
