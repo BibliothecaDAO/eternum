@@ -265,9 +265,11 @@ export const buildRealmProductionPlan = ({
     }
   });
 
-  const configuredCustomIds = Object.keys(realmConfig.customPercentages ?? {}).map(
-    (key) => Number(key) as ResourcesIds,
-  );
+  const presetId = realmConfig.presetId ?? "smart";
+  const configuredCustomIds =
+    presetId === "custom"
+      ? Object.keys(realmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds)
+      : [];
   const resourceIdsToEvaluate = buildResourceIdsToEvaluate(producedResourceIds, configuredCustomIds);
 
   if (resourceIdsToEvaluate.length === 0) {
@@ -285,7 +287,6 @@ export const buildRealmProductionPlan = ({
     };
   }
 
-  const presetId = realmConfig.presetId ?? "smart";
   const smartDefaults = calculatePresetAllocations(resourceIdsToEvaluate, "smart", entityType);
   const presetAllocations =
     presetId === "smart" || presetId === "idle"

@@ -204,6 +204,36 @@ describe("buildRealmProductionPlan", () => {
     expect(plan.callset.resourceToResource).toEqual([{ resourceId: ResourcesIds.Knight, cycles: 1 }]);
   });
 
+  it("ignores stale custom resource keys when planning smart allocations", () => {
+    const snapshot = makeSnapshot([ResourcesIds.Knight], {
+      [ResourcesIds.Wheat]: 100,
+      [ResourcesIds.Copper]: 100,
+      [ResourcesIds.Essence]: 100,
+      [ResourcesIds.Knight]: 100,
+    });
+
+    const baselinePlan = buildRealmProductionPlan({
+      realmConfig: makeRealmConfig(),
+      snapshot,
+    });
+    const planWithStaleCustomKeys = buildRealmProductionPlan({
+      realmConfig: makeRealmConfig(
+        { presetId: "smart" },
+        {
+          [ResourcesIds.KnightT2]: { resourceToResource: 50, laborToResource: 0 },
+        },
+      ),
+      snapshot,
+    });
+
+    expect(planWithStaleCustomKeys.evaluatedResourceIds).toEqual(baselinePlan.evaluatedResourceIds);
+    expect(planWithStaleCustomKeys.callset.resourceToResource).toEqual(baselinePlan.callset.resourceToResource);
+    expect(planWithStaleCustomKeys.skipped).not.toContainEqual({
+      resourceId: ResourcesIds.KnightT2,
+      reason: "No active production building",
+    });
+  });
+
   it("does not allow the smart minimum cycle when any input cannot fund one cycle inside budget", () => {
     const plan = buildRealmProductionPlan({
       realmConfig: makeRealmConfig(),

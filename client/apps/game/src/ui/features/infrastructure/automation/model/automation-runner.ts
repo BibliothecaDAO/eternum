@@ -9,12 +9,6 @@ export interface ExecutableProductionPlan {
   planLogPayload: Record<string, unknown>;
 }
 
-interface ExecuteRealmProductionPlanArgs extends ExecuteRealmProductionPlanProps {
-  skipQueue: true;
-  resource_to_resource: Array<{ resource_id: number; cycles: number }>;
-  labor_to_resource: Array<{ resource_id: number; cycles: number }>;
-}
-
 type ExecuteRealmProductionPlan = (args: ExecuteRealmProductionPlanProps) => Promise<unknown>;
 
 type ProductionPlanExecutionResult =

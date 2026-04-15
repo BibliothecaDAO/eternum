@@ -10,10 +10,7 @@ import {
   getRealmStatusLabel,
   timeAgo,
 } from "@/utils/automation-status";
-import {
-  buildAutomationSkipMessage,
-  PROCESS_INTERVAL_MS,
-} from "@/ui/features/infrastructure/automation/model/automation-processor";
+import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { Bot } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -50,7 +47,7 @@ const getStatusDotBg = (statusStr?: string): string => {
 };
 
 const getVisibleSkipMessages = (realm: RealmAutomationConfig): string[] =>
-  (realm.lastExecution?.skipped ?? []).slice(0, 2).map(buildAutomationSkipMessage);
+  realm.lastStatus?.status === "skipped" && realm.lastStatus.message ? [realm.lastStatus.message] : [];
 
 interface ProductionAutomationContentProps {
   compact?: boolean;
