@@ -4,7 +4,7 @@ import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
-import type { StructureArmyGeneration } from "../../types";
+import type { StructureArmyProduction } from "../../types";
 import {
   createContentContainer,
   createDirectionIndicators,
@@ -62,7 +62,7 @@ interface StructureLabelData extends LabelData {
   };
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
-  activeArmyGeneration?: StructureArmyGeneration[];
+  activeArmyProduction?: StructureArmyProduction[];
   incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
   attackedFromDegrees?: number;
@@ -88,7 +88,7 @@ export interface StructureInfoCompat {
   };
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
-  activeArmyGeneration?: StructureArmyGeneration[];
+  activeArmyProduction?: StructureArmyProduction[];
   incomingTroopArrivals?: IncomingTroopArrival[];
 }
 
@@ -152,7 +152,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     if (data.structureType === StructureType.Realm) {
       upsertRealmArmyGenerationDisplay({
         contentContainer,
-        activeArmyGeneration: data.activeArmyGeneration,
+        activeArmyProduction: data.activeArmyProduction,
         cameraView,
       });
     }
@@ -408,7 +408,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     if (contentContainer) {
       upsertRealmArmyGenerationDisplay({
         contentContainer,
-        activeArmyGeneration: data.structureType === StructureType.Realm ? data.activeArmyGeneration : undefined,
+        activeArmyProduction: data.structureType === StructureType.Realm ? data.activeArmyProduction : undefined,
         cameraView,
       });
     }

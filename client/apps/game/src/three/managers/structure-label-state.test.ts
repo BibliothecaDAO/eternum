@@ -99,7 +99,7 @@ describe("structure label state", () => {
       isMine: false,
       owner: { ownerName: "Alice" },
       guardArmies: [{ slot: 1, category: "infantry", tier: 1, count: 10 }],
-      activeArmyGeneration: [{ resourceId: 26, buildingCount: 2 }],
+      activeArmyProduction: [{ resourceId: 26, outputPerTick: 3n, buildingCount: 2 }],
       battleTimerLeft: 15,
       attackedFromDegrees: 30,
       attackedTowardDegrees: 120,
@@ -126,7 +126,7 @@ describe("structure label state", () => {
       isMine: false,
       owner: { ownerName: "Alice" },
       guardArmies: [],
-      activeArmyGeneration: [{ resourceId: 26, buildingCount: 2 }],
+      activeArmyProduction: [{ resourceId: 26, outputPerTick: 3n, buildingCount: 2 }],
       battleTimerLeft: 0,
       attackedFromDegrees: undefined,
       attackedTowardDegrees: undefined,
@@ -140,7 +140,7 @@ describe("structure label state", () => {
     const second = buildStructureLabelDataKey(
       {
         ...baseStructure,
-        activeArmyGeneration: [{ resourceId: 26, buildingCount: 3 }],
+        activeArmyProduction: [{ resourceId: 26, outputPerTick: 5n, buildingCount: 3 }],
       },
       100,
     );

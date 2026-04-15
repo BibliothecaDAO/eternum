@@ -35,7 +35,7 @@ export interface StructureInfo {
   // Enhanced data from MapDataStore
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
-  activeArmyGeneration?: StructureArmyGeneration[];
+  activeArmyProduction?: StructureArmyProduction[];
   incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
   attackedFromDegrees?: number; // Degrees from which this structure has been attacked
@@ -44,8 +44,9 @@ export interface StructureInfo {
   battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
-export interface StructureArmyGeneration {
+export interface StructureArmyProduction {
   resourceId: ResourcesIds;
+  outputPerTick: bigint;
   buildingCount: number;
 }
 

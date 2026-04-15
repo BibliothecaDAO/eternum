@@ -18,7 +18,7 @@ interface CreateStructureRecordInput {
   isAddressMine: (address: bigint) => boolean;
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
-  activeArmyGeneration?: Array<{ resourceId: ResourcesIds; buildingCount: number }>;
+  activeArmyProduction?: Array<{ resourceId: ResourcesIds; outputPerTick: bigint; buildingCount: number }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
   attackedFromDegrees?: number;
@@ -43,7 +43,7 @@ export function createStructureRecord(input: CreateStructureRecordInput): Struct
     isAlly: input.isAlly,
     guardArmies: input.guardArmies,
     activeProductions: input.activeProductions,
-    activeArmyGeneration: input.activeArmyGeneration,
+    activeArmyProduction: input.activeArmyProduction,
     incomingTroopArrivals: input.incomingTroopArrivals,
     hyperstructureRealmCount: input.hyperstructureRealmCount,
     attackedFromDegrees: input.attackedFromDegrees,

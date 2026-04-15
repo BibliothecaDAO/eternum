@@ -49,7 +49,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   },
 }));
 
-import { resolveActiveArmyGenerationFromResource } from "./structure-army-generation";
+import { resolveActiveArmyProductionFromResource } from "./structure-army-generation";
 
 const PRODUCTION_FIELD_BY_RESOURCE_ID: Partial<Record<ResourcesIds, string>> = {
   [ResourcesIds.Knight]: "KNIGHT_T1_PRODUCTION",
@@ -83,7 +83,7 @@ const buildProduction = (
   ...overrides,
 });
 
-describe("resolveActiveArmyGenerationFromResource", () => {
+describe("resolveActiveArmyProductionFromResource", () => {
   it("ignores non-military production entries", () => {
     const resource = {
       WHEAT_BALANCE: 0n,
@@ -100,8 +100,8 @@ describe("resolveActiveArmyGenerationFromResource", () => {
       }),
     } as any;
 
-    expect(resolveActiveArmyGenerationFromResource({ resource, currentDefaultTick: 1 })).toEqual([
-      { resourceId: ResourcesIds.Knight, buildingCount: 2 },
+    expect(resolveActiveArmyProductionFromResource({ resource, currentDefaultTick: 1 })).toEqual([
+      { resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 },
     ]);
   });
 
@@ -127,8 +127,8 @@ describe("resolveActiveArmyGenerationFromResource", () => {
       }),
     } as any;
 
-    expect(resolveActiveArmyGenerationFromResource({ resource, currentDefaultTick: 1 })).toEqual([
-      { resourceId: ResourcesIds.Knight, buildingCount: 2 },
+    expect(resolveActiveArmyProductionFromResource({ resource, currentDefaultTick: 1 })).toEqual([
+      { resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 },
     ]);
   });
 
@@ -143,9 +143,9 @@ describe("resolveActiveArmyGenerationFromResource", () => {
       }),
     } as any;
 
-    expect(resolveActiveArmyGenerationFromResource({ resource, currentDefaultTick: 2 })).toEqual([
-      { resourceId: ResourcesIds.Knight, buildingCount: 2 },
+    expect(resolveActiveArmyProductionFromResource({ resource, currentDefaultTick: 2 })).toEqual([
+      { resourceId: ResourcesIds.Knight, outputPerTick: 10n, buildingCount: 2 },
     ]);
-    expect(resolveActiveArmyGenerationFromResource({ resource, currentDefaultTick: 3 })).toEqual([]);
+    expect(resolveActiveArmyProductionFromResource({ resource, currentDefaultTick: 3 })).toEqual([]);
   });
 });

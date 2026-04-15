@@ -31,7 +31,7 @@ describe("StructureRecordStore", () => {
     });
   });
 
-  it("stores active army generation summaries when provided", () => {
+  it("stores active army production summaries when provided", () => {
     const store = new StructureRecordStore({
       isAddressMine: () => false,
     });
@@ -50,11 +50,11 @@ describe("StructureRecordStore", () => {
       false,
       undefined,
       undefined,
-      [{ resourceId: 26 as any, buildingCount: 2 }],
+      [{ resourceId: 26 as any, outputPerTick: 3n, buildingCount: 2 }],
     );
 
-    expect(store.getStructureByEntityId(7 as any)?.activeArmyGeneration).toEqual([
-      { resourceId: 26, buildingCount: 2 },
+    expect(store.getStructureByEntityId(7 as any)?.activeArmyProduction).toEqual([
+      { resourceId: 26, outputPerTick: 3n, buildingCount: 2 },
     ]);
   });
 

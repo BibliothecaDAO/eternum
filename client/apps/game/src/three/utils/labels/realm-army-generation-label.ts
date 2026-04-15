@@ -1,11 +1,11 @@
 import { CameraView } from "../../scenes/hexagon-scene";
-import type { StructureArmyGeneration } from "../../types";
+import type { StructureArmyProduction } from "../../types";
 import { resolveCameraView } from "./label-view";
 
 const MAX_VISIBLE_GENERATION_CHIPS = 3;
 const SOFT_LABEL_COLOR = "#f6f1e5";
 
-const createGenerationChip = (entry: StructureArmyGeneration, inputView: CameraView): HTMLElement => {
+const createGenerationChip = (entry: StructureArmyProduction, inputView: CameraView): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const chip = document.createElement("div");
   chip.classList.add(
@@ -35,14 +35,14 @@ const createGenerationChip = (entry: StructureArmyGeneration, inputView: CameraV
   const count = document.createElement("span");
   count.classList.add(cameraView === CameraView.Medium ? "text-[10px]" : "text-xxs", "font-semibold");
   count.style.color = SOFT_LABEL_COLOR;
-  count.textContent = `x${entry.buildingCount}`;
+  count.textContent = `+${entry.outputPerTick.toString()}/tick`;
   chip.appendChild(count);
 
   return chip;
 };
 
 const createRealmArmyGenerationDisplay = (
-  activeArmyGeneration: StructureArmyGeneration[] | undefined,
+  activeArmyProduction: StructureArmyProduction[] | undefined,
   inputView: CameraView,
 ): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
@@ -67,12 +67,12 @@ const createRealmArmyGenerationDisplay = (
   accent.style.color = "rgba(251, 191, 36, 0.85)";
   container.appendChild(accent);
 
-  const visibleEntries = (activeArmyGeneration ?? []).slice(0, MAX_VISIBLE_GENERATION_CHIPS);
+  const visibleEntries = (activeArmyProduction ?? []).slice(0, MAX_VISIBLE_GENERATION_CHIPS);
   visibleEntries.forEach((entry) => {
     container.appendChild(createGenerationChip(entry, cameraView));
   });
 
-  const overflowCount = (activeArmyGeneration?.length ?? 0) - visibleEntries.length;
+  const overflowCount = (activeArmyProduction?.length ?? 0) - visibleEntries.length;
   if (overflowCount > 0) {
     const overflow = document.createElement("span");
     overflow.classList.add(
@@ -89,10 +89,10 @@ const createRealmArmyGenerationDisplay = (
 
 const updateRealmArmyGenerationDisplay = (
   container: HTMLElement,
-  activeArmyGeneration: StructureArmyGeneration[] | undefined,
+  activeArmyProduction: StructureArmyProduction[] | undefined,
   inputView: CameraView,
 ): void => {
-  const next = createRealmArmyGenerationDisplay(activeArmyGeneration, inputView);
+  const next = createRealmArmyGenerationDisplay(activeArmyProduction, inputView);
   container.className = next.className;
   container.setAttribute("style", next.getAttribute("style") ?? "");
   container.replaceChildren(...Array.from(next.childNodes));
@@ -100,25 +100,25 @@ const updateRealmArmyGenerationDisplay = (
 
 export const upsertRealmArmyGenerationDisplay = (input: {
   contentContainer: HTMLElement;
-  activeArmyGeneration: StructureArmyGeneration[] | undefined;
+  activeArmyProduction: StructureArmyProduction[] | undefined;
   cameraView: CameraView;
 }): void => {
   const existing = input.contentContainer.querySelector(
     '[data-component="realm-army-generation"]',
   ) as HTMLElement | null;
-  const hasActiveGeneration = Array.isArray(input.activeArmyGeneration) && input.activeArmyGeneration.length > 0;
+  const hasActiveProduction = Array.isArray(input.activeArmyProduction) && input.activeArmyProduction.length > 0;
 
-  if (!hasActiveGeneration) {
+  if (!hasActiveProduction) {
     existing?.remove();
     return;
   }
 
   if (existing) {
-    updateRealmArmyGenerationDisplay(existing, input.activeArmyGeneration, input.cameraView);
+    updateRealmArmyGenerationDisplay(existing, input.activeArmyProduction, input.cameraView);
     return;
   }
 
-  const next = createRealmArmyGenerationDisplay(input.activeArmyGeneration, input.cameraView);
+  const next = createRealmArmyGenerationDisplay(input.activeArmyProduction, input.cameraView);
   const ownerNode = input.contentContainer.querySelector('[data-component="owner"]');
 
   if (ownerNode && ownerNode.parentElement === input.contentContainer) {

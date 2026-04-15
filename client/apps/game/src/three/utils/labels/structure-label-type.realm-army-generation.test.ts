@@ -56,7 +56,7 @@ describe("StructureLabelType realm army generation", () => {
   it("creates a realm army generation badge above the owner row", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
-        activeArmyGeneration: [{ resourceId: ResourcesIds.Knight, buildingCount: 2 }],
+        activeArmyProduction: [{ resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 }],
       }),
       TEST_CAMERA_VIEW.Close,
     );
@@ -66,6 +66,7 @@ describe("StructureLabelType realm army generation", () => {
 
     expect(badge).not.toBeNull();
     expect(badge?.textContent).toContain("ARMY GEN");
+    expect(badge?.textContent).toContain("+3/tick");
     expect(badge?.nextElementSibling).toBe(owner);
   });
 
@@ -74,7 +75,7 @@ describe("StructureLabelType realm army generation", () => {
     const nonRealm = StructureLabelType.createElement(
       buildStructureLabelData({
         structureType: StructureType.Village,
-        activeArmyGeneration: [{ resourceId: ResourcesIds.Knight, buildingCount: 2 }],
+        activeArmyProduction: [{ resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 }],
       }),
       TEST_CAMERA_VIEW.Close,
     );
@@ -86,11 +87,11 @@ describe("StructureLabelType realm army generation", () => {
   it("keeps the existing badge node stable while updating its contents", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
-        activeArmyGeneration: [
-          { resourceId: ResourcesIds.Knight, buildingCount: 2 },
-          { resourceId: ResourcesIds.CrossbowmanT2, buildingCount: 1 },
-          { resourceId: ResourcesIds.PaladinT3, buildingCount: 4 },
-          { resourceId: ResourcesIds.KnightT3, buildingCount: 3 },
+        activeArmyProduction: [
+          { resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 },
+          { resourceId: ResourcesIds.CrossbowmanT2, outputPerTick: 1n, buildingCount: 1 },
+          { resourceId: ResourcesIds.PaladinT3, outputPerTick: 4n, buildingCount: 4 },
+          { resourceId: ResourcesIds.KnightT3, outputPerTick: 3n, buildingCount: 3 },
         ],
       }),
       TEST_CAMERA_VIEW.Close,
@@ -102,21 +103,21 @@ describe("StructureLabelType realm army generation", () => {
     StructureLabelType.updateElement?.(
       element,
       buildStructureLabelData({
-        activeArmyGeneration: [{ resourceId: ResourcesIds.Paladin, buildingCount: 5 }],
+        activeArmyProduction: [{ resourceId: ResourcesIds.Paladin, outputPerTick: 5n, buildingCount: 5 }],
       }),
       TEST_CAMERA_VIEW.Close,
     );
 
     const nextBadge = element.querySelector('[data-component="realm-army-generation"]') as HTMLElement | null;
     expect(nextBadge).toBe(badge);
-    expect(nextBadge?.textContent).toContain("x5");
+    expect(nextBadge?.textContent).toContain("+5/tick");
     expect(nextBadge?.textContent).not.toContain("+1");
   });
 
   it("removes a stale realm army generation badge when the label updates to a non-realm", () => {
     const element = StructureLabelType.createElement(
       buildStructureLabelData({
-        activeArmyGeneration: [{ resourceId: ResourcesIds.Knight, buildingCount: 2 }],
+        activeArmyProduction: [{ resourceId: ResourcesIds.Knight, outputPerTick: 3n, buildingCount: 2 }],
       }),
       TEST_CAMERA_VIEW.Close,
     );
@@ -127,7 +128,7 @@ describe("StructureLabelType realm army generation", () => {
       element,
       buildStructureLabelData({
         structureType: StructureType.Village,
-        activeArmyGeneration: undefined,
+        activeArmyProduction: undefined,
       }),
       TEST_CAMERA_VIEW.Close,
     );

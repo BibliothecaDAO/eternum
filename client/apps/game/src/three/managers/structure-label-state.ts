@@ -74,9 +74,9 @@ export const buildStructureLabelDataKey = (structure: StructureInfo, nowSeconds:
     structure.guardArmies
       ?.map((guardArmy) => `${guardArmy.slot}:${guardArmy.category ?? ""}:${guardArmy.tier}:${guardArmy.count}`)
       .join(",") ?? "";
-  const armyGenerationKey =
-    structure.activeArmyGeneration
-      ?.map((generation) => `${generation.resourceId}:${generation.buildingCount}`)
+  const armyProductionKey =
+    structure.activeArmyProduction
+      ?.map((production) => `${production.resourceId}:${production.outputPerTick.toString()}`)
       .join(",") ?? "";
   const productionKey =
     structure.activeProductions
@@ -88,7 +88,7 @@ export const buildStructureLabelDataKey = (structure: StructureInfo, nowSeconds:
     structure.isMine,
     structure.owner?.ownerName ?? "",
     guardKey,
-    armyGenerationKey,
+    armyProductionKey,
     structure.battleTimerLeft ?? 0,
     structure.attackedFromDegrees ?? "",
     structure.attackedTowardDegrees ?? "",

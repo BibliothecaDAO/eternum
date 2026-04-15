@@ -79,7 +79,7 @@ import {
   queuePendingStructureLabelUpdate,
 } from "./structure-pending-label-updates";
 import { StructureRecordStore } from "./structure-record-store";
-import { isSameStructureArmyGeneration, resolveStructureActiveArmyGeneration } from "./structure-army-generation";
+import { isSameStructureArmyProduction, resolveStructureActiveArmyProduction } from "./structure-army-generation";
 import {
   resolveStructureTileUpdateRecord,
   takeFreshPendingLabelUpdate,
@@ -922,7 +922,7 @@ export class StructureManager {
       input.update.isAlly,
       input.resolvedUpdate.guardArmies,
       input.resolvedUpdate.activeProductions,
-      input.existingStructure?.activeArmyGeneration,
+      input.existingStructure?.activeArmyProduction,
       input.existingStructure?.incomingTroopArrivals,
       input.update.hyperstructureRealmCount,
       input.resolvedUpdate.battle.attackedFromDegrees,
@@ -940,7 +940,7 @@ export class StructureManager {
     structureRecord.cosmeticAssetPaths = input.cosmetic.skin.assetPaths;
     structureRecord.usesFallbackCosmeticSkin = input.cosmetic.skin.isFallback;
     structureRecord.attachments = input.cosmetic.attachments;
-    this.syncStructureArmyGenerationState(structureRecord);
+    this.syncStructureArmyProductionState(structureRecord);
 
     return structureRecord;
   }
@@ -950,7 +950,7 @@ export class StructureManager {
       return;
     }
 
-    this.syncStructureArmyGenerationState(structureRecord);
+    this.syncStructureArmyProductionState(structureRecord);
     this.updateTimedLabelTracking(entityId, structureRecord.battleCooldownEnd, structureRecord.incomingTroopArrivals);
 
     const existingLabel = this.entityIdLabels.get(entityId);
@@ -1729,7 +1729,7 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: Vector3) {
-    this.syncStructureArmyGenerationState(structure);
+    this.syncStructureArmyProductionState(structure);
 
     const { label } = this.labelPool.acquire(() => {
       const element = createStructureLabel(structure, this.currentCameraView);
@@ -1858,7 +1858,7 @@ export class StructureManager {
 
     const structure = this.structures.getStructureByEntityId(entityId);
     if (structure) {
-      this.syncStructureArmyGenerationState(structure);
+      this.syncStructureArmyProductionState(structure);
       this.updateStructureLabelData(structure, label);
     }
   }
@@ -1873,7 +1873,7 @@ export class StructureManager {
     const position = this.resolveStructureLabelPosition(structure);
     position.y += 1.95;
     label.position.copy(position);
-    this.syncStructureArmyGenerationState(structure);
+    this.syncStructureArmyProductionState(structure);
     this.updateStructureLabelData(structure, label);
   }
 
@@ -2131,7 +2131,7 @@ export class StructureManager {
         continue;
       }
 
-      if (!this.syncStructureArmyGenerationState(structure)) {
+      if (!this.syncStructureArmyProductionState(structure)) {
         continue;
       }
 
@@ -2183,28 +2183,28 @@ export class StructureManager {
     }
   }
 
-  private syncStructureArmyGenerationState(structure: StructureInfo): boolean {
+  private syncStructureArmyProductionState(structure: StructureInfo): boolean {
     if (structure.structureType !== StructureType.Realm) {
-      if (structure.activeArmyGeneration === undefined) {
+      if (structure.activeArmyProduction === undefined) {
         return false;
       }
 
-      structure.activeArmyGeneration = undefined;
+      structure.activeArmyProduction = undefined;
       return true;
     }
 
-    const nextArmyGeneration = resolveStructureActiveArmyGeneration({
+    const nextArmyProduction = resolveStructureActiveArmyProduction({
       components: this.components,
       structureEntityId: structure.entityId,
       currentDefaultTick: getBlockTimestamp().currentDefaultTick,
     });
-    const normalizedNextArmyGeneration = nextArmyGeneration.length > 0 ? nextArmyGeneration : undefined;
+    const normalizedNextArmyProduction = nextArmyProduction.length > 0 ? nextArmyProduction : undefined;
 
-    if (isSameStructureArmyGeneration(structure.activeArmyGeneration, normalizedNextArmyGeneration)) {
+    if (isSameStructureArmyProduction(structure.activeArmyProduction, normalizedNextArmyProduction)) {
       return false;
     }
 
-    structure.activeArmyGeneration = normalizedNextArmyGeneration;
+    structure.activeArmyProduction = normalizedNextArmyProduction;
     return true;
   }
 

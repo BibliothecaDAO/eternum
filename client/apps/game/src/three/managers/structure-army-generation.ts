@@ -2,7 +2,7 @@ import { ResourceManager } from "@bibliothecadao/eternum";
 import { type ClientComponents, type ID, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue, type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import type { StructureArmyGeneration } from "../types";
+import type { StructureArmyProduction } from "../types";
 
 const TROOP_PRODUCTION_RESOURCE_IDS: readonly ResourcesIds[] = [
   ResourcesIds.Knight,
@@ -16,15 +16,15 @@ const TROOP_PRODUCTION_RESOURCE_IDS: readonly ResourcesIds[] = [
   ResourcesIds.PaladinT3,
 ];
 
-export const resolveActiveArmyGenerationFromResource = (input: {
+export const resolveActiveArmyProductionFromResource = (input: {
   resource: ComponentValue<ClientComponents["Resource"]["schema"]> | null | undefined;
   currentDefaultTick: number;
-}): StructureArmyGeneration[] => {
+}): StructureArmyProduction[] => {
   if (!input.resource) {
     return [];
   }
 
-  const activeArmyGeneration: StructureArmyGeneration[] = [];
+  const activeArmyProduction: StructureArmyProduction[] = [];
 
   TROOP_PRODUCTION_RESOURCE_IDS.forEach((resourceId) => {
     if (!ResourceManager.isActiveStatic(input.resource!, resourceId)) {
@@ -38,39 +38,41 @@ export const resolveActiveArmyGenerationFromResource = (input: {
       input.currentDefaultTick,
     );
     const buildingCount = Number(productionInfo.production?.building_count ?? 0);
+    const outputPerTick = productionInfo.production?.production_rate ?? 0n;
 
-    if (!productionData.isProducing || !Number.isFinite(buildingCount) || buildingCount <= 0) {
+    if (!productionData.isProducing || !Number.isFinite(buildingCount) || buildingCount <= 0 || outputPerTick <= 0n) {
       return;
     }
 
-    activeArmyGeneration.push({
+    activeArmyProduction.push({
       resourceId,
+      outputPerTick,
       buildingCount,
     });
   });
 
-  return activeArmyGeneration;
+  return activeArmyProduction;
 };
 
-export const resolveStructureActiveArmyGeneration = (input: {
+export const resolveStructureActiveArmyProduction = (input: {
   components?: ClientComponents;
   structureEntityId: ID;
   currentDefaultTick: number;
-}): StructureArmyGeneration[] => {
+}): StructureArmyProduction[] => {
   if (!input.components?.Resource) {
     return [];
   }
 
   const resource = getComponentValue(input.components.Resource, getEntityIdFromKeys([BigInt(input.structureEntityId)]));
-  return resolveActiveArmyGenerationFromResource({
+  return resolveActiveArmyProductionFromResource({
     resource,
     currentDefaultTick: input.currentDefaultTick,
   });
 };
 
-export const isSameStructureArmyGeneration = (
-  left: StructureArmyGeneration[] | undefined,
-  right: StructureArmyGeneration[] | undefined,
+export const isSameStructureArmyProduction = (
+  left: StructureArmyProduction[] | undefined,
+  right: StructureArmyProduction[] | undefined,
 ): boolean => {
   const safeLeft = left ?? [];
   const safeRight = right ?? [];
@@ -81,6 +83,8 @@ export const isSameStructureArmyGeneration = (
 
   return safeLeft.every(
     (entry, index) =>
-      entry.resourceId === safeRight[index]?.resourceId && entry.buildingCount === safeRight[index]?.buildingCount,
+      entry.resourceId === safeRight[index]?.resourceId &&
+      entry.outputPerTick === safeRight[index]?.outputPerTick &&
+      entry.buildingCount === safeRight[index]?.buildingCount,
   );
 };
