@@ -1761,6 +1761,18 @@ export default class WorldmapScene extends WarpTravel {
       snapshot.status === "zooming" ? "transitioning" : "idle";
     if (nextTransitionStatus !== this.lastPublishedZoomStatus) {
       this.lastPublishedZoomStatus = nextTransitionStatus;
+      // Show loading indicator during zoom transitions to mask chunk loading lag
+      if (nextTransitionStatus === "transitioning") {
+        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
+      } else {
+        // Delay clearing so the indicator covers the deferred chunk refresh work
+        // that fires immediately after zoom settles
+        setTimeout(() => {
+          if (!this.isChunkTransitioning) {
+            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
+          }
+        }, 300);
+      }
       this.worldmapCameraTransitionListeners.forEach((listener) => listener(nextTransitionStatus));
     }
   }
