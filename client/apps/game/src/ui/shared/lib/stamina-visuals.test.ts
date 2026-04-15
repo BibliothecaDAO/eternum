@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
 const { getNextTickStaminaMock, getTickMock } = vi.hoisted(() => ({
@@ -86,5 +87,37 @@ describe("stamina visuals", () => {
     expect(display.isRecharging).toBe(false);
     expect(display.nextTickGain).toBe(0);
     expect(display.displayCurrent).toBe(120);
+  });
+
+  it("displayCurrent provides a rounded integer suitable for text display", () => {
+    const display = buildProjectedStaminaDisplayModel({
+      committedCurrent: 80,
+      committedMax: 120,
+      armiesTickTimeRemaining: 7,
+      currentArmiesTick: 5,
+      troops: {
+        category: "Knight",
+        tier: 1,
+        count: 10n,
+        stamina: { amount: 80n, updated_tick: 5n },
+        boosts: {
+          incr_damage_dealt_percent_num: 0,
+          incr_damage_dealt_end_tick: 0,
+          decr_damage_gotten_percent_num: 0,
+          decr_damage_gotten_end_tick: 0,
+          incr_stamina_regen_percent_num: 0,
+          incr_stamina_regen_tick_count: 0,
+          incr_explore_reward_percent_num: 0,
+          incr_explore_reward_end_tick: 0,
+        },
+        battle_cooldown_end: 0,
+      } as never,
+    });
+
+    // displayCurrent should be ahead of committedCurrent (projected)
+    expect(display.displayCurrent).toBeGreaterThan(display.committedCurrent);
+    // Rounding it should give a clean integer for text display
+    expect(Math.round(display.displayCurrent)).toBeGreaterThanOrEqual(display.committedCurrent);
+    expect(Math.round(display.displayCurrent)).toBeLessThanOrEqual(display.committedMax);
   });
 });

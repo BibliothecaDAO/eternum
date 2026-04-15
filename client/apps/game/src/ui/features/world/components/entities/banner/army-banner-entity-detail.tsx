@@ -130,6 +130,7 @@ const ArmyBannerEntityDetailContent = memo(
               maxStamina={derivedData.maxStamina}
               displayRatio={derivedData.staminaDisplay?.displayRatio}
               isRecharging={derivedData.staminaDisplay?.isRecharging}
+              displayCurrent={derivedData.staminaDisplay?.displayCurrent}
             />
           ) : null}
         </div>
@@ -195,14 +196,19 @@ const InlineStaminaBar = ({
   maxStamina,
   displayRatio,
   isRecharging,
+  displayCurrent,
 }: {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
   displayRatio?: number;
   isRecharging?: boolean | null;
+  displayCurrent?: number;
 }) => {
   if (!stamina || maxStamina === 0) return null;
-  const staminaValue = Number(stamina.amount);
+  const staminaValue =
+    displayCurrent !== undefined && Number.isFinite(displayCurrent)
+      ? Math.round(displayCurrent)
+      : Number(stamina.amount);
   const percentage = (staminaValue / maxStamina) * 100;
   const projectedPercentage = Math.max(
     percentage,

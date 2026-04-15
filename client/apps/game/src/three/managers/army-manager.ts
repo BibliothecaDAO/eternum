@@ -379,9 +379,9 @@ export class ArmyManager {
       });
       if (tickRefresh.shouldRecompute) {
         this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
-        this.recomputeStaminaForAllArmies();
       }
-      // Update battle timers every second
+      // Update stamina and battle timers every second
+      this.recomputeStaminaForAllArmies();
       this.recomputeBattleTimersForAllArmies();
       // Schedule the next check
       this.scheduleTickCheck();
