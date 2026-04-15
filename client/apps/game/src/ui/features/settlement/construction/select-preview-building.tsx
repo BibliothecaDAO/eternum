@@ -146,10 +146,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
 
   const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
-  const structure = useComponentValue(
-    dojo.setup.components.Structure,
-    getEntityIdFromKeys([BigInt(entityId)]),
-  );
+  const structure = useComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
   const structureBuildings = useComponentValue(
     dojo.setup.components.StructureBuildings,
     getEntityIdFromKeys([BigInt(entityId)]),
