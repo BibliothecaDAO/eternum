@@ -1,7 +1,8 @@
 import { getGameModeConfig } from "@/config/game-modes";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import type { StructureInfo } from "../../types/common";
 import { CameraView } from "../../scenes/camera-view";
 import {

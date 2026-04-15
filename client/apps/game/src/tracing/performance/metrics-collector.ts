@@ -106,8 +106,9 @@ class MetricsCollector {
         const layoutShiftObserver = new PerformanceObserver((list) => {
           let clsValue = 0;
           for (const entry of list.getEntries()) {
-            if (!(entry as LayoutShift).hadRecentInput) {
-              clsValue += (entry as LayoutShift).value;
+            const shift = entry as PerformanceEntry & { hadRecentInput: boolean; value: number };
+            if (!shift.hadRecentInput) {
+              clsValue += shift.value;
             }
           }
           if (clsValue > 0.1) {
