@@ -35,7 +35,9 @@ export async function hydrateWarpTravelChunk<TPreparedTerrain>(
   input.updatePinnedChunks(input.surroundingChunks);
   const boundsSwitchPromise = input.updateBoundsSubscription(input.chunkKey, input.transitionToken);
   input.surroundingChunks.forEach((chunkKey) => {
-    void input.computeTileEntities(chunkKey);
+    void input.computeTileEntities(chunkKey).catch((error) => {
+      console.warn(`[ChunkHydration] Prefetch failed for surrounding chunk "${chunkKey}"`, error);
+    });
   });
 
   return prepareWorldmapChunkPresentation({

@@ -7443,6 +7443,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private traceChunk(event: WorldmapChunkTraceEvent, details: Record<string, unknown> = {}): void {
+    const isErrorEvent =
+      event === "torii_bounds_switch_failed" ||
+      event === "torii_bounds_switch_timeout" ||
+      event === "torii_resubscribe_failed" ||
+      event === "chunk_presentation_timeout" ||
+      event === "chunk_recovery_scheduled" ||
+      event === "chunk_recovery_executed";
+
+    if (isErrorEvent) {
+      console.warn(`[WorldmapChunk] ${event}`, details);
+    }
+
     if (!import.meta.env.DEV) {
       return;
     }
