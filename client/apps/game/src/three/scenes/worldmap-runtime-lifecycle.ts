@@ -1,6 +1,8 @@
 import { SceneName } from "../types";
 
 interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk> {
+  pendingArmyTileBatchByEntity: Map<TEntityId, unknown>;
+  pendingArmyTileBatchFlushTimeout: TTimeout | null;
   pendingArmyRemovals: Map<TEntityId, TTimeout>;
   pendingArmyRemovalMeta: Map<TEntityId, unknown>;
   deferredChunkRemovals: Map<TEntityId, unknown>;
@@ -58,6 +60,8 @@ interface ShouldApplyWorldmapFetchResultInput {
 }
 
 export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPendingChunk>({
+  pendingArmyTileBatchByEntity,
+  pendingArmyTileBatchFlushTimeout,
   pendingArmyRemovals,
   pendingArmyRemovalMeta,
   deferredChunkRemovals,
@@ -81,6 +85,10 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   releaseInactiveResources,
   invalidatePendingFetches,
 }: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>): WorldmapSwitchOffRuntimeStateResult => {
+  if (pendingArmyTileBatchFlushTimeout) {
+    clearTimeout(pendingArmyTileBatchFlushTimeout);
+  }
+  pendingArmyTileBatchByEntity.clear();
   pendingArmyRemovals.forEach((timeoutId) => clearTimeout(timeoutId));
   pendingArmyRemovals.clear();
   pendingArmyRemovalMeta.clear();

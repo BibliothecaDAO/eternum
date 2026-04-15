@@ -203,6 +203,14 @@ import {
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
 import { isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
+import {
+  enqueueArmyTileBatchUpdate as enqueueArmyTileBatchRuntimeUpdate,
+  resolveArmyHexBatchApplyPlan,
+  resolveArmyTileBatch,
+  type ArmyHexBatchMutation,
+  type PendingArmyTileBatchEntry,
+  type ResolvedArmyTileBatch,
+} from "./worldmap-army-tile-batch-runtime";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
@@ -580,6 +588,10 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovements: Set<ID> = new Set();
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
+  private pendingArmyTileBatchByEntity: Map<ID, PendingArmyTileBatchEntry> = new Map();
+  private pendingArmyTileBatchFlushTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly armyTileBatchSettleMs = 32;
+  private isArmyTileBatchFlushing = false;
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
 
@@ -1182,66 +1194,7 @@ export default class WorldmapScene extends WarpTravel {
             row: update.hexCoords.row,
           },
         });
-        const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId);
-        const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
-
-        if (update.removed) {
-          this.scheduleArmyRemoval(update.entityId, "tile", {
-            ownerAddress: update.ownerAddress,
-            position: { col: normalizedPos.x, row: normalizedPos.y },
-          });
-          return;
-        }
-
-        this.updateArmyHexes(update);
-        this.resolvePendingCreateArmyFxOnArmyUpdate(update);
-
-        if (update.battleData?.latestAttackerId) {
-          this.addCombatRelationship(update.battleData.latestAttackerId, update.entityId);
-        }
-        if (update.battleData?.latestDefenderId) {
-          this.addCombatRelationship(update.entityId, update.battleData.latestDefenderId);
-        }
-
-        const spawnResult = resolveArmySpawnBiome(
-          this.exploredTiles,
-          normalizedPos.x,
-          normalizedPos.y,
-          BiomeType.Grassland,
-        );
-        if (spawnResult.action === "write_provisional") {
-          if (!this.exploredTiles.has(normalizedPos.x)) {
-            this.exploredTiles.set(normalizedPos.x, new Map());
-          }
-          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
-          this.provisionalBiomes.mark(normalizedPos.x, normalizedPos.y);
-          this.exploredTilesGeneration.bump();
-        }
-
-        await this.armyManager.onTileUpdate(update);
-        recordArmyMovementLatencyPhase({
-          phase: "army_manager_tile_update_applied",
-          source: "worldmap",
-          entityId: update.entityId,
-          details: {
-            col: update.hexCoords.col,
-            row: update.hexCoords.row,
-          },
-        });
-        this.armyLastTileSyncAt.set(update.entityId, Date.now());
-        if (recoveredPendingRemoval) {
-          void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
-        }
-
-        this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
-
-        const armyEntityId = update.entityId;
-        const prevPosition = this.armiesPositions.get(armyEntityId);
-
-        this.recalculateArrowsForEntity(armyEntityId);
-        if (prevPosition) {
-          this.recalculateArrowsForEntitiesRelatedTo(armyEntityId);
-        }
+        this.enqueueArmyTileBatchUpdate(update);
       }),
     );
 
@@ -1254,7 +1207,6 @@ export default class WorldmapScene extends WarpTravel {
           return;
         }
 
-        this.updateArmyHexes(update);
         this.resolvePendingCreateArmyFxOnArmyUpdate(update);
         this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
       }),
@@ -2970,6 +2922,96 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
   }
 
+  private enqueueArmyTileBatchUpdate(update: ExplorerTroopsTileSystemUpdate): void {
+    enqueueArmyTileBatchRuntimeUpdate(this.pendingArmyTileBatchByEntity, update);
+    this.scheduleArmyTileBatchFlush();
+  }
+
+  private scheduleArmyTileBatchFlush(delayMs: number = this.armyTileBatchSettleMs): void {
+    if (this.pendingArmyTileBatchFlushTimeout) {
+      clearTimeout(this.pendingArmyTileBatchFlushTimeout);
+    }
+
+    this.pendingArmyTileBatchFlushTimeout = setTimeout(() => {
+      this.pendingArmyTileBatchFlushTimeout = null;
+      void this.flushArmyTileBatch();
+    }, delayMs);
+  }
+
+  private async flushArmyTileBatch(): Promise<void> {
+    if (this.isArmyTileBatchFlushing || this.isSwitchedOff) {
+      return;
+    }
+
+    this.isArmyTileBatchFlushing = true;
+    try {
+      while (this.pendingArmyTileBatchByEntity.size > 0 && !this.isSwitchedOff) {
+        const pendingEntries = Array.from(this.pendingArmyTileBatchByEntity.values());
+        this.pendingArmyTileBatchByEntity.clear();
+
+        const resolvedBatch = resolveArmyTileBatch(pendingEntries);
+        if (!resolvedBatch.hasWork) {
+          continue;
+        }
+
+        await this.applyResolvedArmyTileBatch(resolvedBatch);
+      }
+    } finally {
+      this.isArmyTileBatchFlushing = false;
+    }
+  }
+
+  private async applyResolvedArmyTileBatch(batch: ResolvedArmyTileBatch): Promise<void> {
+    const recoveredPendingRemovalEntityIds = new Set<ID>();
+
+    batch.liveUpdates.forEach(({ entityId }) => {
+      if (this.cancelPendingArmyRemoval(entityId)) {
+        recoveredPendingRemovalEntityIds.add(entityId);
+      }
+    });
+
+    const mutations = batch.liveUpdates
+      .map(({ update }) => this.resolveArmyHexCacheMutation(update))
+      .filter((mutation): mutation is ArmyHexBatchMutation => mutation !== null);
+
+    this.applyResolvedArmyHexBatch(mutations);
+
+    for (const { entityId, update } of batch.liveUpdates) {
+      this.resolvePendingCreateArmyFxOnArmyUpdate(update);
+      this.recordArmyTileUpdateBattleRelationships(update);
+      this.recordProvisionalArmySpawnBiome(update);
+
+      await this.armyManager.onTileUpdate(update);
+      recordArmyMovementLatencyPhase({
+        phase: "army_manager_tile_update_applied",
+        source: "worldmap",
+        entityId,
+        details: {
+          col: update.hexCoords.col,
+          row: update.hexCoords.row,
+        },
+      });
+      this.armyLastTileSyncAt.set(entityId, Date.now());
+
+      if (recoveredPendingRemovalEntityIds.has(entityId)) {
+        void this.armyManager.restoreArmyVisualIfVisible(entityId);
+      }
+
+      this.recalculateArrowsForEntity(entityId);
+      if (this.armiesPositions.has(entityId)) {
+        this.recalculateArrowsForEntitiesRelatedTo(entityId);
+      }
+    }
+
+    for (const { update } of batch.removals) {
+      const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+      this.scheduleArmyRemoval(update.entityId, "tile", {
+        ownerAddress: update.ownerAddress,
+        position: { col: normalizedPos.x, row: normalizedPos.y },
+      });
+    }
+  }
+
   private onArmySelection(
     selectedEntityId: ID,
     playerAddress: ContractAddress,
@@ -3590,6 +3632,8 @@ export default class WorldmapScene extends WarpTravel {
     this.clearWorldmapVisibilityRuntimeForSwitchOff();
 
     const runtimeState = applyWorldmapSwitchOffRuntimeState({
+      pendingArmyTileBatchByEntity: this.pendingArmyTileBatchByEntity,
+      pendingArmyTileBatchFlushTimeout: this.pendingArmyTileBatchFlushTimeout,
       pendingArmyRemovals: this.pendingArmyRemovals,
       pendingArmyRemovalMeta: this.pendingArmyRemovalMeta,
       deferredChunkRemovals: this.deferredChunkRemovals,
@@ -3620,6 +3664,7 @@ export default class WorldmapScene extends WarpTravel {
     this.toriiLoadingCounter = runtimeState.toriiLoadingCounter;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
     this.currentChunk = runtimeState.currentChunk;
+    this.pendingArmyTileBatchFlushTimeout = null;
 
     // Clear follow camera timeout to prevent callback firing on destroyed UI store state
     if (this.followCameraTimeout) {
@@ -3822,12 +3867,42 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   // used to track the position of the armies on the map
-  public updateArmyHexes(update: {
+  private recordArmyTileUpdateBattleRelationships(update: ExplorerTroopsTileSystemUpdate): void {
+    if (update.battleData?.latestAttackerId) {
+      this.addCombatRelationship(update.battleData.latestAttackerId, update.entityId);
+    }
+    if (update.battleData?.latestDefenderId) {
+      this.addCombatRelationship(update.entityId, update.battleData.latestDefenderId);
+    }
+  }
+
+  private recordProvisionalArmySpawnBiome(update: { hexCoords: HexPosition }): void {
+    const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+    const spawnResult = resolveArmySpawnBiome(
+      this.exploredTiles,
+      normalizedPos.x,
+      normalizedPos.y,
+      BiomeType.Grassland,
+    );
+
+    if (spawnResult.action !== "write_provisional") {
+      return;
+    }
+
+    if (!this.exploredTiles.has(normalizedPos.x)) {
+      this.exploredTiles.set(normalizedPos.x, new Map());
+    }
+    this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
+    this.provisionalBiomes.mark(normalizedPos.x, normalizedPos.y);
+    this.exploredTilesGeneration.bump();
+  }
+
+  private resolveArmyHexCacheMutation(update: {
     entityId: ID;
     hexCoords: HexPosition;
     ownerAddress?: bigint | undefined;
     ownerStructureId?: ID | null;
-  }) {
+  }): ArmyHexBatchMutation | null {
     const {
       hexCoords: { col, row },
       ownerAddress,
@@ -3839,13 +3914,7 @@ export default class WorldmapScene extends WarpTravel {
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
       }
-      return;
-    }
-
-    if (ownerStructureId !== undefined && ownerStructureId !== null && ownerStructureId !== 0) {
-      this.armyStructureOwners.set(entityId, ownerStructureId);
-    } else {
-      this.armyStructureOwners.delete(entityId);
+      return null;
     }
 
     let actualOwnerAddress = ownerAddress;
@@ -3874,14 +3943,11 @@ export default class WorldmapScene extends WarpTravel {
             console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
           }
           const oldPos = this.armiesPositions.get(entityId);
-          if (oldPos) {
-            this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-            gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-            this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
-          }
-          this.armiesPositions.delete(entityId);
-          this.armyStructureOwners.delete(entityId);
-          return;
+          return {
+            entityId,
+            kind: "remove",
+            oldPos,
+          };
         }
       } else {
         // New army with 0n owner - MapDataStore likely hasn't cached it yet.
@@ -3909,30 +3975,79 @@ export default class WorldmapScene extends WarpTravel {
     const newPos = { col: normalized.x, row: normalized.y };
     const oldPos = this.armiesPositions.get(entityId);
 
-    // Update army position
-    this.armiesPositions.set(entityId, newPos);
+    return {
+      entityId,
+      kind: "upsert",
+      oldPos,
+      newPos,
+      ownerAddress: actualOwnerAddress,
+      ownerStructureId,
+    };
+  }
 
-    // Remove from old position if it changed
-    if (
-      oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
-      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
-    ) {
-      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-      gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
+  private applyArmyHexTrackedRemoval(entityId: ID, position: HexPosition): void {
+    if (this.armyHexes.get(position.col)?.get(position.row)?.id !== entityId) {
+      return;
     }
 
-    // Add to new position
-    if (!this.armyHexes.has(newPos.col)) {
-      this.armyHexes.set(newPos.col, new Map());
+    this.armyHexes.get(position.col)?.delete(position.row);
+    gameWorkerManager.updateArmyHex(position.col, position.row, null);
+    this.invalidateAllChunkCachesContainingHex(position.col, position.row);
+  }
+
+  private applyArmyHexUpsert(input: {
+    entityId: ID;
+    newPos: HexPosition;
+    ownerAddress: bigint;
+    ownerStructureId?: ID | null;
+  }): void {
+    if (input.ownerStructureId !== undefined && input.ownerStructureId !== null && input.ownerStructureId !== 0) {
+      this.armyStructureOwners.set(input.entityId, input.ownerStructureId);
+    } else {
+      this.armyStructureOwners.delete(input.entityId);
     }
 
-    const armyHexData = { id: entityId, owner: actualOwnerAddress };
+    this.armiesPositions.set(input.entityId, input.newPos);
 
-    this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
-    gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
-    this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+    if (!this.armyHexes.has(input.newPos.col)) {
+      this.armyHexes.set(input.newPos.col, new Map());
+    }
+
+    const armyHexData = { id: input.entityId, owner: input.ownerAddress };
+    this.armyHexes.get(input.newPos.col)?.set(input.newPos.row, armyHexData);
+    gameWorkerManager.updateArmyHex(input.newPos.col, input.newPos.row, armyHexData);
+    this.invalidateAllChunkCachesContainingHex(input.newPos.col, input.newPos.row);
+  }
+
+  private applyResolvedArmyHexBatch(mutations: ArmyHexBatchMutation[]): void {
+    const plan = resolveArmyHexBatchApplyPlan(mutations);
+
+    plan.occupancyRemovals.forEach(({ entityId, position }) => {
+      this.applyArmyHexTrackedRemoval(entityId, position);
+    });
+
+    plan.trackedRemovals.forEach((entityId) => {
+      this.armiesPositions.delete(entityId);
+      this.armyStructureOwners.delete(entityId);
+    });
+
+    plan.upserts.forEach((upsert) => {
+      this.applyArmyHexUpsert(upsert);
+    });
+  }
+
+  public updateArmyHexes(update: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    ownerAddress?: bigint | undefined;
+    ownerStructureId?: ID | null;
+  }) {
+    const mutation = this.resolveArmyHexCacheMutation(update);
+    if (!mutation) {
+      return;
+    }
+
+    this.applyResolvedArmyHexBatch([mutation]);
   }
 
   public updateStructureHexes(update: {
@@ -7785,6 +7900,11 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingArmyMovements.clear();
+    if (this.pendingArmyTileBatchFlushTimeout) {
+      clearTimeout(this.pendingArmyTileBatchFlushTimeout);
+      this.pendingArmyTileBatchFlushTimeout = null;
+    }
+    this.pendingArmyTileBatchByEntity.clear();
     if (this.handleTransactionComplete) {
       this.dojo.network?.provider?.off("transactionComplete", this.handleTransactionComplete);
     }

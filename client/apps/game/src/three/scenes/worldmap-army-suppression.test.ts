@@ -39,17 +39,15 @@ describe("worldmap army suppression integration", () => {
     expect(methodBody).not.toContain("restoreArmyVisualIfVisible(entityId)");
   });
 
-  it("tile updates restore visuals after ArmyManager applies the move", () => {
+  it("resolved live army tile batches restore visuals after ArmyManager applies the move", () => {
     const src = readSource("worldmap.tsx");
 
-    const listenerStart = src.indexOf(
-      "this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {",
-    );
-    expect(listenerStart).toBeGreaterThan(-1);
+    const methodStart = src.indexOf("private async applyResolvedArmyTileBatch(");
+    expect(methodStart).toBeGreaterThan(-1);
 
-    const listenerBody = src.slice(listenerStart, listenerStart + 3200);
-    const movePos = listenerBody.indexOf("await this.armyManager.onTileUpdate(update)");
-    const restorePos = listenerBody.indexOf("restoreArmyVisualIfVisible(update.entityId)");
+    const methodBody = src.slice(methodStart, methodStart + 2800);
+    const movePos = methodBody.indexOf("await this.armyManager.onTileUpdate(update)");
+    const restorePos = methodBody.indexOf("restoreArmyVisualIfVisible(entityId)");
 
     expect(movePos).toBeGreaterThan(-1);
     expect(restorePos).toBeGreaterThan(-1);

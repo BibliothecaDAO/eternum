@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-15",
+    title: "Atomic Group Move Sync",
+    description:
+      "Same-transaction convoy moves now resolve as one world-map batch, so adjacent armies stop collapsing into one survivor or disappearing until a chunk reload corrects the board.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-15",
     title: "Safer Group Move Recovery",
     description:
       "Moving several nearby armies at once no longer risks a valid unit being mistaken for a stale replacement and disappearing until a chunk reload brings it back.",

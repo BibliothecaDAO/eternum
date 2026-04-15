@@ -14,17 +14,15 @@ describe("worldmap army tile-sync recovery", () => {
     expect(src).toContain("private armyLastTileSyncAt: Map<ID, number> = new Map()");
   });
 
-  it("records tile sync after ArmyManager applies the tile update", () => {
+  it("records tile sync after ArmyManager applies resolved live tile batch updates", () => {
     const src = readSource("worldmap.tsx");
 
-    const listenerStart = src.indexOf(
-      "this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {",
-    );
-    expect(listenerStart).toBeGreaterThan(-1);
+    const methodStart = src.indexOf("private async applyResolvedArmyTileBatch(");
+    expect(methodStart).toBeGreaterThan(-1);
 
-    const listenerBody = src.slice(listenerStart, listenerStart + 3400);
-    const applyPos = listenerBody.indexOf("await this.armyManager.onTileUpdate(update)");
-    const syncPos = listenerBody.indexOf("this.armyLastTileSyncAt.set(update.entityId, Date.now())");
+    const methodBody = src.slice(methodStart, methodStart + 2600);
+    const applyPos = methodBody.indexOf("await this.armyManager.onTileUpdate(update)");
+    const syncPos = methodBody.indexOf("this.armyLastTileSyncAt.set(entityId, Date.now())");
 
     expect(applyPos).toBeGreaterThan(-1);
     expect(syncPos).toBeGreaterThan(-1);
