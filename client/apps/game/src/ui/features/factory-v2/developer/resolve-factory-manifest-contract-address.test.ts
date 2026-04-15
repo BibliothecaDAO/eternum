@@ -60,6 +60,7 @@ describe("resolveFactoryManifestContractAddress", () => {
     expect(mocks.resolveWorldContracts).toHaveBeenCalledWith("https://factory.example/sql", "etrn-sunrise-01");
     expect(mocks.resolveWorldDeploymentFromFactory).toHaveBeenCalledWith(
       "https://factory.example/sql",
+      "slot",
       "etrn-sunrise-01",
     );
   });
