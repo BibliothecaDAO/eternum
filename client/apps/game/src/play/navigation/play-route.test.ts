@@ -29,6 +29,8 @@ describe("play-route", () => {
       col: 12,
       row: 34,
       spectate: true,
+      bootMode: "direct",
+      resumeScene: null,
     });
   });
 
