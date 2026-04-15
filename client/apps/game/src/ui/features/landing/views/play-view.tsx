@@ -4,7 +4,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
-import { useAccount } from "@starknet-react/core";
 import {
   BookOpen,
   ChevronRight,
@@ -971,7 +970,6 @@ export const PlayView = ({
 
   // Auth state
   const account = useAccountStore((state) => state.account);
-  const { isConnected } = useAccount();
   const setModal = useUIStore((state) => state.setModal);
   const currentLandingHref = `${location.pathname}${location.search}`;
   const entryRedirectState: LandingEntryRouteState = {
@@ -1048,7 +1046,7 @@ export const PlayView = ({
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account) || isConnected;
+      const hasAccount = Boolean(account?.address);
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
@@ -1064,22 +1062,22 @@ export const PlayView = ({
       // Open settle flow
       openGameEntryRoute(selection, "settle", false);
     },
-    [account, buildEntryRedirectHref, entryRedirectState, isConnected, openGameEntryRoute, setModal],
+    [account?.address, buildEntryRedirectHref, entryRedirectState, openGameEntryRoute, setModal],
   );
 
   const handleAutoSettleGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account) || isConnected;
+      const hasAccount = Boolean(account?.address);
       if (!hasAccount) return;
 
       openGameEntryRoute(selection, "settle", true);
     },
-    [account, isConnected, openGameEntryRoute],
+    [account?.address, openGameEntryRoute],
   );
 
   const handlePlayGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account) || isConnected;
+      const hasAccount = Boolean(account?.address);
 
       if (!hasAccount) {
         const redirectTo = buildEntryRedirectHref(selection, "play", null, false);
@@ -1094,7 +1092,7 @@ export const PlayView = ({
       // Open direct play flow
       openGameEntryRoute(selection, "play", false);
     },
-    [account, buildEntryRedirectHref, entryRedirectState, isConnected, openGameEntryRoute, setModal],
+    [account?.address, buildEntryRedirectHref, entryRedirectState, openGameEntryRoute, setModal],
   );
 
   const handleSpectate = useCallback(
@@ -1109,7 +1107,7 @@ export const PlayView = ({
 
   const handleForgeHyperstructures = useCallback(
     (selection: WorldSelection, numLeft: number) => {
-      const hasAccount = Boolean(account) || isConnected;
+      const hasAccount = Boolean(account?.address);
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
@@ -1127,7 +1125,7 @@ export const PlayView = ({
       primeGameEntry("entry");
       navigateToEntryRoute(selection, "forge", numLeft, false);
     },
-    [account, buildEntryRedirectHref, entryRedirectState, isConnected, navigateToEntryRoute, setModal],
+    [account?.address, buildEntryRedirectHref, entryRedirectState, navigateToEntryRoute, setModal],
   );
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {

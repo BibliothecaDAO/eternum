@@ -120,21 +120,21 @@ export const deriveSettlementPhaseViewModel = ({
   };
 };
 
-export const applyAutoSettleRegistrationHint = ({
+const isDashboardSettlementEntryIntent = (entryIntent: "play" | "settle" | "spectate" | "forge"): boolean =>
+  entryIntent === "play" || entryIntent === "settle";
+
+export const applyDashboardRegistrationHint = ({
   snapshot,
-  autoSettleEnabled,
   entryIntent,
-  hasAutoSettleEntry,
+  hasDashboardRegistrationEntry,
 }: {
   snapshot: SettlementSnapshot;
-  autoSettleEnabled: boolean;
-  entryIntent: "play" | "settle";
-  hasAutoSettleEntry: boolean;
+  entryIntent: "play" | "settle" | "spectate" | "forge";
+  hasDashboardRegistrationEntry: boolean;
 }): SettlementSnapshot => {
   const shouldHintRegistration =
-    autoSettleEnabled &&
-    entryIntent === "settle" &&
-    hasAutoSettleEntry &&
+    isDashboardSettlementEntryIntent(entryIntent) &&
+    hasDashboardRegistrationEntry &&
     !snapshot.registered &&
     !snapshot.onceRegistered &&
     !hasIndexedSettlementProgress(snapshot);

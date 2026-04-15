@@ -37,7 +37,7 @@ interface ResolveGameEntryModalPhaseInput {
   hasVillageRevealResult: boolean;
   unifiedSettlementPlannerEnabled: boolean;
   hasSettledRealm: boolean;
-  eternumEntryIntent: "play" | "settle";
+  entryIntent: "play" | "settle";
   seasonSettlementComplete: boolean;
   eternumSettlementMode: "realm" | "village";
   hasVillagePass: boolean;
@@ -47,6 +47,20 @@ interface ResolveGameEntryModalPhaseInput {
   needsSettlement: boolean;
   isBlitzSettlementUnlocked: boolean;
 }
+
+export const resolveBlitzSettlementPhase = ({
+  needsSettlement,
+  isSettlementUnlocked,
+}: {
+  needsSettlement: boolean;
+  isSettlementUnlocked: boolean;
+}): Extract<GameEntryModalPhase, "ready" | "settlement" | "settlement-waiting"> => {
+  if (!needsSettlement) {
+    return "ready";
+  }
+
+  return isSettlementUnlocked ? "settlement" : "settlement-waiting";
+};
 
 export const resolveGameEntryBlockingError = ({
   worldAvailabilityErrorMessage,
@@ -88,7 +102,7 @@ export const resolveGameEntryModalPhase = ({
   hasVillageRevealResult,
   unifiedSettlementPlannerEnabled,
   hasSettledRealm,
-  eternumEntryIntent,
+  entryIntent,
   seasonSettlementComplete,
   eternumSettlementMode,
   hasVillagePass,
@@ -128,16 +142,14 @@ export const resolveGameEntryModalPhase = ({
     }
 
     if (unifiedSettlementPlannerEnabled) {
-      return hasSettledRealm && eternumEntryIntent === "play" && !seasonSettlementComplete
-        ? "ready"
-        : "settlement-planner";
+      return hasSettledRealm && entryIntent === "play" && !seasonSettlementComplete ? "ready" : "settlement-planner";
     }
 
     if (eternumSettlementMode === "village") {
       return hasVillagePass ? "village-placement" : "village-pass-required";
     }
 
-    if (seasonSettlementComplete || (hasSettledRealm && eternumEntryIntent === "play")) {
+    if (seasonSettlementComplete || (hasSettledRealm && entryIntent === "play")) {
       return "ready";
     }
 
@@ -152,11 +164,14 @@ export const resolveGameEntryModalPhase = ({
     return "hyperstructure";
   }
 
-  if (needsSettlement) {
-    if (isBlitzMode && !isBlitzSettlementUnlocked) {
-      return "settlement-waiting";
-    }
+  if (isBlitzMode) {
+    return resolveBlitzSettlementPhase({
+      needsSettlement,
+      isSettlementUnlocked: isBlitzSettlementUnlocked,
+    });
+  }
 
+  if (needsSettlement) {
     return "settlement";
   }
 
