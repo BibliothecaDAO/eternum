@@ -31,7 +31,14 @@ function createArmyLabelData(overrides: Partial<ArmyLabelContentFields> = {}): A
 
 describe("buildArmyLabelDataKey", () => {
   it("includes the label fields that drive army label content", () => {
-    expect(buildArmyLabelDataKey(createArmyLabelData())).toBe("10-9-400-8-true-Alice-45-90");
+    expect(buildArmyLabelDataKey(createArmyLabelData())).toBe("10-9-4000-8-true-Alice-45-90");
+  });
+
+  it("tracks small projected stamina changes so recharge labels can update every second", () => {
+    const initialKey = buildArmyLabelDataKey(createArmyLabelData({ displayStaminaRatio: 0.4 }));
+    const nextKey = buildArmyLabelDataKey(createArmyLabelData({ displayStaminaRatio: 0.4002 }));
+
+    expect(nextKey).not.toBe(initialKey);
   });
 });
 
@@ -77,7 +84,7 @@ describe("syncArmyLabelContentState", () => {
       renderLabel,
     });
 
-    expect(label.userData.lastDataKey).toBe("22-9-400-8-true-Alice-45-90");
+    expect(label.userData.lastDataKey).toBe("22-9-4000-8-true-Alice-45-90");
     expect(renderLabel).toHaveBeenCalledTimes(1);
   });
 });

@@ -19,7 +19,7 @@ import { ArmyWarning } from "../../armies/army-warning";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
-import { resolveCommittedStaminaTextValue } from "./army-stamina-display";
+import { resolveDisplayedStaminaValue } from "./army-stamina-display";
 
 interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
@@ -131,6 +131,7 @@ const ArmyBannerEntityDetailContent = memo(
               maxStamina={derivedData.maxStamina}
               displayRatio={derivedData.staminaDisplay?.displayRatio}
               isRecharging={derivedData.staminaDisplay?.isRecharging}
+              projectedCurrent={derivedData.staminaDisplay?.displayCurrent}
             />
           ) : null}
         </div>
@@ -196,14 +197,16 @@ const InlineStaminaBar = ({
   maxStamina,
   displayRatio,
   isRecharging,
+  projectedCurrent,
 }: {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
   displayRatio?: number;
   isRecharging?: boolean | null;
+  projectedCurrent?: number;
 }) => {
   if (!stamina || maxStamina === 0) return null;
-  const staminaValue = resolveCommittedStaminaTextValue({ stamina });
+  const staminaValue = resolveDisplayedStaminaValue({ stamina, projectedCurrent });
   const percentage = (staminaValue / maxStamina) * 100;
   const projectedPercentage = Math.max(
     percentage,

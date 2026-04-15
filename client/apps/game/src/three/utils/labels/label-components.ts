@@ -108,6 +108,25 @@ const formatStaminaPercent = (current: number, max: number): string => {
   return `${pct}%`;
 };
 
+const resolveStaminaDisplay = (
+  currentStamina: number,
+  maxStamina: number,
+  displayRatio?: number,
+): { committedPercentage: number; projectedPercentage: number; displayedStamina: number } => {
+  const committedPercentage = maxStamina > 0 ? Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100)) : 0;
+  const projectedPercentage = Math.max(
+    committedPercentage,
+    Math.min(100, Math.max(0, (displayRatio ?? committedPercentage / 100) * 100)),
+  );
+  const displayedStamina = Math.round((projectedPercentage / 100) * maxStamina);
+
+  return {
+    committedPercentage,
+    projectedPercentage,
+    displayedStamina,
+  };
+};
+
 /**
  * Building type to resource icon mapping
  */
@@ -298,10 +317,10 @@ export const createStaminaBar = (
 ): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const recharging = isStaminaRecharging(currentStamina, maxStamina);
-  const committedPercentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
-  const projectedPercentage = Math.max(
-    committedPercentage,
-    Math.min(100, Math.max(0, (displayRatio ?? committedPercentage / 100) * 100)),
+  const { committedPercentage, projectedPercentage, displayedStamina } = resolveStaminaDisplay(
+    currentStamina,
+    maxStamina,
+    displayRatio,
   );
   const container = document.createElement("div");
   container.setAttribute("data-component", "stamina-bar");
@@ -318,7 +337,7 @@ export const createStaminaBar = (
     container.appendChild(icon);
 
     const percent = document.createElement("span");
-    percent.textContent = formatStaminaPercent(currentStamina, maxStamina);
+    percent.textContent = formatStaminaPercent(displayedStamina, maxStamina);
     percent.classList.add("font-semibold", "tracking-tight");
     if (recharging) {
       percent.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
@@ -395,7 +414,7 @@ export const createStaminaBar = (
   container.appendChild(progressBar);
 
   const text = document.createElement("span");
-  text.textContent = `${currentStamina}/${maxStamina}`;
+  text.textContent = `${displayedStamina}/${maxStamina}`;
   text.style.color = "#ffffff";
   text.style.fontFamily = "monospace";
   text.style.fontSize = "10px";
@@ -858,14 +877,19 @@ export const updateStaminaBar = (
   const projectedFill = staminaBarElement.querySelector("[data-role='projected-progress-fill']") as HTMLElement | null;
   const textElement = staminaBarElement.querySelector("[data-role='stamina-text']") as HTMLElement;
   const recharging = isStaminaRecharging(currentStamina, maxStamina);
+  const { committedPercentage, projectedPercentage, displayedStamina } = resolveStaminaDisplay(
+    currentStamina,
+    maxStamina,
+    displayRatio,
+  );
 
   if (percentElement) {
-    percentElement.textContent = formatStaminaPercent(currentStamina, maxStamina);
+    percentElement.textContent = formatStaminaPercent(displayedStamina, maxStamina);
     percentElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
   }
 
   if (textElement) {
-    textElement.textContent = `${currentStamina}/${maxStamina}`;
+    textElement.textContent = `${displayedStamina}/${maxStamina}`;
     textElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
   }
 
@@ -875,11 +899,6 @@ export const updateStaminaBar = (
   }
 
   if (progressFill) {
-    const committedPercentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
-    const projectedPercentage = Math.max(
-      committedPercentage,
-      Math.min(100, Math.max(0, (displayRatio ?? committedPercentage / 100) * 100)),
-    );
     progressFill.style.width = `${committedPercentage}%`;
     progressFill.classList.toggle(STAMINA_RECHARGING_FILL_CLASS, recharging);
 

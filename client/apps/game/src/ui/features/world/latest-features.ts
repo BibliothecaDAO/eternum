@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-16",
+    title: "Live Stamina Labels",
+    description:
+      "World-map army labels now show projected stamina recharge between army ticks, so refilling stamina visibly progresses while you watch the map.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-16",
     title: "Accurate Army Stamina",
     description:
       "Fixed army stamina displays so numeric values show the committed on-chain computed state while recharge progress remains visible in the bar.",

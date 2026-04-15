@@ -35,3 +35,11 @@ describe("incoming troop label helpers", () => {
     expect(source).toMatch(/contentContainer\.insertBefore\(container, productionsDisplay\)/);
   });
 });
+
+describe("stamina label helpers", () => {
+  it("uses projected stamina for medium-view recharge text", () => {
+    const source = readLabelComponentsSource();
+
+    expect(source).toMatch(/percent\.textContent = formatStaminaPercent\(displayedStamina, maxStamina\)/);
+  });
+});

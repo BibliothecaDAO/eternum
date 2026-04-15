@@ -1,13 +1,21 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveCommittedStaminaTextValue } from "./army-stamina-display";
+import { resolveDisplayedStaminaValue } from "./army-stamina-display";
 
 describe("army stamina display", () => {
-  it("uses committed stamina for numeric text even when projected stamina is higher", () => {
+  it("uses projected stamina for numeric text when the projected bar is ahead", () => {
     expect(
-      resolveCommittedStaminaTextValue({
+      resolveDisplayedStaminaValue({
         stamina: { amount: 88n, updated_tick: 5n },
         projectedCurrent: 90,
+      }),
+    ).toBe(90);
+  });
+
+  it("falls back to committed stamina when projected stamina is unavailable", () => {
+    expect(
+      resolveDisplayedStaminaValue({
+        stamina: { amount: 88n, updated_tick: 5n },
       }),
     ).toBe(88);
   });

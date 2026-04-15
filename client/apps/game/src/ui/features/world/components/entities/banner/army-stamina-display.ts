@@ -1,6 +1,10 @@
-export const resolveCommittedStaminaTextValue = ({
+export const resolveDisplayedStaminaValue = ({
   stamina,
+  projectedCurrent,
 }: {
   stamina: { amount: bigint; updated_tick: bigint };
   projectedCurrent?: number;
-}) => Number(stamina.amount);
+}) =>
+  projectedCurrent !== undefined && Number.isFinite(projectedCurrent)
+    ? Math.round(projectedCurrent)
+    : Number(stamina.amount);
