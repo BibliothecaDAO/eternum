@@ -122,6 +122,17 @@ import { WorldUpdateListener } from "./world-update-listener";
 
 const encodeAddressName = (value: string): bigint => BigInt(`0x${Buffer.from(value, "utf8").toString("hex")}`);
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((innerResolve, innerReject) => {
+    resolve = innerResolve;
+    reject = innerReject;
+  });
+
+  return { promise, resolve, reject };
+}
+
 describe("WorldUpdateListener army tile bootstrap", () => {
   beforeEach(() => {
     vi.stubGlobal("localStorage", {
@@ -192,6 +203,98 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     expect(defineComponentSystemMock).toHaveBeenCalledTimes(1);
     const options = defineComponentSystemMock.mock.calls[0][3];
     expect(options).toMatchObject({ runOnInit: true });
+  });
+
+  it("batches army tile updates before async enhancement resolves", async () => {
+    vi.useFakeTimers();
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          ExplorerTroops: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const deferredFirstEnhancement = createDeferred<{
+      troopCount: number;
+      currentStamina: number;
+      onChainStamina: undefined;
+      owner: { address: bigint; ownerName: string; guildName: string };
+      ownerStructureId: null;
+      battleData: undefined;
+    }>();
+
+    tileOptToTileMock.mockImplementation((value) => value);
+    getExplorerInfoFromTileOccupierMock.mockReturnValue({
+      troopType: "Knight",
+      troopTier: "T1",
+      isDaydreamsAgent: false,
+    });
+    getComponentValueMock.mockReturnValue({
+      owner: 0,
+      troops: {
+        count: 0n,
+        stamina: {
+          amount: 0n,
+          updated_tick: 0n,
+        },
+      },
+    });
+    enhanceArmyDataMock
+      .mockImplementationOnce(() => deferredFirstEnhancement.promise)
+      .mockResolvedValueOnce({
+        troopCount: 4,
+        currentStamina: 7,
+        onChainStamina: undefined,
+        owner: { address: 22n, ownerName: "Second", guildName: "" },
+        ownerStructureId: null,
+        battleData: undefined,
+      });
+    isComponentUpdateMock.mockReturnValue(true);
+
+    const receivedBatches: Array<{ liveUpdates: Array<{ entityId: number }> }> = [];
+    listener.Army.onTileBatchUpdate((batch) => {
+      receivedBatches.push(batch as { liveUpdates: Array<{ entityId: number }> });
+    });
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    const makeTileUpdate = (occupierId: number, col: number, row: number) => ({
+      value: [
+        {
+          occupier_type: 1,
+          occupier_id: occupierId,
+          col,
+          row,
+        },
+        undefined,
+      ],
+    });
+
+    await handleUpdate(makeTileUpdate(101, 10, 10));
+    await handleUpdate(makeTileUpdate(202, 11, 10));
+
+    await vi.advanceTimersByTimeAsync(32);
+    expect(receivedBatches).toHaveLength(0);
+
+    deferredFirstEnhancement.resolve({
+      troopCount: 3,
+      currentStamina: 5,
+      onChainStamina: undefined,
+      owner: { address: 11n, ownerName: "First", guildName: "" },
+      ownerStructureId: null,
+      battleData: undefined,
+    });
+
+    await vi.runAllTimersAsync();
+
+    expect(receivedBatches).toHaveLength(1);
+    expect(receivedBatches[0].liveUpdates.map(({ entityId }) => entityId)).toEqual([101, 202]);
+
+    vi.useRealTimers();
   });
 
   it("subscribes explorer troop updates with runOnInit enabled", () => {

@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-15",
+    title: "Group Move Slot Rebind Fix",
+    description:
+      "Armies that move together in one transaction now keep distinct world-map anchors through slot compaction and pre-render sync, so adjacent convoy moves stop collapsing several units onto one survivor.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-15",
     title: "Atomic Group Move Sync",
     description:
       "Same-transaction convoy moves now resolve as one world-map batch, so adjacent armies stop collapsing into one survivor or disappearing until a chunk reload corrects the board.",

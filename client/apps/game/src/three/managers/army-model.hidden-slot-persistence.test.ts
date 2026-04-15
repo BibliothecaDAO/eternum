@@ -221,4 +221,35 @@ describe("ArmyModel hidden slot persistence", () => {
 
     expectZeroScaleMatrix(mesh, spareSlot);
   });
+
+  it("rebinds spline movement to the compacted slot", () => {
+    const subject = new ArmyModel(new Scene());
+    const { modelData } = createLoadedModelData();
+    const blockerEntityId = 11;
+    const movingEntityId = 77;
+    const blockerSlot = subject.allocateInstanceSlot(blockerEntityId);
+    const movingSlot = subject.allocateInstanceSlot(movingEntityId);
+
+    (subject as any).models.set(ModelType.Knight1, modelData);
+    subject.assignModelToEntity(movingEntityId, ModelType.Knight1);
+    subject.updateInstance(movingEntityId, movingSlot, new Vector3(3, 0, 3), new Vector3(1, 1, 1));
+
+    subject.startMovement(
+      movingEntityId,
+      [new Vector3(3, 0, 3), new Vector3(4, 0, 3), new Vector3(5, 0, 3)],
+      movingSlot,
+      TroopType.Knight as never,
+      TroopTier.T1 as never,
+    );
+
+    subject.freeInstanceSlot(blockerEntityId, blockerSlot);
+    subject.moveInstanceSlot(movingEntityId, blockerSlot);
+
+    expect((subject as any).movingInstances.get(movingEntityId)?.matrixIndex).toBe(blockerSlot);
+    expect((subject as any).splineMovingInstances.get(movingEntityId)?.matrixIndex).toBe(blockerSlot);
+
+    subject.updateMovements(0.016);
+
+    expect((subject as any).instanceData.get(movingEntityId)?.matrixIndex).toBe(blockerSlot);
+  });
 });

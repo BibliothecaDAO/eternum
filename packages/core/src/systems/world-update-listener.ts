@@ -40,12 +40,56 @@ import {
   type BuildingSystemUpdate,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsSystemUpdate,
+  type ExplorerTroopsTileBatchSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
   StructureSystemUpdate,
   type StructureTileSystemUpdate,
   type TileSystemUpdate,
 } from "./types";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "./utils";
+
+const ARMY_TILE_BATCH_SETTLE_MS = 32;
+
+interface PendingArmyTileLiveSignal {
+  kind: "live";
+  entityId: ID;
+  hexCoords: HexPosition;
+  troopType: TroopType;
+  troopTier: TroopTier;
+  isDaydreamsAgent: boolean;
+}
+
+interface PendingArmyTileRemovedSignal {
+  kind: "removed";
+  entityId: ID;
+  hexCoords: HexPosition;
+  troopType: TroopType;
+  troopTier: TroopTier;
+  isDaydreamsAgent: boolean;
+}
+
+type PendingArmyTileSignal = PendingArmyTileLiveSignal | PendingArmyTileRemovedSignal;
+
+interface PendingArmyTileBatchEntry {
+  entityId: ID;
+  latestLiveSignal?: PendingArmyTileLiveSignal;
+  latestRemovedSignal?: PendingArmyTileRemovedSignal;
+}
+
+function queuePendingArmyTileBatchSignal(
+  pendingEntries: Map<ID, PendingArmyTileBatchEntry>,
+  signal: PendingArmyTileSignal,
+): void {
+  const entry = pendingEntries.get(signal.entityId) ?? { entityId: signal.entityId };
+
+  if (signal.kind === "live") {
+    entry.latestLiveSignal = signal;
+  } else {
+    entry.latestRemovedSignal = signal;
+  }
+
+  pendingEntries.set(signal.entityId, entry);
+}
 
 // The WorldUpdateListener class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -250,6 +294,223 @@ export class WorldUpdateListener {
     };
   }
 
+  private resolvePendingArmyTileSignal(update: any): PendingArmyTileSignal | undefined {
+    if (!isComponentUpdate(update, this.setup.components.TileOpt)) {
+      return undefined;
+    }
+
+    const [currentStateOpt, prevStateOpt] = update.value;
+    const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+    const prevState = prevStateOpt ? tileOptToTile(prevStateOpt) : undefined;
+    const explorer = currentState && getExplorerInfoFromTileOccupier(currentState.occupier_type);
+    const previousExplorer = prevState && getExplorerInfoFromTileOccupier(prevState.occupier_type);
+
+    if (!explorer) {
+      return this.resolvePendingRemovedArmyTileSignal({
+        currentState,
+        prevState,
+        previousExplorer,
+        update,
+      });
+    }
+
+    const rawOccupierId = currentState?.occupier_id;
+    if (rawOccupierId === undefined || rawOccupierId === null) {
+      this.logMissingEntityId("Army.onTileUpdate.current", {
+        update,
+        currentState,
+        prevState,
+      });
+      return undefined;
+    }
+
+    recordArmyMovementLatencyPhase({
+      phase: "tileopt_component_received",
+      source: "world_update_listener",
+      entityId: rawOccupierId,
+      details: {
+        col: currentState.col,
+        row: currentState.row,
+      },
+    });
+
+    return {
+      kind: "live",
+      entityId: rawOccupierId,
+      hexCoords: { col: currentState.col, row: currentState.row },
+      troopType: explorer.troopType as TroopType,
+      troopTier: explorer.troopTier as TroopTier,
+      isDaydreamsAgent: explorer.isDaydreamsAgent,
+    };
+  }
+
+  private resolvePendingRemovedArmyTileSignal(input: {
+    currentState?: ReturnType<typeof tileOptToTile>;
+    prevState?: ReturnType<typeof tileOptToTile>;
+    previousExplorer?: ReturnType<typeof getExplorerInfoFromTileOccupier>;
+    update: any;
+  }): PendingArmyTileRemovedSignal | undefined {
+    const { currentState, prevState, previousExplorer, update } = input;
+    if (!previousExplorer || !prevState) {
+      return undefined;
+    }
+
+    try {
+      const explorerTroops = getComponentValue(
+        this.setup.components.ExplorerTroops,
+        getEntityIdFromKeys([BigInt(prevState.occupier_id)]),
+      );
+
+      if (explorerTroops && explorerTroops.troops.count > 0n) {
+        return undefined;
+      }
+    } catch (_error) {
+      // Fall through and treat the army as removed when the live component snapshot is unavailable.
+    }
+
+    const removedEntityId = prevState.occupier_id;
+    if (removedEntityId === undefined || removedEntityId === null) {
+      this.logMissingEntityId("Army.onTileUpdate.removed", {
+        update,
+        currentState,
+        prevState,
+      });
+      return undefined;
+    }
+
+    const coordsSource = currentState ?? prevState;
+    return {
+      kind: "removed",
+      entityId: removedEntityId,
+      hexCoords: { col: coordsSource.col, row: coordsSource.row },
+      troopType: previousExplorer.troopType as TroopType,
+      troopTier: previousExplorer.troopTier as TroopTier,
+      isDaydreamsAgent: previousExplorer.isDaydreamsAgent,
+    };
+  }
+
+  private buildRemovedArmyTileUpdate(signal: PendingArmyTileRemovedSignal): ExplorerTroopsTileSystemUpdate {
+    return {
+      entityId: signal.entityId,
+      hexCoords: signal.hexCoords,
+      troopType: signal.troopType,
+      troopTier: signal.troopTier,
+      isDaydreamsAgent: signal.isDaydreamsAgent,
+      troopCount: 0,
+      ownerName: "",
+      guildName: "",
+      ownerAddress: 0n,
+      ownerStructureId: null,
+      removed: true,
+    };
+  }
+
+  private async resolveLiveArmyTileUpdate(
+    signal: PendingArmyTileLiveSignal,
+  ): Promise<ExplorerTroopsTileSystemUpdate | undefined> {
+    const { currentArmiesTick } = getBlockTimestamp();
+
+    const result = await this.processSequentialUpdate(signal.entityId, async () => {
+      let structureOwnerId: ID | undefined;
+      try {
+        const explorerTroops = getComponentValue(
+          this.setup.components.ExplorerTroops,
+          getEntityIdFromKeys([BigInt(signal.entityId)]),
+        );
+        structureOwnerId = explorerTroops?.owner;
+      } catch (error) {
+        console.warn(`[DEBUG] Could not get structure owner for army ${signal.entityId}:`, error);
+      }
+
+      const normalizedStructureOwnerId = structureOwnerId && structureOwnerId !== 0 ? structureOwnerId : undefined;
+      const enhancedData = await this.dataEnhancer.enhanceArmyData(
+        signal.entityId,
+        {
+          troopType: signal.troopType,
+          troopTier: signal.troopTier,
+        },
+        currentArmiesTick,
+        normalizedStructureOwnerId,
+      );
+      const liveArmySnapshot = this.resolveLiveArmySnapshot(signal.entityId, currentArmiesTick);
+      const freshestArmyStaminaSource = resolveFreshestArmyStaminaSource({
+        liveSnapshot: liveArmySnapshot,
+        enhancedSnapshot: enhancedData,
+      });
+      const freshestArmyStaminaSnapshot = freshestArmyStaminaSource === "live" ? liveArmySnapshot : enhancedData;
+      const maxStamina = StaminaManager.getMaxStamina(signal.troopType, signal.troopTier);
+
+      return {
+        entityId: signal.entityId,
+        hexCoords: signal.hexCoords,
+        ownerAddress: enhancedData.owner.address ? BigInt(enhancedData.owner.address) : 0n,
+        ownerName: enhancedData.owner.ownerName || "",
+        guildName: enhancedData.owner.guildName || "",
+        troopType: signal.troopType,
+        troopTier: signal.troopTier,
+        isDaydreamsAgent: signal.isDaydreamsAgent,
+        ownerStructureId:
+          liveArmySnapshot?.ownerStructureId ?? normalizedStructureOwnerId ?? enhancedData.ownerStructureId ?? null,
+        troopCount: liveArmySnapshot?.troopCount ?? enhancedData.troopCount,
+        currentStamina: freshestArmyStaminaSnapshot?.currentStamina ?? enhancedData.currentStamina,
+        onChainStamina: freshestArmyStaminaSnapshot?.onChainStamina ?? enhancedData.onChainStamina,
+        battleData: enhancedData.battleData,
+        maxStamina,
+      };
+    });
+
+    if (result) {
+      recordArmyMovementLatencyPhase({
+        phase: "tileopt_component_ready",
+        source: "world_update_listener",
+        entityId: signal.entityId,
+        details: {
+          col: result.hexCoords.col,
+          row: result.hexCoords.row,
+        },
+      });
+    }
+
+    return result || undefined;
+  }
+
+  private async resolveArmyTileBatchUpdate(
+    entries: Iterable<PendingArmyTileBatchEntry>,
+  ): Promise<ExplorerTroopsTileBatchSystemUpdate> {
+    const liveSignals: PendingArmyTileLiveSignal[] = [];
+    const removalUpdates: ExplorerTroopsTileBatchSystemUpdate["removals"] = [];
+
+    for (const entry of entries) {
+      if (entry.latestLiveSignal) {
+        liveSignals.push(entry.latestLiveSignal);
+        continue;
+      }
+
+      if (entry.latestRemovedSignal) {
+        removalUpdates.push({
+          entityId: entry.latestRemovedSignal.entityId,
+          update: this.buildRemovedArmyTileUpdate(entry.latestRemovedSignal),
+        });
+      }
+    }
+
+    const liveUpdates = (await Promise.all(liveSignals.map((signal) => this.resolveLiveArmyTileUpdate(signal))))
+      .filter((update): update is ExplorerTroopsTileSystemUpdate => update !== undefined)
+      .map((update) => ({
+        entityId: update.entityId,
+        update,
+      }));
+
+    liveUpdates.sort((left, right) => Number(left.entityId) - Number(right.entityId));
+    removalUpdates.sort((left, right) => Number(left.entityId) - Number(right.entityId));
+
+    return {
+      liveUpdates,
+      removals: removalUpdates,
+      hasWork: liveUpdates.length > 0 || removalUpdates.length > 0,
+    };
+  }
+
   public get Army() {
     return {
       onTileUpdate: (callback: (value: ExplorerTroopsTileSystemUpdate) => void) => {
@@ -257,182 +518,90 @@ export class WorldUpdateListener {
           this.setup.components.TileOpt,
           callback,
           async (update: any): Promise<ExplorerTroopsTileSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
-              const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
-
-              const explorer = currentState && getExplorerInfoFromTileOccupier(currentState?.occupier_type);
-              const previousExplorer = _prevState && getExplorerInfoFromTileOccupier(_prevState.occupier_type);
-
-              if (!explorer) {
-                if (currentState) {
-                  // console.debug(`[WorldUpdateListener] Tile update without explorer`, {
-                  //   entity: update.entity,
-                  //   occupierType: currentState.occupier_type,
-                  //   occupierId: currentState.occupier_id,
-                  //   prevOccupierId: _prevState?.occupier_id,
-                  //   prevOccupierType: _prevState?.occupier_type,
-                  // });
-                }
-
-                // When an army leaves a tile, verify it's actually dead before marking as removed
-                if (previousExplorer && _prevState) {
-                  // Check if the army still exists in ExplorerTroops component
-                  // If it exists, it's just moving to a new tile and shouldn't be marked as removed
-                  try {
-                    const explorerTroops = getComponentValue(
-                      this.setup.components.ExplorerTroops,
-                      getEntityIdFromKeys([BigInt(_prevState.occupier_id)]),
-                    );
-
-                    // If ExplorerTroops still exists and has non-zero troops, the army is alive (just moving)
-                    if (explorerTroops && explorerTroops.troops.count > 0n) {
-                      // console.debug(
-                      //   `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile but still exists (count: ${explorerTroops.troops.count}) - likely moving`,
-                      // );
-                      // Don't send removal update - army is just moving
-                      return;
-                    }
-
-                    // console.debug(
-                    //   `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile and ExplorerTroops is gone or count=0 - marking as removed`,
-                    // );
-                  } catch (error) {
-                    // console.debug(
-                    //   `[WorldUpdateListener] Could not verify army ${_prevState.occupier_id} existence - assuming removed`,
-                    // );
-                  }
-
-                  // Army is confirmed dead or doesn't exist - mark as removed
-                  const coordsSource = currentState ?? _prevState;
-                  const removedEntityId = _prevState?.occupier_id;
-
-                  if (removedEntityId === undefined || removedEntityId === null) {
-                    this.logMissingEntityId("Army.onTileUpdate.removed", {
-                      update,
-                      currentState,
-                      prevState: _prevState,
-                    });
-                    return;
-                  }
-
-                  return {
-                    entityId: removedEntityId,
-                    hexCoords: { col: coordsSource.col, row: coordsSource.row },
-                    troopType: previousExplorer.troopType as TroopType,
-                    troopTier: previousExplorer.troopTier as TroopTier,
-                    isDaydreamsAgent: previousExplorer.isDaydreamsAgent,
-                    troopCount: 0,
-                    ownerName: "",
-                    guildName: "",
-                    ownerAddress: 0n,
-                    ownerStructureId: null,
-                    removed: true,
-                  };
-                }
-
-                return;
-              }
-
-              const rawOccupierId = currentState?.occupier_id;
-
-              if (rawOccupierId === undefined || rawOccupierId === null) {
-                this.logMissingEntityId("Army.onTileUpdate.current", {
-                  update,
-                  currentState,
-                  prevState: _prevState,
-                });
-                return;
-              }
-
-              recordArmyMovementLatencyPhase({
-                phase: "tileopt_component_received",
-                source: "world_update_listener",
-                entityId: rawOccupierId,
-                details: {
-                  col: currentState.col,
-                  row: currentState.row,
-                },
-              });
-
-              const { currentArmiesTick } = getBlockTimestamp();
-
-              // Use sequential update processing to prevent race conditions
-              const result = await this.processSequentialUpdate(rawOccupierId, async () => {
-                // Try to get the structure owner ID from ExplorerTroops component
-                let structureOwnerId: ID | undefined;
-                try {
-                  const explorerTroops = getComponentValue(
-                    this.setup.components.ExplorerTroops,
-                    getEntityIdFromKeys([BigInt(rawOccupierId)]),
-                  );
-                  structureOwnerId = explorerTroops?.owner;
-                } catch (error) {
-                  console.warn(`[DEBUG] Could not get structure owner for army ${rawOccupierId}:`, error);
-                }
-
-                const normalizedStructureOwnerId =
-                  structureOwnerId && structureOwnerId !== 0 ? structureOwnerId : undefined;
-
-                // Use DataEnhancer to fetch all enhanced data
-                const enhancedData = await this.dataEnhancer.enhanceArmyData(
-                  rawOccupierId,
-                  explorer,
-                  currentArmiesTick,
-                  normalizedStructureOwnerId,
-                );
-                const liveArmySnapshot = this.resolveLiveArmySnapshot(rawOccupierId, currentArmiesTick);
-                const freshestArmyStaminaSource = resolveFreshestArmyStaminaSource({
-                  liveSnapshot: liveArmySnapshot,
-                  enhancedSnapshot: enhancedData,
-                });
-                const freshestArmyStaminaSnapshot =
-                  freshestArmyStaminaSource === "live" ? liveArmySnapshot : enhancedData;
-
-                const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
-
-                return {
-                  entityId: rawOccupierId,
-                  hexCoords: { col: currentState.col, row: currentState.row },
-                  // need to set it to 0n if no owner address because else it won't be registered on the worldmap
-                  ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
-                  ownerName: enhancedData?.owner.ownerName || "",
-                  guildName: enhancedData?.owner.guildName || "",
-                  troopType: explorer.troopType as TroopType,
-                  troopTier: explorer.troopTier as TroopTier,
-                  isDaydreamsAgent: explorer.isDaydreamsAgent,
-                  ownerStructureId:
-                    liveArmySnapshot?.ownerStructureId ??
-                    normalizedStructureOwnerId ??
-                    enhancedData.ownerStructureId ??
-                    null,
-                  // Enhanced data from DataEnhancer
-                  troopCount: liveArmySnapshot?.troopCount ?? enhancedData.troopCount,
-                  currentStamina: freshestArmyStaminaSnapshot?.currentStamina ?? enhancedData.currentStamina,
-                  onChainStamina: freshestArmyStaminaSnapshot?.onChainStamina ?? enhancedData.onChainStamina,
-                  battleData: enhancedData.battleData,
-                  maxStamina,
-                };
-              });
-
-              // Return undefined if update was cancelled due to being outdated
-              if (result) {
-                recordArmyMovementLatencyPhase({
-                  phase: "tileopt_component_ready",
-                  source: "world_update_listener",
-                  entityId: rawOccupierId,
-                  details: {
-                    col: result.hexCoords.col,
-                    row: result.hexCoords.row,
-                  },
-                });
-              }
-              return result || undefined;
+            const signal = this.resolvePendingArmyTileSignal(update);
+            if (!signal) {
+              return undefined;
             }
+
+            if (signal.kind === "removed") {
+              return this.buildRemovedArmyTileUpdate(signal);
+            }
+
+            return this.resolveLiveArmyTileUpdate(signal);
           },
           true,
         );
+      },
+      onTileBatchUpdate: (
+        callback: (value: ExplorerTroopsTileBatchSystemUpdate) => void | Promise<void>,
+      ): (() => void) => {
+        let active = true;
+        let pendingArmyTileBatchFlushTimeout: ReturnType<typeof setTimeout> | null = null;
+        let isArmyTileBatchFlushing = false;
+        const pendingArmyTileBatchByEntity: Map<ID, PendingArmyTileBatchEntry> = new Map();
+
+        const flushPendingArmyTileBatch = async () => {
+          if (isArmyTileBatchFlushing || !active) {
+            return;
+          }
+
+          isArmyTileBatchFlushing = true;
+          try {
+            while (pendingArmyTileBatchByEntity.size > 0 && active) {
+              const pendingEntries = Array.from(pendingArmyTileBatchByEntity.values());
+              pendingArmyTileBatchByEntity.clear();
+
+              const batch = await this.resolveArmyTileBatchUpdate(pendingEntries);
+              if (!batch.hasWork || !active) {
+                continue;
+              }
+
+              await callback(batch);
+            }
+          } finally {
+            isArmyTileBatchFlushing = false;
+          }
+        };
+
+        const schedulePendingArmyTileBatchFlush = () => {
+          if (pendingArmyTileBatchFlushTimeout) {
+            clearTimeout(pendingArmyTileBatchFlushTimeout);
+          }
+
+          pendingArmyTileBatchFlushTimeout = setTimeout(() => {
+            pendingArmyTileBatchFlushTimeout = null;
+            void flushPendingArmyTileBatch();
+          }, ARMY_TILE_BATCH_SETTLE_MS);
+        };
+
+        defineComponentSystem(
+          this.setup.network.world,
+          this.setup.components.TileOpt,
+          (update: any) => {
+            if (!active) {
+              return;
+            }
+
+            const signal = this.resolvePendingArmyTileSignal(update);
+            if (!signal) {
+              return;
+            }
+
+            queuePendingArmyTileBatchSignal(pendingArmyTileBatchByEntity, signal);
+            schedulePendingArmyTileBatchFlush();
+          },
+          {
+            runOnInit: true,
+          },
+        );
+
+        return () => {
+          active = false;
+          if (pendingArmyTileBatchFlushTimeout) {
+            clearTimeout(pendingArmyTileBatchFlushTimeout);
+          }
+          pendingArmyTileBatchByEntity.clear();
+        };
       },
       onExplorerTroopsUpdate: (callback: (value: ExplorerTroopsSystemUpdate) => void) => {
         this.setupSystem(

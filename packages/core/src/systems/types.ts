@@ -50,6 +50,18 @@ export type ExplorerTroopsTileSystemUpdate = {
   };
 };
 
+export type ExplorerTroopsTileBatchSystemUpdate = {
+  liveUpdates: Array<{
+    entityId: ID;
+    update: ExplorerTroopsTileSystemUpdate;
+  }>;
+  removals: Array<{
+    entityId: ID;
+    update: ExplorerTroopsTileSystemUpdate;
+  }>;
+  hasWork: boolean;
+};
+
 // data that you can get only from the explorer troops
 export type ExplorerTroopsSystemUpdate = {
   entityId: ID;

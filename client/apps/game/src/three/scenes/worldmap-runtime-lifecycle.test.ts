@@ -10,7 +10,6 @@ import { SceneName } from "../types";
 
 describe("worldmap runtime lifecycle", () => {
   it("clears switch-off transient state and returns reset primitives", () => {
-    const pendingArmyTileBatchByEntity = new Map<number, { entityId: number }>([[101, { entityId: 101 }]]);
     const pendingArmyRemovals = new Map<number, string>([
       [101, "timeout-a"],
       [202, "timeout-b"],
@@ -35,8 +34,6 @@ describe("worldmap runtime lifecycle", () => {
     const releaseInactiveResourcesSpy = vi.fn();
 
     const result = applyWorldmapSwitchOffRuntimeState({
-      pendingArmyTileBatchByEntity,
-      pendingArmyTileBatchFlushTimeout: "batch-timeout",
       pendingArmyRemovals,
       pendingArmyRemovalMeta,
       deferredChunkRemovals,
@@ -59,8 +56,7 @@ describe("worldmap runtime lifecycle", () => {
       invalidatePendingFetches: invalidatePendingFetchesSpy,
     });
 
-    expect(clearTimeoutSpy).toHaveBeenCalledTimes(4);
-    expect(clearTimeoutSpy).toHaveBeenCalledWith("batch-timeout");
+    expect(clearTimeoutSpy).toHaveBeenCalledTimes(3);
     expect(clearTimeoutSpy).toHaveBeenCalledWith("fallback-timeout");
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledTimes(2);
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(101);
@@ -70,7 +66,6 @@ describe("worldmap runtime lifecycle", () => {
     expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
     expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
 
-    expect(pendingArmyTileBatchByEntity.size).toBe(0);
     expect(pendingArmyRemovals.size).toBe(0);
     expect(pendingArmyRemovalMeta.size).toBe(0);
     expect(deferredChunkRemovals.size).toBe(0);
@@ -101,8 +96,6 @@ describe("worldmap runtime lifecycle", () => {
     const releaseInactiveResourcesSpy = vi.fn();
 
     const result = applyWorldmapSwitchOffRuntimeState({
-      pendingArmyTileBatchByEntity: new Map(),
-      pendingArmyTileBatchFlushTimeout: null,
       pendingArmyRemovals: new Map(),
       pendingArmyRemovalMeta: new Map(),
       deferredChunkRemovals: new Map(),
@@ -180,8 +173,6 @@ describe("worldmap runtime lifecycle", () => {
     const invalidatePendingFetchesSpy = vi.fn();
 
     applyWorldmapSwitchOffRuntimeState({
-      pendingArmyTileBatchByEntity: new Map(),
-      pendingArmyTileBatchFlushTimeout: null,
       pendingArmyRemovals: new Map(),
       pendingArmyRemovalMeta: new Map(),
       deferredChunkRemovals: new Map(),
@@ -215,8 +206,6 @@ describe("worldmap runtime lifecycle", () => {
     const suppressedArmies = new Set<number>([101, 202]);
 
     applyWorldmapSwitchOffRuntimeState({
-      pendingArmyTileBatchByEntity: new Map(),
-      pendingArmyTileBatchFlushTimeout: null,
       pendingArmyRemovals: new Map(),
       pendingArmyRemovalMeta: new Map(),
       deferredChunkRemovals: new Map(),

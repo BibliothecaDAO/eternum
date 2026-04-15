@@ -56,6 +56,7 @@ import {
   BattleEventSystemUpdate,
   ChestSystemUpdate,
   ExplorerRewardSystemUpdate,
+  ExplorerTroopsTileBatchSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getTileAt,
@@ -203,14 +204,7 @@ import {
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
 import { isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
-import {
-  enqueueArmyTileBatchUpdate as enqueueArmyTileBatchRuntimeUpdate,
-  resolveArmyHexBatchApplyPlan,
-  resolveArmyTileBatch,
-  type ArmyHexBatchMutation,
-  type PendingArmyTileBatchEntry,
-  type ResolvedArmyTileBatch,
-} from "./worldmap-army-tile-batch-runtime";
+import { resolveArmyHexBatchApplyPlan, type ArmyHexBatchMutation } from "./worldmap-army-tile-batch-runtime";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
@@ -588,10 +582,6 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovements: Set<ID> = new Set();
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
-  private pendingArmyTileBatchByEntity: Map<ID, PendingArmyTileBatchEntry> = new Map();
-  private pendingArmyTileBatchFlushTimeout: ReturnType<typeof setTimeout> | null = null;
-  private readonly armyTileBatchSettleMs = 32;
-  private isArmyTileBatchFlushing = false;
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
 
@@ -1183,18 +1173,21 @@ export default class WorldmapScene extends WarpTravel {
 
   private registerArmyWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
-        this.incrementToriiBoundsCounter("explorerTiles");
-        recordArmyMovementLatencyPhase({
-          phase: "worldmap_tile_update_received",
-          source: "worldmap",
-          entityId: update.entityId,
-          details: {
-            col: update.hexCoords.col,
-            row: update.hexCoords.row,
-          },
+      this.worldUpdateListener.Army.onTileBatchUpdate(async (batch) => {
+        batch.liveUpdates.forEach(({ update }) => {
+          this.incrementToriiBoundsCounter("explorerTiles");
+          recordArmyMovementLatencyPhase({
+            phase: "worldmap_tile_update_received",
+            source: "worldmap",
+            entityId: update.entityId,
+            details: {
+              col: update.hexCoords.col,
+              row: update.hexCoords.row,
+            },
+          });
         });
-        this.enqueueArmyTileBatchUpdate(update);
+
+        await this.applyResolvedArmyTileBatch(batch);
       }),
     );
 
@@ -2922,46 +2915,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
   }
 
-  private enqueueArmyTileBatchUpdate(update: ExplorerTroopsTileSystemUpdate): void {
-    enqueueArmyTileBatchRuntimeUpdate(this.pendingArmyTileBatchByEntity, update);
-    this.scheduleArmyTileBatchFlush();
-  }
-
-  private scheduleArmyTileBatchFlush(delayMs: number = this.armyTileBatchSettleMs): void {
-    if (this.pendingArmyTileBatchFlushTimeout) {
-      clearTimeout(this.pendingArmyTileBatchFlushTimeout);
-    }
-
-    this.pendingArmyTileBatchFlushTimeout = setTimeout(() => {
-      this.pendingArmyTileBatchFlushTimeout = null;
-      void this.flushArmyTileBatch();
-    }, delayMs);
-  }
-
-  private async flushArmyTileBatch(): Promise<void> {
-    if (this.isArmyTileBatchFlushing || this.isSwitchedOff) {
-      return;
-    }
-
-    this.isArmyTileBatchFlushing = true;
-    try {
-      while (this.pendingArmyTileBatchByEntity.size > 0 && !this.isSwitchedOff) {
-        const pendingEntries = Array.from(this.pendingArmyTileBatchByEntity.values());
-        this.pendingArmyTileBatchByEntity.clear();
-
-        const resolvedBatch = resolveArmyTileBatch(pendingEntries);
-        if (!resolvedBatch.hasWork) {
-          continue;
-        }
-
-        await this.applyResolvedArmyTileBatch(resolvedBatch);
-      }
-    } finally {
-      this.isArmyTileBatchFlushing = false;
-    }
-  }
-
-  private async applyResolvedArmyTileBatch(batch: ResolvedArmyTileBatch): Promise<void> {
+  private async applyResolvedArmyTileBatch(batch: ExplorerTroopsTileBatchSystemUpdate): Promise<void> {
     const recoveredPendingRemovalEntityIds = new Set<ID>();
 
     batch.liveUpdates.forEach(({ entityId }) => {
@@ -3632,8 +3586,6 @@ export default class WorldmapScene extends WarpTravel {
     this.clearWorldmapVisibilityRuntimeForSwitchOff();
 
     const runtimeState = applyWorldmapSwitchOffRuntimeState({
-      pendingArmyTileBatchByEntity: this.pendingArmyTileBatchByEntity,
-      pendingArmyTileBatchFlushTimeout: this.pendingArmyTileBatchFlushTimeout,
       pendingArmyRemovals: this.pendingArmyRemovals,
       pendingArmyRemovalMeta: this.pendingArmyRemovalMeta,
       deferredChunkRemovals: this.deferredChunkRemovals,
@@ -3664,7 +3616,6 @@ export default class WorldmapScene extends WarpTravel {
     this.toriiLoadingCounter = runtimeState.toriiLoadingCounter;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
     this.currentChunk = runtimeState.currentChunk;
-    this.pendingArmyTileBatchFlushTimeout = null;
 
     // Clear follow camera timeout to prevent callback firing on destroyed UI store state
     if (this.followCameraTimeout) {
@@ -7900,11 +7851,6 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingArmyMovements.clear();
-    if (this.pendingArmyTileBatchFlushTimeout) {
-      clearTimeout(this.pendingArmyTileBatchFlushTimeout);
-      this.pendingArmyTileBatchFlushTimeout = null;
-    }
-    this.pendingArmyTileBatchByEntity.clear();
     if (this.handleTransactionComplete) {
       this.dojo.network?.provider?.off("transactionComplete", this.handleTransactionComplete);
     }

@@ -2040,24 +2040,32 @@ export class ArmyModel {
 
   public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
     const movement = this.movingInstances.get(entityId);
-    if (!movement) return;
+    const splineMovement = this.splineMovingInstances.get(entityId);
+    if (!movement && !splineMovement) return;
 
-    const previousIndex = movement.matrixIndex;
-    if (previousIndex === newMatrixIndex) {
+    const previousIndex = movement?.matrixIndex ?? splineMovement?.matrixIndex;
+    if (previousIndex === undefined || previousIndex === newMatrixIndex) {
       return;
     }
 
     // Reset animation state for the old slot so it no longer appears active
     this.setAnimationState(previousIndex, false);
 
-    movement.matrixIndex = newMatrixIndex;
+    if (movement) {
+      movement.matrixIndex = newMatrixIndex;
+    }
+    if (splineMovement) {
+      splineMovement.matrixIndex = newMatrixIndex;
+    }
 
     const instanceData = this.instanceData.get(entityId);
     if (instanceData) {
       instanceData.matrixIndex = newMatrixIndex;
     }
 
-    const isMoving = movement.currentPathIndex !== -1 || movement.floatingHeight > 0;
+    const isMoving =
+      splineMovement !== undefined ||
+      Boolean(movement && (movement.currentPathIndex !== -1 || movement.floatingHeight > 0));
     this.setAnimationState(newMatrixIndex, isMoving);
   }
 

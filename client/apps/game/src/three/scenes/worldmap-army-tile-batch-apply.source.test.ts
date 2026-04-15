@@ -1,15 +1,17 @@
 // @vitest-environment node
 
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
+const readSource = (relativePath: string) =>
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), relativePath), "utf8");
 
 describe("Worldmap army tile batch authoritative apply", () => {
   it("applies occupancy removals before upserts", () => {
-    const source = readSource("src/three/scenes/worldmap.tsx");
+    const source = readSource("worldmap.tsx");
 
     const methodStart = source.indexOf("private applyResolvedArmyHexBatch(");
     expect(methodStart).toBeGreaterThan(-1);

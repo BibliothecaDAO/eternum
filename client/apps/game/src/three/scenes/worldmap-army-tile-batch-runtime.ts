@@ -1,27 +1,4 @@
-import type { ExplorerTroopsTileSystemUpdate } from "@bibliothecadao/eternum";
 import type { HexPosition, ID } from "@bibliothecadao/types";
-
-export interface PendingArmyTileBatchEntry {
-  entityId: ID;
-  latestLiveUpdate?: ExplorerTroopsTileSystemUpdate;
-  latestRemovedUpdate?: ExplorerTroopsTileSystemUpdate;
-}
-
-export interface ResolvedArmyTileBatchLiveUpdate {
-  entityId: ID;
-  update: ExplorerTroopsTileSystemUpdate;
-}
-
-export interface ResolvedArmyTileBatchRemoval {
-  entityId: ID;
-  update: ExplorerTroopsTileSystemUpdate;
-}
-
-export interface ResolvedArmyTileBatch {
-  liveUpdates: ResolvedArmyTileBatchLiveUpdate[];
-  removals: ResolvedArmyTileBatchRemoval[];
-  hasWork: boolean;
-}
 
 export interface ArmyHexBatchMutation {
   entityId: ID;
@@ -44,52 +21,6 @@ export interface ArmyHexBatchApplyPlan {
     ownerAddress: bigint;
     ownerStructureId?: ID | null;
   }>;
-}
-
-export function enqueueArmyTileBatchUpdate(
-  pendingEntries: Map<ID, PendingArmyTileBatchEntry>,
-  update: ExplorerTroopsTileSystemUpdate,
-): void {
-  const entry = pendingEntries.get(update.entityId) ?? { entityId: update.entityId };
-
-  if (update.removed) {
-    entry.latestRemovedUpdate = update;
-  } else {
-    entry.latestLiveUpdate = update;
-  }
-
-  pendingEntries.set(update.entityId, entry);
-}
-
-export function resolveArmyTileBatch(entries: Iterable<PendingArmyTileBatchEntry>): ResolvedArmyTileBatch {
-  const liveUpdates: ResolvedArmyTileBatchLiveUpdate[] = [];
-  const removals: ResolvedArmyTileBatchRemoval[] = [];
-
-  for (const entry of entries) {
-    if (entry.latestLiveUpdate) {
-      liveUpdates.push({
-        entityId: entry.entityId,
-        update: entry.latestLiveUpdate,
-      });
-      continue;
-    }
-
-    if (entry.latestRemovedUpdate) {
-      removals.push({
-        entityId: entry.entityId,
-        update: entry.latestRemovedUpdate,
-      });
-    }
-  }
-
-  liveUpdates.sort((left, right) => Number(left.entityId) - Number(right.entityId));
-  removals.sort((left, right) => Number(left.entityId) - Number(right.entityId));
-
-  return {
-    liveUpdates,
-    removals,
-    hasWork: liveUpdates.length > 0 || removals.length > 0,
-  };
 }
 
 export function resolveArmyHexBatchApplyPlan(mutations: ArmyHexBatchMutation[]): ArmyHexBatchApplyPlan {
