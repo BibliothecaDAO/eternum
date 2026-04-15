@@ -202,7 +202,7 @@ import {
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
-import { findSupersededArmyRemoval, isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
+import { isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
@@ -1192,11 +1192,6 @@ export default class WorldmapScene extends WarpTravel {
           });
           return;
         }
-
-        this.resolveSupersededPendingArmyRemoval(update.entityId, update.ownerAddress, {
-          col: normalizedPos.x,
-          row: normalizedPos.y,
-        });
 
         this.updateArmyHexes(update);
         this.resolvePendingCreateArmyFxOnArmyUpdate(update);
@@ -3665,35 +3660,6 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyRemovalMeta.delete(entityId);
     this.armyStructureOwners.delete(entityId);
     this.clearPendingArmyMovement(entityId);
-  }
-
-  private resolveSupersededPendingArmyRemoval(
-    incomingEntityId: ID,
-    incomingOwnerAddress: bigint | undefined,
-    incomingPosition: HexPosition,
-  ): void {
-    const pending = Array.from(this.pendingArmyRemovalMeta.entries()).map(([entityId, meta]) => ({
-      entityId,
-      scheduledAt: meta.scheduledAt,
-      chunkKey: meta.chunkKey,
-      reason: meta.reason,
-      ownerAddress: meta.ownerAddress,
-      position: meta.position,
-    }));
-
-    const supersededEntityId = findSupersededArmyRemoval({
-      incomingEntityId,
-      incomingOwnerAddress,
-      incomingPosition,
-      pending,
-    });
-
-    if (supersededEntityId === undefined) {
-      return;
-    }
-
-    this.cancelPendingArmyRemoval(supersededEntityId);
-    this.deleteArmy(supersededEntityId, { playDefeatFx: false });
   }
 
   private scheduleArmyRemoval(
