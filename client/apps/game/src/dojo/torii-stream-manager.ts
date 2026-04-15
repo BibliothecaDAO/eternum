@@ -172,7 +172,9 @@ export class ToriiStreamManager {
 
     this.switchQueue = task.then(
       () => undefined,
-      () => undefined,
+      (error) => {
+        console.warn("[ToriiStreamManager] Bounds switch failed in queue", error);
+      },
     );
     this.pendingSwitch = task;
 
