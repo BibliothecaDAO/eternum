@@ -19,7 +19,7 @@ describe("ArmyManager movement start wiring", () => {
   it("fires movement-start listeners from the renderer-owned move path", () => {
     const source = readSource();
 
-    expect(source).toContain("this.runMovementStartListeners(numericEntityId)");
+    expect(source).toContain("this.runMovementStartListeners(input.numericEntityId)");
     expect(source).toContain("this.armyModel.startMovement");
   });
 });

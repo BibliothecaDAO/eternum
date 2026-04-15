@@ -211,6 +211,7 @@ export class ArmyManager {
   private deferredArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
+  private moveApplyVersionByEntity: Map<ID, number> = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
   private suppressedArmies: Set<ID> = new Set();
@@ -1772,10 +1773,12 @@ export class ArmyManager {
     if (!armyData) return;
 
     const numericEntityId = this.toNumericId(entityId);
-    const startPos = armyData.hexCoords.getNormalized();
+    const sourceHexCoords = armyData.hexCoords;
+    const startPos = sourceHexCoords.getNormalized();
     const targetPos = hexCoords.getNormalized();
 
     if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
+    const moveApplyVersion = this.beginMoveApply(entityId);
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
@@ -1789,71 +1792,136 @@ export class ArmyManager {
     }
 
     const workerPath = shouldUseWorkerPath
-      ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
+      ? await gameWorkerManager.findPath(sourceHexCoords, hexCoords, maxHex)
       : null;
-    const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
+    const path = resolveMovementPath(sourceHexCoords, hexCoords, workerPath);
 
-    // Convert path to world positions
-    const worldPath = path.map((pos) => this.getArmyWorldPositionInto(new Vector3(), pos));
-
-    // Track source bucket so army remains visible during movement animation.
-    // The spatial index will have the army in BOTH source and destination buckets
-    // until movement completes.
-    const sourceNorm = armyData.hexCoords.getNormalized();
-    const sourceBucketKey = this.getSpatialKey(sourceNorm.x, sourceNorm.y);
-    const destNorm = hexCoords.getNormalized();
-    const destBucketKey = this.getSpatialKey(destNorm.x, destNorm.y);
-
-    // Only track source if buckets are different
-    if (sourceBucketKey !== destBucketKey) {
-      this.movingArmySourceBuckets.set(entityId, {
-        bucketKey: sourceBucketKey,
-        col: sourceNorm.x,
-        row: sourceNorm.y,
-      });
-    }
-
-    // Add to destination bucket (keep in source bucket too - updateSpatialIndex modified below)
-    this.addToSpatialBucket(entityId, hexCoords);
-    this.armies.set(entityId, { ...armyData, hexCoords });
-
-    const matrixIndex = armyData.matrixIndex;
-    if (matrixIndex === undefined) {
-      this.armyPaths.delete(entityId);
-      this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-      // Clean up source bucket tracking since movement won't actually happen
-      this.cleanupMovementSourceBucket(entityId);
-      await this.renderArmyIntoCurrentChunkIfVisible(entityId);
-      this.runMovementStartListeners(numericEntityId);
-      this.runMovementCompleteListeners(numericEntityId);
-      return;
-    }
-
-    this.armyPaths.set(entityId, path);
-
-    this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
-      // Guard: if the army was removed during movement, skip all callbacks
-      // to prevent re-adding to spatial buckets that were already cleaned up
-      if (!this.armies.has(entityId)) return;
-      this.armyPaths.delete(entityId);
-      // Remove from source bucket now that movement is complete
-      this.cleanupMovementSourceBucket(entityId);
-      // Remove path visualization
-      this.pathRenderer.removePath(numericEntityId);
-      this.runMovementCompleteListeners(numericEntityId);
+    await this.applyMovementWithLatestPresentationState({
+      entityId,
+      numericEntityId,
+      moveApplyVersion,
+      latestTargetHexCoords: hexCoords,
+      path,
+      sourceHexCoords,
     });
-
-    // Start movement in ArmyModel with troop information
-    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
-    this.runMovementStartListeners(numericEntityId);
-
-    // Create path visualization with player-specific color
-    const colorProfile = this.getArmyColorProfile(armyData);
-    const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
-    this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
     // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
+  }
+
+  private beginMoveApply(entityId: ID): number {
+    const nextVersion = (this.moveApplyVersionByEntity.get(entityId) ?? 0) + 1;
+    this.moveApplyVersionByEntity.set(entityId, nextVersion);
+    return nextVersion;
+  }
+
+  private isCurrentMoveApply(entityId: ID, version: number): boolean {
+    return this.moveApplyVersionByEntity.get(entityId) === version;
+  }
+
+  private resolvePostPathMovementState(entityId: ID): ArmyData | undefined {
+    return this.armies.get(entityId);
+  }
+
+  private async applyMovementWithLatestPresentationState(input: {
+    entityId: ID;
+    numericEntityId: number;
+    moveApplyVersion: number;
+    latestTargetHexCoords: Position;
+    path: Position[];
+    sourceHexCoords: Position;
+  }): Promise<void> {
+    if (!this.isCurrentMoveApply(input.entityId, input.moveApplyVersion)) {
+      return;
+    }
+
+    const latestArmy = this.resolvePostPathMovementState(input.entityId);
+    if (!latestArmy) {
+      return;
+    }
+
+    const worldPath = input.path.map((pos) => this.getArmyWorldPositionInto(new Vector3(), pos));
+    const matrixIndex = latestArmy.matrixIndex;
+    this.cleanupMovementSourceBucket(input.entityId);
+
+    if (matrixIndex === undefined) {
+      await this.applySlotlessMovementRecovery({
+        entityId: input.entityId,
+        latestArmy,
+        moveApplyVersion: input.moveApplyVersion,
+        numericEntityId: input.numericEntityId,
+        sourceHexCoords: input.sourceHexCoords,
+        targetHexCoords: input.latestTargetHexCoords,
+      });
+      return;
+    }
+
+    this.trackAnimatedMovementSourceBucket(input.entityId, input.sourceHexCoords, input.latestTargetHexCoords);
+    this.addToSpatialBucket(input.entityId, input.latestTargetHexCoords);
+    this.armies.set(input.entityId, {
+      ...latestArmy,
+      hexCoords: input.latestTargetHexCoords,
+    });
+    this.armyPaths.set(input.entityId, input.path);
+
+    this.armyModel.setMovementCompleteCallback(input.numericEntityId, () => {
+      // Guard: if the army was removed during movement, skip all callbacks
+      // to prevent re-adding to spatial buckets that were already cleaned up
+      if (!this.armies.has(input.entityId)) return;
+      this.armyPaths.delete(input.entityId);
+      this.cleanupMovementSourceBucket(input.entityId);
+      this.pathRenderer.removePath(input.numericEntityId);
+      this.runMovementCompleteListeners(input.numericEntityId);
+    });
+
+    this.armyModel.startMovement(input.numericEntityId, worldPath, matrixIndex, latestArmy.category, latestArmy.tier);
+    this.runMovementStartListeners(input.numericEntityId);
+
+    const colorProfile = this.getArmyColorProfile(latestArmy);
+    const displayState = this.selectedArmyForPath === input.entityId ? "selected" : "moving";
+    this.pathRenderer.createPath(input.numericEntityId, worldPath, colorProfile.primary, displayState);
+  }
+
+  private trackAnimatedMovementSourceBucket(entityId: ID, sourceHexCoords: Position, targetHexCoords: Position): void {
+    const sourceNorm = sourceHexCoords.getNormalized();
+    const sourceBucketKey = this.getSpatialKey(sourceNorm.x, sourceNorm.y);
+    const destNorm = targetHexCoords.getNormalized();
+    const destBucketKey = this.getSpatialKey(destNorm.x, destNorm.y);
+
+    if (sourceBucketKey === destBucketKey) {
+      return;
+    }
+
+    this.movingArmySourceBuckets.set(entityId, {
+      bucketKey: sourceBucketKey,
+      col: sourceNorm.x,
+      row: sourceNorm.y,
+    });
+  }
+
+  private async applySlotlessMovementRecovery(input: {
+    entityId: ID;
+    latestArmy: ArmyData;
+    moveApplyVersion: number;
+    numericEntityId: number;
+    sourceHexCoords: Position;
+    targetHexCoords: Position;
+  }): Promise<void> {
+    this.atomicSpatialTransfer(input.entityId, input.sourceHexCoords, input.targetHexCoords);
+    this.armies.set(input.entityId, {
+      ...input.latestArmy,
+      hexCoords: input.targetHexCoords,
+    });
+    this.armyPaths.delete(input.entityId);
+    this.armyModel.setMovementCompleteCallback(input.numericEntityId, undefined);
+    await this.renderArmyIntoCurrentChunkIfVisible(input.entityId);
+
+    if (!this.isCurrentMoveApply(input.entityId, input.moveApplyVersion)) {
+      return;
+    }
+
+    this.runMovementStartListeners(input.numericEntityId);
+    this.runMovementCompleteListeners(input.numericEntityId);
   }
 
   /**
@@ -1902,6 +1970,7 @@ export class ArmyManager {
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
     this.runMovementCompleteListeners(numericEntityId);
     this.lastKnownVisibleHexes.delete(entityId);
+    this.moveApplyVersionByEntity.delete(entityId);
 
     // Remove path visualization
     this.pathRenderer.removePath(numericEntityId);
@@ -3026,6 +3095,7 @@ ${
 
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
+    this.moveApplyVersionByEntity.clear();
     this.suppressedArmies.clear();
     this.chunkToArmies.clear();
     this.movementStartListeners.clear();

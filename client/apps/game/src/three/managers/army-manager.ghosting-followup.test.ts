@@ -40,15 +40,17 @@ describe("army ghosting follow-up wiring", () => {
   it("moveArmy attempts immediate render recovery when the army has no visible slot", () => {
     const src = readSource("army-manager.ts");
 
-    const methodStart = src.indexOf("public async moveArmy");
-    expect(methodStart).toBeGreaterThan(-1);
+    const applyMethodStart = src.indexOf("private async applyMovementWithLatestPresentationState(");
+    const recoveryMethodStart = src.indexOf("private async applySlotlessMovementRecovery(");
+    expect(applyMethodStart).toBeGreaterThan(-1);
+    expect(recoveryMethodStart).toBeGreaterThan(-1);
 
-    const methodBody = src.slice(methodStart, methodStart + 3200);
-    const slotlessBranchPos = methodBody.indexOf("if (matrixIndex === undefined)");
-    const renderPos = methodBody.indexOf("await this.renderArmyIntoCurrentChunkIfVisible(entityId)");
+    const applyMethodBody = src.slice(applyMethodStart, applyMethodStart + 2600);
+    const recoveryMethodBody = src.slice(recoveryMethodStart, recoveryMethodStart + 1400);
+    const slotlessBranchPos = applyMethodBody.indexOf("await this.applySlotlessMovementRecovery({");
+    const renderPos = recoveryMethodBody.indexOf("await this.renderArmyIntoCurrentChunkIfVisible(input.entityId)");
 
     expect(slotlessBranchPos).toBeGreaterThan(-1);
     expect(renderPos).toBeGreaterThan(-1);
-    expect(renderPos).toBeGreaterThan(slotlessBranchPos);
   });
 });
