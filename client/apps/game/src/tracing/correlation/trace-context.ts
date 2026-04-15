@@ -273,4 +273,3 @@ class TraceContextManager {
 }
 
 export const traceContextManager = TraceContextManager.getInstance();
-

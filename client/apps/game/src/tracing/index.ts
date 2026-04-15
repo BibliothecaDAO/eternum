@@ -57,4 +57,3 @@ export async function cleanupTracing(): Promise<void> {
   await shutdownTracing();
   console.log("🔍 Tracing system cleaned up");
 }
-

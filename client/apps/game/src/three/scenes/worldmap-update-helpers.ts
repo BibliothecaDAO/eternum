@@ -25,4 +25,3 @@ export function processExplorerTroopsUpdate(
   handlers.updateArmyHexes(update);
   handlers.updateArmyFromExplorerTroopsUpdate(update);
 }
-

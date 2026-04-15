@@ -24,10 +24,7 @@ function hasTokenBoundaryMatch(name: string, pattern: string): boolean {
   return false;
 }
 
-export function findAnimationByName(
-  animations: AnimationClip[],
-  patterns: string[],
-): AnimationClip | undefined {
+export function findAnimationByName(animations: AnimationClip[], patterns: string[]): AnimationClip | undefined {
   const lowerPatterns = patterns.map((pattern) => pattern.toLowerCase());
 
   return animations.find((clip) => {
@@ -35,4 +32,3 @@ export function findAnimationByName(
     return lowerPatterns.some((pattern) => hasTokenBoundaryMatch(lowerName, pattern));
   });
 }
-

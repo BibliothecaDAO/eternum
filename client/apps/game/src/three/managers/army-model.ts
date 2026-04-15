@@ -353,12 +353,9 @@ export class ArmyModel {
     // Name-based animation lookup with fallbacks
     const idleClip = findAnimationByName(gltf.animations, ["idle", "stand", "rest"]) ?? gltf.animations[0];
     const runClip =
-      findAnimationByName(gltf.animations, ["run", "walk", "moving"]) ??
-      gltf.animations[1] ??
-      idleClip?.clone();
+      findAnimationByName(gltf.animations, ["run", "walk", "moving"]) ?? gltf.animations[1] ?? idleClip?.clone();
     const attackClip = findAnimationByName(gltf.animations, ["attack", "strike", "combat"]);
     const deathClip = findAnimationByName(gltf.animations, ["death", "die", "dead", "defeat"]);
-
 
     return {
       group,

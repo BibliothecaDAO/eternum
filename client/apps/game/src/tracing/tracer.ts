@@ -292,11 +292,7 @@ function createChildSpan(name: string, attributes?: Attributes): Span {
 }
 
 // Utility function to measure async operations
-async function measureAsync<T>(
-  name: string,
-  operation: () => Promise<T>,
-  attributes?: Attributes,
-): Promise<T> {
+async function measureAsync<T>(name: string, operation: () => Promise<T>, attributes?: Attributes): Promise<T> {
   return withSpan(
     name,
     async (span) => {
