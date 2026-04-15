@@ -372,18 +372,22 @@ export class ArmyManager {
 
   private scheduleTickCheck() {
     this.tickCheckTimeout = setTimeout(() => {
-      const { currentArmiesTick } = getBlockTimestamp();
-      const tickRefresh = resolveArmyStaminaTickRefresh({
-        currentTick: currentArmiesTick,
-        previousTick: this.lastKnownArmiesTick,
-      });
-      if (tickRefresh.shouldRecompute) {
-        this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+      try {
+        const { currentArmiesTick } = getBlockTimestamp();
+        const tickRefresh = resolveArmyStaminaTickRefresh({
+          currentTick: currentArmiesTick,
+          previousTick: this.lastKnownArmiesTick,
+        });
+        if (tickRefresh.shouldRecompute) {
+          this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+        }
+        // Update stamina and battle timers every second
+        this.recomputeStaminaForAllArmies();
+        this.recomputeBattleTimersForAllArmies();
+      } catch (err) {
+        console.error("[stamina-debug] scheduleTickCheck crashed:", err);
       }
-      // Update stamina and battle timers every second
-      this.recomputeStaminaForAllArmies();
-      this.recomputeBattleTimersForAllArmies();
-      // Schedule the next check
+      // Always schedule next check even if current cycle threw
       this.scheduleTickCheck();
     }, 1000);
   }
@@ -2780,23 +2784,35 @@ ${
   }): { current: number; max: number; displayRatio: number } | null {
     const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
     const pendingStamina = getFreshPendingStaminaSource(input.entityId);
-    const staminaSnapshot = getExplorerStaminaSnapshot({
-      entityId: input.entityId,
-      currentArmiesTick,
-      liveTroops: this.resolveLiveExplorerTroops(input.entityId),
-      fallbackArmy: {
-        category: input.category,
-        tier: input.tier,
-        troopCount: input.troopCount,
+    const liveTroops = this.resolveLiveExplorerTroops(input.entityId);
+    let staminaSnapshot;
+    try {
+      staminaSnapshot = getExplorerStaminaSnapshot({
+        entityId: input.entityId,
+        currentArmiesTick,
+        liveTroops,
+        fallbackArmy: {
+          category: input.category,
+          tier: input.tier,
+          troopCount: input.troopCount,
+          onChainStamina: input.onChainStamina,
+        },
+        pendingStamina: pendingStamina
+          ? {
+              amount: pendingStamina.amount,
+              updatedTick: pendingStamina.updatedTick,
+            }
+          : null,
+      });
+    } catch (err) {
+      console.warn(`[stamina-debug] resolveArmyStaminaSnapshot threw for entity ${input.entityId}:`, err, {
+        currentArmiesTick,
         onChainStamina: input.onChainStamina,
-      },
-      pendingStamina: pendingStamina
-        ? {
-            amount: pendingStamina.amount,
-            updatedTick: pendingStamina.updatedTick,
-          }
-        : null,
-    });
+        hasLiveTroops: !!liveTroops,
+        liveTroopsUpdatedTick: liveTroops?.stamina?.updated_tick,
+      });
+      return null;
+    }
     if (!staminaSnapshot) {
       return null;
     }
@@ -2819,9 +2835,26 @@ ${
   /**
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
+  private _staminaDebugLogged = false;
   private recomputeStaminaForAllArmies(): void {
     // Update all army data in cache
     this.armies.forEach((army, entityId) => {
+      if (!this._staminaDebugLogged && this.armies.size > 0) {
+        const { currentArmiesTick } = useBlockTimestampStore.getState();
+        const liveTroops = this.resolveLiveExplorerTroops(entityId);
+        console.log(`[stamina-debug] first army recompute:`, {
+          entityId,
+          currentArmiesTick,
+          onChainStamina: { amount: String(army.onChainStamina.amount), updatedTick: army.onChainStamina.updatedTick },
+          currentStamina: army.currentStamina,
+          maxStamina: army.maxStamina,
+          hasLiveTroops: !!liveTroops,
+          liveTroopsStamina: liveTroops
+            ? { amount: String(liveTroops.stamina?.amount), updatedTick: String(liveTroops.stamina?.updated_tick) }
+            : null,
+        });
+        this._staminaDebugLogged = true;
+      }
       const staminaSnapshot = this.resolveArmyStaminaSnapshot({
         entityId,
         troopCount: army.troopCount,
