@@ -1392,6 +1392,7 @@ export class ArmyModel {
         elapsedTime: 0,
         arrivalSlamTimer: 0,
         isArrivalSlamming: false,
+        endpointCache: new Vector3(),
       });
     }
   }
@@ -1568,7 +1569,6 @@ export class ArmyModel {
   // Pre-allocated vectors for spline sampling (avoid GC pressure)
   private readonly splinePositionTarget: Vector3 = new Vector3();
   private readonly splineTangentTarget: Vector3 = new Vector3();
-  private readonly splineEndpointCache: Vector3 = new Vector3();
 
   private updateSplineMovement(
     splineData: SplineMovementData,
@@ -1656,8 +1656,8 @@ export class ArmyModel {
           .clone()
           .normalize();
         // Cache endpoint once for the entire settlement phase
-        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, this.splineEndpointCache);
-        instanceData.position.copy(this.splineEndpointCache);
+        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, splineData.endpointCache);
+        instanceData.position.copy(splineData.endpointCache);
       }
     }
 
@@ -1683,13 +1683,13 @@ export class ArmyModel {
           ArmyModel.OVERSHOOT_DISTANCE,
         );
         // Use cached endpoint — no recomputation
-        instanceData.position.copy(this.splineEndpointCache);
+        instanceData.position.copy(splineData.endpointCache);
         instanceData.position.x += splineData.finalTangent.x * offset;
         instanceData.position.z += splineData.finalTangent.z * offset;
       }
 
       if (splineData.settlementTimer >= ArmyModel.SETTLEMENT_DURATION) {
-        instanceData.position.copy(this.splineEndpointCache);
+        instanceData.position.copy(splineData.endpointCache);
         instanceData.scale.copy(this.normalScale);
         this.splineMovingInstances.delete(entityId);
         this.stopMovement(entityId);

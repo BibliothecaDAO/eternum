@@ -53,7 +53,7 @@ import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@b
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
 import {
-  applyAutoSettleRegistrationHint,
+  applyDashboardRegistrationHint,
   deriveSettlementPhaseViewModel,
   deriveSettlementStatus,
   hasReachedSettlementTarget,
@@ -864,8 +864,8 @@ interface GameEntryModalProps {
   chain: Chain;
   isSpectateMode?: boolean;
   autoSettleEnabled?: boolean;
-  /** Eternum entry intent: direct play or settlement flow */
-  eternumEntryIntent?: "play" | "settle";
+  /** Entry intent for route-owned landing entry */
+  entryIntent?: "play" | "settle";
   /** If true, skip settlement and just forge hyperstructures, then close */
   isForgeMode?: boolean;
   /** Number of hyperstructures left to forge (for forge mode) */
@@ -2964,7 +2964,7 @@ export const GameEntryModal = ({
   chain,
   isSpectateMode = false,
   autoSettleEnabled = false,
-  eternumEntryIntent = "play",
+  entryIntent = "play",
   isForgeMode = false,
   numHyperstructuresLeft: initialNumHyperstructuresLeft,
 }: GameEntryModalProps) => {
@@ -3010,7 +3010,7 @@ export const GameEntryModal = ({
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
   const unifiedSettlementPlannerEnabled = env.VITE_PUBLIC_ETERNUM_UNIFIED_SETTLEMENT_PLANNER;
-  const entryIntent = isForgeMode ? "forge" : isSpectateMode ? "spectate" : eternumEntryIntent;
+  const resolvedEntryIntent = isForgeMode ? "forge" : isSpectateMode ? "spectate" : entryIntent;
   const entryContext = useMemo(
     () =>
       resolveEntryContextFromLandingSelection({
@@ -3018,11 +3018,11 @@ export const GameEntryModal = ({
           name: worldName,
           chain,
         },
-        intent: entryIntent,
+        intent: resolvedEntryIntent,
         autoSettle: autoSettleEnabled,
         hyperstructuresLeft: initialNumHyperstructuresLeft ?? null,
       }),
-    [autoSettleEnabled, chain, entryIntent, initialNumHyperstructuresLeft, worldName],
+    [autoSettleEnabled, chain, resolvedEntryIntent, initialNumHyperstructuresLeft, worldName],
   );
   const [preflightError, setPreflightError] = useState<Error | null>(null);
   const [preflightRetryNonce, setPreflightRetryNonce] = useState(0);
@@ -3700,7 +3700,7 @@ export const GameEntryModal = ({
       hasVillageRevealResult: villageRevealResult != null,
       unifiedSettlementPlannerEnabled,
       hasSettledRealm,
-      eternumEntryIntent,
+      entryIntent,
       seasonSettlementComplete,
       eternumSettlementMode,
       hasVillagePass,
@@ -3744,7 +3744,7 @@ export const GameEntryModal = ({
       villageRevealResult,
       eternumSettlementMode,
       unifiedSettlementPlannerEnabled,
-      eternumEntryIntent,
+      entryIntent,
       seasonPlacement,
       seasonPlacementErrors,
       selectedSeasonPlacementIsOccupied,
@@ -3788,7 +3788,7 @@ export const GameEntryModal = ({
     villageRevealResult,
     eternumSettlementMode,
     unifiedSettlementPlannerEnabled,
-    eternumEntryIntent,
+    entryIntent,
     seasonPlacement,
     seasonPlacementErrors,
     selectedSeasonPlacementIsOccupied,
@@ -3806,9 +3806,9 @@ export const GameEntryModal = ({
     captureClientEvent("planner_opened", {
       worldName,
       chain,
-      entryIntent: eternumEntryIntent,
+      entryIntent,
     });
-  }, [phase, unifiedSettlementPlannerEnabled, worldName, chain, eternumEntryIntent]);
+  }, [phase, unifiedSettlementPlannerEnabled, worldName, chain, entryIntent]);
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
     if (!account?.address) return null;
@@ -3845,7 +3845,7 @@ export const GameEntryModal = ({
     const playerRegister = registerRows[0] ?? null;
     const settleFinish = settleFinishRows[0] ?? null;
 
-    return applyAutoSettleRegistrationHint({
+    return applyDashboardRegistrationHint({
       snapshot: {
         registered: playerRegister?.registered === true,
         onceRegistered: playerRegister?.once_registered === true,
@@ -3853,11 +3853,10 @@ export const GameEntryModal = ({
         coordsCount: parseSpanLength(settleFinish?.coords),
         settledCount: parseSpanLength(settleFinish?.structure_ids),
       },
-      autoSettleEnabled,
-      entryIntent: eternumEntryIntent,
-      hasAutoSettleEntry: autoSettleEntry != null,
+      entryIntent: resolvedEntryIntent,
+      hasDashboardRegistrationEntry: autoSettleEntry != null,
     });
-  }, [account, autoSettleEnabled, autoSettleEntry, eternumEntryIntent, selectedWorldSqlApi, selectedWorldSqlBaseUrl]);
+  }, [account, autoSettleEntry, resolvedEntryIntent, selectedWorldSqlApi, selectedWorldSqlBaseUrl]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -5221,12 +5220,12 @@ export const GameEntryModal = ({
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
     debugLog(worldName, "Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
-    const shouldAutoEnter = phase === "ready" && (!isEternumMode || eternumEntryIntent === "play");
+    const shouldAutoEnter = phase === "ready" && (!isEternumMode || entryIntent === "play");
     if (shouldAutoEnter) {
       debugLog(worldName, "Auto-entering game...");
       handleEnterGame();
     }
-  }, [phase, handleEnterGame, worldName, isSpectateMode, isEternumMode, eternumEntryIntent]);
+  }, [phase, handleEnterGame, worldName, isSpectateMode, isEternumMode, entryIntent]);
 
   debugLog(worldName, "Render - isOpen:", isOpen, "phase:", phase, "bootstrapStatus:", bootstrapStatus);
 
