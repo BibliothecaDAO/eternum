@@ -128,20 +128,20 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
       }),
     ]);
 
-  const timedOutPhase =
-    (tileFetchResult.status === "timed_out" && "tile_fetch") ||
-    (tileHydrationResult.status === "timed_out" && "tile_hydration") ||
-    (boundsReadyResult.status === "timed_out" && "bounds_ready") ||
-    (structureReadyResult.status === "timed_out" && "structure_hydration") ||
-    (assetPrewarmResult.status === "timed_out" && "asset_prewarm") ||
+  const failedPhase =
+    (tileFetchResult.status !== "resolved" && "tile_fetch") ||
+    (tileHydrationResult.status !== "resolved" && "tile_hydration") ||
+    (boundsReadyResult.status !== "resolved" && "bounds_ready") ||
+    (structureReadyResult.status !== "resolved" && "structure_hydration") ||
+    (assetPrewarmResult.status !== "resolved" && "asset_prewarm") ||
     undefined;
 
-  if (timedOutPhase) {
+  if (failedPhase) {
     input.onChunkReady?.(input.chunkKey);
     return {
       tileFetchSucceeded: false,
       preparedTerrain: null,
-      timedOutPhase,
+      timedOutPhase: failedPhase,
     };
   }
 

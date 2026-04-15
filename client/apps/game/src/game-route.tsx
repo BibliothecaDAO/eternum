@@ -2,7 +2,7 @@
  * Game route module - lazy loaded to avoid pulling heavy deps (World, Dojo, Three.js, etc.)
  * into the landing page bundle.
  */
-import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
+import { ChunkTransitionIndicator, ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
@@ -39,6 +39,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
         <TransactionListenerBridge />
         <TransactionNotification />
         <World backgroundImage={backgroundImage} />
+        <ChunkTransitionIndicator />
         <WorldLoading />
         <Toaster />
       </ErrorBoundary>

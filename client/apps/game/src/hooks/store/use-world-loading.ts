@@ -10,6 +10,7 @@ export enum LoadingStateKey {
   MarketHistory = "marketHistory",
   Leaderboard = "leaderboard",
   Quest = "quest",
+  ChunkTransition = "chunkTransition",
 }
 
 type LoadingState = {
@@ -30,6 +31,7 @@ export const createWorldStoreSlice = (set: any) => ({
     [LoadingStateKey.Leaderboard]: false,
     [LoadingStateKey.MarketHistory]: false,
     [LoadingStateKey.Quest]: false,
+    [LoadingStateKey.ChunkTransition]: false,
   },
 
   setLoading: (key: LoadingStateKey, value: boolean) =>
