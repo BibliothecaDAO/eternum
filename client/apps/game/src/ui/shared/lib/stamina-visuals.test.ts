@@ -89,7 +89,7 @@ describe("stamina visuals", () => {
     expect(display.displayCurrent).toBe(120);
   });
 
-  it("displayCurrent provides a rounded integer suitable for text display", () => {
+  it("keeps committed and projected stamina separate", () => {
     const display = buildProjectedStaminaDisplayModel({
       committedCurrent: 80,
       committedMax: 120,
@@ -114,10 +114,8 @@ describe("stamina visuals", () => {
       } as never,
     });
 
-    // displayCurrent should be ahead of committedCurrent (projected)
+    expect(display.committedCurrent).toBe(80);
     expect(display.displayCurrent).toBeGreaterThan(display.committedCurrent);
-    // Rounding it should give a clean integer for text display
-    expect(Math.round(display.displayCurrent)).toBeGreaterThanOrEqual(display.committedCurrent);
-    expect(Math.round(display.displayCurrent)).toBeLessThanOrEqual(display.committedMax);
+    expect(display.displayRatio).toBeGreaterThan(display.committedRatio);
   });
 });

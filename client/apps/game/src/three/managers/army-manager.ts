@@ -1,6 +1,8 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { getFreshPendingStaminaSource } from "@/lib/army-stamina/source-store";
 import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
+import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
@@ -27,8 +29,8 @@ import { Position } from "@bibliothecadao/eternum";
 import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
-import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
-import { ClientComponents, ContractAddress, ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Biome, configManager } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
@@ -2773,10 +2775,6 @@ ${
     return getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]))?.troops ?? null;
   }
 
-  /**
-   * Compute stamina for a single army. Reads live RECS troops as the single source of truth.
-   * Falls back to the cached onChainStamina only when the RECS component isn't hydrated yet.
-   */
   private resolveArmyStaminaSnapshot(input: {
     entityId: ID;
     troopCount: number;
@@ -2789,80 +2787,40 @@ ${
       return null;
     }
 
-    const liveTroops = this.resolveLiveExplorerTroops(input.entityId);
-    const troops = liveTroops && this.isValidTroops(liveTroops)
-      ? liveTroops
-      : this.buildMinimalTroops(input);
-
-    if (!troops) {
+    const pendingStamina = getFreshPendingStaminaSource(input.entityId);
+    const staminaSnapshot = getExplorerStaminaSnapshot({
+      entityId: input.entityId,
+      currentArmiesTick,
+      liveTroops: this.resolveLiveExplorerTroops(input.entityId),
+      fallbackArmy: {
+        category: input.category,
+        tier: input.tier,
+        troopCount: input.troopCount,
+        onChainStamina: input.onChainStamina,
+      },
+      pendingStamina: pendingStamina
+        ? {
+            amount: pendingStamina.amount,
+            updatedTick: pendingStamina.updatedTick,
+          }
+        : null,
+    });
+    if (!staminaSnapshot) {
       return null;
     }
 
-    try {
-      const stamina = StaminaManager.getStamina(troops, currentArmiesTick);
-      const current = Number(stamina.amount);
-      const max = StaminaManager.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier);
+    const staminaDisplay = buildProjectedStaminaDisplayModel({
+      committedCurrent: staminaSnapshot.current,
+      committedMax: staminaSnapshot.max,
+      armiesTickTimeRemaining,
+      currentArmiesTick,
+      troops: staminaSnapshot.troops,
+    });
 
-      if (!Number.isFinite(current) || !Number.isFinite(max)) {
-        return null;
-      }
-
-      const staminaDisplay = buildProjectedStaminaDisplayModel({
-        committedCurrent: current,
-        committedMax: max,
-        armiesTickTimeRemaining,
-        currentArmiesTick,
-        troops,
-      });
-
-      return {
-        current,
-        max,
-        displayRatio: staminaDisplay.displayRatio,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  private isValidTroops(troops: Troops): boolean {
-    return (
-      typeof troops.stamina?.amount === "bigint" &&
-      typeof troops.stamina?.updated_tick === "bigint" &&
-      typeof troops.count === "bigint" &&
-      typeof troops.category === "string" &&
-      troops.category !== ""
-    );
-  }
-
-  private buildMinimalTroops(input: {
-    category: TroopType;
-    tier: TroopTier;
-    troopCount: number;
-    onChainStamina: { amount: bigint; updatedTick: number };
-  }): Troops | null {
-    if (!Number.isFinite(input.onChainStamina.updatedTick)) {
-      return null;
-    }
     return {
-      category: input.category,
-      tier: input.tier,
-      count: BigInt(input.troopCount),
-      stamina: {
-        amount: input.onChainStamina.amount ?? 0n,
-        updated_tick: BigInt(input.onChainStamina.updatedTick),
-      },
-      boosts: {
-        incr_damage_dealt_percent_num: 0,
-        incr_damage_dealt_end_tick: 0,
-        decr_damage_gotten_percent_num: 0,
-        decr_damage_gotten_end_tick: 0,
-        incr_stamina_regen_percent_num: 0,
-        incr_stamina_regen_tick_count: 0,
-        incr_explore_reward_percent_num: 0,
-        incr_explore_reward_end_tick: 0,
-      },
-      battle_cooldown_end: 0,
+      current: staminaSnapshot.current,
+      max: staminaSnapshot.max,
+      displayRatio: staminaDisplay.displayRatio,
     };
   }
 

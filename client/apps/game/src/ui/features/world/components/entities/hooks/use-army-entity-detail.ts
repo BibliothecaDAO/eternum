@@ -1,16 +1,18 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { getFreshPendingStaminaSource, useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getCharacterName } from "@/utils/agent";
-import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
+import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
+import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ArmyInfo, ContractAddress, HexPosition, ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
@@ -47,6 +49,8 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const setAuthoritativeTroopsSnapshot = useArmyStaminaSourceStore((state) => state.setAuthoritativeTroopsSnapshot);
+  const pendingStamina = useArmyStaminaSourceStore((state) => state.pendingSources[String(armyEntityId)]);
   const liveExplorerTroops = useComponentValue(
     components.ExplorerTroops,
     getEntityIdFromKeys([BigInt(armyEntityId)]),
@@ -68,33 +72,33 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const explorer = explorerData?.explorer;
   const explorerResources = explorerData?.resources;
 
-  // Use live RECS troops as single source of truth, fall back to Torii query snapshot
-  const troops: Troops | null = useMemo(() => {
-    const candidate = liveExplorerTroops ?? explorer?.troops ?? null;
-    if (!candidate) return null;
-    // Validate — RECS can deliver objects with undefined interior fields for dead/zeroed armies
-    if (typeof candidate.stamina?.amount !== "bigint" || typeof candidate.stamina?.updated_tick !== "bigint") {
-      return null;
-    }
-    return candidate;
-  }, [liveExplorerTroops, explorer?.troops]);
+  useEffect(() => {
+    if (!explorer?.troops) return;
+
+    setAuthoritativeTroopsSnapshot({
+      entityId: armyEntityId,
+      source: "snapshot",
+      troops: explorer.troops,
+    });
+  }, [armyEntityId, explorer?.troops, setAuthoritativeTroopsSnapshot]);
 
   const staminaSnapshot = useMemo(() => {
-    if (!troops || !Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) return null;
-    try {
-      const stamina = StaminaManager.getStamina(troops, currentArmiesTick);
-      return {
-        current: Number(stamina.amount),
-        max: StaminaManager.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
-        stamina,
-        troops,
-      };
-    } catch {
-      return null;
-    }
-  }, [currentArmiesTick, troops]);
+    const freshPendingStamina = getFreshPendingStaminaSource(armyEntityId);
+    return getExplorerStaminaSnapshot({
+      entityId: armyEntityId,
+      currentArmiesTick,
+      snapshotTroops: explorer?.troops,
+      liveTroops: liveExplorerTroops,
+      pendingStamina: freshPendingStamina
+        ? {
+            amount: freshPendingStamina.amount,
+            updatedTick: freshPendingStamina.updatedTick,
+          }
+        : null,
+    });
+  }, [armyEntityId, currentArmiesTick, explorer?.troops, liveExplorerTroops, pendingStamina]);
 
-  const currentTroops = troops;
+  const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(
     () => (currentTroops ? getArmyRelicEffects(currentTroops, currentArmiesTick) : []),
     [currentArmiesTick, currentTroops],
