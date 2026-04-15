@@ -13,7 +13,7 @@ import {
   Vector3,
 } from "three";
 import { getRenderBounds } from "../utils/chunk-geometry";
-import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getWorldPositionForHex, hashCoordinates } from "../utils/utils";
 import { MANAGER_UNCOMMITTED_CHUNK, isCommittedManagerChunk } from "./manager-update-convergence";
 import type { ArrivalGhostClearReason, ArrivalGhostVisualStyle } from "./arrival-ghost-policy";
 

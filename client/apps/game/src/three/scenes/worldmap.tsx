@@ -1260,8 +1260,7 @@ export default class WorldmapScene extends WarpTravel {
           cancelPendingArmyRemoval: (entityId) => this.cancelPendingArmyRemoval(entityId),
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
-          updateArmyFromExplorerTroopsUpdate: (troopsUpdate) =>
-            this.armyManager.updateArmyFromExplorerTroopsUpdate(troopsUpdate),
+          updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
         });
       }),
     );
@@ -4073,7 +4072,9 @@ export default class WorldmapScene extends WarpTravel {
       currentChunk: this.currentChunk,
       isChunkTransitioning: this.isChunkTransitioning,
       isVisibleInCurrentChunk:
-        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
+        this.currentChunk !== "null" && !this.isChunkTransitioning
+          ? this.isColRowInCurrentRenderBounds(col, row)
+          : false,
     };
     const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
 
@@ -4168,7 +4169,7 @@ export default class WorldmapScene extends WarpTravel {
     this.invalidateAllChunkCachesContainingHex(col, row);
 
     // if the hex is within the chunk, add it to the interactive hex manager and to the biome
-    if (this.isColRowInVisibleChunk(col, row)) {
+    if (this.isColRowInCurrentRenderBounds(col, row)) {
       await this.updateHexagonGridPromise;
       const chunkWidth = this.renderChunkSize.width;
       const chunkHeight = this.renderChunkSize.height;
@@ -4237,6 +4238,13 @@ export default class WorldmapScene extends WarpTravel {
       );
       this.cacheMatricesForChunk(renderedChunkStartRow, renderedChunkStartCol, expectedExploredTerrainInstances);
     }
+  }
+
+  isColRowInCurrentRenderBounds(col: number, row: number) {
+    const startRow = parseInt(this.currentChunk.split(",")[0]);
+    const startCol = parseInt(this.currentChunk.split(",")[1]);
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
   }
 
   isColRowInVisibleChunk(col: number, row: number) {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as prefetchPlayAssetsModule from "./prefetch-play-assets";
 
 const stubBrowserPreloadGlobals = () => {
   vi.stubGlobal(
@@ -18,6 +19,16 @@ const stubBrowserPreloadGlobals = () => {
 };
 
 describe("prefetch-play-assets", () => {
+  let prefetchDashboardPlayAssets: typeof prefetchPlayAssetsModule.prefetchDashboardPlayAssets;
+  let prefetchPlayEntryAssets: typeof prefetchPlayAssetsModule.prefetchPlayEntryAssets;
+
+  beforeAll(async () => {
+    stubBrowserPreloadGlobals();
+    const module = await import("./prefetch-play-assets");
+    prefetchDashboardPlayAssets = module.prefetchDashboardPlayAssets;
+    prefetchPlayEntryAssets = module.prefetchPlayEntryAssets;
+  });
+
   beforeEach(() => {
     document.head.innerHTML = "";
     window.sessionStorage.clear();
@@ -25,8 +36,11 @@ describe("prefetch-play-assets", () => {
     stubBrowserPreloadGlobals();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("writes a dedicated dashboard session key and batches fetch assets before models and images", async () => {
-    const { prefetchDashboardPlayAssets } = await import("./prefetch-play-assets");
     vi.useFakeTimers();
 
     prefetchDashboardPlayAssets();
@@ -52,12 +66,9 @@ describe("prefetch-play-assets", () => {
       node.getAttribute("href"),
     );
     expect(allPrefetched.some((href) => href?.endsWith(".png") || href?.endsWith(".svg"))).toBe(true);
-
-    vi.useRealTimers();
   });
 
   it("writes a dedicated entry session key", async () => {
-    const { prefetchPlayEntryAssets } = await import("./prefetch-play-assets");
     vi.useFakeTimers();
 
     prefetchPlayEntryAssets();
@@ -65,12 +76,9 @@ describe("prefetch-play-assets", () => {
     expect(window.sessionStorage.getItem("playEntryAssetsPrefetched")).toBeNull();
     await vi.runAllTimersAsync();
     expect(window.sessionStorage.getItem("playEntryAssetsPrefetched")).toBe("true");
-
-    vi.useRealTimers();
   });
 
   it("does not duplicate work while a session prefetch is already in flight", async () => {
-    const { prefetchDashboardPlayAssets } = await import("./prefetch-play-assets");
     vi.useFakeTimers();
 
     prefetchDashboardPlayAssets();
@@ -81,12 +89,9 @@ describe("prefetch-play-assets", () => {
     const links = document.head.querySelectorAll('link[rel="prefetch"]');
     expect(links.length).toBeGreaterThan(0);
     expect(window.sessionStorage.getItem("playDashboardAssetsPrefetched")).toBe("true");
-
-    vi.useRealTimers();
   });
 
   it("is a no-op once the dashboard session key is set", async () => {
-    const { prefetchDashboardPlayAssets } = await import("./prefetch-play-assets");
     vi.useFakeTimers();
     window.sessionStorage.setItem("playDashboardAssetsPrefetched", "true");
 
@@ -94,12 +99,9 @@ describe("prefetch-play-assets", () => {
     await vi.runAllTimersAsync();
 
     expect(document.head.querySelectorAll('link[rel="prefetch"]')).toHaveLength(0);
-
-    vi.useRealTimers();
   });
 
   it("is a no-op once the entry session key is set", async () => {
-    const { prefetchPlayEntryAssets } = await import("./prefetch-play-assets");
     vi.useFakeTimers();
     window.sessionStorage.setItem("playEntryAssetsPrefetched", "true");
 
@@ -107,12 +109,9 @@ describe("prefetch-play-assets", () => {
     await vi.runAllTimersAsync();
 
     expect(document.head.querySelectorAll('link[rel="prefetch"]')).toHaveLength(0);
-
-    vi.useRealTimers();
   });
 
   it("does not duplicate prefetch links across repeated invocations", async () => {
-    const { prefetchDashboardPlayAssets } = await import("./prefetch-play-assets");
     vi.useFakeTimers();
 
     prefetchDashboardPlayAssets();
@@ -125,7 +124,5 @@ describe("prefetch-play-assets", () => {
     await vi.runAllTimersAsync();
 
     expect(document.head.querySelectorAll('link[rel="prefetch"]')).toHaveLength(firstCount);
-
-    vi.useRealTimers();
   });
 });
