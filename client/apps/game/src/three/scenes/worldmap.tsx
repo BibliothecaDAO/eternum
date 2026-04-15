@@ -34,6 +34,7 @@ import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager"
 import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
+import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { processExplorerTroopsUpdate } from "@/three/scenes/worldmap-update-helpers";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
@@ -3723,10 +3724,11 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);
+    const hasMovementInFlight = reason === "tile" && (hasPendingMovement || this.armyManager.isArmyMoving(entityId));
     // Tile removals wait longer (1500ms) to ensure movement updates arrive.
     // Zero troop removals wait briefly so death animations can be visible before cleanup.
     const baseDelay = reason === "tile" ? 1500 : 1000;
-    const initialDelay = hasPendingMovement ? 3000 : baseDelay;
+    const initialDelay = hasMovementInFlight ? 3000 : baseDelay;
     const retryDelay = 500;
     const maxPendingWaitMs = 10000;
 
