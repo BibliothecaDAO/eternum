@@ -146,6 +146,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
 
   const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
+  const structure = useComponentValue(
+    dojo.setup.components.Structure,
+    getEntityIdFromKeys([BigInt(entityId)]),
+  );
   const structureBuildings = useComponentValue(
     dojo.setup.components.StructureBuildings,
     getEntityIdFromKeys([BigInt(entityId)]),
@@ -197,6 +201,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     entityId,
     realm?.position?.x,
     realm?.position?.y,
+    structure?.base?.level,
     structureBuildings,
   ]);
   const hasAvailableBuildingTile = useMemo(() => {
@@ -227,6 +232,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     entityId,
     realm?.position?.x,
     realm?.position?.y,
+    structure?.base?.level,
     pendingBuilds,
     pendingDestroys,
     structureBuildings,
