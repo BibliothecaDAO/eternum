@@ -62,6 +62,12 @@ interface AnimatedInstancedMesh extends InstancedMesh {
   animated: boolean;
 }
 
+function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: MeshStandardMaterial, capacity: number) {
+  return Object.assign(new InstancedMesh(geometry, material, capacity), {
+    animated: false,
+  }) as AnimatedInstancedMesh;
+}
+
 // Number of time offset buckets for batched animation updates
 const ANIMATION_BUCKETS = 16;
 
@@ -125,7 +131,7 @@ export default class InstancedModel {
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
-        const tmp = new InstancedMesh(child.geometry, material, this.capacity) as AnimatedInstancedMesh;
+        const tmp = createAnimatedInstancedMesh(child.geometry, material, this.capacity);
         tmp.renderOrder = 10;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
