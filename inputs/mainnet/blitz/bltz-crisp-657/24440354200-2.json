@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "mainnet.blitz:bltz-crisp-657",
+  "launchRequestId": "24440354200-2",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "bltz-crisp-657",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-04-15T07:05:40.587Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 24440354200,
+    "workflowRunAttempt": 2,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/24440354200",
+    "ref": "next",
+    "sha": "9796588da3a5e8fae25b988697a881ec3ac3557b"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "mainnet.blitz",
+    "gameName": "bltz-crisp-657",
+    "startTime": "2026-04-15T11:00:00.000Z",
+    "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+    "factoryAddress": "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 3600,
+    "blitzRegistrationOverrides": {
+      "fee_amount": "500000000000000000000"
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 50
+  }
+}
