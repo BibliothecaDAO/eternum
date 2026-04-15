@@ -1,22 +1,20 @@
 import { useEffect } from "react";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useAccount } from "@starknet-react/core";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import type { LandingEntryRouteState } from "@/ui/features/landing/lib/landing-entry-state";
+import type { LandingEntryRouteState as SignInRedirectState } from "@/ui/features/landing/lib/landing-entry-state";
 import { Controller } from "@/ui/modules/controller/controller";
 import { ModalContainer } from "@/ui/shared";
 import { useLocation, useNavigate } from "react-router-dom";
 
 interface SignInPromptModalProps {
   redirectTo?: string;
-  redirectState?: LandingEntryRouteState;
+  redirectState?: SignInRedirectState;
 }
 
 export const SignInPromptModal = ({ redirectTo, redirectState }: SignInPromptModalProps) => {
   const setModal = useUIStore((state) => state.setModal);
   const account = useAccountStore((state) => state.account);
-  const { isConnected } = useAccount();
   const navigate = useNavigate();
   const location = useLocation();
   const resolvedRedirectTo = redirectTo ?? `${location.pathname}${location.search}`;
@@ -26,13 +24,13 @@ export const SignInPromptModal = ({ redirectTo, redirectState }: SignInPromptMod
   };
 
   useEffect(() => {
-    if (!account && !isConnected) {
+    if (!account?.address) {
       return;
     }
 
     setModal(null, false);
     navigate(resolvedRedirectTo, { replace: true, state: redirectState });
-  }, [account, isConnected, navigate, redirectState, resolvedRedirectTo, setModal]);
+  }, [account?.address, navigate, redirectState, resolvedRedirectTo, setModal]);
 
   return (
     <ModalContainer>

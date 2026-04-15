@@ -1,11 +1,14 @@
 import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
+const DEFAULT_CHAIN = "slot";
 const DEFAULT_SCENES = ["map", "hex"];
+const DEFAULT_WORLD_NAME = "eternum-blitz-slot-4";
 const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl", "bloom"]);
 const VALID_SCENES = new Set(["map", "hex", "travel"]);
-const DEFAULT_WAIT_MS = 2500;
+const DEFAULT_WAIT_MS = 10000;
 
 export const GLOW_REPRO_SCENES = ["map", "travel"];
 export const GLOW_REPRO_TARGETS = [
@@ -33,16 +36,18 @@ export function normalizeSceneList(value) {
   return scenes;
 }
 
-export function buildSceneSmokeUrl({ baseUrl, rendererMode, scene }) {
+export function buildSceneSmokeUrl({
+  baseUrl,
+  chain = DEFAULT_CHAIN,
+  rendererMode,
+  scene,
+  worldName = DEFAULT_WORLD_NAME,
+}) {
   const url = new URL(baseUrl);
-  url.pathname = `/play/${scene}`;
+  url.pathname = `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`;
   url.searchParams.set("col", "0");
   url.searchParams.set("row", "0");
-
-  if (scene !== "hex") {
-    url.searchParams.set("spectate", "true");
-  }
-
+  url.searchParams.set("spectate", "true");
   url.searchParams.set("rendererMode", rendererMode);
 
   return url.toString();
@@ -119,6 +124,10 @@ function readOption(args, name, fallback) {
   return args[index + 1] ?? fallback;
 }
 
+export function resolveAgentBrowserWorkingDirectory(env = process.env) {
+  return env.RUNNER_TEMP || env.TMPDIR || tmpdir();
+}
+
 function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
   const baseArgs = ["-y", "agent-browser", "--session", session];
   if (headed) {
@@ -126,6 +135,7 @@ function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
   }
 
   const result = spawnSync("npx", [...baseArgs, ...commandArgs], {
+    cwd: resolveAgentBrowserWorkingDirectory(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -144,9 +154,9 @@ function parseErrorLines(raw) {
     .filter(Boolean);
 }
 
-function runSceneSmoke({ baseUrl, headed, rendererMode, scene, waitMs }) {
+function runSceneSmoke({ baseUrl, chain, headed, rendererMode, scene, waitMs, worldName }) {
   const session = `renderer-smoke-${scene}-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}`;
-  const url = buildSceneSmokeUrl({ baseUrl, rendererMode, scene });
+  const url = buildSceneSmokeUrl({ baseUrl, chain, rendererMode, scene, worldName });
 
   runAgentBrowser(session, ["open", url, "--ignore-https-errors"], { headed });
   runAgentBrowser(session, ["wait", String(waitMs)]);
@@ -163,7 +173,7 @@ function runSceneSmoke({ baseUrl, headed, rendererMode, scene, waitMs }) {
   const evaluation = evaluateSceneSmokeResult({
     canvasExists,
     errors,
-    expectedPathname: `/play/${scene}`,
+    expectedPathname: `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`,
     openedUrl,
     unableToStartCount,
   });
@@ -185,18 +195,22 @@ function runSceneSmoke({ baseUrl, headed, rendererMode, scene, waitMs }) {
 
 function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
+  const chain = readOption(argv, "--chain", DEFAULT_CHAIN);
   const rendererMode = readOption(argv, "--renderer-mode", "experimental-webgpu-auto");
   const scenes = normalizeSceneList(readOption(argv, "--scenes", ""));
   const waitMs = Number(readOption(argv, "--wait-ms", String(DEFAULT_WAIT_MS)));
+  const worldName = readOption(argv, "--world", DEFAULT_WORLD_NAME);
   const headed = readFlag(argv, "--headed");
 
   const results = scenes.map((scene) =>
     runSceneSmoke({
       baseUrl,
+      chain,
       headed,
       rendererMode,
       scene,
       waitMs,
+      worldName,
     }),
   );
 

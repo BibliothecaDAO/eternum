@@ -105,21 +105,3 @@ export const debouncedGetBuildingsFromTorii = async <S extends Schema>(
     onComplete?.();
   }
 };
-
-const debouncedGetTilesForPositionsFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  positions: HexPosition[],
-  onComplete?: () => void,
-) => {
-  try {
-    await subscriptionQueue.add(async () => {
-      await getTilesForPositionsFromTorii(client, components, positions);
-      return;
-    }, onComplete);
-  } catch (error) {
-    console.error("Error in debouncedGetTilesForPositionsFromTorii:", error);
-    // Make sure onComplete is called even if there's an error
-    onComplete?.();
-  }
-};

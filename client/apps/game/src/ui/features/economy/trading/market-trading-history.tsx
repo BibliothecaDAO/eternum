@@ -3,7 +3,7 @@ import { sqlApi } from "@/services/api";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { SelectResource } from "@/ui/design-system/molecules/select-resource";
-import { TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/features/economy/trading";
+import { TradeHistoryEvent, TradeHistoryRowHeader } from "./trade-history-event";
 import { useDojo } from "@bibliothecadao/react";
 import { TradeEvent } from "@bibliothecadao/torii";
 import { memo, useEffect, useMemo, useState } from "react";

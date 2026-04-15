@@ -88,7 +88,7 @@ export const DashboardNetworkSwitch = ({ className }: { className?: string }) =>
 
   const handleSelectChain = useCallback(
     async (nextChain: LandingNetworkChain) => {
-      if (nextChain === preferredChain || pendingChain) {
+      if (nextChain === displayedPreferredChain || pendingChain) {
         return;
       }
 
@@ -105,7 +105,7 @@ export const DashboardNetworkSwitch = ({ className }: { className?: string }) =>
         setPendingChain(null);
       }
     },
-    [hasConnectedWallet, pendingChain, preferredChain, selectPreferredChain, switchToPreferredChain],
+    [displayedPreferredChain, hasConnectedWallet, pendingChain, selectPreferredChain, switchToPreferredChain],
   );
 
   return (

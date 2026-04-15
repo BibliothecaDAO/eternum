@@ -77,6 +77,14 @@ const buildTroopSnapshot = (troops: Troops) => ({
   battle_cooldown_end: troops.battle_cooldown_end || 0,
 });
 
+const buildProjectedTroopSnapshot = (
+  troops: Troops,
+  stamina: { amount: bigint; updated_tick: bigint } = troops.stamina || { amount: 0n, updated_tick: 0n },
+) => ({
+  ...buildTroopSnapshot(troops),
+  stamina,
+});
+
 const toRelicResourceIds = (effects: RelicEffectWithEndTick[]): ResourcesIds[] =>
   effects.map((effect) => Number(effect.id)) as ResourcesIds[];
 
@@ -176,16 +184,28 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     if (attackerType === AttackerType.Structure) {
       const guard = structureGuards[0];
       if (!guard) return null;
-      return { troops: buildTroopSnapshot(guard.troops) };
+      return {
+        troops: buildProjectedTroopSnapshot(guard.troops, {
+          amount: attackerStamina,
+          updated_tick: BigInt(currentArmiesTick),
+        }),
+      };
     }
 
     const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attacker.id)]));
-    return army ? { troops: buildTroopSnapshot(army.troops) } : null;
-  }, [attackerType, structureGuards, ExplorerTroops, attacker.id]);
+    return army
+      ? {
+          troops: buildProjectedTroopSnapshot(army.troops, {
+            amount: attackerStamina,
+            updated_tick: BigInt(currentArmiesTick),
+          }),
+        }
+      : null;
+  }, [ExplorerTroops, attacker.id, attackerStamina, attackerType, currentArmiesTick, structureGuards]);
 
   const targetTroopSnapshots = useMemo(() => {
     if (!targetData?.info) return [];
-    return targetData.info.map((info) => buildTroopSnapshot(info));
+    return targetData.info.map((info) => buildProjectedTroopSnapshot(info, info.stamina));
   }, [targetData]);
 
   const isStructureTarget = targetData?.targetType === TargetType.Structure;

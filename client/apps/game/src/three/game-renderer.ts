@@ -329,32 +329,26 @@ export default class GameRenderer {
 
     this.isDestroyed = true;
 
-    try {
-      destroyRendererRuntime({
-        backend: this.backend,
-        cleanupIntervals: this.cleanupIntervals,
-        controls: this.controls,
-        effectsBridgeRuntime: this.supportRuntimeRegistry.getEffectsBridge(),
-        guiFolders: this.guiFolders ?? [],
-        handleWindowResize: this.handleWindowResize,
-        interactionRuntime: this.interactionRuntime,
-        labelRuntime: this.labelRuntime,
-        monitoringRuntime: this.supportRuntimeRegistry.getMonitoring(),
-        removeWindowListener: (type, listener) => window.removeEventListener(type, listener),
-        renderer: this.renderer,
-        routeRuntime: this.supportRuntimeRegistry.getRoute(),
-        scenes: {
-          fastTravelScene: this.fastTravelScene,
-          hexceptionScene: this.hexceptionScene,
-          hudScene: this.hudScene,
-          worldmapScene: this.worldmapScene,
-        },
-        transitionManager: this.transitionManager,
-      });
-
-      console.log("GameRenderer: Destroyed and cleaned up successfully");
-    } catch (error) {
-      console.error("Error during GameRenderer cleanup:", error);
-    }
+    destroyRendererRuntime({
+      backend: this.backend,
+      cleanupIntervals: this.cleanupIntervals,
+      controls: this.controls,
+      effectsBridgeRuntime: this.supportRuntimeRegistry.getEffectsBridge(),
+      guiFolders: this.guiFolders ?? [],
+      handleWindowResize: this.handleWindowResize,
+      interactionRuntime: this.interactionRuntime,
+      labelRuntime: this.labelRuntime,
+      monitoringRuntime: this.supportRuntimeRegistry.getMonitoring(),
+      removeWindowListener: (type, listener) => window.removeEventListener(type, listener),
+      renderer: this.renderer,
+      routeRuntime: this.supportRuntimeRegistry.getRoute(),
+      scenes: {
+        fastTravelScene: this.fastTravelScene,
+        hexceptionScene: this.hexceptionScene,
+        hudScene: this.hudScene,
+        worldmapScene: this.worldmapScene,
+      },
+      transitionManager: this.transitionManager,
+    });
   }
 }

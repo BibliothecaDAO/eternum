@@ -6,6 +6,12 @@ import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
+import {
+  isStaminaRecharging,
+  STAMINA_RECHARGING_FILL_CLASS,
+  STAMINA_RECHARGING_TEXT_CLASS,
+  STAMINA_RECHARGING_TRACK_CLASS,
+} from "@/ui/shared/lib/stamina-visuals";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
@@ -119,7 +125,12 @@ const ArmyBannerEntityDetailContent = memo(
         <div className="flex flex-col gap-2">
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
-            <InlineStaminaBar stamina={derivedData.stamina} maxStamina={derivedData.maxStamina} />
+            <InlineStaminaBar
+              stamina={derivedData.stamina}
+              maxStamina={derivedData.maxStamina}
+              displayRatio={derivedData.staminaDisplay?.displayRatio}
+              isRecharging={derivedData.staminaDisplay?.isRecharging}
+            />
           ) : null}
         </div>
 
@@ -182,14 +193,23 @@ ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 const InlineStaminaBar = ({
   stamina,
   maxStamina,
+  displayRatio,
+  isRecharging,
 }: {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
+  displayRatio?: number;
+  isRecharging?: boolean | null;
 }) => {
   if (!stamina || maxStamina === 0) return null;
   const staminaValue = Number(stamina.amount);
   const percentage = (staminaValue / maxStamina) * 100;
+  const projectedPercentage = Math.max(
+    percentage,
+    Math.min(100, Math.max(0, (displayRatio ?? percentage / 100) * 100)),
+  );
   const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
+  const recharging = isRecharging ?? isStaminaRecharging(staminaValue, maxStamina);
 
   let fillClass = "bg-progress-bar-danger";
   if (staminaValue >= minTravelCost) {
@@ -199,14 +219,29 @@ const InlineStaminaBar = ({
 
   return (
     <div className="flex items-center gap-2 text-xxs text-gold/80">
-      <Lightning className="h-3 w-3 fill-order-power" />
-      <div className="flex-1 h-2 rounded-full border border-gray-600 overflow-hidden">
+      <Lightning className={cn("h-3 w-3 fill-order-power", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
+      <div
+        className={cn(
+          "flex-1 h-2 rounded-full border border-gray-600 overflow-hidden",
+          recharging && STAMINA_RECHARGING_TRACK_CLASS,
+        )}
+      >
         <div
-          className={`${fillClass} h-full rounded-full transition-all duration-300`}
+          className={cn(fillClass, "h-full rounded-full opacity-45 transition-all duration-300")}
           style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
         />
+        <div
+          className={cn(
+            fillClass,
+            "h-full rounded-full transition-all duration-1000 -mt-2",
+            recharging && STAMINA_RECHARGING_FILL_CLASS,
+          )}
+          style={{ width: `${projectedPercentage}%` }}
+        />
       </div>
-      <span className="whitespace-nowrap">{`${staminaValue}/${maxStamina}`}</span>
+      <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>
+        {`${staminaValue}/${maxStamina}`}
+      </span>
     </div>
   );
 };

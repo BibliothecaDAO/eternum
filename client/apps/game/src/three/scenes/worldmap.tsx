@@ -11,6 +11,7 @@ import {
 } from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -32,8 +33,10 @@ import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
-import { CameraView } from "@/three/scenes/hexagon-scene";
+import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
+import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { processExplorerTroopsUpdate } from "@/three/scenes/worldmap-update-helpers";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -1034,6 +1037,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
         this.clearPendingArmyMovement(plan.entityId);
+        useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
         this.disposePendingMovementVisualLifecycle(plan.entityId);
         this.arrivalGhostManager?.clearArrivalGhost(plan.entityId, "tx_failed");
       }
@@ -1252,16 +1256,12 @@ export default class WorldmapScene extends WarpTravel {
 
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-        this.incrementToriiBoundsCounter("explorerTroops");
-
-        if (update.troopCount <= 0) {
-          this.scheduleArmyRemoval(update.entityId, "zero");
-          return;
-        }
-
-        this.updateArmyHexes(update);
-        this.resolvePendingCreateArmyFxOnArmyUpdate(update);
-        this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
+        processExplorerTroopsUpdate(update, {
+          cancelPendingArmyRemoval: (entityId) => this.cancelPendingArmyRemoval(entityId),
+          scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
+          updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
+          updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+        });
       }),
     );
 
@@ -1759,6 +1759,18 @@ export default class WorldmapScene extends WarpTravel {
       snapshot.status === "zooming" ? "transitioning" : "idle";
     if (nextTransitionStatus !== this.lastPublishedZoomStatus) {
       this.lastPublishedZoomStatus = nextTransitionStatus;
+      // Show loading indicator during zoom transitions to mask chunk loading lag
+      if (nextTransitionStatus === "transitioning") {
+        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
+      } else {
+        // Delay clearing so the indicator covers the deferred chunk refresh work
+        // that fires immediately after zoom settles
+        setTimeout(() => {
+          if (!this.isChunkTransitioning) {
+            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
+          }
+        }, 300);
+      }
       this.worldmapCameraTransitionListeners.forEach((listener) => listener(nextTransitionStatus));
     }
   }
@@ -2448,9 +2460,19 @@ export default class WorldmapScene extends WarpTravel {
 
       // Monitor memory usage before army movement action
       this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
+      const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
+      if (selectedArmy) {
+        this.queuePendingMovementStamina({
+          entityId: selectedEntityId,
+          currentStamina: selectedArmy.currentStamina,
+          currentArmiesTick,
+          actionPath,
+          actionKind: isTravelAction ? "travel" : "explore",
+        });
+      }
 
       armyActionManager
-        .moveArmy(account!, actionPath, isTravelAction, getBlockTimestamp().currentArmiesTick)
+        .moveArmy(account!, actionPath, isTravelAction, currentArmiesTick)
         .then((result: any) => {
           // Track txHash → entityId so provider transactionFailed events can clear pending state
           const txHash = result?.transaction_hash;
@@ -2475,6 +2497,7 @@ export default class WorldmapScene extends WarpTravel {
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
           this.clearPendingArmyMovement(selectedEntityId);
+          useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
           this.arrivalGhostManager.clearArrivalGhost(selectedEntityId, "tx_failed");
           cleanup();
@@ -2720,6 +2743,27 @@ export default class WorldmapScene extends WarpTravel {
     this.schedulePendingArmyMovementFallback(entityId);
   }
 
+  private queuePendingMovementStamina(input: {
+    entityId: ID;
+    currentStamina: number;
+    currentArmiesTick: number;
+    actionPath: ActionPath[];
+    actionKind: "travel" | "explore";
+  }): void {
+    const staminaCost = input.actionPath.reduce((total, pathStep) => total + (pathStep.staminaCost ?? 0), 0);
+    if (!Number.isFinite(staminaCost) || staminaCost <= 0) {
+      return;
+    }
+
+    useArmyStaminaSourceStore.getState().setPendingStaminaSource({
+      source: "pending",
+      entityId: input.entityId,
+      amount: BigInt(Math.max(0, Math.floor(input.currentStamina) - Math.floor(staminaCost))),
+      updatedTick: input.currentArmiesTick,
+      capturedAtMs: Date.now(),
+    });
+  }
+
   private hasPendingTravelEffectForHex(key: string): boolean {
     for (const [entityId, trackedEffect] of this.travelEffectsByEntity.entries()) {
       if (trackedEffect.key === key && this.pendingArmyMovements.has(entityId)) {
@@ -2928,6 +2972,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       this.clearPendingArmyMovement(entityId);
+      useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
       this.arrivalGhostManager.clearArrivalGhost(entityId, "stale_timeout");
       if (fallbackPlan.shouldRequestChunkRefresh) {
@@ -3533,6 +3578,7 @@ export default class WorldmapScene extends WarpTravel {
     // when switching away while fetches are still in-flight.
     this.toriiLoadingCounter = 0;
     this.state.setLoading(LoadingStateKey.Map, false);
+    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
   }
 
   private resetWorldmapInteractionForSwitchOff(nextSceneName?: SceneName): void {
@@ -3678,9 +3724,9 @@ export default class WorldmapScene extends WarpTravel {
 
     const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);
     const hasMovementInFlight = reason === "tile" && (hasPendingMovement || this.armyManager.isArmyMoving(entityId));
-    // Tile removals wait longer (1500ms) to ensure movement updates arrive
-    // Zero troop removals are immediate (0ms) since they're confirmed deaths
-    const baseDelay = reason === "tile" ? 1500 : 0;
+    // Tile removals wait longer (1500ms) to ensure movement updates arrive.
+    // Zero troop removals wait briefly so death animations can be visible before cleanup.
+    const baseDelay = reason === "tile" ? 1500 : 1000;
     const initialDelay = hasMovementInFlight ? 3000 : baseDelay;
     const retryDelay = 500;
     const maxPendingWaitMs = 10000;
@@ -4026,7 +4072,9 @@ export default class WorldmapScene extends WarpTravel {
       currentChunk: this.currentChunk,
       isChunkTransitioning: this.isChunkTransitioning,
       isVisibleInCurrentChunk:
-        this.currentChunk !== "null" && !this.isChunkTransitioning ? this.isColRowInVisibleChunk(col, row) : false,
+        this.currentChunk !== "null" && !this.isChunkTransitioning
+          ? this.isColRowInCurrentRenderBounds(col, row)
+          : false,
     };
     const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
 
@@ -4121,7 +4169,7 @@ export default class WorldmapScene extends WarpTravel {
     this.invalidateAllChunkCachesContainingHex(col, row);
 
     // if the hex is within the chunk, add it to the interactive hex manager and to the biome
-    if (this.isColRowInVisibleChunk(col, row)) {
+    if (this.isColRowInCurrentRenderBounds(col, row)) {
       await this.updateHexagonGridPromise;
       const chunkWidth = this.renderChunkSize.width;
       const chunkHeight = this.renderChunkSize.height;
@@ -4190,6 +4238,13 @@ export default class WorldmapScene extends WarpTravel {
       );
       this.cacheMatricesForChunk(renderedChunkStartRow, renderedChunkStartCol, expectedExploredTerrainInstances);
     }
+  }
+
+  isColRowInCurrentRenderBounds(col: number, row: number) {
+    const startRow = parseInt(this.currentChunk.split(",")[0]);
+    const startCol = parseInt(this.currentChunk.split(",")[1]);
+    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
+    return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
   }
 
   isColRowInVisibleChunk(col: number, row: number) {
@@ -6708,8 +6763,10 @@ export default class WorldmapScene extends WarpTravel {
         const transitionToken = ++this.chunkTransitionToken;
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
+        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
           onFinally: () => {
+            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
               durationMs: performance.now() - switchStartedAt,
             });
@@ -6746,7 +6803,11 @@ export default class WorldmapScene extends WarpTravel {
           nextTransitionToken: transitionToken,
           previousTransitionToken: this.actionPathsTransitionToken,
         });
+        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
+          onFinally: () => {
+            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
+          },
           onResolved: () => {
             this.retryDeferredChunkRemovals();
             return true;
@@ -7408,6 +7469,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private traceChunk(event: WorldmapChunkTraceEvent, details: Record<string, unknown> = {}): void {
+    const isErrorEvent =
+      event === "torii_bounds_switch_failed" ||
+      event === "torii_bounds_switch_timeout" ||
+      event === "torii_resubscribe_failed" ||
+      event === "chunk_presentation_timeout" ||
+      event === "chunk_recovery_scheduled" ||
+      event === "chunk_recovery_executed";
+
+    if (isErrorEvent) {
+      console.warn(`[WorldmapChunk] ${event}`, details);
+    }
+
     if (!import.meta.env.DEV) {
       return;
     }

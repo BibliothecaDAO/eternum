@@ -809,7 +809,7 @@ const FactoryV2CurrentStepCard = ({
         </div>
         <div
           data-testid="factory-watch-current-progress-track"
-          className="relative h-2 overflow-hidden rounded-full bg-black/30"
+          className="relative h-2 overflow-hidden rounded-full bg-[#d9cabd]"
         >
           <div
             data-testid="factory-watch-current-progress-fill"
@@ -1616,7 +1616,7 @@ function resolveStepMomentToneAppearance(tone: "done" | "now" | "next") {
       };
     case "now":
       return {
-        containerClassName: "border-gold/20 bg-[rgba(32,27,22,0.96)] shadow-[0_16px_34px_rgba(0,0,0,0.18)]",
+        containerClassName: "border-[#c6a777]/60 bg-[rgba(32,27,22,0.96)] shadow-[0_16px_34px_rgba(0,0,0,0.18)]",
         dotClassName: "bg-[#dfaa54]",
         labelClassName: "text-[#dfaa54]",
         stepLabelClassName: "font-semibold text-gold",
@@ -1726,11 +1726,11 @@ function resolveCurrentStepStatusLabel(
 
 function resolveCurrentProgressFillClassName(isRunningStep: boolean, runStatus: FactoryRun["status"]) {
   if (isRunningStep) {
-    return "bg-[#dfaa54]";
+    return "bg-[#7a4b22]";
   }
 
   if (runStatus === "complete") {
-    return "bg-[#dfaa54]";
+    return "bg-[#7a4b22]";
   }
 
   if (runStatus === "attention") {

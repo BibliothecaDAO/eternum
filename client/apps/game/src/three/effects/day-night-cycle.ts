@@ -1,3 +1,4 @@
+import type GUI from "lil-gui";
 import {
   Scene,
   DirectionalLight,
@@ -615,7 +616,7 @@ export class DayNightCycleManager {
   /**
    * Add GUI controls for day/night cycle
    */
-  addGUIControls(guiFolder: any): void {
+  addGUIControls(guiFolder: GUI): void {
     const dayNightFolder = guiFolder.addFolder("Day/Night Cycle");
 
     dayNightFolder

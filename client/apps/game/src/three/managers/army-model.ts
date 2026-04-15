@@ -66,6 +66,7 @@ import {
 } from "../utils/spline-path";
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
+import { findAnimationByName } from "./animation-clip-matcher";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
@@ -348,6 +349,13 @@ export class ArmyModel {
     this.scene.add(group);
 
     const mixer = new AnimationMixer(gltf.scene);
+
+    // Name-based animation lookup with fallbacks
+    const idleClip = findAnimationByName(gltf.animations, ["idle", "stand", "rest"]) ?? gltf.animations[0];
+    const runClip =
+      findAnimationByName(gltf.animations, ["run", "walk", "moving"]) ?? gltf.animations[1] ?? idleClip?.clone();
+    const attackClip = findAnimationByName(gltf.animations, ["attack", "strike", "combat"]);
+    const deathClip = findAnimationByName(gltf.animations, ["death", "die", "dead", "defeat"]);
 
     return {
       group,
@@ -1392,6 +1400,7 @@ export class ArmyModel {
         elapsedTime: 0,
         arrivalSlamTimer: 0,
         isArrivalSlamming: false,
+        endpointCache: new Vector3(),
       });
     }
   }
@@ -1568,7 +1577,6 @@ export class ArmyModel {
   // Pre-allocated vectors for spline sampling (avoid GC pressure)
   private readonly splinePositionTarget: Vector3 = new Vector3();
   private readonly splineTangentTarget: Vector3 = new Vector3();
-  private readonly splineEndpointCache: Vector3 = new Vector3();
 
   private updateSplineMovement(
     splineData: SplineMovementData,
@@ -1656,8 +1664,8 @@ export class ArmyModel {
           .clone()
           .normalize();
         // Cache endpoint once for the entire settlement phase
-        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, this.splineEndpointCache);
-        instanceData.position.copy(this.splineEndpointCache);
+        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, splineData.endpointCache);
+        instanceData.position.copy(splineData.endpointCache);
       }
     }
 
@@ -1683,13 +1691,13 @@ export class ArmyModel {
           ArmyModel.OVERSHOOT_DISTANCE,
         );
         // Use cached endpoint — no recomputation
-        instanceData.position.copy(this.splineEndpointCache);
+        instanceData.position.copy(splineData.endpointCache);
         instanceData.position.x += splineData.finalTangent.x * offset;
         instanceData.position.z += splineData.finalTangent.z * offset;
       }
 
       if (splineData.settlementTimer >= ArmyModel.SETTLEMENT_DURATION) {
-        instanceData.position.copy(this.splineEndpointCache);
+        instanceData.position.copy(splineData.endpointCache);
         instanceData.scale.copy(this.normalScale);
         this.splineMovingInstances.delete(entityId);
         this.stopMovement(entityId);

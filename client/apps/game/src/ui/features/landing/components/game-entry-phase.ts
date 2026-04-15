@@ -4,6 +4,7 @@ export type GameEntryModalPhase =
   | "loading"
   | "forge"
   | "hyperstructure"
+  | "settlement-waiting"
   | "settlement"
   | "settlement-planner"
   | "season-pass-required"
@@ -36,7 +37,7 @@ interface ResolveGameEntryModalPhaseInput {
   hasVillageRevealResult: boolean;
   unifiedSettlementPlannerEnabled: boolean;
   hasSettledRealm: boolean;
-  eternumEntryIntent: "play" | "settle";
+  entryIntent: "play" | "settle";
   seasonSettlementComplete: boolean;
   eternumSettlementMode: "realm" | "village";
   hasVillagePass: boolean;
@@ -44,7 +45,22 @@ interface ResolveGameEntryModalPhaseInput {
   checksComplete: boolean;
   needsHyperstructureInit: boolean;
   needsSettlement: boolean;
+  isBlitzSettlementUnlocked: boolean;
 }
+
+export const resolveBlitzSettlementPhase = ({
+  needsSettlement,
+  isSettlementUnlocked,
+}: {
+  needsSettlement: boolean;
+  isSettlementUnlocked: boolean;
+}): Extract<GameEntryModalPhase, "ready" | "settlement" | "settlement-waiting"> => {
+  if (!needsSettlement) {
+    return "ready";
+  }
+
+  return isSettlementUnlocked ? "settlement" : "settlement-waiting";
+};
 
 export const resolveGameEntryBlockingError = ({
   worldAvailabilityErrorMessage,
@@ -86,7 +102,7 @@ export const resolveGameEntryModalPhase = ({
   hasVillageRevealResult,
   unifiedSettlementPlannerEnabled,
   hasSettledRealm,
-  eternumEntryIntent,
+  entryIntent,
   seasonSettlementComplete,
   eternumSettlementMode,
   hasVillagePass,
@@ -94,6 +110,7 @@ export const resolveGameEntryModalPhase = ({
   checksComplete,
   needsHyperstructureInit,
   needsSettlement,
+  isBlitzSettlementUnlocked,
 }: ResolveGameEntryModalPhaseInput): GameEntryModalPhase => {
   if (isForgeMode && isBlitzMode) {
     return "forge";
@@ -125,16 +142,14 @@ export const resolveGameEntryModalPhase = ({
     }
 
     if (unifiedSettlementPlannerEnabled) {
-      return hasSettledRealm && eternumEntryIntent === "play" && !seasonSettlementComplete
-        ? "ready"
-        : "settlement-planner";
+      return hasSettledRealm && entryIntent === "play" && !seasonSettlementComplete ? "ready" : "settlement-planner";
     }
 
     if (eternumSettlementMode === "village") {
       return hasVillagePass ? "village-placement" : "village-pass-required";
     }
 
-    if (seasonSettlementComplete || (hasSettledRealm && eternumEntryIntent === "play")) {
+    if (seasonSettlementComplete || (hasSettledRealm && entryIntent === "play")) {
       return "ready";
     }
 
@@ -147,6 +162,13 @@ export const resolveGameEntryModalPhase = ({
 
   if (needsHyperstructureInit) {
     return "hyperstructure";
+  }
+
+  if (isBlitzMode) {
+    return resolveBlitzSettlementPhase({
+      needsSettlement,
+      isSettlementUnlocked: isBlitzSettlementUnlocked,
+    });
   }
 
   if (needsSettlement) {

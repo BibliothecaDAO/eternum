@@ -24,7 +24,7 @@ const ZERO_OWNER_ADDRESS = "0x00000000000000000000000000000000000000000000000000
 const WORLD_MODE_QUERY = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts.
-const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.registration_count_max" AS registration_count_max, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.registration_count_max" AS registration_count_max, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.single_realm_mode" AS single_realm_mode, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Eternum worlds do not rely on blitz_registration_config. Fetch season timing + spacing config instead.
 const WORLD_CONFIG_ETERNUM_QUERY = `
@@ -163,6 +163,7 @@ export interface WorldConfigMeta {
   villagePassAddress: string | null;
   registrationCount: number | null;
   registrationCountMax: number | null;
+  singleRealmMode: boolean;
   twoPlayerMode: boolean;
   // Blitz registration config
   entryTokenAddress: string | null;
@@ -306,6 +307,7 @@ const fetchWorldConfigMeta = async (
     villagePassAddress: null,
     registrationCount: null,
     registrationCountMax: null,
+    singleRealmMode: false,
     twoPlayerMode: false,
     entryTokenAddress: null,
     feeTokenAddress: null,
@@ -367,6 +369,7 @@ const fetchWorldConfigMeta = async (
         if (row.registration_end_at != null)
           meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
 
+        meta.singleRealmMode = parseMaybeBooleanFlag(row.single_realm_mode) ?? false;
         meta.twoPlayerMode = parseMaybeBooleanFlag(row.two_player_mode) ?? false;
 
         // Calculate hyperstructures left from max_ring_count

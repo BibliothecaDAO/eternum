@@ -482,27 +482,22 @@ const decodePlayerName = (value: string | null): string | null => {
     return trimmed;
   }
 
-  try {
-    const hex = trimmed.slice(2);
-    if (hex.length % 2 !== 0) {
-      return trimmed;
-    }
-
-    let output = "";
-    for (let index = 0; index < hex.length; index += 2) {
-      const chunk = hex.slice(index, index + 2);
-      const charCode = parseInt(chunk, 16);
-
-      if (Number.isInteger(charCode) && charCode > 0 && charCode < 127) {
-        output += String.fromCharCode(charCode);
-      }
-    }
-
-    return output.length ? output : trimmed;
-  } catch (error) {
-    console.warn("Failed to decode player name", error);
+  const hex = trimmed.slice(2);
+  if (hex.length % 2 !== 0) {
     return trimmed;
   }
+
+  let output = "";
+  for (let index = 0; index < hex.length; index += 2) {
+    const chunk = hex.slice(index, index + 2);
+    const charCode = parseInt(chunk, 16);
+
+    if (Number.isInteger(charCode) && charCode > 0 && charCode < 127) {
+      output += String.fromCharCode(charCode);
+    }
+  }
+
+  return output.length ? output : trimmed;
 };
 
 const transformLandingLeaderboardRow = (row: PlayerLeaderboardRow, rank: number): PlayerLeaderboardData | null => {

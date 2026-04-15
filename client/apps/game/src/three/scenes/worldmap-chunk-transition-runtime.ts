@@ -6,6 +6,8 @@ export interface WorldmapChunkTransitionRuntimeState<TTransitionPromise = Promis
 interface RunWorldmapChunkTransitionInput<TTransitionPromise extends Promise<unknown>, TResult> {
   onFinally?: () => void | Promise<void>;
   onResolved: () => TResult | Promise<TResult>;
+  onTransitionStart?: () => void | Promise<void>;
+  yieldFrame?: () => Promise<void>;
   state: WorldmapChunkTransitionRuntimeState<TTransitionPromise>;
   transitionPromise: TTransitionPromise;
 }
@@ -24,6 +26,12 @@ export async function runWorldmapChunkTransition<TTransitionPromise extends Prom
 ): Promise<TResult> {
   input.state.isTransitioning = true;
   input.state.activePromise = input.transitionPromise;
+  await input.onTransitionStart?.();
+  if (input.yieldFrame) {
+    await input.yieldFrame();
+  } else if (typeof requestAnimationFrame !== "undefined") {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
 
   try {
     await input.transitionPromise;
