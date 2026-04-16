@@ -6,6 +6,7 @@ import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
 
 import App from "./app";
+import { resolveSentryRuntimeOptions } from "./sentry-config";
 import { BootLoaderCrashFallback, markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader";
 
 declare global {
@@ -21,7 +22,8 @@ if (!rootElement) {
   throw new Error("React root not found");
 }
 
-const sentryEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_SENTRY_DSN);
+const sentryDsn = import.meta.env.VITE_PUBLIC_SENTRY_DSN;
+const sentryEnabled = Boolean(sentryDsn);
 
 interface BootCrashBoundaryProps {
   children: React.ReactNode;
@@ -51,16 +53,19 @@ class BootCrashBoundary extends React.Component<BootCrashBoundaryProps, BootCras
 }
 
 if (sentryEnabled) {
+  const sentryOptions = resolveSentryRuntimeOptions(import.meta.env);
+
   Sentry.init({
-    dsn: import.meta.env.VITE_PUBLIC_SENTRY_DSN,
-    sendDefaultPii: readBooleanEnv("VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII", false),
+    dsn: sentryDsn,
+    sendDefaultPii: sentryOptions.sendDefaultPii,
     integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
-    tracesSampleRate: readNumberEnv("VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE", 0),
-    tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
-    replaysSessionSampleRate: readNumberEnv("VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE", 0),
-    replaysOnErrorSampleRate: readNumberEnv("VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE", 0),
-    environment: import.meta.env.VITE_PUBLIC_SENTRY_ENVIRONMENT || import.meta.env.VITE_PUBLIC_CHAIN || "development",
-    release: import.meta.env.VITE_PUBLIC_GAME_VERSION || undefined,
+    tracesSampleRate: sentryOptions.tracesSampleRate,
+    tracePropagationTargets: sentryOptions.tracePropagationTargets,
+    replaysSessionSampleRate: sentryOptions.replaysSessionSampleRate,
+    replaysOnErrorSampleRate: sentryOptions.replaysOnErrorSampleRate,
+    environment: sentryOptions.environment,
+    release: sentryOptions.release,
+    beforeSend: sentryOptions.beforeSend,
   });
 }
 
@@ -92,17 +97,3 @@ root.render(
     )}
   </React.StrictMode>,
 );
-
-function readBooleanEnv(key: string, fallback: boolean): boolean {
-  const value = import.meta.env[key];
-  if (value == null) return fallback;
-  return value === "true";
-}
-
-function readNumberEnv(key: string, fallback: number): number {
-  const value = import.meta.env[key];
-  if (value == null || value === "") return fallback;
-
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : fallback;
-}

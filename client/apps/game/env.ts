@@ -159,6 +159,7 @@ const envSchema = z.object({
   // Sentry
   VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
   VITE_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
+  VITE_PUBLIC_SENTRY_RELEASE: z.string().optional(),
   VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: z
     .string()
     .optional()
@@ -179,6 +180,22 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_SENTRY_TX_FAILURES_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+  VITE_PUBLIC_SENTRY_TX_FAILURE_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .default("1.0")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_TX_CAPTURE_USER_REJECTIONS: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
+  VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY: z.enum(["hashed", "raw", "none"]).optional().default("hashed"),
 
   // Tracing Configuration
   VITE_TRACING_ENABLED: z

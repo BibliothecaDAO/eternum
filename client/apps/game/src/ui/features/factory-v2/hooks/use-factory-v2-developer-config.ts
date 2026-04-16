@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { reportClientTransactionFailure } from "@/observability/transaction-failure-reporting";
 import {
   DEFAULT_FACTORY_NAMESPACE,
   getFactoryExplorerTxUrl,
@@ -77,11 +79,21 @@ function resolveFactoryConfigConfirmationErrorMessage(error: unknown): string {
 async function submitFactoryConfigMulticall({
   account,
   multicall,
+  chain,
 }: {
   account: NonNullable<ReturnType<typeof useAccountStore.getState>["account"]>;
   multicall: ReturnType<typeof buildFactoryConfigMulticall>;
+  chain: FactoryLaunchChain;
 }) {
-  const result = await account.execute(multicall);
+  const result = await executeObservedClientTransaction({
+    account,
+    calls: multicall,
+    surface: "factory",
+    operation: "factory_config_multicall",
+    chain,
+    waitForConfirmation: false,
+    confirm: false,
+  });
   const txHash = extractTransactionHash(result);
 
   if (!txHash) {
@@ -363,6 +375,17 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
         );
       })
       .catch((error) => {
+        void reportClientTransactionFailure({
+          error,
+          context: {
+            surface: "factory",
+            operation: "factory_config_multicall_confirmation",
+            stage: "confirmation",
+            transactionHash: txHash,
+            chain,
+            walletAddress: account.address,
+          },
+        });
         if (executionAttemptRef.current !== attemptId) {
           return;
         }
@@ -393,6 +416,7 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
       const txHash = await submitFactoryConfigMulticall({
         account,
         multicall,
+        chain,
       });
 
       setExecutionState(buildSubmittedExecutionState(txHash));

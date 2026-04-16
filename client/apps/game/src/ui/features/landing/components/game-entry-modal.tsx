@@ -34,6 +34,7 @@ import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/us
 import { useUsername } from "@/hooks/use-username";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { captureClientEvent } from "@/posthog";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
@@ -126,21 +127,6 @@ const formatUnlockCountdown = (secondsLeft: number): string => {
   const seconds = (total % 60).toString().padStart(2, "0");
 
   return `${hours}:${minutes}:${seconds}`;
-};
-
-const extractTransactionHash = (value: unknown): string | null => {
-  if (!value || typeof value !== "object") return null;
-  const candidate = value as { transaction_hash?: unknown; transactionHash?: unknown };
-
-  if (typeof candidate.transaction_hash === "string" && candidate.transaction_hash.length > 0) {
-    return candidate.transaction_hash;
-  }
-
-  if (typeof candidate.transactionHash === "string" && candidate.transactionHash.length > 0) {
-    return candidate.transactionHash;
-  }
-
-  return null;
 };
 
 const ALL_VILLAGE_DIRECTIONS: readonly Direction[] = [
@@ -3894,19 +3880,14 @@ export const GameEntryModal = ({
     [readSettlementSnapshot, syncSettlementStateFromSnapshot],
   );
 
-  const waitForSubmittedTransaction = useCallback(
+  const confirmSubmittedTransaction = useCallback(
     async (
-      result: unknown,
+      txHash: string,
       label: string,
       fallbackWaitAccount?: {
         waitForTransaction?: (txHash: string) => Promise<unknown>;
       },
     ) => {
-      const txHash = extractTransactionHash(result);
-      if (!txHash) {
-        throw new Error(`Missing transaction hash for ${label}`);
-      }
-
       const provider = new RpcProvider({ nodeUrl: selectedWorldRpcUrl });
       await waitForTransactionConfirmation({
         txHash,
@@ -3933,6 +3914,44 @@ export const GameEntryModal = ({
       });
     },
     [account, selectedWorldRpcUrl],
+  );
+
+  const executeEntryObservedTransaction = useCallback(
+    async ({
+      signer,
+      calls,
+      operation,
+      label,
+      waitForConfirmation = true,
+      fallbackWaitAccount,
+    }: {
+      signer: Account;
+      calls: Call | Call[];
+      operation: string;
+      label: string;
+      waitForConfirmation?: boolean;
+      fallbackWaitAccount?: {
+        waitForTransaction?: (txHash: string) => Promise<unknown>;
+      };
+    }) => {
+      return await executeObservedClientTransaction({
+        account: signer,
+        calls,
+        surface: "settlement",
+        operation,
+        chain,
+        worldName,
+        waitForConfirmation,
+        ...(waitForConfirmation
+          ? {
+              confirm: async (txHash) => {
+                await confirmSubmittedTransaction(txHash, label, fallbackWaitAccount);
+              },
+            }
+          : {}),
+      });
+    },
+    [chain, confirmSubmittedTransaction, worldName],
   );
 
   const resolveWorldSystemAddress = useCallback(
@@ -4255,30 +4274,36 @@ export const GameEntryModal = ({
       });
 
       try {
-        const transferResult = await distributorAccount.execute(
-          buildVillagePassTransferFromCall({
+        await executeEntryObservedTransaction({
+          signer: distributorAccount,
+          calls: buildVillagePassTransferFromCall({
             villagePassAddress,
             fromAddress: VILLAGE_PASS_DISTRIBUTOR_ADDRESS,
             toAddress: account.address,
             tokenId: tokenIdToTransfer,
           }),
-        );
-        await waitForSubmittedTransaction(transferResult, "village_pass.transfer_from", distributorAccount);
+          operation: "village_pass.transfer_from",
+          label: "village_pass.transfer_from",
+          fallbackWaitAccount: distributorAccount,
+        });
       } catch (transferError) {
         const normalizedMessage = getNormalizedErrorMessage(transferError);
         if (!isMissingEntrypointError(normalizedMessage)) {
           throw transferError;
         }
 
-        const safeTransferResult = await distributorAccount.execute(
-          buildVillagePassSafeTransferFromCall({
+        await executeEntryObservedTransaction({
+          signer: distributorAccount,
+          calls: buildVillagePassSafeTransferFromCall({
             villagePassAddress,
             fromAddress: VILLAGE_PASS_DISTRIBUTOR_ADDRESS,
             toAddress: account.address,
             tokenId: tokenIdToTransfer,
           }),
-        );
-        await waitForSubmittedTransaction(safeTransferResult, "village_pass.safe_transfer_from", distributorAccount);
+          operation: "village_pass.safe_transfer_from",
+          label: "village_pass.safe_transfer_from",
+          fallbackWaitAccount: distributorAccount,
+        });
       }
 
       refetchDistributorVillagePassInventory();
@@ -4295,7 +4320,7 @@ export const GameEntryModal = ({
     distributorVillagePasses,
     selectedWorldRpcUrl,
     chain,
-    waitForSubmittedTransaction,
+    executeEntryObservedTransaction,
     refetchDistributorVillagePassInventory,
     refetchVillagePassInventory,
   ]);
@@ -4396,16 +4421,24 @@ export const GameEntryModal = ({
       });
 
       try {
-        const mintRealmAndPassResult = await signer.execute([buildMintRealmCall(), buildMintSeasonPassCall()]);
-        await waitForSubmittedTransaction(mintRealmAndPassResult, "mint realm + season pass");
+        await executeEntryObservedTransaction({
+          signer,
+          calls: [buildMintRealmCall(), buildMintSeasonPassCall()],
+          operation: "mint_realm_and_season_pass",
+          label: "mint realm + season pass",
+        });
       } catch (mintError) {
         if (!isRealmAlreadyMintedError(mintError)) {
           throw mintError;
         }
 
         // Realm exists already; fall back to minting just the season pass.
-        const mintSeasonPassResult = await signer.execute(buildMintSeasonPassCall());
-        await waitForSubmittedTransaction(mintSeasonPassResult, "mint season pass");
+        await executeEntryObservedTransaction({
+          signer,
+          calls: buildMintSeasonPassCall(),
+          operation: "mint_season_pass",
+          label: "mint season pass",
+        });
       }
 
       await refetchSeasonPassInventory();
@@ -4421,7 +4454,7 @@ export const GameEntryModal = ({
     seasonPassAddress,
     realmsAddress,
     mintRealmTokenIdInput,
-    waitForSubmittedTransaction,
+    executeEntryObservedTransaction,
     refetchSeasonPassInventory,
   ]);
 
@@ -4541,19 +4574,23 @@ export const GameEntryModal = ({
           });
 
           try {
-            const createSpiresResult = await signer.execute({
-              contractAddress: spireSystemsAddress,
-              entrypoint: "create_spires",
-              calldata: CallData.compile([
-                spirePlan.includeCenterSpire,
-                spirePlan.settlements.map((settlement) => ({
-                  side: settlement.side,
-                  layer: settlement.layer,
-                  point: settlement.point,
-                })),
-              ]),
+            await executeEntryObservedTransaction({
+              signer,
+              calls: {
+                contractAddress: spireSystemsAddress,
+                entrypoint: "create_spires",
+                calldata: CallData.compile([
+                  spirePlan.includeCenterSpire,
+                  spirePlan.settlements.map((settlement) => ({
+                    side: settlement.side,
+                    layer: settlement.layer,
+                    point: settlement.point,
+                  })),
+                ]),
+              },
+              operation: "create_spires",
+              label: "create_spires",
             });
-            await waitForSubmittedTransaction(createSpiresResult, "create_spires");
           } catch (spireError) {
             if (!isSpiresAlreadySatisfiedError(spireError)) {
               throw spireError;
@@ -4601,13 +4638,14 @@ export const GameEntryModal = ({
         },
       );
 
-      const executeResult = await signer.execute(settlementCalls);
-      await waitForSubmittedTransaction(
-        executeResult,
-        optionalPlayerName
+      await executeEntryObservedTransaction({
+        signer,
+        calls: settlementCalls,
+        operation: "season_realm_create",
+        label: optionalPlayerName
           ? "set address name + approve season pass + season realm create"
           : "approve season pass + season realm create",
-      );
+      });
 
       setSeasonSettlementError(null);
       void refetchSeasonPassInventory();
@@ -4666,7 +4704,7 @@ export const GameEntryModal = ({
     seasonPlacement.side,
     seasonPlacement.layer,
     seasonPlacement.point,
-    waitForSubmittedTransaction,
+    executeEntryObservedTransaction,
     resolveOptionalPlayerNameForSettlement,
     buildSetAddressNameCall,
     refetchSeasonPassInventory,
@@ -4748,12 +4786,12 @@ export const GameEntryModal = ({
         optionalPlayerName,
       });
 
-      const executeResult = await signer.execute(villageSettlementCalls);
-
-      await waitForSubmittedTransaction(
-        executeResult,
-        optionalPlayerName ? "set address name + village_systems.create" : "village_systems.create",
-      );
+      await executeEntryObservedTransaction({
+        signer,
+        calls: villageSettlementCalls,
+        operation: "village_systems.create",
+        label: optionalPlayerName ? "set address name + village_systems.create" : "village_systems.create",
+      });
 
       const revealResult = await waitForVillageResourceReveal({
         ownerAddress: account.address,
@@ -4802,7 +4840,7 @@ export const GameEntryModal = ({
     ownedVillageIdSet,
     resolveOptionalPlayerNameForSettlement,
     buildVillageSettlementCalls,
-    waitForSubmittedTransaction,
+    executeEntryObservedTransaction,
     waitForVillageResourceReveal,
     refetchVillagePassInventory,
     refetchOwnedStructures,
@@ -4905,10 +4943,14 @@ export const GameEntryModal = ({
         calldata: [initialSettleCount],
       });
 
-      const assignResult = await signer.execute(assignCalls);
-      await waitForSubmittedTransaction(assignResult, "assign_and_settle_realms");
+      await executeEntryObservedTransaction({
+        signer,
+        calls: assignCalls,
+        operation: "assign_and_settle_realms",
+        label: "assign_and_settle_realms",
+      });
     },
-    [waitForSubmittedTransaction],
+    [executeEntryObservedTransaction],
   );
 
   const submitRemainingRealmSettlement = useCallback(
@@ -4923,14 +4965,18 @@ export const GameEntryModal = ({
       stepIndex: number;
       totalSteps: number;
     }) => {
-      const settleResult = await signer.execute({
-        contractAddress: blitzRealmSystemsAddress,
-        entrypoint: "settle_realms",
-        calldata: [1],
+      await executeEntryObservedTransaction({
+        signer,
+        calls: {
+          contractAddress: blitzRealmSystemsAddress,
+          entrypoint: "settle_realms",
+          calldata: [1],
+        },
+        operation: "settle_realms",
+        label: `settle_realms ${stepIndex + 1}/${totalSteps}`,
       });
-      await waitForSubmittedTransaction(settleResult, `settle_realms ${stepIndex + 1}/${totalSteps}`);
     },
-    [waitForSubmittedTransaction],
+    [executeEntryObservedTransaction],
   );
 
   // Settlement handler - calls actual Dojo system calls
@@ -5126,7 +5172,13 @@ export const GameEntryModal = ({
       });
 
       debugLog(worldName, "Forging hyperstructures, count:", hyperstructureCount);
-      await signer.execute(calls);
+      await executeEntryObservedTransaction({
+        signer,
+        calls,
+        operation: "make_hyperstructures",
+        label: "make_hyperstructures",
+        waitForConfirmation: false,
+      });
 
       debugLog(worldName, "Hyperstructures forged!");
       // Update local count
@@ -5152,10 +5204,16 @@ export const GameEntryModal = ({
       setCurrentInitializingId(entityId);
 
       try {
-        await (account as unknown as Account).execute({
-          contractAddress: resolveWorldSystemAddress("hyperstructure_systems"),
-          entrypoint: "initialize",
-          calldata: [entityId],
+        await executeEntryObservedTransaction({
+          signer: account as unknown as Account,
+          calls: {
+            contractAddress: resolveWorldSystemAddress("hyperstructure_systems"),
+            entrypoint: "initialize",
+            calldata: [entityId],
+          },
+          operation: "hyperstructure_initialize",
+          label: "hyperstructure initialize",
+          waitForConfirmation: false,
         });
 
         debugLog(worldName, "Hyperstructure initialized:", entityId);
@@ -5194,10 +5252,16 @@ export const GameEntryModal = ({
         debugLog(worldName, "Initializing hyperstructure:", hs.entityId);
 
         try {
-          await (account as unknown as Account).execute({
-            contractAddress: resolveWorldSystemAddress("hyperstructure_systems"),
-            entrypoint: "initialize",
-            calldata: [hs.entityId],
+          await executeEntryObservedTransaction({
+            signer: account as unknown as Account,
+            calls: {
+              contractAddress: resolveWorldSystemAddress("hyperstructure_systems"),
+              entrypoint: "initialize",
+              calldata: [hs.entityId],
+            },
+            operation: "hyperstructure_initialize",
+            label: "hyperstructure initialize",
+            waitForConfirmation: false,
           });
 
           // Update local state

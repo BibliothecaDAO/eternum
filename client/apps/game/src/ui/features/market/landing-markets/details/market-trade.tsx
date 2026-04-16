@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import type { RegisteredToken } from "@/pm/bindings";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { ORACLE_FEE_BPS, PROTOCOL_FEE_BPS } from "@/pm/constants/market-creation-defaults";
@@ -487,11 +488,12 @@ export function MarketTrade({
       setIsDialogOpen(false);
 
       await account.estimateInvokeFee([approveCall, buyCall], { blockIdentifier: "pre_confirmed" });
-      const resultTx = await account.execute([approveCall, buyCall]);
-
-      if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
-        await account.waitForTransaction(resultTx.transaction_hash);
-      }
+      await executeObservedClientTransaction({
+        account,
+        calls: [approveCall, buyCall],
+        surface: "prediction_market",
+        operation: "market_buy",
+      });
 
       toast.success("Trade submitted successfully!");
       if (onTradeSuccess) {

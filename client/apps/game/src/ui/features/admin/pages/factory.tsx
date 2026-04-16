@@ -1,5 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactorySeries, type FactorySeries } from "@/hooks/use-factory-series";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { reportClientTransactionFailure } from "@/observability/transaction-failure-reporting";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { ETERNUM_CONFIG } from "@/utils/config";
@@ -606,10 +608,16 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
     try {
       const seriesNameFelt = shortString.encodeShortString(seriesConfigName.trim());
-      const result = await account.execute({
-        contractAddress: factoryAddress,
-        entrypoint: "set_series_config",
-        calldata: [seriesNameFelt],
+      const result = await executeObservedClientTransaction<{ transaction_hash: string }>({
+        account,
+        calls: {
+          contractAddress: factoryAddress,
+          entrypoint: "set_series_config",
+          calldata: [seriesNameFelt],
+        },
+        surface: "admin",
+        operation: "factory.set_series_config",
+        chain: currentChain,
       });
 
       setSeriesConfigTx({ status: "success", hash: result.transaction_hash });
@@ -805,13 +813,22 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     try {
       let lastHash: string | undefined;
       for (const call of calls) {
-        const result = await account.execute({
-          contractAddress: factoryAddress,
-          entrypoint: call.entrypoint,
-          calldata: call.calldata,
+        const result = await executeObservedClientTransaction<{ transaction_hash: string }>({
+          account,
+          calls: {
+            contractAddress: factoryAddress,
+            entrypoint: call.entrypoint,
+            calldata: call.calldata,
+          },
+          surface: "admin",
+          operation: `factory.${call.entrypoint}`,
+          chain: currentChain,
         });
         lastHash = result.transaction_hash;
         setTx({ status: "running", hash: lastHash });
+        if (!lastHash) {
+          throw new Error(`Factory transaction ${call.entrypoint} did not return a transaction hash.`);
+        }
         await account.waitForTransaction(lastHash);
       }
 
@@ -844,10 +861,17 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     try {
       const worldNameFelt = shortString.encodeShortString(worldName);
       const series = buildSeriesCalldata(seriesName, seriesGameNumber);
-      const result = await account.execute({
-        contractAddress: factoryAddress,
-        entrypoint: "create_game",
-        calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
+      const result = await executeObservedClientTransaction<{ transaction_hash: string }>({
+        account,
+        calls: {
+          contractAddress: factoryAddress,
+          entrypoint: "create_game",
+          calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
+        },
+        surface: "admin",
+        operation: "factory.create_game",
+        chain: currentChain,
+        worldName,
       });
 
       setTx({ status: "success", hash: result.transaction_hash });
@@ -875,10 +899,17 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     try {
       const worldNameFelt = shortString.encodeShortString(worldName);
       const series = buildSeriesCalldata(seriesName, seriesGameNumber);
-      const result = await account.execute({
-        contractAddress: factoryAddress,
-        entrypoint: "create_game",
-        calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
+      const result = await executeObservedClientTransaction<{ transaction_hash: string }>({
+        account,
+        calls: {
+          contractAddress: factoryAddress,
+          entrypoint: "create_game",
+          calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
+        },
+        surface: "admin",
+        operation: "factory.create_game",
+        chain: currentChain,
+        worldName,
       });
       setTx({ status: "success", hash: result.transaction_hash });
       await account.waitForTransaction(result.transaction_hash);
@@ -927,10 +958,19 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         });
 
         setTx({ status: "running" });
-        const result = await account.execute({
-          contractAddress: factoryAddress,
-          entrypoint: "create_game",
-          calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
+        const result = await executeObservedClientTransaction<{ transaction_hash: string }>({
+          account,
+          calls: {
+            contractAddress: factoryAddress,
+            entrypoint: "create_game",
+            calldata: [worldNameFelt, maxActions, version, series.seriesNameFelt, series.seriesGameNumber],
+          },
+          surface: "admin",
+          operation: "factory.create_game_autodeploy",
+          chain: currentChain,
+          worldName: name,
+          waitForConfirmation: false,
+          confirm: false,
         });
         setTx({ status: "success", hash: result.transaction_hash });
 
@@ -943,6 +983,18 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         ])) as any;
 
         if (waitResult.status === "error") {
+          void reportClientTransactionFailure({
+            error: waitResult.error,
+            context: {
+              surface: "admin",
+              operation: "factory.create_game_autodeploy_confirmation",
+              stage: "confirmation",
+              transactionHash: result.transaction_hash,
+              chain: currentChain,
+              worldName: name,
+              walletAddress: account.address,
+            },
+          });
           throw waitResult.error;
         }
 
