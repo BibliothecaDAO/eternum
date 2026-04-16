@@ -19,6 +19,8 @@ describe("Game entry modal auto-settle", () => {
     expect(source).toContain('if (!autoSettleEnabled || phase !== "settlement"');
     expect(source).toContain("void handleSettle();");
     expect(source).toContain("runBlitzSettlementFlow({");
+    expect(source).toContain("const singleRealmMode = worldMeta?.singleRealmMode ?? false;");
+    expect(source).not.toContain('const singleRealmMode = chain === "mainnet";');
     expect(source).toContain('if (result.status === "completed")');
     expect(source).toContain('if (result.status === "syncing")');
     expect(source).toContain("beginBlitzSettlementVerification(result.pendingTargetSettleCount);");

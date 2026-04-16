@@ -4994,7 +4994,7 @@ export const GameEntryModal = ({
 
     try {
       const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
-      const singleRealmMode = chain === "mainnet";
+      const singleRealmMode = worldMeta?.singleRealmMode ?? false;
       const blitzRealmSystemsAddress = resolveWorldSystemAddress("blitz_realm_systems");
       const signer = account as unknown as Account;
       const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
@@ -5044,13 +5044,13 @@ export const GameEntryModal = ({
     autoSettleEntryKey,
     account,
     beginBlitzSettlementVerification,
-    chain,
     finalizeFailedBlitzSettlement,
     finalizeSuccessfulBlitzSettlement,
     isBlitzMode,
     markSettling,
     submitAssignedRealmSettlement,
     submitRemainingRealmSettlement,
+    worldMeta?.singleRealmMode,
     worldName,
     readSettlementSnapshot,
     resolveWorldSystemAddress,
