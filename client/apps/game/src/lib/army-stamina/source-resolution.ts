@@ -106,6 +106,17 @@ const buildPendingTroopsSnapshot = (input: {
     return null;
   }
 
+  // If onchain data (live/snapshot/fallback) has caught up to or surpassed the
+  // pending's updated_tick, the prediction is obsolete. Skip pending so live
+  // data drives the computation and regen calculates from the true chain state.
+  const onchainTicks = [input.liveTroops, input.snapshotTroops, input.fallbackTroops]
+    .map((troops) => Number(troops?.stamina?.updated_tick ?? 0n))
+    .filter((tick) => Number.isFinite(tick));
+  const maxOnchainTick = onchainTicks.length > 0 ? Math.max(...onchainTicks) : -Infinity;
+  if (maxOnchainTick >= pendingSource.updatedTick) {
+    return null;
+  }
+
   return {
     ...pendingSource,
     troops: {
