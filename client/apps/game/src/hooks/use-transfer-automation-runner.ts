@@ -7,41 +7,17 @@ import {
   configManager,
   getBlockTimestamp,
   getConservativeBlockTimestamp,
-  getEntityIdFromKeys,
   getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/structure-capabilities";
+import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 
 const toRaw = (amountHuman: number) => BigInt(Math.floor(amountHuman * RESOURCE_PRECISION));
-
-const normalizeOwnerValue = (owner: unknown): string | null => {
-  if (typeof owner === "string") return owner.trim().toLowerCase();
-  if (typeof owner === "bigint") return `0x${owner.toString(16)}`;
-  if (typeof owner === "number" && Number.isFinite(owner)) return `0x${BigInt(owner).toString(16)}`;
-  return null;
-};
-
-const isEntityOwnedByAccount = (
-  components: ClientComponents | null | undefined,
-  entityId: number,
-  accountAddress: string | undefined,
-): boolean => {
-  if (!components || !entityId || !accountAddress) return false;
-  try {
-    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-    const owner = normalizeOwnerValue(structure?.owner);
-    const accountOwner = normalizeOwnerValue(accountAddress);
-    return Boolean(owner && accountOwner && owner === accountOwner);
-  } catch {
-    return false;
-  }
-};
 
 export const useTransferAutomationRunner = () => {
   const {

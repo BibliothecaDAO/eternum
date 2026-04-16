@@ -115,6 +115,86 @@ const compareAutomationResources = (left: ResourcesIds, right: ResourcesIds): nu
 const isResourceActiveInSnapshot = (snapshot: RealmResourceSnapshot, resourceId: ResourcesIds): boolean =>
   snapshot.get(resourceId)?.hasActiveProduction === true;
 
+type AutomationEntityType = RealmAutomationConfig["entityType"];
+
+export const buildResourceDependencyOrder = (
+  resourceIds: ResourcesIds[],
+  entityType: AutomationEntityType,
+): ResourcesIds[] => {
+  if (!resourceIds.length) return [];
+
+  const idSet = new Set<ResourcesIds>(resourceIds);
+  const dependsOn = new Map<ResourcesIds, Set<ResourcesIds>>();
+  const dependents = new Map<ResourcesIds, Set<ResourcesIds>>();
+
+  for (const resourceId of resourceIds) {
+    dependsOn.set(resourceId, new Set());
+    dependents.set(resourceId, new Set());
+  }
+
+  const addEdge = (dependent: ResourcesIds, input: ResourcesIds) => {
+    if (dependent === input) return;
+    if (!idSet.has(input)) return;
+    dependsOn.get(dependent)!.add(input);
+    dependents.get(input)!.add(dependent);
+  };
+
+  const collectInputs = (resourceId: ResourcesIds): ResourcesIds[] => {
+    const complexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
+    const laborConfig = configManager.getLaborConfig?.(resourceId);
+    const laborInputs = laborConfig?.inputResources ?? [];
+    const aggregated: ResourcesIds[] = [];
+    for (const input of complexInputs) {
+      if (!isAutomationResourceBlocked(input.resource, entityType, "input")) {
+        aggregated.push(input.resource);
+      }
+    }
+    for (const input of laborInputs) {
+      if (!isAutomationResourceBlocked(input.resource, entityType, "input")) {
+        aggregated.push(input.resource);
+      }
+    }
+    return aggregated;
+  };
+
+  for (const resourceId of resourceIds) {
+    for (const input of collectInputs(resourceId)) {
+      addEdge(resourceId, input);
+    }
+  }
+
+  const insertSorted = (bucket: ResourcesIds[], value: ResourcesIds) => {
+    const idx = bucket.findIndex((other) => compareAutomationResources(value, other) < 0);
+    if (idx === -1) bucket.push(value);
+    else bucket.splice(idx, 0, value);
+  };
+
+  const ready: ResourcesIds[] = [];
+  for (const [resourceId, deps] of dependsOn) {
+    if (deps.size === 0) insertSorted(ready, resourceId);
+  }
+
+  const order: ResourcesIds[] = [];
+  while (ready.length) {
+    const current = ready.shift()!;
+    order.push(current);
+    const downstream = Array.from(dependents.get(current) ?? []).sort(compareAutomationResources);
+    for (const dependent of downstream) {
+      const deps = dependsOn.get(dependent)!;
+      deps.delete(current);
+      if (deps.size === 0) insertSorted(ready, dependent);
+    }
+  }
+
+  if (order.length !== resourceIds.length) {
+    const missing = resourceIds.filter((id) => !order.includes(id));
+    console.warn("[Automation] Resource dependency cycle detected; falling back to numeric order", { missing });
+    return [...resourceIds].sort(compareAutomationResources);
+  }
+
+  return order;
+};
+
 const buildResourceIdsToEvaluate = (
   producedResourceIds: ResourcesIds[],
   configuredCustomIds: ResourcesIds[],
@@ -300,9 +380,11 @@ export const buildRealmProductionPlan = ({
     return { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
   };
 
-  const resourceDefinitions = resourceIdsToEvaluate
-    .filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))
-    .toSorted(compareAutomationResources)
+  const filteredResourceIds = resourceIdsToEvaluate.filter(
+    (resourceId) => !isAutomationResourceBlocked(resourceId, entityType),
+  );
+  const orderedResourceIds = buildResourceDependencyOrder(filteredResourceIds, entityType);
+  const resourceDefinitions = orderedResourceIds
     .map((resourceId) => {
       const customPercentages = realmConfig.customPercentages?.[resourceId];
       const presetPercentages = presetAllocations.get(resourceId);
@@ -402,6 +484,17 @@ export const buildRealmProductionPlan = ({
     return true;
   };
 
+  const creditSamePassOutput = (resourceId: ResourcesIds, produced: number) => {
+    if (!Number.isFinite(produced) || produced <= 0) return;
+    const prevTotal = totalAvailable.get(resourceId) ?? 0;
+    const newTotal = prevTotal + produced;
+    totalAvailable.set(resourceId, newTotal);
+
+    const consumedSoFar = consumptionByResource[resourceId] ?? 0;
+    const maxConsumable = Math.floor((newTotal * MAX_RESOURCE_ALLOCATION_PERCENT) / 100);
+    availableBudget.set(resourceId, Math.max(0, maxConsumable - consumedSoFar));
+  };
+
   const getTotal = (resourceId: ResourcesIds) => totalAvailable.get(resourceId) ?? 0;
   const getBudget = (resourceId: ResourcesIds) => availableBudget.get(resourceId) ?? 0;
 
@@ -496,6 +589,7 @@ export const buildRealmProductionPlan = ({
           } else {
             const produced = outputPerCycle * maxCycles;
             addToRecord(outputsByResource, resourceId, produced);
+            creditSamePassOutput(resourceId, produced);
             planCallset.resourceToResource.push({ resourceId, cycles: maxCycles });
             resourceExecutions.push({
               resourceId,
@@ -638,6 +732,7 @@ export const buildRealmProductionPlan = ({
           } else {
             const produced = outputPerCycle * maxCycles;
             addToRecord(outputsByResource, resourceId, produced);
+            creditSamePassOutput(resourceId, produced);
             planCallset.laborToResource.push({ resourceId, cycles: maxCycles });
             laborExecutions.push({
               resourceId,

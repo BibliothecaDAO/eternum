@@ -23,4 +23,30 @@ describe("useAutomation source", () => {
     expect(source).toContain("if (nowMs < nextEligibleMs)");
     expect(source).not.toContain("const blockTimestampMs = currentBlockTimestamp * 1000");
   });
+
+  it("only advances the scheduler clock when processRealms actually ran", () => {
+    const source = readSource("src/hooks/use-automation.tsx");
+
+    expect(source).toContain("type ProcessRealmsResult = { ran: boolean; anyExecuted: boolean }");
+    expect(source).toContain("if (ran && !pruneDuringProcessingRef.current)");
+    expect(source).toContain("return { ran: false, anyExecuted: false }");
+    expect(source).toContain("return { ran: true, anyExecuted }");
+  });
+
+  it("uses the shared signature helper which hashes autoBalance and percentage values", () => {
+    const source = readSource("src/hooks/use-automation.tsx");
+
+    expect(source).toContain("computeAutomationConfigSignature");
+    // The inline signature that only hashed preset + customKeys must be gone.
+    expect(source).not.toContain("const customKeys = Object.keys(realm.customPercentages");
+  });
+
+  it("resets scheduler refs when pruneForGame runs and guards in-flight passes", () => {
+    const source = readSource("src/hooks/use-automation.tsx");
+
+    expect(source).toContain("pruneDuringProcessingRef = useRef");
+    expect(source).toContain("pruneForGame(gameId)");
+    // The pruneForGame effect must reset the scheduler clock.
+    expect(source).toMatch(/pruneForGame\(gameId\);[\s\S]*lastRunTimestampRef\.current = nowMs/);
+  });
 });

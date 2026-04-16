@@ -9,9 +9,14 @@ import {
   type RealmResourceSnapshot,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import {
+  AutomationCancelledError,
+  AutomationSignerSkippedError,
   executeProductionPlansSequentially,
+  isSignerTransientError,
   type ExecutableProductionPlan,
 } from "@/ui/features/infrastructure/automation/model/automation-runner";
+import { computeAutomationConfigSignature } from "@/utils/automation-signature";
+import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import {
   useAutomationStore,
@@ -19,7 +24,6 @@ import {
   DONKEY_DEFAULT_RESOURCE_PERCENT,
   type ResourceAutomationPercentages,
   type RealmAutomationExecutionSummary,
-  type RealmAutomationConfig,
 } from "./store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
@@ -87,6 +91,8 @@ const formatCustomPercentagesLog = (percentages: Record<number, ResourceAutomati
     percentages: value,
   }));
 
+type ProcessRealmsResult = { ran: boolean; anyExecuted: boolean };
+
 export const useAutomation = () => {
   const {
     setup: {
@@ -105,7 +111,10 @@ export const useAutomation = () => {
   const pruneForGame = useAutomationStore((state) => state.pruneForGame);
   const hydrated = useAutomationStore((state) => state.hydrated);
   const processingRef = useRef(false);
-  const processRealmsRef = useRef<() => Promise<boolean>>(async () => false);
+  const processRealmsRef = useRef<() => Promise<ProcessRealmsResult>>(async () => ({
+    ran: false,
+    anyExecuted: false,
+  }));
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
   const playerStructures = useOwnedProductionStructureInfos();
   const gameEndAt = useUIStore((state) => state.gameEndAt);
@@ -122,6 +131,7 @@ export const useAutomation = () => {
   const scheduleNextCheckRef = useRef<() => void>();
   const automationTimeoutIdRef = useRef<number | null>(null);
   const syncedRealmIdsRef = useRef<Set<string>>(new Set());
+  const pruneDuringProcessingRef = useRef<boolean>(false);
 
   const stopAutomation = useCallback(() => {
     if (automationTimeoutIdRef.current !== null) {
@@ -156,6 +166,15 @@ export const useAutomation = () => {
     const season = configManager.getSeasonConfig();
     const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
     pruneForGame(gameId);
+
+    const nowMs = Date.now();
+    if (processingRef.current) {
+      pruneDuringProcessingRef.current = true;
+    }
+    lastRunTimestampRef.current = nowMs;
+    automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
+    nextRunTimestampRef.current = automationEnabledAtRef.current;
+    setNextRunTimestampRef.current(nextRunTimestampRef.current);
   }, [components, pruneForGame]);
 
   useEffect(() => {
@@ -194,29 +213,29 @@ export const useAutomation = () => {
     });
   }, [hydrated, playerStructures, removeRealm, upsertRealm, mode]);
 
-  const processRealms = useCallback(async (): Promise<boolean> => {
-    if (processingRef.current) return false;
+  const processRealms = useCallback(async (): Promise<ProcessRealmsResult> => {
+    if (processingRef.current) return { ran: false, anyExecuted: false };
 
     if (isGameOver()) {
       console.log("Automation: Game has ended. Skipping automation pass.");
-      return false;
+      return { ran: false, anyExecuted: false };
     }
 
     if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
       console.log("Automation: Missing Starknet signer. Skipping automation pass.");
-      return false;
+      return { ran: false, anyExecuted: false };
     }
 
     if (!components) {
       console.log("Automation: Missing Dojo components. Skipping automation pass.");
-      return false;
+      return { ran: false, anyExecuted: false };
     }
 
     const realmList = Object.values(useAutomationStore.getState().realms).filter(
       (realm) => realm.entityType === "realm" || realm.entityType === "village",
     );
     if (realmList.length === 0) {
-      return false;
+      return { ran: false, anyExecuted: false };
     }
 
     processingRef.current = true;
@@ -381,12 +400,28 @@ export const useAutomation = () => {
       if (executablePlans.length > 0) {
         console.log(`[Automation] Executing ${executablePlans.length} production plans sequentially`);
 
+        let signerFaultSurfacedForTick = false;
         const results = await executeProductionPlansSequentially({
           executablePlans,
           signer: starknetSignerAccount as StarknetAccount,
           executeRealmProductionPlan: execute_realm_production_plan,
           onBeforeExecute: ({ planLogPayload }) => {
             console.log("[Automation] Executing production plan", planLogPayload);
+          },
+          isCancelled: ({ plan, realmConfig }) => {
+            if (isGameOver()) {
+              return { cancelled: true, reason: "Game has ended", scope: "pass" };
+            }
+            const accountAddress = starknetSignerAccount?.address;
+            if (!accountAddress || accountAddress === "0x0") {
+              return { cancelled: true, reason: "Signer unavailable", scope: "pass" };
+            }
+            const realmIdNum = Number(realmConfig.realmId);
+            const entityId = Number.isFinite(realmIdNum) && realmIdNum > 0 ? realmIdNum : plan.realmId;
+            if (!isEntityOwnedByAccount(components, entityId, accountAddress)) {
+              return { cancelled: true, reason: "Realm no longer owned", scope: "realm" };
+            }
+            return { cancelled: false };
           },
         });
 
@@ -428,9 +463,46 @@ export const useAutomation = () => {
           } else {
             const rejection = result.reason;
             const rawError = rejection.error;
-            const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
             const realmConfig = rejection.realmConfig;
             const realmLabel = rejection.realmLabel;
+
+            if (rawError instanceof AutomationCancelledError) {
+              console.log("[Automation] Skipped realm due to cancellation", {
+                realmLabel,
+                reason: rawError.message,
+                scope: rawError.scope,
+              });
+              if (realmConfig) {
+                const prev = getRealmConfig(realmConfig.realmId);
+                recordStatus(realmConfig.realmId, {
+                  status: "skipped",
+                  message: rawError.message,
+                  attemptedAt: Date.now(),
+                  consecutiveFailures: prev?.lastStatus?.consecutiveFailures ?? 0,
+                });
+              }
+              continue;
+            }
+
+            if (rawError instanceof AutomationSignerSkippedError) {
+              console.log("[Automation] Skipped realm after signer fault earlier in pass", {
+                realmLabel,
+                reason: rawError.message,
+              });
+              if (realmConfig) {
+                const prev = getRealmConfig(realmConfig.realmId);
+                recordStatus(realmConfig.realmId, {
+                  status: "skipped",
+                  message: rawError.message,
+                  attemptedAt: Date.now(),
+                  consecutiveFailures: prev?.lastStatus?.consecutiveFailures ?? 0,
+                });
+              }
+              continue;
+            }
+
+            const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
+            const isSignerFault = isSignerTransientError(rawError);
 
             console.error(`Automation: Failed to execute plan for ${realmLabel}`, {
               error: rawError,
@@ -443,11 +515,20 @@ export const useAutomation = () => {
                 status: "failed",
                 message: errorMessage,
                 attemptedAt: Date.now(),
-                consecutiveFailures: (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
+                consecutiveFailures: isSignerFault
+                  ? (prev?.lastStatus?.consecutiveFailures ?? 0)
+                  : (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
               });
             }
 
-            toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
+            if (isSignerFault) {
+              if (!signerFaultSurfacedForTick) {
+                signerFaultSurfacedForTick = true;
+                toast.error(`Automation paused this tick: signer error — next tick will retry (${errorMessage})`);
+              }
+            } else {
+              toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
+            }
           }
         }
       }
@@ -455,7 +536,7 @@ export const useAutomation = () => {
       processingRef.current = false;
     }
 
-    return anyExecuted;
+    return { ran: true, anyExecuted };
   }, [
     components,
     execute_realm_production_plan,
@@ -487,13 +568,18 @@ export const useAutomation = () => {
       return;
     }
 
+    let ran = false;
     try {
-      await processRealmsRef.current();
+      const result = await processRealmsRef.current();
+      ran = result.ran;
     } finally {
-      lastRunTimestampRef.current = nowMs;
-      automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
-      nextRunTimestampRef.current = automationEnabledAtRef.current;
-      setNextRunTimestampRef.current(nextRunTimestampRef.current);
+      if (ran && !pruneDuringProcessingRef.current) {
+        lastRunTimestampRef.current = nowMs;
+        automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
+        nextRunTimestampRef.current = automationEnabledAtRef.current;
+        setNextRunTimestampRef.current(nextRunTimestampRef.current);
+      }
+      pruneDuringProcessingRef.current = false;
       scheduleNextCheckRef.current?.();
     }
   }, [isGameOver, setNextRunTimestampRef, stopAutomation]);
@@ -527,33 +613,25 @@ export const useAutomation = () => {
   }, [setNextRunTimestamp]);
 
   useEffect(() => {
-    const computeSignature = (realms: Record<string, RealmAutomationConfig>) =>
-      Object.entries(realms)
-        .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
-        .map(([realmId, realm]) => {
-          const customKeys = Object.keys(realm.customPercentages ?? {})
-            .toSorted()
-            .join(",");
-          const presetId = realm.presetId ?? "smart";
-          return `${realmId}:${presetId}:${customKeys}`;
-        })
-        .toSorted()
-        .join("|");
-
     const unsub = useAutomationStore.subscribe((state, prevState) => {
       if (state.realms === prevState.realms) return;
       if (isGameOver()) return;
 
-      const newSignature = computeSignature(state.realms);
+      const newSignature = computeAutomationConfigSignature(state.realms);
       if (newSignature !== realmResourcesSignatureRef.current) {
         realmResourcesSignatureRef.current = newSignature;
         const nowMs = Date.now();
-        if (nowMs >= automationEnabledAtRef.current) {
-          lastRunTimestampRef.current = nowMs;
-          automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
-          nextRunTimestampRef.current = automationEnabledAtRef.current;
-          setNextRunTimestampRef.current(nextRunTimestampRef.current);
-          void processRealmsRef.current();
+        if (nowMs >= automationEnabledAtRef.current && !processingRef.current) {
+          void (async () => {
+            const result = await processRealmsRef.current();
+            if (result.ran && !pruneDuringProcessingRef.current) {
+              lastRunTimestampRef.current = nowMs;
+              automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
+              nextRunTimestampRef.current = automationEnabledAtRef.current;
+              setNextRunTimestampRef.current(nextRunTimestampRef.current);
+            }
+            pruneDuringProcessingRef.current = false;
+          })();
         }
         scheduleNextCheckRef.current?.();
       }

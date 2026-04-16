@@ -173,7 +173,7 @@ describe("buildRealmProductionPlan", () => {
     ]);
   });
 
-  it("does not spend same-pass T1 output as T2 input", () => {
+  it("feeds same-pass T1 output into T2 consumption so deep chains execute in one tick", () => {
     const plan = buildRealmProductionPlan({
       realmConfig: makeRealmConfig(),
       snapshot: makeSnapshot([ResourcesIds.Knight, ResourcesIds.KnightT2], {
@@ -184,12 +184,132 @@ describe("buildRealmProductionPlan", () => {
       }),
     });
 
-    expect(plan.callset.resourceToResource.map((call) => call.resourceId)).toContain(ResourcesIds.Knight);
-    expect(plan.callset.resourceToResource.map((call) => call.resourceId)).not.toContain(ResourcesIds.KnightT2);
-    expect(plan.skipped).toContainEqual({
-      resourceId: ResourcesIds.KnightT2,
-      reason: "Insufficient complex recipe inputs",
+    const callResourceIds = plan.callset.resourceToResource.map((call) => call.resourceId);
+    expect(callResourceIds).toContain(ResourcesIds.Knight);
+    expect(callResourceIds).toContain(ResourcesIds.KnightT2);
+
+    const t1Cycles = plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.Knight)?.cycles ?? 0;
+    const t2Cycles =
+      plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.KnightT2)?.cycles ?? 0;
+    expect(t1Cycles).toBeGreaterThan(0);
+    expect(t2Cycles).toBeGreaterThan(0);
+    expect(t2Cycles).toBeLessThanOrEqual(t1Cycles);
+  });
+
+  it("skips T2 when there is no snapshot Knight balance and T1 produces nothing (recipe undeployable)", () => {
+    configManagerMock.complexSystemResourceInputs[ResourcesIds.Knight] = [
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Copper, amount: 1 },
+    ];
+    const plan = buildRealmProductionPlan({
+      realmConfig: makeRealmConfig(),
+      snapshot: makeSnapshot([ResourcesIds.Knight, ResourcesIds.KnightT2], {
+        [ResourcesIds.Wheat]: 0,
+        [ResourcesIds.Copper]: 0,
+        [ResourcesIds.Essence]: 500,
+        [ResourcesIds.Knight]: 0,
+      }),
     });
+
+    const callResourceIds = plan.callset.resourceToResource.map((call) => call.resourceId);
+    expect(callResourceIds).not.toContain(ResourcesIds.Knight);
+    expect(callResourceIds).not.toContain(ResourcesIds.KnightT2);
+  });
+
+  it("does not let same-pass output of one recipe leak into an unrelated recipe's budget", () => {
+    configureComplexRecipe(
+      ResourcesIds.Wood,
+      [
+        { resource: ResourcesIds.Wheat, amount: 1 },
+        { resource: ResourcesIds.Copper, amount: 1 },
+      ],
+      10,
+    );
+
+    const plan = buildRealmProductionPlan({
+      realmConfig: makeRealmConfig(
+        { presetId: "custom" },
+        {
+          [ResourcesIds.Wood]: { resourceToResource: 50, laborToResource: 0 },
+        },
+      ),
+      snapshot: makeSnapshot([ResourcesIds.Wood], {
+        [ResourcesIds.Wheat]: 100,
+        [ResourcesIds.Copper]: 100,
+      }),
+    });
+
+    expect(plan.outputsByResource[ResourcesIds.Wood]).toBeGreaterThan(0);
+    expect(plan.consumptionByResource[ResourcesIds.Wood]).toBeUndefined();
+  });
+
+  it("executes a three-tier chain (Ore -> Iron -> Steel) in a single pass", () => {
+    const Ore = ResourcesIds.Stone;
+    const Iron = ResourcesIds.Coal;
+    const Steel = ResourcesIds.Ironwood;
+
+    configureComplexRecipe(Ore, [{ resource: ResourcesIds.Wheat, amount: 1 }], 10);
+    configureComplexRecipe(Iron, [{ resource: Ore, amount: 1 }], 5);
+    configureComplexRecipe(Steel, [{ resource: Iron, amount: 1 }], 2);
+
+    const plan = buildRealmProductionPlan({
+      realmConfig: makeRealmConfig(
+        { presetId: "custom" },
+        {
+          [Ore]: { resourceToResource: 50, laborToResource: 0 },
+          [Iron]: { resourceToResource: 50, laborToResource: 0 },
+          [Steel]: { resourceToResource: 50, laborToResource: 0 },
+        },
+      ),
+      snapshot: makeSnapshot([Ore, Iron, Steel], {
+        [ResourcesIds.Wheat]: 1000,
+        [Ore]: 0,
+        [Iron]: 0,
+        [Steel]: 0,
+      }),
+    });
+
+    const callOrder = plan.callset.resourceToResource.map((call) => call.resourceId);
+    expect(callOrder.indexOf(Ore)).toBeLessThan(callOrder.indexOf(Iron));
+    expect(callOrder.indexOf(Iron)).toBeLessThan(callOrder.indexOf(Steel));
+
+    const oreCycles = plan.callset.resourceToResource.find((call) => call.resourceId === Ore)?.cycles ?? 0;
+    const ironCycles = plan.callset.resourceToResource.find((call) => call.resourceId === Iron)?.cycles ?? 0;
+    const steelCycles = plan.callset.resourceToResource.find((call) => call.resourceId === Steel)?.cycles ?? 0;
+    expect(oreCycles).toBeGreaterThan(0);
+    expect(ironCycles).toBeGreaterThan(0);
+    expect(steelCycles).toBeGreaterThan(0);
+  });
+
+  it("falls back to numeric order and warns when recipe config introduces a cycle", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      configureComplexRecipe(ResourcesIds.Wood, [{ resource: ResourcesIds.Stone, amount: 1 }], 1);
+      configureComplexRecipe(ResourcesIds.Stone, [{ resource: ResourcesIds.Wood, amount: 1 }], 1);
+
+      const plan = buildRealmProductionPlan({
+        realmConfig: makeRealmConfig(
+          { presetId: "custom" },
+          {
+            [ResourcesIds.Wood]: { resourceToResource: 50, laborToResource: 0 },
+            [ResourcesIds.Stone]: { resourceToResource: 50, laborToResource: 0 },
+          },
+        ),
+        snapshot: makeSnapshot([ResourcesIds.Wood, ResourcesIds.Stone], {
+          [ResourcesIds.Wood]: 100,
+          [ResourcesIds.Stone]: 100,
+        }),
+      });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("dependency cycle"),
+        expect.objectContaining({ missing: expect.any(Array) }),
+      );
+      expect(plan.evaluatedResourceIds).toContain(ResourcesIds.Wood);
+      expect(plan.evaluatedResourceIds).toContain(ResourcesIds.Stone);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it("allows one smart troop cycle when percentage math floors to zero but one cycle is affordable", () => {
