@@ -1,7 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { getFreshPendingStaminaSource } from "@/lib/army-stamina/source-store";
-import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -24,7 +23,7 @@ import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, StaminaManager } from "@bibliothecadao/eternum";
 
 import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -2814,18 +2813,19 @@ ${
       return null;
     }
 
-    const staminaDisplay = buildProjectedStaminaDisplayModel({
-      committedCurrent: staminaSnapshot.current,
-      committedMax: staminaSnapshot.max,
-      armiesTickTimeRemaining,
-      currentArmiesTick,
-      troops: staminaSnapshot.troops,
-    });
+    // Compute stamina one tick ahead to get the stable regen value.
+    // StaminaManager.getStamina() returns raw onchain amount when
+    // lastRefillTick == currentArmiesTick (guard clause). Using tick+1
+    // always applies regen, giving the correct computed display value.
+    const nextTickStamina = staminaSnapshot.troops
+      ? Number(StaminaManager.getStamina(staminaSnapshot.troops, currentArmiesTick + 1).amount)
+      : staminaSnapshot.current;
+    const stableCurrentStamina = Math.min(nextTickStamina, staminaSnapshot.max);
 
     return {
-      current: Math.round(staminaDisplay.displayCurrent),
+      current: stableCurrentStamina,
       max: staminaSnapshot.max,
-      displayRatio: staminaDisplay.displayRatio,
+      displayRatio: staminaSnapshot.max > 0 ? stableCurrentStamina / staminaSnapshot.max : 0,
     };
   }
 
