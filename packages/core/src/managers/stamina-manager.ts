@@ -3,6 +3,9 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { configManager } from "./config-manager";
 
+let _staminaDebugCount = 0;
+const STAMINA_DEBUG_LIMIT = 20;
+
 export class StaminaManager {
   constructor(
     private components: ClientComponents,
@@ -35,6 +38,10 @@ export class StaminaManager {
     const maxStamina = staminaConfig.staminaMax;
 
     if (lastRefillTick >= BigInt(currentArmiesTick)) {
+      if (_staminaDebugCount < STAMINA_DEBUG_LIMIT) {
+        _staminaDebugCount++;
+        console.warn(`[STAMINA-DEBUG] guard clause hit: lastRefillTick=${lastRefillTick} >= currentArmiesTick=${currentArmiesTick}, raw amount=${troops.stamina.amount}, maxStamina=${maxStamina}, category=${troops.category}, tier=${troops.tier}`);
+      }
       return structuredClone(troops.stamina);
     }
 
@@ -59,6 +66,11 @@ export class StaminaManager {
       Number(troops.stamina.amount),
       additionalStaminaBoost,
     );
+
+    if (_staminaDebugCount < STAMINA_DEBUG_LIMIT) {
+      _staminaDebugCount++;
+      console.warn(`[STAMINA-DEBUG] regen computed: rawAmount=${troops.stamina.amount}, computedAmount=${newStamina.amount}, maxStamina=${maxStamina}, staminaPerTick=${staminaPerTick}, ticksSinceLastRefill=${ticksSinceLastRefill}, lastRefillTick=${lastRefillTick}, currentArmiesTick=${currentArmiesTick}`);
+    }
 
     return newStamina;
   }
