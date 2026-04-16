@@ -99,7 +99,12 @@ describe("createWebGPURendererBackend", () => {
   it("disposes a partially created renderer when initialization hangs past the timeout", async () => {
     vi.useFakeTimers();
     const renderer = Object.assign(createRendererSurface(), {
-      init: vi.fn(() => new Promise(() => {})),
+      init: vi.fn(
+        () =>
+          new Promise<void>(() => {
+            // Keep initialization pending to exercise the timeout fallback path.
+          }),
+      ),
     });
     const backend = createWebGPURendererBackend(
       {
