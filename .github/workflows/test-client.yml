@@ -148,7 +148,16 @@ jobs:
         run: |
           node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
             --base-url https://127.0.0.1:4173 \
-            --scenes map,hex
+            --scenes map,hex \
+            --artifact-dir /tmp/renderer-scene-smoke-artifacts
+
+      - name: Upload renderer scene smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-scene-smoke-artifacts
+          path: /tmp/renderer-scene-smoke-artifacts
+          if-no-files-found: ignore
 
       - name: Run renderer debug smoke
         run: |

@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
@@ -239,23 +241,36 @@ function sleep(ms) {
   });
 }
 
-function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
+function invokeAgentBrowser(session, commandArgs, { headed = false } = {}) {
   const baseArgs = ["-y", "agent-browser", "--session", session];
   if (headed) {
     baseArgs.push("--headed");
   }
 
-  const result = spawnSync("npx", [...baseArgs, ...commandArgs], {
+  return spawnSync("npx", [...baseArgs, ...commandArgs], {
     cwd: resolveAgentBrowserWorkingDirectory(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
+}
+
+function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
+  const result = invokeAgentBrowser(session, commandArgs, { headed });
 
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || result.stdout.trim() || `agent-browser failed for session ${session}`);
   }
 
   return result.stdout.trim();
+}
+
+function tryRunAgentBrowser(session, commandArgs, { headed = false } = {}) {
+  const result = invokeAgentBrowser(session, commandArgs, { headed });
+  return {
+    ok: result.status === 0,
+    stdout: (result.stdout ?? "").trim(),
+    stderr: (result.stderr ?? "").trim(),
+  };
 }
 
 function parseErrorLines(raw) {
@@ -265,7 +280,66 @@ function parseErrorLines(raw) {
     .filter(Boolean);
 }
 
-async function runSceneSmoke({ baseUrl, chain, headed, rendererMode, scene, sessionToken, waitMs, worldName }) {
+function truncateForLog(value, limit = 4000) {
+  if (!value) {
+    return "";
+  }
+  if (value.length <= limit) {
+    return value;
+  }
+  return `${value.slice(0, limit)}\n…[truncated ${value.length - limit} chars]`;
+}
+
+function ensureArtifactDir(artifactDir) {
+  if (!artifactDir) {
+    return null;
+  }
+  mkdirSync(artifactDir, { recursive: true });
+  return artifactDir;
+}
+
+function dumpSceneSmokeFailureDiagnostics({ artifactDir, headed, rendererMode, scene, session }) {
+  const slug = `${scene}-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}`;
+  const consoleLog = tryRunAgentBrowser(session, ["console"], { headed });
+  const errorsLog = tryRunAgentBrowser(session, ["errors"], { headed });
+  const htmlDump = tryRunAgentBrowser(session, ["get", "html"], { headed });
+  const screenshotPath = artifactDir ? join(artifactDir, `${slug}.png`) : null;
+  const screenshotResult = screenshotPath
+    ? tryRunAgentBrowser(session, ["screenshot", screenshotPath], { headed })
+    : { ok: false, stdout: "", stderr: "skipped (no --artifact-dir)" };
+
+  process.stderr.write(`\n=== scene-smoke failure diagnostics: ${slug} ===\n`);
+  process.stderr.write(`--- console ---\n${truncateForLog(consoleLog.stdout || consoleLog.stderr)}\n`);
+  process.stderr.write(`--- errors ---\n${truncateForLog(errorsLog.stdout || errorsLog.stderr)}\n`);
+  process.stderr.write(`--- html ---\n${truncateForLog(htmlDump.stdout)}\n`);
+  if (screenshotPath) {
+    process.stderr.write(
+      `--- screenshot ---\n${screenshotResult.ok ? screenshotPath : screenshotResult.stderr || "failed"}\n`,
+    );
+  }
+
+  if (artifactDir) {
+    try {
+      writeFileSync(join(artifactDir, `${slug}.console.log`), consoleLog.stdout || consoleLog.stderr || "");
+      writeFileSync(join(artifactDir, `${slug}.errors.log`), errorsLog.stdout || errorsLog.stderr || "");
+      writeFileSync(join(artifactDir, `${slug}.html`), htmlDump.stdout || "");
+    } catch (writeError) {
+      process.stderr.write(`[scene-smoke] failed to persist diagnostics: ${writeError?.message ?? writeError}\n`);
+    }
+  }
+}
+
+async function runSceneSmoke({
+  artifactDir,
+  baseUrl,
+  chain,
+  headed,
+  rendererMode,
+  scene,
+  sessionToken,
+  waitMs,
+  worldName,
+}) {
   const session = `renderer-smoke-${scene}-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}-${sessionToken}`;
   const url = buildSceneSmokeUrl({ baseUrl, chain, rendererMode, scene, worldName });
 
@@ -288,6 +362,10 @@ async function runSceneSmoke({ baseUrl, chain, headed, rendererMode, scene, sess
     openedUrl,
     unableToStartCount,
   });
+
+  if (!evaluation.ok) {
+    dumpSceneSmokeFailureDiagnostics({ artifactDir, headed, rendererMode, scene, session });
+  }
 
   return {
     ...evaluation,
@@ -312,6 +390,7 @@ async function main(argv) {
   const waitMs = Number(readOption(argv, "--wait-ms", String(DEFAULT_WAIT_MS)));
   const requestedWorldName = readOption(argv, "--world", "");
   const headed = readFlag(argv, "--headed");
+  const artifactDir = ensureArtifactDir(readOption(argv, "--artifact-dir", ""));
   const worldName = await resolveSceneSmokeWorldName({ chain, requestedWorldName });
   const sessionToken = Date.now().toString(36);
 
@@ -319,6 +398,7 @@ async function main(argv) {
   for (const scene of scenes) {
     results.push(
       await runSceneSmoke({
+        artifactDir,
         baseUrl,
         chain,
         headed,
