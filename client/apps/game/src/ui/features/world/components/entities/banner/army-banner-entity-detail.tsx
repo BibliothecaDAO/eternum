@@ -127,11 +127,9 @@ const ArmyBannerEntityDetailContent = memo(
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
             <InlineStaminaBar
-              stamina={derivedData.stamina}
+              currentStamina={derivedData.staminaDisplay?.displayCurrent ?? Number(derivedData.stamina.amount)}
               maxStamina={derivedData.maxStamina}
-              displayRatio={derivedData.staminaDisplay?.displayRatio}
               isRecharging={derivedData.staminaDisplay?.isRecharging}
-              projectedCurrent={derivedData.staminaDisplay?.displayCurrent}
             />
           ) : null}
         </div>
@@ -193,24 +191,18 @@ export const ArmyBannerEntityDetail = memo(
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 
 const InlineStaminaBar = ({
-  stamina,
+  currentStamina,
   maxStamina,
-  displayRatio,
   isRecharging,
-  projectedCurrent,
 }: {
-  stamina: { amount: bigint; updated_tick: bigint };
+  currentStamina: number;
   maxStamina: number;
-  displayRatio?: number;
   isRecharging?: boolean | null;
-  projectedCurrent?: number;
 }) => {
-  if (!stamina || maxStamina === 0) return null;
+  if (maxStamina === 0) return null;
   const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
-    current: Number(stamina.amount),
+    current: currentStamina,
     max: maxStamina,
-    displayRatio,
-    projectedCurrent,
   });
   const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
   const recharging = isRecharging ?? isStaminaRecharging(displayedCurrent, maxStamina);

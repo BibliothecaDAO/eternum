@@ -1,8 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { getFreshPendingStaminaSource, useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
-import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
@@ -18,10 +16,16 @@ interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
 }
 
+interface StaminaDisplayData {
+  isRecharging: boolean;
+  displayCurrent: number;
+  displayRatio: number;
+}
+
 interface DerivedArmyData {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
-  staminaDisplay: ArmyStaminaPresentation | null;
+  staminaDisplay: StaminaDisplayData | null;
   playerGuild?: { name: string } | undefined;
   addressName?: string;
   isMine: boolean;
@@ -44,7 +48,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   } = useDojo();
   const mode = useGameModeConfig();
 
-  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const { currentArmiesTick } = useBlockTimestamp();
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
@@ -140,19 +144,17 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
-    const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
+    // staminaSnapshot.current is the computed regen value from
+    // StaminaManager.getStamina(troops, currentArmiesTick). Use directly.
+    const computedAmount = staminaSnapshot?.current ?? 0;
     const maxStamina = staminaSnapshot?.max ?? 0;
-    // buildProjectedStaminaDisplayModel internally computes getStamina(troops, tick+1)
-    // and interpolates from committed toward the next-tick value, handling the guard
-    // clause case automatically.
-    const staminaDisplay = staminaSnapshot
-      ? buildProjectedStaminaDisplayModel({
-          committedCurrent: Number(stamina.amount),
-          committedMax: maxStamina,
-          armiesTickTimeRemaining,
-          currentArmiesTick,
-          troops: staminaSnapshot.troops,
-        })
+    const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
+    const staminaDisplay: StaminaDisplayData | null = staminaSnapshot
+      ? {
+          isRecharging: computedAmount >= 0 && computedAmount < maxStamina,
+          displayCurrent: computedAmount,
+          displayRatio: maxStamina > 0 ? computedAmount / maxStamina : 0,
+        }
       : null;
 
     const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
@@ -174,7 +176,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       structureOwnerName,
     };
   }, [
-    armiesTickTimeRemaining,
     armyEntityId,
     components,
     currentArmiesTick,

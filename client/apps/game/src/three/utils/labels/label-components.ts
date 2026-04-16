@@ -295,14 +295,12 @@ export const createStaminaBar = (
   currentStamina: number,
   maxStamina: number,
   inputView: CameraView,
-  displayRatio?: number,
 ): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const recharging = isStaminaRecharging(currentStamina, maxStamina);
   const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: currentStamina,
     max: maxStamina,
-    displayRatio,
   });
   const container = document.createElement("div");
   container.setAttribute("data-component", "stamina-bar");
@@ -851,7 +849,6 @@ export const updateStaminaBar = (
   staminaBarElement: HTMLElement,
   currentStamina: number,
   maxStamina: number,
-  displayRatio?: number,
 ): void => {
   const percentElement = staminaBarElement.querySelector("[data-role='stamina-percent']") as HTMLElement | null;
   const progressContainer = staminaBarElement.querySelector("[data-role='progress-container']") as HTMLElement | null;
@@ -862,7 +859,6 @@ export const updateStaminaBar = (
   const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: currentStamina,
     max: maxStamina,
-    displayRatio,
   });
 
   if (percentElement) {

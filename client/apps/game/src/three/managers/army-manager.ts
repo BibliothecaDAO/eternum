@@ -1,7 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { getFreshPendingStaminaSource } from "@/lib/army-stamina/source-store";
-import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -2814,22 +2813,12 @@ ${
       return null;
     }
 
-    // buildProjectedStaminaDisplayModel internally calls
-    // getStamina(troops, currentArmiesTick + 1) to compute the next-tick
-    // value and interpolates from committed toward it. This handles the
-    // guard clause case (lastRefillTick == currentArmiesTick) automatically.
-    const staminaDisplay = buildProjectedStaminaDisplayModel({
-      committedCurrent: staminaSnapshot.current,
-      committedMax: staminaSnapshot.max,
-      armiesTickTimeRemaining,
-      currentArmiesTick,
-      troops: staminaSnapshot.troops,
-    });
-
+    // staminaSnapshot.current is already the computed regen value from
+    // StaminaManager.getStamina(troops, currentArmiesTick). Use it directly.
     return {
-      current: Math.round(staminaDisplay.displayCurrent),
+      current: staminaSnapshot.current,
       max: staminaSnapshot.max,
-      displayRatio: staminaDisplay.displayRatio,
+      displayRatio: staminaSnapshot.max > 0 ? staminaSnapshot.current / staminaSnapshot.max : 0,
     };
   }
 
@@ -2911,7 +2900,7 @@ ${
       return;
     }
 
-    updateStaminaBar(staminaBar as HTMLElement, army.currentStamina, army.maxStamina, army.displayStaminaRatio);
+    updateStaminaBar(staminaBar as HTMLElement, army.currentStamina, army.maxStamina);
   }
 
   /**
