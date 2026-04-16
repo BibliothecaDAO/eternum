@@ -175,8 +175,23 @@ export const selectFreshestTroopsSnapshot = (input: {
     return null;
   }
 
-  return candidates.reduce(compareSnapshots).troops ?? null;
+  const winner = candidates.reduce(compareSnapshots);
+
+  if (typeof window !== "undefined" && input.entityId) {
+    // Diagnostic: log when selection changes. Remove after debugging.
+    const key = String(input.entityId);
+    const fingerprint = `${winner.source}:${winner.amount}:${winner.updatedTick}`;
+    if (_lastStaminaSourceFingerprint.get(key) !== fingerprint) {
+      _lastStaminaSourceFingerprint.set(key, fingerprint);
+      const summary = candidates.map((c) => `${c.source}(amt=${c.amount},tick=${c.updatedTick})`).join(" | ");
+      console.warn(`[STAMINA-SRC] entity=${input.entityId} winner=${winner.source} ${summary}`);
+    }
+  }
+
+  return winner.troops ?? null;
 };
+
+const _lastStaminaSourceFingerprint = new Map<string, string>();
 
 export const getExplorerStaminaSnapshot = (
   input: ExplorerStaminaSnapshotInput,
