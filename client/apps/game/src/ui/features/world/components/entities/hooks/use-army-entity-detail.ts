@@ -5,7 +5,7 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
+import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -140,18 +140,14 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
+    const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
     const maxStamina = staminaSnapshot?.max ?? 0;
-    // Compute stamina one tick ahead to bypass the guard clause in
-    // StaminaManager.getStamina() when lastRefillTick == currentArmiesTick.
-    // This gives a stable computed value matching the 3D label path.
-    const stableStamina = staminaSnapshot?.troops
-      ? Number(StaminaManager.getStamina(staminaSnapshot.troops, currentArmiesTick + 1).amount)
-      : Number(staminaSnapshot?.stamina?.amount ?? 0n);
-    const stableAmount = Math.min(stableStamina, maxStamina);
-    const stamina = { amount: BigInt(stableAmount), updated_tick: BigInt(currentArmiesTick + 1) };
+    // buildProjectedStaminaDisplayModel internally computes getStamina(troops, tick+1)
+    // and interpolates from committed toward the next-tick value, handling the guard
+    // clause case automatically.
     const staminaDisplay = staminaSnapshot
       ? buildProjectedStaminaDisplayModel({
-          committedCurrent: stableAmount,
+          committedCurrent: Number(stamina.amount),
           committedMax: maxStamina,
           armiesTickTimeRemaining,
           currentArmiesTick,

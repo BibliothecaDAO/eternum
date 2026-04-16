@@ -24,7 +24,7 @@ import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import { Position, StaminaManager } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 
 import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -2814,19 +2814,12 @@ ${
       return null;
     }
 
-    // Use tick+1 as committed base to bypass the guard clause in
-    // StaminaManager.getStamina() (which returns raw onchain amount when
-    // lastRefillTick == currentArmiesTick). Then use the projection model
-    // to animate smoothly from this stable base toward the next tick value.
-    const committedCurrent = staminaSnapshot.troops
-      ? Math.min(
-          Number(StaminaManager.getStamina(staminaSnapshot.troops, currentArmiesTick + 1).amount),
-          staminaSnapshot.max,
-        )
-      : staminaSnapshot.current;
-
+    // buildProjectedStaminaDisplayModel internally calls
+    // getStamina(troops, currentArmiesTick + 1) to compute the next-tick
+    // value and interpolates from committed toward it. This handles the
+    // guard clause case (lastRefillTick == currentArmiesTick) automatically.
     const staminaDisplay = buildProjectedStaminaDisplayModel({
-      committedCurrent,
+      committedCurrent: staminaSnapshot.current,
       committedMax: staminaSnapshot.max,
       armiesTickTimeRemaining,
       currentArmiesTick,
