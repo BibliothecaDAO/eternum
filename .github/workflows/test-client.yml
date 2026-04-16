@@ -144,6 +144,12 @@ jobs:
           cat /tmp/eternum-game-preview.log >&2 || true
           exit 1
 
+      - name: Run renderer scene smoke
+        run: |
+          node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
+            --base-url https://127.0.0.1:4173 \
+            --scenes map,hex
+
       - name: Run renderer debug smoke
         run: |
           node ./client/apps/game/scripts/run-renderer-debug-smoke.mjs \

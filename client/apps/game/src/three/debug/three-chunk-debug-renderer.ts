@@ -96,6 +96,7 @@ const createDebugRenderer = (canvas: HTMLCanvasElement): THREE.WebGLRenderer => 
     antialias: true,
     alpha: true,
     powerPreference: "high-performance",
+    // Required for CI readPixels smoke checks. Keep this out of the production renderer.
     preserveDrawingBuffer: true,
   });
 
@@ -305,11 +306,8 @@ const destroyDebugRuntime = (runtime: DebugRuntime): void => {
 };
 
 const disposeDebugObject = (object: THREE.Object3D): void => {
-  if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments || object instanceof THREE.GridHelper) {
-    object.geometry.dispose();
-  }
-
   if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
+    object.geometry.dispose();
     disposeMaterial(object.material);
   }
 };

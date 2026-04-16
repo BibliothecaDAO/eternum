@@ -39,17 +39,18 @@ describe("test-client workflow", () => {
     expect(workflow).not.toContain("if: false # Temporarily disabled");
   });
 
-  it("runs the renderer debug smoke path against a live local game server", () => {
+  it("runs the renderer scene and debug smoke paths against a live local game server", () => {
     const workflow = readWorkflow();
 
     expect(workflow).toContain("pnpm --dir ./client/apps/game preview --host 127.0.0.1 --port 4173");
     expect(workflow).toContain("curl --fail --silent --show-error --insecure https://127.0.0.1:4173");
+    expect(workflow).toContain("node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs");
+    expect(workflow).toContain("--scenes map,hex");
     expect(workflow).toContain("node ./client/apps/game/scripts/run-renderer-debug-smoke.mjs");
     expect(workflow).toContain("--base-url https://127.0.0.1:4173");
     expect(workflow).toContain("--scenarios baseline,stress");
     expect(workflow).toContain("--output /tmp/renderer-debug-smoke.json");
     expect(workflow).toContain("renderer-debug-smoke-result");
-    expect(workflow).not.toContain("node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs");
   });
 
   it("sets up pnpm before enabling pnpm caching in setup-node", () => {
