@@ -96,6 +96,37 @@ describe("createWebGPURendererBackend", () => {
     expect(backend.renderer).toBeUndefined();
   });
 
+  it("disposes a partially created renderer when initialization hangs past the timeout", async () => {
+    vi.useFakeTimers();
+    const renderer = Object.assign(createRendererSurface(), {
+      init: vi.fn(() => new Promise(() => {})),
+    });
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(async () => ({
+          activeMode: "webgpu" as const,
+          renderer,
+        })),
+        now: vi.fn(() => 0),
+      },
+    );
+
+    const initPromise = backend.initialize();
+    const initExpectation = expect(initPromise).rejects.toThrow("WebGPU renderer init timed out after 4000ms");
+    await vi.advanceTimersByTimeAsync(4_000);
+
+    await initExpectation;
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
+    expect(backend.renderer).toBeUndefined();
+    vi.useRealTimers();
+  });
+
   it("marks the diagnostics as degraded when the gpu device is lost", async () => {
     let resolveLost: ((value: { message: string }) => void) | undefined;
     const renderer = Object.assign(createRendererSurface(), {
