@@ -27,7 +27,7 @@ export function buildArmyLabelLayoutDataKey(army: ArmyLabelContentFields): strin
 }
 
 export function buildArmyLabelStaminaDataKey(army: ArmyLabelContentFields): string {
-  return `${army.currentStamina}-${army.maxStamina}-${Math.round((army.displayStaminaRatio ?? 0) * 10000)}`;
+  return `${army.currentStamina}-${army.maxStamina}`;
 }
 
 export function syncArmyLabelContentState(input: {

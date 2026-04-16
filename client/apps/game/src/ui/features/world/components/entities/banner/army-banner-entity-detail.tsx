@@ -206,7 +206,7 @@ const InlineStaminaBar = ({
   projectedCurrent?: number;
 }) => {
   if (!stamina || maxStamina === 0) return null;
-  const { committedPercentage, projectedPercentage, displayedCurrent } = resolveStaminaDisplay({
+  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: Number(stamina.amount),
     max: maxStamina,
     displayRatio,
@@ -218,9 +218,9 @@ const InlineStaminaBar = ({
   let fillClass = "bg-progress-bar-danger";
   if (displayedCurrent >= minTravelCost) {
     fillClass =
-      projectedPercentage > 66
+      displayPercentage > 66
         ? "bg-progress-bar-good"
-        : projectedPercentage > 33
+        : displayPercentage > 33
           ? "bg-progress-bar-medium"
           : "bg-progress-bar-danger";
   }
@@ -244,7 +244,7 @@ const InlineStaminaBar = ({
             "h-full rounded-full transition-all duration-1000 -mt-2",
             recharging && STAMINA_RECHARGING_FILL_CLASS,
           )}
-          style={{ width: `${projectedPercentage}%` }}
+          style={{ width: `${displayPercentage}%` }}
         />
       </div>
       <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>

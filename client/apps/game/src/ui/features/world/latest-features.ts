@@ -25,7 +25,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-04-16",
     title: "Live Stamina Labels",
     description:
-      "World-map army labels now show projected stamina recharge between army ticks, so refilling stamina visibly progresses while you watch the map.",
+      "World-map army labels now keep stamina values aligned with the computed stamina shown in army details, avoiding stale or over-projected label values.",
     type: "fix",
     gameSlug: "eternum",
   },

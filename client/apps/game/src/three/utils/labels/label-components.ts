@@ -299,7 +299,7 @@ export const createStaminaBar = (
 ): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const recharging = isStaminaRecharging(currentStamina, maxStamina);
-  const { committedPercentage, projectedPercentage, displayedCurrent } = resolveStaminaDisplay({
+  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: currentStamina,
     max: maxStamina,
     displayRatio,
@@ -378,7 +378,7 @@ export const createStaminaBar = (
   if (recharging) {
     projectedFill.classList.add(STAMINA_RECHARGING_FILL_CLASS);
   }
-  projectedFill.style.width = `${projectedPercentage}%`;
+  projectedFill.style.width = `${displayPercentage}%`;
 
   if (committedPercentage > 66) {
     progressFill.style.backgroundColor = "#10b981";
@@ -859,7 +859,7 @@ export const updateStaminaBar = (
   const projectedFill = staminaBarElement.querySelector("[data-role='projected-progress-fill']") as HTMLElement | null;
   const textElement = staminaBarElement.querySelector("[data-role='stamina-text']") as HTMLElement;
   const recharging = isStaminaRecharging(currentStamina, maxStamina);
-  const { committedPercentage, projectedPercentage, displayedCurrent } = resolveStaminaDisplay({
+  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: currentStamina,
     max: maxStamina,
     displayRatio,
@@ -903,7 +903,7 @@ export const updateStaminaBar = (
     }
 
     if (projectedFill) {
-      projectedFill.style.width = `${projectedPercentage}%`;
+      projectedFill.style.width = `${displayPercentage}%`;
       projectedFill.classList.toggle(STAMINA_RECHARGING_FILL_CLASS, recharging);
     }
   }

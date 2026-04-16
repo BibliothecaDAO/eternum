@@ -40,14 +40,14 @@ function createArmyLabelData(overrides: Partial<ArmyLabelContentFields> = {}): A
 describe("army label data keys", () => {
   it("separates layout fields from stamina fields", () => {
     expect(buildArmyLabelLayoutDataKey(createArmyLabelData())).toBe("10-8-true-Alice-45-90");
-    expect(buildArmyLabelStaminaDataKey(createArmyLabelData())).toBe("9-100-4000");
+    expect(buildArmyLabelStaminaDataKey(createArmyLabelData())).toBe("9-100");
   });
 
-  it("tracks small projected stamina changes so recharge labels can update every second", () => {
+  it("ignores projected-only stamina changes so computed labels do not rerender every second", () => {
     const initialKey = buildArmyLabelStaminaDataKey(createArmyLabelData({ displayStaminaRatio: 0.4 }));
     const nextKey = buildArmyLabelStaminaDataKey(createArmyLabelData({ displayStaminaRatio: 0.4002 }));
 
-    expect(nextKey).not.toBe(initialKey);
+    expect(nextKey).toBe(initialKey);
   });
 });
 
@@ -105,14 +105,14 @@ describe("syncArmyLabelContentState", () => {
       renderStamina,
     });
 
-    expect(label.userData.lastDataKey).toBe("22-8-true-Alice-45-90|9-100-4000");
+    expect(label.userData.lastDataKey).toBe("22-8-true-Alice-45-90|9-100");
     expect(label.userData.lastLayoutDataKey).toBe("22-8-true-Alice-45-90");
-    expect(label.userData.lastStaminaDataKey).toBe("9-100-4000");
+    expect(label.userData.lastStaminaDataKey).toBe("9-100");
     expect(renderLabel).toHaveBeenCalledTimes(1);
     expect(renderStamina).not.toHaveBeenCalled();
   });
 
-  it("updates only stamina when visible layout data is stable", () => {
+  it("skips rendering when only projected stamina changes", () => {
     const label = createArmyLabelStub();
     const initialArmy = createArmyLabelData();
     label.userData.lastLayoutDataKey = buildArmyLabelLayoutDataKey(initialArmy);
@@ -129,9 +129,30 @@ describe("syncArmyLabelContentState", () => {
       renderStamina,
     });
 
-    expect(label.userData.lastDataKey).toBe("10-8-true-Alice-45-90|9-100-4002");
+    expect(renderLabel).not.toHaveBeenCalled();
+    expect(renderStamina).not.toHaveBeenCalled();
+  });
+
+  it("updates only stamina when visible computed stamina changes", () => {
+    const label = createArmyLabelStub();
+    const initialArmy = createArmyLabelData();
+    label.userData.lastLayoutDataKey = buildArmyLabelLayoutDataKey(initialArmy);
+    label.userData.lastStaminaDataKey = buildArmyLabelStaminaDataKey(initialArmy);
+    const renderLabel = vi.fn();
+    const renderStamina = vi.fn();
+
+    syncArmyLabelContentState({
+      label: label as never,
+      layoutDataKey: buildArmyLabelLayoutDataKey(createArmyLabelData({ currentStamina: 10 })),
+      staminaDataKey: buildArmyLabelStaminaDataKey(createArmyLabelData({ currentStamina: 10 })),
+      labelsAttachedToScene: true,
+      renderLabel,
+      renderStamina,
+    });
+
+    expect(label.userData.lastDataKey).toBe("10-8-true-Alice-45-90|10-100");
     expect(label.userData.lastLayoutDataKey).toBe("10-8-true-Alice-45-90");
-    expect(label.userData.lastStaminaDataKey).toBe("9-100-4002");
+    expect(label.userData.lastStaminaDataKey).toBe("10-100");
     expect(renderLabel).not.toHaveBeenCalled();
     expect(renderStamina).toHaveBeenCalledTimes(1);
   });
