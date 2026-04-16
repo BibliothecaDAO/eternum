@@ -2823,7 +2823,7 @@ ${
     });
 
     return {
-      current: staminaSnapshot.current,
+      current: Math.round(staminaDisplay.displayCurrent),
       max: staminaSnapshot.max,
       displayRatio: staminaDisplay.displayRatio,
     };
