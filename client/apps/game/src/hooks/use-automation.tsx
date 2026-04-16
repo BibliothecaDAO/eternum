@@ -111,14 +111,14 @@ export const useAutomation = () => {
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const mode = useGameModeConfig();
   const realmResourcesSignatureRef = useRef<string>("");
-  const initialBlockTimestampMsRef = useRef<number | null>(null);
-  if (initialBlockTimestampMsRef.current === null) {
-    initialBlockTimestampMsRef.current = getBlockTimestamp().currentBlockTimestamp * 1000;
+  const initialAutomationTimestampMsRef = useRef<number | null>(null);
+  if (initialAutomationTimestampMsRef.current === null) {
+    initialAutomationTimestampMsRef.current = Date.now();
   }
-  const initialBlockTimestampMs = initialBlockTimestampMsRef.current!;
-  const automationEnabledAtRef = useRef<number>(initialBlockTimestampMs + PROCESS_INTERVAL_MS);
-  const lastRunBlockTimestampRef = useRef<number>(initialBlockTimestampMs);
-  const nextRunBlockTimestampRef = useRef<number>(automationEnabledAtRef.current);
+  const initialAutomationTimestampMs = initialAutomationTimestampMsRef.current!;
+  const automationEnabledAtRef = useRef<number>(initialAutomationTimestampMs + PROCESS_INTERVAL_MS);
+  const lastRunTimestampRef = useRef<number>(initialAutomationTimestampMs);
+  const nextRunTimestampRef = useRef<number>(automationEnabledAtRef.current);
   const scheduleNextCheckRef = useRef<() => void>();
   const automationTimeoutIdRef = useRef<number | null>(null);
   const syncedRealmIdsRef = useRef<Set<string>>(new Set());
@@ -468,20 +468,21 @@ export const useAutomation = () => {
 
   const runAutomationIfDue = useCallback(async () => {
     const { currentBlockTimestamp } = getBlockTimestamp();
-    const blockTimestampMs = currentBlockTimestamp * 1000;
+    // Use wall clock time for scheduling so stale chain time cannot freeze automation.
+    const nowMs = Date.now();
 
     if (isGameOver(currentBlockTimestamp)) {
       stopAutomation();
       return;
     }
 
-    const lastRunMs = lastRunBlockTimestampRef.current ?? blockTimestampMs;
+    const lastRunMs = lastRunTimestampRef.current ?? nowMs;
     const nextEligibleMs = Math.max(lastRunMs + PROCESS_INTERVAL_MS, automationEnabledAtRef.current);
 
-    nextRunBlockTimestampRef.current = nextEligibleMs;
+    nextRunTimestampRef.current = nextEligibleMs;
     setNextRunTimestampRef.current(nextEligibleMs);
 
-    if (blockTimestampMs < nextEligibleMs) {
+    if (nowMs < nextEligibleMs) {
       scheduleNextCheckRef.current?.();
       return;
     }
@@ -489,10 +490,10 @@ export const useAutomation = () => {
     try {
       await processRealmsRef.current();
     } finally {
-      lastRunBlockTimestampRef.current = blockTimestampMs;
-      automationEnabledAtRef.current = blockTimestampMs + PROCESS_INTERVAL_MS;
-      nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
-      setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+      lastRunTimestampRef.current = nowMs;
+      automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
+      nextRunTimestampRef.current = automationEnabledAtRef.current;
+      setNextRunTimestampRef.current(nextRunTimestampRef.current);
       scheduleNextCheckRef.current?.();
     }
   }, [isGameOver, setNextRunTimestampRef, stopAutomation]);
@@ -546,12 +547,12 @@ export const useAutomation = () => {
       const newSignature = computeSignature(state.realms);
       if (newSignature !== realmResourcesSignatureRef.current) {
         realmResourcesSignatureRef.current = newSignature;
-        const currentBlockMs = getBlockTimestamp().currentBlockTimestamp * 1000;
-        if (currentBlockMs >= automationEnabledAtRef.current) {
-          lastRunBlockTimestampRef.current = currentBlockMs;
-          automationEnabledAtRef.current = currentBlockMs + PROCESS_INTERVAL_MS;
-          nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
-          setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+        const nowMs = Date.now();
+        if (nowMs >= automationEnabledAtRef.current) {
+          lastRunTimestampRef.current = nowMs;
+          automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
+          nextRunTimestampRef.current = automationEnabledAtRef.current;
+          setNextRunTimestampRef.current(nextRunTimestampRef.current);
           void processRealmsRef.current();
         }
         scheduleNextCheckRef.current?.();
@@ -570,7 +571,7 @@ export const useAutomation = () => {
       };
     }
 
-    setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+    setNextRunTimestampRef.current(nextRunTimestampRef.current);
     scheduleNextCheck();
     return () => {
       if (automationTimeoutIdRef.current !== null) {

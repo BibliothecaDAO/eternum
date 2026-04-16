@@ -14,4 +14,13 @@ describe("useAutomation source", () => {
     expect(source).toContain("extractReadableErrorMessage");
     expect(source).not.toContain("String(rawError)");
   });
+
+  it("uses wall clock time for scheduling so stale chain time cannot freeze production automation", () => {
+    const source = readSource("src/hooks/use-automation.tsx");
+
+    expect(source).toContain("Use wall clock time for scheduling");
+    expect(source).toContain("const nowMs = Date.now();");
+    expect(source).toContain("if (nowMs < nextEligibleMs)");
+    expect(source).not.toContain("const blockTimestampMs = currentBlockTimestamp * 1000");
+  });
 });
