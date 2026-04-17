@@ -105,7 +105,28 @@ describe("explorer stamina source selection", () => {
     });
   });
 
-  it("prefers a pending local stamina overlay over same-tick remote snapshots", () => {
+  it("prefers a pending local stamina overlay when it is strictly newer than remote snapshots", () => {
+    const liveTroops = buildTroops(6n, 80n);
+    const snapshotTroops = buildTroops(6n, 50n);
+
+    expect(
+      selectFreshestTroopsSnapshot({
+        liveTroops: liveTroops as never,
+        snapshotTroops: snapshotTroops as never,
+        pendingStamina: {
+          amount: 20n,
+          updatedTick: 7,
+        },
+      }),
+    ).toMatchObject({
+      stamina: {
+        amount: 20n,
+        updated_tick: 7n,
+      },
+    });
+  });
+
+  it("discards a pending overlay once onchain snapshots have caught up to its tick", () => {
     const liveTroops = buildTroops(6n, 80n);
     const snapshotTroops = buildTroops(6n, 50n);
 
@@ -118,12 +139,7 @@ describe("explorer stamina source selection", () => {
           updatedTick: 6,
         },
       }),
-    ).toMatchObject({
-      stamina: {
-        amount: 20n,
-        updated_tick: 6n,
-      },
-    });
+    ).toBe(snapshotTroops);
   });
 
   it("projects stamina from the freshest selected source", () => {
