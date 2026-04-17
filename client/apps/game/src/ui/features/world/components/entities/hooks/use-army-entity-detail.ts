@@ -175,16 +175,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [
-    armyEntityId,
-    components,
-    currentArmiesTick,
-    explorer,
-    mode,
-    staminaSnapshot,
-    structure,
-    userAddress,
-  ]);
+  }, [armyEntityId, components, currentArmiesTick, explorer, mode, staminaSnapshot, structure, userAddress]);
 
   const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
     if (!derivedData) return undefined;

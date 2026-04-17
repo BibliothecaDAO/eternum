@@ -291,11 +291,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 /**
  * Create stamina bar component
  */
-export const createStaminaBar = (
-  currentStamina: number,
-  maxStamina: number,
-  inputView: CameraView,
-): HTMLElement => {
+export const createStaminaBar = (currentStamina: number, maxStamina: number, inputView: CameraView): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const recharging = isStaminaRecharging(currentStamina, maxStamina);
   const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
@@ -845,11 +841,7 @@ export const updateIncomingTroopDisplay = (
 /**
  * Update an existing stamina bar with new values
  */
-export const updateStaminaBar = (
-  staminaBarElement: HTMLElement,
-  currentStamina: number,
-  maxStamina: number,
-): void => {
+export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina: number, maxStamina: number): void => {
   const percentElement = staminaBarElement.querySelector("[data-role='stamina-percent']") as HTMLElement | null;
   const progressContainer = staminaBarElement.querySelector("[data-role='progress-container']") as HTMLElement | null;
   const progressFill = staminaBarElement.querySelector("[data-role='progress-fill']") as HTMLElement;
