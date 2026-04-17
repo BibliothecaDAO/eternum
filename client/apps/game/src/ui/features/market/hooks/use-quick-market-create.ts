@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { CairoCustomEnum, Call, CallData, uint256, type Abi, type RawArgsObject, type Uint256 } from "starknet";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { findMarketByPrizeAddressAcrossChains } from "@/pm/hooks/queries";
 import { getPredictionMarketChain, getPredictionMarketConfig } from "@/pm/prediction-market-config";
 import { normalizeHex } from "@/runtime/world/normalize";
@@ -635,13 +636,13 @@ export const useQuickMarketCreate = (
         blockIdentifier: "pre_confirmed",
       });
 
-      // Execute the transaction
-      const result = await account.execute([approveCall, createMarketCall]);
-
-      // Wait for confirmation if the account supports it
-      if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
-        await account.waitForTransaction(result.transaction_hash);
-      }
+      await executeObservedClientTransaction({
+        account,
+        calls: [approveCall, createMarketCall],
+        surface: "prediction_market",
+        operation: "market_create",
+        worldName,
+      });
 
       toast.success(`Prediction market created for ${worldName}!`);
     } catch (e) {

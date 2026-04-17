@@ -9,7 +9,7 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("App play-route normalization", () => {
   it("only normalizes direct play routes while the boot overlay still owns entry handoff", () => {
-    const source = readSource("src/app.tsx");
+    const source = readSource("src/game-client-app.tsx");
 
     expect(source).toContain("normalizePlayBootLocation");
     expect(source).toContain("const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);");

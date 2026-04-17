@@ -1,4 +1,5 @@
 import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import {
   fetchLandingLeaderboard,
@@ -1283,7 +1284,16 @@ export const finalizeGameRankingAndMMR = async ({
         entrypoint: "blitz_prize_claim_no_game",
         calldata: [onlyPlayer],
       };
-      await signer.execute([claimNoGameCall]);
+      await executeObservedClientTransaction({
+        account: signer,
+        calls: [claimNoGameCall],
+        surface: "game_review",
+        operation: "blitz_prize_claim_no_game",
+        chain,
+        worldName,
+        worldAddress: profile.worldAddress,
+        waitForConfirmation: false,
+      });
     } else {
       const totalPlayers = playersForSubmission.length;
       const playerBatches = chunk(playersForSubmission, RANKING_BATCH_SIZE);
@@ -1295,7 +1305,16 @@ export const finalizeGameRankingAndMMR = async ({
           entrypoint: "blitz_prize_player_rank",
           calldata: [randomTrialId(), index === 0 ? totalPlayers : 0, batch.length, ...batch],
         };
-        await signer.execute([playerRankCall]);
+        await executeObservedClientTransaction({
+          account: signer,
+          calls: [playerRankCall],
+          surface: "game_review",
+          operation: "blitz_prize_player_rank",
+          chain,
+          worldName,
+          worldAddress: profile.worldAddress,
+          waitForConfirmation: false,
+        });
       }
     }
 
@@ -1331,7 +1350,16 @@ export const finalizeGameRankingAndMMR = async ({
             },
           ];
 
-          return signer.execute(calls);
+          return await executeObservedClientTransaction({
+            account: signer,
+            calls,
+            surface: "game_review",
+            operation: "commit_and_claim_game_mmr",
+            chain,
+            worldName,
+            worldAddress: profile.worldAddress,
+            waitForConfirmation: false,
+          });
         },
       });
 
@@ -1429,7 +1457,16 @@ const claimGameReviewRewardsForPlayers = async ({
     }
     calls.push(claimCall);
 
-    await signer.execute(calls);
+    await executeObservedClientTransaction({
+      account: signer,
+      calls,
+      surface: "game_review",
+      operation: "blitz_prize_claim",
+      chain,
+      worldName,
+      worldAddress: profile.worldAddress,
+      waitForConfirmation: false,
+    });
   }
 
   return {

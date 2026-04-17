@@ -9,7 +9,7 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("AMM feature wiring", () => {
   it("nests the AMM route inside the landing dashboard instead of mounting a standalone shell", () => {
-    const appSource = readSource("src/app.tsx");
+    const appSource = readSource("src/game-client-app.tsx");
     const landingSource = readSource("src/ui/features/landing/index.ts");
     const layoutSource = readSource("src/ui/features/landing/landing-layout.tsx");
 

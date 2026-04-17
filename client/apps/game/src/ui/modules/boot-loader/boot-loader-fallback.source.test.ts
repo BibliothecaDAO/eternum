@@ -16,11 +16,13 @@ describe("Boot loader crash fallback wiring", () => {
     expect(mainSource).toContain("<BootLoaderCrashFallback />");
   });
 
-  it("wraps the non-Sentry render path with the crash fallback", () => {
+  it("wraps the non-Sentry render path with a boot-only crash fallback", () => {
     const mainSource = readSource("src/main.tsx");
 
+    expect(mainSource).toContain("class BootCrashBoundary extends React.Component");
+    expect(mainSource).not.toContain('from "./ui/shared/error-boundary"');
     expect(mainSource).toMatch(
-      /:\s*\(\s*<Sentry\.ErrorBoundary fallback={<BootLoaderCrashFallback \/>}>\s*<App \/>\s*<\/Sentry\.ErrorBoundary>\s*\)/s,
+      /:\s*\(\s*<BootCrashBoundary fallback={<BootLoaderCrashFallback \/>}>\s*<App \/>\s*<\/BootCrashBoundary>\s*\)/s,
     );
   });
 });

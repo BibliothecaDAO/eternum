@@ -1,6 +1,6 @@
 import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ArrowLeftRight, Home, Menu, Settings, TrendingUp, Trophy, User, X } from "lucide-react";
+import { ArrowLeftRight, Bug, Home, Menu, Settings, TrendingUp, Trophy, User, X } from "lucide-react";
 import { useState, useCallback } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { getSectionFromPath, getActiveSubItem, getSubItemHref } from "../context/navigation-config";
@@ -24,7 +24,16 @@ const mobileNavItems: MobileNavItem[] = [
   { icon: User, label: "Profile", path: "/profile" },
   { icon: TrendingUp, label: "Markets", path: "/markets" },
   { icon: ArrowLeftRight, label: "AMM", path: "/amm" },
+  ...buildDebugMobileNavItems(),
 ];
+
+function buildDebugMobileNavItems(): MobileNavItem[] {
+  if (!import.meta.env.DEV) {
+    return [];
+  }
+
+  return [{ icon: Bug, label: "Debug", path: "/debug/three-chunks" }];
+}
 
 /**
  * Mobile hamburger menu drawer

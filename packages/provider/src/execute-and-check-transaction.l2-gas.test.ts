@@ -1,6 +1,7 @@
 import type { Call, ResourceBoundsBN } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 import { EternumProvider } from "./index";
+import type { TransactionFailedPayload } from "./types";
 
 const makeResourceBounds = (l2GasMaxAmount: bigint): ResourceBoundsBN => ({
   l1_gas: { max_amount: 1n, max_price_per_unit: 1n },
@@ -30,6 +31,12 @@ const makeProvider = () => {
   provider.pendingVrfExecutionLocks = new Map();
   provider.TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   return provider;
+};
+
+const findTransactionFailedPayload = (
+  provider: ReturnType<typeof makeProvider>,
+): TransactionFailedPayload | undefined => {
+  return provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed")?.[1];
 };
 
 describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
@@ -230,8 +237,12 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
 
-    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
-    expect(failedEmit?.[1]).toBe("Transaction failed to submit: insufficient balance");
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      message: "Transaction failed to submit: insufficient balance",
+      stage: "submit",
+      entrypoints: ["settle_realms"],
+      contractAddresses: ["0x1"],
+    });
   });
 
   it("prefers nested revert reason over generic short rpc messages", async () => {
@@ -255,8 +266,10 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
 
-    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
-    expect(failedEmit?.[1]).toBe("Transaction failed to submit: one of the tiles in path is occupied");
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      message: "Transaction failed to submit: one of the tiles in path is occupied",
+      stage: "submit",
+    });
   });
 
   it("extracts hex-annotated starknet nested reasons before generic rpc text", async () => {
@@ -283,8 +296,10 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
 
-    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
-    expect(failedEmit?.[1]).toBe("Transaction failed to submit: Population exceeds capacity");
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      message: "Transaction failed to submit: Population exceeds capacity",
+      stage: "submit",
+    });
   });
 
   it("does not surface protocol error codes when no readable reason is available", async () => {
@@ -304,8 +319,10 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
 
-    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
-    expect(failedEmit?.[1]).toBe("Transaction failed to submit: Unknown error");
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      message: "Transaction failed to submit: Unknown error",
+      stage: "submit",
+    });
   });
 
   it("falls back for wrapped generic string errors without serializing quotes", async () => {
@@ -325,7 +342,82 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
 
-    const failedEmit = provider.emit.mock.calls.find((emitCall: unknown[]) => emitCall[0] === "transactionFailed");
-    expect(failedEmit?.[1]).toBe("Transaction failed to submit: Unknown error");
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      message: "Transaction failed to submit: Unknown error",
+      stage: "submit",
+    });
+  });
+
+  it("emits revert payloads with transaction hash after submission", async () => {
+    const provider = makeProvider();
+    provider.provider = {
+      waitForTransaction: vi.fn().mockResolvedValue({
+        isReverted: () => true,
+        execution_error: "Execution reverted: realm occupied",
+      }),
+    };
+    provider.waitForTransactionWithCheckInternal =
+      EternumProvider.prototype["waitForTransactionWithCheckInternal"].bind(provider);
+    provider.waitForTransactionWithTimeout = EternumProvider.prototype["waitForTransactionWithTimeout"].bind(provider);
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toThrow(
+      "Transaction failed with reason: realm occupied",
+    );
+
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      transactionHash: "0xabc",
+      stage: "revert",
+      message: "realm occupied",
+    });
+  });
+
+  it("marks asynchronous post-timeout confirmation failures as background confirmation", async () => {
+    const provider = makeProvider();
+    let rejectWait!: (error: unknown) => void;
+    provider.waitForTransactionWithCheckInternal = vi.fn().mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          rejectWait = reject;
+        }),
+    );
+    provider.waitForTransactionWithTimeout = vi.fn().mockResolvedValue({ status: "pending" });
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    const pendingResult = await provider.executeAndCheckTransaction(signer, call);
+    expect(pendingResult).toMatchObject({
+      statusReceipt: "PENDING",
+      transaction_hash: "0xabc",
+    });
+
+    rejectWait(new Error("confirmation failed"));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      transactionHash: "0xabc",
+      stage: "background_confirmation",
+      message: "confirmation failed",
+    });
   });
 });

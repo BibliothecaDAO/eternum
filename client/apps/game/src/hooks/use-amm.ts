@@ -2,6 +2,7 @@ import { useMemo, useCallback } from "react";
 import { useAccount } from "@starknet-react/core";
 import type { Call } from "starknet";
 import { env } from "../../env";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { GameAmmClient } from "@/services/amm";
 
 interface AmmRuntimeConfig {
@@ -57,7 +58,12 @@ export function useAmm() {
         throw new Error("Wallet not connected");
       }
       const callArray = Array.isArray(calls) ? calls : [calls];
-      const result = await account.execute(callArray);
+      const result = await executeObservedClientTransaction<{ transaction_hash: string }>({
+        account,
+        calls: callArray,
+        surface: "amm",
+        operation: "amm_execute",
+      });
       return result.transaction_hash;
     },
     [account, client],
