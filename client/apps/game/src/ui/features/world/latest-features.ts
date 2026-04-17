@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-16",
+    title: "Automation Skip Reasons",
+    description:
+      "Production automation now shows why a realm was skipped, making inactive buildings, missing inputs, and budget limits easier to diagnose.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-15",
     title: "Blitz Settlement Handoff Fix",
     description:

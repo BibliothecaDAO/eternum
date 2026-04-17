@@ -1,4 +1,5 @@
 import {
+  buildAutomationPlanSkipMessage,
   buildExecutionSummary,
   buildRealmProductionPlan,
   buildRealmResourceSnapshot,
@@ -7,6 +8,21 @@ import {
   type RealmProductionPlan,
   type RealmResourceSnapshot,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import {
+  AutomationCancelledError,
+  AutomationSignerSkippedError,
+  executeProductionPlansSequentially,
+  isSignerTransientError,
+  type ExecutableProductionPlan,
+} from "@/ui/features/infrastructure/automation/model/automation-runner";
+import { computeAutomationConfigSignature } from "@/utils/automation-signature";
+import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
+import {
+  computeNextEligibleMs,
+  computePostPassSchedulerUpdate,
+  computeScheduleDelayMs,
+  shouldAdvanceSchedulerBookkeeping,
+} from "./automation-scheduler";
 import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import {
   useAutomationStore,
@@ -14,7 +30,6 @@ import {
   DONKEY_DEFAULT_RESOURCE_PERCENT,
   type ResourceAutomationPercentages,
   type RealmAutomationExecutionSummary,
-  type RealmAutomationConfig,
 } from "./store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
@@ -26,6 +41,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Account as StarknetAccount } from "starknet";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -81,6 +97,8 @@ const formatCustomPercentagesLog = (percentages: Record<number, ResourceAutomati
     percentages: value,
   }));
 
+type ProcessRealmsResult = { ran: boolean; anyExecuted: boolean };
+
 export const useAutomation = () => {
   const {
     setup: {
@@ -93,30 +111,33 @@ export const useAutomation = () => {
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
   const recordStatus = useAutomationStore((state) => state.recordStatus);
-  const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
   const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
   const pruneForGame = useAutomationStore((state) => state.pruneForGame);
   const hydrated = useAutomationStore((state) => state.hydrated);
   const processingRef = useRef(false);
-  const processRealmsRef = useRef<() => Promise<boolean>>(async () => false);
+  const processRealmsRef = useRef<() => Promise<ProcessRealmsResult>>(async () => ({
+    ran: false,
+    anyExecuted: false,
+  }));
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
   const playerStructures = useOwnedProductionStructureInfos();
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const mode = useGameModeConfig();
   const realmResourcesSignatureRef = useRef<string>("");
-  const initialBlockTimestampMsRef = useRef<number | null>(null);
-  if (initialBlockTimestampMsRef.current === null) {
-    initialBlockTimestampMsRef.current = getBlockTimestamp().currentBlockTimestamp * 1000;
+  const initialAutomationTimestampMsRef = useRef<number | null>(null);
+  if (initialAutomationTimestampMsRef.current === null) {
+    initialAutomationTimestampMsRef.current = Date.now();
   }
-  const initialBlockTimestampMs = initialBlockTimestampMsRef.current!;
-  const automationEnabledAtRef = useRef<number>(initialBlockTimestampMs + PROCESS_INTERVAL_MS);
-  const lastRunBlockTimestampRef = useRef<number>(initialBlockTimestampMs);
-  const nextRunBlockTimestampRef = useRef<number>(automationEnabledAtRef.current);
+  const initialAutomationTimestampMs = initialAutomationTimestampMsRef.current!;
+  const automationEnabledAtRef = useRef<number>(initialAutomationTimestampMs + PROCESS_INTERVAL_MS);
+  const lastRunTimestampRef = useRef<number>(initialAutomationTimestampMs);
+  const nextRunTimestampRef = useRef<number>(automationEnabledAtRef.current);
   const scheduleNextCheckRef = useRef<() => void>();
   const automationTimeoutIdRef = useRef<number | null>(null);
   const syncedRealmIdsRef = useRef<Set<string>>(new Set());
+  const pruneDuringProcessingRef = useRef<boolean>(false);
 
   const stopAutomation = useCallback(() => {
     if (automationTimeoutIdRef.current !== null) {
@@ -151,6 +172,16 @@ export const useAutomation = () => {
     const season = configManager.getSeasonConfig();
     const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
     pruneForGame(gameId);
+
+    const nowMs = Date.now();
+    if (processingRef.current) {
+      pruneDuringProcessingRef.current = true;
+    }
+    const update = computePostPassSchedulerUpdate(nowMs);
+    lastRunTimestampRef.current = update.lastRunMs;
+    automationEnabledAtRef.current = update.automationEnabledAtMs;
+    nextRunTimestampRef.current = update.nextRunMs;
+    setNextRunTimestampRef.current(nextRunTimestampRef.current);
   }, [components, pruneForGame]);
 
   useEffect(() => {
@@ -189,29 +220,29 @@ export const useAutomation = () => {
     });
   }, [hydrated, playerStructures, removeRealm, upsertRealm, mode]);
 
-  const processRealms = useCallback(async (): Promise<boolean> => {
-    if (processingRef.current) return false;
+  const processRealms = useCallback(async (): Promise<ProcessRealmsResult> => {
+    if (processingRef.current) return { ran: false, anyExecuted: false };
 
     if (isGameOver()) {
       console.log("Automation: Game has ended. Skipping automation pass.");
-      return false;
+      return { ran: false, anyExecuted: false };
     }
 
     if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
       console.log("Automation: Missing Starknet signer. Skipping automation pass.");
-      return false;
+      return { ran: false, anyExecuted: false };
     }
 
     if (!components) {
       console.log("Automation: Missing Dojo components. Skipping automation pass.");
-      return false;
+      return { ran: false, anyExecuted: false };
     }
 
     const realmList = Object.values(useAutomationStore.getState().realms).filter(
       (realm) => realm.entityType === "realm" || realm.entityType === "village",
     );
     if (realmList.length === 0) {
-      return false;
+      return { ran: false, anyExecuted: false };
     }
 
     processingRef.current = true;
@@ -222,15 +253,11 @@ export const useAutomation = () => {
       const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
 
       // Phase 1: Build all plans synchronously (no awaits, so no event loop yields)
-      const executablePlans: Array<{
-        plan: RealmProductionPlan;
-        realmConfig: (typeof realmList)[0];
-        realmLabel: string;
-        planLogPayload: Record<string, unknown>;
-      }> = [];
+      const executablePlans: ExecutableProductionPlan[] = [];
 
       for (const realmConfig of realmList) {
         let activeRealmConfig = realmConfig;
+        let runStatusNote: string | undefined;
         const realmIdNum = Number(activeRealmConfig.realmId);
         const realmLabel = activeRealmConfig.realmName ?? `Realm ${activeRealmConfig.realmId}`;
 
@@ -273,10 +300,12 @@ export const useAutomation = () => {
 
         if (activeRealmConfig.presetId === "custom" && activeRealmConfig.autoBalance) {
           try {
-            const resourceIdsForCheck =
-              producedResourceIds.length > 0
-                ? producedResourceIds
-                : Object.keys(activeRealmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds);
+            const resourceIdsForCheck = Array.from(
+              new Set<ResourcesIds>([
+                ...producedResourceIds,
+                ...Object.keys(activeRealmConfig.customPercentages ?? {}).map((key) => Number(key) as ResourcesIds),
+              ]),
+            );
 
             const effectivePercentages: Record<number, ResourceAutomationPercentages> = {};
             const smartDefaults = calculatePresetAllocations(
@@ -300,7 +329,8 @@ export const useAutomation = () => {
             );
 
             if (resourceOver || laborOver) {
-              console.log("[Automation] Auto-switching to smart preset due to over-allocation", {
+              runStatusNote = "Custom allocation over budget; used Smart for this run";
+              console.log("[Automation] Using smart preset for this run due to over-allocation", {
                 realmId: activeRealmConfig.realmId,
                 realmName: realmLabel,
                 producedResourceIds,
@@ -308,11 +338,11 @@ export const useAutomation = () => {
                 laborOver,
               });
 
-              setRealmPreset(activeRealmConfig.realmId, "smart");
-              const refreshed = getRealmConfig(activeRealmConfig.realmId);
-              if (refreshed) {
-                activeRealmConfig = refreshed;
-              }
+              activeRealmConfig = {
+                ...activeRealmConfig,
+                presetId: "smart",
+                customPercentages: {},
+              };
             }
           } catch (error) {
             console.error("[Automation] Failed to auto-balance custom allocations", activeRealmConfig.realmId, error);
@@ -348,55 +378,59 @@ export const useAutomation = () => {
 
         if (!planHasExecutableCalls(plan)) {
           console.log("[Automation] No executable automation calls detected", planLogPayload);
+          recordExecution(activeRealmConfig.realmId, buildExecutionSummary(plan, Date.now()));
           recordStatus(activeRealmConfig.realmId, {
             status: "skipped",
-            message: "No executable calls",
+            message: [runStatusNote, buildAutomationPlanSkipMessage(plan)].filter(Boolean).join("; "),
             attemptedAt: Date.now(),
             consecutiveFailures: 0,
           });
           continue;
         }
 
-        // Collect executable plans for parallel execution
+        // Collect executable plans for isolated execution.
         executablePlans.push({
           plan,
           realmConfig: activeRealmConfig,
           realmLabel,
-          planLogPayload,
+          planLogPayload: {
+            ...planLogPayload,
+            runStatusNote,
+          },
         });
       }
 
-      // Phase 2: Execute all plans in parallel (each realm gets its own independent transaction)
+      // Phase 2: Execute all plans sequentially so isolated per-realm txs do not race the same signer nonce.
       console.log(
         `[Automation] Planning complete: ${executablePlans.length} executable out of ${realmList.length} realms`,
       );
       if (executablePlans.length > 0) {
-        console.log(`[Automation] Executing ${executablePlans.length} production plans in parallel`);
+        console.log(`[Automation] Executing ${executablePlans.length} production plans sequentially`);
 
-        const results = await Promise.allSettled(
-          executablePlans.map(async ({ plan, realmConfig, realmLabel, planLogPayload }) => {
-            try {
-              console.log("[Automation] Executing production plan", planLogPayload);
-              const callset = plan.callset;
-              await execute_realm_production_plan({
-                signer: starknetSignerAccount as StarknetAccount,
-                realm_entity_id: plan.realmId,
-                skipQueue: true,
-                resource_to_resource: callset.resourceToResource.map((item) => ({
-                  resource_id: item.resourceId,
-                  cycles: item.cycles,
-                })),
-                labor_to_resource: callset.laborToResource.map((item) => ({
-                  resource_id: item.resourceId,
-                  cycles: item.cycles,
-                })),
-              });
-              return { plan, realmConfig, realmLabel, planLogPayload };
-            } catch (error) {
-              throw { error, realmConfig, realmLabel };
+        let signerFaultSurfacedForTick = false;
+        const results = await executeProductionPlansSequentially({
+          executablePlans,
+          signer: starknetSignerAccount as StarknetAccount,
+          executeRealmProductionPlan: execute_realm_production_plan,
+          onBeforeExecute: ({ planLogPayload }) => {
+            console.log("[Automation] Executing production plan", planLogPayload);
+          },
+          isCancelled: ({ plan, realmConfig }) => {
+            if (isGameOver()) {
+              return { cancelled: true, reason: "Game has ended", scope: "pass" };
             }
-          }),
-        );
+            const accountAddress = starknetSignerAccount?.address;
+            if (!accountAddress || accountAddress === "0x0") {
+              return { cancelled: true, reason: "Signer unavailable", scope: "pass" };
+            }
+            const realmIdNum = Number(realmConfig.realmId);
+            const entityId = Number.isFinite(realmIdNum) && realmIdNum > 0 ? realmIdNum : plan.realmId;
+            if (!isEntityOwnedByAccount(components, entityId, accountAddress)) {
+              return { cancelled: true, reason: "Realm no longer owned", scope: "realm" };
+            }
+            return { cancelled: false };
+          },
+        });
 
         // Phase 3: Process results
         for (const result of results) {
@@ -406,7 +440,7 @@ export const useAutomation = () => {
             recordExecution(realmConfig.realmId, summary);
             recordStatus(realmConfig.realmId, {
               status: "success",
-              message: undefined,
+              message: typeof planLogPayload.runStatusNote === "string" ? planLogPayload.runStatusNote : undefined,
               attemptedAt: Date.now(),
               consecutiveFailures: 0,
             });
@@ -434,17 +468,53 @@ export const useAutomation = () => {
               toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
             }
           } else {
-            const rejection = result.reason as {
-              error?: unknown;
-              realmConfig?: (typeof executablePlans)[0]["realmConfig"];
-              realmLabel?: string;
-            };
-            const rawError = rejection?.error ?? result.reason;
-            const errorMessage = rawError instanceof Error ? rawError.message : String(rawError);
-            const realmConfig = rejection?.realmConfig;
-            const realmLabel = rejection?.realmLabel ?? "Unknown realm";
+            const rejection = result.reason;
+            const rawError = rejection.error;
+            const realmConfig = rejection.realmConfig;
+            const realmLabel = rejection.realmLabel;
 
-            console.error(`Automation: Failed to execute plan for ${realmLabel}`, errorMessage);
+            if (rawError instanceof AutomationCancelledError) {
+              console.log("[Automation] Skipped realm due to cancellation", {
+                realmLabel,
+                reason: rawError.message,
+                scope: rawError.scope,
+              });
+              if (realmConfig) {
+                const prev = getRealmConfig(realmConfig.realmId);
+                recordStatus(realmConfig.realmId, {
+                  status: "skipped",
+                  message: rawError.message,
+                  attemptedAt: Date.now(),
+                  consecutiveFailures: prev?.lastStatus?.consecutiveFailures ?? 0,
+                });
+              }
+              continue;
+            }
+
+            if (rawError instanceof AutomationSignerSkippedError) {
+              console.log("[Automation] Skipped realm after signer fault earlier in pass", {
+                realmLabel,
+                reason: rawError.message,
+              });
+              if (realmConfig) {
+                const prev = getRealmConfig(realmConfig.realmId);
+                recordStatus(realmConfig.realmId, {
+                  status: "skipped",
+                  message: rawError.message,
+                  attemptedAt: Date.now(),
+                  consecutiveFailures: prev?.lastStatus?.consecutiveFailures ?? 0,
+                });
+              }
+              continue;
+            }
+
+            const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
+            const isSignerFault = isSignerTransientError(rawError);
+
+            console.error(`Automation: Failed to execute plan for ${realmLabel}`, {
+              error: rawError,
+              message: errorMessage,
+            });
 
             if (realmConfig) {
               const prev = getRealmConfig(realmConfig.realmId);
@@ -452,11 +522,20 @@ export const useAutomation = () => {
                 status: "failed",
                 message: errorMessage,
                 attemptedAt: Date.now(),
-                consecutiveFailures: (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
+                consecutiveFailures: isSignerFault
+                  ? (prev?.lastStatus?.consecutiveFailures ?? 0)
+                  : (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
               });
             }
 
-            toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
+            if (isSignerFault) {
+              if (!signerFaultSurfacedForTick) {
+                signerFaultSurfacedForTick = true;
+                toast.error(`Automation paused this tick: signer error — next tick will retry (${errorMessage})`);
+              }
+            } else {
+              toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
+            }
           }
         }
       }
@@ -464,45 +543,51 @@ export const useAutomation = () => {
       processingRef.current = false;
     }
 
-    return anyExecuted;
+    return { ran: true, anyExecuted };
   }, [
     components,
     execute_realm_production_plan,
     recordExecution,
     recordStatus,
     starknetSignerAccount,
-    setRealmPreset,
     getRealmConfig,
     isGameOver,
   ]);
 
   const runAutomationIfDue = useCallback(async () => {
     const { currentBlockTimestamp } = getBlockTimestamp();
-    const blockTimestampMs = currentBlockTimestamp * 1000;
+    // Use wall clock time for scheduling so stale chain time cannot freeze automation.
+    const nowMs = Date.now();
 
     if (isGameOver(currentBlockTimestamp)) {
       stopAutomation();
       return;
     }
 
-    const lastRunMs = lastRunBlockTimestampRef.current ?? blockTimestampMs;
-    const nextEligibleMs = Math.max(lastRunMs + PROCESS_INTERVAL_MS, automationEnabledAtRef.current);
+    const lastRunMs = lastRunTimestampRef.current ?? nowMs;
+    const nextEligibleMs = computeNextEligibleMs(lastRunMs, automationEnabledAtRef.current);
 
-    nextRunBlockTimestampRef.current = nextEligibleMs;
+    nextRunTimestampRef.current = nextEligibleMs;
     setNextRunTimestampRef.current(nextEligibleMs);
 
-    if (blockTimestampMs < nextEligibleMs) {
+    if (nowMs < nextEligibleMs) {
       scheduleNextCheckRef.current?.();
       return;
     }
 
+    let ran = false;
     try {
-      await processRealmsRef.current();
+      const result = await processRealmsRef.current();
+      ran = result.ran;
     } finally {
-      lastRunBlockTimestampRef.current = blockTimestampMs;
-      automationEnabledAtRef.current = blockTimestampMs + PROCESS_INTERVAL_MS;
-      nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
-      setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+      if (shouldAdvanceSchedulerBookkeeping(ran, pruneDuringProcessingRef.current)) {
+        const update = computePostPassSchedulerUpdate(nowMs);
+        lastRunTimestampRef.current = update.lastRunMs;
+        automationEnabledAtRef.current = update.automationEnabledAtMs;
+        nextRunTimestampRef.current = update.nextRunMs;
+        setNextRunTimestampRef.current(nextRunTimestampRef.current);
+      }
+      pruneDuringProcessingRef.current = false;
       scheduleNextCheckRef.current?.();
     }
   }, [isGameOver, setNextRunTimestampRef, stopAutomation]);
@@ -515,9 +600,7 @@ export const useAutomation = () => {
     if (automationTimeoutIdRef.current !== null) {
       window.clearTimeout(automationTimeoutIdRef.current);
     }
-    const now = Date.now();
-    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
-    const delay = Math.max(250, nextBlockMs - now);
+    const delay = computeScheduleDelayMs(Date.now());
     automationTimeoutIdRef.current = window.setTimeout(() => {
       void runAutomationIfDue();
     }, delay);
@@ -536,33 +619,26 @@ export const useAutomation = () => {
   }, [setNextRunTimestamp]);
 
   useEffect(() => {
-    const computeSignature = (realms: Record<string, RealmAutomationConfig>) =>
-      Object.entries(realms)
-        .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
-        .map(([realmId, realm]) => {
-          const customKeys = Object.keys(realm.customPercentages ?? {})
-            .toSorted()
-            .join(",");
-          const presetId = realm.presetId ?? "smart";
-          return `${realmId}:${presetId}:${customKeys}`;
-        })
-        .toSorted()
-        .join("|");
-
     const unsub = useAutomationStore.subscribe((state, prevState) => {
       if (state.realms === prevState.realms) return;
       if (isGameOver()) return;
 
-      const newSignature = computeSignature(state.realms);
+      const newSignature = computeAutomationConfigSignature(state.realms);
       if (newSignature !== realmResourcesSignatureRef.current) {
         realmResourcesSignatureRef.current = newSignature;
-        const currentBlockMs = getBlockTimestamp().currentBlockTimestamp * 1000;
-        if (currentBlockMs >= automationEnabledAtRef.current) {
-          lastRunBlockTimestampRef.current = currentBlockMs;
-          automationEnabledAtRef.current = currentBlockMs + PROCESS_INTERVAL_MS;
-          nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
-          setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
-          void processRealmsRef.current();
+        const nowMs = Date.now();
+        if (nowMs >= automationEnabledAtRef.current && !processingRef.current) {
+          void (async () => {
+            const result = await processRealmsRef.current();
+            if (shouldAdvanceSchedulerBookkeeping(result.ran, pruneDuringProcessingRef.current)) {
+              const update = computePostPassSchedulerUpdate(nowMs);
+              lastRunTimestampRef.current = update.lastRunMs;
+              automationEnabledAtRef.current = update.automationEnabledAtMs;
+              nextRunTimestampRef.current = update.nextRunMs;
+              setNextRunTimestampRef.current(nextRunTimestampRef.current);
+            }
+            pruneDuringProcessingRef.current = false;
+          })();
         }
         scheduleNextCheckRef.current?.();
       }
@@ -580,7 +656,7 @@ export const useAutomation = () => {
       };
     }
 
-    setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+    setNextRunTimestampRef.current(nextRunTimestampRef.current);
     scheduleNextCheck();
     return () => {
       if (automationTimeoutIdRef.current !== null) {
