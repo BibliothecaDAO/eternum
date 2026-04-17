@@ -180,8 +180,6 @@ export const selectFreshestTroopsSnapshot = (input: {
   return winner.troops ?? null;
 };
 
-const _lastDiagFingerprint = new Map<string, string>();
-
 export const getExplorerStaminaSnapshot = (
   input: ExplorerStaminaSnapshotInput,
 ): { current: number; max: number; stamina: { amount: bigint; updated_tick: bigint }; troops: Troops } | null => {
@@ -191,21 +189,6 @@ export const getExplorerStaminaSnapshot = (
   }
 
   const stamina = StaminaManager.getStamina(troops, input.currentArmiesTick);
-
-  if (typeof window !== "undefined" && input.entityId) {
-    const rawAmount = Number(troops.stamina?.amount ?? 0n);
-    const rawTick = Number(troops.stamina?.updated_tick ?? 0n);
-    const computedAmount = Number(stamina.amount);
-    const tickDiff = input.currentArmiesTick - rawTick;
-    const key = String(input.entityId);
-    const fp = `${rawAmount}:${rawTick}:${input.currentArmiesTick}:${computedAmount}`;
-    if (_lastDiagFingerprint.get(key) !== fp) {
-      _lastDiagFingerprint.set(key, fp);
-      console.warn(
-        `[STAMINA-DIAG] entity=${input.entityId} raw={amt:${rawAmount},tick:${rawTick}} currentTick=${input.currentArmiesTick} tickDiff=${tickDiff} → computed=${computedAmount}`,
-      );
-    }
-  }
 
   return {
     current: Number(stamina.amount),
