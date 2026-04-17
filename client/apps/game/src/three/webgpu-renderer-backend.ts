@@ -110,6 +110,7 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
 };
 
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
+const WEBGPU_RENDERER_INIT_TIMEOUT_MS = 4_000;
 let webGpuFrameRecoveryWarned = false;
 
 const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
@@ -200,6 +201,31 @@ function logRecoverableWebGpuFrameError(error: TypeError): void {
 
   webGpuFrameRecoveryWarned = true;
   console.warn("[WebGPURendererBackend] Recovered from a transient WebGPU frame failure", error);
+}
+
+async function waitForRendererInitialization(
+  renderer: WebGPURendererSurface,
+  timeoutMs: number,
+  setTimeoutFn: typeof setTimeout = setTimeout,
+  clearTimeoutFn: typeof clearTimeout = clearTimeout,
+): Promise<void> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const initPromise = renderer.init().catch((error) => {
+    throw error;
+  });
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeoutFn(() => {
+      reject(new Error(`WebGPU renderer init timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    await Promise.race([initPromise, timeoutPromise]);
+  } finally {
+    if (timeoutId !== undefined) {
+      clearTimeoutFn(timeoutId);
+    }
+  }
 }
 
 function renderMainFrameWithRecovery(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
@@ -300,7 +326,7 @@ export function createWebGPURendererBackend(
       try {
         createdRenderer.renderer.setPixelRatio(options.pixelRatio);
         createdRenderer.renderer.setSize(window.innerWidth, window.innerHeight);
-        await createdRenderer.renderer.init();
+        await waitForRendererInitialization(createdRenderer.renderer, WEBGPU_RENDERER_INIT_TIMEOUT_MS);
       } catch (error) {
         releaseDeviceDiagnostics();
         createdRenderer.renderer.dispose();

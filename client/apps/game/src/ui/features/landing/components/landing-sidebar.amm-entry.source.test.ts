@@ -13,7 +13,9 @@ describe("Landing dashboard AMM entry", () => {
     const navigationSource = readSource("src/ui/features/landing/context/navigation-config.ts");
     const headerSource = readSource("src/ui/features/landing/components/landing-header.tsx");
 
-    expect(navigationSource).toContain('type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile"');
+    expect(navigationSource).toContain(
+      'type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile" | "debug"',
+    );
     expect(navigationSource).toContain('id: "amm"');
     expect(navigationSource).toContain('label: "Agora"');
     expect(navigationSource).toContain('label: "AGORA"');

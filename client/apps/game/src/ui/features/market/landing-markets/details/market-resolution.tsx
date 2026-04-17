@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { Button } from "@/ui/design-system/atoms";
@@ -386,7 +387,15 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
 
       setIsResolving(true);
       try {
-        const executeResult = await withTxTimeout(account.execute([resolveCall]), "Resolve transaction");
+        const executeResult = await executeObservedClientTransaction({
+          account,
+          calls: [resolveCall],
+          surface: "prediction_market",
+          operation: "market_resolve",
+          waitForConfirmation: false,
+          confirm: false,
+          submit: async (callArray) => await withTxTimeout(account.execute(callArray), "Resolve transaction"),
+        });
         await waitForTxConfirmationIfAvailable(
           account as {
             waitForTransaction?: (txHash: string) => Promise<unknown>;
@@ -491,7 +500,17 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
             entrypoint: "blitz_prize_claim_no_game",
             calldata: [solePlayer],
           };
-          const executeResult = await withTxTimeout(account.execute([claimCall]), "Compute scores transaction");
+          const executeResult = await executeObservedClientTransaction({
+            account,
+            calls: [claimCall],
+            surface: "prediction_market",
+            operation: "market_compute_scores_claim_no_game",
+            chain,
+            worldName: serverName,
+            waitForConfirmation: false,
+            confirm: false,
+            submit: async (callArray) => await withTxTimeout(account.execute(callArray), "Compute scores transaction"),
+          });
           await waitForTxConfirmationIfAvailable(
             account as {
               waitForTransaction?: (txHash: string) => Promise<unknown>;
@@ -520,10 +539,21 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
             entrypoint: "blitz_prize_player_rank",
             calldata: [randomTrialId(), i === 0 ? total : 0, batch.length, ...batch],
           };
-          const executeResult = await withTxTimeout(
-            account.execute([rankCall]),
-            `Compute scores transaction (batch ${i + 1}/${batches.length})`,
-          );
+          const executeResult = await executeObservedClientTransaction({
+            account,
+            calls: [rankCall],
+            surface: "prediction_market",
+            operation: "market_compute_scores_rank_batch",
+            chain,
+            worldName: serverName,
+            waitForConfirmation: false,
+            confirm: false,
+            submit: async (callArray) =>
+              await withTxTimeout(
+                account.execute(callArray),
+                `Compute scores transaction (batch ${i + 1}/${batches.length})`,
+              ),
+          });
           await waitForTxConfirmationIfAvailable(
             account as {
               waitForTransaction?: (txHash: string) => Promise<unknown>;

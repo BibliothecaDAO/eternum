@@ -7,6 +7,22 @@ export interface BatchedTransactionDetail {
   count: number;
 }
 
+export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
+
+export interface TransactionLifecycleMeta {
+  type?: TransactionType;
+  transactionHash?: string;
+  transactionCount?: number;
+  batchDetails?: BatchedTransactionDetail[];
+  entrypoints?: string[];
+  contractAddresses?: string[];
+}
+
+export interface TransactionFailedPayload extends TransactionLifecycleMeta {
+  message: string;
+  stage: TransactionFailureStage;
+}
+
 export enum TransactionType {
   // Exploration & Movement
   EXPLORE = "explore",

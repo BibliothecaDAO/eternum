@@ -15,6 +15,7 @@ const getTxMessage = (type: TransactionType): string => {
 type TransactionFailurePayload = {
   message?: string;
   type?: (typeof TransactionType)[keyof typeof TransactionType];
+  stage?: string;
   transactionCount?: number;
   transactionHash?: string;
 };
@@ -43,16 +44,10 @@ export function TransactionNotification() {
       AudioManager.getInstance().play("ui.tx_success");
     };
 
-    const handleTransactionFailed = (error: string | TransactionFailurePayload, meta?: TransactionFailurePayload) => {
-      const message = extractReadableErrorMessage(error, extractReadableErrorMessage(meta, "Transaction failed."));
-      const type =
-        typeof error === "object" && error?.type ? error.type : typeof meta?.type !== "undefined" ? meta.type : null;
-      const transactionCount =
-        typeof error === "object" && typeof error?.transactionCount === "number"
-          ? error.transactionCount
-          : typeof meta?.transactionCount === "number"
-            ? meta.transactionCount
-            : null;
+    const handleTransactionFailed = (payload: TransactionFailurePayload) => {
+      const message = extractReadableErrorMessage(payload.message, "Transaction failed.");
+      const type = typeof payload?.type !== "undefined" ? payload.type : null;
+      const transactionCount = typeof payload?.transactionCount === "number" ? payload.transactionCount : null;
       const action = type ? getTxMessage(type) : "Action failed";
       const txCount = transactionCount ? ` (${transactionCount} transactions)` : "";
       const description = `${action}${txCount} - ${message}`;

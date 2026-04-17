@@ -22,6 +22,7 @@ interface TracingConfig {
 
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;
+let shutdownPromise: Promise<void> | null = null;
 
 const DEFAULT_CONFIG: TracingConfig = {
   serviceName: "eternum-game",
@@ -176,6 +177,7 @@ export function initTracing(config: TracingConfig = {}): void {
 
   // Get tracer instance
   tracer = trace.getTracer(finalConfig.serviceName || "eternum-game", finalConfig.version);
+  shutdownPromise = null;
 
   console.log("Tracing initialized with config:", finalConfig);
 }
@@ -315,8 +317,14 @@ async function measureAsync<T>(name: string, operation: () => Promise<T>, attrib
 
 // Cleanup function
 export function shutdownTracing(): Promise<void> {
-  if (tracerProvider) {
-    return tracerProvider.shutdown();
+  if (!tracerProvider) {
+    return Promise.resolve();
   }
-  return Promise.resolve();
+
+  shutdownPromise ??= tracerProvider.shutdown().finally(() => {
+    tracerProvider = null;
+    tracer = null;
+  });
+
+  return shutdownPromise;
 }

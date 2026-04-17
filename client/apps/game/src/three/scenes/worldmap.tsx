@@ -1023,9 +1023,8 @@ export default class WorldmapScene extends WarpTravel {
       });
     };
 
-    this.handleTransactionFailed = (_error: any, meta?: any) => {
-      const txHash =
-        typeof _error === "object" && _error?.transactionHash ? _error.transactionHash : meta?.transactionHash;
+    this.handleTransactionFailed = (payload: { transactionHash?: string }) => {
+      const txHash = payload?.transactionHash;
       if (!txHash) {
         return;
       }

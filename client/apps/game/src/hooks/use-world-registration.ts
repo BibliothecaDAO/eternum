@@ -3,11 +3,12 @@
  * Supports full entry token flow: obtain token -> wait for confirmation -> register.
  * On non-mainnet environments, auto-tops up fee tokens from master account if needed.
  */
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
-import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { ENTRY_TOKEN_LOCK_ID } from "@bibliothecadao/eternum";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
@@ -162,22 +163,17 @@ const fetchAvailableEntryTokenId = async (
   }
 };
 
-const waitForSubmittedRegistrationTransaction = async ({
-  result,
+const waitForRegistrationTransactionConfirmation = async ({
+  txHash,
   chain,
   label,
   account,
 }: {
-  result: unknown;
+  txHash: string;
   chain: Chain;
   label: string;
   account: Account;
 }) => {
-  const txHash = extractTransactionHash(result);
-  if (!txHash) {
-    throw new Error(`Missing transaction hash for ${label}`);
-  }
-
   const provider = new RpcProvider({ nodeUrl: getRpcUrlForChain(chain) });
   await waitForTransactionConfirmation({
     txHash,
@@ -445,16 +441,25 @@ export const useWorldRegistration = ({
           const point = params?.point ?? 0;
 
           setRegistrationStage("registering");
-          const createResult = await starknetAccount.execute({
-            contractAddress: realmSystemsAddress,
-            entrypoint: "create",
-            calldata: CallData.compile([owner, realmId, frontend, side, layer, point]),
-          });
-          await waitForSubmittedRegistrationTransaction({
-            result: createResult,
-            chain,
-            label: "realm_systems.create",
+          await executeObservedClientTransaction({
             account: starknetAccount,
+            calls: {
+              contractAddress: realmSystemsAddress,
+              entrypoint: "create",
+              calldata: CallData.compile([owner, realmId, frontend, side, layer, point]),
+            },
+            surface: "registration",
+            operation: "realm_systems.create",
+            chain,
+            worldName,
+            confirm: async (txHash, observedAccount) => {
+              await waitForRegistrationTransactionConfirmation({
+                txHash,
+                chain,
+                label: "realm_systems.create",
+                account: observedAccount as Account,
+              });
+            },
           });
           setRegistrationStage("done");
           return;
@@ -484,10 +489,18 @@ export const useWorldRegistration = ({
                   const shortfall = feeAmount - currentBalance;
                   const amount = uint256.bnToUint256(shortfall);
                   try {
-                    await masterAccount.execute({
-                      contractAddress: config.feeTokenAddress,
-                      entrypoint: "transfer",
-                      calldata: CallData.compile([address!, amount.low, amount.high]),
+                    await executeObservedClientTransaction({
+                      account: masterAccount,
+                      calls: {
+                        contractAddress: config.feeTokenAddress,
+                        entrypoint: "transfer",
+                        calldata: CallData.compile([address!, amount.low, amount.high]),
+                      },
+                      surface: "registration",
+                      operation: "fee_token.transfer_top_up",
+                      chain,
+                      worldName,
+                      waitForConfirmation: false,
                     });
                     // Wait a bit for the transfer to be indexed
                     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -502,7 +515,15 @@ export const useWorldRegistration = ({
             // Step 1: Obtain entry token
             setRegistrationStage("obtaining-token");
             const obtainCalls = buildObtainTokenCalls(blitzSystemsAddress);
-            await starknetAccount.execute(obtainCalls);
+            await executeObservedClientTransaction({
+              account: starknetAccount,
+              calls: obtainCalls,
+              surface: "registration",
+              operation: "blitz_realm_systems.obtain_entry_token",
+              chain,
+              worldName,
+              waitForConfirmation: false,
+            });
 
             // Step 2: Wait for token
             setRegistrationStage("waiting-for-token");
@@ -516,23 +537,41 @@ export const useWorldRegistration = ({
           // Step 3: Register with token
           setRegistrationStage("registering");
           const registerCalls = buildRegisterCalls(blitzSystemsAddress, tokenId);
-          const registerResult = await starknetAccount.execute(registerCalls);
-          await waitForSubmittedRegistrationTransaction({
-            result: registerResult,
-            chain,
-            label: "blitz_realm_systems.register",
+          await executeObservedClientTransaction({
             account: starknetAccount,
+            calls: registerCalls,
+            surface: "registration",
+            operation: "blitz_realm_systems.register",
+            chain,
+            worldName,
+            confirm: async (txHash, observedAccount) => {
+              await waitForRegistrationTransactionConfirmation({
+                txHash,
+                chain,
+                label: "blitz_realm_systems.register",
+                account: observedAccount as Account,
+              });
+            },
           });
         } else {
           // No entry token required - direct registration
           setRegistrationStage("registering");
           const registerCalls = buildRegisterCalls(blitzSystemsAddress, 0n);
-          const registerResult = await starknetAccount.execute(registerCalls);
-          await waitForSubmittedRegistrationTransaction({
-            result: registerResult,
-            chain,
-            label: "blitz_realm_systems.register",
+          await executeObservedClientTransaction({
             account: starknetAccount,
+            calls: registerCalls,
+            surface: "registration",
+            operation: "blitz_realm_systems.register",
+            chain,
+            worldName,
+            confirm: async (txHash, observedAccount) => {
+              await waitForRegistrationTransactionConfirmation({
+                txHash,
+                chain,
+                label: "blitz_realm_systems.register",
+                account: observedAccount as Account,
+              });
+            },
           });
         }
 

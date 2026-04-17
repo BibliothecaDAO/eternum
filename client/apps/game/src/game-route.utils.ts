@@ -21,7 +21,7 @@ export const resolveGameRouteView = ({
     return "redirect";
   }
 
-  if (isReconnectRequired) {
+  if (phase === "error" || isReconnectRequired) {
     return "reconnect";
   }
 
