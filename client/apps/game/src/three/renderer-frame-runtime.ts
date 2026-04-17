@@ -1,9 +1,7 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import type { Camera, Scene } from "three";
-import { renderRendererBackendFrame } from "./renderer-backend-compat";
 import { setRendererDiagnosticSceneName } from "./renderer-diagnostics";
-import type { RendererBackendV2, RendererOverlayPass } from "./renderer-backend-v2";
-import type { RendererSurfaceLike } from "./renderer-backend";
+import type { RendererBackend, RendererOverlayPass } from "./renderer-backend";
 import type { RendererLabelCadenceView, RendererLabelRuntime } from "./renderer-label-runtime";
 import { SceneName } from "./types";
 
@@ -34,7 +32,7 @@ interface ResolvedRendererFrame {
 }
 
 interface RunRendererFrameInput {
-  backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  backend: RendererBackend;
   camera: Camera;
   captureStatsSample: () => void;
   currentScene: SceneName | undefined;
@@ -237,7 +235,7 @@ function resolveRendererFrameOverlayPasses(input: {
 }
 
 function renderResolvedRendererFrame(input: {
-  backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  backend: RendererBackend;
   camera: Camera;
   hudScene: RendererFrameHudController;
   labelRuntime: Pick<RendererLabelRuntime, "render">;
@@ -248,7 +246,7 @@ function renderResolvedRendererFrame(input: {
     input.labelRuntime.render(input.resolvedFrame.scene, input.camera);
   }
 
-  renderRendererBackendFrame(input.backend, {
+  input.backend.renderFrame({
     mainCamera: input.camera,
     mainScene: input.resolvedFrame.scene,
     overlayPasses: input.resolvedFrame.overlayPasses,

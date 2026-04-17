@@ -1,12 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const disposeRendererBackend = vi.fn();
 const destroyTrackedGuiFolders = vi.fn();
 const disposeContactShadowResources = vi.fn();
-
-vi.mock("./renderer-backend-compat", () => ({
-  disposeRendererBackend,
-}));
 
 vi.mock("./utils/gui-folder-lifecycle", () => ({
   destroyTrackedGuiFolders,
@@ -28,6 +23,7 @@ describe("destroyRendererRuntime", () => {
     const removeWindowListener = vi.fn();
     const removeChild = vi.fn();
     const cleanupIntervals = [setInterval(() => {}, 60_000), setInterval(() => {}, 60_000)];
+    const backendDispose = vi.fn();
     const effectsBridgeRuntime = { dispose: vi.fn() };
     const interactionRuntime = { dispose: vi.fn() };
     const labelRuntime = { dispose: vi.fn() };
@@ -40,7 +36,7 @@ describe("destroyRendererRuntime", () => {
     const transitionManager = { destroy: vi.fn() };
 
     destroyRendererRuntime({
-      backend: { dispose: vi.fn() } as never,
+      backend: { dispose: backendDispose } as never,
       cleanupIntervals,
       effectsBridgeRuntime,
       guiFolders: [{} as never],
@@ -69,7 +65,7 @@ describe("destroyRendererRuntime", () => {
     expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
     expect(cleanupIntervals).toEqual([]);
     expect(removeChild).toHaveBeenCalledTimes(1);
-    expect(disposeRendererBackend).toHaveBeenCalledTimes(1);
+    expect(backendDispose).toHaveBeenCalledTimes(1);
     expect(worldmapScene.destroy).toHaveBeenCalledTimes(1);
     expect(fastTravelScene.destroy).toHaveBeenCalledTimes(1);
     expect(hexceptionScene.destroy).toHaveBeenCalledTimes(1);

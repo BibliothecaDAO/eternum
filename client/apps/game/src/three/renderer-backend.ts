@@ -13,17 +13,43 @@ import { PMREMGenerator } from "three";
 import { GraphicsSettings, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
-import {
-  createRendererBackendCapabilities,
-  createRendererInitDiagnostics,
-  type RendererBackendV2,
-  type RendererFramePipeline,
-  type RendererPostProcessController,
-  type RendererPostProcessPlan,
-  type RendererPostProcessRuntime,
-} from "./renderer-backend-v2";
-import { syncRenderPassScene } from "./renderer-pass-scene";
+import type { RendererBuildMode } from "./renderer-build-mode";
 import { createWebGLPostProcessRuntime } from "./webgl-postprocess-runtime";
+
+export type RendererActiveMode = "legacy-webgl" | "webgpu" | "webgl2-fallback";
+
+export interface RendererBackendCapabilities {
+  supportsEnvironmentIbl: boolean;
+  supportsToneMappingControl: boolean;
+  supportsColorGrade: boolean;
+  supportsBloom: boolean;
+  supportsVignette: boolean;
+  supportsChromaticAberration: boolean;
+  supportsWideLines: boolean;
+}
+
+export type RendererCapabilityFeature =
+  | "environmentIbl"
+  | "toneMappingControl"
+  | "colorGrade"
+  | "bloom"
+  | "vignette"
+  | "chromaticAberration"
+  | "wideLines";
+
+export interface RendererFeatureDegradation {
+  detail?: string;
+  feature: RendererCapabilityFeature;
+  reason: "disabled-by-quality" | "disabled-by-user" | "fallback-active" | "unsupported-backend";
+}
+
+export interface RendererInitDiagnostics {
+  activeMode: RendererActiveMode;
+  buildMode: RendererBuildMode;
+  fallbackReason: string | null;
+  initTimeMs: number;
+  requestedMode: RendererBuildMode;
+}
 
 export interface RendererInfoLike {
   autoReset?: boolean;
@@ -69,13 +95,66 @@ export interface RendererEnvironmentTargets {
   worldmapScene: EnvironmentSceneTarget;
 }
 
-export interface RendererBackend extends RendererBackendV2 {
+export interface RendererOverlayPass {
+  camera: Camera;
+  name?: string;
+  scene: Scene;
+}
+
+export interface RendererFramePipeline {
+  mainCamera: Camera;
+  mainScene: Scene;
+  overlayPasses?: RendererOverlayPass[];
+  sceneName?: string;
+}
+
+export interface RendererPostProcessPlan {
+  antiAlias: "fxaa" | "none";
+  bloom: {
+    enabled: boolean;
+    intensity: number;
+  };
+  chromaticAberration: {
+    enabled: boolean;
+  };
+  colorGrade: {
+    brightness: number;
+    contrast: number;
+    hue: number;
+    saturation: number;
+  };
+  toneMapping: {
+    exposure: number;
+    mode: "aces-filmic" | "cineon" | "linear" | "neutral" | "reinhard";
+    whitePoint: number;
+  };
+  vignette: {
+    darkness: number;
+    enabled: boolean;
+    offset: number;
+  };
+}
+
+export interface RendererPostProcessController {
+  setColorGrade(input: Partial<RendererPostProcessPlan["colorGrade"]>): void;
+  setVignette(input: Partial<Omit<RendererPostProcessPlan["vignette"], "enabled">>): void;
+}
+
+export interface RendererPostProcessRuntime {
+  dispose(): void;
+  renderFrame(pipeline: RendererFramePipeline): void;
+  setPlan(plan: RendererPostProcessPlan): RendererPostProcessController;
+  setSize(width: number, height: number): void;
+}
+
+export interface RendererBackend {
+  readonly capabilities: RendererBackendCapabilities;
   readonly renderer: RendererSurfaceLike;
   applyEnvironment(targets: RendererEnvironmentTargets): Promise<void>;
   applyPostProcessPlan(plan: RendererPostProcessPlan): RendererPostProcessController;
   applyQuality(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
   dispose(): void;
-  initialize(): Promise<ReturnType<typeof createRendererInitDiagnostics>>;
+  initialize(): Promise<RendererInitDiagnostics>;
   renderFrame(pipeline: RendererFramePipeline): void;
   resize(width: number, height: number): void;
 }
@@ -85,6 +164,33 @@ export type RendererBackendFactory = (options: {
   isMobileDevice: boolean;
   pixelRatio: number;
 }) => RendererBackend;
+
+export function createRendererBackendCapabilities(
+  input: Partial<RendererBackendCapabilities> = {},
+): RendererBackendCapabilities {
+  return {
+    supportsBloom: input.supportsBloom ?? false,
+    supportsChromaticAberration: input.supportsChromaticAberration ?? false,
+    supportsColorGrade: input.supportsColorGrade ?? false,
+    supportsEnvironmentIbl: input.supportsEnvironmentIbl ?? false,
+    supportsToneMappingControl: input.supportsToneMappingControl ?? false,
+    supportsVignette: input.supportsVignette ?? false,
+    supportsWideLines: input.supportsWideLines ?? false,
+  };
+}
+
+export function createRendererInitDiagnostics(
+  input: Pick<RendererInitDiagnostics, "activeMode" | "buildMode" | "requestedMode"> &
+    Partial<Pick<RendererInitDiagnostics, "fallbackReason" | "initTimeMs">>,
+): RendererInitDiagnostics {
+  return {
+    activeMode: input.activeMode,
+    buildMode: input.buildMode,
+    fallbackReason: input.fallbackReason ?? null,
+    initTimeMs: input.initTimeMs ?? 0,
+    requestedMode: input.requestedMode,
+  };
+}
 
 interface WebGLRendererBackendDependencies {
   createPostProcessRuntime(input: {

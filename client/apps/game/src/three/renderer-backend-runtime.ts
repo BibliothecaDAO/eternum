@@ -5,12 +5,16 @@ import {
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
 import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
-import { createWebGLRendererBackend, type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
-import type { RendererBackendV2 } from "./renderer-backend-v2";
+import {
+  createWebGLRendererBackend,
+  type RendererBackend,
+  type RendererBackendFactory,
+  type RendererSurfaceLike,
+} from "./renderer-backend";
 import type { RendererBuildMode } from "./renderer-build-mode";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 
-type RendererBackendRuntimeState = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+type RendererBackendRuntimeState = RendererBackend;
 
 interface InitializeRendererBackendRuntimeInput {
   backendFactory?: RendererBackendFactory;

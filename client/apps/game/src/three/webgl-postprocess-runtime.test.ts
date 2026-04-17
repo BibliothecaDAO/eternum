@@ -100,7 +100,7 @@ vi.mock("postprocessing", () => {
   };
 });
 
-import type { RendererPostProcessPlan } from "./renderer-backend-v2";
+import type { RendererPostProcessPlan } from "./renderer-backend";
 import { createWebGLPostProcessRuntime } from "./webgl-postprocess-runtime";
 
 function createPlan(overrides: Partial<RendererPostProcessPlan> = {}): RendererPostProcessPlan {

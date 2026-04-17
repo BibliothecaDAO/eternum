@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createRendererBackendCapabilities } from "./renderer-backend-v2";
+import { createRendererBackendCapabilities } from "./renderer-backend";
 import { resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
 import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
 

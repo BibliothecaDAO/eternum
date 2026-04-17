@@ -1,4 +1,4 @@
-import type { RendererCapabilityFeature, RendererFeatureDegradation } from "./renderer-backend-v2";
+import type { RendererCapabilityFeature, RendererFeatureDegradation } from "./renderer-backend";
 
 export const REQUIRED_RENDERER_PARITY_FEATURES: RendererCapabilityFeature[] = [
   "environmentIbl",

@@ -1,7 +1,5 @@
 import { GraphicsSettings } from "@/ui/config";
-import { resizeRendererBackend } from "./renderer-backend-compat";
-import type { RendererSurfaceLike } from "./renderer-backend";
-import type { RendererBackendV2 } from "./renderer-backend-v2";
+import type { RendererBackend } from "./renderer-backend";
 import type { RendererLabelRuntime } from "./renderer-label-runtime";
 
 interface RendererDisplayPolicyInput {
@@ -10,7 +8,7 @@ interface RendererDisplayPolicyInput {
 }
 
 interface ResizeRendererDisplayInput {
-  backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  backend: RendererBackend;
   camera: {
     aspect: number;
     updateProjectionMatrix(): void;
@@ -89,7 +87,7 @@ export function resizeRendererDisplay(input: ResizeRendererDisplayInput): void {
 
   input.camera.aspect = size.width / size.height;
   input.camera.updateProjectionMatrix();
-  resizeRendererBackend(input.backend, size.width, size.height);
+  input.backend.resize(size.width, size.height);
   input.labelRuntime?.resize(size.width, size.height);
   input.hudScene.onWindowResize(size.width, size.height);
 }

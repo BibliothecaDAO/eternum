@@ -1,16 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
+import {
+  createRendererBackendCapabilities,
+  createRendererInitDiagnostics,
+  type RendererBackend,
+} from "./renderer-backend";
 import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
+
+function createStubBackend(): RendererBackend {
+  return {
+    capabilities: createRendererBackendCapabilities(),
+    initialize: vi.fn(),
+  } as unknown as RendererBackend;
+}
 
 describe("initializeSelectedRendererBackend", () => {
   it("uses the legacy backend directly for the shipping lane", async () => {
     vi.stubGlobal("localStorage", {
       getItem: vi.fn(() => null),
     });
-    const legacyBackend = {
-      capabilities: createRendererBackendCapabilities(),
-      initialize: vi.fn(),
-    };
+    const legacyBackend = createStubBackend();
     const legacyFactory = vi.fn(async () => ({
       backend: legacyBackend,
       diagnostics: createRendererInitDiagnostics({
@@ -45,10 +53,7 @@ describe("initializeSelectedRendererBackend", () => {
     });
     const error = new Error("webgpu init failed");
     const legacyFactory = vi.fn(async () => ({
-      backend: {
-        capabilities: createRendererBackendCapabilities(),
-        initialize: vi.fn(),
-      },
+      backend: createStubBackend(),
       diagnostics: createRendererInitDiagnostics({
         activeMode: "legacy-webgl",
         buildMode: "legacy-webgl",

@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ToneMappingMode } from "postprocessing";
 import { resetRendererDiagnostics, snapshotRendererDiagnostics } from "./renderer-diagnostics";
-import { createRendererBackendCapabilities } from "./renderer-backend-v2";
+import { createRendererBackendCapabilities } from "./renderer-backend";
 
 vi.mock("@/three/constants", () => ({
   POST_PROCESSING_CONFIG: {

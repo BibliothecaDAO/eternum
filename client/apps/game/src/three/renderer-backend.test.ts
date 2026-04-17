@@ -23,7 +23,7 @@ vi.mock("three/examples/jsm/loaders/RGBELoader.js", () => ({
 }));
 
 import { createWebGLRendererBackend, _resetHDRCache } from "./renderer-backend";
-import type { RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
+import type { RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend";
 import type { RendererEnvironmentTargets } from "./renderer-backend";
 import { PMREMGenerator } from "three";
 

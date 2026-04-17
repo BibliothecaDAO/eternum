@@ -7,22 +7,23 @@ import {
   ReinhardToneMapping,
 } from "three";
 
-import type { RendererSurfaceLike } from "./renderer-backend";
+import {
+  createRendererBackendCapabilities,
+  createRendererInitDiagnostics,
+  type RendererActiveMode,
+  type RendererBackend,
+  type RendererEnvironmentTargets,
+  type RendererFramePipeline,
+  type RendererPostProcessController,
+  type RendererPostProcessRuntime,
+  type RendererPostProcessPlan,
+  type RendererSurfaceLike,
+} from "./renderer-backend";
 import {
   markRendererDiagnosticDeviceLost,
   markRendererDiagnosticDeviceReady,
   recordRendererDiagnosticUncapturedError,
 } from "./renderer-diagnostics";
-import {
-  createRendererBackendCapabilities,
-  createRendererInitDiagnostics,
-  type RendererActiveMode,
-  type RendererBackendV2,
-  type RendererFramePipeline,
-  type RendererPostProcessController,
-  type RendererPostProcessRuntime,
-  type RendererPostProcessPlan,
-} from "./renderer-backend-v2";
 import type { RendererBuildMode } from "./renderer-build-mode";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
@@ -261,7 +262,7 @@ export function createWebGPURendererBackend(
     requestedMode: ExperimentalRendererBuildMode;
   },
   dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
-): RendererBackendV2 {
+): RendererBackend {
   const resolvedDependencies = {
     ...defaultDependencies,
     ...dependencies,
@@ -272,8 +273,14 @@ export function createWebGPURendererBackend(
 
   return {
     capabilities: WEBGPU_RENDERER_BACKEND_CAPABILITIES,
-    get renderer() {
-      return renderer;
+    get renderer(): RendererSurfaceLike {
+      // The renderer is only accessed after initialize() resolves; the runtime
+      // caller enforces that ordering. Assert non-null to match the contract.
+      return renderer!;
+    },
+    async applyEnvironment(_targets: RendererEnvironmentTargets): Promise<void> {
+      // WebGPU backend does not participate in PMREM/HDR environment IBL today;
+      // tone mapping on the renderer is configured directly via applyPostProcessPlan.
     },
     applyPostProcessPlan(plan) {
       if (!postProcessRuntime) {

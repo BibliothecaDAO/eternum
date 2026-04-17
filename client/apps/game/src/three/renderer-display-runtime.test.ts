@@ -8,14 +8,8 @@ const mockGraphicsSettings = {
   MID: "MID",
 } as const;
 
-const resizeRendererBackend = vi.fn();
-
 vi.mock("@/ui/config", () => ({
   GraphicsSettings: mockGraphicsSettings,
-}));
-
-vi.mock("./renderer-backend-compat", () => ({
-  resizeRendererBackend,
 }));
 
 const {
@@ -99,13 +93,14 @@ describe("renderer display runtime", () => {
     const labelRuntime = { resize: vi.fn() };
     const hudScene = { onWindowResize: vi.fn() };
     const markLabelsDirty = vi.fn();
+    const backend = { resize: vi.fn() };
     const container = {
       clientHeight: 200,
       clientWidth: 320,
     };
 
     resizeRendererDisplay({
-      backend: {} as never,
+      backend: backend as never,
       camera: camera as never,
       getContainer: () => container as never,
       hudScene: hudScene as never,
@@ -118,7 +113,7 @@ describe("renderer display runtime", () => {
     expect(markLabelsDirty).toHaveBeenCalledTimes(1);
     expect(camera.aspect).toBe(1.6);
     expect(camera.updateProjectionMatrix).toHaveBeenCalledTimes(1);
-    expect(resizeRendererBackend).toHaveBeenCalledWith({}, 320, 200);
+    expect(backend.resize).toHaveBeenCalledWith(320, 200);
     expect(labelRuntime.resize).toHaveBeenCalledWith(320, 200);
     expect(hudScene.onWindowResize).toHaveBeenCalledWith(320, 200);
   });
@@ -126,9 +121,10 @@ describe("renderer display runtime", () => {
   it("falls back to the window size when the renderer container is missing", () => {
     const camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
     const hudScene = { onWindowResize: vi.fn() };
+    const backend = { resize: vi.fn() };
 
     resizeRendererDisplay({
-      backend: {} as never,
+      backend: backend as never,
       camera: camera as never,
       getContainer: () => null,
       hudScene: hudScene as never,
@@ -138,7 +134,7 @@ describe("renderer display runtime", () => {
     });
 
     expect(camera.aspect).toBe(1600 / 900);
-    expect(resizeRendererBackend).toHaveBeenCalledWith({}, 1600, 900);
+    expect(backend.resize).toHaveBeenCalledWith(1600, 900);
     expect(hudScene.onWindowResize).toHaveBeenCalledWith(1600, 900);
   });
 });

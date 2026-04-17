@@ -14,13 +14,13 @@ import {
 } from "postprocessing";
 import { HalfFloatType, type Camera, type Scene, UnsignedByteType, Vector2, WebGLRenderer } from "three";
 
-import type { RendererSurfaceLike } from "./renderer-backend";
-import {
-  type RendererFramePipeline,
-  type RendererPostProcessController,
-  type RendererPostProcessPlan,
-  type RendererPostProcessRuntime,
-} from "./renderer-backend-v2";
+import type {
+  RendererFramePipeline,
+  RendererPostProcessController,
+  RendererPostProcessPlan,
+  RendererPostProcessRuntime,
+  RendererSurfaceLike,
+} from "./renderer-backend";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { syncRenderPassScene } from "./renderer-pass-scene";
 

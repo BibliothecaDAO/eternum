@@ -1,7 +1,11 @@
 import type { Camera, Object3D } from "three";
 
-import type { RendererBackendCapabilities, RendererCapabilityFeature, RendererActiveMode } from "./renderer-backend-v2";
-import type { RendererSurfaceLike } from "./renderer-backend";
+import type {
+  RendererActiveMode,
+  RendererBackendCapabilities,
+  RendererCapabilityFeature,
+  RendererSurfaceLike,
+} from "./renderer-backend";
 
 export interface WebgpuPostprocessPolicy {
   bloomRouting: "deferred" | "mrt-emissive" | "none";

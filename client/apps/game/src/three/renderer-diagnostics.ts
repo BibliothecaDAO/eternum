@@ -4,7 +4,7 @@ import type {
   RendererFeatureDegradation,
   RendererInitDiagnostics,
   RendererPostProcessPlan,
-} from "./renderer-backend-v2";
+} from "./renderer-backend";
 import type { WebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
 import {
   markRendererGpuDeviceLost,

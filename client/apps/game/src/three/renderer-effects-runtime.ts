@@ -9,18 +9,12 @@ import {
   snapshotRendererDiagnostics,
 } from "./renderer-diagnostics";
 import {
-  applyRendererBackendEnvironment,
-  applyRendererBackendPostProcessPlan,
-  applyRendererBackendQuality,
-} from "./renderer-backend-compat";
-import {
   resolveCapabilityAwareRendererEffectPlan,
   resolveRendererEnvironmentPolicy,
   resolvePostProcessingEffectPlan,
   shouldEnablePostProcessingConfig,
 } from "./game-renderer-policy";
-import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
-import type { RendererSurfaceLike } from "./renderer-backend";
+import type { RendererBackend, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend";
 import type { QualityFeatures } from "./utils/quality-controller";
 import { resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
 
@@ -49,7 +43,7 @@ interface RendererEffectsScenes {
 }
 
 interface CreateRendererEffectsRuntimeInput {
-  backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  backend: RendererBackend;
   createFolder: (name: string) => TrackableFolderLike;
   graphicsSetting: GraphicsSettings;
   isMobileDevice: boolean;
@@ -118,7 +112,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       return;
     }
 
-    await applyRendererBackendEnvironment(this.input.backend, {
+    await this.input.backend.applyEnvironment({
       fastTravelScene: this.input.scenes.fastTravelScene as never,
       hexceptionScene: this.input.scenes.hexceptionScene as never,
       intensity: environmentPolicy.intensity,
@@ -132,7 +126,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       Math.min(devicePixelRatio, features.pixelRatio),
     );
 
-    applyRendererBackendQuality(this.input.backend, {
+    this.input.backend.applyQuality({
       height: window.innerHeight,
       pixelRatio: resolvedPixelRatio,
       shadows: features.shadows,
@@ -321,7 +315,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       },
     });
 
-    this.postProcessController = applyRendererBackendPostProcessPlan(this.input.backend, rendererPlan.plan);
+    this.postProcessController = this.input.backend.applyPostProcessPlan(rendererPlan.plan);
     replaceRendererDiagnosticDegradations(
       ["colorGrade", "bloom", "vignette", "chromaticAberration"],
       rendererPlan.degradations,

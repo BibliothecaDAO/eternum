@@ -11,13 +11,13 @@ import { PostProcessing } from "three/webgpu";
 import { pass, emissive, mrt, output } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 
-import type { RendererSurfaceLike } from "./renderer-backend";
-import {
-  type RendererFramePipeline,
-  type RendererPostProcessController,
-  type RendererPostProcessPlan,
-  type RendererPostProcessRuntime,
-} from "./renderer-backend-v2";
+import type {
+  RendererFramePipeline,
+  RendererPostProcessController,
+  RendererPostProcessPlan,
+  RendererPostProcessRuntime,
+  RendererSurfaceLike,
+} from "./renderer-backend";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 
 interface WebGPUScenePass {

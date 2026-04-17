@@ -8,7 +8,6 @@ import type { RendererLabelRuntime } from "./renderer-label-runtime";
 import { createRendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import { createRendererRouteRuntime } from "./renderer-route-runtime";
 import { createRendererRuntimeAssembly } from "./renderer-runtime-assembly";
-import type { RendererBackendV2 } from "./renderer-backend-v2";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
 import { qualityController } from "./utils/quality-controller";
@@ -19,9 +18,9 @@ import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
-import type { RendererSurfaceLike } from "./renderer-backend";
+import type { RendererBackend, RendererSurfaceLike } from "./renderer-backend";
 
-type RendererBackendRuntime = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+type RendererBackendRuntime = RendererBackend;
 
 export interface GameRendererRuntimeState {
   backend?: RendererBackendRuntime;

@@ -1,4 +1,4 @@
-import { createRendererInitDiagnostics, type RendererBackendV2 } from "./renderer-backend-v2";
+import { createRendererInitDiagnostics, type RendererBackend } from "./renderer-backend";
 import {
   incrementRendererDiagnosticError,
   setRendererDiagnosticCapabilities,
@@ -12,7 +12,7 @@ import {
 } from "./renderer-build-mode";
 
 interface InitializedRendererBackend {
-  backend: RendererBackendV2;
+  backend: RendererBackend;
   diagnostics: ReturnType<typeof createRendererInitDiagnostics>;
 }
 

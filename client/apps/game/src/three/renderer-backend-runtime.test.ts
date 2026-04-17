@@ -1,18 +1,28 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
+import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend";
 
-const initializeSelectedRendererBackend = vi.fn();
-const syncRendererBackendDiagnostics = vi.fn();
-const setRendererDiagnosticCapabilities = vi.fn();
-const setRendererDiagnosticDegradations = vi.fn();
-const createWebGLRendererBackend = vi.fn();
-const createWebGPURendererBackend = vi.fn();
-const mockGraphicsSettings = {
-  HIGH: "HIGH",
-  LOW: "LOW",
-  MID: "MID",
-} as const;
+const {
+  initializeSelectedRendererBackend,
+  syncRendererBackendDiagnostics,
+  setRendererDiagnosticCapabilities,
+  setRendererDiagnosticDegradations,
+  createWebGLRendererBackend,
+  createWebGPURendererBackend,
+  mockGraphicsSettings,
+} = vi.hoisted(() => ({
+  initializeSelectedRendererBackend: vi.fn(),
+  syncRendererBackendDiagnostics: vi.fn(),
+  setRendererDiagnosticCapabilities: vi.fn(),
+  setRendererDiagnosticDegradations: vi.fn(),
+  createWebGLRendererBackend: vi.fn(),
+  createWebGPURendererBackend: vi.fn(),
+  mockGraphicsSettings: {
+    HIGH: "HIGH",
+    LOW: "LOW",
+    MID: "MID",
+  } as const,
+}));
 
 vi.mock("./renderer-backend-loader", () => ({
   initializeSelectedRendererBackend,
@@ -24,7 +34,8 @@ vi.mock("./renderer-diagnostics", () => ({
   setRendererDiagnosticDegradations,
 }));
 
-vi.mock("./renderer-backend", () => ({
+vi.mock("./renderer-backend", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./renderer-backend")>()),
   createWebGLRendererBackend,
 }));
 
