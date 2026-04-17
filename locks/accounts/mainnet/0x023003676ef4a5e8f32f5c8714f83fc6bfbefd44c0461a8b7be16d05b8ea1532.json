@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-crisp-657",
-    "launchRequestId": "24440354200-2",
+    "gameName": "bltz-clash-571",
+    "launchRequestId": "24546462511-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24440354200,
-    "workflowRunAttempt": 2,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "697e683f-af5c-4165-ac48-11849df74012"
+    "workflowRunId": 24546462511,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "leaseId": "17a05746-6c06-498c-ad73-f9aa65e3f7a8"
   },
-  "acquiredAt": "2026-04-15T07:08:24.506Z",
-  "heartbeatAt": "2026-04-15T07:08:30.153Z",
-  "expiresAt": "2026-04-15T07:08:30.153Z",
-  "releasedAt": "2026-04-15T07:08:30.153Z"
+  "acquiredAt": "2026-04-17T03:42:16.399Z",
+  "heartbeatAt": "2026-04-17T03:42:16.399Z",
+  "expiresAt": "2026-04-17T03:52:16.399Z"
 }
