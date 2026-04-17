@@ -888,6 +888,7 @@ const SettlementPhase = ({
   isSettling,
   onSettle,
   onEnterGame,
+  errorMessage,
 }: {
   stage: SettleStage;
   assignedCount: number;
@@ -895,6 +896,7 @@ const SettlementPhase = ({
   isSettling: boolean;
   onSettle: () => void;
   onEnterGame: () => void;
+  errorMessage: string | null;
 }) => {
   const viewModel = deriveSettlementPhaseViewModel({
     stage,
@@ -1035,7 +1037,10 @@ const SettlementPhase = ({
       )}
 
       {viewModel.showError && (
-        <p className="text-xs text-red-300 text-center mt-2">Settlement failed. Please try again.</p>
+        <div className="mt-2 text-center">
+          <p className="text-xs text-red-300">Settlement failed. Please try again.</p>
+          {errorMessage && <p className="mt-1 text-[10px] text-red-300/70 break-words">{errorMessage}</p>}
+        </div>
       )}
     </div>
   );
@@ -3031,10 +3036,12 @@ export const GameEntryModal = ({
 
   // Settlement state
   const [settleStage, setSettleStage] = useState<SettleStage>("idle");
+  const [settleErrorMessage, setSettleErrorMessage] = useState<string | null>(null);
   const [isSettling, setIsSettling] = useState(false);
   const [assignedRealmCount, setAssignedRealmCount] = useState(0);
   const [settledRealmCount, setSettledRealmCount] = useState(0);
   const [needsSettlement, setNeedsSettlement] = useState(false);
+  const [canPlay, setCanPlay] = useState(false);
   const [pendingSettlementVerificationTargetCount, setPendingSettlementVerificationTargetCount] = useState<
     number | null
   >(null);
@@ -3495,6 +3502,7 @@ export const GameEntryModal = ({
   const resetBootstrapDependentState = useCallback(() => {
     setPreflightError(null);
     setNeedsSettlement(false);
+    setCanPlay(false);
     setSettlementCheckComplete(false);
     setSettleStage("idle");
     setIsSettling(false);
@@ -3708,6 +3716,7 @@ export const GameEntryModal = ({
       checksComplete,
       needsHyperstructureInit,
       needsSettlement,
+      canPlay,
       isBlitzSettlementUnlocked: blitzSettlementAvailability.isUnlocked,
     });
 
@@ -3722,6 +3731,7 @@ export const GameEntryModal = ({
       hyperstructureCheckComplete,
       needsHyperstructureInit,
       needsSettlement,
+      canPlay,
       isBlitzSettlementUnlocked: blitzSettlementAvailability.isUnlocked,
       worldMode,
       startSettlingAt: worldMeta?.startSettlingAt,
@@ -3768,6 +3778,7 @@ export const GameEntryModal = ({
     hyperstructureCheckComplete,
     needsHyperstructureInit,
     needsSettlement,
+    canPlay,
     blitzSettlementAvailability.isUnlocked,
     isEternumMode,
     isLoadingEternumPrereqs,
@@ -3864,9 +3875,10 @@ export const GameEntryModal = ({
       setAssignedRealmCount(status.assignedCount);
       setSettledRealmCount(status.settledCount);
       setNeedsSettlement(status.needsSettlement);
+      setCanPlay(status.canPlay);
       return status;
     },
-    [setAssignedRealmCount, setSettledRealmCount, setNeedsSettlement],
+    [setAssignedRealmCount, setSettledRealmCount, setNeedsSettlement, setCanPlay],
   );
 
   const waitForSettlementTarget = useCallback(
@@ -4095,6 +4107,7 @@ export const GameEntryModal = ({
 
     if (isEternumMode) {
       setNeedsSettlement(false);
+      setCanPlay(true);
       setSettlementCheckComplete(true);
       return;
     }
@@ -4106,6 +4119,7 @@ export const GameEntryModal = ({
 
     if (isSpectateMode || (isForgeMode && isBlitzMode)) {
       setNeedsSettlement(false);
+      setCanPlay(true);
       setSettlementCheckComplete(true);
       return;
     }
@@ -4114,6 +4128,7 @@ export const GameEntryModal = ({
       try {
         if (!account?.address) {
           setNeedsSettlement(false);
+          setCanPlay(false);
           setSettlementCheckComplete(true);
           return;
         }
@@ -4121,15 +4136,17 @@ export const GameEntryModal = ({
         const snapshot = await readSettlementSnapshot();
         if (!snapshot) {
           setNeedsSettlement(false);
+          setCanPlay(false);
           setSettlementCheckComplete(true);
           return;
         }
-        const status = syncSettlementStateFromSnapshot(snapshot);
+        syncSettlementStateFromSnapshot(snapshot);
 
         setSettlementCheckComplete(true);
       } catch (error) {
         setPreflightError(error instanceof Error ? error : new Error("Failed to check settlement status."));
         setNeedsSettlement(false);
+        setCanPlay(false);
         setSettlementCheckComplete(true);
       }
     };
@@ -4854,9 +4871,10 @@ export const GameEntryModal = ({
 
   const finalizeFailedBlitzSettlement = useCallback(
     (error: Error) => {
-      debugLog(worldName, "Settlement failed:", error);
+      console.error("[GameEntryModal] Settlement failed", { worldName, error });
       clearBlitzSettlementVerification();
       setSettleStage("error");
+      setSettleErrorMessage(error.message);
       if (autoSettleEnabled && autoSettleEntryKey) {
         markFailed(autoSettleEntryKey, error.message);
       }
@@ -4942,13 +4960,17 @@ export const GameEntryModal = ({
     if (!account) return;
 
     setIsSettling(true);
+    setSettleErrorMessage(null);
     if (autoSettleEnabled && autoSettleEntryKey) {
       markSettling(autoSettleEntryKey, Date.now());
     }
 
     try {
+      if (!worldMeta) {
+        throw new Error("World configuration is still loading. Please wait a moment and try again.");
+      }
       const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
-      const singleRealmMode = worldMeta?.singleRealmMode ?? false;
+      const singleRealmMode = worldMeta.singleRealmMode;
       const blitzRealmSystemsAddress = resolveWorldSystemAddress("blitz_realm_systems");
       const signer = account as unknown as Account;
       const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
@@ -5004,7 +5026,7 @@ export const GameEntryModal = ({
     markSettling,
     submitAssignedRealmSettlement,
     submitRemainingRealmSettlement,
-    worldMeta?.singleRealmMode,
+    worldMeta,
     worldName,
     readSettlementSnapshot,
     resolveWorldSystemAddress,
@@ -5402,6 +5424,7 @@ export const GameEntryModal = ({
                   isSettling={isSettling}
                   onSettle={handleSettle}
                   onEnterGame={handleEnterGame}
+                  errorMessage={settleErrorMessage}
                 />
               </motion.div>
             )}

@@ -41,6 +41,7 @@ describe("game entry phase resolution", () => {
       checksComplete: true,
       needsHyperstructureInit: false,
       needsSettlement: false,
+      canPlay: false,
       isBlitzSettlementUnlocked: false,
     });
 
@@ -70,6 +71,7 @@ describe("game entry phase resolution", () => {
       checksComplete: true,
       needsHyperstructureInit: false,
       needsSettlement: true,
+      canPlay: false,
       isBlitzSettlementUnlocked: false,
     });
 
@@ -99,9 +101,100 @@ describe("game entry phase resolution", () => {
       checksComplete: true,
       needsHyperstructureInit: false,
       needsSettlement: true,
+      canPlay: false,
       isBlitzSettlementUnlocked: true,
     });
 
     expect(phase).toBe("settlement");
+  });
+
+  it("keeps unregistered new blitz players out of the game before settlement unlocks", () => {
+    const phase = resolveGameEntryModalPhase({
+      bootstrapStatus: "ready",
+      hasPhaseError: false,
+      isForgeMode: false,
+      isBlitzMode: true,
+      isSpectateMode: false,
+      worldMode: "blitz",
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isEternumMode: false,
+      isLoadingEternumPrereqs: false,
+      hasVillageRevealResult: false,
+      unifiedSettlementPlannerEnabled: false,
+      hasSettledRealm: false,
+      entryIntent: "play",
+      seasonSettlementComplete: false,
+      eternumSettlementMode: "realm",
+      hasVillagePass: false,
+      hasSeasonPass: false,
+      checksComplete: true,
+      needsHyperstructureInit: false,
+      needsSettlement: false,
+      canPlay: false,
+      isBlitzSettlementUnlocked: false,
+    });
+
+    expect(phase).toBe("settlement-waiting");
+  });
+
+  it("routes unregistered new blitz players into the settle flow once settlement unlocks", () => {
+    const phase = resolveGameEntryModalPhase({
+      bootstrapStatus: "ready",
+      hasPhaseError: false,
+      isForgeMode: false,
+      isBlitzMode: true,
+      isSpectateMode: false,
+      worldMode: "blitz",
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isEternumMode: false,
+      isLoadingEternumPrereqs: false,
+      hasVillageRevealResult: false,
+      unifiedSettlementPlannerEnabled: false,
+      hasSettledRealm: false,
+      entryIntent: "play",
+      seasonSettlementComplete: false,
+      eternumSettlementMode: "realm",
+      hasVillagePass: false,
+      hasSeasonPass: false,
+      checksComplete: true,
+      needsHyperstructureInit: false,
+      needsSettlement: false,
+      canPlay: false,
+      isBlitzSettlementUnlocked: true,
+    });
+
+    expect(phase).toBe("settlement");
+  });
+
+  it("auto-enters blitz players once settlement is provably complete", () => {
+    const phase = resolveGameEntryModalPhase({
+      bootstrapStatus: "ready",
+      hasPhaseError: false,
+      isForgeMode: false,
+      isBlitzMode: true,
+      isSpectateMode: false,
+      worldMode: "blitz",
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isEternumMode: false,
+      isLoadingEternumPrereqs: false,
+      hasVillageRevealResult: false,
+      unifiedSettlementPlannerEnabled: false,
+      hasSettledRealm: false,
+      entryIntent: "play",
+      seasonSettlementComplete: false,
+      eternumSettlementMode: "realm",
+      hasVillagePass: false,
+      hasSeasonPass: false,
+      checksComplete: true,
+      needsHyperstructureInit: false,
+      needsSettlement: false,
+      canPlay: true,
+      isBlitzSettlementUnlocked: true,
+    });
+
+    expect(phase).toBe("ready");
   });
 });
