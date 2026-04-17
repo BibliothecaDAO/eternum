@@ -17,6 +17,12 @@ import {
 } from "@/ui/features/infrastructure/automation/model/automation-runner";
 import { computeAutomationConfigSignature } from "@/utils/automation-signature";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
+import {
+  computeNextEligibleMs,
+  computePostPassSchedulerUpdate,
+  computeScheduleDelayMs,
+  shouldAdvanceSchedulerBookkeeping,
+} from "./automation-scheduler";
 import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import {
   useAutomationStore,
@@ -171,9 +177,10 @@ export const useAutomation = () => {
     if (processingRef.current) {
       pruneDuringProcessingRef.current = true;
     }
-    lastRunTimestampRef.current = nowMs;
-    automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
-    nextRunTimestampRef.current = automationEnabledAtRef.current;
+    const update = computePostPassSchedulerUpdate(nowMs);
+    lastRunTimestampRef.current = update.lastRunMs;
+    automationEnabledAtRef.current = update.automationEnabledAtMs;
+    nextRunTimestampRef.current = update.nextRunMs;
     setNextRunTimestampRef.current(nextRunTimestampRef.current);
   }, [components, pruneForGame]);
 
@@ -558,7 +565,7 @@ export const useAutomation = () => {
     }
 
     const lastRunMs = lastRunTimestampRef.current ?? nowMs;
-    const nextEligibleMs = Math.max(lastRunMs + PROCESS_INTERVAL_MS, automationEnabledAtRef.current);
+    const nextEligibleMs = computeNextEligibleMs(lastRunMs, automationEnabledAtRef.current);
 
     nextRunTimestampRef.current = nextEligibleMs;
     setNextRunTimestampRef.current(nextEligibleMs);
@@ -573,10 +580,11 @@ export const useAutomation = () => {
       const result = await processRealmsRef.current();
       ran = result.ran;
     } finally {
-      if (ran && !pruneDuringProcessingRef.current) {
-        lastRunTimestampRef.current = nowMs;
-        automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
-        nextRunTimestampRef.current = automationEnabledAtRef.current;
+      if (shouldAdvanceSchedulerBookkeeping(ran, pruneDuringProcessingRef.current)) {
+        const update = computePostPassSchedulerUpdate(nowMs);
+        lastRunTimestampRef.current = update.lastRunMs;
+        automationEnabledAtRef.current = update.automationEnabledAtMs;
+        nextRunTimestampRef.current = update.nextRunMs;
         setNextRunTimestampRef.current(nextRunTimestampRef.current);
       }
       pruneDuringProcessingRef.current = false;
@@ -592,9 +600,7 @@ export const useAutomation = () => {
     if (automationTimeoutIdRef.current !== null) {
       window.clearTimeout(automationTimeoutIdRef.current);
     }
-    const now = Date.now();
-    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
-    const delay = Math.max(250, nextBlockMs - now);
+    const delay = computeScheduleDelayMs(Date.now());
     automationTimeoutIdRef.current = window.setTimeout(() => {
       void runAutomationIfDue();
     }, delay);
@@ -624,10 +630,11 @@ export const useAutomation = () => {
         if (nowMs >= automationEnabledAtRef.current && !processingRef.current) {
           void (async () => {
             const result = await processRealmsRef.current();
-            if (result.ran && !pruneDuringProcessingRef.current) {
-              lastRunTimestampRef.current = nowMs;
-              automationEnabledAtRef.current = nowMs + PROCESS_INTERVAL_MS;
-              nextRunTimestampRef.current = automationEnabledAtRef.current;
+            if (shouldAdvanceSchedulerBookkeeping(result.ran, pruneDuringProcessingRef.current)) {
+              const update = computePostPassSchedulerUpdate(nowMs);
+              lastRunTimestampRef.current = update.lastRunMs;
+              automationEnabledAtRef.current = update.automationEnabledAtMs;
+              nextRunTimestampRef.current = update.nextRunMs;
               setNextRunTimestampRef.current(nextRunTimestampRef.current);
             }
             pruneDuringProcessingRef.current = false;

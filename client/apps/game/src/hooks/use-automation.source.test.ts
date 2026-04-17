@@ -28,7 +28,7 @@ describe("useAutomation source", () => {
     const source = readSource("src/hooks/use-automation.tsx");
 
     expect(source).toContain("type ProcessRealmsResult = { ran: boolean; anyExecuted: boolean }");
-    expect(source).toContain("if (ran && !pruneDuringProcessingRef.current)");
+    expect(source).toContain("shouldAdvanceSchedulerBookkeeping(ran, pruneDuringProcessingRef.current)");
     expect(source).toContain("return { ran: false, anyExecuted: false }");
     expect(source).toContain("return { ran: true, anyExecuted }");
   });
@@ -46,7 +46,7 @@ describe("useAutomation source", () => {
 
     expect(source).toContain("pruneDuringProcessingRef = useRef");
     expect(source).toContain("pruneForGame(gameId)");
-    // The pruneForGame effect must reset the scheduler clock.
-    expect(source).toMatch(/pruneForGame\(gameId\);[\s\S]*lastRunTimestampRef\.current = nowMs/);
+    // The pruneForGame effect must reset the scheduler clock via the shared helper.
+    expect(source).toMatch(/pruneForGame\(gameId\);[\s\S]*computePostPassSchedulerUpdate\(nowMs\)/);
   });
 });
