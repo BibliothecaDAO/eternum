@@ -9,7 +9,10 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { PrizePanel } from "@/ui/features/prize";
 import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { FaithLeaderboardPanel, GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
+import { FaithLeaderboardPanel } from "../faith";
+import { GuildMembers } from "../guilds/guild-members";
+import { Guilds } from "../guilds/guilds";
+import { PlayersPanel } from "../player/players-panel";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";

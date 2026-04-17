@@ -1,7 +1,7 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ProductionModal } from "@/ui/features/settlement";
+import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import { CountUpNumber } from "@/ui/shared";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {

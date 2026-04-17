@@ -1,6 +1,8 @@
 import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
 import { Button, TextInput } from "@/ui/design-system/atoms";
-import { CreateGuildButton, GuildListHeader, GuildRow, useSocialStore } from "@/ui/features/social";
+import { CreateGuildButton } from "./create-guild-button";
+import { GuildListHeader, GuildRow } from "./guild-list";
+import { useSocialStore } from "../components/use-social-store";
 import { getRealmCountPerHyperstructure, sortItems } from "@/ui/utils/utils";
 import {
   calculateGuildLordsPrize,

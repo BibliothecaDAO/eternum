@@ -85,8 +85,7 @@ vi.mock("../cosmetics", () => ({
     hydrateFromBlitzComponent: vi.fn(),
   },
   resolveStructureCosmetic: vi.fn(() => ({
-    cosmeticId: "default",
-    registryEntry: undefined,
+    skin: { cosmeticId: "default", assetPaths: [], isFallback: true, registryEntry: undefined },
     attachments: [],
   })),
   resolveStructureMountTransforms: vi.fn(() => []),

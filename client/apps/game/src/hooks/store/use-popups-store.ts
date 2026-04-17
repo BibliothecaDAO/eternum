@@ -11,19 +11,22 @@ export interface PopupsStore {
   openAllPopups: (names: string[]) => void;
 }
 
-export const createPopupsSlice = (set: any, get: any) => ({
+export const createPopupsSlice = (
+  set: (partial: Partial<PopupsStore> | ((state: PopupsStore) => Partial<PopupsStore>)) => void,
+  get: () => PopupsStore,
+) => ({
   openedPopups: [],
-  openPopup: (name: string) => set((state: any) => ({ openedPopups: [...state.openedPopups, name] })),
+  openPopup: (name: string) => set((state) => ({ openedPopups: [...state.openedPopups, name] })),
   closePopup: (name: string) =>
-    set((state: any) => ({ openedPopups: state.openedPopups.filter((_name: any) => _name !== name) })),
+    set((state) => ({ openedPopups: state.openedPopups.filter((_name) => _name !== name) })),
   closeAllPopups: () => set({ openedPopups: [] }),
   isPopupOpen: (name: string) => get().openedPopups.includes(name),
   togglePopup: (name: string) => {
     const isOpen = get().isPopupOpen(name);
     if (isOpen) {
-      set((state: any) => ({ openedPopups: state.openedPopups.filter((_name: any) => _name !== name) }));
+      set((state) => ({ openedPopups: state.openedPopups.filter((_name) => _name !== name) }));
     } else {
-      set((state: any) => ({ openedPopups: [...state.openedPopups, name] }));
+      set((state) => ({ openedPopups: [...state.openedPopups, name] }));
     }
   },
   openAllPopups: (names: string[]) => {

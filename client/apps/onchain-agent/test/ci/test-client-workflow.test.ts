@@ -43,8 +43,9 @@ describe("test-client workflow", () => {
     const workflow = readWorkflow();
 
     expect(workflow).toContain("pnpm --dir ./client/apps/game preview --host 127.0.0.1 --port 4173");
+    expect(workflow).toContain("curl --fail --silent --show-error --insecure https://127.0.0.1:4173");
     expect(workflow).toContain("node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs");
-    expect(workflow).toContain("--base-url http://127.0.0.1:4173");
+    expect(workflow).toContain("--base-url https://127.0.0.1:4173");
     expect(workflow).toContain("--scenes map,hex");
   });
 

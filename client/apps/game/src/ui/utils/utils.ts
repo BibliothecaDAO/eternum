@@ -61,19 +61,6 @@ export function displayAddress(string: string) {
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
 
-function divideByPrecisionFormatted(value: number): string {
-  return divideByPrecision(value).toLocaleString("en-US");
-}
-
-// keep this for later
-// export function roundDownToPrecision(value: bigint, precision: number) {
-//   return BigInt(Number(value) - (Number(value) % Number(precision)));
-// }
-
-// export function roundUpToPrecision(value: bigint, precision: number) {
-//   return BigInt(Number(value) + (Number(precision) - (Number(value) % Number(precision))));
-// }
-
 export function addressToNumber(address: string) {
   // Convert the address to a big integer
   let numericValue = ContractAddress(address);
@@ -101,52 +88,6 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     .catch((err) => {
       console.error("Failed to copy: ", err);
     });
-};
-
-const accentsToAscii = (str: string) => {
-  // Character map for transliteration to ASCII
-  const charMap: Record<string, string> = {
-    á: "a",
-    ú: "u",
-    é: "e",
-    ä: "a",
-    Š: "S",
-    Ï: "I",
-    š: "s",
-    Í: "I",
-    í: "i",
-    ó: "o",
-    ï: "i",
-    ë: "e",
-    ê: "e",
-    â: "a",
-    Ó: "O",
-    ü: "u",
-    Á: "A",
-    Ü: "U",
-    ô: "o",
-    ž: "z",
-    Ê: "E",
-    ö: "o",
-    č: "c",
-    Â: "A",
-    Ä: "A",
-    Ë: "E",
-    É: "E",
-    Č: "C",
-    Ž: "Z",
-    Ö: "O",
-    Ú: "U",
-    Ô: "O",
-    "‘": "'",
-  };
-  const transliterate = (str: string) => {
-    return str
-      .split("")
-      .map((char) => charMap[char] || char)
-      .join("");
-  };
-  return transliterate(str);
 };
 
 export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortKey: SortInterface): T[] {

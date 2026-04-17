@@ -139,21 +139,12 @@ export const ensureStructureSynced = async (
     return;
   }
 
-  let entityKey: any;
-  try {
-    entityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
-  } catch {
-    return;
-  }
+  const entityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
 
   const existing = getComponentValue(components.Structure, entityKey);
   if (existing && accountAddress) {
-    try {
-      if (BigInt(existing.owner) === BigInt(accountAddress)) {
-        return;
-      }
-    } catch {
-      // owner comparison failed, re-fetch to be safe
+    if (BigInt(existing.owner) === BigInt(accountAddress)) {
+      return;
     }
   }
 

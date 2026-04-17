@@ -1,3 +1,4 @@
+import type GUI from "lil-gui";
 import {
   Scene,
   LineSegments,
@@ -417,7 +418,7 @@ export class RainEffect {
     this.rainGeometry.attributes.position.needsUpdate = true;
   }
 
-  addGUIControls(guiFolder: any) {
+  addGUIControls(guiFolder: GUI) {
     const rainFolder = guiFolder.addFolder("Rain");
     rainFolder
       .add(this.rainParams, "enabled")
