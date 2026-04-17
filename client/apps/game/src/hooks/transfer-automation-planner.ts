@@ -2,7 +2,7 @@ import { calculateDonkeysNeeded, getTotalResourceWeightKg } from "@bibliothecada
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import type { TransferAutomationEntry } from "./store/use-transfer-automation-store";
 
-export interface PlannedTransfer {
+interface PlannedTransfer {
   resourceId: ResourcesIds;
   humanAmount: number;
 }
@@ -29,7 +29,7 @@ export const planTransferAmounts = (
   return list;
 };
 
-export interface DonkeyCapacityResult {
+interface DonkeyCapacityResult {
   ok: boolean;
   totalKg: number;
   neededDonkeys: number;

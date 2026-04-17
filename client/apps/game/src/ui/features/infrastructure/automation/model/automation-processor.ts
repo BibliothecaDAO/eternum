@@ -117,7 +117,7 @@ const isResourceActiveInSnapshot = (snapshot: RealmResourceSnapshot, resourceId:
 
 type AutomationEntityType = RealmAutomationConfig["entityType"];
 
-export const buildResourceDependencyOrder = (
+const buildResourceDependencyOrder = (
   resourceIds: ResourcesIds[],
   entityType: AutomationEntityType,
 ): ResourcesIds[] => {
@@ -384,25 +384,24 @@ export const buildRealmProductionPlan = ({
     (resourceId) => !isAutomationResourceBlocked(resourceId, entityType),
   );
   const orderedResourceIds = buildResourceDependencyOrder(filteredResourceIds, entityType);
-  const resourceDefinitions = orderedResourceIds
-    .map((resourceId) => {
-      const customPercentages = realmConfig.customPercentages?.[resourceId];
-      const presetPercentages = presetAllocations.get(resourceId);
-      const smartPercentages = smartDefaults.get(resourceId) ?? baselinePercentages(resourceId);
-      const hasActiveProduction = isResourceActiveInSnapshot(snapshot, resourceId);
+  const resourceDefinitions = orderedResourceIds.map((resourceId) => {
+    const customPercentages = realmConfig.customPercentages?.[resourceId];
+    const presetPercentages = presetAllocations.get(resourceId);
+    const smartPercentages = smartDefaults.get(resourceId) ?? baselinePercentages(resourceId);
+    const hasActiveProduction = isResourceActiveInSnapshot(snapshot, resourceId);
 
-      const source =
-        presetId === "custom"
-          ? (customPercentages ?? smartPercentages)
-          : (presetPercentages ?? { resourceToResource: 0, laborToResource: 0 });
+    const source =
+      presetId === "custom"
+        ? (customPercentages ?? smartPercentages)
+        : (presetPercentages ?? { resourceToResource: 0, laborToResource: 0 });
 
-      const percentages: ResourceAutomationPercentages = {
-        resourceToResource: clampPercent(source.resourceToResource),
-        laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource ?? 0),
-      };
+    const percentages: ResourceAutomationPercentages = {
+      resourceToResource: clampPercent(source.resourceToResource),
+      laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(source.laborToResource ?? 0),
+    };
 
-      return { resourceId, percentages, hasActiveProduction };
-    });
+    return { resourceId, percentages, hasActiveProduction };
+  });
 
   const skipped: RealmAutomationExecutionSummary["skipped"] = [];
   const resourcesToTrack = new Set<ResourcesIds>();

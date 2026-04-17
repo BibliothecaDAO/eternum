@@ -188,7 +188,8 @@ describe("buildRealmProductionPlan", () => {
     expect(callResourceIds).toContain(ResourcesIds.Knight);
     expect(callResourceIds).toContain(ResourcesIds.KnightT2);
 
-    const t1Cycles = plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.Knight)?.cycles ?? 0;
+    const t1Cycles =
+      plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.Knight)?.cycles ?? 0;
     const t2Cycles =
       plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.KnightT2)?.cycles ?? 0;
     expect(t1Cycles).toBeGreaterThan(0);

@@ -2,7 +2,7 @@ import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import type { ExecuteRealmProductionPlanProps } from "@bibliothecadao/types";
 import type { RealmProductionPlan } from "./automation-processor";
 
-export const REALM_EXECUTION_TIMEOUT_MS = 30_000;
+const REALM_EXECUTION_TIMEOUT_MS = 30_000;
 
 export class AutomationTimeoutError extends Error {
   constructor(timeoutMs: number) {
@@ -62,9 +62,7 @@ export const isSignerTransientError = (error: unknown): boolean => {
   return false;
 };
 
-export type AutomationCancellation =
-  | { cancelled: false }
-  | { cancelled: true; reason: string; scope?: "pass" | "realm" };
+type AutomationCancellation = { cancelled: false } | { cancelled: true; reason: string; scope?: "pass" | "realm" };
 
 export interface ExecutableProductionPlan {
   plan: RealmProductionPlan;

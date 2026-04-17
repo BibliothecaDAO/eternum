@@ -62,13 +62,7 @@ describe("calculatePresetAllocations", () => {
 
   it("smart weights army T3 highest and drops T1 to 10/5/3 when T3 present", () => {
     const result = calculatePresetAllocations(
-      [
-        ResourcesIds.Wood,
-        ResourcesIds.Copper,
-        ResourcesIds.Coal,
-        ResourcesIds.Knight,
-        ResourcesIds.KnightT3,
-      ],
+      [ResourcesIds.Wood, ResourcesIds.Copper, ResourcesIds.Coal, ResourcesIds.Knight, ResourcesIds.KnightT3],
       "smart",
       "realm",
     );
@@ -77,7 +71,11 @@ describe("calculatePresetAllocations", () => {
   });
 
   it("smart filters blocked output resources (Wheat, Labor)", () => {
-    const result = calculatePresetAllocations([ResourcesIds.Wood, ResourcesIds.Wheat, ResourcesIds.Labor], "smart", "realm");
+    const result = calculatePresetAllocations(
+      [ResourcesIds.Wood, ResourcesIds.Wheat, ResourcesIds.Labor],
+      "smart",
+      "realm",
+    );
     expect(result.has(ResourcesIds.Wheat)).toBe(false);
     expect(result.has(ResourcesIds.Labor)).toBe(false);
     expect(result.has(ResourcesIds.Wood)).toBe(true);
@@ -89,7 +87,11 @@ describe("calculatePresetAllocations", () => {
   });
 
   it("smart includes resources without a tier weighting as zero entries", () => {
-    const result = calculatePresetAllocations([ResourcesIds.Wood, ResourcesIds.Donkey, ResourcesIds.Fish], "smart", "realm");
+    const result = calculatePresetAllocations(
+      [ResourcesIds.Wood, ResourcesIds.Donkey, ResourcesIds.Fish],
+      "smart",
+      "realm",
+    );
     // Fish is not in any tier; must still be present and zeroed.
     expect(result.get(ResourcesIds.Fish)).toEqual({ resourceToResource: 0, laborToResource: 0 });
   });
@@ -114,12 +116,8 @@ describe("getAutomationOverallocation", () => {
       { resource: ResourcesIds.Wood, amount: 1 },
       { resource: ResourcesIds.Coal, amount: 1 },
     ];
-    configManager.complexSystemResourceInputs[ResourcesIds.Crossbowman] = [
-      { resource: ResourcesIds.Wood, amount: 1 },
-    ];
-    configManager.simpleSystemResourceInputs[ResourcesIds.Knight] = [
-      { resource: ResourcesIds.Copper, amount: 1 },
-    ];
+    configManager.complexSystemResourceInputs[ResourcesIds.Crossbowman] = [{ resource: ResourcesIds.Wood, amount: 1 }];
+    configManager.simpleSystemResourceInputs[ResourcesIds.Knight] = [{ resource: ResourcesIds.Copper, amount: 1 }];
   });
 
   afterEach(() => {

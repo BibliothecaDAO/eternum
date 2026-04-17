@@ -14,11 +14,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/structure-capabilities";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
-import {
-  assessDonkeyCapacity,
-  buildSendResourcesArgs,
-  planTransferAmounts,
-} from "./transfer-automation-planner";
+import { assessDonkeyCapacity, buildSendResourcesArgs, planTransferAmounts } from "./transfer-automation-planner";
 
 export const useTransferAutomationRunner = () => {
   const {

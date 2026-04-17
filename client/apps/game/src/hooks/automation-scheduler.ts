@@ -24,10 +24,8 @@ export const computeScheduleDelayMs = (nowMs: number): number => {
  * the game state didn't change under us mid-run (pruneForGame resets during an
  * in-flight run must win over the pass's clock advance).
  */
-export const shouldAdvanceSchedulerBookkeeping = (
-  ran: boolean,
-  pruneDuringProcessing: boolean,
-): boolean => ran && !pruneDuringProcessing;
+export const shouldAdvanceSchedulerBookkeeping = (ran: boolean, pruneDuringProcessing: boolean): boolean =>
+  ran && !pruneDuringProcessing;
 
 /**
  * Compute the updated scheduler refs after a successful pass, returning the

@@ -16,9 +16,10 @@ vi.mock("@bibliothecadao/eternum", () => ({
 import { isEntityOwnedByAccount } from "./entity-ownership";
 
 type FakeStructure = { owner: unknown };
-const makeComponents = (structures: Record<string, FakeStructure>) => ({
-  Structure: new Map<string, FakeStructure>(Object.entries(structures)),
-}) as unknown as Parameters<typeof isEntityOwnedByAccount>[0];
+const makeComponents = (structures: Record<string, FakeStructure>) =>
+  ({
+    Structure: new Map<string, FakeStructure>(Object.entries(structures)),
+  }) as unknown as Parameters<typeof isEntityOwnedByAccount>[0];
 
 describe("isEntityOwnedByAccount", () => {
   it("returns true when the structure owner matches the account address (case-insensitive, trimmed)", () => {

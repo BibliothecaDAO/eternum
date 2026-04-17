@@ -72,10 +72,7 @@ describe("planTransferAmounts", () => {
   });
 
   it("skips resources not present in resourceConfigs", () => {
-    const entry = makeEntry(
-      [ResourcesIds.Wood, ResourcesIds.Coal],
-      [{ resourceId: ResourcesIds.Wood, amount: 10 }],
-    );
+    const entry = makeEntry([ResourcesIds.Wood, ResourcesIds.Coal], [{ resourceId: ResourcesIds.Wood, amount: 10 }]);
     const result = planTransferAmounts(entry, () => 100);
     expect(result).toEqual([{ resourceId: ResourcesIds.Wood, humanAmount: 10 }]);
   });

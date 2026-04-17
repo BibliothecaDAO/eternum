@@ -90,7 +90,9 @@ describe("useAutomationStore", () => {
     });
 
     it("normalizes unknown preset ids to smart when creating", () => {
-      useAutomationStore.getState().upsertRealm("1", { presetId: "bogus" as unknown as RealmAutomationConfig["presetId"] });
+      useAutomationStore
+        .getState()
+        .upsertRealm("1", { presetId: "bogus" as unknown as RealmAutomationConfig["presetId"] });
       expect(useAutomationStore.getState().realms["1"].presetId).toBe("smart");
     });
   });
