@@ -26,7 +26,7 @@ import { destroyRendererRuntime } from "./renderer-destroy-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
-import type { RendererBackendV2 } from "./renderer-backend-v2";
+import type { RendererBackend } from "./renderer-backend";
 import { createGameRendererRuntimeAssembly, type GameRendererRuntimeState } from "./game-renderer-runtime-assembly";
 import type { SceneManager } from "@/three/scene-manager";
 import type HUDScene from "@/three/scenes/hud-scene";
@@ -42,7 +42,7 @@ export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
   private readonly sessionRuntime: RendererSessionRuntime<HUDScene>;
   private readonly supportRuntimeRegistry: RendererSupportRuntimeRegistry;
-  private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  private backend!: RendererBackend;
   private renderer!: RendererSurfaceLike;
   private interactionRuntime!: RendererInteractionRuntime;
   private camera!: RendererInteractionRuntime["camera"];
@@ -140,10 +140,10 @@ export default class GameRenderer {
     });
     if (this.isDestroyed) {
       // Destroyed mid-await — dispose the just-created backend instead of leaving it attached.
-      backend.dispose?.();
+      backend.dispose();
       return;
     }
-    this.backend = backend as RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+    this.backend = backend;
     this.renderer = renderer;
   }
 

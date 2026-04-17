@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetRendererDiagnostics } from "./renderer-diagnostics";
-import { createRendererBackendCapabilities } from "./renderer-backend-v2";
+import { createRendererBackendCapabilities } from "./renderer-backend";
 
 const initializeSelectedRendererBackendMock = vi.fn();
 
