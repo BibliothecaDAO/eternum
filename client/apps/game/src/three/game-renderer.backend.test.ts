@@ -154,6 +154,41 @@ describe("GameRenderer backend seam", () => {
     expect(subject.renderer).toBe(backend.renderer);
   });
 
+  it("disposes the backend and skips assignment when destroyed during init", async () => {
+    const backend = createFakeBackend();
+    let resolveInit!: () => void;
+    const initGate = new Promise<void>((r) => {
+      resolveInit = r;
+    });
+    backend.initialize = vi.fn(async () => {
+      await initGate;
+      return {
+        activeMode: "legacy-webgl",
+        buildMode: "legacy-webgl",
+        fallbackReason: null,
+        initTimeMs: 0,
+        requestedMode: "legacy-webgl",
+      };
+    });
+
+    const subject = Object.create(GameRenderer.prototype) as any;
+    subject.graphicsSetting = "HIGH";
+    subject.isMobileDevice = false;
+    subject.isDestroyed = false;
+    subject.getTargetPixelRatio = vi.fn(() => 1);
+
+    const initPromise = subject.initializeRendererBackend(() => backend);
+
+    // Simulate destroy() firing while backend init is still pending.
+    subject.isDestroyed = true;
+    resolveInit();
+    await initPromise;
+
+    expect(subject.backend).toBeUndefined();
+    expect(subject.renderer).toBeUndefined();
+    expect(backend.dispose).toHaveBeenCalledTimes(1);
+  });
+
   it("routes experimental env boot through the selected-backend loader", async () => {
     const backend = createFakeBackend();
     const diagnostics = {

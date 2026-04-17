@@ -33,23 +33,29 @@ export function createRendererEffectsBridgeRuntime(
 class GameRendererEffectsBridgeRuntime implements RendererEffectsBridgeRuntime {
   private effectsRuntime?: RendererEffectsRuntime;
   private unsubscribeQualityListener?: () => void;
+  private isDisposed = false;
 
   constructor(private readonly input: CreateRendererEffectsBridgeRuntimeInput) {}
 
   public setupPostProcessingEffects(): void {
-    this.getOrCreateEffectsRuntime().setupPostProcessingEffects(this.input.resolveQualityFeatures());
+    const runtime = this.getOrCreateEffectsRuntime();
+    runtime?.setupPostProcessingEffects(this.input.resolveQualityFeatures());
   }
 
   public applyEnvironment(): void {
-    void this.getOrCreateEffectsRuntime().applyEnvironment();
+    const runtime = this.getOrCreateEffectsRuntime();
+    if (runtime) {
+      void runtime.applyEnvironment();
+    }
   }
 
   public applyQualityFeatures(features: QualityFeatures): void {
-    this.getOrCreateEffectsRuntime().applyQualityFeatures(features);
+    const runtime = this.getOrCreateEffectsRuntime();
+    runtime?.applyQualityFeatures(features);
   }
 
   public subscribeToQualityController(): void {
-    if (this.unsubscribeQualityListener) {
+    if (this.isDisposed || this.unsubscribeQualityListener) {
       return;
     }
 
@@ -59,6 +65,10 @@ class GameRendererEffectsBridgeRuntime implements RendererEffectsBridgeRuntime {
   }
 
   public updateWeatherPostProcessing(): void {
+    if (this.isDisposed) {
+      return;
+    }
+
     const weatherState = this.input.resolveWeatherState();
     if (!weatherState || !this.effectsRuntime) {
       return;
@@ -68,12 +78,17 @@ class GameRendererEffectsBridgeRuntime implements RendererEffectsBridgeRuntime {
   }
 
   public dispose(): void {
+    this.isDisposed = true;
     this.unsubscribeQualityListener?.();
     this.unsubscribeQualityListener = undefined;
     this.effectsRuntime = undefined;
   }
 
-  private getOrCreateEffectsRuntime(): RendererEffectsRuntime {
+  private getOrCreateEffectsRuntime(): RendererEffectsRuntime | undefined {
+    if (this.isDisposed) {
+      return undefined;
+    }
+
     if (!this.effectsRuntime) {
       this.effectsRuntime = this.input.createEffectsRuntime();
     }

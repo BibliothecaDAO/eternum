@@ -383,6 +383,29 @@ describe("GameRenderer destroy lifecycle", () => {
       }),
     );
   });
+
+  it("cancels a pending requestAnimationFrame handle on destroy", () => {
+    const fixture = createGameRendererSubject();
+    const cancelSpy = vi.fn();
+    vi.stubGlobal("cancelAnimationFrame", cancelSpy);
+    fixture.subject.animationFrameHandle = 4242;
+
+    fixture.subject.destroy();
+
+    expect(cancelSpy).toHaveBeenCalledWith(4242);
+    expect(fixture.subject.animationFrameHandle).toBeNull();
+  });
+
+  it("does not call cancelAnimationFrame when no frame is pending", () => {
+    const fixture = createGameRendererSubject();
+    const cancelSpy = vi.fn();
+    vi.stubGlobal("cancelAnimationFrame", cancelSpy);
+    fixture.subject.animationFrameHandle = null;
+
+    fixture.subject.destroy();
+
+    expect(cancelSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe("initScene destruction guard", () => {

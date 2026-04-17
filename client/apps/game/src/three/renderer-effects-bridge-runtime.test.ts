@@ -90,6 +90,68 @@ describe("renderer effects bridge runtime", () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
+  it("does not lazy-create an effects runtime after dispose", () => {
+    const qualityFeatures = createQualityFeatures();
+    const effectsRuntime = {
+      applyEnvironment: vi.fn(async () => {}),
+      applyQualityFeatures: vi.fn(),
+      hasPostProcessing: vi.fn(() => true),
+      resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
+      setupPostProcessingEffects: vi.fn(),
+      updateWeatherPostProcessing: vi.fn(),
+    };
+    const createEffectsRuntime = vi.fn(() => effectsRuntime);
+    const runtime = createRendererEffectsBridgeRuntime({
+      addQualityListener: vi.fn(),
+      createEffectsRuntime,
+      resolveQualityFeatures: () => qualityFeatures,
+      resolveWeatherState: () => undefined,
+    });
+
+    runtime.dispose();
+
+    runtime.setupPostProcessingEffects();
+    runtime.applyEnvironment();
+    runtime.applyQualityFeatures(qualityFeatures);
+    runtime.updateWeatherPostProcessing();
+
+    expect(createEffectsRuntime).not.toHaveBeenCalled();
+    expect(effectsRuntime.setupPostProcessingEffects).not.toHaveBeenCalled();
+    expect(effectsRuntime.applyEnvironment).not.toHaveBeenCalled();
+    expect(effectsRuntime.applyQualityFeatures).not.toHaveBeenCalled();
+    expect(effectsRuntime.updateWeatherPostProcessing).not.toHaveBeenCalled();
+  });
+
+  it("does not invoke a quality listener that fires after dispose", () => {
+    const qualityFeatures = createQualityFeatures();
+    const effectsRuntime = {
+      applyEnvironment: vi.fn(async () => {}),
+      applyQualityFeatures: vi.fn(),
+      hasPostProcessing: vi.fn(() => true),
+      resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
+      setupPostProcessingEffects: vi.fn(),
+      updateWeatherPostProcessing: vi.fn(),
+    };
+    const createEffectsRuntime = vi.fn(() => effectsRuntime);
+    let listener: ((event: { currentFeatures: ReturnType<typeof createQualityFeatures> }) => void) | undefined;
+    const runtime = createRendererEffectsBridgeRuntime({
+      addQualityListener: (next) => {
+        listener = next;
+        return () => {};
+      },
+      createEffectsRuntime,
+      resolveQualityFeatures: () => qualityFeatures,
+      resolveWeatherState: () => undefined,
+    });
+
+    runtime.subscribeToQualityController();
+    runtime.dispose();
+    listener?.({ currentFeatures: qualityFeatures });
+
+    expect(createEffectsRuntime).not.toHaveBeenCalled();
+    expect(effectsRuntime.applyQualityFeatures).not.toHaveBeenCalled();
+  });
+
   it("only forwards weather updates when an effects runtime already exists", () => {
     const weatherState = { intensity: 0.5, stormIntensity: 0.3 };
     const effectsRuntime = {

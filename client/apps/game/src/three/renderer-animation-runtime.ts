@@ -1,7 +1,7 @@
 interface RunRendererAnimationTickInput {
   getCurrentTime: () => number;
   getCycleProgress: () => number;
-  isDestroyed: boolean;
+  isDestroyed: () => boolean;
   isLabelRuntimeReady: boolean;
   lastTime: number;
   logDestroyed?: (message: string) => void;
@@ -49,7 +49,7 @@ export function runRendererAnimationTick(input: RunRendererAnimationTickInput): 
 }
 
 function shouldStopRendererAnimation(input: Pick<RunRendererAnimationTickInput, "isDestroyed">): boolean {
-  return input.isDestroyed;
+  return input.isDestroyed();
 }
 
 function shouldWaitForRendererLabels(input: Pick<RunRendererAnimationTickInput, "isLabelRuntimeReady">): boolean {

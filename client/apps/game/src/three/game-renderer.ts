@@ -67,6 +67,7 @@ export default class GameRenderer {
   private guiFolders: TrackableGuiFolder[] = [];
   private readonly isMobileDevice = IS_MOBILE;
   private backendInitializationPromise?: Promise<void>;
+  private animationFrameHandle: number | null = null;
   private readonly handleWindowResize = () => this.onWindowResize();
 
   constructor(dojoContext: SetupResult) {
@@ -137,6 +138,11 @@ export default class GameRenderer {
       pixelRatio: this.getTargetPixelRatio(),
       search: window.location.search,
     });
+    if (this.isDestroyed) {
+      // Destroyed mid-await — dispose the just-created backend instead of leaving it attached.
+      backend.dispose?.();
+      return;
+    }
     this.backend = backend as RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
     this.renderer = renderer;
   }
@@ -286,7 +292,7 @@ export default class GameRenderer {
     this.lastTime = runRendererAnimationTick({
       getCurrentTime: () => performance.now(),
       getCycleProgress: () => useUIStore.getState().cycleProgress || 0,
-      isDestroyed: this.isDestroyed,
+      isDestroyed: () => this.isDestroyed,
       isLabelRuntimeReady: this.labelRuntime?.isReady() ?? false,
       lastTime: this.lastTime,
       logDestroyed: (message) => console.log(message),
@@ -306,10 +312,12 @@ export default class GameRenderer {
           effectsBridgeRuntime: this.supportRuntimeRegistry.getEffectsBridge(),
           worldmapScene: this.worldmapScene,
         }),
-      requestNextFrame: () =>
-        requestAnimationFrame(() => {
+      requestNextFrame: () => {
+        this.animationFrameHandle = requestAnimationFrame(() => {
+          this.animationFrameHandle = null;
           this.animate();
-        }),
+        });
+      },
       targetFPS: this.getTargetFPS(),
       updateControls: () => {
         this.controls?.update();
@@ -328,6 +336,11 @@ export default class GameRenderer {
     }
 
     this.isDestroyed = true;
+
+    if (this.animationFrameHandle !== null) {
+      cancelAnimationFrame(this.animationFrameHandle);
+      this.animationFrameHandle = null;
+    }
 
     destroyRendererRuntime({
       backend: this.backend,
