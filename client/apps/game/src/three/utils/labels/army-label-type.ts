@@ -276,7 +276,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     const staminaBar = element.querySelector('[data-component="stamina-bar"]');
     if (staminaBar && data.currentStamina !== undefined && data.maxStamina !== undefined) {
-      updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina, data.displayStaminaRatio);
+      updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina);
     }
 
     const directionIndicators = updateDirectionIndicators(
