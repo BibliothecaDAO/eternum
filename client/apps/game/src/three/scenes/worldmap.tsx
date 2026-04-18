@@ -491,6 +491,27 @@ function allocateWorldmapInteractionDebugInstanceId(): number {
   return worldmapInteractionDebugInstanceCounter;
 }
 
+// Temporary tracing to diagnose biome-missing-on-load bug. Filter console with
+// "[biome-trace]". Flip BIOME_TRACE_ENABLED to false (or delete this block) once
+// the root cause is confirmed.
+const BIOME_TRACE_ENABLED = true;
+const biomeTraceUpdateCounts = new Map<string, number>();
+function biomeTrace(event: string, data?: Record<string, unknown>): void {
+  if (!BIOME_TRACE_ENABLED) return;
+  const stamp = (performance.now() / 1000).toFixed(3);
+  console.log(`[biome-trace ${stamp}s] ${event}`, data ?? {});
+}
+function biomeTraceCountUpdate(fetchKey: string | null): number {
+  if (!fetchKey) return 0;
+  const next = (biomeTraceUpdateCounts.get(fetchKey) ?? 0) + 1;
+  biomeTraceUpdateCounts.set(fetchKey, next);
+  return next;
+}
+function biomeTraceGetCount(fetchKey: string | null): number {
+  if (!fetchKey) return 0;
+  return biomeTraceUpdateCounts.get(fetchKey) ?? 0;
+}
+
 export default class WorldmapScene extends WarpTravel {
   private readonly interactionDebugInstanceId = allocateWorldmapInteractionDebugInstanceId();
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
@@ -1335,6 +1356,16 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Tile.onTileUpdate((value) => {
         this.incrementToriiBoundsCounter("tiles");
+        const activeFetchKeys = Array.from(this.tileHydrationFetches.keys());
+        activeFetchKeys.forEach((key) => biomeTraceCountUpdate(key));
+        biomeTrace("tile-update.received", {
+          col: value.hexCoords.col,
+          row: value.hexCoords.row,
+          biome: value.biome,
+          activeFetchKeys,
+          countsForFetch: activeFetchKeys.map((key) => [key, biomeTraceGetCount(key)]),
+          exploredTilesCols: this.exploredTiles.size,
+        });
         void this.trackTileHydrationUpdate(value, this.updateExploredHex(value));
       }),
     );
@@ -5180,6 +5211,14 @@ export default class WorldmapScene extends WarpTravel {
     if (cachedChunk) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_hit");
       incrementWorldmapRenderCounter("preparedChunkPrewarmHits");
+      biomeTrace("prepareTerrainChunk.cache-hit", {
+        chunkKey: `${startRow},${startCol}`,
+        expectedExploredTerrainInstances: cachedChunk.expectedExploredTerrainInstances,
+        biomeEntryCount: cachedChunk.biomeEntries.size,
+        nonZeroBiomeEntries: Array.from(cachedChunk.biomeEntries.entries())
+          .filter(([, entry]) => (entry.count ?? 0) > 0)
+          .map(([biome, entry]) => [biome, entry.count]),
+      });
       return cachedChunk;
     }
 
@@ -5193,6 +5232,19 @@ export default class WorldmapScene extends WarpTravel {
       centerRow: prepCenterRow,
       halfCols: prepHalfCols,
       halfRows: prepHalfRows,
+    });
+    biomeTrace("prepareTerrainChunk.snapshot", {
+      chunkKey: `${startRow},${startCol}`,
+      prepCenterRow,
+      prepCenterCol,
+      prepHalfRows,
+      prepHalfCols,
+      exploredTilesCols: this.exploredTiles.size,
+      snapshotCols: prepSnapshot.size,
+      // Sample 3 rows of the snapshot to see if it actually has data
+      snapshotSample: Array.from(prepSnapshot.entries())
+        .slice(0, 3)
+        .map(([col, rows]) => [col, rows.size]),
     });
 
     return new Promise<PreparedTerrainChunk>((resolve) => {
@@ -5274,6 +5326,14 @@ export default class WorldmapScene extends WarpTravel {
         if (frameHandle !== null) {
           cancelAnimationFrame(frameHandle);
         }
+        biomeTrace("prepareTerrainChunk.finalize", {
+          chunkKey: `${startRow},${startCol}`,
+          expectedExploredTerrainInstances,
+          biomeEntryCount: biomeEntries.size,
+          nonZeroBiomes: Array.from(biomeEntries.entries())
+            .filter(([, entry]) => (entry.count ?? 0) > 0)
+            .map(([biome, entry]) => [biome, entry.count]),
+        });
         resolve({
           chunkKey: `${startRow},${startCol}`,
           startRow,
@@ -5946,10 +6006,26 @@ export default class WorldmapScene extends WarpTravel {
 
   private async waitForTileHydrationIdle(chunkKey: string): Promise<void> {
     const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    biomeTrace("waitForTileHydrationIdle.enter", {
+      chunkKey,
+      fetchKey,
+      hasState: this.tileHydrationFetches.has(fetchKey),
+      stateSnapshot: (() => {
+        const s = this.tileHydrationFetches.get(fetchKey);
+        return s ? { fetchSettled: s.fetchSettled, pendingCount: s.pendingCount } : null;
+      })(),
+      exploredTilesCols: this.exploredTiles.size,
+    });
 
     while (true) {
       const state = this.tileHydrationFetches.get(fetchKey);
       if (!state) {
+        biomeTrace("waitForTileHydrationIdle.resolve", {
+          chunkKey,
+          fetchKey,
+          reason: "no-state",
+          exploredTilesCols: this.exploredTiles.size,
+        });
         return;
       }
 
@@ -5957,6 +6033,12 @@ export default class WorldmapScene extends WarpTravel {
         await Promise.resolve();
         const refreshed = this.tileHydrationFetches.get(fetchKey);
         if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
+          biomeTrace("waitForTileHydrationIdle.resolve", {
+            chunkKey,
+            fetchKey,
+            reason: "settled-and-idle",
+            exploredTilesCols: this.exploredTiles.size,
+          });
           return;
         }
       }
@@ -6014,6 +6096,7 @@ export default class WorldmapScene extends WarpTravel {
   private trackTileHydrationUpdate(update: { hexCoords: HexPosition }, work: Promise<void>): Promise<void> {
     const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
     const matchedFetchKeys: string[] = [];
+    const droppedByFetchKeys: Array<[string, string]> = [];
 
     this.tileHydrationFetches.forEach((state, fetchKey) => {
       if (
@@ -6024,7 +6107,26 @@ export default class WorldmapScene extends WarpTravel {
       ) {
         state.pendingCount += 1;
         matchedFetchKeys.push(fetchKey);
+      } else {
+        const reason =
+          state.fetchSettled
+            ? "already-settled"
+            : normalized.x < state.minCol ||
+                normalized.x > state.maxCol ||
+                normalized.y < state.minRow ||
+                normalized.y > state.maxRow
+              ? "out-of-bounds"
+              : "unknown";
+        droppedByFetchKeys.push([fetchKey, reason]);
       }
+    });
+
+    biomeTrace("tile-update.track", {
+      col: normalized.x,
+      row: normalized.y,
+      matchedFetchKeys,
+      droppedByFetchKeys,
+      openFetches: this.tileHydrationFetches.size,
     });
 
     if (matchedFetchKeys.length === 0) {
@@ -6051,6 +6153,15 @@ export default class WorldmapScene extends WarpTravel {
     maxRow: number,
     fetchGeneration: number,
   ): Promise<boolean> {
+    biomeTrace("fetch.start", {
+      fetchKey,
+      fetchGeneration,
+      minCol,
+      maxCol,
+      minRow,
+      maxRow,
+      exploredTilesCols: this.exploredTiles.size,
+    });
     this.beginToriiFetch();
     try {
       await getExplorerTroopsFromToriiExact(
@@ -6108,7 +6219,17 @@ export default class WorldmapScene extends WarpTravel {
       // (expectedExploredTerrainInstances=0 passes the fingerprint gate).
       // setTimeout(0) over Promise.resolve() because Recs may queue several
       // microtasks before delivering.
+      biomeTrace("fetch.pre-yield", {
+        fetchKey,
+        updatesDuringFetch: biomeTraceGetCount(fetchKey),
+        exploredTilesCols: this.exploredTiles.size,
+      });
       await new Promise((resolve) => setTimeout(resolve, 0));
+      biomeTrace("fetch.post-yield.pre-settle", {
+        fetchKey,
+        updatesDuringFetch: biomeTraceGetCount(fetchKey),
+        exploredTilesCols: this.exploredTiles.size,
+      });
       this.settleTileHydrationFetch(fetchKey, fetchGeneration);
       this.settleStructureHydrationFetch(fetchKey, fetchGeneration);
       this.endToriiFetch();
