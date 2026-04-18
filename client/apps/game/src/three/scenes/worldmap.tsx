@@ -6097,6 +6097,18 @@ export default class WorldmapScene extends WarpTravel {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
       return false;
     } finally {
+      // Yield one macrotask so Recs store subscriptions triggered by
+      // getMapFromToriiExact's setComponent calls have a chance to dispatch
+      // Tile.onTileUpdate / Structure.onTileUpdate before we close the
+      // hydration window. Without this, those callbacks fire after
+      // fetchSettled=true, shouldTrackHydrationUpdateForFetch drops them
+      // from pendingCount, and waitForTileHydrationIdle resolves against
+      // a still-empty exploredTiles map — prepareTerrainChunk then commits
+      // a preparedTerrain with every biome count=0 and the cache is poisoned
+      // (expectedExploredTerrainInstances=0 passes the fingerprint gate).
+      // setTimeout(0) over Promise.resolve() because Recs may queue several
+      // microtasks before delivering.
+      await new Promise((resolve) => setTimeout(resolve, 0));
       this.settleTileHydrationFetch(fetchKey, fetchGeneration);
       this.settleStructureHydrationFetch(fetchKey, fetchGeneration);
       this.endToriiFetch();
