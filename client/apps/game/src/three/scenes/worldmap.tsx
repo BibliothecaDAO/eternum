@@ -5169,6 +5169,13 @@ export default class WorldmapScene extends WarpTravel {
     rows: number,
     cols: number,
   ): Promise<PreparedTerrainChunk> {
+    // Await before touching the cache: prewarm may have written a cached entry
+    // against a partial biomeModels map (some GLTFs still loading). Returning
+    // that cache hit without waiting lets applyPreparedTerrainChunk silently
+    // drop matrices for biomes whose model has not resolved yet, which surfaced
+    // as "armies render but biome hexes are missing" on cold loads.
+    await Promise.all(this.modelLoadPromises);
+
     const cachedChunk = this.createPreparedTerrainChunkFromCache(startRow, startCol);
     if (cachedChunk) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_hit");
@@ -5187,7 +5194,6 @@ export default class WorldmapScene extends WarpTravel {
       halfCols: prepHalfCols,
       halfRows: prepHalfRows,
     });
-    await Promise.all(this.modelLoadPromises);
 
     return new Promise<PreparedTerrainChunk>((resolve) => {
       const matrixPool = MatrixPool.getInstance();
@@ -6400,7 +6406,14 @@ export default class WorldmapScene extends WarpTravel {
           continue;
         }
         const { matrices, count, landColors } = entry;
-        const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+        const hexMesh = this.biomeModels.get(biome as BiomeType);
+        // onBiomeModelLoaded can call us while some GLTFs are still loading.
+        // Skip biomes whose InstancedBiome is not yet populated; the next
+        // callback fires when each model arrives and flushes the remaining
+        // entries on that pass.
+        if (!hexMesh) {
+          continue;
+        }
         if (matrices) {
           hexMesh.setMatricesAndCount(matrices, count);
           const matrixUploadBytes = count * Float32Array.BYTES_PER_ELEMENT * 16;
@@ -7824,6 +7837,21 @@ export default class WorldmapScene extends WarpTravel {
   protected override onBiomeModelLoaded(model: InstancedBiome): void {
     if (this.currentChunkBounds) {
       model.setWorldBounds(this.currentChunkBounds);
+    }
+
+    // Flush cached terrain onto the newly-available biome. If this GLTF
+    // resolved after applyPreparedTerrainChunk already committed for the
+    // current chunk, the model would otherwise sit at count=0 until the
+    // next chunk switch re-triggered apply. Same class as the army
+    // reconciler flush fix — buffered state must commit when the model
+    // it targets becomes available.
+    if (this.currentChunk && this.currentChunk !== "null") {
+      const [startRowStr, startColStr] = this.currentChunk.split(",");
+      const startRow = Number.parseInt(startRowStr ?? "", 10);
+      const startCol = Number.parseInt(startColStr ?? "", 10);
+      if (Number.isFinite(startRow) && Number.isFinite(startCol)) {
+        this.applyCachedMatricesForChunk(startRow, startCol);
+      }
     }
   }
 
