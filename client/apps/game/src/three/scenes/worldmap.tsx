@@ -1366,7 +1366,16 @@ export default class WorldmapScene extends WarpTravel {
           countsForFetch: activeFetchKeys.map((key) => [key, biomeTraceGetCount(key)]),
           exploredTilesCols: this.exploredTiles.size,
         });
-        void this.trackTileHydrationUpdate(value, this.updateExploredHex(value));
+        // Fire render work. updateExploredHex's synchronous prelude lands the tile into
+        // exploredTiles / exploredTilesGeneration / gameWorkerManager before any await,
+        // so by the time this call returns, hydration data is guaranteed to have landed.
+        void this.updateExploredHex(value);
+        // Pass a resolved promise to the tracker so pendingCount drains immediately.
+        // Previously the tracker awaited updateExploredHex's full promise, which itself
+        // awaits modelLoadPromises / updateHexagonGrid — both can stall for seconds on
+        // cold load, pinning pendingCount > 0 and blocking waitForTileHydrationIdle
+        // indefinitely (so prepareTerrainChunk never runs for the first chunk).
+        void this.trackTileHydrationUpdate(value, Promise.resolve());
       }),
     );
 
