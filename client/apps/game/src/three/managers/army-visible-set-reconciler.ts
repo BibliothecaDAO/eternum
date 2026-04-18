@@ -25,12 +25,9 @@ export function reconcileVisibleArmySet<TArmy extends { entityId: TEntityId }, T
   const staleVisibleArmies = input.sortEntityIds(
     input.currentVisibleOrder.filter((entityId) => !desiredIds.has(entityId)),
   );
-  let buffersDirty = false;
 
   staleVisibleArmies.forEach((entityId) => {
-    if (input.removeVisibleArmy(entityId) !== null) {
-      buffersDirty = true;
-    }
+    input.removeVisibleArmy(entityId);
   });
 
   input.desiredVisibleArmies
@@ -42,7 +39,6 @@ export function reconcileVisibleArmySet<TArmy extends { entityId: TEntityId }, T
       }
 
       input.addVisibleArmy(army, modelType);
-      buffersDirty = true;
     });
 
   if (input.forceRefresh) {
@@ -54,7 +50,6 @@ export function reconcileVisibleArmySet<TArmy extends { entityId: TEntityId }, T
       }
 
       input.refreshVisibleArmy(army, slot, modelType);
-      buffersDirty = true;
     });
   }
 
@@ -70,7 +65,9 @@ export function reconcileVisibleArmySet<TArmy extends { entityId: TEntityId }, T
   input.syncVisibleArmyAttachments();
   input.updateArmyAttachmentTransforms();
 
-  if (buffersDirty) {
-    input.flushVisibleArmyBuffers();
-  }
+  // Always flush so mesh.count / instanceMatrix.needsUpdate reflect the committed
+  // visible set even on no-op reconciles. Fixes a slow-load race where the first
+  // chunk commit ran against an empty army set and the flush was skipped; armies
+  // that landed afterward stayed invisible until the next chunk change re-flushed.
+  input.flushVisibleArmyBuffers();
 }

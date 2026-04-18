@@ -87,7 +87,7 @@ describe("reconcileVisibleArmySet", () => {
     expect(flushVisibleArmyBuffers).toHaveBeenCalledTimes(1);
   });
 
-  it("preserves presentation updates on no-op passes without flushing buffers", () => {
+  it("preserves presentation updates and flushes buffers on no-op passes", () => {
     const currentVisibleOrder: ID[] = [2 as ID, 1 as ID];
     const visibleArmySlots = new Map<ID, number>([
       [2 as ID, 0],
@@ -142,6 +142,46 @@ describe("reconcileVisibleArmySet", () => {
     expect(refreshVisibleArmyCollection).toHaveBeenCalledTimes(1);
     expect(syncVisibleArmyAttachments).toHaveBeenCalledTimes(1);
     expect(updateArmyAttachmentTransforms).toHaveBeenCalledTimes(1);
-    expect(flushVisibleArmyBuffers).not.toHaveBeenCalled();
+    expect(flushVisibleArmyBuffers).toHaveBeenCalledTimes(1);
+  });
+
+  it("flushes buffers on an empty initial reconcile so a slow-load chunk commit establishes a clean baseline", () => {
+    // Regression: on slow loads the first chunk commit ran before any army data had
+    // arrived. Empty-in / empty-out reconciles previously skipped the flush, so the
+    // instanced mesh kept mesh.count=0 and instanceMatrix.needsUpdate=false until
+    // the next chunk change re-triggered reconcile with a non-empty desired set.
+    const removeVisibleArmy = vi.fn();
+    const addVisibleArmy = vi.fn();
+    const refreshVisibleArmy = vi.fn();
+    const removeEntityIdLabel = vi.fn();
+    const commitVisibleArmyOrder = vi.fn();
+    const refreshVisibleArmyCollection = vi.fn();
+    const syncVisibleArmyAttachments = vi.fn();
+    const updateArmyAttachmentTransforms = vi.fn();
+    const flushVisibleArmyBuffers = vi.fn();
+
+    reconcileVisibleArmySet<VisibleArmyStub, ModelTypeStub, ID>({
+      desiredVisibleArmies: [],
+      modelTypesByEntity: new Map(),
+      currentVisibleOrder: [],
+      forEachTrackedLabel: () => {},
+      getVisibleArmySlot: () => undefined,
+      removeVisibleArmy,
+      addVisibleArmy,
+      refreshVisibleArmy,
+      removeEntityIdLabel,
+      commitVisibleArmyOrder,
+      refreshVisibleArmyCollection,
+      syncVisibleArmyAttachments,
+      updateArmyAttachmentTransforms,
+      flushVisibleArmyBuffers,
+      sortEntityIds: (entityIds) => entityIds,
+    });
+
+    expect(removeVisibleArmy).not.toHaveBeenCalled();
+    expect(addVisibleArmy).not.toHaveBeenCalled();
+    expect(refreshVisibleArmy).not.toHaveBeenCalled();
+    expect(commitVisibleArmyOrder).toHaveBeenCalledWith([]);
+    expect(flushVisibleArmyBuffers).toHaveBeenCalledTimes(1);
   });
 });
