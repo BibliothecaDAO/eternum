@@ -12,6 +12,7 @@ import {
 } from "@/init/bootstrap";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
+import { finalizeBootstrapSession } from "./bootstrap-finalize";
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "./context";
 
 export type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
@@ -197,27 +198,23 @@ export const useGameEntryBootstrapController = ({
     inFlightRef.current = promise;
 
     promise
-      .then(async (result) => {
-        if (activeRunIdRef.current !== runId) {
-          return;
-        }
-
-        const connector = useAccountStore.getState().connector;
-        if (connector) {
-          markGameEntryMilestone("session-policies-refresh-started");
-          await refreshSessionPolicies(connector);
-          if (activeRunIdRef.current !== runId) {
-            return;
-          }
-          markGameEntryMilestone("session-policies-refresh-completed");
-        } else {
-          markGameEntryMilestone("session-policies-refresh-skipped");
-        }
-
-        setTasks(createCompletedBootstrapTasks());
-        setSession(result);
-        setStatus("ready");
-        markGameEntryMilestone("entry-ready");
+      .then((result) => {
+        // Fire-and-forget: commit `ready` first so the boot pipeline can advance,
+        // then rotate keychain policies in the background. `use-controller-account`
+        // already guards signing on `isSessionPolicyRefreshInProgress`, so downstream
+        // callers stay correct while the keychain iframe rebuilds.
+        void finalizeBootstrapSession({
+          connector: useAccountStore.getState().connector,
+          commitReady: () => {
+            setTasks(createCompletedBootstrapTasks());
+            setSession(result);
+            setStatus("ready");
+          },
+          refreshPolicies: refreshSessionPolicies,
+          markMilestone: markGameEntryMilestone,
+          logError: (error) => console.error("[bootstrap] session policy refresh failed:", error),
+          isStillActive: () => activeRunIdRef.current === runId,
+        });
       })
       .catch((incomingError: unknown) => {
         if (activeRunIdRef.current !== runId) {

@@ -46,6 +46,12 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
   markWorldmapReady: (token) =>
     set((state) => {
       if (token !== state.bootToken) {
+        // Stale-token drops mean a new boot has already advanced the token
+        // before the previous scene finished waking. If the new boot never
+        // re-fires markWorldmapReady the play route stalls at wait_worldmap_ready.
+        console.warn(
+          `[play-route-readiness] markWorldmapReady dropped: incoming token=${token} current=${state.bootToken}`,
+        );
         return state;
       }
 

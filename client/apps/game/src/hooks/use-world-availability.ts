@@ -554,8 +554,11 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
     });
   });
 
-  const isAnyLoading = queries.some((q) => q.isLoading);
-  const allSettled = queries.every((q) => !q.isLoading);
+  // Treat a pending bulk query as "still loading" so the UI doesn't briefly
+  // collapse `data?.isAvailable ?? false` into an "unavailable" flash while
+  // per-world queries are gated off waiting for bulk availability.
+  const isAnyLoading = isBulkAvailabilityPending || queries.some((q) => q.isLoading);
+  const allSettled = !isBulkAvailabilityPending && queries.every((q) => !q.isLoading);
 
   return {
     results,

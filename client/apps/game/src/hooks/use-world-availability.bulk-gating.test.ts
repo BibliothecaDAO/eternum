@@ -76,4 +76,32 @@ describe("useWorldsAvailability bulk gating", () => {
 
     expect(queries[0]?.enabled).toBe(true);
   });
+
+  it("keeps isAnyLoading=true while bulk availability is pending so the UI doesn't flash unavailable", () => {
+    // Regression: on first modal open the bulk query is still pending, so per-world
+    // queries are gated off. A disabled react-query reports isLoading=false with
+    // data=undefined, which collapsed to isAvailable=false and surfaced the
+    // "The selected world is currently unavailable." warning for one frame.
+    reactQueryMocks.useQuery.mockReturnValue({
+      data: undefined,
+      isPending: true,
+    });
+    reactQueryMocks.useQueries.mockImplementation(({ queries }: { queries: Array<Record<string, unknown>> }) =>
+      queries.map(() => ({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      })),
+    );
+
+    const { isAnyLoading, allSettled } = useWorldsAvailability(
+      [{ name: "alpha", chain: "mainnet" }],
+      true,
+      null,
+    );
+
+    expect(isAnyLoading).toBe(true);
+    expect(allSettled).toBe(false);
+  });
 });
