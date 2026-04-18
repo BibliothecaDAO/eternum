@@ -23,6 +23,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-16",
+    title: "Live Stamina Labels",
+    description:
+      "World-map army labels now keep stamina values aligned with the computed stamina shown in army details, avoiding stale or over-projected label values.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-16",
+    title: "Accurate Army Stamina",
+    description:
+      "Fixed army stamina displays so numeric values show the committed on-chain computed state while recharge progress remains visible in the bar.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-16",
     title: "Automation Skip Reasons",
     description:
       "Production automation now shows why a realm was skipped, making inactive buildings, missing inputs, and budget limits easier to diagnose.",

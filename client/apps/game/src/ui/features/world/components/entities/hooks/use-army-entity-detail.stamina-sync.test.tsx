@@ -114,15 +114,14 @@ const sameTickSnapshotTroops = {
   stamina: { amount: 20n, updated_tick: 5n },
 };
 
-const Probe = () => {
+type CapturedDerivedData = ReturnType<typeof useArmyEntityDetail>["derivedData"];
+
+let captured: CapturedDerivedData;
+
+const Capture = () => {
   const { derivedData } = useArmyEntityDetail({ armyEntityId: 1 as never });
-  return (
-    <div>
-      {derivedData
-        ? `${Number(derivedData.stamina.amount)}/${derivedData.maxStamina}:${derivedData.staminaDisplay?.displayCurrent ?? 0}`
-        : "loading"}
-    </div>
-  );
+  captured = derivedData;
+  return null;
 };
 
 describe("useArmyEntityDetail stamina sync", () => {
@@ -134,6 +133,7 @@ describe("useArmyEntityDetail stamina sync", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
+    captured = undefined;
     useArmyStaminaSourceStore.setState({
       pendingSources: {},
       authoritativeSources: {},
@@ -207,10 +207,13 @@ describe("useArmyEntityDetail stamina sync", () => {
 
   it("prefers live troop stamina over the stale Torii snapshot", async () => {
     await act(async () => {
-      root.render(<Probe />);
+      root.render(<Capture />);
     });
 
-    expect(container.textContent).toContain("20/120:");
+    expect(captured?.stamina.amount).toBe(20n);
+    expect(captured?.stamina.updated_tick).toBe(5n);
+    expect(captured?.maxStamina).toBe(120);
+    expect(captured?.staminaDisplay?.displayCurrent).toBe(20);
   });
 
   it("prefers the newer Torii troop stamina when the live troop snapshot is stale", async () => {
@@ -268,10 +271,13 @@ describe("useArmyEntityDetail stamina sync", () => {
     });
 
     await act(async () => {
-      root.render(<Probe />);
+      root.render(<Capture />);
     });
 
-    expect(container.textContent).toContain("65/120:");
+    expect(captured?.stamina.amount).toBe(65n);
+    expect(captured?.stamina.updated_tick).toBe(9n);
+    expect(captured?.maxStamina).toBe(120);
+    expect(captured?.staminaDisplay?.displayCurrent).toBe(65);
   });
 
   it("prefers the Torii snapshot when both snapshots share the same tick but differ in amount", async () => {
@@ -320,9 +326,12 @@ describe("useArmyEntityDetail stamina sync", () => {
     });
 
     await act(async () => {
-      root.render(<Probe />);
+      root.render(<Capture />);
     });
 
-    expect(container.textContent).toContain("20/120:30");
+    expect(captured?.stamina.amount).toBe(20n);
+    expect(captured?.stamina.updated_tick).toBe(5n);
+    expect(captured?.maxStamina).toBe(120);
+    expect(captured?.staminaDisplay?.displayCurrent).toBe(20);
   });
 });

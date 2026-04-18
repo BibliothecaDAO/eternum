@@ -39,8 +39,13 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@config": path.resolve(__dirname, "../../../config/utils/utils"),
+      "@bibliothecadao/amm-sdk": path.resolve(__dirname, "../../../packages/amm-sdk/src/index.ts"),
+      "@bibliothecadao/ammv2-sdk": path.resolve(__dirname, "../../../packages/ammv2-sdk/src/index.ts"),
+      "@bibliothecadao/client": path.resolve(__dirname, "../../../packages/client/src/index.ts"),
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../../packages/core/src/index.ts"),
+      "@bibliothecadao/provider": path.resolve(__dirname, "../../../packages/provider/src/index.ts"),
       "@bibliothecadao/react": path.resolve(__dirname, "../../../packages/react/src/index.ts"),
+      "@bibliothecadao/torii": path.resolve(__dirname, "../../../packages/torii/src/index.ts"),
       "@bibliothecadao/types": path.resolve(__dirname, "../../../packages/types/src/index.ts"),
       "@manifests": path.resolve(__dirname, "../../../contracts/game"),
     },

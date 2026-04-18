@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from "vitest";
 
 import { resolveGameEntryModalPhase, resolveBlitzSettlementPhase } from "./game-entry-phase";
@@ -56,13 +58,22 @@ const resolvePhaseFromSnapshot = ({
     checksComplete: true,
     needsHyperstructureInit: false,
     needsSettlement: status.needsSettlement,
+    canPlay: status.canPlay,
     isBlitzSettlementUnlocked: isSettlementUnlocked,
   });
 };
 
 describe("resolveBlitzSettlementPhase", () => {
   it("maps settled players to ready", () => {
-    expect(resolveBlitzSettlementPhase({ needsSettlement: false, isSettlementUnlocked: false })).toBe("ready");
+    expect(resolveBlitzSettlementPhase({ canPlay: true, isSettlementUnlocked: false })).toBe("ready");
+  });
+
+  it("routes unfinished players to settlement when unlocked", () => {
+    expect(resolveBlitzSettlementPhase({ canPlay: false, isSettlementUnlocked: true })).toBe("settlement");
+  });
+
+  it("holds unfinished players in settlement-waiting before unlock", () => {
+    expect(resolveBlitzSettlementPhase({ canPlay: false, isSettlementUnlocked: false })).toBe("settlement-waiting");
   });
 });
 
@@ -87,6 +98,28 @@ describe("blitz entry handoff", () => {
         isSettlementUnlocked: true,
       }),
     ).toBe("settlement");
+  });
+
+  it("routes unregistered new players (no dashboard hint) into the settle flow, not ready", () => {
+    expect(
+      resolvePhaseFromSnapshot({
+        snapshot: snapshot(),
+        entryIntent: "play",
+        hasDashboardRegistrationEntry: false,
+        isSettlementUnlocked: true,
+      }),
+    ).toBe("settlement");
+  });
+
+  it("holds unregistered new players (no dashboard hint) in settlement-waiting before unlock", () => {
+    expect(
+      resolvePhaseFromSnapshot({
+        snapshot: snapshot(),
+        entryIntent: "play",
+        hasDashboardRegistrationEntry: false,
+        isSettlementUnlocked: false,
+      }),
+    ).toBe("settlement-waiting");
   });
 
   it("keeps settled entries ready", () => {

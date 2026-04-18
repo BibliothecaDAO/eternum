@@ -12,6 +12,7 @@ import {
   STAMINA_RECHARGING_TEXT_CLASS,
   STAMINA_RECHARGING_TRACK_CLASS,
 } from "@/ui/shared/lib/stamina-visuals";
+import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
@@ -126,9 +127,8 @@ const ArmyBannerEntityDetailContent = memo(
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
             <InlineStaminaBar
-              stamina={derivedData.stamina}
+              currentStamina={derivedData.staminaDisplay?.displayCurrent ?? Number(derivedData.stamina.amount)}
               maxStamina={derivedData.maxStamina}
-              displayRatio={derivedData.staminaDisplay?.displayRatio}
               isRecharging={derivedData.staminaDisplay?.isRecharging}
             />
           ) : null}
@@ -191,30 +191,30 @@ export const ArmyBannerEntityDetail = memo(
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 
 const InlineStaminaBar = ({
-  stamina,
+  currentStamina,
   maxStamina,
-  displayRatio,
   isRecharging,
 }: {
-  stamina: { amount: bigint; updated_tick: bigint };
+  currentStamina: number;
   maxStamina: number;
-  displayRatio?: number;
   isRecharging?: boolean | null;
 }) => {
-  if (!stamina || maxStamina === 0) return null;
-  const staminaValue = Number(stamina.amount);
-  const percentage = (staminaValue / maxStamina) * 100;
-  const projectedPercentage = Math.max(
-    percentage,
-    Math.min(100, Math.max(0, (displayRatio ?? percentage / 100) * 100)),
-  );
+  if (maxStamina === 0) return null;
+  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+    current: currentStamina,
+    max: maxStamina,
+  });
   const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
-  const recharging = isRecharging ?? isStaminaRecharging(staminaValue, maxStamina);
+  const recharging = isRecharging ?? isStaminaRecharging(displayedCurrent, maxStamina);
 
   let fillClass = "bg-progress-bar-danger";
-  if (staminaValue >= minTravelCost) {
+  if (displayedCurrent >= minTravelCost) {
     fillClass =
-      percentage > 66 ? "bg-progress-bar-good" : percentage > 33 ? "bg-progress-bar-medium" : "bg-progress-bar-danger";
+      displayPercentage > 66
+        ? "bg-progress-bar-good"
+        : displayPercentage > 33
+          ? "bg-progress-bar-medium"
+          : "bg-progress-bar-danger";
   }
 
   return (
@@ -228,7 +228,7 @@ const InlineStaminaBar = ({
       >
         <div
           className={cn(fillClass, "h-full rounded-full opacity-45 transition-all duration-300")}
-          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+          style={{ width: `${committedPercentage}%` }}
         />
         <div
           className={cn(
@@ -236,11 +236,11 @@ const InlineStaminaBar = ({
             "h-full rounded-full transition-all duration-1000 -mt-2",
             recharging && STAMINA_RECHARGING_FILL_CLASS,
           )}
-          style={{ width: `${projectedPercentage}%` }}
+          style={{ width: `${displayPercentage}%` }}
         />
       </div>
       <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>
-        {`${staminaValue}/${maxStamina}`}
+        {`${displayedCurrent}/${maxStamina}`}
       </span>
     </div>
   );

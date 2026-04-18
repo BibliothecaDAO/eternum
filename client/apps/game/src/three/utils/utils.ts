@@ -11,7 +11,14 @@ export function createPausedLabel() {
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.7/");
-dracoLoader.preload();
+
+// Under vitest the gstatic fetch resolves after the jsdom env tears down, and
+// three.js's FileLoader calls `new ProgressEvent(...)` on the stale global,
+// which leaks as an unhandled rejection and fails CI.
+const isVitest = typeof process !== "undefined" && process.env?.VITEST === "true";
+if (!isVitest) {
+  dracoLoader.preload();
+}
 
 export const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
