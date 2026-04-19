@@ -1,6 +1,6 @@
-import { ArrowLeftRight, Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, Bug, Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
 
-type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile";
+type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile" | "debug";
 
 interface SubMenuItem {
   id: string;
@@ -69,6 +69,7 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
       { id: "wallet", label: "WALLET", tab: "wallet", href: "/profile?tab=wallet" },
     ],
   },
+  ...buildDebugNavigationSections(),
 ];
 
 const HOME_SECTION_PATHS = new Set(["/", "/learn", "/news", "/factory"]);
@@ -122,4 +123,20 @@ export function getSubItemHref(section: SectionConfig, item: SubMenuItem, search
 
   const queryString = nextSearchParams.toString();
   return queryString ? `${section.basePath}?${queryString}` : section.basePath;
+}
+
+function buildDebugNavigationSections(): SectionConfig[] {
+  if (!import.meta.env.DEV) {
+    return [];
+  }
+
+  return [
+    {
+      id: "debug",
+      label: "Debug",
+      icon: Bug,
+      basePath: "/debug/three-chunks",
+      subMenu: [{ id: "three-chunks", label: "DEBUG", tab: null, href: "/debug/three-chunks" }],
+    },
+  ];
 }

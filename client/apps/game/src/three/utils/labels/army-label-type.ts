@@ -1,6 +1,6 @@
 import { getCharacterName } from "@/utils/agent";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { CameraView } from "../../scenes/hexagon-scene";
+import { CameraView } from "../../scenes/camera-view";
 import {
   createContentContainer,
   createDirectionIndicators,
@@ -93,14 +93,14 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       data.maxStamina !== undefined &&
       data.maxStamina > 0
     ) {
-      const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView, data.displayStaminaRatio);
+      const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
       troopCountDisplay.appendChild(staminaBar);
       staminaHandledInline = true;
     }
 
     if (!staminaHandledInline) {
       if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
-        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView, data.displayStaminaRatio);
+        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
         textContainer.appendChild(staminaBar);
       } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
         const staminaInfo = document.createElement("div");
@@ -238,19 +238,14 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         data.maxStamina !== undefined &&
         data.maxStamina > 0
       ) {
-        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView, data.displayStaminaRatio);
+        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
         troopCountDisplay.appendChild(staminaBar);
         staminaHandledInline = true;
       }
 
       if (!staminaHandledInline) {
         if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
-          const staminaBar = createStaminaBar(
-            data.currentStamina,
-            data.maxStamina,
-            cameraView,
-            data.displayStaminaRatio,
-          );
+          const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
           contentContainer.appendChild(staminaBar);
         } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
           const staminaInfo = document.createElement("div");
@@ -281,7 +276,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     const staminaBar = element.querySelector('[data-component="stamina-bar"]');
     if (staminaBar && data.currentStamina !== undefined && data.maxStamina !== undefined) {
-      updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina, data.displayStaminaRatio);
+      updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina);
     }
 
     const directionIndicators = updateDirectionIndicators(

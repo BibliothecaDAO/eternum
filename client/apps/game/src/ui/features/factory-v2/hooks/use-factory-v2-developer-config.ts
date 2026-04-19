@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { reportClientTransactionFailure } from "@/observability/transaction-failure-reporting";
 import {
   DEFAULT_FACTORY_NAMESPACE,
   getFactoryExplorerTxUrl,
@@ -9,7 +11,6 @@ import {
   resolveFactoryConfigDefaultVersion,
 } from "@/ui/features/factory/shared/factory-metadata";
 import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";
-import { canInteractWithLandingChain } from "@/ui/features/landing/lib/landing-network-state";
 import { getChainLabel } from "@/ui/utils/network-switch";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { buildFactoryConfigMulticall } from "../developer/factory-config-multicall";
@@ -78,11 +79,21 @@ function resolveFactoryConfigConfirmationErrorMessage(error: unknown): string {
 async function submitFactoryConfigMulticall({
   account,
   multicall,
+  chain,
 }: {
   account: NonNullable<ReturnType<typeof useAccountStore.getState>["account"]>;
   multicall: ReturnType<typeof buildFactoryConfigMulticall>;
+  chain: FactoryLaunchChain;
 }) {
-  const result = await account.execute(multicall);
+  const result = await executeObservedClientTransaction({
+    account,
+    calls: multicall,
+    surface: "factory",
+    operation: "factory_config_multicall",
+    chain,
+    waitForConfirmation: false,
+    confirm: false,
+  });
   const txHash = extractTransactionHash(result);
 
   if (!txHash) {
@@ -162,6 +173,26 @@ function isPendingFactoryConfigExecutionState(
   txHash: string,
 ): state is Extract<FactoryDeveloperConfigExecutionState, { status: "submitted"; txHash: string }> {
   return state.status === "submitted" && state.txHash === txHash;
+}
+
+function canSubmitFactoryConfigOnCurrentNetwork({
+  account,
+  landingNetworkState,
+  chain,
+}: {
+  account: ReturnType<typeof useAccountStore.getState>["account"];
+  landingNetworkState: ReturnType<typeof useLandingNetworkState>;
+  chain: FactoryLaunchChain;
+}): boolean {
+  if (!account) {
+    return true;
+  }
+
+  if (landingNetworkState.status === "detecting" || landingNetworkState.status === "unsupported") {
+    return false;
+  }
+
+  return landingNetworkState.connectedLandingChain === chain;
 }
 
 export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGameMode; chain: FactoryLaunchChain }) => {
@@ -262,7 +293,11 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     manifestState.status === "ready" &&
     selectedSectionIds.length > 0 &&
     executionState.status !== "sending";
-  const canSubmitOnCurrentNetwork = canInteractWithLandingChain(landingNetworkState, chain);
+  const canSubmitOnCurrentNetwork = canSubmitFactoryConfigOnCurrentNetwork({
+    account,
+    landingNetworkState,
+    chain,
+  });
 
   const isVersionCustomized = version !== defaultVersion;
   const executionTxHash =
@@ -340,6 +375,17 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
         );
       })
       .catch((error) => {
+        void reportClientTransactionFailure({
+          error,
+          context: {
+            surface: "factory",
+            operation: "factory_config_multicall_confirmation",
+            stage: "confirmation",
+            transactionHash: txHash,
+            chain,
+            walletAddress: account.address,
+          },
+        });
         if (executionAttemptRef.current !== attemptId) {
           return;
         }
@@ -370,6 +416,7 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
       const txHash = await submitFactoryConfigMulticall({
         account,
         multicall,
+        chain,
       });
 
       setExecutionState(buildSubmittedExecutionState(txHash));

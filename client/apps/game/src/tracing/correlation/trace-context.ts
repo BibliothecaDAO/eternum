@@ -1,4 +1,4 @@
-import { context, trace, Context } from "@opentelemetry/api";
+import { type Attributes, context, trace, Context } from "@opentelemetry/api";
 import { v4 as uuidv4 } from "uuid";
 
 interface TraceContext {
@@ -219,7 +219,7 @@ class TraceContextManager {
     };
   }
 
-  public createChildContext(name: string, attributes?: Record<string, any>): Context {
+  public createChildContext(name: string, attributes?: Attributes): Context {
     const span = trace.getTracer("eternum-game").startSpan(name, {
       attributes: {
         ...attributes,
@@ -272,14 +272,4 @@ class TraceContextManager {
   }
 }
 
-// Export singleton instance
 export const traceContextManager = TraceContextManager.getInstance();
-
-// Convenience functions (used internally)
-const getTraceContext = traceContextManager.getContext.bind(traceContextManager);
-const setUserId = traceContextManager.setUserId.bind(traceContextManager);
-const setRealmId = traceContextManager.setRealmId.bind(traceContextManager);
-const setGamePhase = traceContextManager.setGamePhase.bind(traceContextManager);
-const recordUserAction = traceContextManager.recordUserAction.bind(traceContextManager);
-const getCorrelationHeaders = traceContextManager.getCorrelationHeaders.bind(traceContextManager);
-const enrichError = traceContextManager.enrichError.bind(traceContextManager);

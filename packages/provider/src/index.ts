@@ -26,7 +26,13 @@ import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import { withRetry } from "./retry";
 import type { RetryConfig } from "./retry";
-import { BatchedTransactionDetail, TransactionType } from "./types";
+import {
+  BatchedTransactionDetail,
+  TransactionFailedPayload,
+  TransactionFailureStage,
+  TransactionLifecycleMeta,
+  TransactionType,
+} from "./types";
 import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
 export const NAMESPACE = "s1_eternum";
 export {
@@ -37,11 +43,18 @@ export {
   getDelayForTransaction,
 } from "./batch-config";
 export type { BatchDelayConfig } from "./batch-config";
-export { PromiseQueue, QueueableTransaction } from "./promise-queue";
-export { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
+export { PromiseQueue } from "./promise-queue";
+export type { QueueableTransaction } from "./promise-queue";
+export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
 export { withRetry, isRetryableError, calculateBackoffDelay, DEFAULT_RETRY_CONFIG } from "./retry";
 export type { RetryConfig } from "./retry";
-export { BatchedTransactionDetail, TransactionType } from "./types";
+export { TransactionType } from "./types";
+export type {
+  BatchedTransactionDetail,
+  TransactionFailedPayload,
+  TransactionFailureStage,
+  TransactionLifecycleMeta,
+} from "./types";
 export type { VrfSource } from "./vrf";
 
 // Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
@@ -356,15 +369,35 @@ const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN 
   };
 };
 
-type TransactionFailureMeta = {
-  type?: TransactionType;
-  transactionCount?: number;
-  transactionHash?: string;
-};
-
 type VrfExecutionLock = {
   completed: Promise<void>;
   resolve: () => void;
+};
+
+type TransactionFailureError = Error & {
+  transactionFailureStage?: TransactionFailureStage;
+};
+
+const attachTransactionFailureStage = (
+  error: unknown,
+  stage: TransactionFailureStage,
+  fallbackMessage = "Unknown error",
+): TransactionFailureError => {
+  const stagedError: TransactionFailureError =
+    error instanceof Error
+      ? (error as TransactionFailureError)
+      : (new Error(extractErrorMessage(error, fallbackMessage)) as TransactionFailureError);
+  stagedError.transactionFailureStage = stage;
+  return stagedError;
+};
+
+const resolveTransactionFailureStage = (error: unknown, fallback: TransactionFailureStage): TransactionFailureStage => {
+  const stagedError = error as TransactionFailureError | undefined;
+  if (error instanceof Error && typeof stagedError?.transactionFailureStage === "string") {
+    return stagedError.transactionFailureStage ?? fallback;
+  }
+
+  return fallback;
 };
 
 /**
@@ -618,12 +651,38 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
   }
 
-  private getTransactionSpanAttributes(
+  private getTransactionEntrypoints(transactionDetails: AllowArray<Call>): string[] {
+    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+    return details.map((detail) => detail.entrypoint).filter((entrypoint): entrypoint is string => Boolean(entrypoint));
+  }
+
+  private getTransactionContractAddresses(transactionDetails: AllowArray<Call>): string[] {
+    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+    return Array.from(
+      new Set(details.map((detail) => detail.contractAddress).filter((address): address is string => Boolean(address))),
+    );
+  }
+
+  private buildTransactionLifecycleMeta(
     transactionDetails: AllowArray<Call>,
-    transactionMeta: TransactionFailureMeta,
+    meta: Pick<TransactionLifecycleMeta, "type" | "transactionCount" | "batchDetails" | "transactionHash">,
+  ): TransactionLifecycleMeta {
+    const entrypoints = this.getTransactionEntrypoints(transactionDetails);
+    const contractAddresses = this.getTransactionContractAddresses(transactionDetails);
+
+    return {
+      ...meta,
+      ...(entrypoints.length > 0 ? { entrypoints } : {}),
+      ...(contractAddresses.length > 0 ? { contractAddresses } : {}),
+    };
+  }
+
+  private buildTransactionSpanAttributes(
+    transactionDetails: AllowArray<Call>,
+    transactionMeta: TransactionLifecycleMeta,
   ): Record<string, string | number | boolean | string[]> {
     const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
-    const entrypoints = details.map((detail) => detail.entrypoint).filter(Boolean);
+    const entrypoints = this.getTransactionEntrypoints(transactionDetails);
     const attributes: Record<string, string | number | boolean | string[]> = {
       "provider.namespace": NAMESPACE,
       "transaction.count": details.length,
@@ -654,11 +713,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     return attributes;
   }
 
-  private startTransactionSpan(transactionDetails: AllowArray<Call>, transactionMeta: TransactionFailureMeta): Span {
+  private startTransactionSpan(transactionDetails: AllowArray<Call>, transactionMeta: TransactionLifecycleMeta): Span {
     const tracer = trace.getTracer("eternum-provider");
     return tracer.startSpan("provider.transaction", {
       kind: SpanKind.CLIENT,
-      attributes: this.getTransactionSpanAttributes(transactionDetails, transactionMeta),
+      attributes: this.buildTransactionSpanAttributes(transactionDetails, transactionMeta),
     });
   }
 
@@ -691,6 +750,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
     span.setStatus({ code: SpanStatusCode.ERROR, message });
     span.end();
+  }
+
+  private emitTransactionFailure(payload: TransactionFailedPayload): void {
+    this.emit("transactionFailed", payload);
   }
 
   // ============ Optional client-side batching API ============
@@ -809,11 +872,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
     txType = options?.transactionType ?? txType;
 
-    const transactionMeta = {
+    const transactionMeta = this.buildTransactionLifecycleMeta(sanitizedTransactionDetails, {
       type: txType,
-      ...(isMultipleTransactions && { transactionCount: sanitizedTransactionDetails.length }),
-      ...(batchDetails && batchDetails.length > 0 && { batchDetails }),
-    };
+      ...(isMultipleTransactions ? { transactionCount: sanitizedTransactionDetails.length } : {}),
+      ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
+    });
 
     const span = this.startTransactionSpan(sanitizedTransactionDetails, transactionMeta);
 
@@ -848,7 +911,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       releaseVrfExecutionLock?.();
       releaseVrfExecutionLock = undefined;
       const message = extractErrorMessage(error);
-      this.emit("transactionFailed", `Transaction failed to submit: ${message}`, transactionMeta);
+      this.emitTransactionFailure({
+        ...transactionMeta,
+        message: `Transaction failed to submit: ${message}`,
+        stage: "submit",
+      });
       this.failTransactionSpan(span, undefined, error);
       throw error;
     }
@@ -863,10 +930,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     const waitForConfirmation = options?.waitForConfirmation ?? true;
-    const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(tx.transaction_hash, {
+    const transactionMetaWithHash = {
       ...transactionMeta,
       transactionHash: tx.transaction_hash,
-    });
+    };
+    const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(
+      tx.transaction_hash,
+      transactionMetaWithHash,
+    );
     const waitPromise = releaseVrfExecutionLock
       ? waitPromiseWithoutLockRelease.finally(() => {
           releaseVrfExecutionLock?.();
@@ -892,6 +963,11 @@ export class EternumProvider extends EnhancedDojoProvider {
         })
         .catch((error) => {
           console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
+          this.emitTransactionFailure({
+            ...transactionMetaWithHash,
+            message: extractErrorMessage(error),
+            stage: resolveTransactionFailureStage(error, "background_confirmation"),
+          });
           this.failTransactionSpan(span, tx.transaction_hash, error);
         })
         .finally(() => {
@@ -908,6 +984,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     try {
       waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
     } catch (error) {
+      this.emitTransactionFailure({
+        ...transactionMetaWithHash,
+        message: extractErrorMessage(error),
+        stage: resolveTransactionFailureStage(error, "confirmation"),
+      });
       this.failTransactionSpan(span, tx.transaction_hash, error);
       throw error;
     }
@@ -930,6 +1011,11 @@ export class EternumProvider extends EnhancedDojoProvider {
         })
         .catch((error) => {
           console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
+          this.emitTransactionFailure({
+            ...transactionMetaWithHash,
+            message: extractErrorMessage(error),
+            stage: resolveTransactionFailureStage(error, "background_confirmation"),
+          });
           this.failTransactionSpan(span, tx.transaction_hash, error);
         })
         .finally(() => {
@@ -1205,7 +1291,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
-    transactionMeta?: TransactionFailureMeta,
+    transactionMeta?: TransactionLifecycleMeta,
   ): Promise<GetTransactionReceiptResponse> {
     let receipt;
     const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
@@ -1223,17 +1309,12 @@ export class EternumProvider extends EnhancedDojoProvider {
         retryInterval: 500,
       });
     } catch (error) {
-      const message = extractErrorMessage(error);
-      this.emit("transactionFailed", `Transaction failed while waiting for confirmation: ${message}`, {
-        ...transactionMeta,
-        transactionHash,
-      });
       console.error(`Error waiting for transaction ${transactionHash}`, {
         nodeUrl,
         manifestRpcUrl,
         worldAddress: this.manifest?.world?.address,
       });
-      throw error;
+      throw attachTransactionFailureStage(error, "confirmation");
     }
 
     const receiptAny = receipt as any;
@@ -1253,11 +1334,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         "Unknown revert reason",
       );
       const message = `Transaction failed with reason: ${revertReason}`;
-      this.emit("transactionFailed", message, {
-        ...transactionMeta,
-        transactionHash,
-      });
-      throw new Error(message);
+      throw attachTransactionFailureStage(new Error(message), "revert", message);
     }
 
     return receipt;

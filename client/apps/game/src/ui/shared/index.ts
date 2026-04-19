@@ -1,7 +1,3 @@
-// Shared Components Public API
-// Re-export all shared, cross-feature components
-
-// Core UI Components
 export { CountUpNumber } from "./components/count-up-number";
 export { EndgameModal } from "./components/endgame-modal";
 export { ModalContainer } from "./components/modal-container";

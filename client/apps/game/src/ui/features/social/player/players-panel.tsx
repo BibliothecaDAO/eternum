@@ -8,7 +8,9 @@ import {
   useLandingLeaderboardStore,
 } from "@/services/leaderboard/use-landing-leaderboard-store";
 import { VICTORY_POINT_VALUES, formatHyperstructureControlVpRange } from "@/config/victory-points";
-import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
+import { EndSeasonButton } from "../components/end-season-button";
+import { RegisterPointsButton } from "../components/register-points-button";
+import { PlayerList, type PlayerCustom } from "./player-list";
 import {
   buildFinalizedBlitzStandingLookup,
   buildRegisteredPointsLookup,

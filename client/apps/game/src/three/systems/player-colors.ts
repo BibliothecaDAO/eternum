@@ -463,13 +463,7 @@ class PlayerColorManager {
   }
 }
 
-// Export singleton instance
 export const playerColorManager = new PlayerColorManager();
-
-// Export preset colors for backward compatibility
-const PLAYER_COLOR_PRESETS = COLOR_PALETTE;
-
-// Export utility functions
 
 /**
  * Debug utilities for visualizing and testing the player color system

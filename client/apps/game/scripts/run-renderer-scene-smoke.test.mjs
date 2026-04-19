@@ -1,15 +1,22 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildSceneSmokeUrl,
+  decodePaddedWorldName,
   GLOW_REPRO_SCENES,
   GLOW_REPRO_TARGETS,
   evaluateRendererParitySummary,
   evaluateSceneSmokeResult,
   normalizeRendererDiagnosticsSnapshot,
   normalizeSceneList,
+  resolveAgentBrowserWorkingDirectory,
+  resolveSceneSmokeWorldName,
 } from "./run-renderer-scene-smoke.mjs";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("glow repro matrix", () => {
   it("locks the named scenes and targets used for glow regression review", () => {
@@ -40,17 +47,76 @@ describe("buildSceneSmokeUrl", () => {
         rendererMode: "experimental-webgpu-auto",
         scene: "map",
       }),
-    ).toBe("https://127.0.0.1:4173/play/map?col=0&row=0&spectate=true&rendererMode=experimental-webgpu-auto");
+    ).toBe(
+      "https://127.0.0.1:4173/play/slot/eternum-blitz-slot-4/map?col=0&row=0&spectate=true&rendererMode=experimental-webgpu-auto",
+    );
   });
 
-  it("builds the hexception url without spectate mode", () => {
+  it("builds the hexception url as a canonical spectator route", () => {
     expect(
       buildSceneSmokeUrl({
+        chain: "mainnet",
         baseUrl: "https://127.0.0.1:4173",
         rendererMode: "legacy-webgl",
         scene: "hex",
+        worldName: "etrn-dawn",
       }),
-    ).toBe("https://127.0.0.1:4173/play/hex?col=0&row=0&rendererMode=legacy-webgl");
+    ).toBe("https://127.0.0.1:4173/play/mainnet/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=legacy-webgl");
+  });
+});
+
+describe("decodePaddedWorldName", () => {
+  it("decodes padded felt world names from the factory indexer", () => {
+    expect(decodePaddedWorldName("0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032")).toBe(
+      "bltz-spark-702",
+    );
+  });
+});
+
+describe("resolveSceneSmokeWorldName", () => {
+  it("honors an explicit world override without querying discovery backends", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    await expect(
+      resolveSceneSmokeWorldName({
+        chain: "slot",
+        requestedWorldName: "bltz-manual-101",
+      }),
+    ).resolves.toBe("bltz-manual-101");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("discovers the first alive factory world for the selected chain", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              name: "0x0000000000000000000000000000000000000000626c747a2d646561642d393939",
+            },
+            {
+              name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
+            },
+          ]),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    await expect(
+      resolveSceneSmokeWorldName({
+        chain: "slot",
+        requestedWorldName: "",
+      }),
+    ).resolves.toBe("bltz-spark-702");
+  });
+});
+
+describe("resolveAgentBrowserWorkingDirectory", () => {
+  it("runs npx outside the repository workspace to avoid npm duplicate workspace-name failures", () => {
+    expect(resolveAgentBrowserWorkingDirectory({ RUNNER_TEMP: "/runner-temp", TMPDIR: "/tmp" })).toBe("/runner-temp");
+    expect(resolveAgentBrowserWorkingDirectory({ TMPDIR: "/tmp" })).toBe("/tmp");
   });
 });
 

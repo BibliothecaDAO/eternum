@@ -1,4 +1,4 @@
-import { context, Span, SpanKind, SpanStatusCode, trace, Tracer } from "@opentelemetry/api";
+import { type Attributes, context, Span, SpanKind, SpanStatusCode, trace, Tracer } from "@opentelemetry/api";
 import { ZoneContextManager } from "@opentelemetry/context-zone";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
@@ -22,6 +22,7 @@ interface TracingConfig {
 
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;
+let shutdownPromise: Promise<void> | null = null;
 
 const DEFAULT_CONFIG: TracingConfig = {
   serviceName: "eternum-game",
@@ -176,6 +177,7 @@ export function initTracing(config: TracingConfig = {}): void {
 
   // Get tracer instance
   tracer = trace.getTracer(finalConfig.serviceName || "eternum-game", finalConfig.version);
+  shutdownPromise = null;
 
   console.log("Tracing initialized with config:", finalConfig);
 }
@@ -191,7 +193,7 @@ function startSpan(
   name: string,
   options?: {
     kind?: SpanKind;
-    attributes?: Record<string, any>;
+    attributes?: Attributes;
     parent?: Span;
   },
 ): Span {
@@ -213,7 +215,7 @@ export function withSpan<T>(
   fn: (span: Span) => T,
   options?: {
     kind?: SpanKind;
-    attributes?: Record<string, any>;
+    attributes?: Attributes;
   },
 ): T {
   const span = startSpan(name, options);
@@ -254,21 +256,21 @@ export function getCurrentSpan(): Span | undefined {
   return trace.getSpan(context.active());
 }
 
-export function addEvent(name: string, attributes?: Record<string, any>): void {
+export function addEvent(name: string, attributes?: Attributes): void {
   const span = getCurrentSpan();
   if (span) {
     span.addEvent(name, attributes);
   }
 }
 
-export function setSpanAttributes(attributes: Record<string, any>): void {
+export function setSpanAttributes(attributes: Attributes): void {
   const span = getCurrentSpan();
   if (span) {
     span.setAttributes(attributes);
   }
 }
 
-export function recordError(error: Error, context?: Record<string, any>): void {
+export function recordError(error: Error, context?: Attributes): void {
   const span = getCurrentSpan();
   if (span) {
     span.recordException(error);
@@ -284,7 +286,7 @@ export function getCurrentTraceId(): string | undefined {
   return span?.spanContext().traceId;
 }
 
-function createChildSpan(name: string, attributes?: Record<string, any>): Span {
+function createChildSpan(name: string, attributes?: Attributes): Span {
   return startSpan(name, {
     attributes,
     parent: getCurrentSpan(),
@@ -292,11 +294,7 @@ function createChildSpan(name: string, attributes?: Record<string, any>): Span {
 }
 
 // Utility function to measure async operations
-async function measureAsync<T>(
-  name: string,
-  operation: () => Promise<T>,
-  attributes?: Record<string, any>,
-): Promise<T> {
+async function measureAsync<T>(name: string, operation: () => Promise<T>, attributes?: Attributes): Promise<T> {
   return withSpan(
     name,
     async (span) => {
@@ -319,8 +317,14 @@ async function measureAsync<T>(
 
 // Cleanup function
 export function shutdownTracing(): Promise<void> {
-  if (tracerProvider) {
-    return tracerProvider.shutdown();
+  if (!tracerProvider) {
+    return Promise.resolve();
   }
-  return Promise.resolve();
+
+  shutdownPromise ??= tracerProvider.shutdown().finally(() => {
+    tracerProvider = null;
+    tracer = null;
+  });
+
+  return shutdownPromise;
 }

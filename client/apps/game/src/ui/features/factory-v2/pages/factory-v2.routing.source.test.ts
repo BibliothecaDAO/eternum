@@ -9,7 +9,7 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("FactoryV2 legacy route wiring", () => {
   it("keeps the legacy factory CTA pointed at a standalone legacy route", () => {
-    const appSource = readSource("src/app.tsx");
+    const appSource = readSource("src/game-client-app.tsx");
     const factoryV2Source = readSource("src/ui/features/factory-v2/pages/factory-v2.tsx");
 
     expect(appSource).toContain('path="/factory/legacy"');

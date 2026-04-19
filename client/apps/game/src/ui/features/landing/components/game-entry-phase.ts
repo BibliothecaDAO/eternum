@@ -45,17 +45,18 @@ interface ResolveGameEntryModalPhaseInput {
   checksComplete: boolean;
   needsHyperstructureInit: boolean;
   needsSettlement: boolean;
+  canPlay: boolean;
   isBlitzSettlementUnlocked: boolean;
 }
 
 export const resolveBlitzSettlementPhase = ({
-  needsSettlement,
+  canPlay,
   isSettlementUnlocked,
 }: {
-  needsSettlement: boolean;
+  canPlay: boolean;
   isSettlementUnlocked: boolean;
 }): Extract<GameEntryModalPhase, "ready" | "settlement" | "settlement-waiting"> => {
-  if (!needsSettlement) {
+  if (canPlay) {
     return "ready";
   }
 
@@ -110,6 +111,7 @@ export const resolveGameEntryModalPhase = ({
   checksComplete,
   needsHyperstructureInit,
   needsSettlement,
+  canPlay,
   isBlitzSettlementUnlocked,
 }: ResolveGameEntryModalPhaseInput): GameEntryModalPhase => {
   if (isForgeMode && isBlitzMode) {
@@ -166,7 +168,7 @@ export const resolveGameEntryModalPhase = ({
 
   if (isBlitzMode) {
     return resolveBlitzSettlementPhase({
-      needsSettlement,
+      canPlay,
       isSettlementUnlocked: isBlitzSettlementUnlocked,
     });
   }

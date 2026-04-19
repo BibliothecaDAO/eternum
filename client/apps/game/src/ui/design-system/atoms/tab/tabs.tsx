@@ -8,7 +8,7 @@ import { Tab as HeadlessTab } from "@headlessui/react";
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
-export const VARIANTS: any = {
+export const VARIANTS = {
   default: {
     tab: {
       base: "px-3 py-1 !outline-none transition-colors duration-200 space-x-1 hover:bg-gold/20 border-3 border-transparent",

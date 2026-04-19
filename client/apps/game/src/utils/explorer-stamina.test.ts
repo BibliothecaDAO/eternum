@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
 const { getStaminaMock, getMaxStaminaMock } = vi.hoisted(() => ({
@@ -15,6 +16,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   },
 }));
 
+import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import {
   getExplorerStaminaSnapshot,
   getTroopsStaminaUpdatedTick,
@@ -103,7 +105,28 @@ describe("explorer stamina source selection", () => {
     });
   });
 
-  it("prefers a pending local stamina overlay over same-tick remote snapshots", () => {
+  it("prefers a pending local stamina overlay when it is strictly newer than remote snapshots", () => {
+    const liveTroops = buildTroops(6n, 80n);
+    const snapshotTroops = buildTroops(6n, 50n);
+
+    expect(
+      selectFreshestTroopsSnapshot({
+        liveTroops: liveTroops as never,
+        snapshotTroops: snapshotTroops as never,
+        pendingStamina: {
+          amount: 20n,
+          updatedTick: 7,
+        },
+      }),
+    ).toMatchObject({
+      stamina: {
+        amount: 20n,
+        updated_tick: 7n,
+      },
+    });
+  });
+
+  it("discards a pending overlay once onchain snapshots have caught up to its tick", () => {
     const liveTroops = buildTroops(6n, 80n);
     const snapshotTroops = buildTroops(6n, 50n);
 
@@ -116,12 +139,7 @@ describe("explorer stamina source selection", () => {
           updatedTick: 6,
         },
       }),
-    ).toMatchObject({
-      stamina: {
-        amount: 20n,
-        updated_tick: 6n,
-      },
-    });
+    ).toBe(snapshotTroops);
   });
 
   it("projects stamina from the freshest selected source", () => {
@@ -136,5 +154,58 @@ describe("explorer stamina source selection", () => {
 
     expect(staminaSnapshot?.troops).toBe(snapshotTroops);
     expect(staminaSnapshot?.stamina.amount).toBe(25n);
+  });
+
+  it("consults the authoritative snapshot store when entityId is provided", () => {
+    const entityId = 42;
+    const boostedTroops = {
+      ...buildTroops(5n, 10n),
+      boosts: {
+        ...buildTroops(5n, 10n).boosts,
+        incr_stamina_regen_percent_num: 5000,
+        incr_stamina_regen_tick_count: 4,
+      },
+    };
+
+    // Seed the authoritative store (normally populated by the UI panel)
+    useArmyStaminaSourceStore.setState({
+      authoritativeSources: {
+        [String(entityId)]: {
+          source: "snapshot",
+          entityId,
+          amount: 10n,
+          updatedTick: 5,
+          troopCount: 10,
+          capturedAtMs: Date.now(),
+          troops: boostedTroops as never,
+        },
+      },
+    });
+
+    // Without entityId: falls back to fallback with zeroed boosts
+    const withoutId = selectFreshestTroopsSnapshot({
+      fallbackArmy: {
+        category: "Knight" as never,
+        tier: 1 as never,
+        troopCount: 10,
+        onChainStamina: { amount: 10n, updatedTick: 5 },
+      },
+    });
+    expect(withoutId?.boosts?.incr_stamina_regen_percent_num).toBe(0);
+
+    // With entityId: authoritative snapshot (with boosts) is preferred
+    const withId = selectFreshestTroopsSnapshot({
+      entityId: entityId as never,
+      fallbackArmy: {
+        category: "Knight" as never,
+        tier: 1 as never,
+        troopCount: 10,
+        onChainStamina: { amount: 10n, updatedTick: 5 },
+      },
+    });
+    expect(withId?.boosts?.incr_stamina_regen_percent_num).toBe(5000);
+
+    // Cleanup
+    useArmyStaminaSourceStore.setState({ authoritativeSources: {} });
   });
 });

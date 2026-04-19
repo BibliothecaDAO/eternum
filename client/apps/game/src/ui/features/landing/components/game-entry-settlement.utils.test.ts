@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -272,5 +274,27 @@ describe("buildSettlementExecutionPlan", () => {
     expect(plan.targetSettleCount).toBe(1);
     expect(plan.initialSettleCount).toBe(1);
     expect(plan.extraSettleCalls).toBe(0);
+  });
+
+  it("does not preempt the settle call for onceRegistered players who have no coords yet", () => {
+    const plan = buildSettlementExecutionPlan({
+      isMainnet: false,
+      singleRealmMode: true,
+      snapshot: snapshot({ registered: false, onceRegistered: true }),
+    });
+
+    expect(plan.shouldAssignAndSettle).toBe(true);
+    expect(plan.missingAssignmentRegistration).toBe(false);
+  });
+
+  it("still blocks truly unregistered players from the assign+settle path", () => {
+    const plan = buildSettlementExecutionPlan({
+      isMainnet: false,
+      singleRealmMode: true,
+      snapshot: snapshot({ registered: false, onceRegistered: false }),
+    });
+
+    expect(plan.shouldAssignAndSettle).toBe(true);
+    expect(plan.missingAssignmentRegistration).toBe(true);
   });
 });

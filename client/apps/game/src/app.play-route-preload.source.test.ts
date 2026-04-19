@@ -9,7 +9,7 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("App play route preload wiring", () => {
   it("uses the shared game-route preloader and stops waiting for the loading screen to start asset prefetch", () => {
-    const source = readSource("src/app.tsx");
+    const source = readSource("src/game-client-app.tsx");
 
     expect(source).toContain("preloadGameRouteModule");
     expect(source).toContain("lazy(preloadGameRouteModule)");

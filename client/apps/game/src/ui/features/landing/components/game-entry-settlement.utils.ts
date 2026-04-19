@@ -199,6 +199,6 @@ export const buildSettlementExecutionPlan = ({
     shouldAssignAndSettle: true,
     initialSettleCount,
     extraSettleCalls,
-    missingAssignmentRegistration: !snapshot.registered,
+    missingAssignmentRegistration: !snapshot.registered && !snapshot.onceRegistered,
   };
 };

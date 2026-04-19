@@ -59,9 +59,7 @@ class PerformanceMonitorImpl {
     return PerformanceMonitorImpl.instance;
   }
 
-  // ===========================================================================
   // Core Instrumentation
-  // ===========================================================================
 
   /**
    * Start timing a named operation
@@ -149,9 +147,7 @@ class PerformanceMonitorImpl {
     this.lastFrameTime = now;
   }
 
-  // ===========================================================================
   // Metric Management
-  // ===========================================================================
 
   private createMetric(name: string): PerformanceMetric {
     return {
@@ -194,9 +190,7 @@ class PerformanceMonitorImpl {
     return this.metrics;
   }
 
-  // ===========================================================================
   // Hex Simulation
-  // ===========================================================================
 
   /**
    * Get simulated hex count for testing
@@ -226,9 +220,7 @@ class PerformanceMonitorImpl {
     this.isSimulating = active;
   }
 
-  // ===========================================================================
   // Reporting
-  // ===========================================================================
 
   /**
    * Generate a performance report
@@ -312,9 +304,7 @@ class PerformanceMonitorImpl {
     console.groupEnd();
   }
 
-  // ===========================================================================
   // Configuration
-  // ===========================================================================
 
   public setEnabled(enabled: boolean): void {
     this.enabled = enabled;
@@ -340,7 +330,6 @@ class PerformanceMonitorImpl {
   }
 }
 
-// Export singleton
 export const PerformanceMonitor = PerformanceMonitorImpl.getInstance();
 
 // Export helper for wrapping methods

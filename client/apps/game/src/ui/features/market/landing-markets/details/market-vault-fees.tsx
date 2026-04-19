@@ -6,6 +6,7 @@ import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { HStack, VStack } from "@/pm/ui";
 import { formatUnits } from "@/pm/utils";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { Button } from "@/ui/design-system/atoms";
 import { getContractByName } from "@dojoengine/core";
 import { useAccount } from "@starknet-react/core";
@@ -170,11 +171,12 @@ export function MarketVaultFees({
         return;
       }
 
-      const resultTx = await account.execute(calls);
-
-      if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
-        await account.waitForTransaction(resultTx.transaction_hash);
-      }
+      await executeObservedClientTransaction({
+        account,
+        calls,
+        surface: "prediction_market",
+        operation: "market_claim_vault_fees",
+      });
 
       toast.success("Vault Fees claimed!");
     } catch (error) {

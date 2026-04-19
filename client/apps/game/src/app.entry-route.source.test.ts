@@ -9,7 +9,7 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("App entry route wiring", () => {
   it("mounts the route-owned game entry flow inside the landing layout", () => {
-    const source = readSource("src/app.tsx");
+    const source = readSource("src/game-client-app.tsx");
 
     expect(source).toContain('path="enter/:chain/:world"');
     expect(source).toContain("<LandingEntryRoute />");

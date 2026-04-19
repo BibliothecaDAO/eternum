@@ -1,7 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { getFreshPendingStaminaSource } from "@/lib/army-stamina/source-store";
-import { buildProjectedStaminaDisplayModel } from "@/ui/shared/lib/stamina-visuals";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -29,7 +28,7 @@ import { Position } from "@bibliothecadao/eternum";
 import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
-import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
+import { Biome, configManager } from "@bibliothecadao/eternum";
 import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -58,6 +57,7 @@ import { getRenderBounds } from "../utils/chunk-geometry";
 import { trackGuiFolder, type TrackableGuiFolder } from "../utils/gui-folder-lifecycle";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
+import { updateStaminaBar } from "../utils/labels/label-components";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
@@ -70,7 +70,11 @@ import {
   syncArmyIndicatorPresentationState,
   syncMovingArmyIndicatorPresentationState,
 } from "./army-indicator-presentation";
-import { buildArmyLabelDataKey, syncArmyLabelContentState } from "./army-label-content";
+import {
+  buildArmyLabelLayoutDataKey,
+  buildArmyLabelStaminaDataKey,
+  syncArmyLabelContentState,
+} from "./army-label-content";
 import {
   configureArmyLabelHoverPriority,
   initializeArmyLabelState,
@@ -372,18 +376,22 @@ export class ArmyManager {
 
   private scheduleTickCheck() {
     this.tickCheckTimeout = setTimeout(() => {
-      const { currentArmiesTick } = getBlockTimestamp();
-      const tickRefresh = resolveArmyStaminaTickRefresh({
-        currentTick: currentArmiesTick,
-        previousTick: this.lastKnownArmiesTick,
-      });
-      if (tickRefresh.shouldRecompute) {
-        this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+      try {
+        const { currentArmiesTick } = getBlockTimestamp();
+        const tickRefresh = resolveArmyStaminaTickRefresh({
+          currentTick: currentArmiesTick,
+          previousTick: this.lastKnownArmiesTick,
+        });
+        if (tickRefresh.shouldRecompute) {
+          this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+        }
+        // Update stamina and battle timers every second
         this.recomputeStaminaForAllArmies();
+        this.recomputeBattleTimersForAllArmies();
+      } catch {
+        // Swallow errors to keep the tick loop alive
       }
-      // Update battle timers every second
-      this.recomputeBattleTimersForAllArmies();
-      // Schedule the next check
+      // Always schedule next check even if current cycle threw
       this.scheduleTickCheck();
     }, 1000);
   }
@@ -2779,8 +2787,13 @@ ${
     tier: TroopTier;
   }): { current: number; max: number; displayRatio: number } | null {
     const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
+    if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
+      return null;
+    }
+
     const pendingStamina = getFreshPendingStaminaSource(input.entityId);
     const staminaSnapshot = getExplorerStaminaSnapshot({
+      entityId: input.entityId,
       currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroops(input.entityId),
       fallbackArmy: {
@@ -2800,18 +2813,12 @@ ${
       return null;
     }
 
-    const staminaDisplay = buildProjectedStaminaDisplayModel({
-      committedCurrent: staminaSnapshot.current,
-      committedMax: staminaSnapshot.max,
-      armiesTickTimeRemaining,
-      currentArmiesTick,
-      troops: staminaSnapshot.troops,
-    });
-
+    // staminaSnapshot.current is already the computed regen value from
+    // StaminaManager.getStamina(troops, currentArmiesTick). Use it directly.
     return {
       current: staminaSnapshot.current,
       max: staminaSnapshot.max,
-      displayRatio: staminaDisplay.displayRatio,
+      displayRatio: staminaSnapshot.max > 0 ? staminaSnapshot.current / staminaSnapshot.max : 0,
     };
   }
 
@@ -2821,23 +2828,27 @@ ${
   private recomputeStaminaForAllArmies(): void {
     // Update all army data in cache
     this.armies.forEach((army, entityId) => {
-      const staminaSnapshot = this.resolveArmyStaminaSnapshot({
-        entityId,
-        troopCount: army.troopCount,
-        onChainStamina: army.onChainStamina,
-        category: army.category,
-        tier: army.tier,
-      });
+      try {
+        const staminaSnapshot = this.resolveArmyStaminaSnapshot({
+          entityId,
+          troopCount: army.troopCount,
+          onChainStamina: army.onChainStamina,
+          category: army.category,
+          tier: army.tier,
+        });
 
-      // Update cached army data with new stamina
-      army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
-      army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
-      army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
+        // Update cached army data with new stamina
+        army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
+        army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
+        army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
 
-      // Update visible label if it exists
-      const label = this.entityIdLabels.get(entityId);
-      if (label) {
-        this.updateArmyLabelData(entityId, army, label);
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateArmyLabelData(entityId, army, label);
+        }
+      } catch {
+        // Skip this army — don't let one bad entity block all others
       }
     });
   }
@@ -2869,14 +2880,27 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    const dataKey = buildArmyLabelDataKey(army);
+    const layoutDataKey = buildArmyLabelLayoutDataKey(army);
+    const staminaDataKey = buildArmyLabelStaminaDataKey(army);
 
     syncArmyLabelContentState({
       label: existingLabel,
-      dataKey,
+      layoutDataKey,
+      staminaDataKey,
       labelsAttachedToScene: this.labelsGroup.parent !== null,
       renderLabel: () => updateArmyLabel(existingLabel.element, army, this.currentCameraView),
+      renderStamina: () => this.updateArmyLabelStamina(existingLabel.element, army),
     });
+  }
+
+  private updateArmyLabelStamina(labelElement: HTMLElement, army: ArmyData): void {
+    const staminaBar = labelElement.querySelector('[data-component="stamina-bar"]');
+    if (!staminaBar) {
+      updateArmyLabel(labelElement, army, this.currentCameraView);
+      return;
+    }
+
+    updateStaminaBar(staminaBar as HTMLElement, army.currentStamina, army.maxStamina);
   }
 
   /**

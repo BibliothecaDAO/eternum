@@ -98,7 +98,8 @@ describe("army manager delta pipeline wiring", () => {
   it("routes label content updates through shared helpers", () => {
     const source = readArmyManagerSource();
 
-    expect(source).toMatch(/buildArmyLabelDataKey\(/);
+    expect(source).toMatch(/buildArmyLabelLayoutDataKey\(/);
+    expect(source).toMatch(/buildArmyLabelStaminaDataKey\(/);
     expect(source).toMatch(/syncArmyLabelContentState\(/);
   });
 
