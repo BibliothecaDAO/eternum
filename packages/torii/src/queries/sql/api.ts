@@ -107,10 +107,7 @@ const buildCacheUrl = (baseUrl: string, path: string): URL => {
 // during boot (use-player-structure-sync + others) and re-query the same owner
 // within a few hundred ms. gRPC subscription reconciles any staleness within a block.
 const STRUCTURES_BY_OWNER_TTL_MS = 500;
-const structuresByOwnerCache = new Map<
-  string,
-  { promise: Promise<StructureLocation[]>; expiresAt: number }
->();
+const structuresByOwnerCache = new Map<string, { promise: Promise<StructureLocation[]>; expiresAt: number }>();
 
 export class SqlApi {
   constructor(
