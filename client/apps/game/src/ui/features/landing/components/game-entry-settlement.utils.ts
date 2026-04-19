@@ -157,6 +157,16 @@ export type SettlementExecutionPlan = {
   missingAssignmentRegistration: boolean;
 };
 
+const shouldContinueSettlementWithoutAssignment = ({
+  registered,
+  settledCount,
+  targetSettleCount,
+}: {
+  registered: boolean;
+  settledCount: number;
+  targetSettleCount: number;
+}): boolean => settledCount > 0 && settledCount < targetSettleCount && !registered;
+
 export const buildSettlementExecutionPlan = ({
   isMainnet,
   singleRealmMode,
@@ -169,6 +179,7 @@ export const buildSettlementExecutionPlan = ({
   const targetSettleCount = getExpectedSettlementCount(singleRealmMode);
   const settledCount = Math.max(0, snapshot.settledCount);
   const coordsCount = Math.max(0, snapshot.coordsCount);
+  const remainingToTarget = Math.max(0, targetSettleCount - settledCount);
 
   if (settledCount >= targetSettleCount) {
     return {
@@ -180,8 +191,17 @@ export const buildSettlementExecutionPlan = ({
     };
   }
 
+  if (shouldContinueSettlementWithoutAssignment({ registered: snapshot.registered, settledCount, targetSettleCount })) {
+    return {
+      targetSettleCount,
+      shouldAssignAndSettle: false,
+      initialSettleCount: 0,
+      extraSettleCalls: remainingToTarget,
+      missingAssignmentRegistration: false,
+    };
+  }
+
   if (coordsCount > 0) {
-    const remainingToTarget = Math.max(0, targetSettleCount - settledCount);
     return {
       targetSettleCount,
       shouldAssignAndSettle: false,
