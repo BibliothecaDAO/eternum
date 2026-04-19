@@ -555,8 +555,7 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
   });
 
   const isAnyLoading =
-    isBulkAvailabilityPending ||
-    queries.some((q) => q.isLoading || (q.data === undefined && q.error == null));
+    isBulkAvailabilityPending || queries.some((q) => q.isLoading || (q.data === undefined && q.error == null));
   const allSettled = !isBulkAvailabilityPending && queries.every((q) => q.data !== undefined || q.error != null);
 
   return {
