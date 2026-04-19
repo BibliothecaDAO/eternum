@@ -45,11 +45,7 @@ const markConfigCacheFresh = () => {
   }
 };
 
-/**
- * Clear the cached "config already fetched this session" marker. Surfaces as a
- * module export so a debug action can force a blocking revalidation on next boot.
- */
-export const clearConfigFetchCache = () => {
+const clearConfigFetchCache = () => {
   if (!hasSessionStorage()) return;
   try {
     window.sessionStorage.removeItem(getConfigCacheKey());
