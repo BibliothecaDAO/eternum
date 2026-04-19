@@ -271,6 +271,22 @@ export default class InstancedModel {
       }
     });
     this.count = resolvedCount;
+    if (typeof window !== "undefined" && (window as unknown as { __WORLDMAP_BIOME_BOUNDS_DEBUG?: boolean }).__WORLDMAP_BIOME_BOUNDS_DEBUG) {
+      const probe = this.instancedMeshes[0];
+      if (probe) {
+        const ms = (probe as unknown as { boundingSphere: THREE.Sphere | null }).boundingSphere;
+        const gs = probe.geometry.boundingSphere;
+        console.log("[biome-bounds] setMatricesAndCount", {
+          biome: this.biomeName,
+          count: this.count,
+          meshBSphere: ms ? { c: ms.center.toArray(), r: ms.radius } : null,
+          geoBSphere: gs ? { c: gs.center.toArray(), r: gs.radius } : null,
+          worldBoundsSphere: this.worldBounds
+            ? { c: this.worldBounds.sphere.center.toArray(), r: this.worldBounds.sphere.radius }
+            : null,
+        });
+      }
+    }
   }
 
   setMatrixAt(index: number, matrix: THREE.Matrix4) {
@@ -330,6 +346,20 @@ export default class InstancedModel {
     } else {
       mesh.frustumCulled = false;
     }
+    if (typeof window !== "undefined" && (window as unknown as { __WORLDMAP_BIOME_BOUNDS_DEBUG?: boolean }).__WORLDMAP_BIOME_BOUNDS_DEBUG) {
+      const ms = (mesh as unknown as { boundingSphere: THREE.Sphere | null }).boundingSphere;
+      const gs = mesh.geometry.boundingSphere;
+      console.log("[biome-bounds] applyWorldBounds", {
+        biome: this.biomeName,
+        count: this.count,
+        meshCount: mesh.count,
+        meshBSphere: ms ? { c: ms.center.toArray(), r: ms.radius } : null,
+        geoBSphere: gs ? { c: gs.center.toArray(), r: gs.radius } : null,
+        worldBoundsSphere: this.worldBounds
+          ? { c: this.worldBounds.sphere.center.toArray(), r: this.worldBounds.sphere.radius }
+          : null,
+      });
+    }
   }
 
   public setWorldBounds(bounds?: { box: THREE.Box3; sphere: THREE.Sphere }) {
@@ -340,6 +370,20 @@ export default class InstancedModel {
         }
       : undefined;
     this.instancedMeshes.forEach((mesh) => this.applyWorldBounds(mesh));
+    if (typeof window !== "undefined" && (window as unknown as { __WORLDMAP_BIOME_BOUNDS_DEBUG?: boolean }).__WORLDMAP_BIOME_BOUNDS_DEBUG) {
+      const probe = this.instancedMeshes[0];
+      if (probe) {
+        const ms = (probe as unknown as { boundingSphere: THREE.Sphere | null }).boundingSphere;
+        console.log("[biome-bounds] setWorldBounds:after", {
+          biome: this.biomeName,
+          count: this.count,
+          meshBSphere: ms ? { c: ms.center.toArray(), r: ms.radius } : null,
+          worldBoundsSphere: this.worldBounds
+            ? { c: this.worldBounds.sphere.center.toArray(), r: this.worldBounds.sphere.radius }
+            : null,
+        });
+      }
+    }
   }
 
   clone() {
