@@ -1,3 +1,5 @@
+import { parseMaybeBooleanFlag } from "@/config/game-modes/resolved-mode";
+
 export type SettlementSnapshot = {
   registered: boolean;
   onceRegistered: boolean;
@@ -5,6 +7,15 @@ export type SettlementSnapshot = {
   coordsCount: number;
   settledCount: number;
 };
+
+// Torii SQL returns boolean columns as numeric (0/1) or string ("0"/"1"), so
+// strict `=== true` on the raw row mis-reads genuine registrations as false.
+export const parseSnapshotRegistrationRow = (
+  row: { registered?: unknown; once_registered?: unknown } | null | undefined,
+): { registered: boolean; onceRegistered: boolean } => ({
+  registered: parseMaybeBooleanFlag(row?.registered) === true,
+  onceRegistered: parseMaybeBooleanFlag(row?.once_registered) === true,
+});
 
 const hasIndexedSettlementProgress = (snapshot: SettlementSnapshot): boolean =>
   snapshot.hasSettledStructure || snapshot.coordsCount > 0 || snapshot.settledCount > 0;

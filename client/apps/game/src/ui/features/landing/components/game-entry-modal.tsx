@@ -58,6 +58,7 @@ import {
   deriveSettlementPhaseViewModel,
   deriveSettlementStatus,
   hasReachedSettlementTarget,
+  parseSnapshotRegistrationRow,
   type SettleStage,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
@@ -502,8 +503,8 @@ const mapVillagePassDistributorTransferError = (error: unknown): string => {
 
 type DirectSettlementSnapshotRow = {
   coords?: unknown;
-  once_registered?: boolean | null;
-  registered?: boolean | null;
+  once_registered?: unknown;
+  registered?: unknown;
   structure_ids?: unknown;
 };
 
@@ -3842,10 +3843,12 @@ export const GameEntryModal = ({
     const playerRegister = registerRows[0] ?? null;
     const settleFinish = settleFinishRows[0] ?? null;
 
+    const { registered, onceRegistered } = parseSnapshotRegistrationRow(playerRegister);
+
     return applyDashboardRegistrationHint({
       snapshot: {
-        registered: playerRegister?.registered === true,
-        onceRegistered: playerRegister?.once_registered === true,
+        registered,
+        onceRegistered,
         hasSettledStructure: playerStructures.length > 0,
         coordsCount: parseSpanLength(settleFinish?.coords),
         settledCount: parseSpanLength(settleFinish?.structure_ids),
