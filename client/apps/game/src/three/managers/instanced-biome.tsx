@@ -338,6 +338,15 @@ export default class InstancedModel {
   private applyWorldBounds(mesh: THREE.InstancedMesh) {
     if (this.worldBounds) {
       mesh.frustumCulled = true;
+      // three.js frustum-culls InstancedMesh against mesh.boundingSphere
+      // (its own, not geometry's). Writing only to geometry.* is a no-op
+      // for culling and left the mesh sphere stuck at the identity-matrix
+      // sphere computed on first render — biomes were being culled when
+      // the camera moved to a different chunk.
+      mesh.boundingSphere = mesh.boundingSphere ?? new THREE.Sphere();
+      mesh.boundingSphere.copy(this.worldBounds.sphere);
+      mesh.boundingBox = mesh.boundingBox ?? new THREE.Box3();
+      mesh.boundingBox.copy(this.worldBounds.box);
       const geometry = mesh.geometry;
       geometry.boundingSphere = geometry.boundingSphere ?? new THREE.Sphere();
       geometry.boundingSphere.copy(this.worldBounds.sphere);
@@ -345,6 +354,8 @@ export default class InstancedModel {
       geometry.boundingBox.copy(this.worldBounds.box);
     } else {
       mesh.frustumCulled = false;
+      mesh.boundingSphere = null;
+      mesh.boundingBox = null;
     }
     if (typeof window !== "undefined" && (window as unknown as { __WORLDMAP_BIOME_BOUNDS_DEBUG?: boolean }).__WORLDMAP_BIOME_BOUNDS_DEBUG) {
       const ms = (mesh as unknown as { boundingSphere: THREE.Sphere | null }).boundingSphere;

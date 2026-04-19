@@ -634,6 +634,14 @@ export default class InstancedModel {
   private applyWorldBounds(mesh: InstancedMesh) {
     if (this.worldBounds) {
       mesh.frustumCulled = true;
+      // three.js frustum-culls InstancedMesh against mesh.boundingSphere
+      // (its own, not geometry's). Geometry-only writes were a no-op for
+      // culling and left the mesh sphere stale after instance matrices
+      // moved to a new chunk.
+      mesh.boundingSphere = mesh.boundingSphere ?? new Sphere();
+      mesh.boundingSphere.copy(this.worldBounds.sphere);
+      mesh.boundingBox = mesh.boundingBox ?? new Box3();
+      mesh.boundingBox.copy(this.worldBounds.box);
       const geometry = mesh.geometry;
       geometry.boundingSphere = geometry.boundingSphere ?? new Sphere();
       geometry.boundingSphere.copy(this.worldBounds.sphere);
@@ -641,6 +649,8 @@ export default class InstancedModel {
       geometry.boundingBox.copy(this.worldBounds.box);
     } else {
       mesh.frustumCulled = false;
+      mesh.boundingSphere = null;
+      mesh.boundingBox = null;
     }
   }
 
