@@ -76,4 +76,45 @@ describe("useWorldsAvailability bulk gating", () => {
 
     expect(queries[0]?.enabled).toBe(true);
   });
+
+  it("reports loading while the bulk query is still pending, even though per-world queries are disabled", () => {
+    reactQueryMocks.useQuery.mockReturnValue({
+      data: undefined,
+      isPending: true,
+    });
+    reactQueryMocks.useQueries.mockImplementation(() => [
+      {
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      },
+    ]);
+
+    const result = useWorldsAvailability([{ name: "alpha", chain: "mainnet" }], true, null);
+
+    expect(result.isAnyLoading).toBe(true);
+    expect(result.allSettled).toBe(false);
+    expect(result.results.get("mainnet:alpha")?.isLoading).toBe(true);
+  });
+
+  it("reports loading while per-world queries have no data yet (disabled but not errored)", () => {
+    reactQueryMocks.useQuery.mockReturnValue({
+      data: {},
+      isPending: false,
+    });
+    reactQueryMocks.useQueries.mockImplementation(() => [
+      {
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      },
+    ]);
+
+    const result = useWorldsAvailability([{ name: "alpha", chain: "mainnet" }], true, null);
+
+    expect(result.isAnyLoading).toBe(true);
+    expect(result.allSettled).toBe(false);
+  });
 });
