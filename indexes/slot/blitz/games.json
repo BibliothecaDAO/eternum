@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-19T03:32:24.110Z",
+  "updatedAt": "2026-04-19T09:40:42.803Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -368,7 +368,7 @@
       "path": "runs/slot/blitz/bltz-stomp-910.json",
       "inputPath": "inputs/slot/blitz/bltz-stomp-910/24388852297-2.json",
       "status": "complete",
-      "updatedAt": "2026-04-14T08:42:13.312Z",
+      "updatedAt": "2026-04-19T09:40:42.803Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -379,7 +379,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-04-14T08:42:13.312Z"
+        "lastIndexerDescribeAt": "2026-04-14T08:42:13.312Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-04-19T09:40:41.748Z"
       }
     },
     "bltz-dash-157": {
