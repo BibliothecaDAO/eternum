@@ -549,13 +549,15 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
       chain: world.chain,
       isAvailable: query.data?.isAvailable ?? false,
       meta: query.data?.meta ?? null,
-      isLoading: query.isLoading,
+      isLoading: isBulkAvailabilityPending || query.isLoading || (query.data === undefined && query.error == null),
       error: query.error as Error | null,
     });
   });
 
-  const isAnyLoading = queries.some((q) => q.isLoading);
-  const allSettled = queries.every((q) => !q.isLoading);
+  const isAnyLoading =
+    isBulkAvailabilityPending ||
+    queries.some((q) => q.isLoading || (q.data === undefined && q.error == null));
+  const allSettled = !isBulkAvailabilityPending && queries.every((q) => q.data !== undefined || q.error != null);
 
   return {
     results,
