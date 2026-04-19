@@ -250,6 +250,25 @@ describe("buildSettlementExecutionPlan", () => {
     expect(plan.missingAssignmentRegistration).toBe(false);
   });
 
+  it("continues partial mainnet settlement when coords indexing is unavailable", () => {
+    const plan = buildSettlementExecutionPlan({
+      isMainnet: true,
+      singleRealmMode: false,
+      snapshot: snapshot({
+        registered: false,
+        onceRegistered: true,
+        coordsCount: 0,
+        settledCount: 1,
+      }),
+    });
+
+    expect(plan.targetSettleCount).toBe(3);
+    expect(plan.shouldAssignAndSettle).toBe(false);
+    expect(plan.initialSettleCount).toBe(0);
+    expect(plan.extraSettleCalls).toBe(2);
+    expect(plan.missingAssignmentRegistration).toBe(false);
+  });
+
   it("plans single-call non-mainnet multi-realm settlement", () => {
     const plan = buildSettlementExecutionPlan({
       isMainnet: false,
