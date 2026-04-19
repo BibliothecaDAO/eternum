@@ -76,6 +76,40 @@ export const usePlayerStructureSync = () => {
     [playerStructures],
   );
 
+  // Stable content-based key; changes only when owned structures or their positions change,
+  // so downstream memos + the subscription useEffect do not churn on every render.
+  const clauseKey = useMemo(
+    () =>
+      `${structureEntityIds.join(",")}|${structurePositions.map((p) => `${p.col},${p.row}`).join(";")}`,
+    [structureEntityIds, structurePositions],
+  );
+
+  const structureClauses = useMemo(
+    () =>
+      structureEntityIds.map((id) => ({
+        Keys: {
+          keys: [id.toString()],
+          pattern_matching: "VariableLen" as PatternMatching,
+          models: PLAYER_STRUCTURE_MODELS,
+        },
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clauseKey captures structureEntityIds content
+    [clauseKey],
+  );
+
+  const buildingClauses = useMemo(
+    () =>
+      structurePositions.map((pos) => ({
+        Keys: {
+          keys: [pos.col.toString(), pos.row.toString()],
+          pattern_matching: "VariableLen" as PatternMatching,
+          models: ["s1_eternum-Building"],
+        },
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clauseKey captures structurePositions content
+    [clauseKey],
+  );
+
   const accountAddress = useAccountStore().account?.address;
   const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
   const structureEntityIdsRef = useRef<ReadonlySet<number>>(new Set());
@@ -229,22 +263,6 @@ export const usePlayerStructureSync = () => {
 
       if (!accountAddress || !toriiClient) return;
 
-      const structureClauses = structureEntityIds.map((id) => ({
-        Keys: {
-          keys: [id.toString()],
-          pattern_matching: "VariableLen" as PatternMatching,
-          models: PLAYER_STRUCTURE_MODELS,
-        },
-      }));
-
-      const buildingClauses = structurePositions.map((pos) => ({
-        Keys: {
-          keys: [pos.col.toString(), pos.row.toString()],
-          pattern_matching: "VariableLen" as PatternMatching,
-          models: ["s1_eternum-Building"],
-        },
-      }));
-
       const ownerStructureClause = MemberClause("s1_eternum-Structure", "owner", "Eq", {
         type: "ContractAddress",
         value: padHexAddressTo66(accountAddress),
@@ -268,5 +286,7 @@ export const usePlayerStructureSync = () => {
         subscriptionRef.current = null;
       }
     };
-  }, [structureEntityIds, structurePositions, accountAddress, toriiClient, setup]);
+    // clauseKey is the stable content-based dep; structureClauses/buildingClauses track it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clauseKey, accountAddress, toriiClient, setup]);
 };
