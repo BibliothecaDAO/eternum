@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-19",
+    title: "Upcoming Game CTA",
+    description:
+      "Upcoming game lists now link directly to Create Game when there are no queued candidates, making it easier to start the next match.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-16",
     title: "Live Stamina Labels",
     description:

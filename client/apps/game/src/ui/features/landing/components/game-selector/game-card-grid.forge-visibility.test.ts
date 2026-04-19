@@ -15,4 +15,15 @@ describe("Game card forge visibility", () => {
       "const showForgeButton = isBlitzMode && game.config?.numHyperstructuresLeft !== null && playerAddress;",
     );
   });
+
+  it("routes empty upcoming game grids to the create game page", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/components/game-selector/game-card-grid.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("const shouldShowCreateGameCta = isUpcomingOnlyStatusFilter(statusFilter);");
+    expect(source).toContain('to="/factory"');
+    expect(source).toContain("Forge New Game");
+  });
 });
