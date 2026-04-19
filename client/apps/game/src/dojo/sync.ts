@@ -490,15 +490,20 @@ export const initialSync = async (
     updateProgress(25);
   }
 
-  await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-
-  updateProgress(50);
-
-  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  updateProgress(75);
-
-  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  updateProgress(90);
+  // Config, AddressNames and Guilds write to disjoint components with no
+  // ordering constraints, so run them concurrently. updateProgress keeps the
+  // highest value, so individual checkpoints are safe in any order.
+  await Promise.all([
+    runTimedTask("config query", 50, async () => {
+      await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+    runTimedTask("address names query", 75, async () => {
+      await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+    runTimedTask("guilds query", 90, async () => {
+      await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  ]);
 
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
 
