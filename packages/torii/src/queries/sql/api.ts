@@ -103,6 +103,12 @@ const buildCacheUrl = (baseUrl: string, path: string): URL => {
   return new URL(`${trimmed}${normalizedPath}`);
 };
 
+// Short-lived dedupe + TTL for fetchStructuresByOwner. Callers mount concurrently
+// during boot (use-player-structure-sync + others) and re-query the same owner
+// within a few hundred ms. gRPC subscription reconciles any staleness within a block.
+const STRUCTURES_BY_OWNER_TTL_MS = 500;
+const structuresByOwnerCache = new Map<string, { promise: Promise<StructureLocation[]>; expiresAt: number }>();
+
 export class SqlApi {
   constructor(
     private readonly baseUrl: string,
@@ -174,12 +180,36 @@ export class SqlApi {
   /**
    * Fetch structures by owner from the SQL database.
    * SQL queries always return arrays.
+   *
+   * Concurrent calls for the same owner share a single in-flight request, and
+   * repeats within {@link STRUCTURES_BY_OWNER_TTL_MS} reuse the resolved result.
    */
   async fetchStructuresByOwner(owner: string): Promise<StructureLocation[]> {
+    const cacheKey = `${this.baseUrl}|${owner}`;
+    const cached = structuresByOwnerCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.promise;
+    }
+
     const formattedOwner = formatAddressForQuery(owner);
     const query = STRUCTURE_QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", formattedOwner);
     const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<StructureLocation>(url, "Failed to fetch structures by owner");
+    const promise = fetchWithErrorHandling<StructureLocation>(url, "Failed to fetch structures by owner");
+
+    // Evict on rejection so the next caller retries instead of inheriting the error.
+    promise.catch(() => {
+      const current = structuresByOwnerCache.get(cacheKey);
+      if (current?.promise === promise) {
+        structuresByOwnerCache.delete(cacheKey);
+      }
+    });
+
+    structuresByOwnerCache.set(cacheKey, {
+      promise,
+      expiresAt: Date.now() + STRUCTURES_BY_OWNER_TTL_MS,
+    });
+
+    return promise;
   }
 
   /**

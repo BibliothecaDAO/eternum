@@ -153,15 +153,123 @@ const GLOBAL_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_STREAM_MODELS);
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 
 interface QueueProcessor {
-  queueUpdate: (entityId: string, data: ToriiEntity, origin?: "entity" | "event") => void;
+  queueUpdate: (entityId: string, data: ToriiEntity, origin?: "entity" | "event") => Promise<void>;
   dispose: () => void;
 }
+
+interface SyncEntitiesSubscription {
+  cancel: () => void;
+  ready: Promise<void>;
+}
+
+interface SyncReadinessController {
+  ready: Promise<void>;
+  trackInitialEntityWrite: (writeComplete: Promise<void>) => void;
+  markSubscriptionsReady: () => void;
+  cancel: () => void;
+}
+
+interface WriteCompletionTracker {
+  track: (entityId: string) => Promise<void>;
+  resolveBatch: (batch: BatchPayload) => void;
+  resolveAll: () => void;
+}
+
+type QueuedUpdate = { entityId: string; data: ToriiEntity; resolve: () => void };
+
+const createSyncReadinessController = (): SyncReadinessController => {
+  let firstEntityUpdateReceived = false;
+  let subscriptionsReady = false;
+  let pendingInitialEntityWrites = 0;
+  let settled = false;
+
+  let resolveReady!: () => void;
+  let rejectReady!: (error: Error) => void;
+  const ready = new Promise<void>((resolve, reject) => {
+    resolveReady = resolve;
+    rejectReady = reject;
+  });
+
+  ready.catch(() => undefined);
+
+  const resolveWhenInitialEntitiesAreApplied = () => {
+    if (settled || !firstEntityUpdateReceived || !subscriptionsReady || pendingInitialEntityWrites > 0) {
+      return;
+    }
+
+    settled = true;
+    resolveReady();
+  };
+
+  return {
+    ready,
+    trackInitialEntityWrite: (writeComplete: Promise<void>) => {
+      firstEntityUpdateReceived = true;
+      pendingInitialEntityWrites += 1;
+      writeComplete.then(
+        () => {
+          pendingInitialEntityWrites -= 1;
+          resolveWhenInitialEntitiesAreApplied();
+        },
+        () => {
+          pendingInitialEntityWrites -= 1;
+          resolveWhenInitialEntitiesAreApplied();
+        },
+      );
+    },
+    markSubscriptionsReady: () => {
+      subscriptionsReady = true;
+      resolveWhenInitialEntitiesAreApplied();
+    },
+    cancel: () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      rejectReady(new Error("syncEntitiesDebounced canceled before ready"));
+    },
+  };
+};
+
+const createWriteCompletionTracker = (): WriteCompletionTracker => {
+  const pendingWriteResolvers = new Map<string, Array<() => void>>();
+
+  const resolveEntityWrites = (entityId: string) => {
+    const resolvers = pendingWriteResolvers.get(entityId);
+    if (!resolvers) {
+      return;
+    }
+
+    resolvers.forEach((resolve) => resolve());
+    pendingWriteResolvers.delete(entityId);
+  };
+
+  return {
+    track: (entityId: string) =>
+      new Promise<void>((resolve) => {
+        const resolvers = pendingWriteResolvers.get(entityId) ?? [];
+        resolvers.push(resolve);
+        pendingWriteResolvers.set(entityId, resolvers);
+      }),
+    resolveBatch: (batch: BatchPayload) => {
+      const appliedEntityIds = new Set([...batch.deletions, ...batch.upserts.map((entity) => entity.hashed_keys)]);
+      appliedEntityIds.forEach(resolveEntityWrites);
+    },
+    resolveAll: () => {
+      pendingWriteResolvers.forEach((resolvers) => {
+        resolvers.forEach((resolve) => resolve());
+      });
+      pendingWriteResolvers.clear();
+    },
+  };
+};
 
 const createMainThreadQueueProcessor = (
   applyBatch: (batch: BatchPayload) => void,
   logging: boolean,
 ): QueueProcessor => {
-  const updateQueue: Array<{ entityId: string; data: ToriiEntity }> = [];
+  const updateQueue: QueuedUpdate[] = [];
   let isProcessing = false;
   let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -229,6 +337,8 @@ const createMainThreadQueueProcessor = (
       }
     }
 
+    itemsToProcess.forEach(({ resolve }) => resolve());
+
     isProcessing = false;
     if (updateQueue.length > 0) {
       pendingTimeoutId = setTimeout(processNextInQueue, 0);
@@ -237,17 +347,21 @@ const createMainThreadQueueProcessor = (
 
   return {
     queueUpdate: (entityId: string, data: ToriiEntity) => {
-      updateQueue.push({ entityId, data });
+      const writeComplete = new Promise<void>((resolve) => {
+        updateQueue.push({ entityId, data, resolve });
+      });
       if (!isProcessing) {
         if (pendingTimeoutId !== null) clearTimeout(pendingTimeoutId);
         pendingTimeoutId = setTimeout(processNextInQueue, 200);
       }
+      return writeComplete;
     },
     dispose: () => {
       if (pendingTimeoutId !== null) {
         clearTimeout(pendingTimeoutId);
         pendingTimeoutId = null;
       }
+      updateQueue.forEach(({ resolve }) => resolve());
       updateQueue.length = 0;
     },
   };
@@ -262,10 +376,14 @@ const createWorkerQueueProcessor = (
   }
 
   try {
+    const writeCompletion = createWriteCompletionTracker();
+
     const manager = new ToriiSyncWorkerManager({
       logging,
       onBatch: (batch) => {
-        applyBatch({ upserts: batch.upserts, deletions: batch.deletions });
+        const syncBatch = { upserts: batch.upserts, deletions: batch.deletions };
+        applyBatch(syncBatch);
+        writeCompletion.resolveBatch(syncBatch);
       },
       onError: (message, error) => {
         console.error("[sync-worker] error", message, error);
@@ -279,9 +397,16 @@ const createWorkerQueueProcessor = (
 
     return {
       queueUpdate: (_entityId: string, data: ToriiEntity, origin?: "entity" | "event") => {
-        manager.enqueue(data, origin ?? "entity");
+        const writeComplete = writeCompletion.track(data.hashed_keys);
+        if (!manager.enqueue(data, origin ?? "entity")) {
+          writeCompletion.resolveAll();
+        }
+        return writeComplete;
       },
-      dispose: () => manager.dispose(),
+      dispose: () => {
+        writeCompletion.resolveAll();
+        manager.dispose();
+      },
     };
   } catch (error) {
     console.error("[sync-worker] failed to initialize", error);
@@ -296,7 +421,7 @@ export const syncEntitiesDebounced = async (
   logging = true,
   onUpdate?: () => void,
   options?: SyncEntitiesSubscriptionOptions,
-) => {
+): Promise<SyncEntitiesSubscription> => {
   if (logging) console.log("Starting syncEntities");
 
   const {
@@ -328,13 +453,16 @@ export const syncEntitiesDebounced = async (
 
   const queueProcessor =
     createWorkerQueueProcessor(applyBatch, logging) ?? createMainThreadQueueProcessor(applyBatch, logging);
+  const readiness = createSyncReadinessController();
 
   const queueUpdate = (data: ToriiEntity, origin: "entity" | "event") => {
     try {
-      queueProcessor.queueUpdate(data.hashed_keys, data, origin);
+      const writeComplete = queueProcessor.queueUpdate(data.hashed_keys, data, origin);
       onUpdate?.();
+      return writeComplete;
     } catch (error) {
       console.error("Error queuing entity update:", error);
+      return Promise.resolve();
     }
   };
 
@@ -344,7 +472,7 @@ export const syncEntitiesDebounced = async (
         client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
           if (logging) console.log("Entity updated", data);
           recordTileOptStreamTrace(data);
-          queueUpdate(data, "entity");
+          readiness.trackInitialEntityWrite(queueUpdate(data, "entity"));
         }),
       createEventSubscription: () =>
         client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
@@ -355,10 +483,14 @@ export const syncEntitiesDebounced = async (
       onSubscriptionSetupTimeout: options?.onSubscriptionSetupTimeout,
     });
 
+    readiness.markSubscriptionsReady();
+
     return {
+      ready: readiness.ready,
       cancel: () => {
         subscriptions.cancel();
         queueProcessor.dispose();
+        readiness.cancel();
       },
     };
   } catch (error) {
@@ -490,15 +622,20 @@ export const initialSync = async (
     updateProgress(25);
   }
 
-  await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-
-  updateProgress(50);
-
-  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  updateProgress(75);
-
-  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  updateProgress(90);
+  // Config, AddressNames and Guilds write to disjoint components with no
+  // ordering constraints, so run them concurrently. updateProgress keeps the
+  // highest value, so individual checkpoints are safe in any order.
+  await Promise.all([
+    runTimedTask("config query", 50, async () => {
+      await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+    runTimedTask("address names query", 75, async () => {
+      await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+    runTimedTask("guilds query", 90, async () => {
+      await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  ]);
 
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
 
