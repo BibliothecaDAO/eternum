@@ -30,6 +30,16 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+type SyncSubscriptionStub = {
+  cancel: () => void;
+  ready: Promise<void>;
+};
+
+const syncSubscription = (cancel: () => void): SyncSubscriptionStub => ({
+  cancel,
+  ready: Promise.resolve(),
+});
+
 const descriptor = (minCol: number): BoundsDescriptor => ({
   minCol,
   maxCol: minCol + 10,
@@ -42,7 +52,7 @@ describe("ToriiStreamManager", () => {
   it("reports skipped outcome when switching to an unchanged signature", async () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
     const cancel = vi.fn();
-    syncMock.mockImplementation(async () => ({ cancel }));
+    syncMock.mockImplementation(async () => syncSubscription(cancel));
 
     const manager = new ToriiStreamManager({
       client: {} as any,
@@ -60,8 +70,8 @@ describe("ToriiStreamManager", () => {
 
   it("keeps the newest bounds subscription active when switches race", async () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
-    const firstSwitch = deferred<{ cancel: () => void }>();
-    const secondSwitch = deferred<{ cancel: () => void }>();
+    const firstSwitch = deferred<SyncSubscriptionStub>();
+    const secondSwitch = deferred<SyncSubscriptionStub>();
 
     const cancelFirst = vi.fn();
     const cancelSecond = vi.fn();
@@ -80,10 +90,10 @@ describe("ToriiStreamManager", () => {
     const pendingSecond = manager.switchBounds(descriptor(24));
 
     // Resolve second first to simulate out-of-order completion.
-    secondSwitch.resolve({ cancel: cancelSecond });
+    secondSwitch.resolve(syncSubscription(cancelSecond));
     await Promise.resolve();
 
-    firstSwitch.resolve({ cancel: cancelFirst });
+    firstSwitch.resolve(syncSubscription(cancelFirst));
 
     const [firstResult, secondResult] = await Promise.all([pendingFirst, pendingSecond]);
 
@@ -97,9 +107,9 @@ describe("ToriiStreamManager", () => {
 
   it("drops stale middle switch during A->B->A bounds churn", async () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
-    const firstSwitch = deferred<{ cancel: () => void }>();
-    const secondSwitch = deferred<{ cancel: () => void }>();
-    const thirdSwitch = deferred<{ cancel: () => void }>();
+    const firstSwitch = deferred<SyncSubscriptionStub>();
+    const secondSwitch = deferred<SyncSubscriptionStub>();
+    const thirdSwitch = deferred<SyncSubscriptionStub>();
 
     const cancelFirst = vi.fn();
     const cancelSecond = vi.fn();
@@ -120,9 +130,9 @@ describe("ToriiStreamManager", () => {
     const pendingB = manager.switchBounds(descriptor(24));
     const pendingA2 = manager.switchBounds(descriptor(0));
 
-    firstSwitch.resolve({ cancel: cancelFirst });
-    secondSwitch.resolve({ cancel: cancelSecond });
-    thirdSwitch.resolve({ cancel: cancelThird });
+    firstSwitch.resolve(syncSubscription(cancelFirst));
+    secondSwitch.resolve(syncSubscription(cancelSecond));
+    thirdSwitch.resolve(syncSubscription(cancelThird));
 
     const [resultA1, resultB, resultA2] = await Promise.all([pendingA1, pendingB, pendingA2]);
 
@@ -157,7 +167,7 @@ describe("ToriiStreamManager", () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
     const cancelRecovered = vi.fn();
 
-    syncMock.mockRejectedValueOnce(new Error("timeout:25")).mockResolvedValueOnce({ cancel: cancelRecovered });
+    syncMock.mockRejectedValueOnce(new Error("timeout:25")).mockResolvedValueOnce(syncSubscription(cancelRecovered));
 
     const manager = new ToriiStreamManager({
       client: {} as any,
