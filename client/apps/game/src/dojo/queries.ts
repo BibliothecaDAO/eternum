@@ -7,12 +7,56 @@ import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { env } from "../../env";
 import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
+
+const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
+
+const getConfigCacheKey = () => `${CONFIG_FETCH_CACHE_PREFIX}:${env.VITE_PUBLIC_CHAIN}:${env.VITE_PUBLIC_TORII}`;
+
+const hasSessionStorage = () => {
+  try {
+    return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+  } catch {
+    return false;
+  }
+};
+
+const hasFreshConfigCache = () => {
+  if (!hasSessionStorage()) return false;
+  try {
+    return window.sessionStorage.getItem(getConfigCacheKey()) !== null;
+  } catch {
+    return false;
+  }
+};
+
+const markConfigCacheFresh = () => {
+  if (!hasSessionStorage()) return;
+  try {
+    window.sessionStorage.setItem(getConfigCacheKey(), Date.now().toString());
+  } catch {
+    /* storage quota / disabled — ignore */
+  }
+};
+
+/**
+ * Clear the cached "config already fetched this session" marker. Surfaces as a
+ * module export so a debug action can force a blocking revalidation on next boot.
+ */
+export const clearConfigFetchCache = () => {
+  if (!hasSessionStorage()) return;
+  try {
+    window.sessionStorage.removeItem(getConfigCacheKey());
+  } catch {
+    /* ignore */
+  }
+};
 
 const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isFinite(id);
 const hasValidPosition = (position: HexPosition | undefined): position is HexPosition =>
@@ -208,15 +252,34 @@ export const getConfigFromTorii = async <S extends Schema>(
       },
     },
   ];
-  return getEntities(
-    client,
-    { Composite: { operator: "Or", clauses: configClauses } },
-    components,
-    [],
-    configModels,
-    EVENT_QUERY_LIMIT,
-    false,
-  );
+
+  const fetchConfig = () =>
+    getEntities(
+      client,
+      { Composite: { operator: "Or", clauses: configClauses } },
+      components,
+      [],
+      configModels,
+      EVENT_QUERY_LIMIT,
+      false,
+    );
+
+  // Per issue #4653: config data is static within a chain/world deployment and
+  // most config models are also covered by GLOBAL_STREAM_CLAUSE's initial state
+  // flush. On reloads within the same tab session, skip blocking on the fetch —
+  // fire it in the background so RECS still revalidates. Clear the marker on
+  // failure so the next boot falls back to a blocking fetch.
+  if (hasFreshConfigCache()) {
+    fetchConfig().catch((error) => {
+      console.warn("[torii] Background config revalidation failed", error);
+      clearConfigFetchCache();
+    });
+    return;
+  }
+
+  const result = await fetchConfig();
+  markConfigCacheFresh();
+  return result;
 };
 
 export const getAddressNamesFromTorii = async <S extends Schema>(
