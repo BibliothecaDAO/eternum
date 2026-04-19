@@ -79,8 +79,7 @@ export const usePlayerStructureSync = () => {
   // Stable content-based key; changes only when owned structures or their positions change,
   // so downstream memos + the subscription useEffect do not churn on every render.
   const clauseKey = useMemo(
-    () =>
-      `${structureEntityIds.join(",")}|${structurePositions.map((p) => `${p.col},${p.row}`).join(";")}`,
+    () => `${structureEntityIds.join(",")}|${structurePositions.map((p) => `${p.col},${p.row}`).join(";")}`,
     [structureEntityIds, structurePositions],
   );
 
