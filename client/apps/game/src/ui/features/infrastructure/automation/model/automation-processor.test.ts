@@ -173,7 +173,7 @@ describe("buildRealmProductionPlan", () => {
     ]);
   });
 
-  it("feeds same-pass T1 output into T2 consumption so deep chains execute in one tick", () => {
+  it("does not let T1 same-pass output fund T2 when pre-existing T1 balance is zero", () => {
     const plan = buildRealmProductionPlan({
       realmConfig: makeRealmConfig(),
       snapshot: makeSnapshot([ResourcesIds.Knight, ResourcesIds.KnightT2], {
@@ -186,15 +186,39 @@ describe("buildRealmProductionPlan", () => {
 
     const callResourceIds = plan.callset.resourceToResource.map((call) => call.resourceId);
     expect(callResourceIds).toContain(ResourcesIds.Knight);
-    expect(callResourceIds).toContain(ResourcesIds.KnightT2);
+    expect(callResourceIds).not.toContain(ResourcesIds.KnightT2);
 
     const t1Cycles =
       plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.Knight)?.cycles ?? 0;
+    expect(t1Cycles).toBeGreaterThan(0);
+  });
+
+  it("sizes T2 cycles from pre-existing T1 balance only, ignoring same-pass T1 output", () => {
+    // Use custom preset with 100% percentages so the T2 cycle cap is clearly bounded by Knight balance
+    // and not by any preset-specific allocation math.
+    const plan = buildRealmProductionPlan({
+      realmConfig: makeRealmConfig(
+        { presetId: "custom" },
+        {
+          [ResourcesIds.Knight]: { resourceToResource: 10, laborToResource: 0 },
+          [ResourcesIds.KnightT2]: { resourceToResource: 50, laborToResource: 0 },
+        },
+      ),
+      snapshot: makeSnapshot([ResourcesIds.Knight, ResourcesIds.KnightT2], {
+        [ResourcesIds.Wheat]: 10_000,
+        [ResourcesIds.Copper]: 10_000,
+        [ResourcesIds.Essence]: 10_000,
+        [ResourcesIds.Knight]: 100,
+      }),
+    });
+
     const t2Cycles =
       plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.KnightT2)?.cycles ?? 0;
-    expect(t1Cycles).toBeGreaterThan(0);
+
+    // KnightT2 consumes 1 Knight per cycle. Real Knight balance is 100, MAX_RESOURCE_ALLOCATION_PERCENT = 90%,
+    // so the binding cap is 90. Same-pass Knight output must NOT raise this ceiling.
     expect(t2Cycles).toBeGreaterThan(0);
-    expect(t2Cycles).toBeLessThanOrEqual(t1Cycles);
+    expect(t2Cycles).toBeLessThanOrEqual(90);
   });
 
   it("skips T2 when there is no snapshot Knight balance and T1 produces nothing (recipe undeployable)", () => {
@@ -244,7 +268,7 @@ describe("buildRealmProductionPlan", () => {
     expect(plan.consumptionByResource[ResourcesIds.Wood]).toBeUndefined();
   });
 
-  it("executes a three-tier chain (Ore -> Iron -> Steel) in a single pass", () => {
+  it("primes a three-tier chain (Ore -> Iron -> Steel) tier-by-tier across passes, not all in one pass", () => {
     const Ore = ResourcesIds.Stone;
     const Iron = ResourcesIds.Coal;
     const Steel = ResourcesIds.Ironwood;
@@ -270,16 +294,58 @@ describe("buildRealmProductionPlan", () => {
       }),
     });
 
+    // Topological order is preserved even when downstream tiers cannot run — evaluation order is observable via ordering of evaluatedResourceIds.
+    expect(plan.evaluatedResourceIds.indexOf(Ore)).toBeLessThan(plan.evaluatedResourceIds.indexOf(Iron));
+    expect(plan.evaluatedResourceIds.indexOf(Iron)).toBeLessThan(plan.evaluatedResourceIds.indexOf(Steel));
+
     const callOrder = plan.callset.resourceToResource.map((call) => call.resourceId);
-    expect(callOrder.indexOf(Ore)).toBeLessThan(callOrder.indexOf(Iron));
-    expect(callOrder.indexOf(Iron)).toBeLessThan(callOrder.indexOf(Steel));
+    // Only Ore has a spendable input (Wheat). Iron and Steel cannot execute this pass because
+    // their upstream output goes to `output_amount_left` on chain and only materializes
+    // into spendable balance over future ticks.
+    expect(callOrder).toEqual([Ore]);
 
     const oreCycles = plan.callset.resourceToResource.find((call) => call.resourceId === Ore)?.cycles ?? 0;
-    const ironCycles = plan.callset.resourceToResource.find((call) => call.resourceId === Iron)?.cycles ?? 0;
-    const steelCycles = plan.callset.resourceToResource.find((call) => call.resourceId === Steel)?.cycles ?? 0;
     expect(oreCycles).toBeGreaterThan(0);
-    expect(ironCycles).toBeGreaterThan(0);
-    expect(steelCycles).toBeGreaterThan(0);
+  });
+
+  it("regression: downstream COAL consumption is bounded by real COAL balance, ignoring same-pass output (COAL chain bug)", () => {
+    // Reproduces the on-chain failure: "Insufficient Balance: COAL (id: 209, balance: 463) < 1279".
+    // Upstream recipe that produces COAL must NOT inflate the downstream COAL-consuming budget.
+    const CoalProducer = ResourcesIds.Stone; // stand-in for a recipe whose output is COAL
+    const CoalConsumer = ResourcesIds.Ironwood; // stand-in for a recipe that consumes COAL
+
+    // CoalProducer: consumes Wheat, outputs COAL (10 per cycle).
+    configManagerMock.complexSystemResourceInputs[CoalProducer] = [{ resource: ResourcesIds.Wheat, amount: 1 }];
+    configManagerMock.complexSystemResourceOutput[CoalProducer] = {
+      resource: ResourcesIds.Coal,
+      amount: 10,
+    };
+
+    // CoalConsumer: consumes COAL (1 per cycle), outputs itself.
+    configureComplexRecipe(CoalConsumer, [{ resource: ResourcesIds.Coal, amount: 1 }], 2);
+
+    const plan = buildRealmProductionPlan({
+      realmConfig: makeRealmConfig(
+        { presetId: "custom" },
+        {
+          [CoalProducer]: { resourceToResource: 50, laborToResource: 0 },
+          [CoalConsumer]: { resourceToResource: 50, laborToResource: 0 },
+        },
+      ),
+      snapshot: makeSnapshot([CoalProducer, CoalConsumer], {
+        [ResourcesIds.Wheat]: 10_000, // plenty of upstream input
+        [ResourcesIds.Coal]: 463, // low pre-existing COAL balance
+      }),
+    });
+
+    const consumerCycles =
+      plan.callset.resourceToResource.find((call) => call.resourceId === CoalConsumer)?.cycles ?? 0;
+    const coalConsumed = plan.consumptionByResource[ResourcesIds.Coal] ?? 0;
+
+    // CoalConsumer needs 1 COAL per cycle; with 90% cap and 463 balance, max cycles = floor(463 * 0.9) = 416.
+    // Without the fix, same-pass credit from CoalProducer would push this far higher (contract reverts on chain).
+    expect(consumerCycles).toBeLessThanOrEqual(416);
+    expect(coalConsumed).toBeLessThanOrEqual(416);
   });
 
   it("falls back to numeric order and warns when recipe config introduces a cycle", () => {
