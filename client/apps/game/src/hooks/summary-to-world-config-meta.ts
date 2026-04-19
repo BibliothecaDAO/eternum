@@ -16,7 +16,7 @@ import type { WorldSummary } from "@bibliothecadao/types";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import type { WorldConfigMeta } from "./use-world-availability";
 
-export interface PlayerRegistrationFields {
+interface PlayerRegistrationFields {
   isPlayerRegistered: boolean | null;
   hasPlayerSettledRealm: boolean | null;
 }
@@ -25,6 +25,15 @@ const resolveMode = (summaryMode: WorldSummary["mode"]): ResolvedGameMode => {
   if (summaryMode === "blitz") return "blitz";
   if (summaryMode === "eternum") return "eternum";
   return "unknown";
+};
+
+const parseSummaryBigInt = (value: string | null): bigint => {
+  if (!value) return 0n;
+  try {
+    return BigInt(value);
+  } catch {
+    return 0n;
+  }
 };
 
 /**
@@ -64,13 +73,11 @@ export const summaryToWorldConfigMeta = (
     registrationCountMax: summary.registrationCountMax ?? null,
     singleRealmMode: summary.singleRealmMode ?? false,
     twoPlayerMode: summary.twoPlayerMode ?? false,
-    // Blitz fee/entry economics — not yet surfaced by the summary; 0n/null defaults are safe
-    // because the jackpot uses prizeDistributionAddress + feeTokenAddress from the summary.
-    entryTokenAddress: null,
+    entryTokenAddress: summary.entryTokenAddress ?? null,
     feeTokenAddress: summary.feeTokenAddress ?? null,
-    feeAmount: 0n,
-    registrationStartAt: null,
-    registrationEndAt: summary.startMainAt ?? null,
+    feeAmount: parseSummaryBigInt(summary.feeAmount),
+    registrationStartAt: summary.registrationStartAt ?? null,
+    registrationEndAt: summary.registrationEndAt ?? summary.startMainAt ?? null,
     mmrEnabled: summary.mmrEnabled ?? false,
     devModeOn: summary.devModeOn ?? false,
     isPlayerRegistered: playerRegistration?.isPlayerRegistered ?? null,

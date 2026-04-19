@@ -14,12 +14,12 @@ import type { WorldSummary } from "@bibliothecadao/types";
 import { parseMaybeBooleanFlag } from "@/config/game-modes/resolved-mode";
 import { useQueries } from "@tanstack/react-query";
 
-export interface PlayerWorldRegistration {
+interface PlayerWorldRegistration {
   isPlayerRegistered: boolean | null;
   hasPlayerSettledRealm: boolean | null;
 }
 
-export interface PlayerWorldRegistrationResult {
+interface PlayerWorldRegistrationResult {
   registrationsByWorldKey: Map<string, PlayerWorldRegistration>;
   isAnyLoading: boolean;
 }
@@ -46,10 +46,7 @@ const parseMaybeHexToNumber = (v: unknown): number | null => {
  * Ported from `use-world-availability.ts` — uses `once_registered` because
  * `registered` gets cleared after settlement.
  */
-export const fetchPlayerRegistration = async (
-  toriiBaseUrl: string,
-  playerAddress: string,
-): Promise<boolean | null> => {
+export const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: string): Promise<boolean | null> => {
   try {
     const query = `SELECT once_registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerAddress}" LIMIT 1;`;
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
@@ -93,7 +90,7 @@ export const fetchPlayerHasSettledRealm = async (
 export const getWorldSummaryKey = (world: Pick<WorldSummary, "name" | "chain">): string =>
   `${world.chain}:${world.name}`;
 
-export interface UsePlayerWorldRegistrationsInput {
+interface UsePlayerWorldRegistrationsInput {
   worlds: WorldSummary[];
   playerAddress: string | null;
 }

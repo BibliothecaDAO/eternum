@@ -15,8 +15,7 @@ type MarketLookupResult = {
   marketRow: MarketWithDetailsRow | null;
 };
 
-const alternateChainOf = (chain: MarketDataChain): MarketDataChain =>
-  chain === "mainnet" ? "slot" : "mainnet";
+const alternateChainOf = (chain: MarketDataChain): MarketDataChain => (chain === "mainnet" ? "slot" : "mainnet");
 
 /**
  * Look up a prediction market by its prize-distribution address, starting from the preferred chain.

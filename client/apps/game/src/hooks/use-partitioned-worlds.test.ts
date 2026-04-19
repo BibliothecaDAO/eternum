@@ -19,10 +19,15 @@ const make = (name: string, overrides: Partial<WorldSummary>): WorldSummary => (
   twoPlayerMode: null,
   seasonPassAddress: null,
   villagePassAddress: null,
+  worldAddress: null,
   prizeDistributionAddress: null,
+  entryTokenAddress: null,
   feeTokenAddress: null,
+  feeAmount: null,
   registrationCount: null,
   registrationCountMax: null,
+  registrationStartAt: null,
+  registrationEndAt: null,
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
@@ -117,10 +122,7 @@ describe("partitionWorlds", () => {
   });
 });
 
-function expectExactly(
-  partition: WorldPartition,
-  expected: Partial<Record<keyof WorldPartition, string[]>>,
-): void {
+function expectExactly(partition: WorldPartition, expected: Partial<Record<keyof WorldPartition, string[]>>): void {
   const buckets: (keyof WorldPartition)[] = ["live", "upcoming", "ended", "offline", "unknown"];
   for (const bucket of buckets) {
     const expectedNames = expected[bucket] ?? [];

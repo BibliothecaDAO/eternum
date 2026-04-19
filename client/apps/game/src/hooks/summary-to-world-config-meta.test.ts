@@ -19,10 +19,15 @@ const baseSummary: WorldSummary = {
   twoPlayerMode: false,
   seasonPassAddress: "0xseason",
   villagePassAddress: "0xvillage",
+  worldAddress: "0xworld",
   prizeDistributionAddress: "0xprize",
+  entryTokenAddress: "0xentry",
   feeTokenAddress: "0xfee",
+  feeAmount: "255",
   registrationCount: 5,
   registrationCountMax: 100,
+  registrationStartAt: 100,
+  registrationEndAt: 200,
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
@@ -44,7 +49,11 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.seasonPassAddress).toBe("0xseason");
     expect(meta.villagePassAddress).toBe("0xvillage");
     expect(meta.prizeDistributionAddress).toBe("0xprize");
+    expect(meta.entryTokenAddress).toBe("0xentry");
     expect(meta.feeTokenAddress).toBe("0xfee");
+    expect(meta.feeAmount).toBe(255n);
+    expect(meta.registrationStartAt).toBe(100);
+    expect(meta.registrationEndAt).toBe(200);
     expect(meta.numHyperstructuresLeft).toBe(42);
     expect(meta.mmrEnabled).toBe(true);
     expect(meta.devModeOn).toBe(false);
@@ -93,10 +102,15 @@ describe("summaryToWorldConfigMeta", () => {
       twoPlayerMode: null,
       seasonPassAddress: null,
       villagePassAddress: null,
+      worldAddress: null,
       prizeDistributionAddress: null,
+      entryTokenAddress: null,
       feeTokenAddress: null,
+      feeAmount: null,
       registrationCount: null,
       registrationCountMax: null,
+      registrationStartAt: null,
+      registrationEndAt: null,
       settledPlayersCount: null,
       settledRealmsCount: null,
       settledVillagesCount: null,
@@ -115,7 +129,11 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.singleRealmMode).toBe(false);
     expect(meta.twoPlayerMode).toBe(false);
     expect(meta.prizeDistributionAddress).toBeNull();
+    expect(meta.entryTokenAddress).toBeNull();
     expect(meta.feeTokenAddress).toBeNull();
+    expect(meta.feeAmount).toBe(0n);
+    expect(meta.registrationStartAt).toBeNull();
+    expect(meta.registrationEndAt).toBeNull();
     expect(meta.numHyperstructuresLeft).toBeNull();
     expect(meta.winnerJackpotAmount).toBe(0n);
   });
@@ -136,8 +154,8 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.settledVillagesCount).toBe(56);
   });
 
-  it("sets registrationEndAt to startMainAt (registration ends when main starts)", () => {
-    const meta = summaryToWorldConfigMeta(baseSummary, null);
+  it("falls back to startMainAt when the summary omits registrationEndAt", () => {
+    const meta = summaryToWorldConfigMeta({ ...baseSummary, registrationEndAt: null }, null);
     expect(meta.registrationEndAt).toBe(baseSummary.startMainAt);
   });
 });

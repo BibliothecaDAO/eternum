@@ -32,10 +32,15 @@ const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
   twoPlayerMode: null,
   seasonPassAddress: null,
   villagePassAddress: null,
+  worldAddress: null,
   prizeDistributionAddress: null,
+  entryTokenAddress: null,
   feeTokenAddress: null,
+  feeAmount: null,
   registrationCount: null,
   registrationCountMax: null,
+  registrationStartAt: null,
+  registrationEndAt: null,
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
@@ -216,9 +221,7 @@ describe("usePlayerWorldRegistrations", () => {
   });
 
   it("surfaces loading state from child queries", () => {
-    reactQueryMocks.useQueries.mockReturnValue([
-      { data: undefined, isLoading: true, isFetching: true, error: null },
-    ]);
+    reactQueryMocks.useQueries.mockReturnValue([{ data: undefined, isLoading: true, isFetching: true, error: null }]);
 
     const result = usePlayerWorldRegistrations({
       worlds: [makeSummary({ name: "alpha", mode: "blitz" })],

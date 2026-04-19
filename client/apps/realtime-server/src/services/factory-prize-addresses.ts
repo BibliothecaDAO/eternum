@@ -1,7 +1,6 @@
 import { decodePaddedFeltAscii, fetchFactoryRows, getFactorySqlBaseUrl } from "./factory-sql";
 
-const PRIZE_DISTRIBUTION_SELECTOR =
-  "0x042230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
+const PRIZE_DISTRIBUTION_SELECTOR = "0x042230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
 
 const PRIZE_ADDRESS_QUERY = `
   SELECT name, contract_address
@@ -28,10 +27,7 @@ function extractAddress(value: unknown): string | null {
  * Returns a `worldName → prizeAddress` map (world names are decoded from padded felts).
  * One SQL query per chain per poll cycle.
  */
-export async function fetchFactoryPrizeAddresses(
-  chain: string,
-  timeoutMs: number,
-): Promise<Map<string, string>> {
+export async function fetchFactoryPrizeAddresses(chain: string, timeoutMs: number): Promise<Map<string, string>> {
   const baseUrl = getFactorySqlBaseUrl(chain);
   if (!baseUrl) return new Map();
 

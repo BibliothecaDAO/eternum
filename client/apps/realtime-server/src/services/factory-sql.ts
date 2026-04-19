@@ -53,6 +53,18 @@ export function extractNameFelt(row: FactoryRow): string | null {
   return null;
 }
 
+export function extractContractAddress(row: FactoryRow): string | null {
+  const direct = normalizeAddress(row.contract_address ?? row.address ?? row["data.address"]);
+  if (direct) return direct;
+
+  const nestedData = asRecord(row.data);
+  if (nestedData) {
+    return normalizeAddress(nestedData.contract_address ?? nestedData.address);
+  }
+
+  return null;
+}
+
 export function decodePaddedFeltAscii(hex: string): string {
   if (!hex) return "";
 
@@ -72,6 +84,31 @@ export function decodePaddedFeltAscii(hex: string): string {
   }
 
   return output;
+}
+
+function normalizeAddress(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === "bigint") return value > 0n ? `0x${value.toString(16)}` : null;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return `0x${BigInt(Math.floor(value)).toString(16)}`;
+  }
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed =
+      trimmed.startsWith("0x") || trimmed.startsWith("0X")
+        ? BigInt(trimmed)
+        : /^[0-9]+$/.test(trimmed)
+          ? BigInt(trimmed)
+          : null;
+    if (parsed == null || parsed <= 0n) return null;
+    return `0x${parsed.toString(16)}`;
+  } catch {
+    return null;
+  }
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

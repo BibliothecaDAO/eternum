@@ -44,7 +44,7 @@ export async function fetchJackpotBalance({
   }
 }
 
-export interface UseWorldJackpotInput {
+interface UseWorldJackpotInput {
   chain: Chain;
   feeTokenAddress: string | null;
   prizeDistributionAddress: string | null;
@@ -67,12 +67,7 @@ export const useWorldJackpot = ({
   const canFetch = enabled && Boolean(feeTokenAddress) && Boolean(prizeDistributionAddress);
 
   return useQuery({
-    queryKey: [
-      "worldJackpot",
-      chain,
-      prizeDistributionAddress ?? "none",
-      feeTokenAddress ?? "none",
-    ],
+    queryKey: ["worldJackpot", chain, prizeDistributionAddress ?? "none", feeTokenAddress ?? "none"],
     queryFn: () =>
       fetchJackpotBalance({
         chain,

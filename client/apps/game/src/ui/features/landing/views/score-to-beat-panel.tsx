@@ -396,7 +396,7 @@ export const ScoreToBeatPanel = () => {
     if (!worldsSummary) return [];
     return worldsSummary
       .filter((summary) => summary.chain === selectedChain && summary.alive)
-      .map((summary) => ({ name: summary.name, chain: selectedChain, worldAddress: null }));
+      .map((summary) => ({ name: summary.name, chain: selectedChain, worldAddress: summary.worldAddress }));
   }, [worldsSummary, selectedChain]);
 
   const staticGamesForSelectedChain = useMemo(

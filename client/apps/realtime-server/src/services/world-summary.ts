@@ -17,6 +17,7 @@ const WORLD_SUMMARY_QUERY = `
     "blitz_registration_config.fee_token" AS fee_token,
     "blitz_registration_config.fee_amount" AS fee_amount,
     "blitz_registration_config.registration_start_at" AS registration_start_at,
+    "season_config.start_main_at" AS registration_end_at,
     "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count,
     "blitz_settlement_config.single_realm_mode" AS single_realm_mode,
     "blitz_settlement_config.two_player_mode" AS two_player_mode,
@@ -43,10 +44,15 @@ const NULL_SUMMARY: SummaryFields = {
   twoPlayerMode: null,
   seasonPassAddress: null,
   villagePassAddress: null,
+  worldAddress: null,
   prizeDistributionAddress: null,
+  entryTokenAddress: null,
   feeTokenAddress: null,
+  feeAmount: null,
   registrationCount: null,
   registrationCountMax: null,
+  registrationStartAt: null,
+  registrationEndAt: null,
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
@@ -62,6 +68,21 @@ function parseMaybeHexToNumber(v: unknown): number | null {
       if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
       const n = Number(v);
       return Number.isFinite(n) ? n : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function parseMaybeHexToBigInt(v: unknown): bigint | null {
+  if (v == null) return null;
+  if (typeof v === "bigint") return v;
+  if (typeof v === "number" && Number.isFinite(v)) return BigInt(Math.floor(v));
+  if (typeof v === "string") {
+    try {
+      if (v.startsWith("0x") || v.startsWith("0X")) return BigInt(v);
+      return BigInt(v);
     } catch {
       return null;
     }
@@ -104,14 +125,8 @@ function resolveMode(blitzModeOn: unknown): WorldSummaryMode | null {
   return n === 0 ? "eternum" : "blitz";
 }
 
-function calculateHyperstructuresLeft(
-  maxRingCount: number,
-  createdCount: number,
-  twoPlayerMode: boolean,
-): number {
-  const total = twoPlayerMode
-    ? maxRingCount + 1
-    : 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
+function calculateHyperstructuresLeft(maxRingCount: number, createdCount: number, twoPlayerMode: boolean): number {
+  const total = twoPlayerMode ? maxRingCount + 1 : 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
   return Math.max(0, total - createdCount);
 }
 
@@ -120,6 +135,10 @@ function parseSummaryRow(row: Record<string, unknown>): SummaryFields {
   const twoPlayerMode = parseMaybeBoolean(row.two_player_mode) ?? false;
   const maxRingCount = parseMaybeHexToNumber(row.max_ring_count);
   const createdCount = parseMaybeHexToNumber(row.hyperstructure_created_count) ?? 0;
+  const registrationEndAt =
+    mode === "blitz"
+      ? (parseMaybeHexToNumber(row.registration_end_at) ?? parseMaybeHexToNumber(row.start_main_at))
+      : null;
 
   let numHyperstructuresLeft: number | null = null;
   if (mode === "blitz" && maxRingCount != null && maxRingCount > 0) {
@@ -137,10 +156,15 @@ function parseSummaryRow(row: Record<string, unknown>): SummaryFields {
     twoPlayerMode: parseMaybeBoolean(row.two_player_mode),
     seasonPassAddress: parseMaybeHexToAddress(row.season_pass_address),
     villagePassAddress: parseMaybeHexToAddress(row.village_pass_token_address),
+    worldAddress: null,
     prizeDistributionAddress: null,
+    entryTokenAddress: parseMaybeHexToAddress(row.entry_token_address),
     feeTokenAddress: parseMaybeHexToAddress(row.fee_token),
+    feeAmount: parseMaybeHexToBigInt(row.fee_amount)?.toString() ?? null,
     registrationCount: parseMaybeHexToNumber(row.registration_count),
     registrationCountMax: parseMaybeHexToNumber(row.registration_count_max),
+    registrationStartAt: parseMaybeHexToNumber(row.registration_start_at),
+    registrationEndAt,
     settledPlayersCount: parseMaybeHexToNumber(row.settled_players_count),
     settledRealmsCount: parseMaybeHexToNumber(row.settled_realms_count),
     settledVillagesCount: parseMaybeHexToNumber(row.settled_villages_count),
@@ -149,19 +173,29 @@ function parseSummaryRow(row: Record<string, unknown>): SummaryFields {
   };
 }
 
-export async function fetchWorldSummary(worldName: string, timeoutMs: number): Promise<SummaryFields> {
+export interface WorldSummaryFetchResult {
+  fields: SummaryFields;
+  ok: boolean;
+}
+
+export async function fetchWorldSummaryResult(worldName: string, timeoutMs: number): Promise<WorldSummaryFetchResult> {
   try {
     const url = `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql?query=${encodeURIComponent(WORLD_SUMMARY_QUERY)}`;
     const response = await fetch(url, {
       signal: AbortSignal.timeout(timeoutMs),
     });
-    if (!response.ok) return { ...NULL_SUMMARY };
+    if (!response.ok) return { fields: { ...NULL_SUMMARY }, ok: false };
 
     const rows = (await response.json()) as Record<string, unknown>[];
-    if (!Array.isArray(rows) || rows.length === 0) return { ...NULL_SUMMARY };
+    if (!Array.isArray(rows) || rows.length === 0) return { fields: { ...NULL_SUMMARY }, ok: false };
 
-    return parseSummaryRow(rows[0]!);
+    return { fields: parseSummaryRow(rows[0]!), ok: true };
   } catch {
-    return { ...NULL_SUMMARY };
+    return { fields: { ...NULL_SUMMARY }, ok: false };
   }
+}
+
+export async function fetchWorldSummary(worldName: string, timeoutMs: number): Promise<SummaryFields> {
+  const result = await fetchWorldSummaryResult(worldName, timeoutMs);
+  return result.fields;
 }

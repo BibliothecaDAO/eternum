@@ -1195,9 +1195,7 @@ export const UnifiedGameGrid = ({
         return {
           name: summary.name,
           chain: summary.chain,
-          // The summary endpoint does not carry worldAddress — callers resolve
-          // on-demand via the factory at selection time. Keep null here.
-          worldAddress: null,
+          worldAddress: summary.worldAddress ?? null,
           worldKey,
           status,
           gameStatus,

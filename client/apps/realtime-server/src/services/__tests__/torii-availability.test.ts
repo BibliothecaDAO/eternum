@@ -233,9 +233,32 @@ describe("ToriiAvailabilityService", () => {
         name: "alpha",
         chain: "mainnet",
         alive: true,
+        worldAddress: "0xabc",
         mode: "blitz",
         registrationCount: 3,
         startMainAt: 0x65b1ffe0,
+      });
+    });
+
+    it("preserves the last good summary when a later summary fetch fails", async () => {
+      mockFetch
+        .mockResolvedValueOnce(new Response(null, { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify([blitzSummaryRow]), { status: 200 }))
+        .mockResolvedValueOnce(new Response(null, { status: 200 }))
+        .mockResolvedValueOnce(new Response(null, { status: 500 }));
+
+      const service = new ToriiAvailabilityService({ factoryChains: [] });
+      await service.probeWorld("alpha", "mainnet", "0xprize", "0xabc");
+      await service.probeWorld("alpha", "mainnet", "0xprize", "0xabc");
+
+      const [summary] = service.getSummaries();
+      expect(summary).toMatchObject({
+        name: "alpha",
+        alive: true,
+        mode: "blitz",
+        startMainAt: 0x65b1ffe0,
+        prizeDistributionAddress: "0xprize",
+        worldAddress: "0xabc",
       });
     });
 

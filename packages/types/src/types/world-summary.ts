@@ -19,11 +19,16 @@ export interface WorldSummary {
 
   seasonPassAddress: string | null;
   villagePassAddress: string | null;
+  worldAddress: string | null;
   prizeDistributionAddress: string | null;
+  entryTokenAddress: string | null;
   feeTokenAddress: string | null;
+  feeAmount: string | null;
 
   registrationCount: number | null;
   registrationCountMax: number | null;
+  registrationStartAt: number | null;
+  registrationEndAt: number | null;
   settledPlayersCount: number | null;
   settledRealmsCount: number | null;
   settledVillagesCount: number | null;

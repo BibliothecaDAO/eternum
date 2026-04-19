@@ -6,6 +6,7 @@ vi.mock("../../../services/torii-availability", () => {
   const mockService = {
     getAvailability: vi.fn().mockReturnValue({}),
     getSummaries: vi.fn().mockReturnValue([]),
+    isSummaryReady: vi.fn().mockReturnValue(false),
     probeWorld: vi.fn(),
     pollOnce: vi.fn(),
     start: vi.fn(),
@@ -35,10 +36,15 @@ const stubSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
   twoPlayerMode: null,
   seasonPassAddress: null,
   villagePassAddress: null,
+  worldAddress: null,
   prizeDistributionAddress: null,
+  entryTokenAddress: null,
   feeTokenAddress: null,
+  feeAmount: null,
   registrationCount: null,
   registrationCountMax: null,
+  registrationStartAt: null,
+  registrationEndAt: null,
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
@@ -75,18 +81,23 @@ describe("worlds routes", () => {
     expect(body[1]).toMatchObject({ name: "beta", chain: "slot", alive: false });
   });
 
-  it("GET /summary returns an empty array when nothing is cached", async () => {
+  it("GET /summary returns an empty array with no-store when nothing is cached", async () => {
     (availabilityService.getSummaries as ReturnType<typeof vi.fn>).mockReturnValue([]);
+    (availabilityService.isSummaryReady as ReturnType<typeof vi.fn>).mockReturnValue(false);
 
     const res = await app.request("/api/worlds/summary");
 
     expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
     const body = await res.json();
     expect(body).toEqual([]);
   });
 
-  it("GET /summary sets Cache-Control for edge caching", async () => {
-    (availabilityService.getSummaries as ReturnType<typeof vi.fn>).mockReturnValue([]);
+  it("GET /summary sets Cache-Control for edge caching after the first poll completes", async () => {
+    (availabilityService.getSummaries as ReturnType<typeof vi.fn>).mockReturnValue([
+      stubSummary({ name: "alpha", mode: "blitz" }),
+    ]);
+    (availabilityService.isSummaryReady as ReturnType<typeof vi.fn>).mockReturnValue(true);
 
     const res = await app.request("/api/worlds/summary");
 

@@ -51,7 +51,11 @@ describe("fetchWorldSummary", () => {
     expect(summary.devModeOn).toBe(false);
     expect(summary.registrationCount).toBe(5);
     expect(summary.registrationCountMax).toBe(10);
+    expect(summary.entryTokenAddress).toBe("0x1234");
     expect(summary.feeTokenAddress).toBe("0xabcd");
+    expect(summary.feeAmount).toBe("255");
+    expect(summary.registrationStartAt).toBe(0x65b0fde0);
+    expect(summary.registrationEndAt).toBe(0x65b1ffe0);
     expect(summary.singleRealmMode).toBe(false);
     expect(summary.twoPlayerMode).toBe(true);
     // two-player + maxRingCount=2 → total = 2 + 1 = 3; created = 1; left = 2
@@ -85,6 +89,10 @@ describe("fetchWorldSummary", () => {
     expect(summary.settledRealmsCount).toBe(100);
     expect(summary.settledVillagesCount).toBe(25);
     expect(summary.registrationCount).toBeNull();
+    expect(summary.entryTokenAddress).toBeNull();
+    expect(summary.feeAmount).toBeNull();
+    expect(summary.registrationStartAt).toBeNull();
+    expect(summary.registrationEndAt).toBeNull();
     expect(summary.numHyperstructuresLeft).toBeNull();
   });
 

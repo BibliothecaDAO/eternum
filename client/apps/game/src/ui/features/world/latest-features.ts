@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-20",
+    title: "Faster Game Lists",
+    description:
+      "Landing game lists now load from a shared world summary, reducing startup requests while keeping registration, rewards, and review actions available.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-19",
     title: "Upcoming Game CTA",
     description:
