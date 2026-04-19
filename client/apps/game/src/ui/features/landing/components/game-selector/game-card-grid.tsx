@@ -31,6 +31,7 @@ import type { Chain } from "@contracts";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { primeGameEntry } from "@/game-entry-preload";
 import { describeAutoSettleRuntimePhase, resolveAutoSettleRuntimeState } from "./auto-settle-runtime";
@@ -153,6 +154,11 @@ export type WorldSelection = WorldSelectionInput;
 type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
 type MarketDataChain = "slot" | "mainnet";
 
+const isUpcomingOnlyStatusFilter = (statusFilter: GameStatus | GameStatus[] | undefined): boolean => {
+  if (Array.isArray(statusFilter)) return statusFilter.length === 1 && statusFilter[0] === "upcoming";
+  return statusFilter === "upcoming";
+};
+
 interface GameMarketSnapshot {
   market: MarketClass;
   chain: MarketDataChain;
@@ -234,6 +240,37 @@ const buildGameResolutionSignature = (game: GameData): string => {
     config?.numHyperstructuresLeft ?? "",
     config?.winnerJackpotAmount?.toString() ?? "",
   ].join(":");
+};
+
+const EmptyGameGridState = ({ showCreateGameCta }: { showCreateGameCta: boolean }) => {
+  if (!showCreateGameCta) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60px] text-center">
+        <p className="text-[10px] text-white/40">No games available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-[220px] flex-col items-center justify-center px-4 text-center">
+      <div className="mb-6 h-3 w-3 rotate-45 border border-amber-300/30 bg-amber-300/5" />
+      <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-white/45">No upcoming candidates.</p>
+      <p className="max-w-[240px] text-[11px] uppercase leading-6 tracking-[0.28em] text-white/70">
+        Forge a new game or wait for the next seeded batch.
+      </p>
+      <Link
+        to="/factory"
+        className={cn(
+          "mt-6 inline-flex h-10 items-center justify-center gap-2 border border-amber-300/25 px-4",
+          "bg-black/20 text-[11px] uppercase tracking-[0.2em] text-amber-100/80 transition-all",
+          "hover:border-amber-300/45 hover:bg-amber-300/10 hover:text-amber-100",
+        )}
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+        Forge New Game
+      </Link>
+    </div>
+  );
 };
 
 interface GameCardProps {
@@ -1363,6 +1400,7 @@ export const UnifiedGameGrid = ({
   // Wait for controller to reconnect if there's a stored session before showing games
   // This prevents the flash of "logged out" state on page refresh
   const isLoading = factoryWorldsLoading || factoryCheckingAvailability || isWaitingForReconnect;
+  const shouldShowCreateGameCta = isUpcomingOnlyStatusFilter(statusFilter);
 
   // Count by status
   const counts = useMemo(() => {
@@ -1518,9 +1556,7 @@ export const UnifiedGameGrid = ({
             </button>
           </div>
         ) : games.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[60px] text-center">
-            <p className="text-[10px] text-white/40">No games available</p>
-          </div>
+          <EmptyGameGridState showCreateGameCta={shouldShowCreateGameCta} />
         ) : layout === "vertical" ? (
           <div className="flex flex-col gap-3">
             {resolvedGames.map((game) => {
