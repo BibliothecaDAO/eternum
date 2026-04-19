@@ -483,17 +483,6 @@ export const buildRealmProductionPlan = ({
     return true;
   };
 
-  const creditSamePassOutput = (resourceId: ResourcesIds, produced: number) => {
-    if (!Number.isFinite(produced) || produced <= 0) return;
-    const prevTotal = totalAvailable.get(resourceId) ?? 0;
-    const newTotal = prevTotal + produced;
-    totalAvailable.set(resourceId, newTotal);
-
-    const consumedSoFar = consumptionByResource[resourceId] ?? 0;
-    const maxConsumable = Math.floor((newTotal * MAX_RESOURCE_ALLOCATION_PERCENT) / 100);
-    availableBudget.set(resourceId, Math.max(0, maxConsumable - consumedSoFar));
-  };
-
   const getTotal = (resourceId: ResourcesIds) => totalAvailable.get(resourceId) ?? 0;
   const getBudget = (resourceId: ResourcesIds) => availableBudget.get(resourceId) ?? 0;
 
@@ -588,7 +577,6 @@ export const buildRealmProductionPlan = ({
           } else {
             const produced = outputPerCycle * maxCycles;
             addToRecord(outputsByResource, resourceId, produced);
-            creditSamePassOutput(resourceId, produced);
             planCallset.resourceToResource.push({ resourceId, cycles: maxCycles });
             resourceExecutions.push({
               resourceId,
@@ -731,7 +719,6 @@ export const buildRealmProductionPlan = ({
           } else {
             const produced = outputPerCycle * maxCycles;
             addToRecord(outputsByResource, resourceId, produced);
-            creditSamePassOutput(resourceId, produced);
             planCallset.laborToResource.push({ resourceId, cycles: maxCycles });
             laborExecutions.push({
               resourceId,
