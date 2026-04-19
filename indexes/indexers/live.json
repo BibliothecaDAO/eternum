@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-17T03:51:40.984Z",
+  "updatedAt": "2026-04-19T00:48:32.782Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1293,6 +1293,19 @@
         "describedAt": "2026-04-17T03:51:40.984Z"
       },
       "updatedAt": "2026-04-17T03:51:40.984Z"
+    },
+    "bltz-snap-322": {
+      "gameName": "bltz-snap-322",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-snap-322/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-19T00:48:32.781Z"
+      },
+      "updatedAt": "2026-04-19T00:48:32.782Z"
     }
   }
 }
