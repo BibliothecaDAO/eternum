@@ -52,10 +52,25 @@ describe("buildOptimisticArmyTileUpdate", () => {
     expect(update!.guildName).toBe("Democritus");
     expect(update!.ownerStructureId).toBe(7);
     expect(update!.isDaydreamsAgent).toBe(false);
-    expect(update!.troopCount).toBe(123);
-    expect(update!.currentStamina).toBe(200);
-    expect(update!.maxStamina).toBe(400);
-    expect(update!.onChainStamina?.amount).toBe(200n);
+  });
+
+  it("does NOT propagate stale cached stamina / troop count from the army into the synthetic update", () => {
+    // Regression guard: stamina and troop count are owned by pending-stamina
+    // store + explorerTroops indexer stream. Leaking the pre-move cached
+    // values through the synthetic update desyncs the UI against pending /
+    // on-chain sources.
+    const army = makeArmy({
+      currentStamina: 999,
+      maxStamina: 1000,
+      onChainStamina: { amount: 777n, updatedTick: 1234 },
+      troopCount: 42,
+    });
+    const update = buildOptimisticArmyTileUpdate(army, { col: 2147483750, row: 2147483749 });
+
+    expect(update!.currentStamina).toBeUndefined();
+    expect(update!.maxStamina).toBeUndefined();
+    expect(update!.onChainStamina).toBeUndefined();
+    expect(update!.troopCount).toBeUndefined();
   });
 
   it("uses the requested target hex, not the army's current position", () => {

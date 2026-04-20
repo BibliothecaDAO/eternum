@@ -10,13 +10,28 @@ import type { ArmyData } from "../types/common";
  * local move confirms. Returns null when the tracked army is not available —
  * in that case the caller should wait for the authoritative indexer update.
  *
- * The output is intentionally minimal: it only needs the fields the cache sync
- * and army-manager transition path consume. Troop count / stamina / battle data
- * continue to converge through the real indexer stream. `battleData` is
- * deliberately omitted — travel can only originate from a non-battle state, so
- * there is no battle context to propagate optimistically, and downstream
- * `ArmyManager.onTileUpdate` destructures it with `|| {}` so the absence is
- * safe.
+ * The output is the minimum set of fields the position-handoff path consumes:
+ * entity id, destination hex, troop identity, and owner. We deliberately do NOT
+ * propagate stamina, troop count, or battle data:
+ *
+ *   - Stamina is owned by two sources: `useArmyStaminaSourceStore` (pending,
+ *     written at move submit with the debited amount + current tick) and the
+ *     on-chain update delivered via `onExplorerTroopsUpdate`. The synthetic
+ *     update's `army.onChainStamina` / `army.currentStamina` are stale cached
+ *     snapshots from BEFORE the move and would desync the UI from the pending
+ *     / on-chain sources if any path ever read them. Omitting them means the
+ *     stamina display is driven end-to-end by pending (until on-chain catches
+ *     up) with no chance of the optimistic path leaking pre-move values.
+ *   - Troop count is only touched by battles, and travel never enters a battle
+ *     tile — the authoritative explorer-troops update is the source of truth.
+ *   - Battle data: travel can only originate from a non-battle state, so there
+ *     is no battle context to propagate, and downstream `onTileUpdate`
+ *     destructures `battleData` with `|| {}` so the absence is safe.
+ *
+ * The `onTileUpdate` handler's existing-army branch ignores these fields
+ * anyway (it only calls `moveArmy` + `syncTrackedArmyOwnerState`), so omitting
+ * them changes nothing for the happy path — it just closes the door on any
+ * future reader picking up stale cached stamina from the optimistic update.
  */
 export function buildOptimisticArmyTileUpdate(
   army: ArmyData | undefined,
@@ -36,10 +51,6 @@ export function buildOptimisticArmyTileUpdate(
     guildName: army.owner.guildName,
     ownerAddress: army.owner.address,
     ownerStructureId: army.owningStructureId,
-    troopCount: army.troopCount,
-    currentStamina: army.currentStamina,
-    maxStamina: army.maxStamina,
-    onChainStamina: army.onChainStamina,
   };
 }
 
