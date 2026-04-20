@@ -23,9 +23,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-20",
-    title: "Faster Army Movement",
+    title: "Faster Army Travel",
     description:
-      "Local army moves now start animating the moment the transaction confirms, removing the pause that used to wait for the indexer to echo the new tile.",
+      "Local travel moves now start animating the moment the transaction confirms, removing the pause that used to wait for the indexer to echo the new tile. Explore still waits on the indexer because treasure rewards can rewind the unit.",
     type: "improvement",
     gameSlug: "eternum",
   },

@@ -90,20 +90,27 @@ directly from `transactionComplete` without coordination flags. The later indexe
 ## Non-goals
 
 - Optimistic updates for remote (other players') armies. Those still flow exclusively through the indexer.
+- Optimistic resolution for **explore** actions. The explore contract
+  (`contracts/game/src/systems/combat/contracts/troop_movement.cairo:170-286`) uses on-chain VRF to decide whether
+  treasure is found. When treasure _is_ found, the explorer is rewound to its source hex (lines 277-286). Because we
+  cannot predict the VRF result client-side, optimistically animating to the requested destination would produce a
+  visible source → destination → source ping-pong whenever treasure is discovered. Explore therefore continues to use
+  the indexer-driven path (tx confirmed → `tx_confirmed` latency phase only → real `onTileUpdate` drives the move).
 - Optimistic stamina or troop count updates. `queuePendingMovementStamina(...)` already handles stamina; indexer still
   owns troop counts.
-- Optimistic explore result (new biome reveal, extra rewards). Biome/reward data still arrives through Torii; only the
-  army's visible position is resolved optimistically.
+- Optimistic explore result (new biome reveal, extra rewards). Biome/reward data still arrives through Torii.
 - Changing `ArmyActionManager`, system calls, or tx confirmation plumbing. Only the renderer-side listener changes.
 
 ## Proposed Behavior
 
-### New lifecycle for local moves
+### New lifecycle for local travel moves
+
+Explore actions deliberately skip step 4 and therefore short-circuit at step 5 (see Non-goals above).
 
 1. submit move
 2. mark pending + travel FX + arrival ghost (unchanged)
 3. record `tx_submitted`; store `{txHash -> entityId}` (unchanged)
-4. store `{txHash -> targetHex}` alongside the entity map
+4. **travel actions only** — store `{txHash -> targetHex}` alongside the entity map
 5. **on `transactionComplete`**:
    - record `tx_confirmed`
    - synthesize an `ExplorerTroopsTileSystemUpdate` using tracked army data + cached target hex

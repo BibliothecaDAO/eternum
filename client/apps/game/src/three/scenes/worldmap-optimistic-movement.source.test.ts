@@ -15,6 +15,18 @@ describe("Worldmap optimistic movement wiring", () => {
     expect(source).toMatch(/pendingArmyMovementTxTargets\.set\(\s*txHash\s*,/);
   });
 
+  it("only registers the optimistic target for travel actions (explore rewinds on VRF treasure hit)", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    const setIndex = source.indexOf("this.pendingArmyMovementTxTargets.set(txHash");
+    expect(setIndex).toBeGreaterThan(-1);
+    // Walk backwards from the set() call and find the nearest enclosing
+    // `if (...)` condition — it must gate on isTravelAction so explore txs
+    // never enter the optimistic pipeline.
+    const window = source.slice(Math.max(0, setIndex - 400), setIndex);
+    expect(window).toMatch(/if \(isTravelAction\)/);
+  });
+
   it("imports the pure optimistic update builder", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 

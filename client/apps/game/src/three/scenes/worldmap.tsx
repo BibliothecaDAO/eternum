@@ -2563,10 +2563,19 @@ export default class WorldmapScene extends WarpTravel {
           });
           if (txHash) {
             this.pendingArmyMovementTxMap.set(txHash, selectedEntityId);
-            this.pendingArmyMovementTxTargets.set(txHash, {
-              col: targetHex.col,
-              row: targetHex.row,
-            });
+            // Optimistic resolution is only safe for travel: the explore
+            // contract uses on-chain VRF to decide whether to grant treasure,
+            // and on treasure discovery (troop_movement.cairo:272-286) the
+            // explorer is rewound to its source hex. Since we cannot predict
+            // that outcome client-side, registering the destination here
+            // would animate a move that the indexer will then contradict,
+            // producing a source → dest → source ping-pong.
+            if (isTravelAction) {
+              this.pendingArmyMovementTxTargets.set(txHash, {
+                col: targetHex.col,
+                row: targetHex.row,
+              });
+            }
             recordArmyMovementLatencyPhase({
               phase: "tx_submitted",
               source: "worldmap",
