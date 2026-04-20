@@ -50,8 +50,16 @@ describe("resolveAutoSettleRuntimeState", () => {
     });
   });
 
-  it("opens the entry route exactly when the countdown reaches settlement time", () => {
+  it("waits for onchain settlement time after the visible countdown reaches settlement time", () => {
     expect(resolveAutoSettleRuntimeState(createInput({ nowSec: 130 }))).toMatchObject({
+      phase: "prewarming",
+      shouldOpenEntry: false,
+      shouldRefreshAvailability: true,
+    });
+  });
+
+  it("opens the entry route after the onchain settlement delay", () => {
+    expect(resolveAutoSettleRuntimeState(createInput({ nowSec: 132 }))).toMatchObject({
       phase: "opening",
       shouldOpenEntry: true,
       shouldRefreshAvailability: true,
