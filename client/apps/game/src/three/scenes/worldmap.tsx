@@ -206,6 +206,7 @@ import {
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
+import { buildOptimisticArmyTileUpdate } from "./worldmap-optimistic-movement";
 import { findSupersededArmyRemoval, isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
@@ -611,6 +612,8 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
+  private pendingArmyMovementTxTargets: Map<string, HexPosition> = new Map();
+  private optimisticallyResolvedArmies: Set<ID> = new Set();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
 
   private get hydratedChunkRefreshes(): Set<string> {
@@ -1077,6 +1080,13 @@ export default class WorldmapScene extends WarpTravel {
         entityId,
         txHash,
       });
+
+      const targetHex = this.pendingArmyMovementTxTargets.get(txHash);
+      if (!targetHex) {
+        return;
+      }
+
+      void this.resolveArmyMovementOptimistically({ entityId, txHash, targetHex });
     };
 
     this.handleTransactionFailed = (payload: { transactionHash?: string }) => {
@@ -1097,6 +1107,7 @@ export default class WorldmapScene extends WarpTravel {
         this.arrivalGhostManager?.clearArrivalGhost(plan.entityId, "tx_failed");
       }
       this.pendingArmyMovementTxMap.delete(txHash);
+      this.pendingArmyMovementTxTargets.delete(txHash);
     };
 
     dojoContext.network?.provider?.on("transactionComplete", this.handleTransactionComplete);
@@ -1292,6 +1303,19 @@ export default class WorldmapScene extends WarpTravel {
             row: update.hexCoords.row,
           },
         });
+
+        if (this.optimisticallyResolvedArmies.delete(update.entityId)) {
+          recordArmyMovementLatencyPhase({
+            phase: "movement_optimistic_convergence",
+            source: "worldmap",
+            entityId: update.entityId,
+            details: {
+              col: update.hexCoords.col,
+              row: update.hexCoords.row,
+            },
+          });
+        }
+
         this.armyLastTileSyncAt.set(update.entityId, Date.now());
         if (recoveredPendingRemoval) {
           void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
@@ -2539,6 +2563,10 @@ export default class WorldmapScene extends WarpTravel {
           });
           if (txHash) {
             this.pendingArmyMovementTxMap.set(txHash, selectedEntityId);
+            this.pendingArmyMovementTxTargets.set(txHash, {
+              col: targetHex.col,
+              row: targetHex.row,
+            });
             recordArmyMovementLatencyPhase({
               phase: "tx_submitted",
               source: "worldmap",
@@ -2739,13 +2767,55 @@ export default class WorldmapScene extends WarpTravel {
     for (const [txHash, eid] of this.pendingArmyMovementTxMap) {
       if (eid === entityId) {
         this.pendingArmyMovementTxMap.delete(txHash);
+        this.pendingArmyMovementTxTargets.delete(txHash);
       }
+    }
+
+    // Keep the optimistic marker alive on the "movement_started" clear so the
+    // authoritative indexer update can still record convergence. Failure and
+    // stale-timeout paths arrive with other reasons and drop the marker.
+    if (reason !== "movement_started") {
+      this.optimisticallyResolvedArmies.delete(entityId);
     }
 
     const trackedEffect = this.travelEffectsByEntity.get(entityId);
     if (trackedEffect && shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason })) {
       trackedEffect.cleanup();
     }
+  }
+
+  private async resolveArmyMovementOptimistically(params: {
+    entityId: ID;
+    txHash: string;
+    targetHex: HexPosition;
+  }): Promise<void> {
+    const { entityId, txHash, targetHex } = params;
+
+    if (this.optimisticallyResolvedArmies.has(entityId)) {
+      return;
+    }
+
+    const army = this.armyManager.getArmy(entityId);
+    const syntheticUpdate = buildOptimisticArmyTileUpdate(army, targetHex);
+    if (!syntheticUpdate) {
+      return;
+    }
+
+    this.optimisticallyResolvedArmies.add(entityId);
+
+    recordArmyMovementLatencyPhase({
+      phase: "movement_resolved_optimistically",
+      source: "worldmap",
+      entityId,
+      txHash,
+      details: {
+        col: targetHex.col,
+        row: targetHex.row,
+      },
+    });
+
+    this.updateArmyHexes(syntheticUpdate);
+    await this.armyManager.onTileUpdate(syntheticUpdate);
   }
 
   private installPendingMovementVisualLifecycle(input: {
@@ -8065,6 +8135,8 @@ export default class WorldmapScene extends WarpTravel {
       this.dojo.network?.provider?.off("transactionFailed", this.handleTransactionFailed);
     }
     this.pendingArmyMovementTxMap.clear();
+    this.pendingArmyMovementTxTargets.clear();
+    this.optimisticallyResolvedArmies.clear();
     this.stopToriiBoundsCounterLog();
     if (this.toriiStreamManager === activeSpatialStreamManager) {
       activeSpatialStreamManager = null;

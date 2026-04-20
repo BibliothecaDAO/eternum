@@ -20,6 +20,13 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(source).toContain('"movement_completed"');
   });
 
+  it("records optimistic resolution and indexer convergence phases", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    expect(source).toContain('"movement_resolved_optimistically"');
+    expect(source).toContain('"movement_optimistic_convergence"');
+  });
+
   it("uses an authoritative world-sync timeout longer than the old 10 second stale cutoff", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 

@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-20",
+    title: "Faster Army Movement",
+    description:
+      "Local army moves now start animating the moment the transaction confirms, removing the pause that used to wait for the indexer to echo the new tile.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-20",
     title: "Blitz Settlement Sync",
     description:
       "Blitz settlement now waits for the requested settled realm count before advancing, so fresh entries no longer get stuck on finalizing when the index briefly returns an empty snapshot.",
