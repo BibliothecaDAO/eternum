@@ -74,4 +74,33 @@ describe("Worldmap optimistic movement wiring", () => {
     expect(methodBody).toContain("pendingArmyMovementTxTargets");
     expect(methodBody).toContain("optimisticallyResolvedArmies");
   });
+
+  it("drops a stale optimistic marker when a new pending movement starts so a stalled convergence cannot block future optimistic resolves", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    const methodStart = source.indexOf("private markPendingArmyMovement");
+    expect(methodStart).toBeGreaterThan(-1);
+    const methodBody = source.slice(methodStart, methodStart + 800);
+    expect(methodBody).toContain("this.optimisticallyResolvedArmies.delete(entityId)");
+  });
+
+  it("mirrors the post-tile-update arrow recalculation the indexer handler runs so overlays follow the optimistic move", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    const methodMatch = source.match(/private (?:async )?resolveArmyMovementOptimistically\b/);
+    expect(methodMatch).not.toBeNull();
+    const methodStart = methodMatch!.index!;
+    const methodBody = source.slice(methodStart, methodStart + 2500);
+    expect(methodBody).toContain("this.recalculateArrowsForEntity(entityId)");
+    expect(methodBody).toContain("this.recalculateArrowsForEntitiesRelatedTo(entityId)");
+  });
+
+  it("logs optimistic resolver failures instead of silently dropping them on the fire-and-forget path", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    const handlerStart = source.indexOf("this.handleTransactionComplete");
+    expect(handlerStart).toBeGreaterThan(-1);
+    const handlerBody = source.slice(handlerStart, handlerStart + 2200);
+    expect(handlerBody).toMatch(/resolveArmyMovementOptimistically\([\s\S]*?\)\s*\.catch\(/);
+  });
 });

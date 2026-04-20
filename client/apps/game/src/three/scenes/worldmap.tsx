@@ -1086,7 +1086,9 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
-      void this.resolveArmyMovementOptimistically({ entityId, txHash, targetHex });
+      this.resolveArmyMovementOptimistically({ entityId, txHash, targetHex }).catch((error) => {
+        console.error("[worldmap] optimistic army movement resolution failed", error);
+      });
     };
 
     this.handleTransactionFailed = (payload: { transactionHash?: string }) => {
@@ -2565,7 +2567,7 @@ export default class WorldmapScene extends WarpTravel {
             this.pendingArmyMovementTxMap.set(txHash, selectedEntityId);
             // Optimistic resolution is only safe for travel: the explore
             // contract uses on-chain VRF to decide whether to grant treasure,
-            // and on treasure discovery (troop_movement.cairo:272-286) the
+            // and on treasure discovery (troop_movement.cairo:277-286) the
             // explorer is rewound to its source hex. Since we cannot predict
             // that outcome client-side, registering the destination here
             // would animate a move that the indexer will then contradict,
@@ -2772,7 +2774,12 @@ export default class WorldmapScene extends WarpTravel {
       this.pendingArmyMovementFallbackTimeouts.delete(entityId);
     }
 
-    // Remove any txHash entries pointing to this entity
+    // Remove any txHash entries pointing to this entity. Note: if two moves
+    // are queued for the same entity, the first `movement_started` clear will
+    // drop txMap/txTarget entries for BOTH — the second move's
+    // `handleTransactionComplete` will then fall back to the indexer path.
+    // This mirrors the pre-existing txMap-cleanup semantics and avoids
+    // racing a stale optimistic animation against a newer one.
     for (const [txHash, eid] of this.pendingArmyMovementTxMap) {
       if (eid === entityId) {
         this.pendingArmyMovementTxMap.delete(txHash);
@@ -2825,6 +2832,18 @@ export default class WorldmapScene extends WarpTravel {
 
     this.updateArmyHexes(syntheticUpdate);
     await this.armyManager.onTileUpdate(syntheticUpdate);
+
+    // Mirror the post-tile-update hooks the authoritative indexer handler runs
+    // so direction arrows and related-entity overlays follow the optimistic
+    // move instead of pointing at the pre-move hex until Torii converges.
+    // Chunk cache invalidation is already performed inside updateArmyHexes.
+    // armyLastTileSyncAt is intentionally NOT updated here — the staleness
+    // fallback should still consider this tile unsynced until the indexer
+    // actually delivers the authoritative update.
+    this.recalculateArrowsForEntity(entityId);
+    if (this.armiesPositions.has(entityId)) {
+      this.recalculateArrowsForEntitiesRelatedTo(entityId);
+    }
   }
 
   private installPendingMovementVisualLifecycle(input: {
@@ -2872,6 +2891,12 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private markPendingArmyMovement(entityId: ID): void {
+    // Drop any lingering optimistic marker from a prior move. The marker is
+    // intentionally preserved across `movement_started` so indexer convergence
+    // can log a phase — but if convergence never arrived (Torii stall, reorg,
+    // client disconnect) and the user initiates a new move, we must not
+    // short-circuit the next optimistic resolve at `optimisticallyResolvedArmies.has`.
+    this.optimisticallyResolvedArmies.delete(entityId);
     this.pendingArmyMovements.add(entityId);
     this.pendingArmyMovementStartedAt.set(entityId, Date.now());
     this.schedulePendingArmyMovementFallback(entityId);

@@ -92,7 +92,8 @@ directly from `transactionComplete` without coordination flags. The later indexe
 - Optimistic updates for remote (other players') armies. Those still flow exclusively through the indexer.
 - Optimistic resolution for **explore** actions. The explore contract
   (`contracts/game/src/systems/combat/contracts/troop_movement.cairo:170-286`) uses on-chain VRF to decide whether
-  treasure is found. When treasure _is_ found, the explorer is rewound to its source hex (lines 277-286). Because we
+  treasure is found. When treasure _is_ found, the explorer is rewound to its source hex (lines 277-286 — the
+  `occupy_destination == false` branch sets `explorer.coord = from` and re-occupies the source tile). Because we
   cannot predict the VRF result client-side, optimistically animating to the requested destination would produce a
   visible source → destination → source ping-pong whenever treasure is discovered. Explore therefore continues to use
   the indexer-driven path (tx confirmed → `tx_confirmed` latency phase only → real `onTileUpdate` drives the move).

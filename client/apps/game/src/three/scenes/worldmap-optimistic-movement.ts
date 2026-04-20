@@ -11,7 +11,11 @@ import type { ArmyData } from "../types/common";
  *
  * The output is intentionally minimal: it only needs the fields the cache sync
  * and army-manager transition path consume. Troop count / stamina / battle data
- * continue to converge through the real indexer stream.
+ * continue to converge through the real indexer stream. `battleData` is
+ * deliberately omitted — travel can only originate from a non-battle state, so
+ * there is no battle context to propagate optimistically, and downstream
+ * `ArmyManager.onTileUpdate` destructures it with `|| {}` so the absence is
+ * safe.
  */
 export function buildOptimisticArmyTileUpdate(
   army: ArmyData | undefined,
