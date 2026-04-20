@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-20T12:42:16.023Z",
+  "updatedAt": "2026-04-20T19:43:27.813Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1332,6 +1332,19 @@
         "describedAt": "2026-04-20T12:42:16.023Z"
       },
       "updatedAt": "2026-04-20T12:42:16.023Z"
+    },
+    "bltz-dash-740": {
+      "gameName": "bltz-dash-740",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-dash-740/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-20T19:43:27.813Z"
+      },
+      "updatedAt": "2026-04-20T19:43:27.813Z"
     }
   }
 }
