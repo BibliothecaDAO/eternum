@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24652784336-1",
   "currentStepId": null,
   "createdAt": "2026-04-20T06:56:46.746Z",
-  "updatedAt": "2026-04-20T12:40:44.904Z",
+  "updatedAt": "2026-04-20T12:42:13.401Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -88,14 +88,12 @@
     "configureTxHash": "0x3bb8b0509d9db1f230fe9208089962c7570763f525b03749cff0a00da71f85e",
     "worldConfigTxHash": "0x3bb8b0509d9db1f230fe9208089962c7570763f525b03749cff0a00da71f85e",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-clash-490/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-20T10:32:33.232Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-04-20T12:40:43.394Z"
+    "lastIndexerDescribeAt": "2026-04-20T12:42:13.401Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-04-20T07:00:38.827Z"
 }
