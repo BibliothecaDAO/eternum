@@ -458,7 +458,8 @@ const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
 // Hard timeout wrapping the entire chunk transition (phase timeouts + post-phase work).
 // Catches cases where post-phase awaits (e.g. manager catch-up, finalize rollback)
 // hang past all per-phase timeouts and would otherwise lock isChunkTransitioning.
-const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_TIMEOUT_MS * 4, 30_000);
+// Kept tight so a wedged transition recovers inside ~20s instead of 45s+.
+const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_TIMEOUT_MS + 8_000, 20_000);
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
