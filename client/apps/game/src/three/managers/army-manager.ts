@@ -1800,6 +1800,13 @@ export class ArmyManager {
 
     if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
 
+    // Claim the destination synchronously before the pathfinding await so that
+    // any concurrent moveArmy(entity, sameDest) call — e.g. an authoritative
+    // Torii tile update racing our optimistic resolution — sees the updated
+    // position and hits the same-position early return above instead of
+    // starting a second animation that would rewind the in-flight one.
+    this.armies.set(entityId, { ...armyData, hexCoords });
+
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
     const staminaMax = Number(maxTroopStamina?.staminaMax ?? 0);
@@ -1838,7 +1845,6 @@ export class ArmyManager {
 
     // Add to destination bucket (keep in source bucket too - updateSpatialIndex modified below)
     this.addToSpatialBucket(entityId, hexCoords);
-    this.armies.set(entityId, { ...armyData, hexCoords });
 
     const matrixIndex = armyData.matrixIndex;
     if (matrixIndex === undefined) {
