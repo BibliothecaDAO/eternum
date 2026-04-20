@@ -35,9 +35,9 @@ type SyncSubscriptionStub = {
   ready: Promise<void>;
 };
 
-const syncSubscription = (cancel: () => void): SyncSubscriptionStub => ({
+const syncSubscription = (cancel: () => void, ready: Promise<void> = Promise.resolve()): SyncSubscriptionStub => ({
   cancel,
-  ready: Promise.resolve(),
+  ready,
 });
 
 const descriptor = (minCol: number): BoundsDescriptor => ({
@@ -103,6 +103,87 @@ describe("ToriiStreamManager", () => {
     expect(secondResult.outcome).toBe("applied");
     expect(cancelFirst).toHaveBeenCalledTimes(1);
     expect(cancelSecond).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies bounds while monitoring spatial TileOpt readiness in the background", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const ready = deferred<void>();
+    const cancel = vi.fn();
+    const onSpatialReadyTimeout = vi.fn();
+    syncMock.mockImplementation(async () => syncSubscription(cancel, ready.promise));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+      onSpatialReadyTimeout,
+    });
+
+    const result = await manager.switchBounds(descriptor(0));
+    ready.resolve();
+    await Promise.resolve();
+
+    manager.cancelCurrentSubscription();
+
+    expect(result.outcome).toBe("applied");
+    expect(onSpatialReadyTimeout).not.toHaveBeenCalled();
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports spatial TileOpt readiness timeout without blocking bounds application", async () => {
+    vi.useFakeTimers();
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const onSpatialReadyTimeout = vi.fn();
+    const cancel = vi.fn();
+    syncMock.mockImplementation(async () => syncSubscription(cancel, new Promise<void>(() => {})));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+      onSpatialReadyTimeout,
+      subscriptionSetupTimeoutMs: 25,
+    });
+
+    const result = await manager.switchBounds(descriptor(0));
+
+    expect(result.outcome).toBe("applied");
+    expect(onSpatialReadyTimeout).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(25);
+
+    expect(onSpatialReadyTimeout).toHaveBeenCalledWith({
+      elapsedMs: expect.any(Number),
+      requestId: 1,
+      timeoutMs: 25,
+    });
+
+    manager.cancelCurrentSubscription();
+    vi.useRealTimers();
+  });
+
+  it("uses TileOpt as the spatial stream readiness entity", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    syncMock.mockImplementationOnce(async (...args) => {
+      const options = args[5] as
+        | {
+            isReadyEntity?: (entity: { models: Record<string, unknown> }) => boolean;
+          }
+        | undefined;
+
+      expect(options?.isReadyEntity?.({ models: { "s1_eternum-Structure": {} } })).toBe(false);
+      expect(options?.isReadyEntity?.({ models: { "s1_eternum-TileOpt": {} } })).toBe(true);
+
+      return syncSubscription(vi.fn());
+    });
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    await manager.switchBounds(descriptor(0));
   });
 
   it("drops stale middle switch during A->B->A bounds churn", async () => {

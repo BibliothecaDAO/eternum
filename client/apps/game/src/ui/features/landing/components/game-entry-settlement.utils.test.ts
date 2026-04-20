@@ -9,6 +9,7 @@ import {
   deriveSettlementStatus,
   getExpectedSettlementCount,
   hasReachedSettlementTarget,
+  parseSnapshotRegistrationRow,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
 
@@ -250,6 +251,25 @@ describe("buildSettlementExecutionPlan", () => {
     expect(plan.missingAssignmentRegistration).toBe(false);
   });
 
+  it("continues partial mainnet settlement when coords indexing is unavailable", () => {
+    const plan = buildSettlementExecutionPlan({
+      isMainnet: true,
+      singleRealmMode: false,
+      snapshot: snapshot({
+        registered: false,
+        onceRegistered: true,
+        coordsCount: 0,
+        settledCount: 1,
+      }),
+    });
+
+    expect(plan.targetSettleCount).toBe(3);
+    expect(plan.shouldAssignAndSettle).toBe(false);
+    expect(plan.initialSettleCount).toBe(0);
+    expect(plan.extraSettleCalls).toBe(2);
+    expect(plan.missingAssignmentRegistration).toBe(false);
+  });
+
   it("plans single-call non-mainnet multi-realm settlement", () => {
     const plan = buildSettlementExecutionPlan({
       isMainnet: false,
@@ -296,5 +316,38 @@ describe("buildSettlementExecutionPlan", () => {
 
     expect(plan.shouldAssignAndSettle).toBe(true);
     expect(plan.missingAssignmentRegistration).toBe(true);
+  });
+});
+
+describe("parseSnapshotRegistrationRow", () => {
+  it("returns false for null / undefined rows", () => {
+    expect(parseSnapshotRegistrationRow(null)).toEqual({ registered: false, onceRegistered: false });
+    expect(parseSnapshotRegistrationRow(undefined)).toEqual({ registered: false, onceRegistered: false });
+    expect(parseSnapshotRegistrationRow({})).toEqual({ registered: false, onceRegistered: false });
+  });
+
+  it("accepts native booleans", () => {
+    expect(parseSnapshotRegistrationRow({ registered: true, once_registered: false })).toEqual({
+      registered: true,
+      onceRegistered: false,
+    });
+  });
+
+  it("accepts numeric 1/0 from Torii SQL", () => {
+    expect(parseSnapshotRegistrationRow({ registered: 1, once_registered: 0 })).toEqual({
+      registered: true,
+      onceRegistered: false,
+    });
+    expect(parseSnapshotRegistrationRow({ registered: 0, once_registered: 1 })).toEqual({
+      registered: false,
+      onceRegistered: true,
+    });
+  });
+
+  it('accepts string "1"/"0" from Torii SQL', () => {
+    expect(parseSnapshotRegistrationRow({ registered: "0", once_registered: "1" })).toEqual({
+      registered: false,
+      onceRegistered: true,
+    });
   });
 });

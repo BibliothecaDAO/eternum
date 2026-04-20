@@ -14,6 +14,11 @@ interface SetupToriiSubscriptionsInput {
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 }
 
+interface ManagedToriiSubscriptionSetup {
+  cancelResolved: () => void;
+  promise: Promise<ToriiCancelableSubscription>;
+}
+
 class ToriiSubscriptionSetupTimeoutError extends Error {
   readonly label: string;
   readonly timeoutMs: number;
@@ -71,36 +76,74 @@ async function resolveToriiSubscriptionWithTimeout(
   });
 }
 
+function createManagedToriiSubscriptionSetup(
+  label: string,
+  createSubscription: () => Promise<ToriiCancelableSubscription>,
+  timeoutMs?: number,
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void,
+): ManagedToriiSubscriptionSetup {
+  let resolvedSubscription: ToriiCancelableSubscription | null = null;
+  let cancelOnResolve = false;
+
+  const promise = resolveToriiSubscriptionWithTimeout(
+    label,
+    createSubscription,
+    timeoutMs,
+    onSubscriptionSetupTimeout,
+  ).then((subscription) => {
+    if (cancelOnResolve) {
+      subscription.cancel();
+      return subscription;
+    }
+
+    resolvedSubscription = subscription;
+    return subscription;
+  });
+
+  return {
+    cancelResolved: () => {
+      if (resolvedSubscription) {
+        resolvedSubscription.cancel();
+        return;
+      }
+
+      cancelOnResolve = true;
+    },
+    promise,
+  };
+}
+
 export async function setupToriiSubscriptions({
   createEntitySubscription,
   createEventSubscription,
   subscriptionSetupTimeoutMs,
   onSubscriptionSetupTimeout,
 }: SetupToriiSubscriptionsInput): Promise<ToriiCancelableSubscription> {
-  let entitySubscription: ToriiCancelableSubscription | null = null;
+  const entitySetup = createManagedToriiSubscriptionSetup(
+    "entity subscription",
+    createEntitySubscription,
+    subscriptionSetupTimeoutMs,
+    onSubscriptionSetupTimeout,
+  );
+  const eventSetup = createManagedToriiSubscriptionSetup(
+    "event subscription",
+    createEventSubscription,
+    subscriptionSetupTimeoutMs,
+    onSubscriptionSetupTimeout,
+  );
 
   try {
-    entitySubscription = await resolveToriiSubscriptionWithTimeout(
-      "entity subscription",
-      createEntitySubscription,
-      subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout,
-    );
-    const eventSubscription = await resolveToriiSubscriptionWithTimeout(
-      "event subscription",
-      createEventSubscription,
-      subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout,
-    );
+    const [entitySubscription, eventSubscription] = await Promise.all([entitySetup.promise, eventSetup.promise]);
 
     return {
       cancel: () => {
-        entitySubscription?.cancel();
+        entitySubscription.cancel();
         eventSubscription.cancel();
       },
     };
   } catch (error) {
-    entitySubscription?.cancel();
+    entitySetup.cancelResolved();
+    eventSetup.cancelResolved();
     throw error;
   }
 }
