@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -25,5 +27,15 @@ describe("Game card forge visibility", () => {
     expect(source).toContain("const shouldShowCreateGameCta = isUpcomingOnlyStatusFilter(statusFilter);");
     expect(source).toContain('to="/factory"');
     expect(source).toContain("Forge New Game");
+  });
+
+  it("uses complete forge labels on the game card action", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/components/game-selector/game-card-grid.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("All Forged");
+    expect(source).toContain("Hyperstructures");
   });
 });

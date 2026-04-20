@@ -114,10 +114,6 @@ export const resolveGameEntryModalPhase = ({
   canPlay,
   isBlitzSettlementUnlocked,
 }: ResolveGameEntryModalPhaseInput): GameEntryModalPhase => {
-  if (isForgeMode && isBlitzMode) {
-    return "forge";
-  }
-
   if (hasPhaseError || bootstrapStatus === "error") {
     return "error";
   }
@@ -132,6 +128,10 @@ export const resolveGameEntryModalPhase = ({
 
   if (worldMode === "unknown" || isCheckingWorldAvailability || !hasWorldMeta) {
     return "loading";
+  }
+
+  if (isForgeMode && isBlitzMode) {
+    return "forge";
   }
 
   if (isEternumMode) {
