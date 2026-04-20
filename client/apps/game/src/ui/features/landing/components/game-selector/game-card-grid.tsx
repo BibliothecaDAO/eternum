@@ -1,15 +1,14 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
-import {
-  getAvailabilityStatus,
-  getWorldKey,
-  useWorldsAvailability,
-  type WorldConfigMeta,
-} from "@/hooks/use-world-availability";
+import { summaryToWorldConfigMeta } from "@/hooks/summary-to-world-config-meta";
+import { usePlayerWorldRegistrations, getWorldSummaryKey } from "@/hooks/use-player-world-registrations";
+import { type WorldConfigMeta } from "@/hooks/use-world-availability";
+import { useWorldJackpot } from "@/hooks/use-world-jackpot";
+import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
+import type { WorldSummary } from "@bibliothecadao/types";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { findMarketByPrizeAddressAcrossChains, getPmSqlApiForUrl } from "@/pm/hooks/queries";
@@ -339,8 +338,17 @@ const GameCard = ({
   const showForgeButton = isBlitzMode && game.config?.numHyperstructuresLeft !== null && playerAddress;
   const lordsFeeAmount = game.config?.feeAmount ?? 0n;
   const hasLordsFee = lordsFeeAmount > 0n;
-  const winnerJackpotAmount = game.config?.winnerJackpotAmount ?? 0n;
   const isMainnetGame = game.chain === "mainnet";
+  // Jackpot is resolved on-demand via useWorldJackpot now — the bulk summary
+  // does not carry per-world balances. Gate the RPC call on mainnet cards
+  // where we actually render the prize pool.
+  const { data: jackpotBalance } = useWorldJackpot({
+    chain: game.chain,
+    feeTokenAddress: game.config?.feeTokenAddress ?? null,
+    prizeDistributionAddress: game.config?.prizeDistributionAddress ?? null,
+    enabled: isMainnetGame && Boolean(game.config?.prizeDistributionAddress),
+  });
+  const winnerJackpotAmount = jackpotBalance ?? 0n;
   const marketSnapshot = marketState?.data ?? null;
   const hasPrizeAddress = Boolean(game.config?.prizeDistributionAddress);
   const showPredictionMarket = hasPrizeAddress && !devModeOn;
@@ -1136,58 +1144,68 @@ export const UnifiedGameGrid = ({
 
   const { nowSec, isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
-  // Fetch from both chains
+  // Single bulk summary fetch for all worlds (replaces per-world fan-out).
+  // The server serves timing, mode, counters, and prize addresses in one call.
   const {
-    worlds: factoryWorlds,
-    isLoading: factoryWorldsLoading,
-    error: factoryError,
-    refetchAll: refetchFactoryWorlds,
-  } = useFactoryWorlds(["mainnet", "slot"]);
+    data: worldsSummaryData,
+    isPending: summaryIsLoading,
+    error: summaryError,
+    refetch: refetchSummary,
+  } = useWorldsSummary();
 
-  // Fetch world availability AND player registration status together
-  // When playerFeltLiteral changes (user connects), React Query will refetch
-  const {
-    results: factoryAvailability,
-    isAnyLoading: factoryCheckingAvailability,
-    refetchAll: refetchFactory,
-  } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0, playerFeltLiteral);
+  // Only show live worlds on supported chains. Dead (alive=false) worlds
+  // are excluded from the card grid — they surface separately via the modal.
+  const liveSummaries = useMemo<WorldSummary[]>(
+    () =>
+      (worldsSummaryData ?? []).filter(
+        (summary) => summary.alive && (summary.chain === "mainnet" || summary.chain === "slot"),
+      ),
+    [worldsSummaryData],
+  );
 
-  // Build game data - only include online games from both chains
+  // Player-scoped fields (registration, settled realm) layered on top of the
+  // bulk summary. Only fires when a wallet is connected — anonymous boot = 0 calls.
+  const { registrationsByWorldKey, isAnyLoading: playerRegistrationsLoading } = usePlayerWorldRegistrations({
+    worlds: liveSummaries,
+    playerAddress: playerFeltLiteral,
+  });
+
+  // Build game data from the bulk summary + player registration overlay.
   const games = useMemo<GameData[]>(() => {
-    const nodes = factoryWorlds
-      .map((world) => {
-        const worldKey = getWorldKey(world);
-        const availability = factoryAvailability.get(worldKey);
-        const status = getAvailabilityStatus(availability);
-        const startMainAt = availability?.meta?.startMainAt ?? null;
-        const endAt = availability?.meta?.endAt ?? null;
+    const nodes = liveSummaries
+      .map((summary): GameData => {
+        const worldKey = getWorldSummaryKey(summary);
+        const startMainAt = summary.startMainAt ?? null;
+        const endAt = summary.endAt ?? null;
+
+        // alive worlds are "ok" by definition — the summary is the bulk availability.
+        const status: "checking" | "ok" | "fail" = "ok";
 
         let gameStatus: GameStatus = "unknown";
-        if (status === "ok") {
-          if (isEnded(startMainAt, endAt)) gameStatus = "ended";
-          else if (isOngoing(startMainAt, endAt)) gameStatus = "ongoing";
-          else if (isUpcoming(startMainAt)) gameStatus = "upcoming";
-        }
+        if (isEnded(startMainAt, endAt)) gameStatus = "ended";
+        else if (isOngoing(startMainAt, endAt)) gameStatus = "ongoing";
+        else if (isUpcoming(startMainAt)) gameStatus = "upcoming";
 
-        // Use local registration state first, then fall back to server state
-        const isRegistered = localRegistrations[worldKey] ?? availability?.meta?.isPlayerRegistered ?? null;
+        const registration = registrationsByWorldKey.get(worldKey) ?? null;
+        const config: WorldConfigMeta = summaryToWorldConfigMeta(summary, registration);
+
+        // Local registration state takes precedence for immediate UI feedback.
+        const isRegistered = localRegistrations[worldKey] ?? config.isPlayerRegistered ?? null;
 
         return {
-          name: world.name,
-          chain: world.chain,
-          worldAddress: world.worldAddress ?? null,
+          name: summary.name,
+          chain: summary.chain,
+          worldAddress: summary.worldAddress ?? null,
           worldKey,
           status,
           gameStatus,
           startMainAt,
           endAt,
-          registrationCount: availability?.meta?.registrationCount ?? null,
+          registrationCount: summary.registrationCount ?? null,
           isRegistered,
-          config: availability?.meta ?? null,
+          config,
         };
       })
-      // Only show online games
-      .filter((game) => game.status === "ok")
       // Filter by dev mode if specified
       .filter((game) => {
         if (devModeFilter === undefined) return true;
@@ -1226,8 +1244,8 @@ export const UnifiedGameGrid = ({
       return aStart - bStart;
     });
   }, [
-    factoryWorlds,
-    factoryAvailability,
+    liveSummaries,
+    registrationsByWorldKey,
     localRegistrations,
     isOngoing,
     isEnded,
@@ -1379,8 +1397,8 @@ export const UnifiedGameGrid = ({
 
   const handleRefresh = useCallback(async () => {
     setLocalRegistrations({});
-    await Promise.all([refetchFactoryWorlds(), refetchFactory()]);
-  }, [refetchFactoryWorlds, refetchFactory]);
+    await refetchSummary();
+  }, [refetchSummary]);
 
   // Callback for when a registration completes - update local state immediately and invalidate cache
   const handleRegistrationComplete = useCallback(
@@ -1388,18 +1406,21 @@ export const UnifiedGameGrid = ({
       // Update local state for immediate UI feedback
       setLocalRegistrations((prev) => ({ ...prev, [worldKey]: true }));
 
-      // Invalidate the query cache so fresh data is fetched when navigating back
-      // This ensures the registration status persists across tab switches
+      // Invalidate both the legacy per-world availability cache (modal path)
+      // and the new player registration cache so fresh data is fetched when
+      // navigating back. This ensures the registration status persists across tab switches.
       queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
+      queryClient.invalidateQueries({ queryKey: ["playerWorldRegistration", worldKey] });
 
       onRegistrationComplete?.();
     },
     [onRegistrationComplete, queryClient],
   );
 
-  // Wait for controller to reconnect if there's a stored session before showing games
-  // This prevents the flash of "logged out" state on page refresh
-  const isLoading = factoryWorldsLoading || factoryCheckingAvailability || isWaitingForReconnect;
+  // Wait for controller to reconnect if there's a stored session before showing games.
+  // This prevents the flash of "logged out" state on page refresh.
+  const factoryError = summaryError as Error | null;
+  const isLoading = summaryIsLoading || playerRegistrationsLoading || isWaitingForReconnect;
   const shouldShowCreateGameCta = isUpcomingOnlyStatusFilter(statusFilter);
 
   // Count by status
@@ -1460,7 +1481,9 @@ export const UnifiedGameGrid = ({
       }
 
       if (runtimeState.shouldRefreshAvailability) {
-        void queryClient.invalidateQueries({ queryKey: ["worldAvailability", game.worldKey] });
+        // Refresh both the bulk summary and any per-player registration state.
+        void queryClient.invalidateQueries({ queryKey: ["worldsSummary"] });
+        void queryClient.invalidateQueries({ queryKey: ["playerWorldRegistration", game.worldKey] });
       }
 
       if (!runtimeState.shouldOpenEntry) return;

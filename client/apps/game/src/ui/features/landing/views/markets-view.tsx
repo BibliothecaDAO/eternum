@@ -6,9 +6,8 @@ import {
   useAvatarProfiles,
   useAvatarProfilesByUsernames,
 } from "@/hooks/use-player-avatar";
-import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldsAvailability } from "@/hooks/use-world-availability";
+import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import type { MarketClass } from "@/pm/class";
 import { useOptionalControllers } from "@/pm/hooks/controllers/use-controllers";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
@@ -576,22 +575,21 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const [pagesByFilter, setPagesByFilter] = useState<Record<string, number>>({});
   const currentPage = pagesByFilter[filterKey] ?? 1;
   const offset = (currentPage - 1) * PAGE_SIZE;
-  const { worlds: factoryWorlds } = useFactoryWorlds(["mainnet", "slot"]);
-  const { results: worldAvailabilityByKey } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0);
+  const { data: worldsSummary } = useWorldsSummary();
   const blockedDevModeOracleAddresses = useMemo(() => {
     const blockedAddresses = new Set<string>();
 
-    worldAvailabilityByKey.forEach((availability) => {
-      if (!availability.meta?.devModeOn) return;
+    for (const summary of worldsSummary ?? []) {
+      if (!summary.devModeOn) continue;
 
-      const prizeDistributionAddress = normalizeHexAddress(availability.meta.prizeDistributionAddress ?? "");
+      const prizeDistributionAddress = normalizeHexAddress(summary.prizeDistributionAddress ?? "");
       if (prizeDistributionAddress) {
         blockedAddresses.add(prizeDistributionAddress);
       }
-    });
+    }
 
     return Array.from(blockedAddresses);
-  }, [worldAvailabilityByKey]);
+  }, [worldsSummary]);
 
   const { counts, isLoading: isCountsLoading, isFetching: isCountsFetching } = useMultiChainMarketCounts(selectedChain);
   const hasLiveMarkets = counts.live > 0;

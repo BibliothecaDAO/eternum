@@ -565,12 +565,3 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
     refetchAll: () => Promise.all(queries.map((q) => q.refetch())),
   };
 };
-
-/**
- * Get availability status string for a world.
- */
-export const getAvailabilityStatus = (availability: WorldAvailability | undefined): "checking" | "ok" | "fail" => {
-  if (!availability) return "checking";
-  if (availability.isLoading) return "checking";
-  return availability.isAvailable ? "ok" : "fail";
-};
