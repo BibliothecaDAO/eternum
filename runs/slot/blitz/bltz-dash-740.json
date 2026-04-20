@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24686374317-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-04-20T19:36:53.498Z",
-  "updatedAt": "2026-04-20T19:38:43.913Z",
+  "updatedAt": "2026-04-20T19:38:48.145Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-20T19:38:48.145Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,5 +71,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-dash-740.json",
     "worldAddress": "0x074474c19050c5ab5a08dbb46776da8f465c49d80634615579d20861f1046b59",
     "createGameTxHash": "0x54623778c136009f8f497ea69e40ce0f57e80d9e142c42bc1aebcfedea13006"
+  },
+  "activeLease": {
+    "launchRequestId": "24686374317-1",
+    "workflowRunId": 24686374317,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-04-20T19:38:48.145Z",
+    "expiresAt": "2026-04-20T20:23:48.145Z"
   }
 }
