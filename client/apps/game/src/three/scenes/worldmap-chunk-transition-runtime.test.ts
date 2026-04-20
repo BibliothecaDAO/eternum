@@ -50,4 +50,116 @@ describe("runWorldmapChunkTransition", () => {
     expect(state.isTransitioning).toBe(false);
     expect(state.activePromise).toBeNull();
   });
+
+  it("invokes onHardTimeout and releases ownership when the transition exceeds hardTimeoutMs", async () => {
+    vi.useFakeTimers();
+    try {
+      const state = createWorldmapChunkTransitionRuntimeState();
+      // Never resolves during the test.
+      const transitionPromise = new Promise<void>(() => {});
+      const onResolved = vi.fn(() => true);
+      const onHardTimeout = vi.fn(() => false);
+      const onFinally = vi.fn();
+
+      const runPromise = runWorldmapChunkTransition({
+        hardTimeoutMs: 1_000,
+        onFinally,
+        onHardTimeout,
+        onResolved,
+        state,
+        transitionPromise,
+        yieldFrame: () => Promise.resolve(),
+      });
+
+      // Let onTransitionStart + yieldFrame microtasks run.
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(state.isTransitioning).toBe(true);
+      expect(state.activePromise).toBe(transitionPromise);
+
+      vi.advanceTimersByTime(1_000);
+
+      await expect(runPromise).resolves.toBe(false);
+      expect(onHardTimeout).toHaveBeenCalledWith({ timeoutMs: 1_000 });
+      expect(onResolved).not.toHaveBeenCalled();
+      expect(onFinally).toHaveBeenCalledTimes(1);
+      expect(state.isTransitioning).toBe(false);
+      expect(state.activePromise).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("prefers the transition result when it resolves before hardTimeoutMs elapses", async () => {
+    vi.useFakeTimers();
+    try {
+      const state = createWorldmapChunkTransitionRuntimeState();
+      let resolveTransition!: () => void;
+      const transitionPromise = new Promise<void>((resolve) => {
+        resolveTransition = resolve;
+      });
+      const onResolved = vi.fn(() => true);
+      const onHardTimeout = vi.fn(() => false);
+
+      const runPromise = runWorldmapChunkTransition({
+        hardTimeoutMs: 60_000,
+        onHardTimeout,
+        onResolved,
+        state,
+        transitionPromise,
+        yieldFrame: () => Promise.resolve(),
+      });
+
+      resolveTransition();
+
+      await expect(runPromise).resolves.toBe(true);
+      expect(onResolved).toHaveBeenCalledTimes(1);
+      expect(onHardTimeout).not.toHaveBeenCalled();
+      expect(state.isTransitioning).toBe(false);
+      expect(state.activePromise).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("swallows a transition rejection that lands after the hard timeout without unhandled rejection", async () => {
+    vi.useFakeTimers();
+    const rejection = new Error("late rejection");
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+
+    try {
+      const state = createWorldmapChunkTransitionRuntimeState();
+      let rejectTransition!: (error: unknown) => void;
+      const transitionPromise = new Promise<void>((_, reject) => {
+        rejectTransition = reject;
+      });
+      const onHardTimeout = vi.fn(() => false);
+
+      const runPromise = runWorldmapChunkTransition({
+        hardTimeoutMs: 1_000,
+        onHardTimeout,
+        onResolved: vi.fn(() => true),
+        state,
+        transitionPromise,
+        yieldFrame: () => Promise.resolve(),
+      });
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      vi.advanceTimersByTime(1_000);
+      await expect(runPromise).resolves.toBe(false);
+
+      rejectTransition(rejection);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off("unhandledRejection", unhandled);
+      vi.useRealTimers();
+    }
+  });
 });

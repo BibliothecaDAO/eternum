@@ -16,6 +16,7 @@ export type WorldmapChunkTraceEvent =
   | "spatial_sql_fetch_failed"
   | "spatial_sql_recs_hydrated"
   | "chunk_presentation_timeout"
+  | "chunk_transition_hard_timeout"
   | "chunk_recovery_scheduled"
   | "chunk_recovery_executed"
   | "torii_resubscribe_requested"
