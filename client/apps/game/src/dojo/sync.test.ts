@@ -160,6 +160,48 @@ describe("syncEntitiesDebounced", () => {
     );
   });
 
+  it("waits for a matching ready entity before resolving ready", async () => {
+    vi.useFakeTimers();
+    const harness = createSyncHarness();
+    const subscription = await syncEntitiesDebounced(
+      harness.client as any,
+      harness.setup as any,
+      null,
+      false,
+      undefined,
+      {
+        isReadyEntity: (entity) => Boolean(entity.models["s1_eternum-TileOpt"]),
+      },
+    );
+    let readyResolved = false;
+
+    subscription.ready.then(() => {
+      readyResolved = true;
+    });
+
+    harness.emitEntityUpdate({
+      hashed_keys: "structure-1",
+      models: {
+        "s1_eternum-Structure": { entity_id: 1 },
+      },
+    });
+
+    await vi.advanceTimersByTimeAsync(200);
+    expect(readyResolved).toBe(false);
+
+    harness.emitEntityUpdate({
+      hashed_keys: "tile-1",
+      models: {
+        "s1_eternum-TileOpt": { col: 1, row: 2, data: "3" },
+      },
+    });
+
+    await vi.advanceTimersByTimeAsync(200);
+    await subscription.ready;
+
+    expect(readyResolved).toBe(true);
+  });
+
   it("rejects ready when canceled before the first entity update is written", async () => {
     vi.useFakeTimers();
     const harness = createSyncHarness();

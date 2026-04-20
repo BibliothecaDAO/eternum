@@ -30,11 +30,14 @@ import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from 
 export const EVENT_QUERY_LIMIT = 40_000;
 
 interface SyncEntitiesSubscriptionOptions {
+  isReadyEntity?: SyncEntityReadinessMatcher;
+  onReadyEntityApplied?: (info: SyncEntityReadinessInfo) => void;
+  onReadyEntityReceived?: (info: SyncEntityReadinessInfo) => void;
   subscriptionSetupTimeoutMs?: number;
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 }
 
-let entityStreamSubscription: { cancel: () => void } | null = null;
+let entityStreamSubscription: { cancel: () => void; ready: Promise<void> } | null = null;
 
 /**
  * Cancel the global entity stream subscription.
@@ -151,6 +154,11 @@ const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_NON_SPATIAL_MODEL
 const GLOBAL_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_STREAM_MODELS);
 
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
+type SyncEntityReadinessMatcher = (data: ToriiEntity) => boolean;
+type SyncEntityReadinessInfo = {
+  entityId: string;
+  models: string[];
+};
 
 interface QueueProcessor {
   queueUpdate: (entityId: string, data: ToriiEntity, origin?: "entity" | "event") => Promise<void>;
@@ -164,7 +172,7 @@ interface SyncEntitiesSubscription {
 
 interface SyncReadinessController {
   ready: Promise<void>;
-  trackInitialEntityWrite: (writeComplete: Promise<void>) => void;
+  trackReadyEntityWrite: (writeComplete: Promise<void>) => void;
   markSubscriptionsReady: () => void;
   cancel: () => void;
 }
@@ -178,9 +186,9 @@ interface WriteCompletionTracker {
 type QueuedUpdate = { entityId: string; data: ToriiEntity; resolve: () => void };
 
 const createSyncReadinessController = (): SyncReadinessController => {
-  let firstEntityUpdateReceived = false;
+  let readyEntityUpdateReceived = false;
   let subscriptionsReady = false;
-  let pendingInitialEntityWrites = 0;
+  let pendingReadyEntityWrites = 0;
   let settled = false;
 
   let resolveReady!: () => void;
@@ -192,8 +200,8 @@ const createSyncReadinessController = (): SyncReadinessController => {
 
   ready.catch(() => undefined);
 
-  const resolveWhenInitialEntitiesAreApplied = () => {
-    if (settled || !firstEntityUpdateReceived || !subscriptionsReady || pendingInitialEntityWrites > 0) {
+  const resolveWhenReadyEntitiesAreApplied = () => {
+    if (settled || !readyEntityUpdateReceived || !subscriptionsReady || pendingReadyEntityWrites > 0) {
       return;
     }
 
@@ -203,23 +211,23 @@ const createSyncReadinessController = (): SyncReadinessController => {
 
   return {
     ready,
-    trackInitialEntityWrite: (writeComplete: Promise<void>) => {
-      firstEntityUpdateReceived = true;
-      pendingInitialEntityWrites += 1;
+    trackReadyEntityWrite: (writeComplete: Promise<void>) => {
+      readyEntityUpdateReceived = true;
+      pendingReadyEntityWrites += 1;
       writeComplete.then(
         () => {
-          pendingInitialEntityWrites -= 1;
-          resolveWhenInitialEntitiesAreApplied();
+          pendingReadyEntityWrites -= 1;
+          resolveWhenReadyEntitiesAreApplied();
         },
         () => {
-          pendingInitialEntityWrites -= 1;
-          resolveWhenInitialEntitiesAreApplied();
+          pendingReadyEntityWrites -= 1;
+          resolveWhenReadyEntitiesAreApplied();
         },
       );
     },
     markSubscriptionsReady: () => {
       subscriptionsReady = true;
-      resolveWhenInitialEntitiesAreApplied();
+      resolveWhenReadyEntitiesAreApplied();
     },
     cancel: () => {
       if (settled) {
@@ -231,6 +239,11 @@ const createSyncReadinessController = (): SyncReadinessController => {
     },
   };
 };
+
+const createSyncEntityReadinessInfo = (data: ToriiEntity): SyncEntityReadinessInfo => ({
+  entityId: data.hashed_keys,
+  models: Object.keys((data.models as Record<string, unknown>) ?? {}),
+});
 
 const createWriteCompletionTracker = (): WriteCompletionTracker => {
   const pendingWriteResolvers = new Map<string, Array<() => void>>();
@@ -454,6 +467,7 @@ export const syncEntitiesDebounced = async (
   const queueProcessor =
     createWorkerQueueProcessor(applyBatch, logging) ?? createMainThreadQueueProcessor(applyBatch, logging);
   const readiness = createSyncReadinessController();
+  const isReadyEntity = options?.isReadyEntity ?? (() => true);
 
   const queueUpdate = (data: ToriiEntity, origin: "entity" | "event") => {
     try {
@@ -472,7 +486,15 @@ export const syncEntitiesDebounced = async (
         client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
           if (logging) console.log("Entity updated", data);
           recordTileOptStreamTrace(data);
-          readiness.trackInitialEntityWrite(queueUpdate(data, "entity"));
+          const writeComplete = queueUpdate(data, "entity");
+          if (isReadyEntity(data)) {
+            const readyEntityInfo = createSyncEntityReadinessInfo(data);
+            options?.onReadyEntityReceived?.(readyEntityInfo);
+            void writeComplete.finally(() => {
+              options?.onReadyEntityApplied?.(readyEntityInfo);
+            });
+            readiness.trackReadyEntityWrite(writeComplete);
+          }
         }),
       createEventSubscription: () =>
         client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
@@ -639,7 +661,40 @@ export const initialSync = async (
 
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
 
+  // Block on the Torii stream's initial entity flush so the worldmap scene
+  // observes populated RECS state instead of an empty world on fast loads.
+  if (entityStreamSubscription) {
+    await waitForInitialEntityFlush(entityStreamSubscription.ready, subscriptionSetupTimeoutMs);
+  }
+
   updateProgress(100);
+};
+
+const waitForInitialEntityFlush = async (ready: Promise<void>, timeoutMs: number): Promise<void> => {
+  const flushStart = performance.now();
+  const readyPromise = ready.catch((error) => {
+    console.warn("[sync] Initial entity flush did not settle cleanly", error);
+  });
+
+  if (!timeoutMs || timeoutMs <= 0) {
+    await readyPromise;
+    console.log("[sync] initial entity flush", performance.now() - flushStart);
+    return;
+  }
+
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<void>((resolve) => {
+    timeoutHandle = setTimeout(() => {
+      console.warn(`[sync] Initial entity flush timed out after ${timeoutMs}ms, continuing`);
+      resolve();
+    }, timeoutMs);
+  });
+
+  await Promise.race([readyPromise, timeoutPromise]);
+  if (timeoutHandle !== undefined) {
+    clearTimeout(timeoutHandle);
+  }
+  console.log("[sync] initial entity flush", performance.now() - flushStart);
 };
 
 const resubscribeEntityStream = async (

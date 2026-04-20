@@ -94,46 +94,44 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     });
   };
 
-  const [tileFetchResult, tileHydrationResult, boundsReadyResult, structureReadyResult, assetPrewarmResult] =
-    await Promise.all([
-      settleWorldmapAsyncStage({
-        label: "tile_fetch" as const,
-        promise: input.tileFetchPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_fetch", timeoutMs),
-      }),
-      settleWorldmapAsyncStage({
-        label: "tile_hydration" as const,
-        promise: input.tileHydrationReadyPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_hydration", timeoutMs),
-      }),
-      settleWorldmapAsyncStage({
-        label: "bounds_ready" as const,
-        promise: input.boundsReadyPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("bounds_ready", timeoutMs),
-      }),
-      settleWorldmapAsyncStage({
-        label: "structure_hydration" as const,
-        promise: input.structureReadyPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("structure_hydration", timeoutMs),
-      }),
-      settleWorldmapAsyncStage({
-        label: "asset_prewarm" as const,
-        promise: input.assetPrewarmPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("asset_prewarm", timeoutMs),
-      }),
-    ]);
+  void settleWorldmapAsyncStage({
+    label: "structure_hydration" as const,
+    promise: input.structureReadyPromise,
+    timeoutMs: input.phaseTimeoutMs,
+    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("structure_hydration", timeoutMs),
+  });
+  void settleWorldmapAsyncStage({
+    label: "asset_prewarm" as const,
+    promise: input.assetPrewarmPromise,
+    timeoutMs: input.phaseTimeoutMs,
+    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("asset_prewarm", timeoutMs),
+  });
+
+  const [tileFetchResult, tileHydrationResult, boundsReadyResult] = await Promise.all([
+    settleWorldmapAsyncStage({
+      label: "tile_fetch" as const,
+      promise: input.tileFetchPromise,
+      timeoutMs: input.phaseTimeoutMs,
+      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_fetch", timeoutMs),
+    }),
+    settleWorldmapAsyncStage({
+      label: "tile_hydration" as const,
+      promise: input.tileHydrationReadyPromise,
+      timeoutMs: input.phaseTimeoutMs,
+      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_hydration", timeoutMs),
+    }),
+    settleWorldmapAsyncStage({
+      label: "bounds_ready" as const,
+      promise: input.boundsReadyPromise,
+      timeoutMs: input.phaseTimeoutMs,
+      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("bounds_ready", timeoutMs),
+    }),
+  ]);
 
   const failedPhase =
     (tileFetchResult.status !== "resolved" && "tile_fetch") ||
     (tileHydrationResult.status !== "resolved" && "tile_hydration") ||
     (boundsReadyResult.status !== "resolved" && "bounds_ready") ||
-    (structureReadyResult.status !== "resolved" && "structure_hydration") ||
-    (assetPrewarmResult.status !== "resolved" && "asset_prewarm") ||
     undefined;
 
   if (failedPhase) {
