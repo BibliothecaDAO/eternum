@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { Position } from "@bibliothecadao/eternum";
 
 import type { ArmyData } from "../types/common";
-import { buildOptimisticArmyTileUpdate } from "./worldmap-optimistic-movement";
+import { buildOptimisticArmyTileUpdate, isStaleOptimisticIndexerUpdate } from "./worldmap-optimistic-movement";
 
 function makeArmy(overrides: Partial<ArmyData> = {}): ArmyData {
   return {
@@ -85,5 +85,44 @@ describe("buildOptimisticArmyTileUpdate", () => {
     const army = makeArmy({ owningStructureId: null });
     const update = buildOptimisticArmyTileUpdate(army, { col: 1, row: 2 });
     expect(update!.ownerStructureId).toBeNull();
+  });
+});
+
+describe("isStaleOptimisticIndexerUpdate", () => {
+  it("returns false when the tracked army is missing so the caller applies the update normally", () => {
+    const stale = isStaleOptimisticIndexerUpdate(undefined, {
+      hexCoords: { col: 2147483750, row: 2147483750 },
+    });
+    expect(stale).toBe(false);
+  });
+
+  it("returns false when the incoming update matches the army's current position (authoritative convergence)", () => {
+    const army = makeArmy({
+      hexCoords: new Position({ x: 2147483750, y: 2147483749 }),
+    });
+    const stale = isStaleOptimisticIndexerUpdate(army, {
+      hexCoords: { col: 2147483750, row: 2147483749 },
+    });
+    expect(stale).toBe(false);
+  });
+
+  it("returns true when the incoming update targets a position the client has already advanced past", () => {
+    // Scenario: armies map is at C (latest optimistic target); indexer is
+    // still delivering the earlier tx's update for B.
+    const armyAtC = makeArmy({
+      hexCoords: new Position({ x: 2147483752, y: 2147483752 }),
+    });
+    const staleUpdateForB = { hexCoords: { col: 2147483750, row: 2147483750 } };
+    expect(isStaleOptimisticIndexerUpdate(armyAtC, staleUpdateForB)).toBe(true);
+  });
+
+  it("compares on normalized coordinates so a mix of contract/normalized inputs still matches", () => {
+    // army stored with contract coords (FELT_CENTER-offset), update arriving
+    // with same position expressed either way should NOT be flagged stale.
+    const army = makeArmy({
+      hexCoords: new Position({ x: 2147483748, y: 2147483748 }),
+    });
+    const sameHex = { hexCoords: { col: 2147483748, row: 2147483748 } };
+    expect(isStaleOptimisticIndexerUpdate(army, sameHex)).toBe(false);
   });
 });

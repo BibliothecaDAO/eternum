@@ -25,6 +25,7 @@ describe("Worldmap movement latency tracing wiring", () => {
 
     expect(source).toContain('"movement_resolved_optimistically"');
     expect(source).toContain('"movement_optimistic_convergence"');
+    expect(source).toContain('"movement_optimistic_stale_skipped"');
   });
 
   it("uses an authoritative world-sync timeout longer than the old 10 second stale cutoff", () => {

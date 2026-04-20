@@ -13,7 +13,8 @@ export type ArmyMovementLatencyPhase =
   | "movement_started"
   | "movement_completed"
   | "movement_resolved_optimistically"
-  | "movement_optimistic_convergence";
+  | "movement_optimistic_convergence"
+  | "movement_optimistic_stale_skipped";
 
 export type ArmyMovementLatencySource = "worldmap" | "torii_sync" | "world_update_listener";
 

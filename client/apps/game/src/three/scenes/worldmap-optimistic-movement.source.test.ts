@@ -103,4 +103,38 @@ describe("Worldmap optimistic movement wiring", () => {
     const handlerBody = source.slice(handlerStart, handlerStart + 2200);
     expect(handlerBody).toMatch(/resolveArmyMovementOptimistically\([\s\S]*?\)\s*\.catch\(/);
   });
+
+  it("imports and wires the stale-update guard into the indexer tile-update handler", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    expect(source).toContain("isStaleOptimisticIndexerUpdate");
+    // Gate the call on optimisticallyResolvedArmies so remote / freshly-synced
+    // armies without an optimistic marker keep the normal apply path.
+    expect(source).toMatch(
+      /this\.optimisticallyResolvedArmies\.has\(update\.entityId\)\s*&&\s*isStaleOptimisticIndexerUpdate\(/,
+    );
+    expect(source).toContain('"movement_optimistic_stale_skipped"');
+  });
+
+  it("keeps the optimistic marker set on stale-skip so the LATEST target's indexer delivery still converges", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    const phaseIdx = source.indexOf('"movement_optimistic_stale_skipped"');
+    expect(phaseIdx).toBeGreaterThan(-1);
+    // Walk forward to the `return;` that ends the stale branch and make sure
+    // `optimisticallyResolvedArmies.delete` is NOT invoked in between — we
+    // want to keep waiting for the authoritative latest-tx update.
+    const staleBranch = source.slice(phaseIdx, phaseIdx + 800);
+    expect(staleBranch).toContain("return;");
+    expect(staleBranch).not.toContain("this.optimisticallyResolvedArmies.delete");
+  });
+
+  it("refreshes armyLastTileSyncAt on a stale-skip so the staleness fallback does not fire mid-optimistic-chain", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    const phaseIdx = source.indexOf('"movement_optimistic_stale_skipped"');
+    expect(phaseIdx).toBeGreaterThan(-1);
+    const staleBranch = source.slice(phaseIdx, phaseIdx + 800);
+    expect(staleBranch).toMatch(/this\.armyLastTileSyncAt\.set\(update\.entityId,\s*Date\.now\(\)\)/);
+  });
 });

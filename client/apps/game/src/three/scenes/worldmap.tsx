@@ -206,7 +206,7 @@ import {
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
-import { buildOptimisticArmyTileUpdate } from "./worldmap-optimistic-movement";
+import { buildOptimisticArmyTileUpdate, isStaleOptimisticIndexerUpdate } from "./worldmap-optimistic-movement";
 import { findSupersededArmyRemoval, isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
@@ -1269,6 +1269,31 @@ export default class WorldmapScene extends WarpTravel {
           col: normalizedPos.x,
           row: normalizedPos.y,
         });
+
+        // Drop authoritative tile updates that target a position the client
+        // has already optimistically advanced past. Without this guard the
+        // late-arriving indexer update for an earlier tx will `moveArmy` the
+        // unit backwards — the visible ping-pong. Safe because Torii delivers
+        // tile updates per-entity in order, so the LATEST optimistic target
+        // will still arrive and converge, clearing the marker.
+        if (
+          this.optimisticallyResolvedArmies.has(update.entityId) &&
+          isStaleOptimisticIndexerUpdate(this.armyManager.getArmy(update.entityId), update)
+        ) {
+          recordArmyMovementLatencyPhase({
+            phase: "movement_optimistic_stale_skipped",
+            source: "worldmap",
+            entityId: update.entityId,
+            details: {
+              staleCol: update.hexCoords.col,
+              staleRow: update.hexCoords.row,
+            },
+          });
+          // We still saw a real tile update for this entity, so keep the
+          // staleness fallback quiet.
+          this.armyLastTileSyncAt.set(update.entityId, Date.now());
+          return;
+        }
 
         this.updateArmyHexes(update);
         this.resolvePendingCreateArmyFxOnArmyUpdate(update);
