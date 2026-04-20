@@ -150,6 +150,7 @@ import {
 import {
   createWorldmapChunkTransitionRuntimeState,
   runWorldmapChunkTransition,
+  type WorldmapChunkTransitionHardTimeoutInfo,
 } from "./worldmap-chunk-transition-runtime";
 import {
   settleWorldmapShortcutSelectionProtection,
@@ -454,6 +455,10 @@ const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
 const TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS = env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
 const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
+// Hard timeout wrapping the entire chunk transition (phase timeouts + post-phase work).
+// Catches cases where post-phase awaits (e.g. manager catch-up, finalize rollback)
+// hang past all per-phase timeouts and would otherwise lock isChunkTransitioning.
+const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_TIMEOUT_MS * 4, 30_000);
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
@@ -5681,6 +5686,34 @@ export default class WorldmapScene extends WarpTravel {
     }, 0);
   }
 
+  private handleChunkTransitionHardTimeout(
+    reason: "switch_chunk" | "refresh_current_chunk",
+    chunkKey: string,
+    info: WorldmapChunkTransitionHardTimeoutInfo,
+  ): void {
+    console.warn("[WorldmapScene] Chunk transition hard timeout — forcing recovery", {
+      reason,
+      chunkKey,
+      timeoutMs: info.timeoutMs,
+    });
+    this.traceChunk("chunk_transition_hard_timeout", {
+      reason,
+      chunkKey,
+      timeoutMs: info.timeoutMs,
+    });
+    if (this.toriiLoadingCounter > 0) {
+      this.toriiLoadingCounter = 0;
+      this.state.setLoading(LoadingStateKey.Map, false);
+    }
+    this.toriiBoundsAreaKey = null;
+    this.clearStalledChunkAreaState(chunkKey);
+    this.requestToriiResubscribe("chunk_transition_hard_timeout", chunkKey);
+    this.scheduleChunkRecovery("chunk_transition_hard_timeout", chunkKey, {
+      reason,
+      timeoutMs: info.timeoutMs,
+    });
+  }
+
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
     const areaKey = this.clearStalledChunkAreaState(info.chunkKey);
     this.toriiLoadingCounter = recoverWorldmapMapLoadingStateFromChunkTimeout({
@@ -6958,11 +6991,16 @@ export default class WorldmapScene extends WarpTravel {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
         this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
+          hardTimeoutMs: WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS,
           onFinally: () => {
             this.state.setLoading(LoadingStateKey.ChunkTransition, false);
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
               durationMs: performance.now() - switchStartedAt,
             });
+          },
+          onHardTimeout: (info) => {
+            this.handleChunkTransitionHardTimeout("switch_chunk", chunkKey, info);
+            return false;
           },
           onResolved: () => {
             this.retryDeferredChunkRemovals();
@@ -6998,8 +7036,13 @@ export default class WorldmapScene extends WarpTravel {
         });
         this.state.setLoading(LoadingStateKey.ChunkTransition, true);
         return runWorldmapChunkTransition({
+          hardTimeoutMs: WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS,
           onFinally: () => {
             this.state.setLoading(LoadingStateKey.ChunkTransition, false);
+          },
+          onHardTimeout: (info) => {
+            this.handleChunkTransitionHardTimeout("refresh_current_chunk", chunkKey, info);
+            return false;
           },
           onResolved: () => {
             this.retryDeferredChunkRemovals();
