@@ -269,7 +269,7 @@ describe("resolvePendingArmyMovementFallbackPlan", () => {
 
 describe("resolvePendingArmyMovementTxFailurePlan", () => {
   it("clears pending movement when txHash maps to a pending entity", () => {
-    const txEntityMap = new Map<string, number>([["0xabc", 42]]);
+    const txEntityMap = new Map<string, Set<number>>([["0xabc", new Set([42])]]);
     const pendingEntities = new Set<number>([42]);
 
     expect(
@@ -279,13 +279,12 @@ describe("resolvePendingArmyMovementTxFailurePlan", () => {
         pendingEntities,
       }),
     ).toEqual({
-      shouldClearPendingMovement: true,
-      entityId: 42,
+      entitiesToClear: [42],
     });
   });
 
   it("does not clear when txHash is not in the mapping", () => {
-    const txEntityMap = new Map<string, number>();
+    const txEntityMap = new Map<string, Set<number>>();
     const pendingEntities = new Set<number>([42]);
 
     expect(
@@ -295,13 +294,12 @@ describe("resolvePendingArmyMovementTxFailurePlan", () => {
         pendingEntities,
       }),
     ).toEqual({
-      shouldClearPendingMovement: false,
-      entityId: undefined,
+      entitiesToClear: [],
     });
   });
 
   it("does not clear when entity is no longer pending (already resolved)", () => {
-    const txEntityMap = new Map<string, number>([["0xabc", 42]]);
+    const txEntityMap = new Map<string, Set<number>>([["0xabc", new Set([42])]]);
     const pendingEntities = new Set<number>();
 
     expect(
@@ -311,8 +309,36 @@ describe("resolvePendingArmyMovementTxFailurePlan", () => {
         pendingEntities,
       }),
     ).toEqual({
-      shouldClearPendingMovement: false,
-      entityId: 42,
+      entitiesToClear: [],
     });
+  });
+
+  it("returns every still-pending entity when a batched tx hash covers multiple moves", () => {
+    // Regression guard: rapid successive moves are coalesced into one multicall
+    // by `PromiseQueue.processBatch`, so they share a single transaction_hash.
+    // All pending entities attached to that hash must be cleared on failure.
+    const txEntityMap = new Map<string, Set<number>>([["0xbatched", new Set([10, 20, 30])]]);
+    const pendingEntities = new Set<number>([10, 20, 30]);
+
+    const plan = resolvePendingArmyMovementTxFailurePlan({
+      txHash: "0xbatched",
+      txEntityMap,
+      pendingEntities,
+    });
+
+    expect(plan.entitiesToClear.sort()).toEqual([10, 20, 30]);
+  });
+
+  it("skips entities in the batch that have already resolved", () => {
+    const txEntityMap = new Map<string, Set<number>>([["0xbatched", new Set([10, 20, 30])]]);
+    const pendingEntities = new Set<number>([20]);
+
+    const plan = resolvePendingArmyMovementTxFailurePlan({
+      txHash: "0xbatched",
+      txEntityMap,
+      pendingEntities,
+    });
+
+    expect(plan.entitiesToClear).toEqual([20]);
   });
 });

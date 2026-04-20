@@ -70,7 +70,9 @@ describe("Worldmap optimistic movement wiring", () => {
 
     const methodStart = source.indexOf("private clearPendingArmyMovement");
     expect(methodStart).toBeGreaterThan(-1);
-    const methodBody = source.slice(methodStart, methodStart + 1600);
+    // Widened from 1600 → 2400 to accommodate the per-entity cleanup loop
+    // that iterates the batched-tx map-of-sets.
+    const methodBody = source.slice(methodStart, methodStart + 2400);
     expect(methodBody).toContain("pendingArmyMovementTxTargets");
     expect(methodBody).toContain("optimisticallyResolvedArmies");
   });
@@ -127,6 +129,39 @@ describe("Worldmap optimistic movement wiring", () => {
     const staleBranch = source.slice(phaseIdx, phaseIdx + 800);
     expect(staleBranch).toContain("return;");
     expect(staleBranch).not.toContain("this.optimisticallyResolvedArmies.delete");
+  });
+
+  it("stores txHash → entity SET (not a single entity) so batched multicalls resolve every move, not just the last", () => {
+    // Regression guard against the `pendingArmyMovementTxMap` reverting to
+    // `Map<string, ID>`. PromiseQueue.processBatch coalesces rapid moves into
+    // ONE multicall that returns a single transaction_hash; mapping txHash to
+    // a single entity id would only resolve the last-written move optimistically
+    // and leave the rest waiting on the indexer.
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    expect(source).toMatch(/pendingArmyMovementTxMap:\s*Map<string,\s*Set<ID>>/);
+    expect(source).toMatch(/pendingArmyMovementTxTargets:\s*Map<string,\s*Map<ID,\s*HexPosition>>/);
+
+    // Submit path must ADD to the entity set, not overwrite it.
+    expect(source).toMatch(/entitiesForTx\.add\(selectedEntityId\)/);
+    // And the target map must key by entity inside the per-tx map so siblings
+    // in a batch keep their own destinations.
+    expect(source).toMatch(/targetsForTx\.set\(selectedEntityId,/);
+  });
+
+  it("iterates every entity attached to a txHash when the tx confirms so a batched multicall resolves every move", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    const handlerStart = source.indexOf("this.handleTransactionComplete");
+    expect(handlerStart).toBeGreaterThan(-1);
+    const handlerBody = source.slice(handlerStart, handlerStart + 2400);
+
+    // A for-of over the entity set (snapshotted to array so downstream
+    // handlers that mutate the set — e.g. movement_started clears — don't
+    // disturb iteration) is the load-bearing bit.
+    expect(handlerBody).toMatch(/for\s*\(\s*const\s+entityId\s+of\s+\[\.\.\.entities\]\s*\)/);
+    // Per-entity target lookup inside the loop.
+    expect(handlerBody).toMatch(/targetsForTx\?\.get\(entityId\)/);
   });
 
   it("refreshes armyLastTileSyncAt on a stale-skip so the staleness fallback does not fire mid-optimistic-chain", () => {

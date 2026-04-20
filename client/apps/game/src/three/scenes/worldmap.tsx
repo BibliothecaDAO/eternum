@@ -611,8 +611,15 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovements: Set<ID> = new Set();
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
-  private pendingArmyMovementTxMap: Map<string, ID> = new Map();
-  private pendingArmyMovementTxTargets: Map<string, HexPosition> = new Map();
+  // txHash → entity set. One tx can cover MULTIPLE moves because PromiseQueue
+  // batches rapid successive calls into a single multicall (see
+  // packages/provider/src/promise-queue.ts processBatch). We must resolve
+  // the optimistic move for every entity attached to the hash, not just the
+  // last one that wrote to this map.
+  private pendingArmyMovementTxMap: Map<string, Set<ID>> = new Map();
+  // txHash → (entityId → target hex). Keyed by entity inside each tx so that a
+  // batched multicall carries independent targets per move.
+  private pendingArmyMovementTxTargets: Map<string, Map<ID, HexPosition>> = new Map();
   private optimisticallyResolvedArmies: Set<ID> = new Set();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
 
@@ -1069,26 +1076,35 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
-      const entityId = this.pendingArmyMovementTxMap.get(txHash);
-      if (entityId === undefined) {
+      const entities = this.pendingArmyMovementTxMap.get(txHash);
+      if (!entities || entities.size === 0) {
         return;
       }
 
-      recordArmyMovementLatencyPhase({
-        phase: "tx_confirmed",
-        source: "worldmap",
-        entityId,
-        txHash,
-      });
+      const targetsForTx = this.pendingArmyMovementTxTargets.get(txHash);
 
-      const targetHex = this.pendingArmyMovementTxTargets.get(txHash);
-      if (!targetHex) {
-        return;
+      // Resolve every entity attached to this hash: when rapid successive moves
+      // are batched into one multicall they share the hash, and only iterating
+      // resolves each one optimistically. Snapshot into an array so mutations
+      // by downstream handlers (e.g., clearPendingArmyMovement on animation
+      // start) don't disturb this iteration.
+      for (const entityId of [...entities]) {
+        recordArmyMovementLatencyPhase({
+          phase: "tx_confirmed",
+          source: "worldmap",
+          entityId,
+          txHash,
+        });
+
+        const targetHex = targetsForTx?.get(entityId);
+        if (!targetHex) {
+          continue;
+        }
+
+        this.resolveArmyMovementOptimistically({ entityId, txHash, targetHex }).catch((error) => {
+          console.error("[worldmap] optimistic army movement resolution failed", error);
+        });
       }
-
-      this.resolveArmyMovementOptimistically({ entityId, txHash, targetHex }).catch((error) => {
-        console.error("[worldmap] optimistic army movement resolution failed", error);
-      });
     };
 
     this.handleTransactionFailed = (payload: { transactionHash?: string }) => {
@@ -1102,11 +1118,11 @@ export default class WorldmapScene extends WarpTravel {
         txEntityMap: this.pendingArmyMovementTxMap,
         pendingEntities: this.pendingArmyMovements,
       });
-      if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
-        this.clearPendingArmyMovement(plan.entityId);
-        useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
-        this.disposePendingMovementVisualLifecycle(plan.entityId);
-        this.arrivalGhostManager?.clearArrivalGhost(plan.entityId, "tx_failed");
+      for (const entityId of plan.entitiesToClear) {
+        this.clearPendingArmyMovement(entityId);
+        useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
+        this.disposePendingMovementVisualLifecycle(entityId);
+        this.arrivalGhostManager?.clearArrivalGhost(entityId, "tx_failed");
       }
       this.pendingArmyMovementTxMap.delete(txHash);
       this.pendingArmyMovementTxTargets.delete(txHash);
@@ -2589,7 +2605,16 @@ export default class WorldmapScene extends WarpTravel {
             txHash,
           });
           if (txHash) {
-            this.pendingArmyMovementTxMap.set(txHash, selectedEntityId);
+            // Multiple moves can share a txHash (multicall batching in
+            // PromiseQueue.processBatch), so ADD to the entity set for this
+            // hash rather than overwriting it — otherwise only the
+            // last-registered entity in the batch would optimistically resolve.
+            let entitiesForTx = this.pendingArmyMovementTxMap.get(txHash);
+            if (!entitiesForTx) {
+              entitiesForTx = new Set<ID>();
+              this.pendingArmyMovementTxMap.set(txHash, entitiesForTx);
+            }
+            entitiesForTx.add(selectedEntityId);
             // Optimistic resolution is only safe for travel: the explore
             // contract uses on-chain VRF to decide whether to grant treasure,
             // and on treasure discovery (troop_movement.cairo:277-286) the
@@ -2598,7 +2623,12 @@ export default class WorldmapScene extends WarpTravel {
             // would animate a move that the indexer will then contradict,
             // producing a source → dest → source ping-pong.
             if (isTravelAction) {
-              this.pendingArmyMovementTxTargets.set(txHash, {
+              let targetsForTx = this.pendingArmyMovementTxTargets.get(txHash);
+              if (!targetsForTx) {
+                targetsForTx = new Map<ID, HexPosition>();
+                this.pendingArmyMovementTxTargets.set(txHash, targetsForTx);
+              }
+              targetsForTx.set(selectedEntityId, {
                 col: targetHex.col,
                 row: targetHex.row,
               });
@@ -2799,16 +2829,26 @@ export default class WorldmapScene extends WarpTravel {
       this.pendingArmyMovementFallbackTimeouts.delete(entityId);
     }
 
-    // Remove any txHash entries pointing to this entity. Note: if two moves
-    // are queued for the same entity, the first `movement_started` clear will
-    // drop txMap/txTarget entries for BOTH — the second move's
-    // `handleTransactionComplete` will then fall back to the indexer path.
-    // This mirrors the pre-existing txMap-cleanup semantics and avoids
-    // racing a stale optimistic animation against a newer one.
-    for (const [txHash, eid] of this.pendingArmyMovementTxMap) {
-      if (eid === entityId) {
-        this.pendingArmyMovementTxMap.delete(txHash);
-        this.pendingArmyMovementTxTargets.delete(txHash);
+    // Remove this entity from every txHash's entity set (and target map),
+    // dropping the txHash entry entirely when its set empties. Sibling
+    // entities in a batched multicall remain registered so their optimistic
+    // resolution is untouched.
+    //
+    // Historical note: if the same entity is queued for two moves, the first
+    // `movement_started` clear drops the earlier entry — the second move's
+    // `handleTransactionComplete` for that entity then falls back to the
+    // indexer path. This mirrors the pre-existing txMap-cleanup semantics and
+    // avoids racing a stale optimistic animation against a newer one.
+    for (const [txHash, entities] of this.pendingArmyMovementTxMap) {
+      if (entities.delete(entityId)) {
+        const targetsForTx = this.pendingArmyMovementTxTargets.get(txHash);
+        targetsForTx?.delete(entityId);
+        if (entities.size === 0) {
+          this.pendingArmyMovementTxMap.delete(txHash);
+          this.pendingArmyMovementTxTargets.delete(txHash);
+        } else if (targetsForTx && targetsForTx.size === 0) {
+          this.pendingArmyMovementTxTargets.delete(txHash);
+        }
       }
     }
 

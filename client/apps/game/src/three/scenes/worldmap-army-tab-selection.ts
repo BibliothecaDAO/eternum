@@ -44,13 +44,16 @@ interface PendingArmyMovementFallbackPlan {
 
 interface ResolvePendingArmyMovementTxFailurePlanInput {
   txHash: string;
-  txEntityMap: Map<string, number>;
+  // txHash → entity set: a single batched multicall delivers one hash for
+  // N moves, so this MUST be a set, not a single entity id.
+  txEntityMap: Map<string, Set<number>>;
   pendingEntities: Set<number>;
 }
 
 interface PendingArmyMovementTxFailurePlan {
-  shouldClearPendingMovement: boolean;
-  entityId: number | undefined;
+  // All entities that initiated a move for this txHash AND are still pending.
+  // Caller should clear pending state + lifecycle + ghost for each.
+  entitiesToClear: number[];
 }
 
 /**
@@ -149,21 +152,26 @@ export function resolvePendingArmyMovementFallbackPlan(
 }
 
 /**
- * Decide whether to clear pending movement when a transaction fails on-chain.
- * The txEntityMap correlates transaction hashes to the entity that initiated the move.
+ * Decide which entities to clear pending movement for when a transaction
+ * fails on-chain. A single `txHash` may correspond to MULTIPLE entities when
+ * several moves were batched into one multicall (see `PromiseQueue.processBatch`).
+ * Returns only the subset of those entities that are still actively pending
+ * — entities that already resolved (e.g., via animation start) are skipped.
  */
 export function resolvePendingArmyMovementTxFailurePlan(
   input: ResolvePendingArmyMovementTxFailurePlanInput,
 ): PendingArmyMovementTxFailurePlan {
-  const entityId = input.txEntityMap.get(input.txHash);
-
-  if (entityId === undefined) {
-    return { shouldClearPendingMovement: false, entityId: undefined };
+  const entities = input.txEntityMap.get(input.txHash);
+  if (!entities || entities.size === 0) {
+    return { entitiesToClear: [] };
   }
 
-  if (!input.pendingEntities.has(entityId)) {
-    return { shouldClearPendingMovement: false, entityId };
+  const entitiesToClear: number[] = [];
+  for (const entityId of entities) {
+    if (input.pendingEntities.has(entityId)) {
+      entitiesToClear.push(entityId);
+    }
   }
 
-  return { shouldClearPendingMovement: true, entityId };
+  return { entitiesToClear };
 }
