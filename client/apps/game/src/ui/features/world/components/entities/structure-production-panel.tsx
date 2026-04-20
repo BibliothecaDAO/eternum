@@ -16,6 +16,19 @@ interface StructureProductionPanelProps {
   showProductionSummary?: boolean;
   showTooltip?: boolean;
   badgeVariant?: "default" | "detailed";
+  /**
+   * Map keyed by resourceId → human-readable reason describing why the last
+   * automation cycle skipped producing this resource. When supplied, the badge
+   * for each listed resource gets a red starvation ring and the reason string
+   * is appended to the tooltip.
+   */
+  starvedResources?: Map<ResourcesIds, string>;
+  /**
+   * Map keyed by resourceId → consumption per second (human units). When supplied
+   * alongside `badgeVariant="detailed"`, the badge's top-right corner shows the net
+   * rate (`productionPerSecond − consumptionPerSecond`), colored green/red/muted.
+   */
+  consumptionPerSecondById?: Map<ResourcesIds, number>;
 }
 
 interface ResourceProductionSummaryItem {
@@ -36,6 +49,17 @@ const formatOutputAmount = (value: number | null | undefined): string | undefine
   return currencyIntlFormat(abs, decimals);
 };
 
+const NET_RATE_EPSILON = 1e-6;
+
+const formatNetRatePerSecond = (value: number): string => {
+  const abs = Math.abs(value);
+  const decimals = abs >= 1000 ? 0 : abs >= 10 ? 1 : 2;
+  const magnitude = currencyIntlFormat(abs, decimals);
+  if (value > NET_RATE_EPSILON) return `+${magnitude}/s`;
+  if (value < -NET_RATE_EPSILON) return `-${magnitude}/s`;
+  return `0/s`;
+};
+
 export const StructureProductionPanel = memo(
   ({
     structure,
@@ -45,6 +69,8 @@ export const StructureProductionPanel = memo(
     showProductionSummary = true,
     showTooltip = true,
     badgeVariant = "default",
+    starvedResources,
+    consumptionPerSecondById,
   }: StructureProductionPanelProps) => {
     const [timerTick, setTimerTick] = useState(0);
 
@@ -183,6 +209,8 @@ export const StructureProductionPanel = memo(
                 summary.isProducing && effectiveRemainingSeconds !== null
                   ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
                   : null;
+              const starvationReason = starvedResources?.get(summary.resourceId);
+              const isStarved = typeof starvationReason === "string" && starvationReason.length > 0;
               const tooltipParts = summary.isProducing
                 ? [
                     resourceLabel,
@@ -193,17 +221,40 @@ export const StructureProductionPanel = memo(
                     resourceLabel,
                     `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`,
                   ];
+              if (isStarved) {
+                tooltipParts.push(`⚠ ${starvationReason}`);
+              }
               const outputLabel = summary.isProducing ? formatOutputAmount(effectiveOutputRemaining) : undefined;
+              let netRateLabel: string | undefined;
+              if (badgeVariant === "detailed") {
+                const production = Number.isFinite(summary.productionPerSecond) ? (summary.productionPerSecond ?? 0) : 0;
+                const consumption = consumptionPerSecondById?.get(summary.resourceId) ?? 0;
+                const hasSignal = production !== 0 || consumption !== 0;
+                if (hasSignal) {
+                  netRateLabel = formatNetRatePerSecond(production - consumption);
+                }
+              }
               const badgeProps =
                 badgeVariant === "detailed"
                   ? {
                       cornerTopLeft: summary.totalBuildings > 0 ? `${summary.totalBuildings}` : undefined,
-                      cornerTopRight: outputLabel,
+                      cornerTopRight: netRateLabel ?? outputLabel,
                       cornerBottomRight: formattedRemaining ?? undefined,
                     }
                   : {
                       totalCount: summary.totalBuildings,
                     };
+
+              let cornerTopRightClassName: string | undefined;
+              if (badgeVariant === "detailed" && netRateLabel) {
+                if (netRateLabel.startsWith("+")) {
+                  cornerTopRightClassName = "text-emerald-400";
+                } else if (netRateLabel.startsWith("-")) {
+                  cornerTopRightClassName = "text-red-400";
+                } else {
+                  cornerTopRightClassName = "text-gold/50";
+                }
+              }
 
               return (
                 <ProductionStatusBadge
@@ -214,6 +265,8 @@ export const StructureProductionPanel = memo(
                   timeRemainingSeconds={effectiveRemainingSeconds}
                   size={productionBadgeSize}
                   showTooltip={showTooltip}
+                  className={isStarved ? "rounded-full ring-1 ring-red-500/60" : undefined}
+                  cornerTopRightClassName={cornerTopRightClassName}
                   {...badgeProps}
                 />
               );

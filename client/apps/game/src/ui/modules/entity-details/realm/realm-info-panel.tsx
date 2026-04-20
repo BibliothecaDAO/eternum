@@ -10,10 +10,12 @@ import { productionAutomation } from "@/ui/features/world/components/config";
 import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
+import { useRealmStarvedResources } from "@/ui/modules/entity-details/realm/use-realm-starved-resources";
+import { useRealmConsumptionPerSecond } from "@/ui/modules/entity-details/realm/use-realm-consumption-per-second";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { inferRealmPreset } from "@/utils/automation-presets";
-import { getRealmStatusColor, getRealmStatusLabel, getFailureSeverity, timeAgo } from "@/utils/automation-status";
+import { getRealmStatusColor, getFailureSeverity, timeAgo } from "@/utils/automation-status";
 import {
   formatTime,
   getGuardsByStructure,
@@ -26,7 +28,6 @@ import {
   ContractAddress,
   EntityType,
   RelicRecipientType,
-  ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -91,69 +92,55 @@ const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null)
   return "Idle";
 };
 
-const NextAutomationRunLabel = memo(() => {
+const RealmAutomationStatusLine = memo(({ realmId }: { realmId: string }) => {
+  const lastStatus = useAutomationStore(useCallback((state) => state.realms[realmId]?.lastStatus, [realmId]));
   const nextRunTimestamp = useAutomationStore((state) => state.nextRunTimestamp);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    if (typeof nextRunTimestamp !== "number") return;
+    if (typeof nextRunTimestamp !== "number" && !lastStatus) return;
     const id = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [nextRunTimestamp]);
+  }, [nextRunTimestamp, lastStatus]);
 
-  if (typeof nextRunTimestamp !== "number") {
-    return <span>Automation schedule pending.</span>;
-  }
+  if (!lastStatus && typeof nextRunTimestamp !== "number") return null;
 
-  const remainingSeconds = Math.max(0, Math.ceil((nextRunTimestamp - nowMs) / 1000));
-  return <span>Next automation run in {remainingSeconds}s</span>;
-});
+  const statusColor = lastStatus ? getRealmStatusColor(lastStatus) : "text-gold/40";
+  const failureSeverity = lastStatus ? getFailureSeverity(lastStatus) : "none";
 
-NextAutomationRunLabel.displayName = "NextAutomationRunLabel";
+  // Build the compact one-liner: "✓ 7s ago · next in 25s".
+  const statusGlyph = !lastStatus
+    ? ""
+    : lastStatus.status === "success"
+      ? "✓"
+      : lastStatus.status === "failed"
+        ? "✕"
+        : "⟳";
 
-const RealmAutomationStatusLine = memo(({ realmId }: { realmId: string }) => {
-  const lastStatus = useAutomationStore(useCallback((state) => state.realms[realmId]?.lastStatus, [realmId]));
-  const lastExecution = useAutomationStore(useCallback((state) => state.realms[realmId]?.lastExecution, [realmId]));
-
-  if (!lastStatus) return null;
-
-  const statusColor = getRealmStatusColor(lastStatus);
-  const statusLabel = getRealmStatusLabel(lastStatus);
-  const failureSeverity = getFailureSeverity(lastStatus);
-  const timeSince = timeAgo(lastStatus.attemptedAt);
+  const sinceLabel = lastStatus ? timeAgo(lastStatus.attemptedAt) : null;
+  const remainingSeconds =
+    typeof nextRunTimestamp === "number" ? Math.max(0, Math.ceil((nextRunTimestamp - nowMs) / 1000)) : null;
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5">
-        <span
-          className={`inline-block h-1.5 w-1.5 rounded-full ${
-            lastStatus.status === "success"
-              ? "bg-emerald-400"
-              : lastStatus.status === "failed"
-                ? "bg-red-400"
-                : "bg-amber-400"
-          }`}
-        />
-        <span className={`text-[10px] ${statusColor}`}>{statusLabel}</span>
-        <span className="text-[10px] text-gold/30">{timeSince}</span>
+      <div className="flex items-center justify-end gap-1.5 text-[10px]">
+        {lastStatus && (
+          <>
+            <span className={statusColor}>{statusGlyph}</span>
+            <span className="text-gold/40">{sinceLabel}</span>
+          </>
+        )}
+        {remainingSeconds !== null && (
+          <>
+            {lastStatus && <span className="text-gold/20">·</span>}
+            <span className="text-gold/40">next in {remainingSeconds}s</span>
+          </>
+        )}
       </div>
 
-      {failureSeverity === "critical" && (
+      {failureSeverity === "critical" && lastStatus && (
         <div className="rounded border border-danger/30 bg-danger/5 px-2 py-1 text-[10px] text-danger">
           {lastStatus.consecutiveFailures} consecutive failures: {lastStatus.message}
-        </div>
-      )}
-
-      {lastStatus.status === "success" && lastExecution?.outputsByResource && (
-        <div className="text-[10px] text-gold/40">
-          Produced:{" "}
-          {Object.entries(lastExecution.outputsByResource)
-            .filter(([, amount]) => amount > 0)
-            .map(([resId, amount]) => {
-              const label = ResourcesIds[Number(resId) as ResourcesIds];
-              return `${Math.round(amount).toLocaleString()} ${typeof label === "string" ? label : `#${resId}`}`;
-            })
-            .join(", ")}
         </div>
       )}
     </div>
@@ -209,6 +196,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     return automationRealms[String(realmId)];
   }, [automationRealms, realmId]);
   const statusLabel = resolveAutomationStatusLabel(automationConfig);
+
+  const starvedResources = useRealmStarvedResources(realmId);
+  const consumptionPerSecondById = useRealmConsumptionPerSecond(structure, realmId);
 
   const handleModifyClick = useCallback(() => {
     if (!realmId) return;
@@ -364,19 +354,18 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                 resources={resources}
                 compact
                 smallTextClass="text-xxs"
-                showTooltip={false}
+                showTooltip
                 showProductionSummary={false}
                 badgeVariant="detailed"
+                starvedResources={starvedResources}
+                consumptionPerSecondById={consumptionPerSecondById}
               />
             ) : (
               <p className="text-xxs text-gold/60 italic">Production data unavailable.</p>
             )}
           </div>
-          <div className="mt-3 text-right text-[10px] text-gold/50">
-            <NextAutomationRunLabel />
-          </div>
           {realmId && (
-            <div className="mt-1">
+            <div className="mt-3 text-right">
               <RealmAutomationStatusLine realmId={String(realmId)} />
             </div>
           )}
@@ -485,79 +474,76 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       )}
 
       {canShowArmiesCard && (
-        <div className="rounded border border-gold/20 bg-black/50 p-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Armies</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className={cn(
-                  "rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
-                  (!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy) &&
-                    "cursor-not-allowed opacity-50",
-                  isOwned &&
-                    structureEntityId &&
-                    structureCapabilities.canCreateFieldArmy &&
-                    "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
-                )}
-                onClick={() => {
-                  if (!structureEntityId || !isOwned || !structureCapabilities.canCreateFieldArmy) return;
-                  openArmyCreationPopup({
-                    structureId: Number(structureEntityId),
-                    isExplorer: true,
-                  });
-                }}
-                disabled={!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy}
-                aria-label="Create field army"
-                title="Create field army"
-              >
-                <Sword className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  "rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
-                  (!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy) &&
-                    "cursor-not-allowed opacity-50",
-                  isOwned &&
-                    structureEntityId &&
-                    structureCapabilities.canManageGuardArmy &&
-                    "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
-                )}
-                onClick={() => {
-                  if (!structureEntityId || !isOwned || !structureCapabilities.canManageGuardArmy) return;
-                  const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
-                  openArmyCreationPopup({
-                    structureId: Number(structureEntityId),
-                    isExplorer: false,
-                    maxDefenseSlots,
-                  });
-                }}
-                disabled={!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy}
-                aria-label="Create defense army"
-                title="Create defense army"
-              >
-                <Shield className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          <div className="mt-1.5 flex items-center gap-3 text-xxs text-gold/80">
-            <div className="flex items-center gap-1.5 rounded border border-gold/10 bg-[#1b140f]/80 px-2 py-1">
+        <div className="mt-auto flex items-center justify-between text-xxs text-gold/70">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
               <Sword className="h-3 w-3 text-gold/50" />
-              <span className="uppercase tracking-wide text-gold/60">Field</span>
-              <span className="font-semibold text-gold">
+              <span className="uppercase tracking-wide text-gold/50">Field</span>
+              <span className="font-semibold text-gold/90">
                 {attackArmyCount}
                 {maxAttackArmies !== null ? `/${maxAttackArmies}` : ""}
               </span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded border border-gold/10 bg-[#1b140f]/80 px-2 py-1">
+            </span>
+            <span className="flex items-center gap-1">
               <Shield className="h-3 w-3 text-gold/50" />
-              <span className="uppercase tracking-wide text-gold/60">Guard</span>
-              <span className="font-semibold text-gold">
+              <span className="uppercase tracking-wide text-gold/50">Guard</span>
+              <span className="font-semibold text-gold/90">
                 {guardArmyCount}
                 {maxGuardArmies !== null ? `/${maxGuardArmies}` : ""}
               </span>
-            </div>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              className={cn(
+                "rounded-full border border-gold/30 bg-black/40 p-1 text-gold/80 transition",
+                (!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy) &&
+                  "cursor-not-allowed opacity-50",
+                isOwned &&
+                  structureEntityId &&
+                  structureCapabilities.canCreateFieldArmy &&
+                  "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
+              )}
+              onClick={() => {
+                if (!structureEntityId || !isOwned || !structureCapabilities.canCreateFieldArmy) return;
+                openArmyCreationPopup({
+                  structureId: Number(structureEntityId),
+                  isExplorer: true,
+                });
+              }}
+              disabled={!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy}
+              aria-label="Create field army"
+              title="Create field army"
+            >
+              <Sword className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-full border border-gold/30 bg-black/40 p-1 text-gold/80 transition",
+                (!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy) &&
+                  "cursor-not-allowed opacity-50",
+                isOwned &&
+                  structureEntityId &&
+                  structureCapabilities.canManageGuardArmy &&
+                  "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
+              )}
+              onClick={() => {
+                if (!structureEntityId || !isOwned || !structureCapabilities.canManageGuardArmy) return;
+                const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
+                openArmyCreationPopup({
+                  structureId: Number(structureEntityId),
+                  isExplorer: false,
+                  maxDefenseSlots,
+                });
+              }}
+              disabled={!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy}
+              aria-label="Create defense army"
+              title="Create defense army"
+            >
+              <Shield className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       )}
