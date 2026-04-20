@@ -65,9 +65,11 @@ import {
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
+  tileOptToTile,
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
+  BiomeIdToType,
   BiomeType,
   ContractAddress,
   Direction,
@@ -81,7 +83,7 @@ import {
   Structure,
   StructureType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { getComponentEntities, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
@@ -468,6 +470,7 @@ const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ];
 const WORLDMAP_CHUNK_POLICY = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
+const SPATIAL_SQL_RESULT_ARRAY_KEYS = ["entities", "items", "models", "rows"];
 type DirectionalPrefetchAnchor = {
   forwardChunkKey: string;
   movementAxis: "x" | "z";
@@ -489,6 +492,31 @@ let worldmapInteractionDebugInstanceCounter = 0;
 function allocateWorldmapInteractionDebugInstanceId(): number {
   worldmapInteractionDebugInstanceCounter += 1;
   return worldmapInteractionDebugInstanceCounter;
+}
+
+function countSpatialSqlRows(result: unknown): number | null {
+  if (Array.isArray(result)) {
+    return result.length;
+  }
+
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+
+  const record = result as Record<string, unknown>;
+  for (const key of SPATIAL_SQL_RESULT_ARRAY_KEYS) {
+    const value = record[key];
+    if (Array.isArray(value)) {
+      return value.length;
+    }
+  }
+
+  return null;
+}
+
+function resolveTileBiomeType(biomeId: number): BiomeType {
+  const biome = BiomeIdToType[biomeId];
+  return biome === BiomeType.None ? BiomeType.Grassland : biome || BiomeType.Grassland;
 }
 
 export default class WorldmapScene extends WarpTravel {
@@ -967,10 +995,38 @@ export default class WorldmapScene extends WarpTravel {
       logging: false,
       onUpdate: () => useConnectionStore.getState().recordSpatialUpdate(),
       subscriptionSetupTimeoutMs: TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS,
+      onSpatialReadyEntityApplied: (info) => this.handleSpatialTileOptRecsApplied(info),
+      onSpatialReadyEntityReceived: (info) => this.handleSpatialTileOptStreamReceived(info),
+      onSpatialReadyTimeout: (info) => this.handleSpatialTileOptReadyTimeout(info),
       onSubscriptionSetupTimeout: (info) => this.handleToriiSubscriptionSetupTimeout(info),
     });
     activeSpatialStreamManager = this.toriiStreamManager;
     this.startToriiBoundsCounterLog();
+  }
+
+  private handleSpatialTileOptStreamReceived(info: {
+    elapsedMs: number;
+    entityId: string;
+    models: string[];
+    requestId: number;
+  }): void {
+    incrementWorldmapRenderCounter("spatialTileOptStreamReceived");
+    this.traceChunk("spatial_tileopt_stream_received", info);
+  }
+
+  private handleSpatialTileOptRecsApplied(info: {
+    elapsedMs: number;
+    entityId: string;
+    models: string[];
+    requestId: number;
+  }): void {
+    incrementWorldmapRenderCounter("spatialTileOptRecsApplied");
+    this.traceChunk("spatial_tileopt_recs_applied", info);
+  }
+
+  private handleSpatialTileOptReadyTimeout(info: { elapsedMs: number; requestId: number; timeoutMs: number }): void {
+    incrementWorldmapRenderCounter("spatialTileOptReadyTimeouts");
+    this.traceChunk("spatial_tileopt_ready_timeout", info);
   }
 
   private initializeWorldmapSceneServices(dojoContext: SetupResult): void {
@@ -6046,23 +6102,46 @@ export default class WorldmapScene extends WarpTravel {
     fetchGeneration: number,
   ): Promise<boolean> {
     this.beginToriiFetch();
+    const localBounds = {
+      minCol,
+      maxCol,
+      minRow,
+      maxRow,
+    };
+    const sqlBounds = {
+      minCol: minCol + FELT_CENTER(),
+      maxCol: maxCol + FELT_CENTER(),
+      minRow: minRow + FELT_CENTER(),
+      maxRow: maxRow + FELT_CENTER(),
+    };
+
     try {
-      await getExplorerTroopsFromToriiExact(
-        this.dojo.network.toriiClient,
-        this.dojo.network.contractComponents as unknown as Parameters<typeof getExplorerTroopsFromToriiExact>[1],
-        minCol + FELT_CENTER(),
-        maxCol + FELT_CENTER(),
-        minRow + FELT_CENTER(),
-        maxRow + FELT_CENTER(),
+      await this.runSpatialSqlFetch("explorer_troops", fetchKey, sqlBounds, () =>
+        getExplorerTroopsFromToriiExact(
+          this.dojo.network.toriiClient,
+          this.dojo.network.contractComponents as unknown as Parameters<typeof getExplorerTroopsFromToriiExact>[1],
+          sqlBounds.minCol,
+          sqlBounds.maxCol,
+          sqlBounds.minRow,
+          sqlBounds.maxRow,
+        ),
       );
-      await getMapFromToriiExact(
-        this.dojo.network.toriiClient,
-        this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],
-        minCol + FELT_CENTER(),
-        maxCol + FELT_CENTER(),
-        minRow + FELT_CENTER(),
-        maxRow + FELT_CENTER(),
+      await this.runSpatialSqlFetch("tileopt", fetchKey, sqlBounds, () =>
+        getMapFromToriiExact(
+          this.dojo.network.toriiClient,
+          this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],
+          sqlBounds.minCol,
+          sqlBounds.maxCol,
+          sqlBounds.minRow,
+          sqlBounds.maxRow,
+        ),
       );
+      const hydratedTileCount = this.hydrateExploredTilesFromTileOptRecs(fetchKey, localBounds);
+      this.traceChunk("spatial_sql_recs_hydrated", {
+        fetchKey,
+        hydratedTileCount,
+        localBounds,
+      });
       if (
         shouldApplyWorldmapFetchResult({
           fetchGeneration,
@@ -6094,6 +6173,121 @@ export default class WorldmapScene extends WarpTravel {
       this.settleTileHydrationFetch(fetchKey, fetchGeneration);
       this.settleStructureHydrationFetch(fetchKey, fetchGeneration);
       this.endToriiFetch();
+    }
+  }
+
+  private hydrateExploredTilesFromTileOptRecs(
+    fetchKey: string,
+    bounds: {
+      maxCol: number;
+      maxRow: number;
+      minCol: number;
+      minRow: number;
+    },
+  ): number {
+    const tileOptComponent = this.dojo.components.TileOpt;
+    if (!tileOptComponent) {
+      return 0;
+    }
+
+    let hydratedTileCount = 0;
+    for (const entity of getComponentEntities(tileOptComponent)) {
+      const tileOpt = getComponentValue(tileOptComponent, entity);
+      const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
+      if (!tile) {
+        continue;
+      }
+
+      const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
+      if (!this.isPositionWithinBounds(normalized, bounds)) {
+        continue;
+      }
+
+      const biome = resolveTileBiomeType(tile.biome);
+      const existingBiome = this.exploredTiles.get(normalized.x)?.get(normalized.y);
+      if (existingBiome === biome && !this.provisionalBiomes.isProvisional(normalized.x, normalized.y)) {
+        continue;
+      }
+
+      this.writeExploredTileFromSqlHydration(normalized.x, normalized.y, biome);
+      hydratedTileCount += 1;
+    }
+
+    if (hydratedTileCount > 0) {
+      incrementWorldmapRenderCounter("spatialSqlRecsHydratedTiles", hydratedTileCount);
+    }
+
+    if (import.meta.env.DEV && hydratedTileCount === 0) {
+      console.warn("[WorldmapScene] SQL TileOpt fetch produced no RECS tiles for render bounds", { fetchKey, bounds });
+    }
+
+    return hydratedTileCount;
+  }
+
+  private isPositionWithinBounds(
+    position: { x: number; y: number },
+    bounds: {
+      maxCol: number;
+      maxRow: number;
+      minCol: number;
+      minRow: number;
+    },
+  ): boolean {
+    return (
+      position.x >= bounds.minCol &&
+      position.x <= bounds.maxCol &&
+      position.y >= bounds.minRow &&
+      position.y <= bounds.maxRow
+    );
+  }
+
+  private writeExploredTileFromSqlHydration(col: number, row: number, biome: BiomeType): void {
+    if (!this.exploredTiles.has(col)) {
+      this.exploredTiles.set(col, new Map());
+    }
+
+    this.exploredTiles.get(col)!.set(row, biome);
+    this.provisionalBiomes.clear(col, row);
+    this.exploredTilesGeneration.bump();
+    gameWorkerManager.updateExploredTile(col, row, biome);
+    this.invalidateAllChunkCachesContainingHex(col, row);
+  }
+
+  private async runSpatialSqlFetch<T>(
+    queryName: "explorer_troops" | "tileopt",
+    fetchKey: string,
+    bounds: {
+      maxCol: number;
+      maxRow: number;
+      minCol: number;
+      minRow: number;
+    },
+    fetch: () => Promise<T>,
+  ): Promise<T> {
+    const startedAt = performance.now();
+    try {
+      const result = await fetch();
+      const durationMs = Math.round(performance.now() - startedAt);
+      incrementWorldmapRenderCounter("spatialSqlFetchCompleted");
+      this.traceChunk("spatial_sql_fetch_completed", {
+        bounds,
+        durationMs,
+        fetchKey,
+        queryName,
+        rowCount: countSpatialSqlRows(result),
+      });
+      return result;
+    } catch (error) {
+      const durationMs = Math.round(performance.now() - startedAt);
+      incrementWorldmapRenderCounter("spatialSqlFetchFailed");
+      this.traceChunk("spatial_sql_fetch_failed", {
+        bounds,
+        durationMs,
+        error: error instanceof Error ? error.message : String(error),
+        fetchKey,
+        queryName,
+      });
+      throw error;
     }
   }
 

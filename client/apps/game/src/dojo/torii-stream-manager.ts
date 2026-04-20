@@ -27,6 +27,20 @@ interface BoundsSwitchResult {
   outcome: BoundsSwitchOutcome;
 }
 
+type ToriiEntitySubscription = Awaited<ReturnType<typeof syncEntitiesDebounced>>;
+type ToriiSpatialReadinessEntityInfo = {
+  elapsedMs: number;
+  entityId: string;
+  models: string[];
+  requestId: number;
+};
+
+type ToriiSpatialReadinessTimeoutInfo = {
+  elapsedMs: number;
+  requestId: number;
+  timeoutMs: number;
+};
+
 export interface BoundsSubscriptionSetupTimeoutInfo extends ToriiSubscriptionSetupTimeoutInfo {
   requestId: number;
 }
@@ -38,6 +52,9 @@ interface ToriiStreamManagerConfig {
   clauseBuilder?: (descriptor: BoundsDescriptor) => Clause | null;
   onUpdate?: () => void;
   subscriptionSetupTimeoutMs?: number;
+  onSpatialReadyEntityApplied?: (info: ToriiSpatialReadinessEntityInfo) => void;
+  onSpatialReadyEntityReceived?: (info: ToriiSpatialReadinessEntityInfo) => void;
+  onSpatialReadyTimeout?: (info: ToriiSpatialReadinessTimeoutInfo) => void;
   onSubscriptionSetupTimeout?: (info: BoundsSubscriptionSetupTimeoutInfo) => void;
 }
 
@@ -48,6 +65,72 @@ export interface GlobalModelStreamConfig {
 }
 
 const DEFAULT_SUBSCRIPTION_SETUP_TIMEOUT_MS = 8_000;
+const TILE_OPT_MODEL = "s1_eternum-TileOpt";
+
+function isTileOptEntity(data: { models?: Record<string, unknown> }): boolean {
+  return Boolean(data.models?.[TILE_OPT_MODEL]);
+}
+
+async function waitForSpatialStreamReady(
+  subscription: ToriiEntitySubscription,
+  timeoutMs: number,
+): Promise<{ durationMs: number; status: "ready" | "timeout" }> {
+  const startedAt = performance.now();
+  if (timeoutMs <= 0) {
+    await subscription.ready;
+    return { durationMs: performance.now() - startedAt, status: "ready" };
+  }
+
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<"timeout">((resolve) => {
+    timeoutHandle = setTimeout(() => resolve("timeout"), timeoutMs);
+  });
+
+  try {
+    const status = await Promise.race([
+      subscription.ready.then(
+        () => "ready" as const,
+        (error) => {
+          console.warn("[ToriiStreamManager] Spatial stream readiness failed", error);
+          return "ready" as const;
+        },
+      ),
+      timeout,
+    ]);
+
+    return { durationMs: performance.now() - startedAt, status };
+  } finally {
+    if (timeoutHandle !== undefined) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+}
+
+function buildSpatialReadinessEntityInfo({
+  elapsedMs,
+  entityId,
+  models,
+  requestId,
+}: ToriiSpatialReadinessEntityInfo): ToriiSpatialReadinessEntityInfo {
+  return {
+    elapsedMs: Math.round(elapsedMs),
+    entityId,
+    models,
+    requestId,
+  };
+}
+
+function buildSpatialReadinessTimeoutInfo({
+  elapsedMs,
+  requestId,
+  timeoutMs,
+}: ToriiSpatialReadinessTimeoutInfo): ToriiSpatialReadinessTimeoutInfo {
+  return {
+    elapsedMs: Math.round(elapsedMs),
+    requestId,
+    timeoutMs,
+  };
+}
 
 const defaultClauseBuilder = (descriptor: BoundsDescriptor): Clause | null => {
   const { models, additionalClauses } = descriptor;
@@ -105,6 +188,9 @@ export class ToriiStreamManager {
   private currentSignature: string | null = null;
   private lastDescriptor: BoundsDescriptor | null = null;
   private readonly subscriptionSetupTimeoutMs: number;
+  private readonly onSpatialReadyEntityApplied?: (info: ToriiSpatialReadinessEntityInfo) => void;
+  private readonly onSpatialReadyEntityReceived?: (info: ToriiSpatialReadinessEntityInfo) => void;
+  private readonly onSpatialReadyTimeout?: (info: ToriiSpatialReadinessTimeoutInfo) => void;
   private readonly onSubscriptionSetupTimeout?: (info: BoundsSubscriptionSetupTimeoutInfo) => void;
 
   constructor({
@@ -114,6 +200,9 @@ export class ToriiStreamManager {
     clauseBuilder = defaultClauseBuilder,
     onUpdate,
     subscriptionSetupTimeoutMs = DEFAULT_SUBSCRIPTION_SETUP_TIMEOUT_MS,
+    onSpatialReadyEntityApplied,
+    onSpatialReadyEntityReceived,
+    onSpatialReadyTimeout,
     onSubscriptionSetupTimeout,
   }: ToriiStreamManagerConfig) {
     this.client = client;
@@ -122,6 +211,9 @@ export class ToriiStreamManager {
     this.clauseBuilder = clauseBuilder;
     this.onUpdate = onUpdate;
     this.subscriptionSetupTimeoutMs = subscriptionSetupTimeoutMs;
+    this.onSpatialReadyEntityApplied = onSpatialReadyEntityApplied;
+    this.onSpatialReadyEntityReceived = onSpatialReadyEntityReceived;
+    this.onSpatialReadyTimeout = onSpatialReadyTimeout;
     this.onSubscriptionSetupTimeout = onSubscriptionSetupTimeout;
   }
 
@@ -150,7 +242,27 @@ export class ToriiStreamManager {
     const requestId = ++this.latestSwitchRequestId;
 
     const task = this.switchQueue.then(async (): Promise<BoundsSwitchResult> => {
+      const readinessStartedAt = performance.now();
       const subscription = await syncEntitiesDebounced(this.client, this.setup, clause, this.logging, this.onUpdate, {
+        isReadyEntity: isTileOptEntity,
+        onReadyEntityApplied: (info) => {
+          this.onSpatialReadyEntityApplied?.(
+            buildSpatialReadinessEntityInfo({
+              ...info,
+              elapsedMs: performance.now() - readinessStartedAt,
+              requestId,
+            }),
+          );
+        },
+        onReadyEntityReceived: (info) => {
+          this.onSpatialReadyEntityReceived?.(
+            buildSpatialReadinessEntityInfo({
+              ...info,
+              elapsedMs: performance.now() - readinessStartedAt,
+              requestId,
+            }),
+          );
+        },
         subscriptionSetupTimeoutMs: this.subscriptionSetupTimeoutMs,
         onSubscriptionSetupTimeout: (info) => {
           this.onSubscriptionSetupTimeout?.({ ...info, requestId });
@@ -163,7 +275,10 @@ export class ToriiStreamManager {
         return { outcome: "stale_dropped" };
       }
 
-      // Swap active stream only after the replacement subscription is ready.
+      this.monitorSpatialStreamReadiness(subscription, requestId);
+
+      // The exact SQL fetch + hydration gate owns first terrain presentation.
+      // The stream readiness monitor is a live-update health signal only.
       this.cancelCurrentSubscription();
       this.currentSubscription = subscription;
       this.currentSignature = signature;
@@ -185,6 +300,22 @@ export class ToriiStreamManager {
         this.pendingSwitch = null;
       }
     }
+  }
+
+  private monitorSpatialStreamReadiness(subscription: ToriiEntitySubscription, requestId: number): void {
+    void waitForSpatialStreamReady(subscription, this.subscriptionSetupTimeoutMs).then((readinessResult) => {
+      if (readinessResult.status !== "timeout") {
+        return;
+      }
+
+      this.onSpatialReadyTimeout?.(
+        buildSpatialReadinessTimeoutInfo({
+          elapsedMs: readinessResult.durationMs,
+          requestId,
+          timeoutMs: this.subscriptionSetupTimeoutMs,
+        }),
+      );
+    });
   }
 
   cancelCurrentSubscription() {

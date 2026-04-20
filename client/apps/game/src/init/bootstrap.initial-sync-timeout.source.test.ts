@@ -14,4 +14,11 @@ describe("initial sync bootstrap timeout wiring", () => {
     expect(source).toContain("subscriptionSetupTimeoutMs:");
     expect(source).toContain("env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS");
   });
+
+  it("waits for the initial entity flush before reporting sync complete", () => {
+    const source = readSource("src/dojo/sync.ts");
+
+    expect(source).toContain("waitForInitialEntityFlush");
+    expect(source).toContain("entityStreamSubscription.ready");
+  });
 });

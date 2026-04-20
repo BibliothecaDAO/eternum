@@ -10,7 +10,7 @@ import {
   type BootstrappedEntrySession,
   type SetupResult,
 } from "@/init/bootstrap";
-import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
+import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "./context";
 
@@ -147,6 +147,35 @@ export const useGameEntryBootstrapController = ({
     setTasks((previousTasks) => updateTaskStatus(previousTasks, taskId, taskStatus));
   }, []);
 
+  const completeBootstrapRun = useCallback((result: BootstrappedEntrySession) => {
+    setTasks(createCompletedBootstrapTasks());
+    setSession(result);
+    setStatus("ready");
+    markGameEntryMilestone("entry-ready");
+  }, []);
+
+  const refreshSessionPoliciesAfterEntryReady = useCallback((runId: number) => {
+    const connector = useAccountStore.getState().connector;
+    if (!connector) {
+      markGameEntryMilestone("session-policies-refresh-skipped");
+      return;
+    }
+
+    const refreshStartedAt = performance.now();
+    markGameEntryMilestone("session-policies-refresh-started");
+
+    void refreshSessionPolicies(connector)
+      .catch((refreshError: unknown) => {
+        console.warn("[bootstrap] Session policy refresh failed after entry ready", refreshError);
+      })
+      .finally(() => {
+        recordGameEntryDuration("session-policies-refresh", performance.now() - refreshStartedAt);
+        if (activeRunIdRef.current === runId) {
+          markGameEntryMilestone("session-policies-refresh-completed");
+        }
+      });
+  }, []);
+
   const refreshReadyState = useCallback((nextContext: ResolvedEntryContext | null) => {
     const nextState = resolveInitialState(nextContext);
     setSession(nextState.session);
@@ -197,27 +226,13 @@ export const useGameEntryBootstrapController = ({
     inFlightRef.current = promise;
 
     promise
-      .then(async (result) => {
+      .then((result) => {
         if (activeRunIdRef.current !== runId) {
           return;
         }
 
-        const connector = useAccountStore.getState().connector;
-        if (connector) {
-          markGameEntryMilestone("session-policies-refresh-started");
-          await refreshSessionPolicies(connector);
-          if (activeRunIdRef.current !== runId) {
-            return;
-          }
-          markGameEntryMilestone("session-policies-refresh-completed");
-        } else {
-          markGameEntryMilestone("session-policies-refresh-skipped");
-        }
-
-        setTasks(createCompletedBootstrapTasks());
-        setSession(result);
-        setStatus("ready");
-        markGameEntryMilestone("entry-ready");
+        completeBootstrapRun(result);
+        refreshSessionPoliciesAfterEntryReady(runId);
       })
       .catch((incomingError: unknown) => {
         if (activeRunIdRef.current !== runId) {
@@ -234,7 +249,7 @@ export const useGameEntryBootstrapController = ({
           inFlightRef.current = null;
         }
       });
-  }, [context, refreshReadyState, setTaskStatus]);
+  }, [completeBootstrapRun, context, refreshReadyState, refreshSessionPoliciesAfterEntryReady, setTaskStatus]);
 
   useEffect(() => {
     refreshReadyState(context);
