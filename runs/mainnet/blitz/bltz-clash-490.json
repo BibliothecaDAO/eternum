@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24652784336-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-04-20T06:56:46.746Z",
-  "updatedAt": "2026-04-20T06:58:49.198Z",
+  "updatedAt": "2026-04-20T06:58:58.339Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-04-20T06:58:58.339Z"
     },
     {
       "id": "configure-world",
@@ -75,5 +76,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-clash-490.json",
     "worldAddress": "0x072117edda08871997ad341d9396a65bac38956a0ba5fef4d3fb2fe0be99215e",
     "createGameTxHash": "0x1682fd8e2a334c75483a01cb72dc08a1f7491521fdc5c16f8193fb6956aab0"
+  },
+  "activeLease": {
+    "launchRequestId": "24652784336-1",
+    "workflowRunId": 24652784336,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-04-20T06:58:58.339Z",
+    "expiresAt": "2026-04-20T07:43:58.339Z"
   }
 }
