@@ -1,7 +1,7 @@
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 
-const DEFAULT_HEALTH_CHECK_INTERVAL_MS = 15_000;
-const DEFAULT_STALE_THRESHOLD_MS = 30_000;
+const DEFAULT_HEALTH_CHECK_INTERVAL_MS = 10_000;
+const DEFAULT_STALE_THRESHOLD_MS = 15_000;
 
 interface ConnectionHealthMonitorConfig {
   onReconnectSpatial: () => Promise<void>;
@@ -19,6 +19,7 @@ export class ConnectionHealthMonitor {
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
   private reconnecting = false;
   private disposed = false;
+  private lastStreamReconnectAtMs = 0;
 
   constructor(config: ConnectionHealthMonitorConfig) {
     this.config = config;
@@ -90,17 +91,28 @@ export class ConnectionHealthMonitor {
     if (document.visibilityState === "hidden") return;
 
     const store = useConnectionStore.getState();
-    const now = Date.now();
 
     try {
       const healthy = await this.config.healthCheckFn();
 
       if (healthy) {
         store.recordHealthCheck();
-        // Server is reachable — connection is healthy.
-        // Stream staleness just means no game state changed recently, not a connection issue.
         store.setStatus("connected");
         store.resetReconnectAttempts();
+
+        // Server is reachable, but a stream can silently die (WASM gRPC drop
+        // without onError firing) while the tab stays visible. If either stream
+        // has been silent past the stale threshold, force a resubscribe.
+        // Cooldown prevents reconnect storms when the area is genuinely idle.
+        const now = Date.now();
+        if (now - this.lastStreamReconnectAtMs >= this.staleThresholdMs) {
+          const spatialStale = now - store.lastSpatialUpdate > this.staleThresholdMs;
+          const globalStale = now - store.lastGlobalUpdate > this.staleThresholdMs;
+          if (spatialStale || globalStale) {
+            this.lastStreamReconnectAtMs = now;
+            void this.reconnectStaleStreams(spatialStale, globalStale);
+          }
+        }
       }
     } catch {
       store.setStatus("disconnected");

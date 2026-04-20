@@ -68,6 +68,7 @@ import {
   resolveGameEntryModalPhase,
   type GameEntryModalPhase as ModalPhase,
 } from "./game-entry-phase";
+import { resolveHyperstructureForgeBatchSize, resolveHyperstructureForgeCount } from "./game-entry-forge.utils";
 import { resolveBlitzSettlementAvailability } from "./game-entry-blitz-timing";
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
 import { SeasonPassOptionCard } from "./season-pass-option-card";
@@ -2826,119 +2827,83 @@ const HyperstructurePhase = ({
  */
 const ForgeHyperstructuresPhase = ({
   numHyperstructuresLeft,
+  nextForgeCount,
   isForging,
+  errorMessage,
   onForge,
   onClose,
 }: {
   numHyperstructuresLeft: number;
+  nextForgeCount: number;
   isForging: boolean;
+  errorMessage: string | null;
   onForge: () => void;
   onClose: () => void;
 }) => {
   const allForged = numHyperstructuresLeft <= 0;
+  const forgeLabel = `Forge ${nextForgeCount} Hyperstructure${nextForgeCount === 1 ? "" : "s"}`;
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="text-center mb-4">
-        <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
-          <Sparkles className="w-8 h-8 text-amber-400" />
+    <div className="flex flex-col gap-4" aria-live="polite">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gold/30 bg-gold/10">
+          {allForged ? <Check className="h-5 w-5 text-emerald-400" /> : <Sparkles className="h-5 w-5 text-gold" />}
         </div>
-        <h2 className="text-lg font-semibold text-gold">
-          {allForged ? "All Hyperstructures Forged!" : "Forge Hyperstructures"}
-        </h2>
-        <p className="text-xs text-gold/60 mt-1">
-          {allForged
-            ? "All hyperstructures have been created for this game."
-            : "Create hyperstructures for the upcoming game. Anyone can forge them!"}
-        </p>
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold text-gold">
+            {allForged ? "All Hyperstructures Forged" : "Forge Hyperstructures"}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-gold/65">
+            {allForged
+              ? "This world has the required hyperstructures ready for registration."
+              : "Create the remaining hyperstructures for this Blitz world."}
+          </p>
+        </div>
       </div>
 
-      {!allForged && (
-        <>
-          {/* Forge button - golden orb style similar to HyperstructureForge */}
-          <motion.button
-            onClick={onForge}
-            disabled={isForging}
-            initial={{ scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative w-24 h-24 rounded-full cursor-pointer transform-gpu disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-yellow-300/50 mb-4"
-            style={{
-              background: "radial-gradient(circle at 30% 30%, #facc15, #ca8a04, #f59e0b)",
-              boxShadow:
-                "0 8px 32px rgba(251, 191, 36, 0.4), inset 0 2px 8px rgba(255, 255, 255, 0.4), inset 0 -2px 8px rgba(0, 0, 0, 0.1)",
-              border: "4px solid #fef3c7",
-            }}
-          >
-            {/* Ripple Effect */}
-            <motion.div
-              className="absolute inset-0 rounded-full border-2 border-yellow-400/40"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.6, 0, 0.6],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-md border border-gold/15 bg-black/25 px-3 py-2">
+          <div className="text-[10px] uppercase text-gold/50">Remaining</div>
+          <div className="mt-1 text-2xl font-semibold text-gold">{Math.max(0, numHyperstructuresLeft)}</div>
+        </div>
+        <div className="rounded-md border border-gold/15 bg-black/25 px-3 py-2">
+          <div className="text-[10px] uppercase text-gold/50">Next Transaction</div>
+          <div className="mt-1 text-2xl font-semibold text-gold">{nextForgeCount}</div>
+        </div>
+      </div>
 
-            {/* Content */}
-            <div className="flex items-center justify-center w-full h-full text-4xl font-black text-amber-900">
-              {isForging ? (
-                <motion.img
-                  src="/images/logos/eternum-loader.png"
-                  className="w-8 h-8"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                />
-              ) : (
-                <motion.span
-                  key={numHyperstructuresLeft}
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                >
-                  {numHyperstructuresLeft}
-                </motion.span>
-              )}
-            </div>
-
-            {/* Sparkles */}
-            {!isForging && (
-              <>
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-2 h-2 bg-white rounded-full"
-                    style={{
-                      top: `${20 + i * 20}%`,
-                      left: `${10 + i * 30}%`,
-                    }}
-                    animate={{
-                      opacity: [0, 1, 0],
-                      scale: [0, 1, 0],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      delay: i * 0.5,
-                      ease: "easeInOut",
-                    }}
-                  />
-                ))}
-              </>
-            )}
-          </motion.button>
-
-          <p className="text-xs text-gold/50 text-center mb-4">
-            Click to forge {numHyperstructuresLeft} hyperstructure{numHyperstructuresLeft !== 1 ? "s" : ""}
-          </p>
-        </>
+      {errorMessage && (
+        <div className="flex gap-2 rounded-md border border-red/30 bg-red/10 px-3 py-2 text-sm text-red">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
       )}
 
-      {/* Close button */}
+      {!allForged && (
+        <button
+          type="button"
+          onClick={onForge}
+          disabled={isForging || nextForgeCount <= 0}
+          className={cn(
+            "flex h-11 w-full items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors",
+            "border-gold bg-gold text-brown hover:bg-gold/90",
+            "disabled:cursor-not-allowed disabled:border-gold/25 disabled:bg-gold/10 disabled:text-gold/45",
+          )}
+        >
+          {isForging ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Forging...</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4" />
+              <span>{forgeLabel}</span>
+            </>
+          )}
+        </button>
+      )}
+
       <Button variant="outline" onClick={onClose} className="w-full" forceUppercase={false}>
         {allForged ? "Done" : "Close"}
       </Button>
@@ -3046,6 +3011,7 @@ export const GameEntryModal = ({
   // Forge hyperstructures state (for creating new ones during registration)
   const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
   const [isForging, setIsForging] = useState(false);
+  const [forgeErrorMessage, setForgeErrorMessage] = useState<string | null>(null);
   const [eternumSettlementMode, setEternumSettlementMode] = useState<EternumSettlementMode>("realm");
   const [seasonPlacement, setSeasonPlacement] = useState<SeasonPlacement>(DEFAULT_SEASON_PLACEMENT);
   const [selectedSeasonPassTokenId, setSelectedSeasonPassTokenId] = useState<bigint | null>(null);
@@ -3063,6 +3029,12 @@ export const GameEntryModal = ({
   const [settlementPlannerTarget, setSettlementPlannerTarget] = useState<SettlementPlannerTarget | null>(null);
   const [settlementPlannerConflict, setSettlementPlannerConflict] = useState<string | null>(null);
   const [settlementPlannerSuccess, setSettlementPlannerSuccess] = useState<string | null>(null);
+
+  const forgeBatchSize = useMemo(() => resolveHyperstructureForgeBatchSize(chain), [chain]);
+  const nextForgeCount = useMemo(
+    () => resolveHyperstructureForgeCount({ numHyperstructuresLeft, batchSize: forgeBatchSize }),
+    [forgeBatchSize, numHyperstructuresLeft],
+  );
   const [optimisticRealmPlacements, setOptimisticRealmPlacements] = useState<SettlementPlannerOptimisticRealm[]>([]);
   const [mintRealmTokenIdInput, setMintRealmTokenIdInput] = useState("1");
   const [isAutoSelectingNextRealmTokenId, setIsAutoSelectingNextRealmTokenId] = useState(false);
@@ -4209,6 +4181,16 @@ export const GameEntryModal = ({
     resetBootstrapDependentState();
   }, [chain, isBlitzMode, isForgeMode, isOpen, resetBootstrapDependentState, worldName]);
 
+  useEffect(() => {
+    if (!isOpen || !isForgeMode) {
+      return;
+    }
+
+    setNumHyperstructuresLeft(initialNumHyperstructuresLeft ?? 0);
+    setIsForging(false);
+    setForgeErrorMessage(null);
+  }, [chain, initialNumHyperstructuresLeft, isForgeMode, isOpen, worldName]);
+
   // Retry handler
   const handleRetry = useCallback(() => {
     resetBootstrapDependentState();
@@ -5158,11 +5140,21 @@ export const GameEntryModal = ({
     debugLog(worldName, "handleForgeHyperstructures called - hasAccount:", !!account);
     if (!isBlitzMode) {
       debugLog(worldName, "Skipping blitz forge flow outside blitz mode");
+      setForgeErrorMessage("Hyperstructure forging is only available for Blitz worlds.");
       return;
     }
-    if (!account) return;
+    if (!account) {
+      setForgeErrorMessage("Connect a controller account before forging hyperstructures.");
+      return;
+    }
+    if (nextForgeCount <= 0) {
+      setNumHyperstructuresLeft(0);
+      setForgeErrorMessage(null);
+      return;
+    }
 
     setIsForging(true);
+    setForgeErrorMessage(null);
 
     try {
       const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
@@ -5175,8 +5167,7 @@ export const GameEntryModal = ({
         throw new Error("blitz_realm_systems contract not found for selected world");
       }
 
-      const batchSize = chain === "mainnet" ? 1 : 4;
-      const hyperstructureCount = numHyperstructuresLeft > 0 ? Math.min(numHyperstructuresLeft, batchSize) : batchSize;
+      const hyperstructureCount = nextForgeCount;
       const signer = account as unknown as Account;
 
       const { env } = await import("../../../../../env");
@@ -5214,10 +5205,11 @@ export const GameEntryModal = ({
       queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
     } catch (error) {
       debugLog(worldName, "Forge hyperstructures failed:", error);
+      setForgeErrorMessage(error instanceof Error ? error.message : "Failed to forge hyperstructures.");
     } finally {
       setIsForging(false);
     }
-  }, [account, isBlitzMode, worldName, chain, queryClient, numHyperstructuresLeft]);
+  }, [account, isBlitzMode, worldName, nextForgeCount, chain, queryClient]);
 
   // Initialize a single hyperstructure
   const handleInitializeHyperstructure = useCallback(
@@ -5455,7 +5447,9 @@ export const GameEntryModal = ({
               <motion.div key="forge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <ForgeHyperstructuresPhase
                   numHyperstructuresLeft={numHyperstructuresLeft}
+                  nextForgeCount={nextForgeCount}
                   isForging={isForging}
+                  errorMessage={forgeErrorMessage}
                   onForge={handleForgeHyperstructures}
                   onClose={onClose}
                 />
