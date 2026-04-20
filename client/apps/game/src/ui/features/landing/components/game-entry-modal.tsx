@@ -3883,7 +3883,7 @@ export const GameEntryModal = ({
         if (snapshot) {
           latestSnapshot = snapshot;
           const status = syncSettlementStateFromSnapshot(snapshot);
-          if (status.settledCount >= targetSettleCount || status.remainingToSettle === 0) {
+          if (hasReachedSettlementTarget(status, targetSettleCount)) {
             return snapshot;
           }
         }
