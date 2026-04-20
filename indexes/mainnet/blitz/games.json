@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-20T06:56:46.746Z",
+  "updatedAt": "2026-04-20T06:56:51.769Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -276,12 +276,13 @@
       "path": "runs/mainnet/blitz/bltz-clash-490.json",
       "inputPath": "inputs/mainnet/blitz/bltz-clash-490/24652784336-1.json",
       "status": "running",
-      "updatedAt": "2026-04-20T06:56:46.746Z",
+      "updatedAt": "2026-04-20T06:56:51.769Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-04-20T07:41:51.769Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-04-20T11:00:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
