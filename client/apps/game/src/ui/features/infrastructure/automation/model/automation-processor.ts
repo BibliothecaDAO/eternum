@@ -464,6 +464,43 @@ export const buildRealmProductionPlan = ({
     availableBudget.set(resourceId, Math.max(0, maxConsumable));
   });
 
+  // Pre-allocate shared-input budget proportionally. Without this, consumers processed
+  // first drain the 90% cap and later consumers (especially troops under the cycle-fallback
+  // numeric ordering) get crumbs. Each input's scale factor caps every consumer's
+  // requested share so total reservations fit within the budget.
+  const totalDemandByInput = new Map<ResourcesIds, number>();
+  const addDemand = (inputId: ResourcesIds, percent: number) => {
+    if (!(percent > 0)) return;
+    totalDemandByInput.set(inputId, (totalDemandByInput.get(inputId) ?? 0) + percent);
+  };
+  for (const definition of resourceDefinitions) {
+    if (!definition.hasActiveProduction) continue;
+    const { resourceId, percentages } = definition;
+    if (percentages.resourceToResource > 0) {
+      const inputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
+      for (const input of inputs) {
+        if (input.amount <= 0) continue;
+        if (isAutomationResourceBlocked(input.resource, entityType, "input")) continue;
+        addDemand(input.resource, percentages.resourceToResource);
+      }
+    }
+    if (percentages.laborToResource > 0) {
+      const laborConfig = configManager.getLaborConfig?.(resourceId);
+      const inputs = laborConfig?.inputResources ?? [];
+      for (const input of inputs) {
+        if (input.amount <= 0) continue;
+        if (isAutomationResourceBlocked(input.resource, entityType, "input")) continue;
+        addDemand(input.resource, percentages.laborToResource);
+      }
+    }
+  }
+  const scaleFactorByInput = new Map<ResourcesIds, number>();
+  totalDemandByInput.forEach((demand, inputId) => {
+    const scale = demand > MAX_RESOURCE_ALLOCATION_PERCENT ? MAX_RESOURCE_ALLOCATION_PERCENT / demand : 1;
+    scaleFactorByInput.set(inputId, scale);
+  });
+  const getInputShareScale = (inputId: ResourcesIds) => scaleFactorByInput.get(inputId) ?? 1;
+
   const planCallset: RealmProductionCallset = {
     resourceToResource: [],
     laborToResource: [],
@@ -526,7 +563,7 @@ export const buildRealmProductionPlan = ({
             break;
           }
 
-          const desired = Math.floor((total * resourceToResource) / 100);
+          const desired = Math.floor((total * resourceToResource * getInputShareScale(input.resource)) / 100);
           if (desired <= 0) {
             maxCycles = 0;
             break;
@@ -642,7 +679,7 @@ export const buildRealmProductionPlan = ({
             break;
           }
 
-          const desired = Math.floor((total * laborToResource) / 100);
+          const desired = Math.floor((total * laborToResource * getInputShareScale(input.resource)) / 100);
           if (desired <= 0) {
             laborDebug.push({
               inputResource: input.resource,
