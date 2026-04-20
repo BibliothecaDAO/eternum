@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24691908947-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-04-20T21:44:15.490Z",
-  "updatedAt": "2026-04-20T21:45:26.875Z",
+  "updatedAt": "2026-04-20T21:45:31.016Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-20T21:45:31.016Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,5 +71,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-lgc-friendly-match.json",
     "worldAddress": "0x078a9731f7b892e7b4b981b14fe237bd192206d755bb039cdf756faa6ed2400b",
     "createGameTxHash": "0x424a79ea02da92ca7ba7a5d123510fbdaafc8e63efc497552feb36877964bf2"
+  },
+  "activeLease": {
+    "launchRequestId": "24691908947-1",
+    "workflowRunId": 24691908947,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-04-20T21:45:31.016Z",
+    "expiresAt": "2026-04-20T22:30:31.016Z"
   }
 }
