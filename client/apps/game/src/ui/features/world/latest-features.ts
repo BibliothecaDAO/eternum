@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-20",
+    title: "Cleaner Forge Flow",
+    description:
+      "Forge Hyperstructures now waits for the dashboard entry data to be ready, shows a clearer remaining count, and reports forge failures instead of leaving the action feeling stuck.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-20",
     title: "Blitz Settlement Sync",
     description:
       "Blitz settlement now waits for the requested settled realm count before advancing, so fresh entries no longer get stuck on finalizing when the index briefly returns an empty snapshot.",
