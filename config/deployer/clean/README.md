@@ -174,7 +174,7 @@ The committed rolling Blitz cadence should be dispatched as:
 
 ```text
 launch_kind = rotation
-environment = slot.blitz
+environment = mainnet.blitz
 config_path = config/deployer/clean/examples/blitz-rotation.yaml
 launch_step = full
 ```

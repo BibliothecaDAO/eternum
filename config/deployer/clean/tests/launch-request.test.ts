@@ -174,7 +174,7 @@ games:
 
     expect(request).toMatchObject({
       launchKind: "rotation",
-      environmentId: "slot.blitz",
+      environmentId: "mainnet.blitz",
       rotationName: "blitz-rotation",
       firstGameStartTime: "2026-04-20T01:00:00Z",
       gameIntervalMinutes: 0,
