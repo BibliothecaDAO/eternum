@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-20T21:44:20.807Z",
+  "updatedAt": "2026-04-20T21:45:11.270Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -494,14 +494,13 @@
       "path": "runs/slot/blitz/lgc-friendly-match.json",
       "inputPath": "inputs/slot/blitz/lgc-friendly-match/24691908947-1.json",
       "status": "running",
-      "updatedAt": "2026-04-20T21:44:20.807Z",
+      "updatedAt": "2026-04-20T21:45:11.270Z",
       "workflowRef": "next",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-04-20T22:29:20.807Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "2026-04-20T23:00:00.000Z",
+      "startTime": 1776726000,
       "durationSeconds": 3600,
       "artifacts": {}
     }
