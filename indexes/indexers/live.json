@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-19T22:12:30.942Z",
+  "updatedAt": "2026-04-20T10:32:36.014Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1319,6 +1319,19 @@
         "describedAt": "2026-04-19T22:12:30.942Z"
       },
       "updatedAt": "2026-04-19T22:12:30.942Z"
+    },
+    "bltz-clash-490": {
+      "gameName": "bltz-clash-490",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-clash-490/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-20T10:32:36.014Z"
+      },
+      "updatedAt": "2026-04-20T10:32:36.014Z"
     }
   }
 }
