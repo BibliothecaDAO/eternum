@@ -191,7 +191,7 @@ export interface FactoryRotationEvaluationState {
   lastNudgedAt: string | null;
 }
 
-export interface FactoryRotationWeeklyCadenceEntry {
+interface FactoryRotationWeeklyCadenceEntry {
   gameNamePrefix: string;
   weekday: string;
   utcTime: string;
