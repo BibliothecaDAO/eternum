@@ -13,6 +13,7 @@ import type {
   LaunchGameStepId,
   LaunchRotationRequest,
   LaunchRotationStepId,
+  LaunchRotationWeeklyCadenceEntry,
   LaunchSeriesRequest,
   LaunchSeriesStepId,
   LaunchTargetKind,
@@ -278,6 +279,100 @@ function resolveTargetGameNamesJson(args: Args): string[] | undefined {
   return normalizedGameNames;
 }
 
+const WEEKLY_CADENCE_WEEKDAYS = new Set<LaunchRotationWeeklyCadenceEntry["weekday"]>([
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+]);
+
+function resolveWeeklyCadenceJson(args: Args): LaunchRotationWeeklyCadenceEntry[] | undefined {
+  const rawValue = resolveOptionalArg(args, "weekly-cadence-json", ["GAME_LAUNCH_WEEKLY_CADENCE_JSON"]);
+
+  if (!rawValue) {
+    return undefined;
+  }
+
+  let parsedValue: unknown;
+
+  try {
+    parsedValue = JSON.parse(rawValue);
+  } catch {
+    throw new Error("weekly cadence JSON must be valid JSON");
+  }
+
+  if (!Array.isArray(parsedValue) || parsedValue.length === 0) {
+    throw new Error("weekly cadence JSON must be a non-empty array");
+  }
+
+  return parsedValue.map((entry, index) => normalizeWeeklyCadenceEntry(entry, index));
+}
+
+function normalizeWeeklyCadenceEntry(entry: unknown, index: number): LaunchRotationWeeklyCadenceEntry {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} must be an object`);
+  }
+
+  const record = entry as Record<string, unknown>;
+  const gameNamePrefix = normalizeWeeklyCadenceString(record.gameNamePrefix, "gameNamePrefix", index);
+  const weekday = normalizeWeeklyCadenceWeekday(record.weekday, index);
+  const utcTime = normalizeWeeklyCadenceTime(record.utcTime, index);
+  const blitzRegistrationOverrides = normalizeWeeklyCadenceRegistrationOverrides(
+    record.blitzRegistrationOverrides,
+    index,
+  );
+
+  return {
+    gameNamePrefix,
+    weekday,
+    utcTime,
+    ...(blitzRegistrationOverrides ? { blitzRegistrationOverrides } : {}),
+  };
+}
+
+function normalizeWeeklyCadenceString(value: unknown, label: string, index: number): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} requires a non-empty ${label}`);
+  }
+
+  return value.trim();
+}
+
+function normalizeWeeklyCadenceWeekday(value: unknown, index: number): LaunchRotationWeeklyCadenceEntry["weekday"] {
+  const weekday = normalizeWeeklyCadenceString(value, "weekday", index).toLowerCase();
+  if (!WEEKLY_CADENCE_WEEKDAYS.has(weekday as LaunchRotationWeeklyCadenceEntry["weekday"])) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} has an unsupported weekday`);
+  }
+
+  return weekday as LaunchRotationWeeklyCadenceEntry["weekday"];
+}
+
+function normalizeWeeklyCadenceTime(value: unknown, index: number): string {
+  const utcTime = normalizeWeeklyCadenceString(value, "utcTime", index);
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(utcTime);
+  if (!match) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} utcTime must be HH:MM in UTC`);
+  }
+
+  return utcTime;
+}
+
+function normalizeWeeklyCadenceRegistrationOverrides(value: unknown, index: number) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} blitzRegistrationOverrides must be an object`);
+  }
+
+  validateBlitzRegistrationOverrideEntries(value as Record<string, unknown>);
+  return value as LaunchRotationWeeklyCadenceEntry["blitzRegistrationOverrides"];
+}
+
 function requireSeriesLaunchArgs(args: Args): {
   environmentId: LaunchSeriesRequest["environmentId"];
   seriesName: string;
@@ -305,6 +400,7 @@ function requireRotationLaunchArgs(args: Args): {
   maxGames: number;
   advanceWindowGames?: number;
   evaluationIntervalMinutes: number;
+  weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
 } {
   const environmentId = args.environment;
   const rotationName = resolveOptionalArg(args, "rotation-name", ["GAME_LAUNCH_ROTATION_NAME"]);
@@ -322,17 +418,18 @@ function requireRotationLaunchArgs(args: Args): {
     resolveOptionalArg(args, "evaluation-interval-minutes", ["GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES"]),
     "evaluation interval minutes",
   );
+  const weeklyCadence = resolveWeeklyCadenceJson(args);
 
   if (
     !environmentId ||
     !rotationName ||
     !firstGameStartTime ||
-    gameIntervalMinutes === undefined ||
+    (gameIntervalMinutes === undefined && !weeklyCadence) ||
     maxGames === undefined ||
     evaluationIntervalMinutes === undefined
   ) {
     throw new Error(
-      "--environment, --rotation-name, --first-game-start-time, --game-interval-minutes, --max-games, and --evaluation-interval-minutes are required for rotation launches",
+      "--environment, --rotation-name, --first-game-start-time, --max-games, and --evaluation-interval-minutes are required for rotation launches, plus either --game-interval-minutes or --weekly-cadence-json",
     );
   }
 
@@ -340,10 +437,11 @@ function requireRotationLaunchArgs(args: Args): {
     environmentId: environmentId as LaunchRotationRequest["environmentId"],
     rotationName,
     firstGameStartTime,
-    gameIntervalMinutes,
+    gameIntervalMinutes: gameIntervalMinutes ?? 0,
     maxGames,
     advanceWindowGames,
     evaluationIntervalMinutes,
+    weeklyCadence,
   };
 }
 
@@ -448,6 +546,7 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     gameIntervalMinutes: requiredArgs.gameIntervalMinutes,
     maxGames: requiredArgs.maxGames,
     advanceWindowGames: requiredArgs.advanceWindowGames,
+    weeklyCadence: requiredArgs.weeklyCadence,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
     ...resolveSharedLaunchRequestOptions(resolvedArgs),

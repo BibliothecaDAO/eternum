@@ -340,6 +340,7 @@ async function handleCreateFactoryRotationRun(request, env) {
     maxGames: body.maxGames,
     advanceWindowGames: body.advanceWindowGames,
     evaluationIntervalMinutes: body.evaluationIntervalMinutes,
+    weeklyCadence: body.weeklyCadence,
     devModeOn: body.devModeOn,
     singleRealmMode: body.singleRealmMode,
     twoPlayerMode: body.twoPlayerMode,
@@ -1135,7 +1136,13 @@ function validateCreateFactoryRotationRunBody(body) {
   validateWorkflowRef(body.workflowRef);
   validateMapConfigOverrides(body.mapConfigOverrides);
   validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
-  validatePositiveNumber(body.gameIntervalMinutes, "gameIntervalMinutes");
+
+  if (hasWeeklyCadence(body)) {
+    validateWeeklyCadence(body.weeklyCadence);
+  } else {
+    validatePositiveNumber(body.gameIntervalMinutes, "gameIntervalMinutes");
+  }
+
   validatePositiveNumber(body.maxGames, "maxGames");
   validatePositiveNumber(body.evaluationIntervalMinutes, "evaluationIntervalMinutes");
 
@@ -1153,6 +1160,42 @@ function validateCreateFactoryRotationRunBody(body) {
   if (body.autoRetryIntervalMinutes !== undefined) {
     validatePositiveNumber(body.autoRetryIntervalMinutes, "autoRetryIntervalMinutes");
   }
+}
+
+const WEEKLY_CADENCE_WEEKDAYS = new Set(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]);
+
+function hasWeeklyCadence(body) {
+  return Array.isArray(body.weeklyCadence) && body.weeklyCadence.length > 0;
+}
+
+function validateWeeklyCadence(weeklyCadence) {
+  if (!Array.isArray(weeklyCadence) || weeklyCadence.length === 0) {
+    throw new HttpError(400, "weeklyCadence must be a non-empty array");
+  }
+
+  for (const [index, entry] of weeklyCadence.entries()) {
+    validateWeeklyCadenceEntry(entry, index);
+  }
+}
+
+function validateWeeklyCadenceEntry(entry, index) {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    throw new HttpError(400, `weeklyCadence entry ${index + 1} must be an object`);
+  }
+
+  if (typeof entry.gameNamePrefix !== "string" || !entry.gameNamePrefix.trim()) {
+    throw new HttpError(400, `weeklyCadence entry ${index + 1} requires gameNamePrefix`);
+  }
+
+  if (typeof entry.weekday !== "string" || !WEEKLY_CADENCE_WEEKDAYS.has(entry.weekday.toLowerCase())) {
+    throw new HttpError(400, `weeklyCadence entry ${index + 1} has an unsupported weekday`);
+  }
+
+  if (typeof entry.utcTime !== "string" || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(entry.utcTime)) {
+    throw new HttpError(400, `weeklyCadence entry ${index + 1} utcTime must be HH:MM in UTC`);
+  }
+
+  validateBlitzRegistrationOverrides(entry.blitzRegistrationOverrides);
 }
 
 function validateContinueFactoryRunBody(body) {
@@ -1432,6 +1475,7 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     maxGames: rawRequest.maxGames,
     advanceWindowGames: rawRequest.advanceWindowGames,
     evaluationIntervalMinutes: rawRequest.evaluationIntervalMinutes,
+    weeklyCadence: rawRequest.weeklyCadence,
     rpcUrl: rawRequest.rpcUrl,
     factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
@@ -3033,6 +3077,7 @@ function buildReplayableLaunchOptions(request) {
   assignOptionalLaunchOption(launchOptions, "singleRealmMode", request.singleRealmMode);
   assignOptionalLaunchOption(launchOptions, "twoPlayerMode", request.twoPlayerMode);
   assignOptionalLaunchOption(launchOptions, "durationSeconds", request.durationSeconds);
+  assignOptionalLaunchOption(launchOptions, "weeklyCadence", request.weeklyCadence);
   assignOptionalLaunchOption(launchOptions, "mapConfigOverrides", request.mapConfigOverrides);
   assignOptionalLaunchOption(launchOptions, "blitzRegistrationOverrides", request.blitzRegistrationOverrides);
   assignOptionalLaunchOption(launchOptions, "cartridgeApiBase", request.cartridgeApiBase);

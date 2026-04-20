@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-20",
+    title: "Rolling Blitz Cadence",
+    description:
+      "Factory rotations now support weekly cadence details and weekend buy-in overrides, making long-running Blitz schedules easier to monitor as future games stay queued.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-20",
     title: "Blitz Settlement Sync",
     description:
       "Blitz settlement now waits for the requested settled realm count before advancing, so fresh entries no longer get stuck on finalizing when the index briefly returns an empty snapshot.",

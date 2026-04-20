@@ -189,6 +189,67 @@ describe("factory worker map config overrides", () => {
     expect(dispatchBody.inputs.auto_retry_interval_minutes).toBe("15");
   });
 
+  test("dispatches weekly cadence rotations without a fixed game interval", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/contents/runs/slot/blitz/rotations/blitz-rotation.json")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (String(url).includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          rotationName: "blitz-rotation",
+          firstGameStartTime: "2026-04-20T01:00:00Z",
+          maxGames: 5200,
+          advanceWindowGames: 5,
+          evaluationIntervalMinutes: 15,
+          weeklyCadence: [
+            {
+              gameNamePrefix: "na-gladiator",
+              weekday: "monday",
+              utcTime: "01:00",
+              blitzRegistrationOverrides: {
+                fee_amount: "500000000000000000000",
+              },
+            },
+          ],
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
+
+    expect(response.status).toBe(202);
+    expect(dispatchBody.inputs.launch_kind).toBe("rotation");
+    expect(dispatchBody.inputs.game_interval_minutes).toBeUndefined();
+    expect(launchOptions.weeklyCadence).toEqual([
+      {
+        gameNamePrefix: "na-gladiator",
+        weekday: "monday",
+        utcTime: "01:00",
+        blitzRegistrationOverrides: {
+          fee_amount: "500000000000000000000",
+        },
+      },
+    ]);
+  });
+
   test("reuses stored map config overrides during continue", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {

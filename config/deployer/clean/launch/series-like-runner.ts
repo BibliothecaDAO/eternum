@@ -145,7 +145,7 @@ function buildSeriesLikeGameRequest(
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
     mapConfigOverrides: request.mapConfigOverrides,
-    blitzRegistrationOverrides: request.blitzRegistrationOverrides,
+    blitzRegistrationOverrides: game.blitzRegistrationOverrides ?? request.blitzRegistrationOverrides,
     cartridgeApiBase: request.cartridgeApiBase,
     toriiNamespaces: request.toriiNamespaces,
     vrfProviderAddress: request.vrfProviderAddress,

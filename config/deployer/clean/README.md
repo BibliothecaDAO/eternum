@@ -28,7 +28,10 @@ Required inputs:
 - `--start-time`: unix seconds, unix milliseconds, or ISO-8601
 
 When `--config-path` is present, the YAML file can provide those required fields instead. The file uses the clean
-deployer request shape, so weekly schedules should be modeled as `launchKind: series` with an explicit `games:` list.
+deployer request shape, so finite weekly schedules can be modeled as `launchKind: series` with an explicit `games:`
+list. Rolling weekly schedules should use `launchKind: rotation` with `weeklyCadence:` entries so the worker keeps the
+advance window filled until the rotation is cancelled. A weekly cadence entry can include `blitzRegistrationOverrides`
+when a slot needs a different buy-in from the parent/default Blitz registration config.
 
 Optional env or flags:
 
@@ -164,6 +167,15 @@ schedules should be dispatched like:
 launch_kind = series
 environment = slot.blitz
 config_path = config/deployer/clean/examples/blitz-weekly-series.yaml
+launch_step = full
+```
+
+The committed rolling Blitz cadence should be dispatched as:
+
+```text
+launch_kind = rotation
+environment = slot.blitz
+config_path = config/deployer/clean/examples/blitz-rotation.yaml
 launch_step = full
 ```
 
