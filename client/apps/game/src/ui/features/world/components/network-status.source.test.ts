@@ -30,8 +30,8 @@ describe("network status wiring", () => {
 
     expect(source).toContain("export const getConnectionHealthMonitor");
     expect(source).toContain("forceReconnect");
-    expect(source).toContain("setSpatialStatus(\"reconnecting\")");
-    expect(source).toContain("setGlobalStatus(\"reconnecting\")");
+    expect(source).toContain('setSpatialStatus("reconnecting")');
+    expect(source).toContain('setGlobalStatus("reconnecting")');
   });
 
   it("fires a throttled subscription-setup-timeout toast from worldmap", () => {

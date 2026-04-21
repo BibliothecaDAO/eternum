@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ConnectionStatus = "connected" | "degraded" | "disconnected";
+type ConnectionStatus = "connected" | "degraded" | "disconnected";
 export type StreamStatus = "connected" | "stale" | "reconnecting" | "failed";
 
 interface ConnectionState {
@@ -49,7 +49,11 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
         status,
         lastConnectedAt: status === "connected" ? now : state.lastConnectedAt,
         lastDisconnectedAt:
-          status !== "connected" && state.status === "connected" ? now : status === "connected" ? null : state.lastDisconnectedAt,
+          status !== "connected" && state.status === "connected"
+            ? now
+            : status === "connected"
+              ? null
+              : state.lastDisconnectedAt,
       };
     }),
   setSpatialStatus: (spatialStatus: StreamStatus) =>

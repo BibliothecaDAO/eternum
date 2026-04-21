@@ -4,8 +4,8 @@ import { env } from "../../env";
 import { getActiveWorld } from "@/runtime/world";
 import { resolveUserIdentity } from "./wallet-identity";
 
-export type NetworkStreamType = "spatial" | "global" | "both";
-export type NetworkHealthEvent =
+type NetworkStreamType = "spatial" | "global" | "both";
+type NetworkHealthEvent =
   | "outage_start"
   | "stream_stale"
   | "reconnect_start"
@@ -98,11 +98,6 @@ export const setNetworkHealthScopeTags = async ({ toriiBaseUrl, walletAddress }:
   if (walletIdentity) {
     Sentry.setUser({ id: walletIdentity });
   }
-};
-
-export const clearNetworkHealthUser = (): void => {
-  if (!isEnabled()) return;
-  Sentry.setUser(null);
 };
 
 export const addNetworkBreadcrumb = ({

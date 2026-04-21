@@ -1,6 +1,6 @@
 import { env } from "../../env";
 
-export type WalletIdentityMode = "hashed" | "raw" | "none";
+type WalletIdentityMode = "hashed" | "raw" | "none";
 
 export const resolveWalletIdentityMode = (): WalletIdentityMode => {
   const configured = env.VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY;
