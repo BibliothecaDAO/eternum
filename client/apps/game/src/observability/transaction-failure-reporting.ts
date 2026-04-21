@@ -7,6 +7,7 @@ import {
 import { env } from "../../env";
 import { getActiveWorld } from "@/runtime/world";
 import { extractReadableErrorMessage } from "@/utils/error-message";
+import { resolveUserIdentity, resolveWalletIdentityMode } from "./wallet-identity";
 
 export type ClientTransactionSurface =
   | "dojo_provider"
@@ -73,11 +74,6 @@ const reportedFailureKeys = new Map<string, number>();
 
 const readString = (value: unknown): string | undefined =>
   typeof value === "string" && value.length > 0 ? value : undefined;
-
-const resolveWalletIdentityMode = (): "hashed" | "raw" | "none" => {
-  const configuredMode = env.VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY;
-  return configuredMode === "raw" || configuredMode === "none" ? configuredMode : "hashed";
-};
 
 const isSentryTransactionMonitoringEnabled = (): boolean => {
   return import.meta.env.PROD && Boolean(env.VITE_PUBLIC_SENTRY_DSN) && env.VITE_PUBLIC_SENTRY_TX_FAILURES_ENABLED;
@@ -221,30 +217,6 @@ const buildDedupeKey = ({
   }
 
   return `${surface}:${operation}:${stage}:${normalizedReason}`;
-};
-
-const resolveUserIdentity = async (walletAddress: string | null | undefined): Promise<string | null> => {
-  if (!walletAddress) {
-    return null;
-  }
-
-  const identityMode = resolveWalletIdentityMode();
-  if (identityMode === "none") {
-    return null;
-  }
-
-  if (identityMode === "raw") {
-    return walletAddress;
-  }
-
-  if (typeof globalThis.crypto?.subtle === "undefined") {
-    return null;
-  }
-
-  const payload = new TextEncoder().encode(walletAddress.toLowerCase());
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", payload);
-  const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `wallet:${hash}`;
 };
 
 const buildBreadcrumbData = (context: Partial<Omit<ClientTransactionFailureContext, "stage">> & { stage?: string }) => {

@@ -196,6 +196,21 @@ const envSchema = z.object({
     .optional()
     .default("false"),
   VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY: z.enum(["hashed", "raw", "none"]).optional().default("hashed"),
+  VITE_PUBLIC_SENTRY_NETWORK_HEALTH_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+  VITE_PUBLIC_SENTRY_NETWORK_HEALTH_MIN_OUTAGE_MS: z
+    .string()
+    .optional()
+    .default("10000")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_NETWORK_HEALTH_MAX_PER_SESSION: z
+    .string()
+    .optional()
+    .default("50")
+    .transform((v) => Number(v)),
 
   // Tracing Configuration
   VITE_TRACING_ENABLED: z
@@ -217,6 +232,7 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+
   VITE_PUBLIC_TORII_BOUNDS_DEBUG: z
     .string()
     .transform((v) => v === "true")

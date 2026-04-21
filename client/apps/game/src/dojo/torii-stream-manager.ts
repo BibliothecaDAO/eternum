@@ -2,6 +2,7 @@ import { SetupResult } from "@bibliothecadao/dojo";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause, ToriiClient } from "@dojoengine/torii-wasm/types";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { syncEntitiesDebounced } from "./sync";
 import type { ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
@@ -282,6 +283,9 @@ export class ToriiStreamManager {
       this.cancelCurrentSubscription();
       this.currentSubscription = subscription;
       this.currentSignature = signature;
+      // Handshake succeeded — restart the staleness clock so the monitor
+      // measures "time since last spatial entity *after* subscription is live".
+      useConnectionStore.getState().recordSpatialUpdate();
       return { outcome: "applied" };
     });
 
