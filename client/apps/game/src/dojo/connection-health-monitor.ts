@@ -2,6 +2,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 
 const DEFAULT_HEALTH_CHECK_INTERVAL_MS = 10_000;
 const DEFAULT_STALE_THRESHOLD_MS = 15_000;
+const DEFAULT_RECONNECT_COOLDOWN_MS = 60_000;
 
 interface ConnectionHealthMonitorConfig {
   onReconnectSpatial: () => Promise<void>;
@@ -9,12 +10,20 @@ interface ConnectionHealthMonitorConfig {
   healthCheckFn: () => Promise<boolean>;
   healthCheckIntervalMs?: number;
   staleThresholdMs?: number;
+  reconnectCooldownMs?: number;
+}
+
+interface ConnectionHealthToriiInput {
+  activeWorld?: { toriiBaseUrl?: string | null } | null;
+  runtimeToriiUrl?: string | null;
+  fallbackToriiUrl: string;
 }
 
 export class ConnectionHealthMonitor {
   private readonly config: ConnectionHealthMonitorConfig;
   private readonly healthCheckIntervalMs: number;
   private readonly staleThresholdMs: number;
+  private readonly reconnectCooldownMs: number;
 
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
   private reconnecting = false;
@@ -25,6 +34,10 @@ export class ConnectionHealthMonitor {
     this.config = config;
     this.healthCheckIntervalMs = config.healthCheckIntervalMs ?? DEFAULT_HEALTH_CHECK_INTERVAL_MS;
     this.staleThresholdMs = config.staleThresholdMs ?? DEFAULT_STALE_THRESHOLD_MS;
+    this.reconnectCooldownMs = Math.max(
+      config.reconnectCooldownMs ?? DEFAULT_RECONNECT_COOLDOWN_MS,
+      this.staleThresholdMs,
+    );
   }
 
   start(): void {
@@ -105,7 +118,7 @@ export class ConnectionHealthMonitor {
         // has been silent past the stale threshold, force a resubscribe.
         // Cooldown prevents reconnect storms when the area is genuinely idle.
         const now = Date.now();
-        if (now - this.lastStreamReconnectAtMs >= this.staleThresholdMs) {
+        if (now - this.lastStreamReconnectAtMs >= this.reconnectCooldownMs) {
           const spatialStale = now - store.lastSpatialUpdate > this.staleThresholdMs;
           const globalStale = now - store.lastGlobalUpdate > this.staleThresholdMs;
           if (spatialStale || globalStale) {
@@ -126,13 +139,33 @@ export class ConnectionHealthMonitor {
     if (this.reconnecting || this.disposed) return;
 
     this.reconnecting = true;
+    const store = useConnectionStore.getState();
     try {
       const promises: Promise<void>[] = [];
       if (spatial) promises.push(this.config.onReconnectSpatial());
       if (global) promises.push(this.config.onReconnectGlobal());
       await Promise.all(promises);
+      if (promises.length > 0) {
+        store.recordStreamReconnect();
+      }
+    } catch (error) {
+      console.warn("[ConnectionHealthMonitor] Failed to reconnect stale streams", error);
+      store.setStatus("degraded");
+      store.incrementReconnectAttempts();
     } finally {
       this.reconnecting = false;
     }
   }
 }
+
+const trimOptionalUrl = (value: string | null | undefined): string | null => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
+export const resolveConnectionHealthToriiBaseUrl = ({
+  activeWorld,
+  fallbackToriiUrl,
+  runtimeToriiUrl,
+}: ConnectionHealthToriiInput): string =>
+  trimOptionalUrl(activeWorld?.toriiBaseUrl) ?? trimOptionalUrl(runtimeToriiUrl) ?? fallbackToriiUrl;

@@ -1,10 +1,12 @@
-import { ConnectionHealthMonitor } from "@/dojo/connection-health-monitor";
+import { ConnectionHealthMonitor, resolveConnectionHealthToriiBaseUrl } from "@/dojo/connection-health-monitor";
 import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
+import { useActiveWorldProfile } from "@/runtime/world";
 import { getActiveSpatialStreamManager } from "@/three/scenes/worldmap";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { useDojo } from "@bibliothecadao/react";
 import { Leva } from "leva";
 import { useEffect } from "react";
+import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { useUIStore } from "../../hooks/store/use-ui-store";
 import { Tooltip } from "../design-system/molecules/tooltip";
@@ -137,10 +139,16 @@ const HUD = () => (
  */
 const ConnectionMonitor = () => {
   const { setup } = useDojo();
+  const activeWorld = useActiveWorldProfile();
   const state = useUIStore.getState();
+  const fallbackToriiBaseUrl = activeWorld?.toriiBaseUrl ?? env.VITE_PUBLIC_TORII;
 
   useEffect(() => {
-    const toriiBaseUrl = env.VITE_PUBLIC_TORII;
+    const toriiBaseUrl = resolveConnectionHealthToriiBaseUrl({
+      activeWorld,
+      fallbackToriiUrl: fallbackToriiBaseUrl,
+      runtimeToriiUrl: dojoConfig.toriiUrl,
+    });
 
     const monitor = new ConnectionHealthMonitor({
       onReconnectSpatial: async () => {
@@ -164,7 +172,7 @@ const ConnectionMonitor = () => {
 
     monitor.start();
     return () => monitor.dispose();
-  }, [setup, state]);
+  }, [activeWorld, fallbackToriiBaseUrl, setup, state]);
 
   return null;
 };
