@@ -83,7 +83,7 @@ function createSyncHarness() {
   const cancelEventSubscription = vi.fn();
 
   const client = {
-    onEntityUpdated: vi.fn(async (_clause, callback: EntityUpdatedCallback) => {
+    onEntityUpdated: vi.fn(async (_clause, _worldAddresses, callback: EntityUpdatedCallback) => {
       onEntityUpdated = callback;
       return { cancel: cancelEntitySubscription };
     }),

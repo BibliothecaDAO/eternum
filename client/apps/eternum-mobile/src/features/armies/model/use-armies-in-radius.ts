@@ -28,6 +28,7 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
 
       try {
         const query: Query = {
+          world_addresses: [],
           pagination: {
             limit: 1000,
             cursor: undefined,

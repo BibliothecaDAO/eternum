@@ -126,7 +126,7 @@ const syncEntitiesDebounced = async (
   };
 
   // Handle entity updates
-  const entitySub = await client.onEntityUpdated(entityKeyClause, (data: any) => {
+  const entitySub = await client.onEntityUpdated(entityKeyClause, undefined, (data: any) => {
     if (logging) console.log("Entity updated", data);
 
     try {
@@ -137,7 +137,7 @@ const syncEntitiesDebounced = async (
   });
 
   // Handle event message updates
-  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: any) => {
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, undefined, (data: any) => {
     if (logging) console.log("Event message updated", data.hashed_keys);
 
     try {

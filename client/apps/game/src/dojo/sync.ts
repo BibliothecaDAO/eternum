@@ -483,7 +483,7 @@ export const syncEntitiesDebounced = async (
   try {
     const subscriptions = await setupToriiSubscriptions({
       createEntitySubscription: () =>
-        client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
+        client.onEntityUpdated(entityKeyClause, undefined, (data: ToriiEntity) => {
           if (logging) console.log("Entity updated", data);
           recordTileOptStreamTrace(data);
           const writeComplete = queueUpdate(data, "entity");
@@ -497,7 +497,7 @@ export const syncEntitiesDebounced = async (
           }
         }),
       createEventSubscription: () =>
-        client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
+        client.onEventMessageUpdated(entityKeyClause, undefined, (data: ToriiEntity) => {
           if (logging) console.log("Event message updated", data.hashed_keys);
           queueUpdate(data, "event");
         }),

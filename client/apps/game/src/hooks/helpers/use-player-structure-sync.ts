@@ -151,7 +151,7 @@ export const usePlayerStructureSync = () => {
     const normalizedAccountAddress = padHexAddressTo66(accountAddress).toLowerCase();
 
     const subscribeToOwnedStructureUpdates = async () => {
-      const ownerSubscription = await toriiClient.onEntityUpdated(ownerStructureClause, (value: unknown) => {
+      const ownerSubscription = await toriiClient.onEntityUpdated(ownerStructureClause, undefined, (value: unknown) => {
         if (cancelled) return;
 
         const owner = readOwnerFromStructureModelUpdate(value);
