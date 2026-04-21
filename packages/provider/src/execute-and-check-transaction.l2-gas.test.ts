@@ -1,8 +1,10 @@
 import type { Call, ResourceBoundsBN } from "starknet";
 import { ETransactionVersion } from "starknet";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { EternumProvider } from "./index";
+import { PromiseQueue } from "./promise-queue";
 import type { TransactionFailedPayload } from "./types";
+import { TransactionType } from "./types";
 
 const makeResourceBounds = (l2GasMaxAmount: bigint): ResourceBoundsBN => ({
   l1_gas: { max_amount: 1n, max_price_per_unit: 1n },
@@ -31,6 +33,8 @@ const makeProvider = () => {
   provider.pendingTransactionSpans = new Map();
   provider.pendingVrfExecutionLocks = new Map();
   provider.TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
+  provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
+  provider.FEE_ESTIMATE_TIMEOUT_MS = 5_000;
   return provider;
 };
 
@@ -41,6 +45,10 @@ const findTransactionFailedPayload = (
 };
 
 describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("truncates l2 gas max_amount to the mainnet ceiling when the estimate exceeds it", async () => {
     const provider = makeProvider();
     const signer = {
@@ -224,9 +232,9 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       waitForConfirmation: false,
     });
 
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(provider.execute).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => {
+      expect(provider.execute).toHaveBeenCalledTimes(2);
+    });
 
     resolveFirstWait({ isReverted: () => false });
 
@@ -440,5 +448,101 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       stage: "background_confirmation",
       message: "confirmation failed",
     });
+  });
+
+  it("times out stuck submissions before a transaction hash so the queue can drain later actions", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    provider.promiseQueue = new PromiseQueue(provider, { batchDelayMs: 0 });
+    provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 50;
+    provider.execute = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockResolvedValueOnce({ transaction_hash: "0xnext" });
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const firstCall: Call = {
+      contractAddress: "0x1",
+      entrypoint: "set_entity_name",
+      calldata: [],
+    };
+    const secondCall: Call = {
+      contractAddress: "0x1",
+      entrypoint: "set_address_name",
+      calldata: [],
+    };
+
+    const firstResult = provider.promiseQueue
+      .enqueue({
+        signer,
+        calls: firstCall,
+        transactionType: TransactionType.SET_ENTITY_NAME,
+      })
+      .then(
+        () => "resolved",
+        (error: unknown) => error,
+      );
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(provider.execute).toHaveBeenCalledTimes(1);
+
+    const secondResult = provider.promiseQueue.enqueue({
+      signer,
+      calls: secondCall,
+      transactionType: TransactionType.SET_ADDRESS_NAME,
+    });
+
+    await vi.advanceTimersByTimeAsync(50);
+    const timedOutFirstResult = await Promise.race([firstResult, Promise.resolve("still-pending")]);
+
+    expect(timedOutFirstResult).toBeInstanceOf(Error);
+    expect((timedOutFirstResult as Error).message).toContain("Transaction submission timed out");
+    await expect(secondResult).resolves.toMatchObject({
+      statusReceipt: "PENDING",
+      transaction_hash: "0xnext",
+    });
+    expect(provider.execute).toHaveBeenCalledTimes(2);
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      stage: "submit",
+      message: expect.stringContaining("Transaction submission timed out"),
+    });
+  });
+
+  it("uses default v3 execution details when fee estimation stalls before submission", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    provider.FEE_ESTIMATE_TIMEOUT_MS = 50;
+
+    const signer = {
+      estimateInvokeFee: vi.fn(() => new Promise(() => {})),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    const result = provider
+      .executeAndCheckTransaction(signer, call, undefined, {
+        waitForConfirmation: false,
+      })
+      .then(
+        (value: unknown) => value,
+        (error: unknown) => error,
+      );
+
+    await vi.advanceTimersByTimeAsync(50);
+    const timedOutEstimateResult = await Promise.race([result, Promise.resolve("still-pending")]);
+
+    expect(timedOutEstimateResult).toMatchObject({
+      statusReceipt: "PENDING",
+      transaction_hash: "0xabc",
+    });
+    expect(provider.execute).toHaveBeenCalledWith(signer, call, "s1_eternum", { version: ETransactionVersion.V3 });
   });
 });

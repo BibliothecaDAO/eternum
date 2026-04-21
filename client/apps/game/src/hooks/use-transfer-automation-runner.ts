@@ -4,8 +4,8 @@ import { useDojo } from "@bibliothecadao/react";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
   configManager,
+  getAutomationProjectionTick,
   getBlockTimestamp,
-  getConservativeBlockTimestamp,
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
@@ -109,7 +109,7 @@ export const useTransferAutomationRunner = () => {
 
       const { currentBlockTimestamp } = getBlockTimestamp();
       // Use conservative tick for resource validation to prevent tx failures from clock desync
-      const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
+      const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();
       if (isSeasonOver(currentBlockTimestamp)) {
         stopTransferAutomation();
         return;

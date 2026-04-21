@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ConnectionHealthMonitor } from "./connection-health-monitor";
+import { ConnectionHealthMonitor, resolveConnectionHealthToriiBaseUrl } from "./connection-health-monitor";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 
 interface FakeEventTarget {
@@ -51,6 +51,7 @@ describe("ConnectionHealthMonitor", () => {
       lastGlobalUpdate: Date.now(),
       lastHealthCheck: Date.now(),
       reconnectAttempts: 0,
+      streamReconnectVersion: 0,
     });
   });
 
@@ -128,6 +129,48 @@ describe("ConnectionHealthMonitor", () => {
     monitor.dispose();
   });
 
+  it("uses a separate reconnect cooldown so idle worlds do not resubscribe every stale threshold", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      reconnectCooldownMs: 20_000,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now() - 10_000,
+      lastGlobalUpdate: Date.now() - 10_000,
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(2);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(2);
+
+    monitor.dispose();
+  });
+
   it("does not reconnect when the health check fails", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
@@ -156,5 +199,56 @@ describe("ConnectionHealthMonitor", () => {
     expect(useConnectionStore.getState().status).toBe("disconnected");
 
     monitor.dispose();
+  });
+
+  it("records a stream reconnect after stale streams are rebuilt", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now() - 10_000,
+      lastGlobalUpdate: Date.now() - 10_000,
+      streamReconnectVersion: 0,
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(useConnectionStore.getState().streamReconnectVersion).toBe(1);
+
+    monitor.dispose();
+  });
+});
+
+describe("resolveConnectionHealthToriiBaseUrl", () => {
+  it("prefers the active world Torii over the static env fallback", () => {
+    const toriiBaseUrl = resolveConnectionHealthToriiBaseUrl({
+      activeWorld: { toriiBaseUrl: "https://api.cartridge.gg/x/s0-game-5/torii" },
+      fallbackToriiUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/torii",
+      runtimeToriiUrl: "https://api.cartridge.gg/x/s0-game-5/torii",
+    });
+
+    expect(toriiBaseUrl).toBe("https://api.cartridge.gg/x/s0-game-5/torii");
+  });
+
+  it("uses the bootstrapped runtime Torii when no active profile is available", () => {
+    const toriiBaseUrl = resolveConnectionHealthToriiBaseUrl({
+      activeWorld: null,
+      fallbackToriiUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/torii",
+      runtimeToriiUrl: "https://api.cartridge.gg/x/bltz-warzone-04/torii",
+    });
+
+    expect(toriiBaseUrl).toBe("https://api.cartridge.gg/x/bltz-warzone-04/torii");
   });
 });

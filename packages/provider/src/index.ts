@@ -61,6 +61,8 @@ export type { VrfSource } from "./vrf";
 
 // Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
 const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
+const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
+const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
 const GENERIC_ERROR_MESSAGES = new Set([
   "transaction execution error",
@@ -76,6 +78,18 @@ const WRAPPED_ERROR_PREFIXES = [
   "Transaction failed while waiting for confirmation:",
   "Transaction failed with reason:",
 ];
+
+const formatTimeoutDuration = (timeoutMs: number): string =>
+  timeoutMs >= 1_000 ? `${Math.round(timeoutMs / 1_000)}s` : `${timeoutMs}ms`;
+
+class TransactionSubmissionTimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(
+      `Transaction submission timed out after ${formatTimeoutDuration(timeoutMs)} before a transaction hash was returned`,
+    );
+    this.name = "TransactionSubmissionTimeoutError";
+  }
+}
 
 const normalizeErrorKey = (value: string): string =>
   value
@@ -346,6 +360,8 @@ const extractErrorMessage = (error: unknown, fallback = "Unknown error"): string
   return fallback;
 };
 
+const matchesNonceError = (error: unknown): boolean => extractErrorMessage(error, "").toLowerCase().includes("nonce");
+
 // starknet.js's Account.estimateInvokeFee already applies the global
 // resourceBoundsOverhead (50% per gas axis by default) via toOverheadResourceBounds,
 // so this helper only enforces the mainnet l2_gas ceiling and no longer multiplies.
@@ -522,6 +538,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionDetails: AllowArray<Call>,
   ) => Promise<GetTransactionReceiptResponse>;
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
+  private readonly TRANSACTION_SUBMIT_TIMEOUT_MS = DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS;
+  private readonly FEE_ESTIMATE_TIMEOUT_MS = DEFAULT_FEE_ESTIMATE_TIMEOUT_MS;
   private pendingTransactionSpans = new Map<string, Span>();
   private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
   private readonly retryConfig?: RetryConfig;
@@ -659,9 +677,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     try {
-      const estimate = (await estimateInvokeFee.call(signer, transactionDetails, {
-        version: ETransactionVersion.V3,
-      })) as { resourceBounds?: ResourceBoundsBN };
+      const estimate = (await this.withTimeout(
+        estimateInvokeFee.call(signer, transactionDetails, {
+          version: ETransactionVersion.V3,
+        }),
+        this.FEE_ESTIMATE_TIMEOUT_MS,
+        () =>
+          new Error(
+            `Transaction fee estimation timed out after ${formatTimeoutDuration(this.FEE_ESTIMATE_TIMEOUT_MS)}`,
+          ),
+      )) as { resourceBounds?: ResourceBoundsBN };
       const resourceBounds = withL2GasCeiling(estimate?.resourceBounds);
       if (!resourceBounds) {
         return details;
@@ -674,6 +699,59 @@ export class EternumProvider extends EnhancedDojoProvider {
     } catch (error) {
       console.warn("[provider] Failed to estimate invoke fee, using default v3 tx details", error);
       return details;
+    }
+  }
+
+  private async submitTransaction(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+    executionDetails: UniversalDetails,
+  ): Promise<{ transaction_hash: string }> {
+    if (this.retryConfig && this.retryConfig.maxRetries > 0) {
+      let currentExecutionDetails = executionDetails;
+      return await withRetry(
+        () => this.execute(signer as any, transactionDetails, NAMESPACE, currentExecutionDetails),
+        this.retryConfig,
+        async (error, attempt) => {
+          if (matchesNonceError(error)) {
+            currentExecutionDetails = await this.getV3ExecutionDetails(signer, transactionDetails);
+          }
+          console.warn(`[provider] Retry attempt ${attempt} for transaction: ${extractErrorMessage(error)}`);
+        },
+      );
+    }
+
+    return await this.execute(signer as any, transactionDetails, NAMESPACE, executionDetails);
+  }
+
+  private async submitTransactionWithTimeout(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+    executionDetails: UniversalDetails,
+  ): Promise<{ transaction_hash: string }> {
+    return await this.withTimeout(
+      this.submitTransaction(signer, transactionDetails, executionDetails),
+      this.TRANSACTION_SUBMIT_TIMEOUT_MS,
+      () => new TransactionSubmissionTimeoutError(this.TRANSACTION_SUBMIT_TIMEOUT_MS),
+    );
+  }
+
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, buildError: () => Error): Promise<T> {
+    if (timeoutMs <= 0) {
+      return await promise;
+    }
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(buildError()), timeoutMs);
+    });
+
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
     }
   }
 
@@ -916,23 +994,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     let tx;
     try {
-      if (this.retryConfig && this.retryConfig.maxRetries > 0) {
-        let currentExecutionDetails = executionDetails;
-        tx = await withRetry(
-          () => this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, currentExecutionDetails),
-          this.retryConfig,
-          async (error, attempt) => {
-            // Re-estimate gas on nonce-related errors
-            const msg = error instanceof Error ? error.message.toLowerCase() : "";
-            if (msg.includes("nonce")) {
-              currentExecutionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
-            }
-            console.warn(`[provider] Retry attempt ${attempt} for transaction: ${extractErrorMessage(error)}`);
-          },
-        );
-      } else {
-        tx = await this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, executionDetails);
-      }
+      tx = await this.submitTransactionWithTimeout(signer, sanitizedTransactionDetails, executionDetails);
     } catch (error) {
       releaseVrfExecutionLock?.();
       releaseVrfExecutionLock = undefined;
