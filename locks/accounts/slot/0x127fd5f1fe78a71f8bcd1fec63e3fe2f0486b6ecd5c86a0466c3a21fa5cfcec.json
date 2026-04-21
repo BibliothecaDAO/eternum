@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "lgc-friendly-match",
-    "launchRequestId": "24691908947-1",
+    "gameName": "bltz-boost-814",
+    "launchRequestId": "24703933554-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24691908947,
+    "workflowRunId": 24703933554,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "282b9040-2e6a-4924-b9b0-854b5ebaa3ac"
+    "stepId": "create-world",
+    "leaseId": "875cbc6a-f1be-4a4f-a46d-09a988e1f2fe"
   },
-  "acquiredAt": "2026-04-20T21:46:04.731Z",
-  "heartbeatAt": "2026-04-20T21:46:20.678Z",
-  "expiresAt": "2026-04-20T21:46:20.678Z",
-  "releasedAt": "2026-04-20T21:46:20.678Z"
+  "acquiredAt": "2026-04-21T04:25:52.149Z",
+  "heartbeatAt": "2026-04-21T04:25:52.149Z",
+  "expiresAt": "2026-04-21T04:35:52.149Z"
 }
