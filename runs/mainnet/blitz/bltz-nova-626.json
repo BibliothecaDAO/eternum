@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24741788249-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-04-21T19:21:37.041Z",
-  "updatedAt": "2026-04-21T19:23:56.483Z",
+  "updatedAt": "2026-04-21T19:24:00.213Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-21T19:24:00.213Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-nova-626.json",
     "worldAddress": "0x00cc9013258cd7712d9edd242e1d58258e91d067d338acd087a9d1d30203b75f",
     "createGameTxHash": "0x38d2640098ab147a684885dd62d597c23fe5587eeecbb5e9eba18a8cb944557"
+  },
+  "activeLease": {
+    "launchRequestId": "24741788249-1",
+    "workflowRunId": 24741788249,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-04-21T19:24:00.213Z",
+    "expiresAt": "2026-04-21T20:09:00.213Z"
   }
 }
