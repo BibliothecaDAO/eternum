@@ -17,7 +17,9 @@ import {
   BigNumberish,
   Call,
   CallData,
+  ETransactionVersion,
   GetTransactionReceiptResponse,
+  InvokeFunctionResponse,
   ResourceBoundsBN,
   uint256,
   UniversalDetails,
@@ -59,8 +61,6 @@ export type { VrfSource } from "./vrf";
 
 // Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
 const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
-const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
-const HUNDRED_PERCENT = 100n;
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
 const GENERIC_ERROR_MESSAGES = new Set([
   "transaction execution error",
@@ -346,17 +346,16 @@ const extractErrorMessage = (error: unknown, fallback = "Unknown error"): string
   return fallback;
 };
 
-const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
+// starknet.js's Account.estimateInvokeFee already applies the global
+// resourceBoundsOverhead (50% per gas axis by default) via toOverheadResourceBounds,
+// so this helper only enforces the mainnet l2_gas ceiling and no longer multiplies.
+const withL2GasCeiling = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
   if (!resourceBounds?.l2_gas || typeof resourceBounds.l2_gas.max_amount !== "bigint") {
     return resourceBounds;
   }
 
   const currentMaxAmount = resourceBounds.l2_gas.max_amount;
-  const paddedMaxAmount =
-    (currentMaxAmount * (HUNDRED_PERCENT + V3_L2_GAS_OVERHEAD_PERCENT) + (HUNDRED_PERCENT - 1n)) / HUNDRED_PERCENT;
-  const nextMaxAmount = paddedMaxAmount > MAX_V3_L2_GAS_MAX_AMOUNT ? MAX_V3_L2_GAS_MAX_AMOUNT : paddedMaxAmount;
-
-  if (nextMaxAmount === currentMaxAmount) {
+  if (currentMaxAmount <= MAX_V3_L2_GAS_MAX_AMOUNT) {
     return resourceBounds;
   }
 
@@ -364,7 +363,7 @@ const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN 
     ...resourceBounds,
     l2_gas: {
       ...resourceBounds.l2_gas,
-      max_amount: nextMaxAmount,
+      max_amount: MAX_V3_L2_GAS_MAX_AMOUNT,
     },
   };
 };
@@ -454,7 +453,34 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
     }
   };
 }
-const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
+// @dojoengine/core@1.8.x exposes DojoProvider as a generic class parameterised by
+// an Actions type that defaults to `never`. Extending it directly leaves the
+// inherited instance type with a synthesised `{ [key: string]: never }` index
+// signature, which blocks every subclass property with TS2411. We only rely on the
+// base runtime surface (manifest/provider/execute/call/...), so cast through a
+// plain, non-generic constructor shape to restore subclassing without touching the
+// generated action types used elsewhere.
+type BaseDojoProviderInstance = {
+  manifest: any;
+  provider: any;
+  contract: any;
+  logger: any;
+  execute: (
+    account: Account | AccountInterface,
+    transactions: AllowArray<DojoCall | Call>,
+    nameSpace: string,
+    details?: UniversalDetails,
+  ) => Promise<InvokeFunctionResponse>;
+  call: (nameSpace: string, call: DojoCall | Call) => Promise<any>;
+  callRaw: (nameSpace: string, call: DojoCall | Call) => Promise<any>;
+  getWorldAddress: () => string;
+};
+const BaseDojoProvider = DojoProvider as unknown as new (
+  manifest?: any,
+  url?: string,
+  logLevel?: any,
+) => BaseDojoProviderInstance;
+const EnhancedDojoProvider = ApplyEventEmitter(BaseDojoProvider);
 
 export const buildVrfCalls = async ({
   account,
@@ -626,7 +652,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ): Promise<UniversalDetails> {
-    const details: UniversalDetails = { version: 3 };
+    const details: UniversalDetails = { version: ETransactionVersion.V3 };
     const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
     if (typeof estimateInvokeFee !== "function") {
       return details;
@@ -634,9 +660,9 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     try {
       const estimate = (await estimateInvokeFee.call(signer, transactionDetails, {
-        version: 3,
+        version: ETransactionVersion.V3,
       })) as { resourceBounds?: ResourceBoundsBN };
-      const resourceBounds = withL2GasHeadroom(estimate?.resourceBounds);
+      const resourceBounds = withL2GasCeiling(estimate?.resourceBounds);
       if (!resourceBounds) {
         return details;
       }

@@ -1,4 +1,5 @@
 import type { Call, ResourceBoundsBN } from "starknet";
+import { ETransactionVersion } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 import { EternumProvider } from "./index";
 import type { TransactionFailedPayload } from "./types";
@@ -40,7 +41,28 @@ const findTransactionFailedPayload = (
 };
 
 describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
-  it("caps l2 gas max_amount at the current v3 mainnet limit", async () => {
+  it("truncates l2 gas max_amount to the mainnet ceiling when the estimate exceeds it", async () => {
+    const provider = makeProvider();
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_500_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await provider.executeAndCheckTransaction(signer, call);
+
+    expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
+    const txDetails = provider.execute.mock.calls[0][3];
+    expect(txDetails.version).toBe(ETransactionVersion.V3);
+    expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(1_200_000_000n);
+  });
+
+  it("passes the estimate through unchanged when it is below the mainnet ceiling", async () => {
     const provider = makeProvider();
     const signer = {
       estimateInvokeFee: vi.fn().mockResolvedValue({
@@ -55,10 +77,9 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     await provider.executeAndCheckTransaction(signer, call);
 
-    expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
     const txDetails = provider.execute.mock.calls[0][3];
-    expect(txDetails.version).toBe(3);
-    expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(1_200_000_000n);
+    expect(txDetails.version).toBe(ETransactionVersion.V3);
+    expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(1_000_000_000n);
   });
 
   it("submits without waiting when waitForConfirmation is false", async () => {
