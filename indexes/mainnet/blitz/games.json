@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-21T19:23:50.307Z",
+  "updatedAt": "2026-04-21T19:23:56.483Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -297,11 +297,10 @@
       "path": "runs/mainnet/blitz/bltz-nova-626.json",
       "inputPath": "inputs/mainnet/blitz/bltz-nova-626/24741788249-1.json",
       "status": "running",
-      "updatedAt": "2026-04-21T19:23:50.307Z",
+      "updatedAt": "2026-04-21T19:23:56.483Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-index",
-      "activeLeaseExpiresAt": "2026-04-21T20:08:50.307Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-world",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-world",
       "startTime": 1776801600,
