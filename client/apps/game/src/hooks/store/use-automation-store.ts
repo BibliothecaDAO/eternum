@@ -28,6 +28,12 @@ export const isAutomationResourceBlocked = (
 };
 
 export const MAX_RESOURCE_ALLOCATION_PERCENT = 90;
+// Execution-time safety ceiling on per-input spend. User-facing percentages remain
+// clamped at MAX_RESOURCE_ALLOCATION_PERCENT, but the effective budget applied during
+// plan building is bounded here to absorb drift between the client's projected balance
+// and the on-chain balance at tx inclusion (torii indexer lag, production projection
+// overshoot, un-indexed sibling burns).
+export const AUTOMATION_INPUT_BUDGET_PERCENT = 75;
 export const DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES: ResourceAutomationPercentages = {
   resourceToResource: 0,
   laborToResource: 5,
