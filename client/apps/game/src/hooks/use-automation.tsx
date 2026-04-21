@@ -35,7 +35,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo } from "@bibliothecadao/react";
-import { getBlockTimestamp, getConservativeBlockTimestamp, configManager } from "@bibliothecadao/eternum";
+import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -249,8 +249,10 @@ export const useAutomation = () => {
     let anyExecuted = false;
 
     try {
-      // Use conservative tick for resource validation to prevent tx failures from clock desync
-      const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
+      // Use the automation projection tick (deeper buffer than the default conservative
+      // accessor) so the planner's projected balance stays behind what the chain will
+      // report at tx-inclusion, preventing Insufficient Balance reverts on overshoot.
+      const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();
 
       // Phase 1: Build all plans synchronously (no awaits, so no event loop yields)
       const executablePlans: ExecutableProductionPlan[] = [];

@@ -1,4 +1,5 @@
 import {
+  AUTOMATION_INPUT_BUDGET_PERCENT,
   DONKEY_DEFAULT_RESOURCE_PERCENT,
   DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
   MAX_RESOURCE_ALLOCATION_PERCENT,
@@ -460,7 +461,7 @@ export const buildRealmProductionPlan = ({
   resourcesToTrack.forEach((resourceId) => {
     const balanceHuman = computeHumanBalance(resourceId);
     totalAvailable.set(resourceId, balanceHuman);
-    const maxConsumable = Math.floor((balanceHuman * MAX_RESOURCE_ALLOCATION_PERCENT) / 100);
+    const maxConsumable = Math.floor((balanceHuman * AUTOMATION_INPUT_BUDGET_PERCENT) / 100);
     availableBudget.set(resourceId, Math.max(0, maxConsumable));
   });
 
@@ -496,7 +497,7 @@ export const buildRealmProductionPlan = ({
   }
   const scaleFactorByInput = new Map<ResourcesIds, number>();
   totalDemandByInput.forEach((demand, inputId) => {
-    const scale = demand > MAX_RESOURCE_ALLOCATION_PERCENT ? MAX_RESOURCE_ALLOCATION_PERCENT / demand : 1;
+    const scale = demand > AUTOMATION_INPUT_BUDGET_PERCENT ? AUTOMATION_INPUT_BUDGET_PERCENT / demand : 1;
     scaleFactorByInput.set(inputId, scale);
   });
   const getInputShareScale = (inputId: ResourcesIds) => scaleFactorByInput.get(inputId) ?? 1;
