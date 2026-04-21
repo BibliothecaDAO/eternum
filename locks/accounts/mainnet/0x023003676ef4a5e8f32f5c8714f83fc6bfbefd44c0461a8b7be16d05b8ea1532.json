@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-clash-490",
-    "launchRequestId": "24652784336-1",
+    "gameName": "bltz-nova-626",
+    "launchRequestId": "24741788249-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24652784336,
+    "workflowRunId": 24741788249,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "693aa6f0-05f6-42d2-bd78-f5a08e3b5917"
+    "stepId": "create-world",
+    "leaseId": "0ae0b4e2-d3d5-4fd0-9b84-75a83e385435"
   },
-  "acquiredAt": "2026-04-20T06:59:44.206Z",
-  "heartbeatAt": "2026-04-20T06:59:49.480Z",
-  "expiresAt": "2026-04-20T06:59:49.480Z",
-  "releasedAt": "2026-04-20T06:59:49.480Z"
+  "acquiredAt": "2026-04-21T19:21:46.281Z",
+  "heartbeatAt": "2026-04-21T19:21:46.281Z",
+  "expiresAt": "2026-04-21T19:31:46.281Z"
 }
