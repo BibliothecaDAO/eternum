@@ -1,6 +1,8 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { toast } from "sonner";
 
+import { reportSubscriptionSetupTimeout } from "@/observability/network-health-reporting";
+
 import { ensureStructureSynced, getExplorerTroopsFromToriiExact, getMapFromToriiExact } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import {
@@ -492,6 +494,9 @@ type WorldmapCameraTransitionStatus = "idle" | "transitioning";
 let activeSpatialStreamManager: ToriiStreamManagerType | null = null;
 
 export const getActiveSpatialStreamManager = (): ToriiStreamManagerType | null => activeSpatialStreamManager;
+
+const SETUP_TIMEOUT_TOAST_THROTTLE_MS = 30_000;
+let lastSetupTimeoutToastAtMs = 0;
 
 let worldmapInteractionDebugInstanceCounter = 0;
 
@@ -5598,6 +5603,16 @@ export default class WorldmapScene extends WarpTravel {
       label: info.label,
       timeoutMs: info.timeoutMs,
     });
+    const now = Date.now();
+    if (now - lastSetupTimeoutToastAtMs >= SETUP_TIMEOUT_TOAST_THROTTLE_MS) {
+      lastSetupTimeoutToastAtMs = now;
+      toast("Map sync delayed", { description: "Retrying…" });
+      reportSubscriptionSetupTimeout({
+        label: info.label,
+        timeoutMs: info.timeoutMs,
+        requestId: info.requestId,
+      });
+    }
     this.toriiBoundsAreaKey = null;
     this.requestToriiResubscribe("bounds_setup_timeout", this.currentChunk);
     this.scheduleChunkRecovery("torii_bounds_timeout", this.currentChunk, {

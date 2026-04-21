@@ -38,13 +38,18 @@ interface SyncEntitiesSubscriptionOptions {
 }
 
 let entityStreamSubscription: { cancel: () => void; ready: Promise<void> } | null = null;
+let isInitialSyncInFlight = false;
 
 /**
  * Cancel the global entity stream subscription.
  * Used during game switching to stop the old Torii client from writing
  * stale data into RECS while the new world is being bootstrapped.
+ *
+ * No-op while a boot is still handshaking — tearing down a half-built
+ * subscription strands RECS and the monitor then re-enters the same loop.
  */
 export const cancelEntityStreamSubscription = () => {
+  if (isInitialSyncInFlight) return;
   if (entityStreamSubscription) {
     entityStreamSubscription.cancel();
     entityStreamSubscription = null;
@@ -548,6 +553,7 @@ export const initialSync = async (
     setInitialSyncProgress(0);
   }
 
+  isInitialSyncInFlight = true;
   try {
     entityStreamSubscription = await syncEntitiesDebounced(
       setup.network.toriiClient,
@@ -560,11 +566,17 @@ export const initialSync = async (
         onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
       },
     );
+    // Handshake succeeded — restart the staleness clock so the monitor
+    // measures "time since last entity *after* the subscription exists",
+    // not time since module load.
+    useConnectionStore.getState().recordGlobalUpdate();
   } catch (error) {
     if (error instanceof Error && error.message.includes("Timed out waiting for")) {
       throw new Error(`Timed out connecting to the world stream after ${subscriptionSetupTimeoutMs}ms.`);
     }
     throw error;
+  } finally {
+    isInitialSyncInFlight = false;
   }
 
   const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
