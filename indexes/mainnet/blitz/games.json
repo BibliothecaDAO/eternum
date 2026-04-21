@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-21T19:24:00.213Z",
+  "updatedAt": "2026-04-21T19:24:24.276Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -297,11 +297,10 @@
       "path": "runs/mainnet/blitz/bltz-nova-626.json",
       "inputPath": "inputs/mainnet/blitz/bltz-nova-626/24741788249-1.json",
       "status": "running",
-      "updatedAt": "2026-04-21T19:24:00.213Z",
+      "updatedAt": "2026-04-21T19:24:24.276Z",
       "workflowRef": "next",
-      "currentStepId": "configure-world",
-      "activeLeaseExpiresAt": "2026-04-21T20:09:00.213Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1776801600,
