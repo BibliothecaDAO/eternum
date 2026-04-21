@@ -943,6 +943,11 @@ const GameCard = ({
             <button
               onClick={handleForgeClick}
               disabled={numHyperstructuresLeft <= 0 || isForgeButtonPending}
+              title={
+                numHyperstructuresLeft > 0
+                  ? `Forge ${numHyperstructuresLeft} Hyperstructures`
+                  : "All Hyperstructures Forged"
+              }
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors",
                 numHyperstructuresLeft > 0
@@ -958,7 +963,9 @@ const GameCard = ({
               ) : (
                 <>
                   <Sparkles className="w-3 h-3" />
-                  Forge {numHyperstructuresLeft} Hypers
+                  <span className="truncate">
+                    {numHyperstructuresLeft > 0 ? `Forge ${numHyperstructuresLeft}` : "All Forged"}
+                  </span>
                 </>
               )}
             </button>

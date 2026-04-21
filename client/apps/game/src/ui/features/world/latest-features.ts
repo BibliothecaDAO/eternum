@@ -22,6 +22,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-21",
+    title: "Auto-Settle Timing Fix",
+    description:
+      "Blitz auto-settle now waits briefly after the visible countdown finishes before opening settlement, avoiding the early transaction failure popup.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-20",
+    title: "Cleaner Forge Flow",
+    description:
+      "Forge Hyperstructures now waits for the dashboard entry data to be ready, shows a clearer remaining count, and reports forge failures instead of leaving the action feeling stuck.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-20",
     title: "Blitz Settlement Sync",
     description:

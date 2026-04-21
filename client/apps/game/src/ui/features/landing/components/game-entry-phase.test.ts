@@ -197,4 +197,94 @@ describe("game entry phase resolution", () => {
 
     expect(phase).toBe("ready");
   });
+
+  it("keeps forge mode in loading until the game entry bootstrap is ready", () => {
+    const phase = resolveGameEntryModalPhase({
+      bootstrapStatus: "loading",
+      hasPhaseError: false,
+      isForgeMode: true,
+      isBlitzMode: true,
+      isSpectateMode: false,
+      worldMode: "blitz",
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isEternumMode: false,
+      isLoadingEternumPrereqs: false,
+      hasVillageRevealResult: false,
+      unifiedSettlementPlannerEnabled: false,
+      hasSettledRealm: false,
+      entryIntent: "play",
+      seasonSettlementComplete: false,
+      eternumSettlementMode: "realm",
+      hasVillagePass: false,
+      hasSeasonPass: false,
+      checksComplete: true,
+      needsHyperstructureInit: false,
+      needsSettlement: false,
+      canPlay: true,
+      isBlitzSettlementUnlocked: false,
+    });
+
+    expect(phase).toBe("loading");
+  });
+
+  it("surfaces forge mode blocking errors instead of showing the forge action", () => {
+    const phase = resolveGameEntryModalPhase({
+      bootstrapStatus: "ready",
+      hasPhaseError: true,
+      isForgeMode: true,
+      isBlitzMode: true,
+      isSpectateMode: false,
+      worldMode: "blitz",
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isEternumMode: false,
+      isLoadingEternumPrereqs: false,
+      hasVillageRevealResult: false,
+      unifiedSettlementPlannerEnabled: false,
+      hasSettledRealm: false,
+      entryIntent: "play",
+      seasonSettlementComplete: false,
+      eternumSettlementMode: "realm",
+      hasVillagePass: false,
+      hasSeasonPass: false,
+      checksComplete: true,
+      needsHyperstructureInit: false,
+      needsSettlement: false,
+      canPlay: true,
+      isBlitzSettlementUnlocked: false,
+    });
+
+    expect(phase).toBe("error");
+  });
+
+  it("shows forge mode once the blitz world is ready", () => {
+    const phase = resolveGameEntryModalPhase({
+      bootstrapStatus: "ready",
+      hasPhaseError: false,
+      isForgeMode: true,
+      isBlitzMode: true,
+      isSpectateMode: false,
+      worldMode: "blitz",
+      isCheckingWorldAvailability: false,
+      hasWorldMeta: true,
+      isEternumMode: false,
+      isLoadingEternumPrereqs: false,
+      hasVillageRevealResult: false,
+      unifiedSettlementPlannerEnabled: false,
+      hasSettledRealm: false,
+      entryIntent: "play",
+      seasonSettlementComplete: false,
+      eternumSettlementMode: "realm",
+      hasVillagePass: false,
+      hasSeasonPass: false,
+      checksComplete: true,
+      needsHyperstructureInit: false,
+      needsSettlement: false,
+      canPlay: true,
+      isBlitzSettlementUnlocked: false,
+    });
+
+    expect(phase).toBe("forge");
+  });
 });

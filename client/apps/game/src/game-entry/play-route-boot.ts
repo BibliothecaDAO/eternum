@@ -211,6 +211,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const [bootToken, setBootToken] = useState(0);
   const [hasReconnectGraceElapsed, setHasReconnectGraceElapsed] = useState(false);
   const readiness = usePlayRouteReadinessStore();
+  const nextBootTokenRef = useRef(0);
   const previousRouteRef = useRef<typeof playRoute>(null);
 
   useEffect(() => {
@@ -240,6 +241,14 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     });
   }, [bootstrap.setupResult]);
 
+  const startPlayRouteBoot = useCallback(() => {
+    const nextBootToken = nextBootTokenRef.current + 1;
+    nextBootTokenRef.current = nextBootToken;
+    usePlayRouteReadinessStore.getState().reset(nextBootToken);
+    setBootToken(nextBootToken);
+    setShowBlankOverlay(true);
+  }, [setShowBlankOverlay]);
+
   useEffect(() => {
     const previousRoute = previousRouteRef.current;
     previousRouteRef.current = playRoute;
@@ -264,13 +273,8 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
       return;
     }
 
-    setBootToken((currentBootToken) => {
-      const nextBootToken = currentBootToken + 1;
-      usePlayRouteReadinessStore.getState().reset(nextBootToken);
-      return nextBootToken;
-    });
-    setShowBlankOverlay(true);
-  }, [bootstrap.setupResult, playRoute, setShowBlankOverlay, showBlankOverlay]);
+    startPlayRouteBoot();
+  }, [bootstrap.setupResult, playRoute, showBlankOverlay, startPlayRouteBoot]);
 
   const resolvedAccount = useMemo(() => {
     if (resolvedRequest?.entryMode === "spectator") {

@@ -33,6 +33,7 @@ interface AutoSettleRuntimeState {
 
 const PREWARM_WINDOW_SECONDS = 30;
 const REFRESH_WINDOW_SECONDS = 5;
+const ONCHAIN_SETTLEMENT_DELAY_SECONDS = 2;
 
 export const resolveAutoSettleRuntimeState = ({
   enabled,
@@ -94,6 +95,8 @@ export const resolveAutoSettleRuntimeState = ({
   });
   const resolvedUnlockAtSec = availability.unlockAtSec;
   const isDue = availability.isUnlocked;
+  const isReadyForOnchainSettlement =
+    resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec + ONCHAIN_SETTLEMENT_DELAY_SECONDS;
   const inPrewarmWindow = resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec - PREWARM_WINDOW_SECONDS;
   const inRefreshWindow = resolvedUnlockAtSec != null && nowSec >= resolvedUnlockAtSec - REFRESH_WINDOW_SECONDS;
 
@@ -124,7 +127,7 @@ export const resolveAutoSettleRuntimeState = ({
     };
   }
 
-  if (isDue) {
+  if (isReadyForOnchainSettlement) {
     return {
       phase: "opening",
       shouldPrimeAssets: false,

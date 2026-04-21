@@ -437,11 +437,11 @@ describe("buildRealmProductionPlan", () => {
     });
   });
 
-  it("splits a shared input's 90% budget proportionally so late-ordered consumers aren't starved", () => {
+  it("splits a shared input's execution budget proportionally so late-ordered consumers aren't starved", () => {
     // Reproduces the user-reported troop-starvation bug: when raw resources and a troop
-    // share Wheat as input and aggregate allocation > 90%, sequential first-come reservation
-    // leaves the last consumer with crumbs. Proportional allocation must give each consumer
-    // its scaled share of the cap.
+    // share Wheat as input and aggregate allocation exceeds the execution budget cap,
+    // sequential first-come reservation leaves the last consumer with crumbs. Proportional
+    // allocation must give each consumer its scaled share of the cap.
     configureComplexRecipe(ResourcesIds.Wood, [{ resource: ResourcesIds.Wheat, amount: 1 }], 1);
     configureComplexRecipe(ResourcesIds.Coal, [{ resource: ResourcesIds.Wheat, amount: 1 }], 1);
     // Knight's troop recipe is already configured: needs 1 Wheat + 1 Copper per cycle, output 1.
@@ -461,8 +461,8 @@ describe("buildRealmProductionPlan", () => {
       }),
     });
 
-    // Total Wheat demand = 40 + 40 + 50 = 130%. Cap = 90%. Scale ≈ 90/130 ≈ 0.6923.
-    // Knight scaled demand ≈ 50% * 0.6923 * 1000 ≈ 346 Wheat → 346 cycles.
+    // Total Wheat demand = 40 + 40 + 50 = 130%. Execution budget cap = 75%. Scale = 75/130 ≈ 0.5769.
+    // Knight scaled demand ≈ 50% * 0.5769 * 1000 ≈ 288 Wheat → 288 cycles.
     const knightCycles =
       plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.Knight)?.cycles ?? 0;
     const woodCycles =
@@ -470,19 +470,19 @@ describe("buildRealmProductionPlan", () => {
     const coalCycles =
       plan.callset.resourceToResource.find((call) => call.resourceId === ResourcesIds.Coal)?.cycles ?? 0;
 
-    // Sequential-first-come would give Knight ~0-100 cycles after Wood/Coal drain the budget.
+    // Sequential-first-come would give Knight ~0 cycles after Wood/Coal drain the budget.
     // Proportional allocation gives every consumer their scaled share simultaneously.
-    expect(knightCycles).toBeGreaterThan(300);
-    expect(woodCycles).toBeGreaterThan(250);
-    expect(coalCycles).toBeGreaterThan(250);
+    expect(knightCycles).toBeGreaterThan(250);
+    expect(woodCycles).toBeGreaterThan(200);
+    expect(coalCycles).toBeGreaterThan(200);
 
-    // Total Wheat consumed must never exceed the 90% cap.
+    // Total Wheat consumed must never exceed the 75% execution budget cap.
     const totalWheat = plan.consumptionByResource[ResourcesIds.Wheat] ?? 0;
-    expect(totalWheat).toBeLessThanOrEqual(900);
+    expect(totalWheat).toBeLessThanOrEqual(750);
   });
 
-  it("does not scale when aggregate demand fits inside the 90% cap", () => {
-    // Regression: if demand <= 90%, every consumer gets its full unscaled desired share.
+  it("does not scale when aggregate demand fits inside the execution budget cap", () => {
+    // Regression: if demand <= execution budget, every consumer gets its full unscaled desired share.
     configureComplexRecipe(ResourcesIds.Wood, [{ resource: ResourcesIds.Wheat, amount: 1 }], 1);
 
     const plan = buildRealmProductionPlan({
