@@ -20,6 +20,20 @@ import { getTotalResourceWeightKg, gramToKg } from "../utils";
 
 const MAP_CENTER = 2147483646;
 
+// Torii encodes Cairo u256 as a nested { low, high } struct. The RECS schema in
+// contract-components.ts mirrors that shape for u256 fields, so reassemble the
+// halves back into a single bigint before handing the value to consumers.
+const u256ToBigInt = (
+  value: bigint | number | string | { low: bigint | number | string; high: bigint | number | string } | null | undefined,
+): bigint => {
+  if (value == null) return 0n;
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number" || typeof value === "string") return BigInt(value);
+  const low = BigInt(value.low ?? 0n);
+  const high = BigInt(value.high ?? 0n);
+  return (high << 128n) | low;
+};
+
 type LaborConfig = {
   laborProductionPerResource: number;
   laborBurnPerResourceOutput: number;
@@ -903,7 +917,7 @@ export class ClientConfigManager {
             reward_profile_id: Number(config.blitz_exploration_config?.reward_profile_id ?? 0),
           },
           blitz_registration_config: {
-            fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
+            fee_amount: u256ToBigInt(blitzRegistrationConfig.fee_amount),
             fee_token: BigInt(blitzRegistrationConfig.fee_token),
             fee_recipient: BigInt(blitzRegistrationConfig.fee_recipient),
             entry_token_address: BigInt(blitzRegistrationConfig.entry_token_address || 0),
