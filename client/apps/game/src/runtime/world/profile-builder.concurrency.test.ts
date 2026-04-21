@@ -144,4 +144,24 @@ describe("buildWorldProfile concurrency", () => {
       worldAddress: "0x1",
     });
   });
+
+  it("falls back to the selected slot world rpc when deployment metadata is unavailable", async () => {
+    mocks.resolveWorldContracts.mockResolvedValue({ spawn: "0xabc" });
+    mocks.resolveWorldDeploymentFromFactory.mockResolvedValue(null);
+    mocks.fetchWorldAddress.mockResolvedValue("0x1");
+    mocks.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => [{ entry_token_address: "0x2", fee_token: "0x3" }],
+    });
+
+    await buildWorldProfile("slot", "s0-game-5");
+
+    expect(mocks.normalizeRpcUrl).toHaveBeenCalledWith("https://api.cartridge.gg/x/s0-game-5/katana");
+    expect(mocks.saveWorldProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "s0-game-5",
+        rpcUrl: "https://api.cartridge.gg/x/s0-game-5/katana",
+      }),
+    );
+  });
 });
