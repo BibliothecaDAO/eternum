@@ -683,6 +683,9 @@ const StructureListItem = memo(
           isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
         }`}
       >
+        {showInfoLine && (
+          <div className="mb-0.5 pl-6 text-[9px] uppercase tracking-wide text-gold/50 truncate">{infoLineLabel}</div>
+        )}
         <div className="flex items-center gap-1.5 overflow-hidden">
           <button
             type="button"
@@ -711,13 +714,10 @@ const StructureListItem = memo(
             {structure.displayName}
           </span>
           {showInfoLine && (
-            <>
-              <span className="shrink-0 whitespace-nowrap text-[10px] text-gold/50">{infoLineLabel}</span>
-              <StructureStatusStats
-                populationLabel={populationStatusLabel}
-                buildingTilesLabel={buildingTilesStatusLabel}
-              />
-            </>
+            <StructureStatusStats
+              populationLabel={populationStatusLabel}
+              buildingTilesLabel={buildingTilesStatusLabel}
+            />
           )}
           {activeRelicEffects.length > 0 && (
             <div className="flex items-center gap-0.5 shrink-0 ml-auto">
