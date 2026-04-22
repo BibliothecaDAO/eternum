@@ -588,7 +588,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           game_address: RecsType.String,
-          levels: RecsType.Schema,
+          levels: RecsType.T,
         },
         {
           metadata: {
@@ -2161,7 +2161,7 @@ const eventsComponents = (world: World) => {
             owner: RecsType.OptionalString,
             entity_id: RecsType.OptionalNumber,
             tx_hash: RecsType.String,
-            story: RecsType.Schema,
+            story: RecsType.T,
             timestamp: RecsType.Number,
           },
           {
