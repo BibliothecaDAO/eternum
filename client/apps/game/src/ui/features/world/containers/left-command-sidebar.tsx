@@ -649,9 +649,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure }: Struct
       title={structure.displayName}
       aria-pressed={isSelected}
     >
-      {structure.isFavorite && (
-        <Star className="h-3 w-3 shrink-0 fill-current text-gold" aria-label="Favorited" />
-      )}
+      {structure.isFavorite && <Star className="h-3 w-3 shrink-0 fill-current text-gold" aria-label="Favorited" />}
       {structure.groupColor && (
         <span
           className={clsx(
@@ -663,7 +661,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure }: Struct
       <span
         className={clsx(
           "truncate font-semibold",
-          structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold" : undefined,
+          structure.groupColor ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold") : undefined,
         )}
       >
         {structure.displayName}

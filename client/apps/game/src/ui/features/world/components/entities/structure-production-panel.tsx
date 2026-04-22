@@ -186,90 +186,81 @@ export const StructureProductionPanel = memo(
             badgeVariant === "detailed" ? "flex flex-wrap items-center gap-3" : "flex flex-wrap items-center gap-2"
           }
         >
-          {resourceProductionSummary
-            .toSorted(createProductionSortComparator(starvedResources))
-            .map((summary) => {
-              const resourceLabel = ResourcesIds[summary.resourceId];
-              const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;
-              const effectiveOutputRemaining =
-                summary.isProducing &&
-                summary.outputRemaining !== null &&
-                summary.productionPerSecond !== null &&
-                Number.isFinite(summary.productionPerSecond)
-                  ? Math.max(summary.outputRemaining - elapsedSeconds * summary.productionPerSecond, 0)
-                  : summary.outputRemaining;
-              const effectiveRemainingSeconds =
-                summary.timeRemainingSeconds !== null
-                  ? Math.max(summary.timeRemainingSeconds - elapsedSeconds, 0)
-                  : null;
-              const formattedRemaining =
-                summary.isProducing && effectiveRemainingSeconds !== null
-                  ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
-                  : null;
-              const starvationReason = starvedResources?.get(summary.resourceId);
-              const isStarved = typeof starvationReason === "string" && starvationReason.length > 0;
-              const tooltipParts = summary.isProducing
-                ? [
-                    resourceLabel,
-                    `${summary.activeBuildings}/${summary.totalBuildings} producing`,
-                    formattedRemaining ? `${formattedRemaining} left` : null,
-                  ]
-                : [
-                    resourceLabel,
-                    `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`,
-                  ];
-              if (isStarved) {
-                tooltipParts.push(`⚠ ${starvationReason}`);
+          {resourceProductionSummary.toSorted(createProductionSortComparator(starvedResources)).map((summary) => {
+            const resourceLabel = ResourcesIds[summary.resourceId];
+            const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;
+            const effectiveOutputRemaining =
+              summary.isProducing &&
+              summary.outputRemaining !== null &&
+              summary.productionPerSecond !== null &&
+              Number.isFinite(summary.productionPerSecond)
+                ? Math.max(summary.outputRemaining - elapsedSeconds * summary.productionPerSecond, 0)
+                : summary.outputRemaining;
+            const effectiveRemainingSeconds =
+              summary.timeRemainingSeconds !== null ? Math.max(summary.timeRemainingSeconds - elapsedSeconds, 0) : null;
+            const formattedRemaining =
+              summary.isProducing && effectiveRemainingSeconds !== null
+                ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
+                : null;
+            const starvationReason = starvedResources?.get(summary.resourceId);
+            const isStarved = typeof starvationReason === "string" && starvationReason.length > 0;
+            const tooltipParts = summary.isProducing
+              ? [
+                  resourceLabel,
+                  `${summary.activeBuildings}/${summary.totalBuildings} producing`,
+                  formattedRemaining ? `${formattedRemaining} left` : null,
+                ]
+              : [resourceLabel, `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`];
+            if (isStarved) {
+              tooltipParts.push(`⚠ ${starvationReason}`);
+            }
+            const outputLabel = summary.isProducing ? formatOutputAmount(effectiveOutputRemaining) : undefined;
+            let netRateLabel: string | undefined;
+            if (badgeVariant === "detailed") {
+              const production = Number.isFinite(summary.productionPerSecond) ? (summary.productionPerSecond ?? 0) : 0;
+              const consumption = consumptionPerSecondById?.get(summary.resourceId) ?? 0;
+              const hasSignal = production !== 0 || consumption !== 0;
+              if (hasSignal) {
+                netRateLabel = formatNetRatePerSecond(production - consumption);
               }
-              const outputLabel = summary.isProducing ? formatOutputAmount(effectiveOutputRemaining) : undefined;
-              let netRateLabel: string | undefined;
-              if (badgeVariant === "detailed") {
-                const production = Number.isFinite(summary.productionPerSecond)
-                  ? (summary.productionPerSecond ?? 0)
-                  : 0;
-                const consumption = consumptionPerSecondById?.get(summary.resourceId) ?? 0;
-                const hasSignal = production !== 0 || consumption !== 0;
-                if (hasSignal) {
-                  netRateLabel = formatNetRatePerSecond(production - consumption);
-                }
-              }
-              const badgeProps =
-                badgeVariant === "detailed"
-                  ? {
-                      cornerTopLeft: summary.totalBuildings > 0 ? `${summary.totalBuildings}` : undefined,
-                      cornerTopRight: netRateLabel ?? outputLabel,
-                      cornerBottomRight: formattedRemaining ?? undefined,
-                    }
-                  : {
-                      totalCount: summary.totalBuildings,
-                    };
+            }
+            const badgeProps =
+              badgeVariant === "detailed"
+                ? {
+                    cornerTopLeft: summary.totalBuildings > 0 ? `${summary.totalBuildings}` : undefined,
+                    cornerTopRight: netRateLabel ?? outputLabel,
+                    cornerBottomRight: formattedRemaining ?? undefined,
+                  }
+                : {
+                    totalCount: summary.totalBuildings,
+                  };
 
-              let cornerTopRightClassName: string | undefined;
-              if (badgeVariant === "detailed" && netRateLabel) {
-                if (netRateLabel.startsWith("+")) {
-                  cornerTopRightClassName = "text-emerald-400";
-                } else if (netRateLabel.startsWith("-")) {
-                  cornerTopRightClassName = "text-red-400";
-                } else {
-                  cornerTopRightClassName = "text-gold/50";
-                }
+            let cornerTopRightClassName: string | undefined;
+            if (badgeVariant === "detailed" && netRateLabel) {
+              if (netRateLabel.startsWith("+")) {
+                cornerTopRightClassName = "text-emerald-400";
+              } else if (netRateLabel.startsWith("-")) {
+                cornerTopRightClassName = "text-red-400";
+              } else {
+                cornerTopRightClassName = "text-gold/50";
               }
+            }
 
-              return (
-                <ProductionStatusBadge
-                  key={summary.resourceId}
-                  resourceLabel={resourceLabel}
-                  tooltipText={tooltipParts.filter(Boolean).join(" • ")}
-                  isProducing={summary.isProducing}
-                  timeRemainingSeconds={effectiveRemainingSeconds}
-                  size={productionBadgeSize}
-                  showTooltip={showTooltip}
-                  className={isStarved ? "rounded-full ring-1 ring-red-500/60" : undefined}
-                  cornerTopRightClassName={cornerTopRightClassName}
-                  {...badgeProps}
-                />
-              );
-            })}
+            return (
+              <ProductionStatusBadge
+                key={summary.resourceId}
+                resourceLabel={resourceLabel}
+                tooltipText={tooltipParts.filter(Boolean).join(" • ")}
+                isProducing={summary.isProducing}
+                timeRemainingSeconds={effectiveRemainingSeconds}
+                size={productionBadgeSize}
+                showTooltip={showTooltip}
+                className={isStarved ? "rounded-full ring-1 ring-red-500/60" : undefined}
+                cornerTopRightClassName={cornerTopRightClassName}
+                {...badgeProps}
+              />
+            );
+          })}
         </div>
       </>
     );

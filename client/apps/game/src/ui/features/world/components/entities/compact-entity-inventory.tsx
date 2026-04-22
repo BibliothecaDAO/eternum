@@ -208,12 +208,7 @@ export const CompactEntityInventory = memo(
     const renderItem = (item: DisplayItem, options: { hero: boolean }) => {
       const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
       const isClickableRelic =
-        allowRelicActivation &&
-        item.isRelic &&
-        item.canActivate &&
-        !item.isActive &&
-        entityId &&
-        entityType != null;
+        allowRelicActivation && item.isRelic && item.canActivate && !item.isActive && entityId && entityType != null;
 
       const heroPadding = "px-2 py-1.5";
       const heroIconSize = "sm";
@@ -234,11 +229,7 @@ export const CompactEntityInventory = memo(
       );
 
       return (
-        <div
-          key={`inventory-item-${item.resourceId}`}
-          className={itemClasses}
-          onClick={() => handleRelicClick(item)}
-        >
+        <div key={`inventory-item-${item.resourceId}`} className={itemClasses} onClick={() => handleRelicClick(item)}>
           <ResourceIcon
             resource={ResourcesIds[item.resourceId]}
             size={options.hero ? heroIconSize : iconSize}

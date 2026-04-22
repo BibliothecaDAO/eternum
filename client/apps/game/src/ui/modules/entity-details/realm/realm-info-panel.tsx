@@ -249,8 +249,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structure?.base?.troop_max_guard_count !== undefined ? Number(structure.base.troop_max_guard_count) : null;
 
   const canManageGuards = isOwned && structureCapabilities.canManageGuardArmy;
-  const emptyGuardSlots =
-    canManageGuards && maxGuardArmies !== null ? Math.max(maxGuardArmies - guardArmyCount, 0) : 0;
+  const emptyGuardSlots = canManageGuards && maxGuardArmies !== null ? Math.max(maxGuardArmies - guardArmyCount, 0) : 0;
   const starvingCount = canShowProductionCard ? starvedResources.size : 0;
 
   const handleManageGuards = useCallback(() => {
