@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24775131537-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-04-22T11:12:55.922Z",
-  "updatedAt": "2026-04-22T11:14:01.195Z",
+  "updatedAt": "2026-04-22T11:14:10.214Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-04-22T11:14:10.214Z"
     },
     {
       "id": "configure-world",
@@ -68,5 +69,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-twist-108.json",
     "worldAddress": "0x059f8f010151ee6159b2645b32a24a37cf4d1f015e1c7bb85e0d1a0f6b327563",
     "createGameTxHash": "0x6a177db12b07f878882a61427c97d76c12b9092587c6681571c4c2a1d709f25"
+  },
+  "activeLease": {
+    "launchRequestId": "24775131537-1",
+    "workflowRunId": 24775131537,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-04-22T11:14:10.214Z",
+    "expiresAt": "2026-04-22T11:59:10.214Z"
   }
 }
