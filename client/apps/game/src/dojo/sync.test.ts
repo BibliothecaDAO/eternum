@@ -83,7 +83,8 @@ function createSyncHarness() {
   const cancelEventSubscription = vi.fn();
 
   const client = {
-    onEntityUpdated: vi.fn(async (_clause, callback: EntityUpdatedCallback) => {
+    // Dojo 1.8.x: world_addresses is the 2nd positional arg before the callback.
+    onEntityUpdated: vi.fn(async (_clause, _worldAddresses, callback: EntityUpdatedCallback) => {
       onEntityUpdated = callback;
       return { cancel: cancelEntitySubscription };
     }),
@@ -121,15 +122,21 @@ describe("syncEntitiesDebounced", () => {
     vi.clearAllMocks();
   });
 
-  it("resolves ready after the first entity update is written to RECS", async () => {
-    vi.useFakeTimers();
+  it("resolves ready as soon as subscriptions are registered (deltas-only semantics)", async () => {
+    // Dojo 1.8.x: onEntityUpdated streams deltas only, so the ready promise can no
+    // longer be gated on receiving the first subscription callback — initial state
+    // arrives via the separate getEntities calls in initialSync. Readiness resolves
+    // immediately after subscription setup completes.
     const harness = createSyncHarness();
     const subscription = await syncEntitiesDebounced(harness.client as any, harness.setup as any, null, false);
-    let readyResolved = false;
 
-    subscription.ready.then(() => {
-      readyResolved = true;
-    });
+    await subscription.ready;
+  });
+
+  it("debounces entity updates into a single setEntities batch", async () => {
+    vi.useFakeTimers();
+    const harness = createSyncHarness();
+    await syncEntitiesDebounced(harness.client as any, harness.setup as any, null, false);
 
     harness.emitEntityUpdate({
       hashed_keys: "entity-1",
@@ -139,13 +146,10 @@ describe("syncEntitiesDebounced", () => {
     });
 
     await vi.advanceTimersByTimeAsync(199);
-    expect(readyResolved).toBe(false);
     expect(setEntitiesMock).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(1);
-    await subscription.ready;
 
-    expect(readyResolved).toBe(true);
     expect(setEntitiesMock).toHaveBeenCalledWith(
       [
         {
@@ -160,57 +164,12 @@ describe("syncEntitiesDebounced", () => {
     );
   });
 
-  it("waits for a matching ready entity before resolving ready", async () => {
-    vi.useFakeTimers();
-    const harness = createSyncHarness();
-    const subscription = await syncEntitiesDebounced(
-      harness.client as any,
-      harness.setup as any,
-      null,
-      false,
-      undefined,
-      {
-        isReadyEntity: (entity) => Boolean(entity.models["s1_eternum-TileOpt"]),
-      },
-    );
-    let readyResolved = false;
-
-    subscription.ready.then(() => {
-      readyResolved = true;
-    });
-
-    harness.emitEntityUpdate({
-      hashed_keys: "structure-1",
-      models: {
-        "s1_eternum-Structure": { entity_id: 1 },
-      },
-    });
-
-    await vi.advanceTimersByTimeAsync(200);
-    expect(readyResolved).toBe(false);
-
-    harness.emitEntityUpdate({
-      hashed_keys: "tile-1",
-      models: {
-        "s1_eternum-TileOpt": { col: 1, row: 2, data: "3" },
-      },
-    });
-
-    await vi.advanceTimersByTimeAsync(200);
-    await subscription.ready;
-
-    expect(readyResolved).toBe(true);
-  });
-
-  it("rejects ready when canceled before the first entity update is written", async () => {
-    vi.useFakeTimers();
+  it("tears down both subscriptions when canceled", async () => {
     const harness = createSyncHarness();
     const subscription = await syncEntitiesDebounced(harness.client as any, harness.setup as any, null, false);
-    const readyRejection = expect(subscription.ready).rejects.toThrow(/cancel/i);
 
     subscription.cancel();
 
-    await readyRejection;
     expect(harness.cancelEntitySubscription).toHaveBeenCalledTimes(1);
     expect(harness.cancelEventSubscription).toHaveBeenCalledTimes(1);
   });
