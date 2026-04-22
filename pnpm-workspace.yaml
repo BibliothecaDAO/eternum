@@ -15,22 +15,29 @@ packages:
 
 autoInstallPeers: true
 
+# Patches @dojoengine/utils@1.8.4 to drop the `addAddressPadding` call inside
+# `getEntityIdFromKeys`. Torii 1.8 returns `hashed_keys` without leading-zero padding to
+# felt252 width, so the padded lookup never matched what RECS stored. Reverting the pad
+# call brings client-side entity ID derivation back in sync with server output.
+patchedDependencies:
+  "@dojoengine/utils@1.8.4": patches/@dojoengine__utils@1.8.4.patch
+
 catalog:
   "@cartridge/connector": ^0.13.9
   "@cartridge/controller": ^0.13.9
-  "@dojoengine/core": 1.7.0-preview.3
-  "@dojoengine/predeployed-connector": 1.7.0-preview.3
-  "@dojoengine/react": 1.7.0-preview.3
+  "@dojoengine/core": 1.8.8
+  "@dojoengine/predeployed-connector": 1.8.4
+  "@dojoengine/react": 1.8.11
   "@dojoengine/recs": ^2.0.13
-  "@dojoengine/sdk": 1.7.0-preview.3
-  "@dojoengine/state": 1.7.0-preview.3
-  "@dojoengine/torii-client": 1.7.0-preview.3
-  "@dojoengine/torii-wasm": 1.7.0-preview.3
-  "@dojoengine/utils": 1.7.0-preview.3
+  "@dojoengine/sdk": 1.9.0
+  "@dojoengine/state": 1.8.5
+  "@dojoengine/torii-client": 1.8.2
+  "@dojoengine/torii-wasm": 1.8.2
+  "@dojoengine/utils": 1.8.4
   "@starknet-react/chains": 5.0.3
   "@starknet-react/core": 5.0.3
   bignumber.js: ^9.3.0
   posthog-js: ^1.160.0
   react: ^18
   react-dom: ^18
-  starknet: ^8.5.2
+  starknet: ^8.9.2

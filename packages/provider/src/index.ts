@@ -17,6 +17,7 @@ import {
   BigNumberish,
   Call,
   CallData,
+  ETransactionVersion,
   GetTransactionReceiptResponse,
   ResourceBoundsBN,
   uint256,
@@ -59,8 +60,6 @@ export type { VrfSource } from "./vrf";
 
 // Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
 const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
-const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
-const HUNDRED_PERCENT = 100n;
 const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
@@ -362,17 +361,13 @@ const extractErrorMessage = (error: unknown, fallback = "Unknown error"): string
 
 const matchesNonceError = (error: unknown): boolean => extractErrorMessage(error, "").toLowerCase().includes("nonce");
 
-const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
+const withL2GasCeiling = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
   if (!resourceBounds?.l2_gas || typeof resourceBounds.l2_gas.max_amount !== "bigint") {
     return resourceBounds;
   }
 
   const currentMaxAmount = resourceBounds.l2_gas.max_amount;
-  const paddedMaxAmount =
-    (currentMaxAmount * (HUNDRED_PERCENT + V3_L2_GAS_OVERHEAD_PERCENT) + (HUNDRED_PERCENT - 1n)) / HUNDRED_PERCENT;
-  const nextMaxAmount = paddedMaxAmount > MAX_V3_L2_GAS_MAX_AMOUNT ? MAX_V3_L2_GAS_MAX_AMOUNT : paddedMaxAmount;
-
-  if (nextMaxAmount === currentMaxAmount) {
+  if (currentMaxAmount <= MAX_V3_L2_GAS_MAX_AMOUNT) {
     return resourceBounds;
   }
 
@@ -380,7 +375,7 @@ const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN 
     ...resourceBounds,
     l2_gas: {
       ...resourceBounds.l2_gas,
-      max_amount: nextMaxAmount,
+      max_amount: MAX_V3_L2_GAS_MAX_AMOUNT,
     },
   };
 };
@@ -470,7 +465,12 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
     }
   };
 }
-const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
+// Dojo 1.8+ made DojoProvider generic over Actions (default `never`), which produces an index
+// signature `[K: string]: never` that blocks adding untyped action methods on subclasses.
+// Eternum's provider defines 300+ action methods directly on the class; casting the base to
+// a loose constructor preserves the runtime behavior while letting TypeScript accept the
+// hand-rolled methods. A typed Actions ABI can be threaded through later if we export one.
+const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider) as unknown as new (...args: any[]) => any;
 
 export const buildVrfCalls = async ({
   account,
@@ -644,7 +644,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ): Promise<UniversalDetails> {
-    const details: UniversalDetails = { version: 3 };
+    const details: UniversalDetails = { version: ETransactionVersion.V3 };
     const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
     if (typeof estimateInvokeFee !== "function") {
       return details;
@@ -653,7 +653,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     try {
       const estimate = (await this.withTimeout(
         estimateInvokeFee.call(signer, transactionDetails, {
-          version: 3,
+          version: ETransactionVersion.V3,
         }),
         this.FEE_ESTIMATE_TIMEOUT_MS,
         () =>
@@ -661,7 +661,7 @@ export class EternumProvider extends EnhancedDojoProvider {
             `Transaction fee estimation timed out after ${formatTimeoutDuration(this.FEE_ESTIMATE_TIMEOUT_MS)}`,
           ),
       )) as { resourceBounds?: ResourceBoundsBN };
-      const resourceBounds = withL2GasHeadroom(estimate?.resourceBounds);
+      const resourceBounds = withL2GasCeiling(estimate?.resourceBounds);
       if (!resourceBounds) {
         return details;
       }

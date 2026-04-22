@@ -53,15 +53,21 @@ export function DojoConfigProvider({ children, toriiUrl, worldAddress, chain }: 
       return null;
     }
 
+    // Dojo 1.8.x `createDojoConfig` rebuilds `world.abi` as `manifest.abis` — if the caller
+    // only supplies `world.abi` (our PM manifests do) the overwrite wipes the ABI and the
+    // provider later fails `isCairo1Abi([])` with "Unable to determine Cairo version".
+    // Pre-populate `abis` so the rebuild becomes a no-op.
+    const worldAbi = (manifest as unknown as { world: { abi?: unknown[] } }).world.abi;
     return createDojoConfig({
       toriiUrl,
       manifest: {
         ...manifest,
+        abis: worldAbi,
         world: {
           ...manifest.world,
           address: worldAddress,
         },
-      },
+      } as Parameters<typeof createDojoConfig>[0]["manifest"],
     });
   }, [manifest, toriiUrl, worldAddress]);
 

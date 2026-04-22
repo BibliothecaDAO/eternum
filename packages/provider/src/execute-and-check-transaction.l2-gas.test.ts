@@ -1,3 +1,4 @@
+import { ETransactionVersion } from "starknet";
 import type { Call, ResourceBoundsBN } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EternumProvider } from "./index";
@@ -48,11 +49,11 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     vi.useRealTimers();
   });
 
-  it("caps l2 gas max_amount at the current v3 mainnet limit", async () => {
+  it("caps l2 gas max_amount at the current v3 mainnet limit when the estimate exceeds it", async () => {
     const provider = makeProvider();
     const signer = {
       estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
+        resourceBounds: makeResourceBounds(1_500_000_000n),
       }),
     };
     const call: Call = {
@@ -65,8 +66,29 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
     const txDetails = provider.execute.mock.calls[0][3];
-    expect(txDetails.version).toBe(3);
+    expect(txDetails.version).toBe(ETransactionVersion.V3);
     expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(1_200_000_000n);
+  });
+
+  it("passes l2 gas max_amount through unchanged when the estimate is below the ceiling", async () => {
+    const provider = makeProvider();
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(500_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await provider.executeAndCheckTransaction(signer, call);
+
+    expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
+    const txDetails = provider.execute.mock.calls[0][3];
+    expect(txDetails.version).toBe(ETransactionVersion.V3);
+    expect(txDetails.resourceBounds.l2_gas.max_amount).toBe(500_000_000n);
   });
 
   it("submits without waiting when waitForConfirmation is false", async () => {
@@ -522,6 +544,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       statusReceipt: "PENDING",
       transaction_hash: "0xabc",
     });
-    expect(provider.execute).toHaveBeenCalledWith(signer, call, "s1_eternum", { version: 3 });
+    expect(provider.execute).toHaveBeenCalledWith(signer, call, "s1_eternum", { version: ETransactionVersion.V3 });
   });
 });

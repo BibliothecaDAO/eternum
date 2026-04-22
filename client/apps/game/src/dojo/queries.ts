@@ -260,19 +260,11 @@ export const getConfigFromTorii = async <S extends Schema>(
       false,
     );
 
-  // Per issue #4653: config data is static within a chain/world deployment and
-  // most config models are also covered by GLOBAL_STREAM_CLAUSE's initial state
-  // flush. On reloads within the same tab session, skip blocking on the fetch —
-  // fire it in the background so RECS still revalidates. Clear the marker on
-  // failure so the next boot falls back to a blocking fetch.
-  if (hasFreshConfigCache()) {
-    fetchConfig().catch((error) => {
-      console.warn("[torii] Background config revalidation failed", error);
-      clearConfigFetchCache();
-    });
-    return;
-  }
-
+  // Dojo 1.8.x's `onEntityUpdated` is deltas-only: no initial-state flush. The previous
+  // "fresh cache" short-circuit assumed the global subscription would re-deliver config
+  // models on reload, which left RECS empty when `configManager.setDojo` ran immediately
+  // after — breaking `initializeMapCenter` and all coordinate normalization. Always block
+  // on the fetch so the config is in RECS before downstream initialization runs.
   const result = await fetchConfig();
   markConfigCacheFresh();
   return result;
