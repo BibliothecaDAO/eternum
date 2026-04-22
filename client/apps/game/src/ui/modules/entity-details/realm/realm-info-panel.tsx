@@ -10,6 +10,7 @@ import { productionAutomation } from "@/ui/features/world/components/config";
 import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
+import { RealmAttentionRow } from "@/ui/modules/entity-details/realm/realm-attention-row";
 import { useRealmStarvedResources } from "@/ui/modules/entity-details/realm/use-realm-starved-resources";
 import { useRealmConsumptionPerSecond } from "@/ui/modules/entity-details/realm/use-realm-consumption-per-second";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
@@ -246,6 +247,21 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structure?.base?.troop_max_explorer_count !== undefined ? Number(structure.base.troop_max_explorer_count) : null;
   const maxGuardArmies =
     structure?.base?.troop_max_guard_count !== undefined ? Number(structure.base.troop_max_guard_count) : null;
+
+  const canManageGuards = isOwned && structureCapabilities.canManageGuardArmy;
+  const emptyGuardSlots =
+    canManageGuards && maxGuardArmies !== null ? Math.max(maxGuardArmies - guardArmyCount, 0) : 0;
+  const starvingCount = canShowProductionCard ? starvedResources.size : 0;
+
+  const handleManageGuards = useCallback(() => {
+    if (!structureEntityId || !canManageGuards) return;
+    const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
+    openArmyCreationPopup({
+      structureId: Number(structureEntityId),
+      isExplorer: false,
+      maxDefenseSlots,
+    });
+  }, [canManageGuards, openArmyCreationPopup, structure?.base?.troop_max_guard_count, structureEntityId]);
   const shouldRenderVillageUi = isVillage;
   const isVillageMilitiaClaimed = Boolean(villageTroop?.claimed);
   const [isClaimingVillageMilitia, setIsClaimingVillageMilitia] = useState(false);
@@ -325,6 +341,11 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
 
   return (
     <div className={cn("flex h-full flex-col gap-2 p-2 text-gold", className)}>
+      <RealmAttentionRow
+        starvingCount={starvingCount}
+        emptyGuardSlots={emptyGuardSlots}
+        onManageGuards={canManageGuards ? handleManageGuards : undefined}
+      />
       {canShowProductionCard && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">
           <div className="flex items-center justify-between gap-3">
@@ -400,6 +421,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
               variant="tight"
               showLabels={false}
               maxItems={14}
+              heroCount={3}
               allowRelicActivation
               activeRelicIds={activeRelicIds}
             />

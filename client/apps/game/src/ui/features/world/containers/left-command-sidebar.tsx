@@ -1,6 +1,5 @@
 import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -40,13 +39,7 @@ import {
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
-import {
-  configManager,
-  getStructureArmyRelicEffects,
-  getStructureRelicEffects,
-  Position,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
+import { configManager, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   ClientComponents,
@@ -509,14 +502,32 @@ const LeftPanelHeader = memo(
               )}
             </div>
             {selectedStructureMetadata && (
-              <button
-                type="button"
-                onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
-                className="flex-shrink-0 rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
-                title="Rename structure"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
+              <div className="flex-shrink-0 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onToggleFavorite(selectedStructureMetadata.entityId)}
+                  className="rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
+                  title={selectedStructureMetadata.isFavorite ? "Remove from favorites" : "Favorite structure"}
+                  aria-label={selectedStructureMetadata.isFavorite ? "Remove from favorites" : "Favorite structure"}
+                >
+                  <Star
+                    className={`h-4 w-4 ${
+                      selectedStructureMetadata.isFavorite ? "fill-current text-gold" : "text-gold/70"
+                    }`}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
+                  className="rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
+                  title="Rename structure"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                {selectedStructureMetadata.category === StructureType.Realm && (
+                  <StructureLevelUpButton structureEntityId={selectedStructureMetadata.entityId} />
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -575,15 +586,13 @@ const LeftPanelHeader = memo(
           </Tabs>
 
           {orderedStructures.length > 0 ? (
-            <div className="max-h-[16rem] space-y-1 overflow-y-auto pr-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
               {orderedStructures.map((structure) => (
-                <StructureListItem
+                <StructureChip
                   key={structure.entityId}
                   structure={structure}
                   isSelected={structure.entityId === structureEntityId}
                   onSelectStructure={onSelectStructure}
-                  onToggleFavorite={onToggleFavorite}
-                  components={components}
                 />
               ))}
             </div>
@@ -600,147 +609,75 @@ const LeftPanelHeader = memo(
 
 LeftPanelHeader.displayName = "LeftPanelHeader";
 
-type StructureListItemProps = {
+type StructureChipProps = {
   structure: StructureWithMetadata;
   isSelected: boolean;
   onSelectStructure: (entityId: ID) => void;
-  onToggleFavorite: (entityId: ID) => void;
-  components: ClientComponents;
 };
 
-const StructureListItem = memo(
-  ({ structure, isSelected, onSelectStructure, onToggleFavorite, components }: StructureListItemProps) => {
-    const entityKey = useMemo(() => {
-      try {
-        return getEntityIdFromKeys([BigInt(structure.entityId)]);
-      } catch {
-        return null;
+const StructureChip = memo(({ structure, isSelected, onSelectStructure }: StructureChipProps) => {
+  const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
+  const levelAbbrev = structureCapabilities.hasPopulationDetails
+    ? getLevelName(
+        Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
+      ).charAt(0)
+    : null;
+
+  const handleClick = useCallback(() => onSelectStructure(structure.entityId), [onSelectStructure, structure.entityId]);
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleClick();
       }
-    }, [structure.entityId]);
+    },
+    [handleClick],
+  );
 
-    const liveStructure = useComponentValue(components.Structure, entityKey as any);
-    const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
-    const productionBoostBonus = useComponentValue(components.ProductionBoostBonus, entityKey as any);
-    const currentArmiesTick = useCurrentArmiesTick();
-
-    const activeRelicEffects = useMemo(() => {
-      const structureRelics = productionBoostBonus
-        ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
-        : [];
-      const armyRelics = liveStructure ? getStructureArmyRelicEffects(liveStructure, currentArmiesTick) : [];
-      return [...structureRelics, ...armyRelics];
-    }, [productionBoostBonus, liveStructure, currentArmiesTick]);
-
-    const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
-    const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
-    const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);
-    const levelLabel = structureCapabilities.hasPopulationDetails
-      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-      : null;
-
-    const basePopulationCapacity = structureCapabilities.hasPopulationDetails
-      ? configManager.getBasePopulationCapacity()
-      : 0;
-    const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
-      ? Math.max(Number(basePopulationCapacity ?? 0), 6)
-      : 0;
-
-    const population = Number(liveStructureBuildings?.population.current ?? structure.population ?? 0);
-    const populationCapacity =
-      Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) +
-      normalizedBasePopulationCapacity;
-
-    const showInfoLine = structureCapabilities.hasPopulationDetails;
-    const populationStatusLabel = formatPopulationStatusLabel(population, populationCapacity);
-    const buildingTilesStatusLabel =
-      structure.buildingTilesOccupied !== null && structure.buildingTilesTotal !== null
-        ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
-        : null;
-    const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
-
-    const handleSelectStructure = useCallback(
-      () => onSelectStructure(structure.entityId),
-      [onSelectStructure, structure.entityId],
-    );
-
-    const handleKeyDown = useCallback(
-      (event: KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          handleSelectStructure();
-        }
-      },
-      [handleSelectStructure],
-    );
-
-    return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={handleSelectStructure}
-        onKeyDown={handleKeyDown}
-        className={`w-full rounded-lg border px-2 py-1.5 text-left transition ${
-          isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
-        }`}
-      >
-        {showInfoLine && (
-          <div className="mb-0.5 pl-6 text-[9px] uppercase tracking-wide text-gold/50 truncate">{infoLineLabel}</div>
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={clsx(
+        "group inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition max-w-[10rem]",
+        isSelected
+          ? "border-gold bg-gold/15 text-gold"
+          : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
+      )}
+      title={structure.displayName}
+      aria-pressed={isSelected}
+    >
+      {structure.isFavorite && (
+        <Star className="h-3 w-3 shrink-0 fill-current text-gold" aria-label="Favorited" />
+      )}
+      {structure.groupColor && (
+        <span
+          className={clsx(
+            "h-1.5 w-1.5 shrink-0 rounded-full",
+            STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? "",
+          )}
+        />
+      )}
+      <span
+        className={clsx(
+          "truncate font-semibold",
+          structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold" : undefined,
         )}
-        <div className="flex items-center gap-1.5 overflow-hidden">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleFavorite(structure.entityId);
-            }}
-            className="rounded border border-transparent p-0.5 text-gold/60 hover:text-gold shrink-0"
-            title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-          >
-            <Star className={`h-3.5 w-3.5 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
-          </button>
-          {structure.groupColor && (
-            <span
-              className={`h-2 w-2 shrink-0 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
-            />
-          )}
-          <span
-            className={`min-w-0 max-w-[7rem] shrink truncate text-xs font-semibold ${
-              structure.groupColor
-                ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
-                : "text-gold"
-            }`}
-            title={structure.displayName}
-          >
-            {structure.displayName}
-          </span>
-          {showInfoLine && (
-            <StructureStatusStats
-              populationLabel={populationStatusLabel}
-              buildingTilesLabel={buildingTilesStatusLabel}
-            />
-          )}
-          {activeRelicEffects.length > 0 && (
-            <div className="flex items-center gap-0.5 shrink-0 ml-auto">
-              {activeRelicEffects.map((effect) => {
-                const resourceId = Number(effect.id);
-                return (
-                  <div key={resourceId} className="rounded border border-relic2/30 bg-relic/10 p-0.5">
-                    <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" withTooltip />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {structure.category === StructureType.Realm && (
-            <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto shrink-0" />
-          )}
-        </div>
-      </div>
-    );
-  },
-);
+      >
+        {structure.displayName}
+      </span>
+      {levelAbbrev && (
+        <span className="shrink-0 rounded-sm bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/60">
+          {levelAbbrev}
+        </span>
+      )}
+    </button>
+  );
+});
 
-StructureListItem.displayName = "StructureListItem";
+StructureChip.displayName = "StructureChip";
 
 const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.entityDetails, // Realm Info

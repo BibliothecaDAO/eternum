@@ -7,6 +7,7 @@ import { ProductionStatusBadge } from "@/ui/shared";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { ComponentValue } from "@dojoengine/recs";
 import { formatTimeRemaining } from "../../../economy/resources/entity-resource-table/utils";
+import { createProductionSortComparator } from "./production-sort";
 
 interface StructureProductionPanelProps {
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
@@ -186,11 +187,7 @@ export const StructureProductionPanel = memo(
           }
         >
           {resourceProductionSummary
-            .toSorted((a, b) => {
-              if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
-              if (b.resourceId === ResourcesIds.Wheat && a.resourceId !== ResourcesIds.Wheat) return 1;
-              return a.resourceId - b.resourceId;
-            })
+            .toSorted(createProductionSortComparator(starvedResources))
             .map((summary) => {
               const resourceLabel = ResourcesIds[summary.resourceId];
               const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;

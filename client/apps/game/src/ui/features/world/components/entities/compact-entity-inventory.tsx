@@ -31,6 +31,12 @@ interface CompactEntityInventoryProps {
   showLabels?: boolean;
   allowRelicActivation?: boolean;
   maxItems?: number;
+  /**
+   * When > 0, renders the first `heroCount` items in a larger, higher-contrast
+   * row above the tight grid. Useful for surfacing the highest-priority
+   * resources (lords / relics / food) at a glance.
+   */
+  heroCount?: number;
 }
 
 interface DisplayItem {
@@ -143,6 +149,7 @@ export const CompactEntityInventory = memo(
     showLabels = false,
     allowRelicActivation = false,
     maxItems,
+    heroCount = 0,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
     const mode = useGameModeConfig();
@@ -194,50 +201,70 @@ export const CompactEntityInventory = memo(
     const iconSize = variant === "tight" ? "xs" : "sm";
     const amountClass = variant === "tight" ? "text-[10px]" : "text-xxs";
 
-    return (
-      <div className={cn("flex flex-col gap-1", className)}>
-        <div className={cn(baseGrid)}>
-          {visibleItems.map((item) => {
-            const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
-            const isClickableRelic =
-              allowRelicActivation &&
-              item.isRelic &&
-              item.canActivate &&
-              !item.isActive &&
-              entityId &&
-              entityType != null;
-            const itemClasses = cn(
-              "flex h-full w-full flex-col items-center justify-center rounded-md border text-center",
-              compactItemClass,
-              item.isRelic
-                ? item.isActive
-                  ? "border-relic2/60 bg-relic/15"
-                  : "border-relic2/40 bg-relic/10"
-                : "border-gold/25 bg-dark/40",
-              isClickableRelic &&
-                "cursor-pointer transition-colors duration-150 hover:border-gold/60 hover:bg-gold/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
-            );
+    const effectiveHeroCount = Math.max(0, Math.min(heroCount, visibleItems.length));
+    const heroItems = effectiveHeroCount > 0 ? visibleItems.slice(0, effectiveHeroCount) : [];
+    const regularItems = effectiveHeroCount > 0 ? visibleItems.slice(effectiveHeroCount) : visibleItems;
 
-            return (
-              <div
-                key={`inventory-item-${item.resourceId}`}
-                className={itemClasses}
-                onClick={() => handleRelicClick(item)}
-              >
-                <ResourceIcon resource={ResourcesIds[item.resourceId]} size={iconSize} withTooltip={false} />
-                <span className={cn(amountClass, "font-semibold text-gold/90")}>
-                  {formatInventoryAmount(item.amount)}
-                </span>
-                {showLabels && resourceDef && (
-                  <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
-                    {resourceDef.ticker ?? resourceDef.trait}
-                  </span>
-                )}
-                {item.isRelic && item.isActive && <Sparkles className="mt-1 h-3 w-3 text-relic2" />}
-              </div>
-            );
-          })}
+    const renderItem = (item: DisplayItem, options: { hero: boolean }) => {
+      const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
+      const isClickableRelic =
+        allowRelicActivation &&
+        item.isRelic &&
+        item.canActivate &&
+        !item.isActive &&
+        entityId &&
+        entityType != null;
+
+      const heroPadding = "px-2 py-1.5";
+      const heroIconSize = "sm";
+      const heroAmountClass = "text-sm font-bold";
+
+      const itemClasses = cn(
+        "flex h-full w-full flex-col items-center justify-center rounded-md border text-center",
+        options.hero ? heroPadding : compactItemClass,
+        item.isRelic
+          ? item.isActive
+            ? "border-relic2/60 bg-relic/15"
+            : "border-relic2/40 bg-relic/10"
+          : options.hero
+            ? "border-gold/40 bg-dark/60"
+            : "border-gold/25 bg-dark/40",
+        isClickableRelic &&
+          "cursor-pointer transition-colors duration-150 hover:border-gold/60 hover:bg-gold/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+      );
+
+      return (
+        <div
+          key={`inventory-item-${item.resourceId}`}
+          className={itemClasses}
+          onClick={() => handleRelicClick(item)}
+        >
+          <ResourceIcon
+            resource={ResourcesIds[item.resourceId]}
+            size={options.hero ? heroIconSize : iconSize}
+            withTooltip={false}
+          />
+          <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold text-gold/95")}>
+            {formatInventoryAmount(item.amount)}
+          </span>
+          {(options.hero || showLabels) && resourceDef && (
+            <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
+              {resourceDef.ticker ?? resourceDef.trait}
+            </span>
+          )}
+          {item.isRelic && item.isActive && <Sparkles className="mt-1 h-3 w-3 text-relic2" />}
         </div>
+      );
+    };
+
+    return (
+      <div className={cn("flex flex-col gap-1.5", className)}>
+        {heroItems.length > 0 && (
+          <div className="grid grid-cols-3 gap-1.5">{heroItems.map((item) => renderItem(item, { hero: true }))}</div>
+        )}
+        {regularItems.length > 0 && (
+          <div className={cn(baseGrid)}>{regularItems.map((item) => renderItem(item, { hero: false }))}</div>
+        )}
         {hiddenCount > 0 && (
           <span className="text-[10px] text-gold/60">
             Showing {visibleItems.length} of {items.length}
