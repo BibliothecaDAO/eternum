@@ -26,7 +26,7 @@ import {
   WORLDMAP_PENDING_FX_STOP_EVENT,
 } from "@/utils/pending-worldmap-fx";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
-import { ArmyManager } from "@/three/managers/army-manager";
+import { ArmyManager, type ArmyMovementPlan } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -623,6 +623,10 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
+  // Pre-computed optimistic movement plans keyed by entityId. Planned at submit
+  // time in parallel with the tx, applied on tx_confirmed so the animation
+  // starts before Torii delivers the authoritative update.
+  private pendingMovementPlans: Map<ID, Promise<ArmyMovementPlan | null>> = new Map();
 
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
@@ -1088,6 +1092,22 @@ export default class WorldmapScene extends WarpTravel {
         entityId,
         txHash,
       });
+
+      const planPromise = this.pendingMovementPlans.get(entityId);
+      if (planPromise) {
+        this.pendingMovementPlans.delete(entityId);
+        void planPromise.then((plan) => {
+          if (!plan) return;
+          void this.armyManager.applyMovementPlan(plan, { optimistic: true }).then(() => {
+            recordArmyMovementLatencyPhase({
+              phase: "optimistic_animation_started",
+              source: "worldmap",
+              entityId,
+              txHash,
+            });
+          });
+        });
+      }
     };
 
     this.handleTransactionFailed = (payload: { transactionHash?: string }) => {
@@ -1102,6 +1122,10 @@ export default class WorldmapScene extends WarpTravel {
         pendingEntities: this.pendingArmyMovements,
       });
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
+        this.pendingMovementPlans.delete(plan.entityId);
+        if (this.armyManager.isArmyMovingOptimistically(plan.entityId)) {
+          this.armyManager.rewindOptimisticMovement(plan.entityId);
+        }
         this.clearPendingArmyMovement(plan.entityId);
         useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
         this.disposePendingMovementVisualLifecycle(plan.entityId);
@@ -2524,6 +2548,18 @@ export default class WorldmapScene extends WarpTravel {
         },
       });
 
+      // Pre-compute the optimistic movement plan in parallel with the tx so we can
+      // start the animation as soon as tx_confirmed fires, without waiting for
+      // Torii to deliver the authoritative TileOpt update.
+      const destPosition = new Position({ x: targetHex.col, y: targetHex.row });
+      this.pendingMovementPlans.set(
+        selectedEntityId,
+        this.armyManager.computeMovementPlan(selectedEntityId, destPosition).catch((error) => {
+          console.error("[worldmap] computeMovementPlan failed", error);
+          return null;
+        }),
+      );
+
       // Monitor memory usage before army movement action
       this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
       const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
@@ -2562,6 +2598,10 @@ export default class WorldmapScene extends WarpTravel {
         })
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
+          this.pendingMovementPlans.delete(selectedEntityId);
+          if (this.armyManager.isArmyMovingOptimistically(selectedEntityId)) {
+            this.armyManager.rewindOptimisticMovement(selectedEntityId);
+          }
           this.clearPendingArmyMovement(selectedEntityId);
           useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
@@ -3037,6 +3077,10 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
+      this.pendingMovementPlans.delete(entityId);
+      if (this.armyManager.isArmyMovingOptimistically(entityId)) {
+        this.armyManager.rewindOptimisticMovement(entityId);
+      }
       this.clearPendingArmyMovement(entityId);
       useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
