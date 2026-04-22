@@ -4,6 +4,18 @@ import { defineComponent, Type as RecsType, type World } from "@dojoengine/recs"
 
 export type ContractComponents = ReturnType<typeof defineContractComponents>;
 
+type ContractComponentMetadata = {
+  namespace: string;
+  name: string;
+  types: string[];
+  customTypes: string[];
+};
+
+type QuestLevelsSchema = {
+  game_address: typeof RecsType.String;
+  levels: typeof RecsType.T;
+};
+
 export function defineContractComponents(world: World) {
   return {
     AddressName: (() => {
@@ -584,7 +596,7 @@ export function defineContractComponents(world: World) {
       );
     })(),
     QuestLevels: (() => {
-      return defineComponent(
+      return defineComponent<QuestLevelsSchema, ContractComponentMetadata, unknown[]>(
         world,
         {
           game_address: RecsType.String,
