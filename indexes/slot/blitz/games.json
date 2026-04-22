@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-22T11:27:28.530Z",
+  "updatedAt": "2026-04-22T11:27:50.374Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -578,11 +578,10 @@
       "path": "runs/slot/blitz/bltz-blink-21.json",
       "inputPath": "inputs/slot/blitz/bltz-blink-21/24775644468-1.json",
       "status": "running",
-      "updatedAt": "2026-04-22T11:27:28.530Z",
+      "updatedAt": "2026-04-22T11:27:50.374Z",
       "workflowRef": "next",
-      "currentStepId": "configure-world",
-      "activeLeaseExpiresAt": "2026-04-22T12:12:28.530Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1776858000,
