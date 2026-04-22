@@ -33,8 +33,8 @@ import {
 } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   countOccupiedBuildingTilesByStructure,
-  formatAvailableBuildingTilesLabel,
   formatPopulationStatusLabel,
+  formatUsedBuildingTilesLabel,
   resolveAvailableBuildingTiles,
 } from "@/ui/features/world/containers/structure-status";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
@@ -107,7 +107,7 @@ type StructureWithMetadata = Structure & {
   realmLevelLabel: string | null;
   population: number;
   populationCapacity: number;
-  buildingTilesAvailable: number | null;
+  buildingTilesOccupied: number | null;
   buildingTilesTotal: number | null;
   groupColor: StructureGroupColor | null;
   isFavorite: boolean;
@@ -226,7 +226,7 @@ const StructureStatusStats = ({
   <div className="flex flex-wrap items-center gap-1.5">
     <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" />
     {buildingTilesLabel ? (
-      <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Available / total building tiles" />
+      <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
     ) : null}
   </div>
 );
@@ -375,7 +375,7 @@ const LeftPanelHeader = memo(
           realmLevelLabel,
           population,
           populationCapacity,
-          buildingTilesAvailable: buildingTileSummary?.available ?? null,
+          buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
           buildingTilesTotal: buildingTileSummary?.total ?? null,
           groupColor,
           isFavorite,
@@ -453,10 +453,10 @@ const LeftPanelHeader = memo(
       : null;
     const buildingTilesStatusLabel =
       selectedStructureMetadata &&
-      selectedStructureMetadata.buildingTilesAvailable !== null &&
+      selectedStructureMetadata.buildingTilesOccupied !== null &&
       selectedStructureMetadata.buildingTilesTotal !== null
-        ? formatAvailableBuildingTilesLabel(
-            selectedStructureMetadata.buildingTilesAvailable,
+        ? formatUsedBuildingTilesLabel(
+            selectedStructureMetadata.buildingTilesOccupied,
             selectedStructureMetadata.buildingTilesTotal,
           )
         : null;
@@ -653,8 +653,8 @@ const StructureListItem = memo(
     const showInfoLine = structureCapabilities.hasPopulationDetails;
     const populationStatusLabel = formatPopulationStatusLabel(population, populationCapacity);
     const buildingTilesStatusLabel =
-      structure.buildingTilesAvailable !== null && structure.buildingTilesTotal !== null
-        ? formatAvailableBuildingTilesLabel(structure.buildingTilesAvailable, structure.buildingTilesTotal)
+      structure.buildingTilesOccupied !== null && structure.buildingTilesTotal !== null
+        ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
         : null;
     const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
 

@@ -10,8 +10,8 @@ const resolveBuildRadius = (level: number) => normalizeNonNegativeInteger(level)
 export const formatPopulationStatusLabel = (population: number, populationCapacity: number) =>
   `${normalizeNonNegativeInteger(population)}/${normalizeNonNegativeInteger(populationCapacity)}`;
 
-export const formatAvailableBuildingTilesLabel = (available: number, total: number) =>
-  `${normalizeNonNegativeInteger(available)}/${normalizeNonNegativeInteger(total)}`;
+export const formatUsedBuildingTilesLabel = (used: number, total: number) =>
+  `${normalizeNonNegativeInteger(used)}/${normalizeNonNegativeInteger(total)}`;
 
 export const countOccupiedBuildingTilesByStructure = ({
   buildings,
