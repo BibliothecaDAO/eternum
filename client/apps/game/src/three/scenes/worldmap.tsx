@@ -39,6 +39,7 @@ import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { processExplorerTroopsUpdate } from "@/three/scenes/worldmap-update-helpers";
+import { WorldmapMoveQueue } from "@/three/scenes/worldmap-move-queue";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -627,6 +628,11 @@ export default class WorldmapScene extends WarpTravel {
   // time in parallel with the tx, applied on tx_confirmed so the animation
   // starts before Torii delivers the authoritative update.
   private pendingMovementPlans: Map<ID, Promise<ArmyMovementPlan | null>> = new Map();
+  // At most one queued next-move per entity. Enqueued when the user clicks a
+  // new destination while the current optimistic tween is still animating;
+  // dequeued and re-submitted on onMovementComplete.
+  private moveQueue: WorldmapMoveQueue = new WorldmapMoveQueue();
+  private moveQueueDequeueDisposers: Map<ID, () => void> = new Map();
 
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
@@ -1123,6 +1129,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
         this.pendingMovementPlans.delete(plan.entityId);
+        this.clearQueuedNextMove(plan.entityId);
         if (this.armyManager.isArmyMovingOptimistically(plan.entityId)) {
           this.armyManager.rewindOptimisticMovement(plan.entityId);
         }
@@ -2406,6 +2413,13 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    if (actionPath.length > 0 && this.armyManager?.isArmyMovingOptimistically(selectedEntityId)) {
+      this.enqueueNextMove(account, actionPath, selectedEntityId);
+      this.state.updateEntityActionHoveredHex(null);
+      this.clearSelection();
+      return;
+    }
+
     const actionType = ActionPaths.getActionType(actionPath);
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
@@ -2599,6 +2613,7 @@ export default class WorldmapScene extends WarpTravel {
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
           this.pendingMovementPlans.delete(selectedEntityId);
+          this.clearQueuedNextMove(selectedEntityId);
           if (this.armyManager.isArmyMovingOptimistically(selectedEntityId)) {
             this.armyManager.rewindOptimisticMovement(selectedEntityId);
           }
@@ -3054,6 +3069,41 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private enqueueNextMove(account: Account | AccountInterface, actionPath: ActionPath[], entityId: ID): void {
+    const alreadyQueued = this.moveQueue.has(entityId);
+    this.moveQueue.enqueue(entityId, { actionPath });
+    recordArmyMovementLatencyPhase({
+      phase: "next_move_queued",
+      source: "worldmap",
+      entityId,
+      details: {
+        targetCol: actionPath[actionPath.length - 1]?.hex.col,
+        targetRow: actionPath[actionPath.length - 1]?.hex.row,
+        replacedPreviousQueuedMove: alreadyQueued,
+      },
+    });
+
+    if (alreadyQueued) return;
+
+    const dispose = this.armyManager.onMovementComplete(entityId, () => {
+      this.moveQueueDequeueDisposers.delete(entityId);
+      const queued = this.moveQueue.dequeue(entityId);
+      if (!queued) return;
+      if (!this.armyManager.hasArmy(entityId)) return;
+      this.onArmyMovement(account, queued.actionPath, entityId);
+    });
+    this.moveQueueDequeueDisposers.set(entityId, dispose);
+  }
+
+  private clearQueuedNextMove(entityId: ID): void {
+    this.moveQueue.clear(entityId);
+    const dispose = this.moveQueueDequeueDisposers.get(entityId);
+    if (dispose) {
+      this.moveQueueDequeueDisposers.delete(entityId);
+      dispose();
+    }
+  }
+
   private schedulePendingArmyMovementFallback(entityId: ID): void {
     const existingFallback = this.pendingArmyMovementFallbackTimeouts.get(entityId);
     if (existingFallback) {
@@ -3078,6 +3128,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       this.pendingMovementPlans.delete(entityId);
+      this.clearQueuedNextMove(entityId);
       if (this.armyManager.isArmyMovingOptimistically(entityId)) {
         this.armyManager.rewindOptimisticMovement(entityId);
       }
@@ -3107,6 +3158,7 @@ export default class WorldmapScene extends WarpTravel {
     // Check if army has pending movement transactions
     const selectionPlan = resolvePendingArmyMovementSelectionPlan({
       hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+      isOptimisticMovementActive: this.armyManager.isArmyMovingOptimistically(selectedEntityId),
       pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(selectedEntityId),
       nowMs: Date.now(),
       staleAfterMs: this.authoritativePendingArmyMovementMs,
@@ -8161,6 +8213,10 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingArmyMovements.clear();
+    this.moveQueueDequeueDisposers.forEach((dispose) => dispose());
+    this.moveQueueDequeueDisposers.clear();
+    this.moveQueue.clearAll();
+    this.pendingMovementPlans.clear();
     if (this.handleTransactionComplete) {
       this.dojo.network?.provider?.off("transactionComplete", this.handleTransactionComplete);
     }

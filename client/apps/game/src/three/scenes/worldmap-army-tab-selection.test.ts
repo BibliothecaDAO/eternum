@@ -218,6 +218,38 @@ describe("resolvePendingArmyMovementSelectionPlan", () => {
       shouldBlockSelection: false,
     });
   });
+
+  it("allows re-selection while the optimistic tween is active so the user can queue a next move", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: true,
+        isOptimisticMovementActive: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 2000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: false,
+    });
+  });
+
+  it("still blocks selection when pending but optimistic has not started yet", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: true,
+        isOptimisticMovementActive: false,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 2000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: true,
+      shouldBlockSelection: true,
+    });
+  });
 });
 
 describe("resolvePendingArmyMovementFallbackPlan", () => {
