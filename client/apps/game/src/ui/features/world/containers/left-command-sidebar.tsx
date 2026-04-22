@@ -237,6 +237,7 @@ const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] =
 const HEADER_HEIGHT = 64;
 const PANEL_WIDTH = 420;
 const HANDLE_WIDTH = 14;
+const MAX_VISIBLE_STRUCTURE_ROWS = 5;
 
 const LeftPanelHeader = memo(
   ({
@@ -252,6 +253,7 @@ const LeftPanelHeader = memo(
     onToggleFavorite,
   }: LeftPanelHeaderProps) => {
     const [activeTab, setActiveTab] = useState(0);
+    const [showAllStructures, setShowAllStructures] = useState(false);
     const mode = useGameModeConfig();
 
     const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
@@ -586,16 +588,33 @@ const LeftPanelHeader = memo(
           </Tabs>
 
           {orderedStructures.length > 0 ? (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
-              {orderedStructures.map((structure) => (
-                <StructureChip
-                  key={structure.entityId}
-                  structure={structure}
-                  isSelected={structure.entityId === structureEntityId}
-                  onSelectStructure={onSelectStructure}
-                />
-              ))}
-            </div>
+            (() => {
+              const visibleStructures = showAllStructures
+                ? orderedStructures
+                : orderedStructures.slice(0, MAX_VISIBLE_STRUCTURE_ROWS);
+              const hiddenCount = Math.max(orderedStructures.length - MAX_VISIBLE_STRUCTURE_ROWS, 0);
+              return (
+                <div className="flex flex-col gap-1">
+                  {visibleStructures.map((structure) => (
+                    <StructureChip
+                      key={structure.entityId}
+                      structure={structure}
+                      isSelected={structure.entityId === structureEntityId}
+                      onSelectStructure={onSelectStructure}
+                    />
+                  ))}
+                  {hiddenCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllStructures((prev) => !prev)}
+                      className="w-full rounded border border-gold/20 bg-black/30 px-2 py-1 text-[10px] uppercase tracking-wide text-gold/70 hover:border-gold/40 hover:text-gold"
+                    >
+                      {showAllStructures ? "Show fewer" : `Show ${hiddenCount} more`}
+                    </button>
+                  )}
+                </div>
+              );
+            })()
           ) : (
             <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
               No structures available for this category.
@@ -641,7 +660,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure }: Struct
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={clsx(
-        "group inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition max-w-[10rem]",
+        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-left text-xs transition",
         isSelected
           ? "border-gold bg-gold/15 text-gold"
           : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
@@ -660,7 +679,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure }: Struct
       )}
       <span
         className={clsx(
-          "truncate font-semibold",
+          "min-w-0 flex-1 truncate font-semibold",
           structure.groupColor ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold") : undefined,
         )}
       >

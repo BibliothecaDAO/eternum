@@ -238,7 +238,7 @@ export const CompactEntityInventory = memo(
           <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold text-gold/95")}>
             {formatInventoryAmount(item.amount)}
           </span>
-          {(options.hero || showLabels) && resourceDef && (
+          {showLabels && resourceDef && (
             <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
               {resourceDef.ticker ?? resourceDef.trait}
             </span>
