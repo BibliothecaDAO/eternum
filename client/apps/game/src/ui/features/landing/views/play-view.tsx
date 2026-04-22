@@ -810,7 +810,6 @@ const PlayTabContent = ({
               onForgeHyperstructures={onForgeHyperstructures}
               onRegistrationComplete={onRegistrationComplete}
               modeFilter={resolvedMode}
-              devModeFilter={false}
               statusFilter={["ongoing", "upcoming"]}
               registeredFilter="unregistered"
               hideHeader

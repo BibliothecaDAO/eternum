@@ -4,15 +4,15 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("PlayView live games dev visibility", () => {
-  it("wires forge callback in the live ongoing grid", () => {
+  it("wires forge callback in the open games grid", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
-    const liveStart = source.indexOf("{/* Live Games Column */}");
-    const upcomingStart = source.indexOf("{/* Upcoming Games Column */}");
-    const ongoingBlock = source.slice(liveStart, upcomingStart);
+    const openStart = source.indexOf("{/* Open Games Column */}");
+    const playedStart = source.indexOf("{/* Played Column (ended games) */}");
+    const openBlock = source.slice(openStart, playedStart);
 
-    expect(liveStart).toBeGreaterThan(-1);
-    expect(upcomingStart).toBeGreaterThan(liveStart);
-    expect(ongoingBlock).toContain("onForgeHyperstructures={onForgeHyperstructures}");
+    expect(openStart).toBeGreaterThan(-1);
+    expect(playedStart).toBeGreaterThan(openStart);
+    expect(openBlock).toContain("onForgeHyperstructures={onForgeHyperstructures}");
   });
 
   it("wires forge callback in learn tab practice games", () => {
@@ -26,14 +26,14 @@ describe("PlayView live games dev visibility", () => {
     expect(practiceBlock).toContain("onForgeHyperstructures={onForgeHyperstructures}");
   });
 
-  it("does not hard-filter the live ongoing grid to production only", () => {
+  it("does not hard-filter the open games grid to production only", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
-    const liveStart = source.indexOf("{/* Live Games Column */}");
-    const upcomingStart = source.indexOf("{/* Upcoming Games Column */}");
-    const ongoingBlock = source.slice(liveStart, upcomingStart);
+    const openStart = source.indexOf("{/* Open Games Column */}");
+    const playedStart = source.indexOf("{/* Played Column (ended games) */}");
+    const openBlock = source.slice(openStart, playedStart);
 
-    expect(liveStart).toBeGreaterThan(-1);
-    expect(upcomingStart).toBeGreaterThan(liveStart);
-    expect(ongoingBlock).not.toContain("devModeFilter={false}");
+    expect(openStart).toBeGreaterThan(-1);
+    expect(playedStart).toBeGreaterThan(openStart);
+    expect(openBlock).not.toContain("devModeFilter={false}");
   });
 });
