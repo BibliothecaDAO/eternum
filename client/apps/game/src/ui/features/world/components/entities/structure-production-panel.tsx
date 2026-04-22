@@ -227,7 +227,9 @@ export const StructureProductionPanel = memo(
               const outputLabel = summary.isProducing ? formatOutputAmount(effectiveOutputRemaining) : undefined;
               let netRateLabel: string | undefined;
               if (badgeVariant === "detailed") {
-                const production = Number.isFinite(summary.productionPerSecond) ? (summary.productionPerSecond ?? 0) : 0;
+                const production = Number.isFinite(summary.productionPerSecond)
+                  ? (summary.productionPerSecond ?? 0)
+                  : 0;
                 const consumption = consumptionPerSecondById?.get(summary.resourceId) ?? 0;
                 const hasSignal = production !== 0 || consumption !== 0;
                 if (hasSignal) {

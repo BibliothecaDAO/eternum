@@ -4,9 +4,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { extractStarvedResources } from "./use-realm-starved-resources";
 import type { RealmAutomationExecutionSummary } from "@/hooks/store/use-automation-store";
 
-const baseSummary = (
-  overrides?: Partial<RealmAutomationExecutionSummary>,
-): RealmAutomationExecutionSummary => ({
+const baseSummary = (overrides?: Partial<RealmAutomationExecutionSummary>): RealmAutomationExecutionSummary => ({
   executedAt: Date.now(),
   resourceToResource: [],
   laborToResource: [],

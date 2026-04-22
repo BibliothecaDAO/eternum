@@ -62,7 +62,8 @@ export const aggregateConsumptionPerSecond = (
 ): Map<number, number> => {
   const maxAllocationPercent = options?.maxAllocationPercent ?? DEFAULT_MAX_ALLOCATION_PERCENT;
   const cycleSeconds = options?.cycleSeconds ?? DEFAULT_CYCLE_SECONDS;
-  const complexInputsBySource = options?.recipes?.complexSystemResourceInputs ?? configManager.complexSystemResourceInputs;
+  const complexInputsBySource =
+    options?.recipes?.complexSystemResourceInputs ?? configManager.complexSystemResourceInputs;
   const simpleInputsBySource = options?.recipes?.simpleSystemResourceInputs ?? configManager.simpleSystemResourceInputs;
 
   const totals = new Map<number, number>();
