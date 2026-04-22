@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24775644468-1",
   "currentStepId": null,
   "createdAt": "2026-04-22T11:25:57.213Z",
-  "updatedAt": "2026-04-22T11:30:23.924Z",
+  "updatedAt": "2026-04-22T11:32:09.585Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x1127c4d5cc30a273f05860b3919822237b2b07934878254d9b6dda23693a869",
     "lootChestRoleTxHash": "0x7973b11eb12d59bf3dbe09734abd42e0ad16be1a40db1238f86bd472c281340",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-blink-21/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-22T11:28:51.740Z",
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-04-22T11:30:22.608Z"
+    "lastIndexerDescribeAt": "2026-04-22T11:32:09.585Z"
   },
   "completedAt": "2026-04-22T11:28:53.540Z"
 }
