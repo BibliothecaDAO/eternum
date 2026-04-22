@@ -1090,6 +1090,10 @@ interface UnifiedGameGridProps {
   sortClaimableRewardsFirst?: boolean;
   /** Sort ended games by most recently ended first */
   sortEndedNewestFirst?: boolean;
+  /** Filter by user registration status. "registered" keeps only games where
+   *  isRegistered === true; "unregistered" keeps everything else (including
+   *  null while lookups are pending, so discovery surfaces aren't suppressed). */
+  registeredFilter?: "registered" | "unregistered";
   /** Optional callback to expose the resolved list (for reuse without extra queries) */
   onGamesResolved?: (games: GameData[]) => void;
 }
@@ -1117,6 +1121,7 @@ export const UnifiedGameGrid = ({
   sortRegisteredFirst = false,
   sortClaimableRewardsFirst = false,
   sortEndedNewestFirst = false,
+  registeredFilter,
   onGamesResolved,
 }: UnifiedGameGridProps) => {
   // Track locally completed registrations (to show immediately before refetch)
@@ -1229,6 +1234,12 @@ export const UnifiedGameGrid = ({
       .filter((game) => {
         if (!modeFilter) return true;
         return game.config?.mode === modeFilter;
+      })
+      // Filter by user registration status if specified
+      .filter((game) => {
+        if (!registeredFilter) return true;
+        if (registeredFilter === "registered") return game.isRegistered === true;
+        return game.isRegistered !== true;
       });
 
     // Sort: optionally registered first, then by status, then by start time
@@ -1261,6 +1272,7 @@ export const UnifiedGameGrid = ({
     devModeFilter,
     statusFilter,
     sortRegisteredFirst,
+    registeredFilter,
   ]);
 
   const endedRegisteredGames = useMemo(
