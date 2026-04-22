@@ -164,4 +164,21 @@ describe("buildWorldProfile concurrency", () => {
       }),
     );
   });
+
+  it("rejects unavailable slot worlds before saving a dead rpc profile", async () => {
+    mocks.resolveWorldContracts.mockResolvedValue({ spawn: "0xabc" });
+    mocks.resolveWorldDeploymentFromFactory.mockResolvedValue(null);
+    mocks.fetchWorldAddress.mockResolvedValue(null);
+    mocks.fetch.mockResolvedValue({
+      ok: false,
+      json: async () => [],
+    });
+
+    await expect(buildWorldProfile("slot", "bltz-riff-363")).rejects.toThrow(
+      "Slot world deployment is not available: bltz-riff-363",
+    );
+
+    expect(mocks.normalizeRpcUrl).not.toHaveBeenCalledWith("https://api.cartridge.gg/x/bltz-riff-363/katana");
+    expect(mocks.saveWorldProfile).not.toHaveBeenCalled();
+  });
 });

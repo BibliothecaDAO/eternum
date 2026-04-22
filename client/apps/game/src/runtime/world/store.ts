@@ -1,11 +1,13 @@
 import type { Chain } from "@contracts";
-import { WorldProfile, WorldProfilesMap } from "./types";
+import type { WorldProfile, WorldProfilesMap } from "./types";
 
 const ACTIVE_KEY = "ACTIVE_WORLD_NAME";
 const CHAIN_KEY = "ACTIVE_WORLD_CHAIN";
 const PROFILES_KEY = "WORLD_PROFILES";
 const ACTIVE_WORLD_EVENT = "runtime:active-world-changed";
 const SELECTED_CHAIN_EVENT = "runtime:selected-chain-changed";
+const ZERO_WORLD_ADDRESS = "0x0";
+const PADDED_ZERO_WORLD_ADDRESS = `0x${"0".repeat(64)}`;
 
 const safeParse = <T>(raw: string | null, fallback: T): T => {
   if (!raw) return fallback;
@@ -21,6 +23,17 @@ const CHAIN_VALUES: Chain[] = ["sepolia", "mainnet", "slot", "slottest", "local"
 const isValidChain = (value: string | null): value is Chain => {
   if (!value) return false;
   return CHAIN_VALUES.includes(value as Chain);
+};
+
+const isSlotWorldChain = (chain: Chain): boolean => chain === "slot" || chain === "slottest";
+
+const isZeroWorldAddress = (worldAddress: string | null | undefined): boolean => {
+  const normalized = worldAddress?.toLowerCase();
+  return normalized === ZERO_WORLD_ADDRESS || normalized === PADDED_ZERO_WORLD_ADDRESS;
+};
+
+const isUnavailableSlotWorldProfile = (profile: WorldProfile): boolean => {
+  return isSlotWorldChain(profile.chain) && isZeroWorldAddress(profile.worldAddress);
 };
 
 const readStorageValue = (key: string): string | null => {
@@ -157,7 +170,15 @@ const deleteWorldProfile = (name: string) => {
 
 const getWorldProfile = (name: string): WorldProfile | null => {
   const profiles = getWorldProfiles();
-  return profiles[name] ?? null;
+  const profile = profiles[name] ?? null;
+  if (!profile) return null;
+
+  if (isUnavailableSlotWorldProfile(profile)) {
+    deleteWorldProfile(name);
+    return null;
+  }
+
+  return profile;
 };
 
 export const getActiveWorldName = (): string | null => readStorageValue(ACTIVE_KEY);
