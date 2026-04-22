@@ -263,6 +263,11 @@
     "vitest": "^2.1.9"
   },
   "packageManager": "pnpm@10.25.0",
+  "pnpm": {
+    "patchedDependencies": {
+      "@dojoengine/utils@1.8.4": "patches/@dojoengine__utils@1.8.4.patch"
+    }
+  },
   "workspaces": {
     "packages": [
       "client",

@@ -15,13 +15,6 @@ packages:
 
 autoInstallPeers: true
 
-# Patches @dojoengine/utils@1.8.4 to drop the `addAddressPadding` call inside
-# `getEntityIdFromKeys`. Torii 1.8 returns `hashed_keys` without leading-zero padding to
-# felt252 width, so the padded lookup never matched what RECS stored. Reverting the pad
-# call brings client-side entity ID derivation back in sync with server output.
-patchedDependencies:
-  "@dojoengine/utils@1.8.4": patches/@dojoengine__utils@1.8.4.patch
-
 catalog:
   "@cartridge/connector": ^0.13.9
   "@cartridge/controller": ^0.13.9
