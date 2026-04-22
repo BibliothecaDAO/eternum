@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "sandbox-slot-1",
-    "launchRequestId": "24754052740-1",
+    "gameName": "bltz-twist-108",
+    "launchRequestId": "24775131537-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24754052740,
+    "workflowRunId": 24775131537,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "032bb309-47ff-431f-b71d-bb37837fd690"
+    "stepId": "create-world",
+    "leaseId": "68edf1cc-b8b8-4dc9-8ac5-fcbc0acc1479"
   },
-  "acquiredAt": "2026-04-22T00:46:29.342Z",
-  "heartbeatAt": "2026-04-22T00:46:45.478Z",
-  "expiresAt": "2026-04-22T00:46:45.478Z",
-  "releasedAt": "2026-04-22T00:46:45.478Z"
+  "acquiredAt": "2026-04-22T11:13:05.147Z",
+  "heartbeatAt": "2026-04-22T11:13:05.147Z",
+  "expiresAt": "2026-04-22T11:23:05.147Z"
 }
