@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-22T20:05:47.407Z",
+  "updatedAt": "2026-04-22T20:06:10.928Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -599,11 +599,10 @@
       "path": "runs/slot/blitz/bltz-clash-929.json",
       "inputPath": "inputs/slot/blitz/bltz-clash-929/24799837418-1.json",
       "status": "running",
-      "updatedAt": "2026-04-22T20:05:47.407Z",
+      "updatedAt": "2026-04-22T20:06:10.928Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-04-22T20:50:47.407Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1776891600,
