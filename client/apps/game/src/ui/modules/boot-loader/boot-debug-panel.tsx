@@ -118,9 +118,7 @@ export const BootDebugPanel = ({ currentTaskLabel, slowThresholdMs = 1500 }: Boo
             {durationEntries.map(([name, ms]) => (
               <div key={name} className="contents">
                 <span className="truncate text-gold/65">{name}</span>
-                <span
-                  className={`tabular-nums ${ms > slowThresholdMs ? "text-red-300" : "text-gold/80"}`}
-                >
+                <span className={`tabular-nums ${ms > slowThresholdMs ? "text-red-300" : "text-gold/80"}`}>
                   {formatMs(ms)}
                 </span>
               </div>
@@ -136,9 +134,7 @@ export const BootDebugPanel = ({ currentTaskLabel, slowThresholdMs = 1500 }: Boo
             {steps.map((step) => (
               <div key={step.name} className="contents">
                 <span className="truncate text-gold/65">{step.name}</span>
-                <span
-                  className={`tabular-nums ${step.deltaMs > slowThresholdMs ? "text-red-300" : "text-gold/55"}`}
-                >
+                <span className={`tabular-nums ${step.deltaMs > slowThresholdMs ? "text-red-300" : "text-gold/55"}`}>
                   +{formatMs(step.deltaMs)}
                 </span>
                 <span className="tabular-nums text-gold/35">{formatMs(step.elapsedMs)}</span>
