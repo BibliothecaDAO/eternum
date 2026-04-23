@@ -253,9 +253,18 @@ export class ArmyManager {
   // Position locks pinned at the optimistic destination. Suppresses stale
   // position data from TileOpt / ExplorerTroops snapshot replays (bound-shift,
   // chunk re-hydration) that would otherwise rubber-band the army back to its
-  // pre-tx tile. Auto-release on matching update or TTL expiry.
-  private optimisticPositionLocks: Map<ID, { normalizedTarget: { x: number; y: number }; lockedAtMs: number }> =
-    new Map();
+  // pre-tx tile. normalizedSource is retained so explore-discovery reverts —
+  // where the chain leaves `explorer.coord = from` after rolling a treasure —
+  // are recognised as authoritative and allowed through instead of being
+  // suppressed as stale. Auto-release on matching update or TTL expiry.
+  private optimisticPositionLocks: Map<
+    ID,
+    {
+      normalizedSource: { x: number; y: number };
+      normalizedTarget: { x: number; y: number };
+      lockedAtMs: number;
+    }
+  > = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
   private suppressedArmies: Set<ID> = new Set();
@@ -1930,6 +1939,7 @@ export class ArmyManager {
       // update.
       this.authoritativeReconciledArmies.delete(entityId);
       this.optimisticPositionLocks.set(entityId, {
+        normalizedSource: { x: sourceNormalized.x, y: sourceNormalized.y },
         normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
         lockedAtMs: Date.now(),
       });
@@ -1974,14 +1984,27 @@ export class ArmyManager {
    * True when an incoming position update should be skipped because it disagrees
    * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
    * release the lock as a side effect.
+   *
+   * Source-match is treated the same as target-match: `explorer_explore` can
+   * roll a treasure that leaves `explorer.coord = from` on-chain
+   * (troop_movement.cairo:193). That authoritative revert would otherwise be
+   * swallowed as "stale" and the army would stay visually stranded on the
+   * discovered tile until the TTL expired.
    */
   public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
     const lock = this.optimisticPositionLocks.get(entityId);
     if (!lock) return false;
 
-    const matches =
+    const matchesTarget =
       lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
-    if (matches) {
+    if (matchesTarget) {
+      this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    const matchesSource =
+      lock.normalizedSource.x === incomingNormalized.x && lock.normalizedSource.y === incomingNormalized.y;
+    if (matchesSource) {
       this.optimisticPositionLocks.delete(entityId);
       return false;
     }

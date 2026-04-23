@@ -12,9 +12,9 @@ describe("ArmyManager optimistic position lock", () => {
   it("exposes an optimisticPositionLocks map keyed per entity with normalizedTarget + lockedAtMs", () => {
     const source = readSource();
 
-    const fieldStart = source.indexOf("private optimisticPositionLocks: Map<ID,");
+    const fieldStart = source.indexOf("private optimisticPositionLocks: Map<");
     expect(fieldStart).toBeGreaterThan(0);
-    const declaration = source.slice(fieldStart, fieldStart + 200);
+    const declaration = source.slice(fieldStart, fieldStart + 500);
     expect(declaration).toContain("normalizedTarget");
     expect(declaration).toContain("lockedAtMs");
   });
