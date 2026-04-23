@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-nova-626",
-    "launchRequestId": "24741788249-1",
+    "gameName": "bltz-boost-423",
+    "launchRequestId": "24857851317-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24741788249,
+    "workflowRunId": 24857851317,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "07a49101-e816-4b21-a919-eb81baf76bdb"
+    "stepId": "create-world",
+    "leaseId": "d931093b-5417-43a3-9f85-10b0b5ae8fe0"
   },
-  "acquiredAt": "2026-04-21T19:24:37.007Z",
-  "heartbeatAt": "2026-04-21T19:24:42.224Z",
-  "expiresAt": "2026-04-21T19:24:42.224Z",
-  "releasedAt": "2026-04-21T19:24:42.224Z"
+  "acquiredAt": "2026-04-23T20:44:10.051Z",
+  "heartbeatAt": "2026-04-23T20:44:10.051Z",
+  "expiresAt": "2026-04-23T20:54:10.051Z"
 }
