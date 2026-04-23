@@ -2058,8 +2058,16 @@ export class ArmyManager {
     });
   }
 
-  public rewindOptimisticMovement(entityId: ID): void {
-    if (!this.optimisticallyMovingArmies.has(entityId)) return;
+  public rewindOptimisticMovement(entityId: ID): { col: number; row: number } | null {
+    if (!this.optimisticallyMovingArmies.has(entityId)) return null;
+    // Read the lock's normalizedSource before the delete below — it's the
+    // canonical source-of-truth for the pre-tx hex, set for every optimistic
+    // move regardless of whether the source/dest share a spatial bucket.
+    const lock = this.optimisticPositionLocks.get(entityId);
+    const lockedSource = lock
+      ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y }
+      : null;
+
     this.optimisticallyMovingArmies.delete(entityId);
     this.authoritativeReconciledArmies.delete(entityId);
     this.authoritativeReconcileListeners.delete(this.toNumericId(entityId));
@@ -2105,6 +2113,8 @@ export class ArmyManager {
       source: "worldmap",
       entityId,
     });
+
+    return lockedSource;
   }
 
   /**

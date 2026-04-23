@@ -1172,9 +1172,7 @@ export default class WorldmapScene extends WarpTravel {
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
         this.pendingMovementPlans.delete(plan.entityId);
         this.clearQueuedNextMove(plan.entityId);
-        if (this.armyManager.isArmyMovingOptimistically(plan.entityId)) {
-          this.armyManager.rewindOptimisticMovement(plan.entityId);
-        }
+        this.rewindOptimisticMovementAndArmyHexes(plan.entityId);
         this.clearPendingArmyMovement(plan.entityId);
         useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
         this.disposePendingMovementVisualLifecycle(plan.entityId);
@@ -2675,9 +2673,7 @@ export default class WorldmapScene extends WarpTravel {
           // Transaction failed at submission, remove from pending and cleanup
           this.pendingMovementPlans.delete(selectedEntityId);
           this.clearQueuedNextMove(selectedEntityId);
-          if (this.armyManager.isArmyMovingOptimistically(selectedEntityId)) {
-            this.armyManager.rewindOptimisticMovement(selectedEntityId);
-          }
+          this.rewindOptimisticMovementAndArmyHexes(selectedEntityId);
           this.clearPendingArmyMovement(selectedEntityId);
           useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
@@ -3277,9 +3273,7 @@ export default class WorldmapScene extends WarpTravel {
 
       this.pendingMovementPlans.delete(entityId);
       this.clearQueuedNextMove(entityId);
-      if (this.armyManager.isArmyMovingOptimistically(entityId)) {
-        this.armyManager.rewindOptimisticMovement(entityId);
-      }
+      this.rewindOptimisticMovementAndArmyHexes(entityId);
       this.clearPendingArmyMovement(entityId);
       useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
@@ -3294,6 +3288,37 @@ export default class WorldmapScene extends WarpTravel {
     }, this.authoritativePendingArmyMovementMs);
 
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
+  }
+
+  /**
+   * Rewind an optimistic move on both the visual and spatial cache layers.
+   * armyManager.rewindOptimisticMovement snaps the mesh back to source but
+   * leaves armyHexes / armiesPositions pinned at the optimistic destination
+   * (written by the cache mirror in handleTransactionComplete). Without this
+   * paired write, getHexagonEntity(destination) still resolves the rewound
+   * army — the player sees a mesh back at source but the destination hex
+   * remains clickable and selects the army — until Torii eventually delivers
+   * a reconciling TileOpt. Route every worldmap-side rewind through here so
+   * the two layers move together.
+   */
+  private rewindOptimisticMovementAndArmyHexes(entityId: ID): void {
+    if (!this.armyManager.isArmyMovingOptimistically(entityId)) return;
+
+    const movedArmy = this.armyManager.getArmy(entityId);
+    const ownerAddress = movedArmy?.owner?.address;
+    const ownerStructureId = this.armyStructureOwners.get(entityId) ?? null;
+
+    const source = this.armyManager.rewindOptimisticMovement(entityId);
+    if (!source || ownerAddress === undefined) return;
+
+    // updateArmyHexes normalizes whatever col/row we hand it; pass the source
+    // normalized coords directly (Position's constructor detects magnitude).
+    this.updateArmyHexes({
+      entityId,
+      hexCoords: { col: source.col, row: source.row },
+      ownerAddress,
+      ownerStructureId,
+    });
   }
 
   private onArmySelection(
