@@ -4,6 +4,18 @@ import { defineComponent, Type as RecsType, type World } from "@dojoengine/recs"
 
 export type ContractComponents = ReturnType<typeof defineContractComponents>;
 
+type ContractComponentMetadata = {
+  namespace: string;
+  name: string;
+  types: string[];
+  customTypes: string[];
+};
+
+type QuestLevelsSchema = {
+  game_address: typeof RecsType.String;
+  levels: typeof RecsType.T;
+};
+
 export function defineContractComponents(world: World) {
   return {
     AddressName: (() => {
@@ -584,11 +596,11 @@ export function defineContractComponents(world: World) {
       );
     })(),
     QuestLevels: (() => {
-      return defineComponent(
+      return defineComponent<QuestLevelsSchema, ContractComponentMetadata, unknown[]>(
         world,
         {
           game_address: RecsType.String,
-          levels: RecsType.Schema,
+          levels: RecsType.T,
         },
         {
           metadata: {
@@ -2161,7 +2173,7 @@ const eventsComponents = (world: World) => {
             owner: RecsType.OptionalString,
             entity_id: RecsType.OptionalNumber,
             tx_hash: RecsType.String,
-            story: RecsType.Schema,
+            story: RecsType.T,
             timestamp: RecsType.Number,
           },
           {

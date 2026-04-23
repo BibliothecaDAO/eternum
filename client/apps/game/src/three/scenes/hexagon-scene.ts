@@ -191,7 +191,7 @@ export abstract class HexagonScene {
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
-    this.highlightHexManager = new HighlightHexManager(this.interactionOverlayScene);
+    this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();

@@ -77,7 +77,8 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }, []);
 
   const state = usePlayRouteBootController();
-  const { phase, progress, setupResult, account, connectWallet, retry, isReconnectRequired } = state;
+  const { phase, progress, setupResult, account, connectWallet, retry, isReconnectRequired, currentTask, tasks } =
+    state;
   const routeView = resolveGameRouteView({
     phase,
     hasSetupResult: setupResult !== null,
@@ -88,6 +89,10 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     routeView === "loading" ? "app-loading" : routeView === "ready" ? "app-ready" : null,
     routeView === "ready" ? "boot_world_visible" : routeView === "loading" ? "boot_react_loader_visible" : undefined,
   );
+
+  // Resolve a human-readable label for the active task so the boot debug
+  // panel can show "Connecting to world" rather than "dojo".
+  const currentTaskLabel = currentTask ? (tasks.find((task) => task.id === currentTask)?.label ?? currentTask) : phase;
 
   if (routeView === "redirect") {
     return <Navigate to="/" replace />;
@@ -110,12 +115,19 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
         progress={progress > 0 ? progress : undefined}
         title="Charting the World"
         subtitle="Following contour lines while world state comes online."
+        currentTaskLabel={currentTaskLabel}
       />
     );
   }
 
   if (!setupResult || !account) {
-    return <LoadingScreen title="Charting the World" subtitle="Resolving the last world details." />;
+    return (
+      <LoadingScreen
+        title="Charting the World"
+        subtitle="Resolving the last world details."
+        currentTaskLabel={currentTaskLabel}
+      />
+    );
   }
 
   return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;

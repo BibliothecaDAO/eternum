@@ -13,6 +13,23 @@ const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cart
 
 const toriiBaseUrlFromName = (name: string) => `${cartridgeApiBase}/x/${name}/torii`;
 
+const isSlotWorldChain = (chain: Chain): boolean => chain === "slot" || chain === "slottest";
+
+const assertSlotWorldAddressIsAvailable = ({
+  chain,
+  name,
+  worldAddress,
+}: {
+  chain: Chain;
+  name: string;
+  worldAddress: string | null;
+}) => {
+  if (!isSlotWorldChain(chain)) return;
+  if (worldAddress) return;
+
+  throw new Error(`Slot world deployment is not available: ${name}`);
+};
+
 const measureAsyncDuration = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
   const startedAt = performance.now();
   try {
@@ -110,6 +127,8 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
     worldAddress = normalizeAddress(deployment?.worldAddress) ?? deployment?.worldAddress ?? null;
   }
 
+  assertSlotWorldAddressIsAvailable({ chain, name, worldAddress });
+
   // As a last resort, default to 0x0 so configuration can still proceed with patched contracts
   if (!worldAddress) worldAddress = "0x0";
 
@@ -120,11 +139,14 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
       : chain === "mainnet" || chain === "sepolia"
         ? `${cartridgeApiBase}/x/starknet/${chain}`
         : env.VITE_PUBLIC_NODE_URL;
-  const canUseEnvRpc =
-    hasPublicNodeUrl &&
-    chain !== "slot" &&
-    chain !== "slottest" &&
-    isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
+  // Re-enabled env-RPC fallback for slot (was excluded by 9b295e0b08).
+  // The exclusion meant per-world RPCs had no fallback, so a Cartridge GC of
+  // the world's deployment killed `starknet_chainId` and parked the user on
+  // the "Reconnect to Continue" modal. With the fallback restored, slot
+  // worlds whose factory deployment row lacks an explicit `rpcUrl` (or whose
+  // saved profile is unset) resolve to the env's slot RPC, which is the
+  // last-known-alive slot deployment for the build target.
+  const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
   const fallbackRpcUrl = canUseEnvRpc ? env.VITE_PUBLIC_NODE_URL : chainDefaultRpcUrl;
   const rpcUrl = normalizeRpcUrl(deployment?.rpcUrl ?? fallbackRpcUrl);
 

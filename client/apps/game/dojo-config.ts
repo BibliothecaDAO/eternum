@@ -1,5 +1,14 @@
 import { TORII_SETTING } from "@/utils/config";
-import { getActiveWorld, patchManifestWithFactory, normalizeRpcUrl, resolveChain } from "@/runtime/world";
+import {
+  getActiveWorld,
+  listSavedWorldProfiles,
+  normalizeRpcUrl,
+  patchManifestWithFactory,
+  probeSlotDeploymentRpcAlive,
+  purgeDeadSlotWorldProfiles,
+  purgeUnavailableSlotWorldProfiles,
+  resolveChain,
+} from "@/runtime/world";
 import { Chain, getGameManifest } from "@contracts";
 import { createDojoConfig } from "@dojoengine/core";
 import { env } from "./env";
@@ -12,6 +21,36 @@ const {
   VITE_PUBLIC_FEE_TOKEN_ADDRESS,
   VITE_PUBLIC_CHAIN,
 } = env;
+
+// Both purges must run BEFORE `getActiveWorld()` below. dojo-config is module-
+// loaded before React mounts, so it's the only choke point that runs ahead of
+// `StarknetProvider` building a `ControllerConnector` against a saved RPC URL.
+// Cold-reloading on a Cartridge-GC'd slot deployment would otherwise bake the
+// dead RPC into the connector, `starknet_chainId` 404s, and the user is stuck
+// on "Reconnect to Continue" forever.
+purgeUnavailableSlotWorldProfiles();
+
+// Probe each saved slot profile's RPC directly — this is the *exact* request
+// `ControllerConnector` is about to make, so it's the only liveness signal
+// that's authoritative for the controller-init path. Realtime-server bulk
+// availability lags GC by 30s + has a 5min stale cache, so we don't trust it
+// here. `null` = indeterminate, treat as alive (no false-positive evictions).
+const slotProfilesToProbe = listSavedWorldProfiles().filter(
+  (profile) => profile.chain === "slot" || profile.chain === "slottest",
+);
+const probedDeadSlotNames = new Set<string>();
+await Promise.all(
+  slotProfilesToProbe.map(async (profile) => {
+    const alive = await probeSlotDeploymentRpcAlive(profile.rpcUrl);
+    if (alive === false) probedDeadSlotNames.add(profile.name);
+  }),
+);
+const evictedDeadSlotWorlds = purgeDeadSlotWorldProfiles(probedDeadSlotNames);
+if (evictedDeadSlotWorlds.length > 0) {
+  console.warn(
+    `[dojo-config] Evicted dead slot world profiles: ${evictedDeadSlotWorlds.join(", ")}. Falling back to env defaults.`,
+  );
+}
 
 const resolvedChain = resolveChain(VITE_PUBLIC_CHAIN! as Chain);
 let manifest = getGameManifest(resolvedChain as Chain);

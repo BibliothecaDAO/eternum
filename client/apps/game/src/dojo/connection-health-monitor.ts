@@ -194,15 +194,16 @@ export class ConnectionHealthMonitor {
     const store = useConnectionStore.getState();
     if (spatial) store.setSpatialStatus("reconnecting");
     if (global) store.setGlobalStatus("reconnecting");
+    let attempted = false;
     try {
       const promises: Promise<void>[] = [];
       if (spatial) promises.push(this.config.onReconnectSpatial());
       if (global) promises.push(this.config.onReconnectGlobal());
+      attempted = promises.length > 0;
       await Promise.all(promises);
       if (spatial) store.setSpatialStatus("connected");
       if (global) store.setGlobalStatus("connected");
-      if (promises.length > 0) {
-        store.recordStreamReconnect();
+      if (attempted) {
         this.markConnectedIfNeeded();
       }
     } catch (error) {
@@ -214,6 +215,14 @@ export class ConnectionHealthMonitor {
       this.markOutageStart();
       this.reportDeadEndIfNeeded();
     } finally {
+      // Bump on both success and failure: scoped subscribers (e.g. player
+      // structure sync) re-mount on this version, and a failed global
+      // reconnect can leave their per-stream subscriptions wedged on the
+      // old client. Letting them retry independently is the recovery path
+      // when the global fan-out keeps timing out.
+      if (attempted) {
+        store.recordStreamReconnect();
+      }
       this.reconnecting = false;
     }
   }

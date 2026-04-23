@@ -349,6 +349,38 @@ describe("ConnectionHealthMonitor", () => {
     monitor.dispose();
   });
 
+  it("still bumps streamReconnectVersion when reconnect handlers reject so scoped subs can retry", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.reject(new Error("spatial torii hung")));
+    const onReconnectGlobal = vi.fn(() => Promise.reject(new Error("global initialSync timed out")));
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now() - 10_000,
+      lastGlobalUpdate: Date.now() - 10_000,
+      streamReconnectVersion: 0,
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(useConnectionStore.getState().streamReconnectVersion).toBe(1);
+    expect(onReconnectSpatial).toHaveBeenCalled();
+    expect(onReconnectGlobal).toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
   it("does not auto-reconnect during boot grace even if stream timestamps look stale", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
