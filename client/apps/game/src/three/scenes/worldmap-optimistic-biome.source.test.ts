@@ -71,6 +71,8 @@ describe("Worldmap optimistic destination biome", () => {
     // And the subsequent exploredTiles write must use spawnResult.biome, not a
     // hardcoded Grassland — otherwise the fallback upgrade is cosmetic.
     const writeBlock = scope.slice(spawnCallStart, spawnCallStart + 800);
-    expect(writeBlock).toMatch(/exploredTiles\.get\(normalizedPos\.x\)!\.set\(normalizedPos\.y,\s*spawnResult\.biome\)/);
+    expect(writeBlock).toMatch(
+      /exploredTiles\.get\(normalizedPos\.x\)!\.set\(normalizedPos\.y,\s*spawnResult\.biome\)/,
+    );
   });
 });
