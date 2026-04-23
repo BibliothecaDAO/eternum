@@ -139,11 +139,14 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
       : chain === "mainnet" || chain === "sepolia"
         ? `${cartridgeApiBase}/x/starknet/${chain}`
         : env.VITE_PUBLIC_NODE_URL;
-  const canUseEnvRpc =
-    hasPublicNodeUrl &&
-    chain !== "slot" &&
-    chain !== "slottest" &&
-    isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
+  // Re-enabled env-RPC fallback for slot (was excluded by 9b295e0b08).
+  // The exclusion meant per-world RPCs had no fallback, so a Cartridge GC of
+  // the world's deployment killed `starknet_chainId` and parked the user on
+  // the "Reconnect to Continue" modal. With the fallback restored, slot
+  // worlds whose factory deployment row lacks an explicit `rpcUrl` (or whose
+  // saved profile is unset) resolve to the env's slot RPC, which is the
+  // last-known-alive slot deployment for the build target.
+  const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
   const fallbackRpcUrl = canUseEnvRpc ? env.VITE_PUBLIC_NODE_URL : chainDefaultRpcUrl;
   const rpcUrl = normalizeRpcUrl(deployment?.rpcUrl ?? fallbackRpcUrl);
 

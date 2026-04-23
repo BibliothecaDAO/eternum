@@ -144,6 +144,8 @@ export const listWorldNames = (): string[] => {
   return Object.keys(profiles);
 };
 
+export const listSavedWorldProfiles = (): WorldProfile[] => Object.values(getWorldProfiles());
+
 const getWorldProfiles = (): WorldProfilesMap => {
   return safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
 };
@@ -158,27 +160,71 @@ export const saveWorldProfile = (profile: WorldProfile) => {
   saveWorldProfiles(profiles);
 };
 
-const deleteWorldProfile = (name: string) => {
-  const profiles = getWorldProfiles();
-  if (profiles[name]) {
-    delete profiles[name];
-    saveWorldProfiles(profiles);
-  }
-  const active = getActiveWorldName();
-  if (active === name) clearActiveWorld();
-};
-
 const getWorldProfile = (name: string): WorldProfile | null => {
   const profiles = getWorldProfiles();
   const profile = profiles[name] ?? null;
   if (!profile) return null;
+  if (isUnavailableSlotWorldProfile(profile)) return null;
+  return profile;
+};
 
-  if (isUnavailableSlotWorldProfile(profile)) {
-    deleteWorldProfile(name);
-    return null;
+/**
+ * Removes slot profiles saved with worldAddress=0x0 by an earlier build.
+ * Run once at boot — read paths must stay side-effect-free so a transient
+ * null (e.g. from a disconnected Torii) can't silently drop the active world.
+ */
+export const purgeUnavailableSlotWorldProfiles = (): void => {
+  const profiles = getWorldProfiles();
+  let changed = false;
+
+  for (const [name, profile] of Object.entries(profiles)) {
+    if (isUnavailableSlotWorldProfile(profile)) {
+      delete profiles[name];
+      changed = true;
+      const active = getActiveWorldName();
+      if (active === name) clearActiveWorld();
+    }
   }
 
-  return profile;
+  if (changed) saveWorldProfiles(profiles);
+};
+
+/**
+ * Removes the slot profiles named in `deadNames` from the saved world map and
+ * clears the active world pointer if it referenced one of them.
+ *
+ * Slot worlds are ephemeral: a profile saved while the deployment was alive
+ * keeps a real `worldAddress` and a per-world RPC URL, but the RPC starts
+ * returning `-32000 deployment {name} not found` once Cartridge tears it down.
+ * If we leave that profile in place, `dojoConfig` bakes the dead RPC into
+ * `ControllerConnector`, `starknet_chainId` fails, and the user is stuck on
+ * "Reconnect to Continue" forever.
+ *
+ * The caller is responsible for proving deadness (e.g. via a direct RPC probe
+ * against `probeSlotDeploymentRpcAlive`) so this helper stays pure-IO and
+ * avoids any false-positive eviction on transient errors.
+ *
+ * Returns the subset of `deadNames` that actually existed in storage so
+ * callers can log/telemeter what was wiped.
+ */
+export const purgeDeadSlotWorldProfiles = (deadNames: ReadonlySet<string>): string[] => {
+  if (deadNames.size === 0) return [];
+
+  const profiles = getWorldProfiles();
+  const evicted: string[] = [];
+
+  for (const name of deadNames) {
+    const profile = profiles[name];
+    if (!profile) continue;
+    if (!isSlotWorldChain(profile.chain)) continue;
+    delete profiles[name];
+    evicted.push(name);
+    const active = getActiveWorldName();
+    if (active === name) clearActiveWorld();
+  }
+
+  if (evicted.length > 0) saveWorldProfiles(profiles);
+  return evicted;
 };
 
 export const getActiveWorldName = (): string | null => readStorageValue(ACTIVE_KEY);

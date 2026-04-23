@@ -4,6 +4,7 @@ import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { env } from "../../env";
+import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { SceneName } from "./types";
 import { transitionDB } from "./utils/";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
@@ -159,29 +160,45 @@ export default class GameRenderer {
   }
 
   async initScene() {
+    // Each `recordGameEntryDuration` call below surfaces in the boot debug
+    // panel as `renderer-init-<step>` so a slow cold-reload pinpoints the
+    // exact sub-step (backend handshake vs scene construction vs HUD vs
+    // animate kickoff) instead of being hidden inside the `renderer-init`
+    // aggregate.
+    const backendStart = performance.now();
     await this.backendInitializationPromise;
+    recordGameEntryDuration("renderer-init-backend-await", performance.now() - backendStart);
+
     if (this.isDestroyed) {
       return;
     }
     this.supportRuntimeRegistry.getControlBridge().setupGuiControls();
     this.sessionRuntime.startListeners();
+
+    const measure = (label: string, fn: () => void) => {
+      const start = performance.now();
+      fn();
+      recordGameEntryDuration(`renderer-init-${label}`, performance.now() - start);
+    };
+
     bootstrapRendererStartupRuntime({
-      animate: () => this.animate(),
-      attachInteractionRuntime: () => this.attachInteractionRuntime(),
+      animate: () => measure("animate-start", () => this.animate()),
+      attachInteractionRuntime: () => measure("attach-interaction", () => this.attachInteractionRuntime()),
       cleanupExpiredTransitions: (maxAgeMs) => transitionDB.cleanupExpired(maxAgeMs),
       debug: (message) => console.debug(message),
       document,
-      initializeHudScene: () => {
-        this.hudScene = this.sessionRuntime.createHudScene();
-      },
+      initializeHudScene: () =>
+        measure("hud-scene", () => {
+          this.hudScene = this.sessionRuntime.createHudScene();
+        }),
       isDestroyed: this.isDestroyed,
-      prepareScenes: () => this.prepareScenes(),
+      prepareScenes: () => measure("prepare-scenes", () => this.prepareScenes()),
       registerCleanupInterval: (intervalId) => {
         this.cleanupIntervals = this.cleanupIntervals || [];
         this.cleanupIntervals.push(intervalId);
       },
       rendererDomElement: this.renderer.domElement,
-      syncRouteFromLocation: () => this.sessionRuntime.syncRouteFromLocation(),
+      syncRouteFromLocation: () => measure("sync-route", () => this.sessionRuntime.syncRouteFromLocation()),
       warn: (message) => console.warn(message),
     });
   }
