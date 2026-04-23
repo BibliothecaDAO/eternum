@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+// @vitest-environment node
+import { describe, expect, it } from "vitest";
 
 import {
   buildRendererLoadBenchmarkUrl,
@@ -8,6 +8,12 @@ import {
   evaluateRendererLoadBenchmarkSummary,
   summarizeRendererLoadBenchmarkResults,
 } from "./run-renderer-load-benchmark.mjs";
+
+const assert = {
+  equal: (actual, expected) => expect(actual).toBe(expected),
+  deepEqual: (actual, expected) => expect(actual).toEqual(expected),
+  match: (actual, pattern) => expect(actual).toMatch(pattern),
+};
 
 describe("buildRendererLoadBenchmarkUrl", () => {
   it("builds a spectator play route for the requested renderer mode", () => {
