@@ -43,7 +43,7 @@ import { WorldmapMoveQueue } from "@/three/scenes/worldmap-move-queue";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { configManager, Position } from "@bibliothecadao/eternum";
+import { Biome, configManager, Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import type { ToriiStreamManager as ToriiStreamManagerType } from "@/dojo/torii-stream-manager";
@@ -1116,15 +1116,42 @@ export default class WorldmapScene extends WarpTravel {
             // moved army, letting clicks on the stale tile select it and
             // submit a tx with the wrong starting position. updateArmyHexes
             // is the single writer that performs the delete-old / set-new.
+            const targetContract = plan.targetHexCoords.getContract();
+            const targetNormalized = plan.targetHexCoords.getNormalized();
             const movedArmy = this.armyManager.getArmy(entityId);
             if (movedArmy?.owner?.address !== undefined) {
-              const targetContract = plan.targetHexCoords.getContract();
               this.updateArmyHexes({
                 entityId,
                 hexCoords: { col: targetContract.x, row: targetContract.y },
                 ownerAddress: movedArmy.owner.address,
                 ownerStructureId: this.armyStructureOwners.get(entityId) ?? null,
               });
+            }
+
+            // Paint the destination biome provisionally so the explored-hex
+            // mesh appears in the same frame the tween starts, instead of
+            // waiting 1–5s for Torii to deliver the authoritative TileOpt
+            // write. Biome.getBiome mirrors the Cairo biome_library — the
+            // Cairo side passes felt-offset (contract) coords, so we must
+            // too, or the provisional biome won't agree with the eventual
+            // chain state. exploredTiles is keyed by normalized coords
+            // though, so the two conventions coexist here. No-op when the
+            // tile is already in exploredTiles (travel, re-enter, etc.).
+            const provisionalSpawn = resolveArmySpawnBiome(
+              this.exploredTiles,
+              targetNormalized.x,
+              targetNormalized.y,
+              Biome.getBiome(targetContract.x, targetContract.y),
+            );
+            if (provisionalSpawn.action === "write_provisional") {
+              if (!this.exploredTiles.has(targetNormalized.x)) {
+                this.exploredTiles.set(targetNormalized.x, new Map());
+              }
+              this.exploredTiles.get(targetNormalized.x)!.set(targetNormalized.y, provisionalSpawn.biome);
+              this.provisionalBiomes.mark(targetNormalized.x, targetNormalized.y);
+              this.exploredTilesGeneration.bump();
+              gameWorkerManager.updateExploredTile(targetNormalized.x, targetNormalized.y, provisionalSpawn.biome);
+              this.invalidateAllChunkCachesContainingHex(targetNormalized.x, targetNormalized.y);
             }
           });
         });
@@ -1332,13 +1359,16 @@ export default class WorldmapScene extends WarpTravel {
           this.exploredTiles,
           normalizedPos.x,
           normalizedPos.y,
-          BiomeType.Grassland,
+          // Biome is computed from felt-offset (contract) coords, matching
+          // the Cairo biome_library. update.hexCoords arrives in contract
+          // format from world-update-listener (TileOpt currentState.col/row).
+          Biome.getBiome(update.hexCoords.col, update.hexCoords.row),
         );
         if (spawnResult.action === "write_provisional") {
           if (!this.exploredTiles.has(normalizedPos.x)) {
             this.exploredTiles.set(normalizedPos.x, new Map());
           }
-          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
+          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, spawnResult.biome);
           this.provisionalBiomes.mark(normalizedPos.x, normalizedPos.y);
           this.exploredTilesGeneration.bump();
         }
