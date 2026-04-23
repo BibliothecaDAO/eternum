@@ -21,7 +21,7 @@ describe("Worldmap next-move queue wiring", () => {
 
     const start = source.indexOf("private onArmyMovement(account:");
     expect(start).toBeGreaterThan(0);
-    const prologue = source.slice(start, start + 1000);
+    const prologue = source.slice(start, start + 2000);
 
     expect(prologue).toContain("isArmyMovingOptimistically(selectedEntityId)");
     expect(prologue).toContain("this.enqueueNextMove(account, actionPath, selectedEntityId)");
@@ -32,7 +32,7 @@ describe("Worldmap next-move queue wiring", () => {
 
     const start = source.indexOf("private enqueueNextMove(");
     expect(start).toBeGreaterThan(0);
-    const body = source.slice(start, start + 1200);
+    const body = source.slice(start, start + 3000);
 
     expect(body).toContain('"next_move_queued"');
     expect(body).toContain("this.armyManager.onMovementComplete(entityId");
@@ -48,6 +48,77 @@ describe("Worldmap next-move queue wiring", () => {
     );
   });
 
+  it("drops a queued move when the pending stamina cannot cover the action cost", () => {
+    const source = readSource("worldmap.tsx");
+
+    const start = source.indexOf("private enqueueNextMove(");
+    expect(start).toBeGreaterThan(0);
+    const body = source.slice(start, start + 1800);
+
+    expect(body).toContain("this.canAffordMove(entityId, actionPath)");
+    expect(body).toContain("toast.error");
+  });
+
+  it("re-checks stamina at dequeue before re-submitting", () => {
+    const source = readSource("worldmap.tsx");
+
+    const start = source.indexOf("private enqueueNextMove(");
+    expect(start).toBeGreaterThan(0);
+    const body = source.slice(start, start + 3000);
+
+    // canAffordMove must be consulted during the dequeue path on the queued.actionPath.
+    expect(body).toContain("this.canAffordMove(entityId, queued.actionPath)");
+  });
+
+  it("gates dequeue on both movement complete AND authoritative reconciliation", () => {
+    const source = readSource("worldmap.tsx");
+
+    const start = source.indexOf("private enqueueNextMove(");
+    expect(start).toBeGreaterThan(0);
+    const body = source.slice(start, start + 3000);
+
+    // The dequeue helper should consult reconciliation state before re-submitting.
+    expect(body).toContain("this.armyManager.hasReceivedAuthoritativeReconciliation(entityId)");
+    expect(body).toContain("this.armyManager.onAuthoritativeReconciliation(entityId");
+  });
+
+  it("falls back with a toast if authoritative reconciliation never arrives within the timeout", () => {
+    const source = readSource("worldmap.tsx");
+
+    const start = source.indexOf("private enqueueNextMove(");
+    expect(start).toBeGreaterThan(0);
+    const body = source.slice(start, start + 3000);
+
+    expect(body).toContain("setTimeout");
+    expect(body).toContain("Queued move dropped");
+  });
+
+  it("exposes a canAffordMove helper that sums staminaCost over the action path", () => {
+    const source = readSource("worldmap.tsx");
+
+    const helperStart = source.indexOf("private canAffordMove(entityId: ID, actionPath: ActionPath[])");
+    expect(helperStart).toBeGreaterThan(0);
+    const body = source.slice(helperStart, helperStart + 600);
+
+    expect(body).toMatch(/actionPath\.reduce[\s\S]*?staminaCost/);
+    expect(body).toContain("army.currentStamina");
+  });
+
+  it("runs canAffordMove at the top of onArmyMovement so every submit — not just queued — is gated", () => {
+    const source = readSource("worldmap.tsx");
+
+    const methodStart = source.indexOf(
+      "private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID)",
+    );
+    expect(methodStart).toBeGreaterThan(0);
+    // The check must appear before the optimistic-short-circuit branch and before the
+    // tx submission path. First 400 chars of the method body comfortably cover the prologue.
+    const prologue = source.slice(methodStart, methodStart + 500);
+
+    expect(prologue).toContain("this.canAffordMove(selectedEntityId, actionPath)");
+    expect(prologue).toContain("toast.error");
+  });
+
   it("clears queued next-move on tx failure, submission failure, fallback timeout, and scene destroy", () => {
     const source = readSource("worldmap.tsx");
 
@@ -59,7 +130,7 @@ describe("Worldmap next-move queue wiring", () => {
 
     const submitCatch = source.indexOf('console.error("Army movement failed:"');
     expect(submitCatch).toBeGreaterThan(0);
-    const catchBody = source.slice(submitCatch - 600, submitCatch);
+    const catchBody = source.slice(submitCatch - 900, submitCatch);
     expect(catchBody).toContain("this.clearQueuedNextMove(selectedEntityId)");
 
     expect(source).toMatch(/this\.moveQueue\.clearAll\(\)/);

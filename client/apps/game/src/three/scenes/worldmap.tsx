@@ -43,7 +43,7 @@ import { WorldmapMoveQueue } from "@/three/scenes/worldmap-move-queue";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { Position } from "@bibliothecadao/eternum";
+import { configManager, Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import type { ToriiStreamManager as ToriiStreamManagerType } from "@/dojo/torii-stream-manager";
@@ -1111,6 +1111,21 @@ export default class WorldmapScene extends WarpTravel {
               entityId,
               txHash,
             });
+            // Mirror the optimistic destination into the worldmap's spatial
+            // cache. Without this, armyHexes[sourceHex] still resolves the
+            // moved army, letting clicks on the stale tile select it and
+            // submit a tx with the wrong starting position. updateArmyHexes
+            // is the single writer that performs the delete-old / set-new.
+            const movedArmy = this.armyManager.getArmy(entityId);
+            if (movedArmy?.owner?.address !== undefined) {
+              const targetContract = plan.targetHexCoords.getContract();
+              this.updateArmyHexes({
+                entityId,
+                hexCoords: { col: targetContract.x, row: targetContract.y },
+                ownerAddress: movedArmy.owner.address,
+                ownerStructureId: this.armyStructureOwners.get(entityId) ?? null,
+              });
+            }
           });
         });
       }
@@ -1299,6 +1314,10 @@ export default class WorldmapScene extends WarpTravel {
           row: normalizedPos.y,
         });
 
+        if (this.armyManager.shouldSkipStalePositionUpdate(update.entityId, normalizedPos)) {
+          return;
+        }
+
         this.updateArmyHexes(update);
         this.resolvePendingCreateArmyFxOnArmyUpdate(update);
 
@@ -1358,6 +1377,8 @@ export default class WorldmapScene extends WarpTravel {
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+          shouldSkipStalePositionUpdate: (entityId, normalized) =>
+            this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
         });
       }),
     );
@@ -1562,7 +1583,7 @@ export default class WorldmapScene extends WarpTravel {
         if (shouldCycleStructuresForTab()) {
           return getRealmStructuresForTab().length > 0;
         }
-        return this.selectableArmies.length > 0;
+        return this.hasEligibleArmyForTabCycle();
       },
       action: () => {
         if (shouldCycleStructuresForTab()) {
@@ -2413,6 +2434,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    // Universal stamina pre-check. Blocks any submit (not just queued) when the
+    // client-visible stamina can't cover the action cost — prevents "insufficient
+    // stamina" server rejections from reaching the user as a tx failure toast.
+    if (actionPath.length > 0 && !this.canAffordMove(selectedEntityId, actionPath)) {
+      toast.error("Not enough stamina for this move");
+      this.state.updateEntityActionHoveredHex(null);
+      this.clearSelection();
+      return;
+    }
+
     if (actionPath.length > 0 && this.armyManager?.isArmyMovingOptimistically(selectedEntityId)) {
       this.enqueueNextMove(account, actionPath, selectedEntityId);
       this.state.updateEntityActionHoveredHex(null);
@@ -3069,7 +3100,48 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private canAffordMove(entityId: ID, actionPath: ActionPath[]): boolean {
+    const staminaCost = actionPath.reduce((total, pathStep) => total + (pathStep.staminaCost ?? 0), 0);
+    if (!Number.isFinite(staminaCost) || staminaCost <= 0) return true;
+    const army = this.armyManager.getArmy(entityId);
+    if (!army) return false;
+    return Math.floor(army.currentStamina ?? 0) >= Math.floor(staminaCost);
+  }
+
+  /**
+   * Minimum eligibility for an army to act on the worldmap. Used by Tab-cycle
+   * and anywhere else we want to pre-filter armies before handing selection to
+   * the user — mirrors the gates the right-click action path enforces so the
+   * user never lands on a unit that would immediately fail its first submit.
+   *
+   * An army is "able to act" when:
+   *   - The scene knows about it (armyManager.getArmy returns non-nullish).
+   *   - It has at least the minimum travel stamina cost — i.e. there's SOME
+   *     one-hex action it could perform. Finer-grained stamina is still
+   *     enforced at submit by canAffordMove.
+   *   - It is not sitting in a battle cooldown (battleTimerLeft > 0).
+   */
+  private canArmyAct(entityId: ID): boolean {
+    const army = this.armyManager.getArmy(entityId);
+    if (!army) return false;
+    const minStaminaCost = configManager.getMinTravelStaminaCost();
+    if (Math.floor(army.currentStamina ?? 0) < Math.floor(minStaminaCost)) return false;
+    if ((army.battleTimerLeft ?? 0) > 0) return false;
+    return true;
+  }
+
+  private hasEligibleArmyForTabCycle(): boolean {
+    return this.selectableArmies.some(
+      (army) => !this.pendingArmyMovements.has(army.entityId) && this.canArmyAct(army.entityId),
+    );
+  }
+
   private enqueueNextMove(account: Account | AccountInterface, actionPath: ActionPath[], entityId: ID): void {
+    if (!this.canAffordMove(entityId, actionPath)) {
+      toast.error("Not enough stamina to queue this move — the current move has already spent it");
+      return;
+    }
+
     const alreadyQueued = this.moveQueue.has(entityId);
     this.moveQueue.enqueue(entityId, { actionPath });
     recordArmyMovementLatencyPhase({
@@ -3085,14 +3157,60 @@ export default class WorldmapScene extends WarpTravel {
 
     if (alreadyQueued) return;
 
-    const dispose = this.armyManager.onMovementComplete(entityId, () => {
+    // The dequeue must wait for BOTH the tween to finish AND the authoritative
+    // Torii tile update to arrive. Submitting tx2 before the chain has fully
+    // settled tx1 can race the VRF provider ("not consumed") because successive
+    // explorer_explore calls share account-level VRF state that's only visible
+    // after the prior tx's block is fully applied.
+    let disposeMovementComplete: (() => void) | undefined;
+    let disposeAuthoritativeReconcile: (() => void) | undefined;
+    let fallbackTimeout: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+
+    const runDequeue = () => {
+      if (settled) return;
+      settled = true;
+      disposeMovementComplete?.();
+      disposeAuthoritativeReconcile?.();
+      if (fallbackTimeout) clearTimeout(fallbackTimeout);
       this.moveQueueDequeueDisposers.delete(entityId);
+
       const queued = this.moveQueue.dequeue(entityId);
       if (!queued) return;
       if (!this.armyManager.hasArmy(entityId)) return;
+      if (!this.canAffordMove(entityId, queued.actionPath)) {
+        toast.error("Queued move dropped — insufficient stamina after the prior move resolved");
+        return;
+      }
       this.onArmyMovement(account, queued.actionPath, entityId);
+    };
+
+    const dropWithTimeout = () => {
+      if (settled) return;
+      settled = true;
+      disposeMovementComplete?.();
+      disposeAuthoritativeReconcile?.();
+      this.moveQueueDequeueDisposers.delete(entityId);
+      this.moveQueue.clear(entityId);
+      toast.error("Queued move dropped — indexer fell behind and we couldn't safely submit the follow-up");
+    };
+
+    const tryDequeue = () => {
+      if (settled) return;
+      if (this.armyManager.isArmyMoving(entityId)) return; // tween still running
+      if (!this.armyManager.hasReceivedAuthoritativeReconciliation(entityId)) return; // chain/indexer lagging
+      runDequeue();
+    };
+
+    disposeMovementComplete = this.armyManager.onMovementComplete(entityId, tryDequeue);
+    disposeAuthoritativeReconcile = this.armyManager.onAuthoritativeReconciliation(entityId, tryDequeue);
+    fallbackTimeout = setTimeout(dropWithTimeout, 8000);
+
+    this.moveQueueDequeueDisposers.set(entityId, () => {
+      disposeMovementComplete?.();
+      disposeAuthoritativeReconcile?.();
+      if (fallbackTimeout) clearTimeout(fallbackTimeout);
     });
-    this.moveQueueDequeueDisposers.set(entityId, dispose);
   }
 
   private clearQueuedNextMove(entityId: ID): void {
@@ -8335,6 +8453,14 @@ export default class WorldmapScene extends WarpTravel {
 
         // Skip armies with pending movement transactions
         if (hasPendingMovement) {
+          attempts++;
+          continue;
+        }
+
+        // Skip armies that can't actually act right now (not enough stamina,
+        // in battle cooldown). Lands Tab only on units the user could submit
+        // a move from — prevents the "selected but tx will fail" trap.
+        if (!this.canArmyAct(army.entityId)) {
           attempts++;
           continue;
         }

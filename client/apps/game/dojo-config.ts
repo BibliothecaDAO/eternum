@@ -1,6 +1,8 @@
 import { TORII_SETTING } from "@/utils/config";
 import {
+  buildSharedSlotRpcUrl,
   getActiveWorld,
+  isSlotWorldChain,
   listSavedWorldProfiles,
   normalizeRpcUrl,
   patchManifestWithFactory,
@@ -21,6 +23,8 @@ const {
   VITE_PUBLIC_FEE_TOKEN_ADDRESS,
   VITE_PUBLIC_CHAIN,
 } = env;
+
+const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 // Both purges must run BEFORE `getActiveWorld()` below. dojo-config is module-
 // loaded before React mounts, so it's the only choke point that runs ahead of
@@ -63,8 +67,16 @@ if (activeWorld && activeWorld.contractsBySelector && activeWorld.worldAddress) 
   manifest = patchManifestWithFactory(manifest as any, activeWorld.worldAddress, activeWorld.contractsBySelector);
 }
 
+const resolveDojoConfigRpcUrl = (chain: Chain, profileRpcUrl: string | undefined): string => {
+  if (isSlotWorldChain(chain)) {
+    return buildSharedSlotRpcUrl(cartridgeApiBase);
+  }
+
+  return normalizeRpcUrl(profileRpcUrl ?? VITE_PUBLIC_NODE_URL);
+};
+
 export const dojoConfig = createDojoConfig({
-  rpcUrl: normalizeRpcUrl(rpcFromWorld ?? VITE_PUBLIC_NODE_URL),
+  rpcUrl: resolveDojoConfigRpcUrl(resolvedChain, rpcFromWorld),
   toriiUrl: toriiFromWorld ?? (await TORII_SETTING()),
   masterAddress: VITE_PUBLIC_MASTER_ADDRESS,
   masterPrivateKey: VITE_PUBLIC_MASTER_PRIVATE_KEY,

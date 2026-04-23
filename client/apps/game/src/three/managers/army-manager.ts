@@ -125,6 +125,12 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
+// Auto-release window for an optimistic position lock. If no authoritative
+// update matches the locked destination within this window, the lock is
+// released so the next update can drive a correction tween — covers the rare
+// server-divergent-path case without stranding the visual state.
+const OPTIMISTIC_POSITION_LOCK_TTL_MS = 15_000;
+
 interface MovingArmySourceState {
   bucketKey: string;
   col: number;
@@ -238,6 +244,18 @@ export class ArmyManager {
   // distinguish predicted moves from authoritative ones so we can reconcile or
   // rewind without double-animating when Torii eventually delivers the update.
   private optimisticallyMovingArmies: Set<ID> = new Set();
+  // Entities for which the authoritative Torii tile update has already arrived
+  // after an optimistic submission. Phase C's dequeue consults this to avoid
+  // firing a second explorer_explore before the chain+indexer are settled —
+  // fixes the "VrfProvider: not consumed" race on rapid queued explores.
+  private authoritativeReconciledArmies: Set<ID> = new Set();
+  private authoritativeReconcileListeners: Map<number, Set<() => void>> = new Map();
+  // Position locks pinned at the optimistic destination. Suppresses stale
+  // position data from TileOpt / ExplorerTroops snapshot replays (bound-shift,
+  // chunk re-hydration) that would otherwise rubber-band the army back to its
+  // pre-tx tile. Auto-release on matching update or TTL expiry.
+  private optimisticPositionLocks: Map<ID, { normalizedTarget: { x: number; y: number }; lockedAtMs: number }> =
+    new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
   private suppressedArmies: Set<ID> = new Set();
@@ -643,6 +661,11 @@ export class ArmyManager {
   async onTileUpdate(update: ExplorerTroopsTileSystemUpdate) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
+
+    const incomingNormalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    if (this.shouldSkipStalePositionUpdate(entityId, incomingNormalized)) {
+      return;
+    }
 
     const {
       battleCooldownEnd,
@@ -1902,6 +1925,14 @@ export class ArmyManager {
 
     if (options.optimistic) {
       this.optimisticallyMovingArmies.add(entityId);
+      // Reset any prior reconciliation flag from an earlier optimistic move on
+      // this entity — we're starting fresh and will wait for the next authoritative
+      // update.
+      this.authoritativeReconciledArmies.delete(entityId);
+      this.optimisticPositionLocks.set(entityId, {
+        normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
+        lockedAtMs: Date.now(),
+      });
     }
 
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
@@ -1922,6 +1953,8 @@ export class ArmyManager {
         entityId,
       });
       this.optimisticallyMovingArmies.delete(entityId);
+      this.authoritativeReconciledArmies.add(entityId);
+      this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
     }
 
     const plan = await this.computeMovementPlan(entityId, hexCoords);
@@ -1933,9 +1966,71 @@ export class ArmyManager {
     return this.optimisticallyMovingArmies.has(entityId);
   }
 
+  public hasReceivedAuthoritativeReconciliation(entityId: ID): boolean {
+    return this.authoritativeReconciledArmies.has(entityId);
+  }
+
+  /**
+   * True when an incoming position update should be skipped because it disagrees
+   * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
+   * release the lock as a side effect.
+   */
+  public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
+    const lock = this.optimisticPositionLocks.get(entityId);
+    if (!lock) return false;
+
+    const matches =
+      lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
+    if (matches) {
+      this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
+      this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    return true;
+  }
+
+  public onAuthoritativeReconciliation(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.authoritativeReconcileListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.authoritativeReconcileListeners.set(numericEntityId, listeners);
+    }
+    listeners.add(callback);
+
+    return () => {
+      const active = this.authoritativeReconcileListeners.get(numericEntityId);
+      if (!active) return;
+      active.delete(callback);
+      if (active.size === 0) this.authoritativeReconcileListeners.delete(numericEntityId);
+    };
+  }
+
+  private runAuthoritativeReconcileListeners(entityId: number): void {
+    const listeners = this.authoritativeReconcileListeners.get(entityId);
+    if (!listeners || listeners.size === 0) return;
+
+    this.authoritativeReconcileListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Authoritative reconciliation listener failed", error);
+      }
+    });
+  }
+
   public rewindOptimisticMovement(entityId: ID): void {
     if (!this.optimisticallyMovingArmies.has(entityId)) return;
     this.optimisticallyMovingArmies.delete(entityId);
+    this.authoritativeReconciledArmies.delete(entityId);
+    this.authoritativeReconcileListeners.delete(this.toNumericId(entityId));
+    this.optimisticPositionLocks.delete(entityId);
 
     const numericEntityId = this.toNumericId(entityId);
     const sourceState = this.movingArmySourceBuckets.get(entityId);
@@ -3166,6 +3261,9 @@ ${
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
     this.optimisticallyMovingArmies.clear();
+    this.authoritativeReconciledArmies.clear();
+    this.authoritativeReconcileListeners.clear();
+    this.optimisticPositionLocks.clear();
     this.suppressedArmies.clear();
     this.preCommitArmyQueue.clear();
     this.chunkToArmies.clear();
