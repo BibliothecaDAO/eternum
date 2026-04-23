@@ -25,7 +25,12 @@ import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
 
-import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
+import {
+  ExplorerTroopsSystemUpdate,
+  ExplorerTroopsTileSystemUpdate,
+  getBlockTimestamp,
+  recordArmyMovementLatencyPhase,
+} from "@bibliothecadao/eternum";
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { Biome, configManager } from "@bibliothecadao/eternum";
@@ -120,10 +125,28 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
+// Auto-release window for an optimistic position lock. If no authoritative
+// update matches the locked destination within this window, the lock is
+// released so the next update can drive a correction tween — covers the rare
+// server-divergent-path case without stranding the visual state.
+const OPTIMISTIC_POSITION_LOCK_TTL_MS = 15_000;
+
 interface MovingArmySourceState {
   bucketKey: string;
   col: number;
   row: number;
+}
+
+export interface ArmyMovementPlan {
+  entityId: ID;
+  numericEntityId: number;
+  sourceNormalized: { x: number; y: number };
+  targetNormalized: { x: number; y: number };
+  targetHexCoords: Position;
+  path: Position[];
+  worldPath: Vector3[];
+  armyCategory: TroopType;
+  armyTier: TroopTier;
 }
 
 interface AddArmyParams {
@@ -217,6 +240,22 @@ export class ArmyManager {
   private preCommitArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
+  // Armies animating via an optimistic tween started at tx_confirmed. Used to
+  // distinguish predicted moves from authoritative ones so we can reconcile or
+  // rewind without double-animating when Torii eventually delivers the update.
+  private optimisticallyMovingArmies: Set<ID> = new Set();
+  // Entities for which the authoritative Torii tile update has already arrived
+  // after an optimistic submission. Phase C's dequeue consults this to avoid
+  // firing a second explorer_explore before the chain+indexer are settled —
+  // fixes the "VrfProvider: not consumed" race on rapid queued explores.
+  private authoritativeReconciledArmies: Set<ID> = new Set();
+  private authoritativeReconcileListeners: Map<number, Set<() => void>> = new Map();
+  // Position locks pinned at the optimistic destination. Suppresses stale
+  // position data from TileOpt / ExplorerTroops snapshot replays (bound-shift,
+  // chunk re-hydration) that would otherwise rubber-band the army back to its
+  // pre-tx tile. Auto-release on matching update or TTL expiry.
+  private optimisticPositionLocks: Map<ID, { normalizedTarget: { x: number; y: number }; lockedAtMs: number }> =
+    new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
   private suppressedArmies: Set<ID> = new Set();
@@ -622,6 +661,11 @@ export class ArmyManager {
   async onTileUpdate(update: ExplorerTroopsTileSystemUpdate) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
+
+    const incomingNormalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    if (this.shouldSkipStalePositionUpdate(entityId, incomingNormalized)) {
+      return;
+    }
 
     const {
       battleCooldownEnd,
@@ -1787,18 +1831,19 @@ export class ArmyManager {
     await this.renderArmyIntoCurrentChunkIfVisible(params.entityId);
   }
 
-  public async moveArmy(entityId: ID, hexCoords: Position) {
-    // Monitor memory usage before army movement
+  public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
     this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 
     const armyData = this.armies.get(entityId);
-    if (!armyData) return;
+    if (!armyData) return null;
 
     const numericEntityId = this.toNumericId(entityId);
-    const startPos = armyData.hexCoords.getNormalized();
-    const targetPos = hexCoords.getNormalized();
+    const sourceNormalized = armyData.hexCoords.getNormalized();
+    const targetNormalized = hexCoords.getNormalized();
 
-    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
+    if (sourceNormalized.x === targetNormalized.x && sourceNormalized.y === targetNormalized.y) {
+      return null;
+    }
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
@@ -1815,36 +1860,51 @@ export class ArmyManager {
       ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
       : null;
     const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
-
-    // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPositionInto(new Vector3(), pos));
 
-    // Track source bucket so army remains visible during movement animation.
-    // The spatial index will have the army in BOTH source and destination buckets
-    // until movement completes.
-    const sourceNorm = armyData.hexCoords.getNormalized();
-    const sourceBucketKey = this.getSpatialKey(sourceNorm.x, sourceNorm.y);
-    const destNorm = hexCoords.getNormalized();
-    const destBucketKey = this.getSpatialKey(destNorm.x, destNorm.y);
+    return {
+      entityId,
+      numericEntityId,
+      sourceNormalized,
+      targetNormalized,
+      targetHexCoords: hexCoords,
+      path,
+      worldPath,
+      armyCategory: armyData.category,
+      armyTier: armyData.tier,
+    };
+  }
 
-    // Only track source if buckets are different
+  public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<void> {
+    const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
+
+    const armyData = this.armies.get(entityId);
+    if (!armyData) return;
+
+    const currentNorm = armyData.hexCoords.getNormalized();
+    // Already at target (either this plan or a later authoritative update landed first).
+    if (currentNorm.x === targetNormalized.x && currentNorm.y === targetNormalized.y) return;
+    // Source drifted (another update moved the army since plan was computed). Abandon this plan.
+    if (currentNorm.x !== sourceNormalized.x || currentNorm.y !== sourceNormalized.y) return;
+
+    const sourceBucketKey = this.getSpatialKey(sourceNormalized.x, sourceNormalized.y);
+    const destBucketKey = this.getSpatialKey(targetNormalized.x, targetNormalized.y);
+
     if (sourceBucketKey !== destBucketKey) {
       this.movingArmySourceBuckets.set(entityId, {
         bucketKey: sourceBucketKey,
-        col: sourceNorm.x,
-        row: sourceNorm.y,
+        col: sourceNormalized.x,
+        row: sourceNormalized.y,
       });
     }
 
-    // Add to destination bucket (keep in source bucket too - updateSpatialIndex modified below)
-    this.addToSpatialBucket(entityId, hexCoords);
-    this.armies.set(entityId, { ...armyData, hexCoords });
+    this.addToSpatialBucket(entityId, targetHexCoords);
+    this.armies.set(entityId, { ...armyData, hexCoords: targetHexCoords });
 
     const matrixIndex = armyData.matrixIndex;
     if (matrixIndex === undefined) {
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-      // Clean up source bucket tracking since movement won't actually happen
       this.cleanupMovementSourceBucket(entityId);
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
       this.runMovementStartListeners(numericEntityId);
@@ -1855,28 +1915,163 @@ export class ArmyManager {
     this.armyPaths.set(entityId, path);
 
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
-      // Guard: if the army was removed during movement, skip all callbacks
-      // to prevent re-adding to spatial buckets that were already cleaned up
       if (!this.armies.has(entityId)) return;
       this.armyPaths.delete(entityId);
-      // Remove from source bucket now that movement is complete
       this.cleanupMovementSourceBucket(entityId);
-      // Remove path visualization
       this.pathRenderer.removePath(numericEntityId);
+      this.optimisticallyMovingArmies.delete(entityId);
       this.runMovementCompleteListeners(numericEntityId);
     });
 
-    // Start movement in ArmyModel with troop information
-    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
+    if (options.optimistic) {
+      this.optimisticallyMovingArmies.add(entityId);
+      // Reset any prior reconciliation flag from an earlier optimistic move on
+      // this entity — we're starting fresh and will wait for the next authoritative
+      // update.
+      this.authoritativeReconciledArmies.delete(entityId);
+      this.optimisticPositionLocks.set(entityId, {
+        normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
+        lockedAtMs: Date.now(),
+      });
+    }
+
+    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
     this.runMovementStartListeners(numericEntityId);
 
-    // Create path visualization with player-specific color
     const colorProfile = this.getArmyColorProfile(armyData);
     const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
     this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
-    // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
+  }
+
+  public async moveArmy(entityId: ID, hexCoords: Position): Promise<void> {
+    if (this.optimisticallyMovingArmies.has(entityId)) {
+      recordArmyMovementLatencyPhase({
+        phase: "optimistic_animation_reconciled",
+        source: "world_update_listener",
+        entityId,
+      });
+      this.optimisticallyMovingArmies.delete(entityId);
+      this.authoritativeReconciledArmies.add(entityId);
+      this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
+    }
+
+    const plan = await this.computeMovementPlan(entityId, hexCoords);
+    if (!plan) return;
+    await this.applyMovementPlan(plan, { optimistic: false });
+  }
+
+  public isArmyMovingOptimistically(entityId: ID): boolean {
+    return this.optimisticallyMovingArmies.has(entityId);
+  }
+
+  public hasReceivedAuthoritativeReconciliation(entityId: ID): boolean {
+    return this.authoritativeReconciledArmies.has(entityId);
+  }
+
+  /**
+   * True when an incoming position update should be skipped because it disagrees
+   * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
+   * release the lock as a side effect.
+   */
+  public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
+    const lock = this.optimisticPositionLocks.get(entityId);
+    if (!lock) return false;
+
+    const matches =
+      lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
+    if (matches) {
+      this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
+      this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    return true;
+  }
+
+  public onAuthoritativeReconciliation(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.authoritativeReconcileListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.authoritativeReconcileListeners.set(numericEntityId, listeners);
+    }
+    listeners.add(callback);
+
+    return () => {
+      const active = this.authoritativeReconcileListeners.get(numericEntityId);
+      if (!active) return;
+      active.delete(callback);
+      if (active.size === 0) this.authoritativeReconcileListeners.delete(numericEntityId);
+    };
+  }
+
+  private runAuthoritativeReconcileListeners(entityId: number): void {
+    const listeners = this.authoritativeReconcileListeners.get(entityId);
+    if (!listeners || listeners.size === 0) return;
+
+    this.authoritativeReconcileListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Authoritative reconciliation listener failed", error);
+      }
+    });
+  }
+
+  public rewindOptimisticMovement(entityId: ID): void {
+    if (!this.optimisticallyMovingArmies.has(entityId)) return;
+    this.optimisticallyMovingArmies.delete(entityId);
+    this.authoritativeReconciledArmies.delete(entityId);
+    this.authoritativeReconcileListeners.delete(this.toNumericId(entityId));
+    this.optimisticPositionLocks.delete(entityId);
+
+    const numericEntityId = this.toNumericId(entityId);
+    const sourceState = this.movingArmySourceBuckets.get(entityId);
+    const armyData = this.armies.get(entityId);
+
+    // Clear the complete callback so cancelMovement's teardown doesn't fire listeners.
+    this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+    this.armyModel.cancelMovement(numericEntityId);
+
+    this.armyPaths.delete(entityId);
+    this.pathRenderer.removePath(numericEntityId);
+
+    // Drop any pending start/complete listeners — they were registered for the
+    // optimistic tween we just cancelled and should not fire.
+    this.movementStartListeners.delete(numericEntityId);
+    this.movementCompleteListeners.delete(numericEntityId);
+
+    if (sourceState && armyData) {
+      const sourcePosition = new Position({ x: sourceState.col, y: sourceState.row });
+      const previousHex = armyData.hexCoords;
+      this.armies.set(entityId, { ...armyData, hexCoords: sourcePosition });
+      // Remove from the destination bucket we added during applyMovementPlan.
+      // Leave the source bucket intact — the army never left it.
+      const destNorm = previousHex.getNormalized();
+      const destKey = this.getSpatialKey(destNorm.x, destNorm.y);
+      if (destKey !== sourceState.bucketKey) {
+        const destBucket = this.chunkToArmies.get(destKey);
+        if (destBucket) {
+          destBucket.delete(entityId);
+          if (destBucket.size === 0) this.chunkToArmies.delete(destKey);
+        }
+      }
+      this.movingArmySourceBuckets.delete(entityId);
+      void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+    }
+
+    recordArmyMovementLatencyPhase({
+      phase: "optimistic_animation_rewound",
+      source: "worldmap",
+      entityId,
+    });
   }
 
   /**
@@ -3065,6 +3260,10 @@ ${
 
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
+    this.optimisticallyMovingArmies.clear();
+    this.authoritativeReconciledArmies.clear();
+    this.authoritativeReconcileListeners.clear();
+    this.optimisticPositionLocks.clear();
     this.suppressedArmies.clear();
     this.preCommitArmyQueue.clear();
     this.chunkToArmies.clear();

@@ -346,6 +346,31 @@ export class WorldUpdateListener {
                 return;
               }
 
+              // Cross-check TileOpt against the fresher ExplorerTroops coord. If they
+              // disagree, this TileOpt is stale (e.g. a subscription replay after a
+              // chunk-bounds shift) — emitting it would rubber-band the visual back
+              // to the outdated tile and then forward again when the fresh update
+              // arrives.
+              try {
+                const explorerTroops = getComponentValue(
+                  this.setup.components.ExplorerTroops,
+                  getEntityIdFromKeys([BigInt(rawOccupierId)]),
+                );
+                if (explorerTroops?.coord) {
+                  const explorerCol = Number((explorerTroops.coord as { x?: unknown }).x ?? NaN);
+                  const explorerRow = Number((explorerTroops.coord as { y?: unknown }).y ?? NaN);
+                  if (
+                    Number.isFinite(explorerCol) &&
+                    Number.isFinite(explorerRow) &&
+                    (explorerCol !== currentState.col || explorerRow !== currentState.row)
+                  ) {
+                    return;
+                  }
+                }
+              } catch (_) {
+                // ExplorerTroops unavailable — fall through and emit the TileOpt as-is.
+              }
+
               recordArmyMovementLatencyPhase({
                 phase: "tileopt_component_received",
                 source: "world_update_listener",
