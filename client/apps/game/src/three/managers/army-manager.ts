@@ -2005,7 +2005,17 @@ export class ArmyManager {
     const matchesSource =
       lock.normalizedSource.x === incomingNormalized.x && lock.normalizedSource.y === incomingNormalized.y;
     if (matchesSource) {
-      this.optimisticPositionLocks.delete(entityId);
+      // Discovery revert: `explorer_explore` rolled a treasure, the chain left
+      // `explorer.coord = from`, and the tx emits an ExplorerTroops delta
+      // (stamina/biomes) but no TileOpt change for the source tile. The
+      // optimistic tween has already parked the visual on `target`, so merely
+      // releasing the lock isn't enough — callers that only touch armyHexes
+      // (processExplorerTroopsUpdate) would leave the visual stranded while
+      // the spatial index reconciled to `from`, producing a clickable-but-
+      // invisible army at `from` and a visible-but-unclickable ghost at
+      // `target`. Tear the tween down here so the visual snaps back to
+      // source. rewindOptimisticMovement also clears the lock.
+      this.rewindOptimisticMovement(entityId);
       return false;
     }
 

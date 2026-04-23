@@ -56,8 +56,36 @@ describe("ArmyManager optimistic revert-on-source", () => {
     const body = source.slice(methodStart, methodEnd);
 
     expect(body).toContain("normalizedSource");
-    // The source-match path must release the lock before returning false,
-    // mirroring the existing target-match path.
-    expect(body).toMatch(/normalizedSource[\s\S]{0,400}?optimisticPositionLocks\.delete\(entityId\)/);
+  });
+
+  it("shouldSkipStalePositionUpdate rewinds the optimistic tween on source match", () => {
+    const source = readSource();
+
+    const methodStart = source.indexOf(
+      "public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean",
+    );
+    expect(methodStart).toBeGreaterThan(0);
+    const methodEnd = source.indexOf("\n  public ", methodStart + 20);
+    const body = source.slice(methodStart, methodEnd);
+
+    // A bare updateArmyHexes isn't enough when only ExplorerTroops fires (no
+    // TileOpt on discovery-revert). We must tear down the in-flight tween so
+    // the visual snaps back to `from` instead of parking on the camp tile.
+    expect(body).toMatch(/matchesSource[\s\S]{0,1200}?rewindOptimisticMovement\(entityId\)/);
+  });
+
+  it("shouldSkipStalePositionUpdate does not rewind on target match", () => {
+    const source = readSource();
+
+    const methodStart = source.indexOf(
+      "public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean",
+    );
+    expect(methodStart).toBeGreaterThan(0);
+    const methodEnd = source.indexOf("\n  public ", methodStart + 20);
+    const body = source.slice(methodStart, methodEnd);
+
+    // Target match is the success path — no rewind; the tween completes naturally.
+    const targetBlock = body.slice(body.indexOf("matchesTarget"), body.indexOf("matchesSource"));
+    expect(targetBlock).not.toContain("rewindOptimisticMovement");
   });
 });
