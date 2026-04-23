@@ -19,6 +19,8 @@ type GameEntryMilestone =
   | "setup-completed"
   | "initial-sync-started"
   | "initial-sync-completed"
+  | "renderer-init-started"
+  | "renderer-init-completed"
   | "bootstrap-completed"
   | "session-policies-refresh-started"
   | "session-policies-refresh-completed"
@@ -78,7 +80,17 @@ export const markGameEntryMilestone = (name: GameEntryMilestone): void => {
   }
 
   const timestamp = performance.now();
-  const startMs = gameEntryWindow.__eternumGameEntryStartMs ?? timestamp;
+  // Lazy-initialize the start clock when the timeline wasn't explicitly
+  // started — happens on hard-reload directly into a `/play` route, which
+  // bypasses the landing-page entry path that calls `startGameEntryTimeline()`.
+  // Without this fallback, every milestone was recording `elapsedMs = 0` and
+  // the boot debug panel rendered useless data for the most-instrumented case.
+  if (gameEntryWindow.__eternumGameEntryStartMs === undefined) {
+    gameEntryWindow.__eternumGameEntryStartMs = timestamp;
+    gameEntryWindow.__eternumGameEntryDurations = gameEntryWindow.__eternumGameEntryDurations ?? {};
+    gameEntryWindow.__eternumGameEntryTimeline = gameEntryWindow.__eternumGameEntryTimeline ?? [];
+  }
+  const startMs = gameEntryWindow.__eternumGameEntryStartMs;
   const record = {
     elapsedMs: Math.round(timestamp - startMs),
     name,
@@ -114,4 +126,32 @@ export const recordGameEntryDuration = (name: string, durationMs: number): void 
   const durations = gameEntryWindow.__eternumGameEntryDurations ?? {};
   durations[name] = Math.round(durationMs);
   gameEntryWindow.__eternumGameEntryDurations = durations;
+};
+
+export type GameEntryTimelineSnapshot = {
+  /** Milestones recorded so far, ordered by occurrence. */
+  milestones: ReadonlyArray<GameEntryTimelineRecord>;
+  /** Named operation durations recorded via `recordGameEntryDuration` (ms). */
+  durations: Readonly<Record<string, number>>;
+  /** Wallclock ms since `startGameEntryTimeline()` first fired, or null if not started. */
+  elapsedMs: number | null;
+};
+
+/**
+ * Read the current timeline snapshot — used by the boot debug panel and
+ * any diagnostic that wants to see "what's happening right now" without
+ * re-implementing the window-globals plumbing.
+ */
+export const getGameEntryTimelineSnapshot = (): GameEntryTimelineSnapshot => {
+  const gameEntryWindow = getGameEntryWindow();
+  if (!gameEntryWindow) {
+    return { milestones: [], durations: {}, elapsedMs: null };
+  }
+
+  const startMs = gameEntryWindow.__eternumGameEntryStartMs ?? null;
+  return {
+    milestones: gameEntryWindow.__eternumGameEntryTimeline ?? [],
+    durations: gameEntryWindow.__eternumGameEntryDurations ?? {},
+    elapsedMs: startMs === null ? null : Math.round(performance.now() - startMs),
+  };
 };

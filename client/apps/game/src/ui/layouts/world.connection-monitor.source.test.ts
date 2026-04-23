@@ -15,4 +15,12 @@ describe("world connection monitor wiring", () => {
     expect(source).toContain("activeWorld?.toriiBaseUrl ?? env.VITE_PUBLIC_TORII");
     expect(source).not.toContain("const toriiBaseUrl = env.VITE_PUBLIC_TORII;");
   });
+
+  it("triggers a guarded full re-bootstrap from onDeadEnd so wedged consumers recover", () => {
+    const source = readSource("src/ui/layouts/world.tsx");
+
+    expect(source).toContain("resetBootstrap");
+    expect(source).toContain("bootstrapGameForEntryContext");
+    expect(source).toContain("deadEndRecoveryFired");
+  });
 });

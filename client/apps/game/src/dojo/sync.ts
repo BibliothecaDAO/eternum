@@ -4,6 +4,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { sqlApi } from "@/services/api";
+import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {
   MAP_DATA_REFRESH_INTERVAL,
   MapDataStore,
@@ -554,6 +555,7 @@ export const initialSync = async (
   }
 
   isInitialSyncInFlight = true;
+  const globalStreamSubscribeStart = performance.now();
   try {
     entityStreamSubscription = await syncEntitiesDebounced(
       setup.network.toriiClient,
@@ -576,6 +578,7 @@ export const initialSync = async (
     }
     throw error;
   } finally {
+    recordGameEntryDuration("initial-sync-global-stream-subscribe", performance.now() - globalStreamSubscribeStart);
     isInitialSyncInFlight = false;
   }
 
@@ -596,8 +599,12 @@ export const initialSync = async (
   const runTimedTask = async (label: string, targetProgress: number, task: () => Promise<void>) => {
     const start = performance.now();
     await task();
-    const end = performance.now();
-    console.log(`[sync] ${label}`, end - start);
+    const elapsedMs = performance.now() - start;
+    console.log(`[sync] ${label}`, elapsedMs);
+    // Surface in the boot debug panel under a deterministic key so a slow
+    // sub-step (e.g. "guilds query") immediately points at the bottleneck
+    // instead of being hidden inside the aggregate `initial-sync` total.
+    recordGameEntryDuration(`initial-sync-${label.replace(/\s+/g, "-")}`, elapsedMs);
     updateProgress(targetProgress);
   };
 
@@ -671,12 +678,16 @@ export const initialSync = async (
     }),
   ]);
 
+  const mapDataRefreshStart = performance.now();
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
+  recordGameEntryDuration("initial-sync-map-data-refresh", performance.now() - mapDataRefreshStart);
 
   // Block on the Torii stream's initial entity flush so the worldmap scene
   // observes populated RECS state instead of an empty world on fast loads.
   if (entityStreamSubscription) {
+    const flushStart = performance.now();
     await waitForInitialEntityFlush(entityStreamSubscription.ready, subscriptionSetupTimeoutMs);
+    recordGameEntryDuration("initial-sync-initial-entity-flush", performance.now() - flushStart);
   }
 
   updateProgress(100);

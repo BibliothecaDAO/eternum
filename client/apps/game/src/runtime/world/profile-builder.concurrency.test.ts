@@ -145,7 +145,12 @@ describe("buildWorldProfile concurrency", () => {
     });
   });
 
-  it("falls back to the selected slot world rpc when deployment metadata is unavailable", async () => {
+  it("falls back to the env slot rpc when deployment metadata is unavailable", async () => {
+    // 9b295e0b08 originally pinned slot worlds to a per-world RPC with no env
+    // fallback, which left users stuck on "Reconnect to Continue" once a
+    // Cartridge slot deployment was GC'd. Reverted: when the factory has no
+    // explicit deployment row, slot now falls back to env's slot RPC (the
+    // last-known-alive deployment for the build target).
     mocks.resolveWorldContracts.mockResolvedValue({ spawn: "0xabc" });
     mocks.resolveWorldDeploymentFromFactory.mockResolvedValue(null);
     mocks.fetchWorldAddress.mockResolvedValue("0x1");
@@ -156,11 +161,11 @@ describe("buildWorldProfile concurrency", () => {
 
     await buildWorldProfile("slot", "s0-game-5");
 
-    expect(mocks.normalizeRpcUrl).toHaveBeenCalledWith("https://api.cartridge.gg/x/s0-game-5/katana");
+    expect(mocks.normalizeRpcUrl).toHaveBeenCalledWith("https://fallback-rpc.example");
     expect(mocks.saveWorldProfile).toHaveBeenCalledWith(
       expect.objectContaining({
         name: "s0-game-5",
-        rpcUrl: "https://api.cartridge.gg/x/s0-game-5/katana",
+        rpcUrl: "https://fallback-rpc.example",
       }),
     );
   });
