@@ -123,8 +123,8 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
 };
 
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
-const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 5_000;
-const WEBGPU_RENDERER_INIT_TIMEOUT_MS = 4_000;
+const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 15_000;
+const WEBGPU_RENDERER_INIT_TIMEOUT_MS = 12_000;
 let webGpuFrameRecoveryWarned = false;
 let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
 
@@ -488,7 +488,6 @@ export function createWebGPURendererBackend(
       } finally {
         const totalDurationMs = resolvedDependencies.now() - startTime;
         recordRendererStartupTiming("webgpu-backend-total", totalDurationMs);
-        recordRendererStartupTiming("experimental-backend-total", totalDurationMs);
       }
     },
     renderFrame(pipeline: RendererFramePipeline) {

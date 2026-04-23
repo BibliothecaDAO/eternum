@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { PerspectiveCamera, Scene as ThreeScene } from "three";
 import { describe, expect, it, vi } from "vitest";
+import { SceneName } from "./types";
 
 const requestRendererScenePrewarmMock = vi.fn();
 
@@ -141,8 +142,9 @@ describe("createGameRendererSceneRegistry", () => {
 });
 
 describe("bootstrapRendererSceneRuntime", () => {
-  it("prewarms scenes and applies environment, postprocess, and quality policies in order", async () => {
+  it("prewarms the initial scene immediately and defers inactive scene prewarm", async () => {
     requestRendererScenePrewarmMock.mockReset();
+    const deferredPrewarmTasks: Array<() => void> = [];
     const effectsBridgeRuntime = {
       applyEnvironment: vi.fn(),
       applyQualityFeatures: vi.fn(),
@@ -168,8 +170,12 @@ describe("bootstrapRendererSceneRuntime", () => {
       effectsBridgeRuntime,
       fastTravelScene,
       hexceptionScene,
+      initialSceneName: SceneName.FastTravel,
       qualityFeatures,
       renderer: renderer as never,
+      scheduleInactiveScenePrewarm: (task) => {
+        deferredPrewarmTasks.push(task);
+      },
       sceneManager: sceneManager as never,
       warn: vi.fn(),
       worldmapScene,
@@ -178,26 +184,31 @@ describe("bootstrapRendererSceneRuntime", () => {
     expect(requestRendererScenePrewarmMock).toHaveBeenNthCalledWith(
       1,
       renderer,
-      worldmapScene.getScene(),
-      worldmapScene.getCamera(),
-    );
-    expect(requestRendererScenePrewarmMock).toHaveBeenNthCalledWith(
-      2,
-      renderer,
-      hexceptionScene.getScene(),
-      hexceptionScene.getCamera(),
-    );
-    expect(requestRendererScenePrewarmMock).toHaveBeenNthCalledWith(
-      3,
-      renderer,
       fastTravelScene.getScene(),
       fastTravelScene.getCamera(),
     );
+    expect(requestRendererScenePrewarmMock).toHaveBeenCalledTimes(1);
     expect(effectsBridgeRuntime.applyEnvironment).toHaveBeenCalledTimes(1);
     expect(effectsBridgeRuntime.setupPostProcessingEffects).toHaveBeenCalledTimes(1);
     expect(sceneManager.moveCameraForScene).toHaveBeenCalledTimes(1);
     expect(effectsBridgeRuntime.applyQualityFeatures).toHaveBeenCalledWith(qualityFeatures);
     expect(effectsBridgeRuntime.subscribeToQualityController).toHaveBeenCalledTimes(1);
+
+    expect(deferredPrewarmTasks).toHaveLength(1);
+    deferredPrewarmTasks[0]();
+
+    expect(requestRendererScenePrewarmMock).toHaveBeenNthCalledWith(
+      2,
+      renderer,
+      worldmapScene.getScene(),
+      worldmapScene.getCamera(),
+    );
+    expect(requestRendererScenePrewarmMock).toHaveBeenNthCalledWith(
+      3,
+      renderer,
+      hexceptionScene.getScene(),
+      hexceptionScene.getCamera(),
+    );
   });
 
   it("warns when scene prewarm fails", async () => {
@@ -216,6 +227,7 @@ describe("bootstrapRendererSceneRuntime", () => {
         subscribeToQualityController: vi.fn(),
       },
       hexceptionScene,
+      initialSceneName: SceneName.WorldMap,
       qualityFeatures: {
         bloom: false,
         bloomIntensity: 0,

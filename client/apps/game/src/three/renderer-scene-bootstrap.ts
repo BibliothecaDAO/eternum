@@ -24,6 +24,8 @@ type PrewarmableScene = {
   getScene(): Object3D<Object3DEventMap>;
 };
 
+type ScheduleInactiveScenePrewarm = (task: () => void) => void;
+
 export interface RendererSceneRegistry<
   TTransitionManager,
   TSceneManager,
@@ -96,8 +98,10 @@ interface BootstrapRendererSceneRuntimeInput<
   effectsBridgeRuntime: TEffectsBridgeRuntime;
   fastTravelScene?: TFastTravelScene;
   hexceptionScene: THexceptionScene;
+  initialSceneName: SceneName;
   qualityFeatures: TQualityFeatures;
   renderer?: RendererSurfaceLike;
+  scheduleInactiveScenePrewarm?: ScheduleInactiveScenePrewarm;
   sceneManager: TSceneManager;
   warn?: (message: string, error: unknown) => void;
   worldmapScene: TWorldmapScene;
@@ -221,7 +225,9 @@ export function bootstrapRendererSceneRuntime<
   prewarmRendererBootstrapScenes({
     fastTravelScene: input.fastTravelScene,
     hexceptionScene: input.hexceptionScene,
+    initialSceneName: input.initialSceneName,
     renderer: input.renderer,
+    scheduleInactiveScenePrewarm: input.scheduleInactiveScenePrewarm,
     warn: input.warn,
     worldmapScene: input.worldmapScene,
   });
@@ -239,25 +245,76 @@ function attachRendererSceneToSurface(scene: SceneInputSurfaceOwner, inputSurfac
 function prewarmRendererBootstrapScenes(input: {
   fastTravelScene?: PrewarmableScene;
   hexceptionScene: PrewarmableScene;
+  initialSceneName: SceneName;
   renderer?: RendererSurfaceLike;
+  scheduleInactiveScenePrewarm?: ScheduleInactiveScenePrewarm;
   warn?: (message: string, error: unknown) => void;
   worldmapScene: PrewarmableScene;
 }): void {
+  const scenePrewarmPlan = resolveScenePrewarmPlan(input);
   void prewarmRendererScene({
     renderer: input.renderer,
-    scene: input.worldmapScene,
+    scene: scenePrewarmPlan.initialScene,
     warn: input.warn,
   });
-  void prewarmRendererScene({
-    renderer: input.renderer,
-    scene: input.hexceptionScene,
-    warn: input.warn,
+
+  if (scenePrewarmPlan.inactiveScenes.length === 0) {
+    return;
+  }
+
+  const scheduleInactiveScenePrewarm = input.scheduleInactiveScenePrewarm ?? scheduleInactiveRendererScenePrewarm;
+  scheduleInactiveScenePrewarm(() => {
+    scenePrewarmPlan.inactiveScenes.forEach((scene) => {
+      void prewarmRendererScene({
+        renderer: input.renderer,
+        scene,
+        warn: input.warn,
+      });
+    });
   });
-  void prewarmRendererScene({
-    renderer: input.renderer,
-    scene: input.fastTravelScene,
-    warn: input.warn,
-  });
+}
+
+function resolveScenePrewarmPlan(input: {
+  fastTravelScene?: PrewarmableScene;
+  hexceptionScene: PrewarmableScene;
+  initialSceneName: SceneName;
+  worldmapScene: PrewarmableScene;
+}): {
+  inactiveScenes: PrewarmableScene[];
+  initialScene: PrewarmableScene;
+} {
+  const prewarmEntries = [
+    { scene: input.worldmapScene, sceneName: SceneName.WorldMap },
+    { scene: input.hexceptionScene, sceneName: SceneName.Hexception },
+    { scene: input.fastTravelScene, sceneName: SceneName.FastTravel },
+  ];
+  const initialEntry = prewarmEntries.find(
+    (entry): entry is { scene: PrewarmableScene; sceneName: SceneName } =>
+      entry.sceneName === input.initialSceneName && Boolean(entry.scene),
+  );
+
+  return {
+    inactiveScenes: prewarmEntries
+      .filter((entry) => entry !== initialEntry)
+      .map((entry) => entry.scene)
+      .filter((scene): scene is PrewarmableScene => Boolean(scene)),
+    initialScene: initialEntry?.scene ?? input.worldmapScene,
+  };
+}
+
+function scheduleInactiveRendererScenePrewarm(task: () => void): void {
+  const requestIdleCallback = (
+    globalThis as typeof globalThis & {
+      requestIdleCallback?: (callback: () => void) => number;
+    }
+  ).requestIdleCallback;
+
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(task);
+    return;
+  }
+
+  globalThis.setTimeout(task, 0);
 }
 
 async function prewarmRendererScene(input: {

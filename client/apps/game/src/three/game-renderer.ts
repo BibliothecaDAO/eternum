@@ -25,6 +25,7 @@ import { qualityController } from "./utils/quality-controller";
 import { prepareGameRendererScenes } from "./renderer-scene-orchestration";
 import { destroyRendererRuntime } from "./renderer-destroy-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
+import { resolveRendererRouteSceneFromHref } from "./renderer-route-runtime";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
 import type { RendererBackendV2 } from "./renderer-backend-v2";
@@ -174,6 +175,10 @@ export default class GameRenderer {
     }
     this.supportRuntimeRegistry.getControlBridge().setupGuiControls();
     this.sessionRuntime.startListeners();
+    const initialSceneName = resolveRendererRouteSceneFromHref({
+      fastTravelEnabled: this.isFastTravelEnabled(),
+      href: window.location.href,
+    });
 
     const measure = (label: string, fn: () => void) => {
       const start = performance.now();
@@ -191,8 +196,9 @@ export default class GameRenderer {
         measure("hud-scene", () => {
           this.hudScene = this.sessionRuntime.createHudScene();
         }),
+      initialSceneName,
       isDestroyed: this.isDestroyed,
-      prepareScenes: () => measure("prepare-scenes", () => this.prepareScenes()),
+      prepareScenes: (sceneName) => measure("prepare-scenes", () => this.prepareScenes(sceneName)),
       registerCleanupInterval: (intervalId) => {
         this.cleanupIntervals = this.cleanupIntervals || [];
         this.cleanupIntervals.push(intervalId);
@@ -216,13 +222,14 @@ export default class GameRenderer {
     this.controls = this.interactionRuntime.controls;
   }
 
-  prepareScenes() {
+  prepareScenes(initialSceneName: SceneName) {
     prepareGameRendererScenes({
       applySceneRegistry: (registry) => this.assignRendererSceneRegistry(registry),
       controls: this.controls,
       dojo: this.dojo,
       effectsBridgeRuntime: this.supportRuntimeRegistry.ensureEffectsBridge(),
       fastTravelEnabled: this.isFastTravelEnabled(),
+      initialSceneName,
       inputSurface: this.renderer.domElement,
       mouse: this.mouse,
       qualityFeatures: qualityController.getFeatures(),
