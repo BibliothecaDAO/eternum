@@ -126,8 +126,8 @@ describe("createWebGPURendererBackend", () => {
     );
 
     const initPromise = backend.initialize();
-    const initExpectation = expect(initPromise).rejects.toThrow("WebGPU renderer init timed out after 4000ms");
-    await vi.advanceTimersByTimeAsync(4_000);
+    const initExpectation = expect(initPromise).rejects.toThrow("WebGPU renderer init timed out after 12000ms");
+    await vi.advanceTimersByTimeAsync(12_000);
 
     await initExpectation;
     expect(renderer.dispose).toHaveBeenCalledTimes(1);
@@ -152,19 +152,18 @@ describe("createWebGPURendererBackend", () => {
               receivedSignal = signal;
             }),
         ),
-        now: vi.fn().mockReturnValueOnce(0).mockReturnValue(5_000),
+        now: vi.fn().mockReturnValueOnce(0).mockReturnValue(15_000),
       },
     );
 
     const initPromise = backend.initialize();
     const initExpectation = expect(initPromise).rejects.toThrow(RendererInitTimeoutError);
-    await vi.advanceTimersByTimeAsync(5_000);
+    await vi.advanceTimersByTimeAsync(15_000);
 
     await initExpectation;
     expect(receivedSignal?.aborted).toBe(true);
-    expect(snapshotRendererStartupTimings()).toMatchObject({
-      "experimental-backend-total": 5000,
-      "webgpu-backend-total": 5000,
+    expect(snapshotRendererStartupTimings()).toEqual({
+      "webgpu-backend-total": 15000,
     });
     vi.useRealTimers();
   });
@@ -191,19 +190,19 @@ describe("createWebGPURendererBackend", () => {
                   activeMode: "webgpu" as const,
                   renderer,
                 });
-              }, 5_100);
+              }, 15_100);
             }),
         ),
         now: vi
           .fn(() => 0)
           .mockReturnValueOnce(0)
-          .mockReturnValueOnce(5_000),
+          .mockReturnValueOnce(15_000),
       },
     );
 
     const initPromise = backend.initialize();
     const initExpectation = expect(initPromise).rejects.toThrow(RendererInitTimeoutError);
-    await vi.advanceTimersByTimeAsync(5_000);
+    await vi.advanceTimersByTimeAsync(15_000);
     await initExpectation;
     await vi.advanceTimersByTimeAsync(100);
 
