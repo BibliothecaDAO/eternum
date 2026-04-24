@@ -1892,10 +1892,7 @@ export class ArmyManager {
    * only mirror on `true` — otherwise a drifted/target-matched/unslotted plan
    * would pin a stale destination into caches with no lock to rewind it.
    */
-  public async applyMovementPlan(
-    plan: ArmyMovementPlan,
-    options: { optimistic: boolean },
-  ): Promise<boolean> {
+  public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<boolean> {
     const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
 
     const armyData = this.armies.get(entityId);

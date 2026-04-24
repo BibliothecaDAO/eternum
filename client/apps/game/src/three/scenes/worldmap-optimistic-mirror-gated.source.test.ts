@@ -19,10 +19,7 @@ function readSource(filename: string): string {
 describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
   it("applyMovementPlan returns Promise<boolean>", () => {
     const currentDir = dirname(fileURLToPath(import.meta.url));
-    const source = readFileSync(
-      resolve(currentDir, "../managers/army-manager.ts"),
-      "utf8",
-    );
+    const source = readFileSync(resolve(currentDir, "../managers/army-manager.ts"), "utf8");
 
     expect(source).toMatch(
       /public async applyMovementPlan\(\s*plan: ArmyMovementPlan,\s*options: \{ optimistic: boolean \},?\s*\): Promise<boolean>/,
@@ -31,10 +28,7 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
 
   it("every early-return path in applyMovementPlan returns false", () => {
     const currentDir = dirname(fileURLToPath(import.meta.url));
-    const source = readFileSync(
-      resolve(currentDir, "../managers/army-manager.ts"),
-      "utf8",
-    );
+    const source = readFileSync(resolve(currentDir, "../managers/army-manager.ts"), "utf8");
 
     const methodStart = source.indexOf("public async applyMovementPlan(");
     expect(methodStart).toBeGreaterThan(0);
