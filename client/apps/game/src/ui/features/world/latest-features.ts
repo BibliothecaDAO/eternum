@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-25",
+    title: "Realm Build Counts",
+    description:
+      "Construction now shows a compact built-here summary for the selected realm, so you can check existing building counts without hovering the map.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-24",
     title: "Steadier Realm Sidebar",
     description:

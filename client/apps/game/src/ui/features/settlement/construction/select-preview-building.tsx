@@ -20,6 +20,12 @@ import {
   releaseOccupiedBuildSpot,
   reserveOccupiedBuildSpot,
 } from "./build-reservation-store";
+import {
+  buildRealmBuildingSummary,
+  getMilitaryBuildingInfo,
+  MILITARY_BUILDING_GROUP_ORDER,
+  RealmBuildingSummary,
+} from "./realm-building-summary";
 
 import {
   Biome,
@@ -61,8 +67,7 @@ import Trash from "lucide-react/dist/esm/icons/trash";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-const ARMY_TYPES = ["Archery", "Stable", "Barracks"] as const;
-type ArmyTypeLabel = (typeof ARMY_TYPES)[number];
+type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
   armyType: ArmyTypeLabel;
   buildings: string[];
@@ -608,7 +613,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const armyGroups = useMemo<ArmyGroup[]>(
     () =>
-      ARMY_TYPES.reduce<ArmyGroup[]>((acc, armyType) => {
+      MILITARY_BUILDING_GROUP_ORDER.reduce<ArmyGroup[]>((acc, armyType) => {
         const buildings = buildingTypes.filter((a) => {
           const building = BuildingType[a as keyof typeof BuildingType];
           const info = getMilitaryBuildingInfo(building);
@@ -689,6 +694,22 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   );
 
   const activeArmyType = selectedArmyType ?? recommendedArmyType ?? armyGroups[0]?.armyType ?? null;
+  const allowedBuildingTypes = useMemo(
+    () =>
+      buildingTypes
+        .map((buildingType) => BuildingType[buildingType as keyof typeof BuildingType])
+        .filter((buildingType): buildingType is BuildingType => typeof buildingType === "number"),
+    [buildingTypes],
+  );
+  const realmBuildingSummary = useMemo(
+    () =>
+      buildRealmBuildingSummary({
+        realmResourceIds: realm?.resources ?? [],
+        allowedBuildingTypes,
+        getBuildingCount: getBuildingCountFor,
+      }),
+    [allowedBuildingTypes, getBuildingCountFor, realm?.resources],
+  );
 
   const tabs = useMemo(
     () => [
@@ -1121,6 +1142,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           </label>
         </div>
       </div>
+
+      <RealmBuildingSummary className="realm-summary-selector" headline="Built here" items={realmBuildingSummary} />
 
       <Tabs
         selectedIndex={selectedTab}
@@ -1731,31 +1754,4 @@ const BuildingInfo = ({
       )}
     </div>
   );
-};
-
-// Helper function to determine military building type and tier
-const getMilitaryBuildingInfo = (building: BuildingType) => {
-  // Check for Crossbowman buildings
-  if (building === BuildingType.ResourceCrossbowmanT1)
-    return { type: "Archery", tier: 1, resourceId: ResourcesIds.Crossbowman };
-  if (building === BuildingType.ResourceCrossbowmanT2)
-    return { type: "Archery", tier: 2, resourceId: ResourcesIds.CrossbowmanT2 };
-  if (building === BuildingType.ResourceCrossbowmanT3)
-    return { type: "Archery", tier: 3, resourceId: ResourcesIds.CrossbowmanT3 };
-
-  // Check for Paladin buildings
-  if (building === BuildingType.ResourcePaladinT1) return { type: "Stable", tier: 1, resourceId: ResourcesIds.Paladin };
-  if (building === BuildingType.ResourcePaladinT2)
-    return { type: "Stable", tier: 2, resourceId: ResourcesIds.PaladinT2 };
-  if (building === BuildingType.ResourcePaladinT3)
-    return { type: "Stable", tier: 3, resourceId: ResourcesIds.PaladinT3 };
-
-  // Check for Knight buildings
-  if (building === BuildingType.ResourceKnightT1) return { type: "Barracks", tier: 1, resourceId: ResourcesIds.Knight };
-  if (building === BuildingType.ResourceKnightT2)
-    return { type: "Barracks", tier: 2, resourceId: ResourcesIds.KnightT2 };
-  if (building === BuildingType.ResourceKnightT3)
-    return { type: "Barracks", tier: 3, resourceId: ResourcesIds.KnightT3 };
-
-  return null;
 };
