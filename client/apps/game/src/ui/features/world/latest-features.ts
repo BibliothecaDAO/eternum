@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-24",
+    title: "Header Music Controls",
+    description:
+      "Moved the landing music controls into the top header beside the network and wallet actions, so the home dashboard stays clear while playback controls remain close at hand.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-23",
     title: "Bounded Renderer Startup",
     description:

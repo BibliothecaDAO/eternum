@@ -87,10 +87,11 @@ const LandingLayoutContent = () => {
       {/* Left sidebar (desktop only) */}
       <LandingSidebar onSettingsClick={handleSettingsClick} />
 
-      {/* Top header with wallet */}
+      {/* Top header with landing controls */}
       <LandingHeader
-        walletButton={
+        headerControls={
           <>
+            <LandingMusicPlayer className="hidden lg:flex" presentation="header" />
             <DashboardNetworkSwitch className="hidden md:flex" />
             <Controller />
           </>
@@ -118,7 +119,6 @@ const LandingLayoutContent = () => {
       </main>
 
       {/* Bottom navigation (mobile only) */}
-      <LandingMusicPlayer />
       <MobileBottomNav />
 
       {/* Settings modal */}
