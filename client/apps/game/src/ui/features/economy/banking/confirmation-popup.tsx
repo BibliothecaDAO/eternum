@@ -33,7 +33,15 @@ export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
   );
 
   return (
-    <BasePopup title={title} onClose={onCancel} footer={footer} contentClassName="">
+    <BasePopup
+      title={title}
+      onClose={onCancel}
+      footer={footer}
+      contentClassName=""
+      submitOnEnter
+      onSubmit={onConfirm}
+      isSubmitDisabled={Boolean(disabled) || isLoading}
+    >
       {children}
     </BasePopup>
   );

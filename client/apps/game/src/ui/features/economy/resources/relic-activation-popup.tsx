@@ -116,7 +116,15 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   );
 
   return (
-    <BasePopup title="Activate Relic" onClose={onClose} footer={footer} contentClassName="">
+    <BasePopup
+      title="Activate Relic"
+      onClose={onClose}
+      footer={footer}
+      contentClassName=""
+      submitOnEnter
+      onSubmit={handleConfirm}
+      isSubmitDisabled={isLoading || !!error || !compatible || !hasEnoughEssence}
+    >
       <RelicSummary
         resourceKey={resourceKey}
         title={resourceName}

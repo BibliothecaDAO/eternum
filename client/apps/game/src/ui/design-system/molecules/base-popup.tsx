@@ -1,4 +1,5 @@
 import Button from "@/ui/design-system/atoms/button";
+import { handlePopupShortcutKeyDown } from "@/ui/design-system/molecules/popup-submit-shortcut";
 import X from "lucide-react/dist/esm/icons/x";
 import React, { useEffect, useRef } from "react";
 
@@ -10,6 +11,9 @@ interface BasePopupProps {
   className?: string;
   contentClassName?: string;
   width?: string;
+  submitOnEnter?: boolean;
+  onSubmit?: () => void;
+  isSubmitDisabled?: boolean;
 }
 
 export const BasePopup: React.FC<BasePopupProps> = ({
@@ -20,6 +24,9 @@ export const BasePopup: React.FC<BasePopupProps> = ({
   className = "",
   contentClassName = "",
   width = "max-w-md",
+  submitOnEnter = false,
+  onSubmit,
+  isSubmitDisabled = false,
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -49,6 +56,14 @@ export const BasePopup: React.FC<BasePopupProps> = ({
       <div
         ref={popupRef}
         tabIndex={-1}
+        onKeyDown={(event) =>
+          handlePopupShortcutKeyDown(event, {
+            onClose,
+            onSubmit,
+            submitOnEnter,
+            isSubmitDisabled,
+          })
+        }
         className={`border border-gold/10 bg-brown/90 panel-wood rounded p-8 w-full ${width} mx-auto flex flex-col items-center relative ${className}`}
       >
         <div className="absolute top-3 right-3">

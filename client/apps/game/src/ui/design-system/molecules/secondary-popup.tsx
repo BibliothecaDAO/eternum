@@ -1,6 +1,7 @@
 import { useUISound } from "@/audio/hooks/useUISound";
 import Button from "@/ui/design-system/atoms/button";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
+import { handlePopupShortcutKeyDown } from "@/ui/design-system/molecules/popup-submit-shortcut";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import X from "lucide-react/dist/esm/icons/x";
@@ -13,7 +14,11 @@ type FilterPopupProps = {
   containerClassName?: string;
   name?: string;
   width?: string;
+  onClose?: () => void;
   onOutsideClick?: () => void;
+  submitOnEnter?: boolean;
+  onSubmit?: () => void;
+  isSubmitDisabled?: boolean;
 };
 
 export const resolvePopupWidth = (width?: string) => {
@@ -31,7 +36,11 @@ export const SecondaryPopup = ({
   containerClassName,
   name,
   width,
+  onClose,
   onOutsideClick,
+  submitOnEnter,
+  onSubmit,
+  isSubmitDisabled,
 }: FilterPopupProps) => {
   const playPopupOpen = useUISound("ui.modal_open");
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -143,10 +152,19 @@ export const SecondaryPopup = ({
           <div
             onClick={handleClick}
             ref={nodeRef}
+            onKeyDown={(event) =>
+              handlePopupShortcutKeyDown(event, {
+                onClose,
+                onSubmit,
+                submitOnEnter,
+                isSubmitDisabled,
+              })
+            }
             className={clsx(
               "fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] panel-wood panel-wood-corners bg-dark-wood",
               className,
             )}
+            tabIndex={-1}
             style={resolvedWidth ? { width: resolvedWidth } : undefined}
           >
             {/* Ornate corner elements for panel-wood-corners */}

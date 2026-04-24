@@ -330,7 +330,15 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   );
 
   return (
-    <BasePopup title="Craft Relic" onClose={onClose} footer={footer} contentClassName="max-w-[520px]">
+    <BasePopup
+      title="Craft Relic"
+      onClose={onClose}
+      footer={footer}
+      contentClassName="max-w-[520px]"
+      submitOnEnter
+      onSubmit={handleCraftRelic}
+      isSubmitDisabled={isCrafting || !canCraft}
+    >
       <div className="space-y-4 text-left">
         <div className="rounded border border-relic/40 bg-gradient-to-b from-relic/20 to-dark-brown/30 p-4">
           <div className="flex items-start justify-between gap-3">

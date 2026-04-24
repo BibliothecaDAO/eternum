@@ -9,9 +9,10 @@ interface ActionFooterProps {
   isLoading: boolean;
   isDisabled: boolean;
   onSubmit: () => void;
+  shortcutHint?: string | null;
 }
 
-export const ActionFooter = ({ armyType, label, isLoading, isDisabled, onSubmit }: ActionFooterProps) => {
+export const ActionFooter = ({ armyType, label, isLoading, isDisabled, onSubmit, shortcutHint }: ActionFooterProps) => {
   return (
     <div className="p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
       <Button
@@ -33,6 +34,11 @@ export const ActionFooter = ({ armyType, label, isLoading, isDisabled, onSubmit 
           <span className="drop-shadow-sm">{label}</span>
         </div>
       </Button>
+      {shortcutHint && !isDisabled && !isLoading && (
+        <div className="mt-1.5 text-center text-[11px] font-medium uppercase tracking-[0.16em] text-gold/55">
+          {shortcutHint}
+        </div>
+      )}
     </div>
   );
 };

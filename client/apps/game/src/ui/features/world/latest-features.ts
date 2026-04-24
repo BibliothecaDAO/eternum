@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-25",
+    title: "Keyboard Confirm Shortcuts",
+    description:
+      "Army creation and confirmation popups now accept Enter as the primary submit shortcut, so you can finish common actions from the keyboard without hunting for the confirm button.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-24",
     title: "Steadier Realm Sidebar",
     description:

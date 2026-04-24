@@ -687,7 +687,11 @@ export const UnifiedArmyCreationModal = ({
       width="800"
       name="unified-army-creation-modal"
       containerClassName="absolute left-0 top-0"
+      onClose={handleClose}
       onOutsideClick={handleClose}
+      submitOnEnter
+      onSubmit={handleCreate}
+      isSubmitDisabled={isActionDisabled}
     >
       <SecondaryPopup.Head onClose={handleClose}>{modalTitle}</SecondaryPopup.Head>
       <SecondaryPopup.Body width="100%" height="auto">
@@ -765,6 +769,7 @@ export const UnifiedArmyCreationModal = ({
                 isLoading={isLoading}
                 isDisabled={isActionDisabled}
                 onSubmit={handleCreate}
+                shortcutHint="Press Enter to submit"
               />
             </div>
           </div>
