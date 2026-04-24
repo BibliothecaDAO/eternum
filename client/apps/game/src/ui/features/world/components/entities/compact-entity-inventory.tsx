@@ -1,12 +1,13 @@
 import { memo, useCallback, useMemo } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { divideByPrecision, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
+import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   EntityType,
@@ -60,15 +61,15 @@ const formatInventoryAmount = (value: number): string => {
   return flooredValue.toLocaleString();
 };
 
-const buildDisplayItems = (
+export const buildDisplayItems = (
   resourceComponent?: ComponentValue<ClientComponents["Resource"]["schema"]> | null,
+  currentDefaultTick?: number,
   activeRelicIds: number[] = [],
   recipientType?: RelicRecipientType,
   resourceTiers?: Record<string, ResourcesIds[]>,
 ) => {
   if (!resourceComponent) return [] as DisplayItem[];
 
-  const { currentDefaultTick } = getBlockTimestamp();
   const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick).filter(
     (resource) => resource.amount > 0,
   );
@@ -153,10 +154,11 @@ export const CompactEntityInventory = memo(
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
     const mode = useGameModeConfig();
+    const currentDefaultTick = useCurrentDefaultTick();
     const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
     const items = useMemo(
-      () => buildDisplayItems(resources, activeRelicIds, recipientType, resourceTiers),
-      [resources, activeRelicIds, recipientType, resourceTiers],
+      () => buildDisplayItems(resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers),
+      [resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers],
     );
 
     const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);
