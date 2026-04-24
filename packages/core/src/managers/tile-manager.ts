@@ -25,14 +25,21 @@ import {
   getTileAt,
   setBuildingCount,
 } from "..";
+import {
+  type BuildSlotTransition,
+  clearBuildSlotTransition,
+  markBuildPending,
+  markDestroyPending,
+  markOccupiedUnconfirmed,
+  resolveOccupiedState,
+} from "./build-slot-state";
 import { configManager } from "./config-manager";
 
 // Global const to flick optimistic building on or off
 export const OPTIMISTIC_BUILDING_ENABLED = true;
 
-// Module-level Set to track pending builds across TileManager instances
-// This prevents race conditions between optimistic updates and Torii sync
-const pendingBuilds = new Set<string>();
+// Module-level slot transition state tracks optimistic placement until synced component state confirms it.
+const buildSlotTransitions = new Map<string, BuildSlotTransition>();
 const OPTIMISTIC_TX_FALLBACK_TIMEOUT_MS = 180_000;
 const OCCUPIED_SPACE_REASON = "space is occupied";
 
@@ -48,6 +55,9 @@ const extractErrorMessage = (error: unknown): string => {
 
 const isOccupiedSpaceError = (error: unknown): boolean =>
   extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
+
+const toBuildSlotKey = (outerCol: number, outerRow: number, innerCol: number, innerRow: number) =>
+  `${outerCol},${outerRow},${innerCol},${innerRow}`;
 
 export class TileManager {
   private col: number;
@@ -119,18 +129,14 @@ export class TileManager {
 
   isHexOccupied = (hexCoords: HexPosition) => {
     const { col, row } = hexCoords;
-
-    // Check pending builds first to prevent race conditions
-    const buildKey = `${this.col},${this.row},${col},${row}`;
-    if (pendingBuilds.has(buildKey)) {
-      return true;
-    }
+    const buildKey = toBuildSlotKey(this.col, this.row, col, row);
 
     const building = getComponentValue(
       this.components.Building,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(col), BigInt(row)]),
     );
-    return building !== undefined && building.category !== BuildingType.None;
+    const confirmedOccupied = building !== undefined && building.category !== BuildingType.None;
+    return resolveOccupiedState(buildSlotTransitions, buildKey, confirmedOccupied);
   };
 
   structureType = () => {
@@ -261,6 +267,9 @@ export class TileManager {
     signer: DojoAccount,
     transactionHash: string | undefined,
     cleanup: () => void,
+    options?: {
+      onReverted?: (revertReason: string) => void;
+    },
   ) => {
     let isCleanedUp = false;
     const finalize = () => {
@@ -301,6 +310,7 @@ export class TileManager {
                 ? receiptAny.revertReason
                 : "Unknown revert reason";
           console.warn(`Transaction ${transactionHash} reverted: ${revertReason}`);
+          options?.onReverted?.(revertReason);
         }
       })
       .catch((error) => {
@@ -445,15 +455,14 @@ export class TileManager {
     useSimpleCost: boolean,
   ) => {
     const { col, row } = hexCoords;
+    const buildKey = toBuildSlotKey(this.col, this.row, col, row);
 
     // Re-check occupancy at call time to avoid sending a known-invalid tx.
     if (this.isHexOccupied({ col, row })) {
       throw new Error(OCCUPIED_SPACE_REASON);
     }
 
-    // Track this build as pending to prevent race conditions
-    const buildKey = `${this.col},${this.row},${col},${row}`;
-    pendingBuilds.add(buildKey);
+    markBuildPending(buildSlotTransitions, buildKey);
 
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
     const endPosition: [number, number] = [col, row];
@@ -475,25 +484,42 @@ export class TileManager {
       });
 
       const transactionHash = this._extractTransactionHash(result);
-      this._scheduleOptimisticCleanupOnTransaction(signer, transactionHash, () => {
-        removeBuildingOverride();
-        pendingBuilds.delete(buildKey);
-      });
+      this._scheduleOptimisticCleanupOnTransaction(
+        signer,
+        transactionHash,
+        () => {
+          removeBuildingOverride();
+        },
+        {
+          onReverted: (revertReason) => {
+            removeBuildingOverride();
+            if (revertReason.toLowerCase().includes(OCCUPIED_SPACE_REASON)) {
+              markOccupiedUnconfirmed(buildSlotTransitions, buildKey);
+              return;
+            }
+            clearBuildSlotTransition(buildSlotTransitions, buildKey);
+          },
+        },
+      );
 
       return result;
     } catch (error) {
       // On error, remove immediately
       removeBuildingOverride();
-      pendingBuilds.delete(buildKey);
       console.error(error);
       if (isOccupiedSpaceError(error)) {
+        markOccupiedUnconfirmed(buildSlotTransitions, buildKey);
         throw new Error(OCCUPIED_SPACE_REASON);
       }
+      clearBuildSlotTransition(buildSlotTransitions, buildKey);
       throw error;
     }
   };
 
   destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
+    const buildKey = toBuildSlotKey(this.col, this.row, col, row);
+    markDestroyPending(buildSlotTransitions, buildKey);
+
     // add optimistic rendering if enabled
     let removeBuildingOverride = () => {};
     if (OPTIMISTIC_BUILDING_ENABLED) {
@@ -512,10 +538,17 @@ export class TileManager {
       });
 
       const transactionHash = this._extractTransactionHash(result);
-      this._scheduleOptimisticCleanupOnTransaction(signer, transactionHash, removeBuildingOverride);
+      this._scheduleOptimisticCleanupOnTransaction(signer, transactionHash, removeBuildingOverride, {
+        onReverted: () => {
+          removeBuildingOverride();
+          clearBuildSlotTransition(buildSlotTransitions, buildKey);
+        },
+      });
     } catch (error) {
       console.log("error", error);
       removeBuildingOverride();
+      clearBuildSlotTransition(buildSlotTransitions, buildKey);
+      throw error;
     }
   };
 
