@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24640263840-1",
   "currentStepId": null,
   "createdAt": "2026-04-19T22:07:09.609Z",
-  "updatedAt": "2026-04-24T23:00:39.972Z",
+  "updatedAt": "2026-04-24T23:02:09.226Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -79,14 +79,12 @@
     "configureTxHash": "0x7e11ecad35faaaab421dad7b3a350e8e59444c34c4d0fb5e01b68ebb000ea9a",
     "worldConfigTxHash": "0x7e11ecad35faaaab421dad7b3a350e8e59444c34c4d0fb5e01b68ebb000ea9a",
     "lootChestRoleTxHash": "0x4944f4a6762688a82d27cb4d3ccb55479773933e9c336a06e714e4bb9416ea",
-    "indexerCreated": true,
-    "indexerTier": "legendary",
-    "indexerUrl": "https://api.cartridge.gg/x/bltz-riff-363/torii",
-    "indexerVersion": "v1.8.15",
-    "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-19T22:12:28.627Z",
+    "indexerCreated": false,
     "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-04-24T23:00:38.382Z"
+    "pendingIndexerTierRequestedAt": "2026-04-24T23:02:09.226Z",
+    "lastIndexerTierDispatchTarget": "pro",
+    "lastIndexerTierDispatchFailedAt": "2026-04-24T23:02:09.226Z",
+    "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
   },
   "completedAt": "2026-04-19T22:09:50.561Z"
 }
