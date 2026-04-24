@@ -43,7 +43,7 @@ import { WorldmapMoveQueue } from "@/three/scenes/worldmap-move-queue";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { configManager, Position } from "@bibliothecadao/eternum";
+import { Biome, configManager, Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import type { ToriiStreamManager as ToriiStreamManagerType } from "@/dojo/torii-stream-manager";
@@ -1104,7 +1104,23 @@ export default class WorldmapScene extends WarpTravel {
         this.pendingMovementPlans.delete(entityId);
         void planPromise.then((plan) => {
           if (!plan) return;
-          void this.armyManager.applyMovementPlan(plan, { optimistic: true }).then(() => {
+          void this.armyManager.applyMovementPlan(plan, { optimistic: true }).then((planApplied) => {
+            if (!planApplied) {
+              // applyMovementPlan early-returned (army gone / already at
+              // target / source drifted / no render slot). No optimistic
+              // lock was registered and no tween is in flight, so mirroring
+              // the destination into armyHexes now would pin a stale
+              // selectable hex with nothing left to rewind it — producing
+              // the "mesh at source, destination still clickable" desync.
+              // Let Torii's authoritative update reconcile naturally.
+              recordArmyMovementLatencyPhase({
+                phase: "optimistic_animation_skipped",
+                source: "worldmap",
+                entityId,
+                txHash,
+              });
+              return;
+            }
             recordArmyMovementLatencyPhase({
               phase: "optimistic_animation_started",
               source: "worldmap",
@@ -1116,15 +1132,42 @@ export default class WorldmapScene extends WarpTravel {
             // moved army, letting clicks on the stale tile select it and
             // submit a tx with the wrong starting position. updateArmyHexes
             // is the single writer that performs the delete-old / set-new.
+            const targetContract = plan.targetHexCoords.getContract();
+            const targetNormalized = plan.targetHexCoords.getNormalized();
             const movedArmy = this.armyManager.getArmy(entityId);
             if (movedArmy?.owner?.address !== undefined) {
-              const targetContract = plan.targetHexCoords.getContract();
               this.updateArmyHexes({
                 entityId,
                 hexCoords: { col: targetContract.x, row: targetContract.y },
                 ownerAddress: movedArmy.owner.address,
                 ownerStructureId: this.armyStructureOwners.get(entityId) ?? null,
               });
+            }
+
+            // Paint the destination biome provisionally so the explored-hex
+            // mesh appears in the same frame the tween starts, instead of
+            // waiting 1–5s for Torii to deliver the authoritative TileOpt
+            // write. Biome.getBiome mirrors the Cairo biome_library — the
+            // Cairo side passes felt-offset (contract) coords, so we must
+            // too, or the provisional biome won't agree with the eventual
+            // chain state. exploredTiles is keyed by normalized coords
+            // though, so the two conventions coexist here. No-op when the
+            // tile is already in exploredTiles (travel, re-enter, etc.).
+            const provisionalSpawn = resolveArmySpawnBiome(
+              this.exploredTiles,
+              targetNormalized.x,
+              targetNormalized.y,
+              Biome.getBiome(targetContract.x, targetContract.y),
+            );
+            if (provisionalSpawn.action === "write_provisional") {
+              if (!this.exploredTiles.has(targetNormalized.x)) {
+                this.exploredTiles.set(targetNormalized.x, new Map());
+              }
+              this.exploredTiles.get(targetNormalized.x)!.set(targetNormalized.y, provisionalSpawn.biome);
+              this.provisionalBiomes.mark(targetNormalized.x, targetNormalized.y);
+              this.exploredTilesGeneration.bump();
+              gameWorkerManager.updateExploredTile(targetNormalized.x, targetNormalized.y, provisionalSpawn.biome);
+              this.invalidateAllChunkCachesContainingHex(targetNormalized.x, targetNormalized.y);
             }
           });
         });
@@ -1145,9 +1188,7 @@ export default class WorldmapScene extends WarpTravel {
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
         this.pendingMovementPlans.delete(plan.entityId);
         this.clearQueuedNextMove(plan.entityId);
-        if (this.armyManager.isArmyMovingOptimistically(plan.entityId)) {
-          this.armyManager.rewindOptimisticMovement(plan.entityId);
-        }
+        this.rewindOptimisticMovementAndArmyHexes(plan.entityId);
         this.clearPendingArmyMovement(plan.entityId);
         useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
         this.disposePendingMovementVisualLifecycle(plan.entityId);
@@ -1332,13 +1373,16 @@ export default class WorldmapScene extends WarpTravel {
           this.exploredTiles,
           normalizedPos.x,
           normalizedPos.y,
-          BiomeType.Grassland,
+          // Biome is computed from felt-offset (contract) coords, matching
+          // the Cairo biome_library. update.hexCoords arrives in contract
+          // format from world-update-listener (TileOpt currentState.col/row).
+          Biome.getBiome(update.hexCoords.col, update.hexCoords.row),
         );
         if (spawnResult.action === "write_provisional") {
           if (!this.exploredTiles.has(normalizedPos.x)) {
             this.exploredTiles.set(normalizedPos.x, new Map());
           }
-          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
+          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, spawnResult.biome);
           this.provisionalBiomes.mark(normalizedPos.x, normalizedPos.y);
           this.exploredTilesGeneration.bump();
         }
@@ -2645,9 +2689,7 @@ export default class WorldmapScene extends WarpTravel {
           // Transaction failed at submission, remove from pending and cleanup
           this.pendingMovementPlans.delete(selectedEntityId);
           this.clearQueuedNextMove(selectedEntityId);
-          if (this.armyManager.isArmyMovingOptimistically(selectedEntityId)) {
-            this.armyManager.rewindOptimisticMovement(selectedEntityId);
-          }
+          this.rewindOptimisticMovementAndArmyHexes(selectedEntityId);
           this.clearPendingArmyMovement(selectedEntityId);
           useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
@@ -3247,9 +3289,7 @@ export default class WorldmapScene extends WarpTravel {
 
       this.pendingMovementPlans.delete(entityId);
       this.clearQueuedNextMove(entityId);
-      if (this.armyManager.isArmyMovingOptimistically(entityId)) {
-        this.armyManager.rewindOptimisticMovement(entityId);
-      }
+      this.rewindOptimisticMovementAndArmyHexes(entityId);
       this.clearPendingArmyMovement(entityId);
       useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
@@ -3264,6 +3304,37 @@ export default class WorldmapScene extends WarpTravel {
     }, this.authoritativePendingArmyMovementMs);
 
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
+  }
+
+  /**
+   * Rewind an optimistic move on both the visual and spatial cache layers.
+   * armyManager.rewindOptimisticMovement snaps the mesh back to source but
+   * leaves armyHexes / armiesPositions pinned at the optimistic destination
+   * (written by the cache mirror in handleTransactionComplete). Without this
+   * paired write, getHexagonEntity(destination) still resolves the rewound
+   * army — the player sees a mesh back at source but the destination hex
+   * remains clickable and selects the army — until Torii eventually delivers
+   * a reconciling TileOpt. Route every worldmap-side rewind through here so
+   * the two layers move together.
+   */
+  private rewindOptimisticMovementAndArmyHexes(entityId: ID): void {
+    if (!this.armyManager.isArmyMovingOptimistically(entityId)) return;
+
+    const movedArmy = this.armyManager.getArmy(entityId);
+    const ownerAddress = movedArmy?.owner?.address;
+    const ownerStructureId = this.armyStructureOwners.get(entityId) ?? null;
+
+    const source = this.armyManager.rewindOptimisticMovement(entityId);
+    if (!source || ownerAddress === undefined) return;
+
+    // updateArmyHexes normalizes whatever col/row we hand it; pass the source
+    // normalized coords directly (Position's constructor detects magnitude).
+    this.updateArmyHexes({
+      entityId,
+      hexCoords: { col: source.col, row: source.row },
+      ownerAddress,
+      ownerStructureId,
+    });
   }
 
   private onArmySelection(

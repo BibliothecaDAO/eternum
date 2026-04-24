@@ -46,8 +46,10 @@ describe("Worldmap optimistic movement wiring", () => {
     expect(handlerEnd).toBeGreaterThan(handlerStart);
 
     const handler = source.slice(handlerStart, handlerEnd);
-    expect(handler).toContain("isArmyMovingOptimistically");
-    expect(handler).toContain("rewindOptimisticMovement");
+    // The worldmap seam pairs the armyManager rewind with an armyHexes
+    // spatial-cache rewind so the destination stops resolving in
+    // getHexagonEntity after the mesh snaps back.
+    expect(handler).toContain("rewindOptimisticMovementAndArmyHexes");
   });
 
   it("clears pending movement plans when the move resolves or fails", () => {

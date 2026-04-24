@@ -253,9 +253,18 @@ export class ArmyManager {
   // Position locks pinned at the optimistic destination. Suppresses stale
   // position data from TileOpt / ExplorerTroops snapshot replays (bound-shift,
   // chunk re-hydration) that would otherwise rubber-band the army back to its
-  // pre-tx tile. Auto-release on matching update or TTL expiry.
-  private optimisticPositionLocks: Map<ID, { normalizedTarget: { x: number; y: number }; lockedAtMs: number }> =
-    new Map();
+  // pre-tx tile. normalizedSource is retained so explore-discovery reverts —
+  // where the chain leaves `explorer.coord = from` after rolling a treasure —
+  // are recognised as authoritative and allowed through instead of being
+  // suppressed as stale. Auto-release on matching update or TTL expiry.
+  private optimisticPositionLocks: Map<
+    ID,
+    {
+      normalizedSource: { x: number; y: number };
+      normalizedTarget: { x: number; y: number };
+      lockedAtMs: number;
+    }
+  > = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
   private suppressedArmies: Set<ID> = new Set();
@@ -1875,17 +1884,25 @@ export class ArmyManager {
     };
   }
 
-  public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<void> {
+  /**
+   * Apply a pre-computed movement plan. Returns `true` when the plan started
+   * an optimistic tween (for `optimistic: true`) or a non-optimistic visual
+   * update, and `false` when it early-returned without effect. Callers that
+   * mirror predicted state into sibling caches (e.g. worldmap.armyHexes) must
+   * only mirror on `true` — otherwise a drifted/target-matched/unslotted plan
+   * would pin a stale destination into caches with no lock to rewind it.
+   */
+  public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<boolean> {
     const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
 
     const armyData = this.armies.get(entityId);
-    if (!armyData) return;
+    if (!armyData) return false;
 
     const currentNorm = armyData.hexCoords.getNormalized();
     // Already at target (either this plan or a later authoritative update landed first).
-    if (currentNorm.x === targetNormalized.x && currentNorm.y === targetNormalized.y) return;
+    if (currentNorm.x === targetNormalized.x && currentNorm.y === targetNormalized.y) return false;
     // Source drifted (another update moved the army since plan was computed). Abandon this plan.
-    if (currentNorm.x !== sourceNormalized.x || currentNorm.y !== sourceNormalized.y) return;
+    if (currentNorm.x !== sourceNormalized.x || currentNorm.y !== sourceNormalized.y) return false;
 
     const sourceBucketKey = this.getSpatialKey(sourceNormalized.x, sourceNormalized.y);
     const destBucketKey = this.getSpatialKey(targetNormalized.x, targetNormalized.y);
@@ -1909,7 +1926,10 @@ export class ArmyManager {
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
       this.runMovementStartListeners(numericEntityId);
       this.runMovementCompleteListeners(numericEntityId);
-      return;
+      // No tween played and no optimistic lock was registered. If the caller
+      // mirrored armyHexes to target now and the chain later reverts, nothing
+      // would snap the spatial cache back. Report no-op so the mirror bails.
+      return false;
     }
 
     this.armyPaths.set(entityId, path);
@@ -1930,6 +1950,7 @@ export class ArmyManager {
       // update.
       this.authoritativeReconciledArmies.delete(entityId);
       this.optimisticPositionLocks.set(entityId, {
+        normalizedSource: { x: sourceNormalized.x, y: sourceNormalized.y },
         normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
         lockedAtMs: Date.now(),
       });
@@ -1943,6 +1964,7 @@ export class ArmyManager {
     this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
+    return true;
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position): Promise<void> {
@@ -1974,15 +1996,38 @@ export class ArmyManager {
    * True when an incoming position update should be skipped because it disagrees
    * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
    * release the lock as a side effect.
+   *
+   * Source-match is treated the same as target-match: `explorer_explore` can
+   * roll a treasure that leaves `explorer.coord = from` on-chain
+   * (troop_movement.cairo:193). That authoritative revert would otherwise be
+   * swallowed as "stale" and the army would stay visually stranded on the
+   * discovered tile until the TTL expired.
    */
   public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
     const lock = this.optimisticPositionLocks.get(entityId);
     if (!lock) return false;
 
-    const matches =
+    const matchesTarget =
       lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
-    if (matches) {
+    if (matchesTarget) {
       this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    const matchesSource =
+      lock.normalizedSource.x === incomingNormalized.x && lock.normalizedSource.y === incomingNormalized.y;
+    if (matchesSource) {
+      // Discovery revert: `explorer_explore` rolled a treasure, the chain left
+      // `explorer.coord = from`, and the tx emits an ExplorerTroops delta
+      // (stamina/biomes) but no TileOpt change for the source tile. The
+      // optimistic tween has already parked the visual on `target`, so merely
+      // releasing the lock isn't enough — callers that only touch armyHexes
+      // (processExplorerTroopsUpdate) would leave the visual stranded while
+      // the spatial index reconciled to `from`, producing a clickable-but-
+      // invisible army at `from` and a visible-but-unclickable ghost at
+      // `target`. Tear the tween down here so the visual snaps back to
+      // source. rewindOptimisticMovement also clears the lock.
+      this.rewindOptimisticMovement(entityId);
       return false;
     }
 
@@ -2025,8 +2070,14 @@ export class ArmyManager {
     });
   }
 
-  public rewindOptimisticMovement(entityId: ID): void {
-    if (!this.optimisticallyMovingArmies.has(entityId)) return;
+  public rewindOptimisticMovement(entityId: ID): { col: number; row: number } | null {
+    if (!this.optimisticallyMovingArmies.has(entityId)) return null;
+    // Read the lock's normalizedSource before the delete below — it's the
+    // canonical source-of-truth for the pre-tx hex, set for every optimistic
+    // move regardless of whether the source/dest share a spatial bucket.
+    const lock = this.optimisticPositionLocks.get(entityId);
+    const lockedSource = lock ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y } : null;
+
     this.optimisticallyMovingArmies.delete(entityId);
     this.authoritativeReconciledArmies.delete(entityId);
     this.authoritativeReconcileListeners.delete(this.toNumericId(entityId));
@@ -2072,6 +2123,8 @@ export class ArmyManager {
       source: "worldmap",
       entityId,
     });
+
+    return lockedSource;
   }
 
   /**
