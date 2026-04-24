@@ -26,7 +26,7 @@ import {
   WORLDMAP_PENDING_FX_STOP_EVENT,
 } from "@/utils/pending-worldmap-fx";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
-import { ArmyManager } from "@/three/managers/army-manager";
+import { ArmyManager, type ArmyMovementPlan } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -39,10 +39,11 @@ import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { processExplorerTroopsUpdate } from "@/three/scenes/worldmap-update-helpers";
+import { WorldmapMoveQueue } from "@/three/scenes/worldmap-move-queue";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { Position } from "@bibliothecadao/eternum";
+import { Biome, configManager, Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import type { ToriiStreamManager as ToriiStreamManagerType } from "@/dojo/torii-stream-manager";
@@ -623,6 +624,15 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
+  // Pre-computed optimistic movement plans keyed by entityId. Planned at submit
+  // time in parallel with the tx, applied on tx_confirmed so the animation
+  // starts before Torii delivers the authoritative update.
+  private pendingMovementPlans: Map<ID, Promise<ArmyMovementPlan | null>> = new Map();
+  // At most one queued next-move per entity. Enqueued when the user clicks a
+  // new destination while the current optimistic tween is still animating;
+  // dequeued and re-submitted on onMovementComplete.
+  private moveQueue: WorldmapMoveQueue = new WorldmapMoveQueue();
+  private moveQueueDequeueDisposers: Map<ID, () => void> = new Map();
 
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
@@ -1088,6 +1098,80 @@ export default class WorldmapScene extends WarpTravel {
         entityId,
         txHash,
       });
+
+      const planPromise = this.pendingMovementPlans.get(entityId);
+      if (planPromise) {
+        this.pendingMovementPlans.delete(entityId);
+        void planPromise.then((plan) => {
+          if (!plan) return;
+          void this.armyManager.applyMovementPlan(plan, { optimistic: true }).then((planApplied) => {
+            if (!planApplied) {
+              // applyMovementPlan early-returned (army gone / already at
+              // target / source drifted / no render slot). No optimistic
+              // lock was registered and no tween is in flight, so mirroring
+              // the destination into armyHexes now would pin a stale
+              // selectable hex with nothing left to rewind it — producing
+              // the "mesh at source, destination still clickable" desync.
+              // Let Torii's authoritative update reconcile naturally.
+              recordArmyMovementLatencyPhase({
+                phase: "optimistic_animation_skipped",
+                source: "worldmap",
+                entityId,
+                txHash,
+              });
+              return;
+            }
+            recordArmyMovementLatencyPhase({
+              phase: "optimistic_animation_started",
+              source: "worldmap",
+              entityId,
+              txHash,
+            });
+            // Mirror the optimistic destination into the worldmap's spatial
+            // cache. Without this, armyHexes[sourceHex] still resolves the
+            // moved army, letting clicks on the stale tile select it and
+            // submit a tx with the wrong starting position. updateArmyHexes
+            // is the single writer that performs the delete-old / set-new.
+            const targetContract = plan.targetHexCoords.getContract();
+            const targetNormalized = plan.targetHexCoords.getNormalized();
+            const movedArmy = this.armyManager.getArmy(entityId);
+            if (movedArmy?.owner?.address !== undefined) {
+              this.updateArmyHexes({
+                entityId,
+                hexCoords: { col: targetContract.x, row: targetContract.y },
+                ownerAddress: movedArmy.owner.address,
+                ownerStructureId: this.armyStructureOwners.get(entityId) ?? null,
+              });
+            }
+
+            // Paint the destination biome provisionally so the explored-hex
+            // mesh appears in the same frame the tween starts, instead of
+            // waiting 1–5s for Torii to deliver the authoritative TileOpt
+            // write. Biome.getBiome mirrors the Cairo biome_library — the
+            // Cairo side passes felt-offset (contract) coords, so we must
+            // too, or the provisional biome won't agree with the eventual
+            // chain state. exploredTiles is keyed by normalized coords
+            // though, so the two conventions coexist here. No-op when the
+            // tile is already in exploredTiles (travel, re-enter, etc.).
+            const provisionalSpawn = resolveArmySpawnBiome(
+              this.exploredTiles,
+              targetNormalized.x,
+              targetNormalized.y,
+              Biome.getBiome(targetContract.x, targetContract.y),
+            );
+            if (provisionalSpawn.action === "write_provisional") {
+              if (!this.exploredTiles.has(targetNormalized.x)) {
+                this.exploredTiles.set(targetNormalized.x, new Map());
+              }
+              this.exploredTiles.get(targetNormalized.x)!.set(targetNormalized.y, provisionalSpawn.biome);
+              this.provisionalBiomes.mark(targetNormalized.x, targetNormalized.y);
+              this.exploredTilesGeneration.bump();
+              gameWorkerManager.updateExploredTile(targetNormalized.x, targetNormalized.y, provisionalSpawn.biome);
+              this.invalidateAllChunkCachesContainingHex(targetNormalized.x, targetNormalized.y);
+            }
+          });
+        });
+      }
     };
 
     this.handleTransactionFailed = (payload: { transactionHash?: string }) => {
@@ -1102,6 +1186,9 @@ export default class WorldmapScene extends WarpTravel {
         pendingEntities: this.pendingArmyMovements,
       });
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
+        this.pendingMovementPlans.delete(plan.entityId);
+        this.clearQueuedNextMove(plan.entityId);
+        this.rewindOptimisticMovementAndArmyHexes(plan.entityId);
         this.clearPendingArmyMovement(plan.entityId);
         useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
         this.disposePendingMovementVisualLifecycle(plan.entityId);
@@ -1268,6 +1355,10 @@ export default class WorldmapScene extends WarpTravel {
           row: normalizedPos.y,
         });
 
+        if (this.armyManager.shouldSkipStalePositionUpdate(update.entityId, normalizedPos)) {
+          return;
+        }
+
         this.updateArmyHexes(update);
         this.resolvePendingCreateArmyFxOnArmyUpdate(update);
 
@@ -1282,13 +1373,16 @@ export default class WorldmapScene extends WarpTravel {
           this.exploredTiles,
           normalizedPos.x,
           normalizedPos.y,
-          BiomeType.Grassland,
+          // Biome is computed from felt-offset (contract) coords, matching
+          // the Cairo biome_library. update.hexCoords arrives in contract
+          // format from world-update-listener (TileOpt currentState.col/row).
+          Biome.getBiome(update.hexCoords.col, update.hexCoords.row),
         );
         if (spawnResult.action === "write_provisional") {
           if (!this.exploredTiles.has(normalizedPos.x)) {
             this.exploredTiles.set(normalizedPos.x, new Map());
           }
-          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
+          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, spawnResult.biome);
           this.provisionalBiomes.mark(normalizedPos.x, normalizedPos.y);
           this.exploredTilesGeneration.bump();
         }
@@ -1327,6 +1421,8 @@ export default class WorldmapScene extends WarpTravel {
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+          shouldSkipStalePositionUpdate: (entityId, normalized) =>
+            this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
         });
       }),
     );
@@ -1531,7 +1627,7 @@ export default class WorldmapScene extends WarpTravel {
         if (shouldCycleStructuresForTab()) {
           return getRealmStructuresForTab().length > 0;
         }
-        return this.selectableArmies.length > 0;
+        return this.hasEligibleArmyForTabCycle();
       },
       action: () => {
         if (shouldCycleStructuresForTab()) {
@@ -2382,6 +2478,23 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    // Universal stamina pre-check. Blocks any submit (not just queued) when the
+    // client-visible stamina can't cover the action cost — prevents "insufficient
+    // stamina" server rejections from reaching the user as a tx failure toast.
+    if (actionPath.length > 0 && !this.canAffordMove(selectedEntityId, actionPath)) {
+      toast.error("Not enough stamina for this move");
+      this.state.updateEntityActionHoveredHex(null);
+      this.clearSelection();
+      return;
+    }
+
+    if (actionPath.length > 0 && this.armyManager?.isArmyMovingOptimistically(selectedEntityId)) {
+      this.enqueueNextMove(account, actionPath, selectedEntityId);
+      this.state.updateEntityActionHoveredHex(null);
+      this.clearSelection();
+      return;
+    }
+
     const actionType = ActionPaths.getActionType(actionPath);
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
@@ -2524,6 +2637,18 @@ export default class WorldmapScene extends WarpTravel {
         },
       });
 
+      // Pre-compute the optimistic movement plan in parallel with the tx so we can
+      // start the animation as soon as tx_confirmed fires, without waiting for
+      // Torii to deliver the authoritative TileOpt update.
+      const destPosition = new Position({ x: targetHex.col, y: targetHex.row });
+      this.pendingMovementPlans.set(
+        selectedEntityId,
+        this.armyManager.computeMovementPlan(selectedEntityId, destPosition).catch((error) => {
+          console.error("[worldmap] computeMovementPlan failed", error);
+          return null;
+        }),
+      );
+
       // Monitor memory usage before army movement action
       this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
       const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
@@ -2562,6 +2687,9 @@ export default class WorldmapScene extends WarpTravel {
         })
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
+          this.pendingMovementPlans.delete(selectedEntityId);
+          this.clearQueuedNextMove(selectedEntityId);
+          this.rewindOptimisticMovementAndArmyHexes(selectedEntityId);
           this.clearPendingArmyMovement(selectedEntityId);
           useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
@@ -3014,6 +3142,128 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private canAffordMove(entityId: ID, actionPath: ActionPath[]): boolean {
+    const staminaCost = actionPath.reduce((total, pathStep) => total + (pathStep.staminaCost ?? 0), 0);
+    if (!Number.isFinite(staminaCost) || staminaCost <= 0) return true;
+    const army = this.armyManager.getArmy(entityId);
+    if (!army) return false;
+    return Math.floor(army.currentStamina ?? 0) >= Math.floor(staminaCost);
+  }
+
+  /**
+   * Minimum eligibility for an army to act on the worldmap. Used by Tab-cycle
+   * and anywhere else we want to pre-filter armies before handing selection to
+   * the user — mirrors the gates the right-click action path enforces so the
+   * user never lands on a unit that would immediately fail its first submit.
+   *
+   * An army is "able to act" when:
+   *   - The scene knows about it (armyManager.getArmy returns non-nullish).
+   *   - It has at least the minimum travel stamina cost — i.e. there's SOME
+   *     one-hex action it could perform. Finer-grained stamina is still
+   *     enforced at submit by canAffordMove.
+   *   - It is not sitting in a battle cooldown (battleTimerLeft > 0).
+   */
+  private canArmyAct(entityId: ID): boolean {
+    const army = this.armyManager.getArmy(entityId);
+    if (!army) return false;
+    const minStaminaCost = configManager.getMinTravelStaminaCost();
+    if (Math.floor(army.currentStamina ?? 0) < Math.floor(minStaminaCost)) return false;
+    if ((army.battleTimerLeft ?? 0) > 0) return false;
+    return true;
+  }
+
+  private hasEligibleArmyForTabCycle(): boolean {
+    return this.selectableArmies.some(
+      (army) => !this.pendingArmyMovements.has(army.entityId) && this.canArmyAct(army.entityId),
+    );
+  }
+
+  private enqueueNextMove(account: Account | AccountInterface, actionPath: ActionPath[], entityId: ID): void {
+    if (!this.canAffordMove(entityId, actionPath)) {
+      toast.error("Not enough stamina to queue this move — the current move has already spent it");
+      return;
+    }
+
+    const alreadyQueued = this.moveQueue.has(entityId);
+    this.moveQueue.enqueue(entityId, { actionPath });
+    recordArmyMovementLatencyPhase({
+      phase: "next_move_queued",
+      source: "worldmap",
+      entityId,
+      details: {
+        targetCol: actionPath[actionPath.length - 1]?.hex.col,
+        targetRow: actionPath[actionPath.length - 1]?.hex.row,
+        replacedPreviousQueuedMove: alreadyQueued,
+      },
+    });
+
+    if (alreadyQueued) return;
+
+    // The dequeue must wait for BOTH the tween to finish AND the authoritative
+    // Torii tile update to arrive. Submitting tx2 before the chain has fully
+    // settled tx1 can race the VRF provider ("not consumed") because successive
+    // explorer_explore calls share account-level VRF state that's only visible
+    // after the prior tx's block is fully applied.
+    let disposeMovementComplete: (() => void) | undefined;
+    let disposeAuthoritativeReconcile: (() => void) | undefined;
+    let fallbackTimeout: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+
+    const runDequeue = () => {
+      if (settled) return;
+      settled = true;
+      disposeMovementComplete?.();
+      disposeAuthoritativeReconcile?.();
+      if (fallbackTimeout) clearTimeout(fallbackTimeout);
+      this.moveQueueDequeueDisposers.delete(entityId);
+
+      const queued = this.moveQueue.dequeue(entityId);
+      if (!queued) return;
+      if (!this.armyManager.hasArmy(entityId)) return;
+      if (!this.canAffordMove(entityId, queued.actionPath)) {
+        toast.error("Queued move dropped — insufficient stamina after the prior move resolved");
+        return;
+      }
+      this.onArmyMovement(account, queued.actionPath, entityId);
+    };
+
+    const dropWithTimeout = () => {
+      if (settled) return;
+      settled = true;
+      disposeMovementComplete?.();
+      disposeAuthoritativeReconcile?.();
+      this.moveQueueDequeueDisposers.delete(entityId);
+      this.moveQueue.clear(entityId);
+      toast.error("Queued move dropped — indexer fell behind and we couldn't safely submit the follow-up");
+    };
+
+    const tryDequeue = () => {
+      if (settled) return;
+      if (this.armyManager.isArmyMoving(entityId)) return; // tween still running
+      if (!this.armyManager.hasReceivedAuthoritativeReconciliation(entityId)) return; // chain/indexer lagging
+      runDequeue();
+    };
+
+    disposeMovementComplete = this.armyManager.onMovementComplete(entityId, tryDequeue);
+    disposeAuthoritativeReconcile = this.armyManager.onAuthoritativeReconciliation(entityId, tryDequeue);
+    fallbackTimeout = setTimeout(dropWithTimeout, 8000);
+
+    this.moveQueueDequeueDisposers.set(entityId, () => {
+      disposeMovementComplete?.();
+      disposeAuthoritativeReconcile?.();
+      if (fallbackTimeout) clearTimeout(fallbackTimeout);
+    });
+  }
+
+  private clearQueuedNextMove(entityId: ID): void {
+    this.moveQueue.clear(entityId);
+    const dispose = this.moveQueueDequeueDisposers.get(entityId);
+    if (dispose) {
+      this.moveQueueDequeueDisposers.delete(entityId);
+      dispose();
+    }
+  }
+
   private schedulePendingArmyMovementFallback(entityId: ID): void {
     const existingFallback = this.pendingArmyMovementFallbackTimeouts.get(entityId);
     if (existingFallback) {
@@ -3037,6 +3287,9 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
+      this.pendingMovementPlans.delete(entityId);
+      this.clearQueuedNextMove(entityId);
+      this.rewindOptimisticMovementAndArmyHexes(entityId);
       this.clearPendingArmyMovement(entityId);
       useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
@@ -3053,6 +3306,37 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementFallbackTimeouts.set(entityId, fallbackTimeout);
   }
 
+  /**
+   * Rewind an optimistic move on both the visual and spatial cache layers.
+   * armyManager.rewindOptimisticMovement snaps the mesh back to source but
+   * leaves armyHexes / armiesPositions pinned at the optimistic destination
+   * (written by the cache mirror in handleTransactionComplete). Without this
+   * paired write, getHexagonEntity(destination) still resolves the rewound
+   * army — the player sees a mesh back at source but the destination hex
+   * remains clickable and selects the army — until Torii eventually delivers
+   * a reconciling TileOpt. Route every worldmap-side rewind through here so
+   * the two layers move together.
+   */
+  private rewindOptimisticMovementAndArmyHexes(entityId: ID): void {
+    if (!this.armyManager.isArmyMovingOptimistically(entityId)) return;
+
+    const movedArmy = this.armyManager.getArmy(entityId);
+    const ownerAddress = movedArmy?.owner?.address;
+    const ownerStructureId = this.armyStructureOwners.get(entityId) ?? null;
+
+    const source = this.armyManager.rewindOptimisticMovement(entityId);
+    if (!source || ownerAddress === undefined) return;
+
+    // updateArmyHexes normalizes whatever col/row we hand it; pass the source
+    // normalized coords directly (Position's constructor detects magnitude).
+    this.updateArmyHexes({
+      entityId,
+      hexCoords: { col: source.col, row: source.row },
+      ownerAddress,
+      ownerStructureId,
+    });
+  }
+
   private onArmySelection(
     selectedEntityId: ID,
     playerAddress: ContractAddress,
@@ -3063,6 +3347,7 @@ export default class WorldmapScene extends WarpTravel {
     // Check if army has pending movement transactions
     const selectionPlan = resolvePendingArmyMovementSelectionPlan({
       hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+      isOptimisticMovementActive: this.armyManager.isArmyMovingOptimistically(selectedEntityId),
       pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(selectedEntityId),
       nowMs: Date.now(),
       staleAfterMs: this.authoritativePendingArmyMovementMs,
@@ -8117,6 +8402,10 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingArmyMovements.clear();
+    this.moveQueueDequeueDisposers.forEach((dispose) => dispose());
+    this.moveQueueDequeueDisposers.clear();
+    this.moveQueue.clearAll();
+    this.pendingMovementPlans.clear();
     if (this.handleTransactionComplete) {
       this.dojo.network?.provider?.off("transactionComplete", this.handleTransactionComplete);
     }
@@ -8235,6 +8524,14 @@ export default class WorldmapScene extends WarpTravel {
 
         // Skip armies with pending movement transactions
         if (hasPendingMovement) {
+          attempts++;
+          continue;
+        }
+
+        // Skip armies that can't actually act right now (not enough stamina,
+        // in battle cooldown). Lands Tab only on units the user could submit
+        // a move from — prevents the "selected but tx will fail" trap.
+        if (!this.canArmyAct(army.entityId)) {
           attempts++;
           continue;
         }

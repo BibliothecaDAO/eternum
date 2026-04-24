@@ -37,10 +37,10 @@ describe("army ghosting follow-up wiring", () => {
     expect(suppressedPos).toBeLessThan(pointIconPos);
   });
 
-  it("moveArmy attempts immediate render recovery when the army has no visible slot", () => {
+  it("applyMovementPlan attempts immediate render recovery when the army has no visible slot", () => {
     const src = readSource("army-manager.ts");
 
-    const methodStart = src.indexOf("public async moveArmy");
+    const methodStart = src.indexOf("public async applyMovementPlan");
     expect(methodStart).toBeGreaterThan(-1);
 
     const methodBody = src.slice(methodStart, methodStart + 3200);

@@ -199,6 +199,7 @@ export function normalizeRendererDiagnosticsSnapshot(snapshot) {
     postprocessPolicy: snapshot?.postprocessPolicy ?? null,
     requestedMode: snapshot?.requestedMode ?? null,
     sceneName: snapshot?.sceneName ?? null,
+    startupTimings: snapshot?.startupTimings ?? {},
   };
 }
 

@@ -36,6 +36,7 @@ describe("processExplorerTroopsUpdate", () => {
     const update = {
       entityId: 7,
       troopCount: 12,
+      hexCoords: { col: 2100, row: 2100 },
     } as any;
 
     processExplorerTroopsUpdate(update, {

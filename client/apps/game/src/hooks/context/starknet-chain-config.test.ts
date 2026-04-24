@@ -57,4 +57,17 @@ describe("resolveStarknetRuntimeConfig", () => {
     expect(config.rpcUrl).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
     expect(config.defaultChainId).toBe("0x57505f455445524e554d5f424c49545a5f534c4f545f34");
   });
+
+  it("pins slot worlds to the shared slot runtime even when the active profile has a per-world katana rpc", () => {
+    const config = resolveStarknetRuntimeConfig({
+      fallbackChain: "slot",
+      selectedChain: "slot",
+      baseRpcUrl: "https://api.cartridge.gg/x/s0-game-5/katana/rpc/v0_9",
+      cartridgeApiBase: "https://api.cartridge.gg",
+    });
+
+    expect(config.chainKind).toBe("slot");
+    expect(config.rpcUrl).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
+    expect(config.defaultChainId).toBe("0x57505f455445524e554d5f424c49545a5f534c4f545f34");
+  });
 });

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { useUIStore } from "../../hooks/store/use-ui-store";
+import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
 import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
@@ -69,6 +70,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
         <Tooltip />
         <VersionDisplay />
+        <ArmyMovementLatencyOverlay />
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
     </>

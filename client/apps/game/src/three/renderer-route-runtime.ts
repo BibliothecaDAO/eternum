@@ -21,6 +21,20 @@ export function createRendererRouteRuntime(input: CreateRendererRouteRuntimeInpu
   return new GameRendererRouteRuntime(input);
 }
 
+export function resolveRendererRouteSceneFromHref(input: { fastTravelEnabled: boolean; href: string }): SceneName {
+  const url = new URL(input.href);
+
+  return resolvePlayRouteTarget(
+    {
+      pathname: url.pathname,
+      search: url.search,
+    },
+    {
+      fastTravelEnabled: input.fastTravelEnabled,
+    },
+  ).scene as SceneName;
+}
+
 class GameRendererRouteRuntime implements RendererRouteRuntime {
   private isListening = false;
   private readonly handleRouteEvent = () => {
@@ -40,16 +54,10 @@ class GameRendererRouteRuntime implements RendererRouteRuntime {
   }
 
   public syncFromLocation(href: string = window.location.href): void {
-    const url = new URL(href);
-    const targetScene = resolvePlayRouteTarget(
-      {
-        pathname: url.pathname,
-        search: url.search,
-      },
-      {
-        fastTravelEnabled: this.input.fastTravelEnabled(),
-      },
-    ).scene as SceneName;
+    const targetScene = resolveRendererRouteSceneFromHref({
+      fastTravelEnabled: this.input.fastTravelEnabled(),
+      href,
+    });
 
     if (this.shouldMoveCameraForActiveRoute(targetScene)) {
       this.input.moveCameraForScene();
