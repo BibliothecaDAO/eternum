@@ -104,9 +104,7 @@ export const LandingMusicPlayer = ({ className, presentation = "floating" }: Lan
               {isHeaderPresentation ? "Music" : currentTrackLabel}
             </p>
             {!isHeaderPresentation ? (
-              <p className="text-[11px] text-gold/45">
-                {requiresInteraction ? "Start music with a control" : "Music"}
-              </p>
+              <p className="text-[11px] text-gold/45">{requiresInteraction ? "Start music with a control" : "Music"}</p>
             ) : null}
           </div>
 
