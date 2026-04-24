@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-25",
+    title: "Structure Map Labels",
+    description:
+      "World map structure markers now stay visible across more structure types and fallback cases, so named locations are easier to spot again while scanning the map.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-24",
     title: "Steadier Realm Sidebar",
     description:

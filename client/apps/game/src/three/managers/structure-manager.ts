@@ -2,7 +2,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
-import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -73,6 +72,7 @@ import {
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { refreshStructureCosmeticsByOwner } from "./structure-cosmetics-refresh";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
+import { resolveStructurePointRendererKey, type StructurePointRendererKey } from "./structure-point-renderer-key";
 import {
   mapPendingStructureGuardArmies,
   queuePendingBuildingLabelUpdate,
@@ -90,6 +90,7 @@ import {
   shouldRebuildVisibleStructuresForStructureUpdate,
   shouldRefreshVisibleStructures,
 } from "./structure-update-policy";
+import { presentVisibleStructures } from "./structure-visible-presentation-pass";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -157,17 +158,7 @@ export class StructureManager {
   private readonly animationCullDistance = 140;
   private animationCameraPosition: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
-  private pointsRenderers?: {
-    myVillage: PointsLabelRenderer;
-    enemyVillage: PointsLabelRenderer;
-    allyVillage: PointsLabelRenderer;
-    myRealm: PointsLabelRenderer;
-    enemyRealm: PointsLabelRenderer;
-    allyRealm: PointsLabelRenderer;
-    hyperstructure: PointsLabelRenderer;
-    bank: PointsLabelRenderer;
-    fragmentMine: PointsLabelRenderer;
-  };
+  private pointsRenderers?: Record<StructurePointRendererKey, PointsLabelRenderer>;
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
@@ -1222,6 +1213,7 @@ export class StructureManager {
       const modelInstanceCounts = new Map<InstancedModel, number>();
       const nextActiveStructureModels = new Set<InstancedModel>();
       const nextActiveCosmeticStructureModels = new Set<InstancedModel>();
+      const presentedStructureIds = new Set<ID>();
 
       // Begin batch mode for all point renderers (avoids computeBoundingSphere per setPoint)
       if (this.pointsRenderers) {
@@ -1237,6 +1229,7 @@ export class StructureManager {
 
         structures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
+          presentedStructureIds.add(structure.entityId);
           const rotationY = this.resolveVisibleStructureRotationY(structure);
           this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
           this.bindVisibleStructureInstance(
@@ -1261,6 +1254,7 @@ export class StructureManager {
 
         structures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
+          presentedStructureIds.add(structure.entityId);
           const rotationY = this.resolveVisibleStructureRotationY(structure);
           this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
           this.bindVisibleCosmeticStructureInstance(
@@ -1274,6 +1268,18 @@ export class StructureManager {
 
         // Note: setCount will be called once per model after all structures are processed
       }
+
+      const fallbackVisibleStructureIds = presentVisibleStructures({
+        visibleStructures: visibleStructures.filter((structure) => !presentedStructureIds.has(structure.entityId)),
+        presentStructure: (structure) => {
+          const rotationY = this.resolveVisibleStructureRotationY(structure);
+          this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
+        },
+      });
+
+      fallbackVisibleStructureIds.forEach((entityId) => {
+        visibleStructureIds.add(entityId);
+      });
 
       this.finalizeVisibleStructureModelPass(
         modelInstanceCounts,
@@ -1465,32 +1471,13 @@ export class StructureManager {
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {
     if (!this.pointsRenderers) return null;
 
-    const { structureType, isMine, isAlly } = structure;
+    const rendererKey = resolveStructurePointRendererKey({
+      structureType: structure.structureType,
+      isMine: structure.isMine,
+      isAlly: structure.isAlly,
+    });
 
-    if (isVillageLikeStructureCategory(structureType)) {
-      return isMine
-        ? this.pointsRenderers.myVillage
-        : isAlly
-          ? this.pointsRenderers.allyVillage
-          : this.pointsRenderers.enemyVillage;
-    }
-    if (structureType === StructureType.Realm) {
-      return isMine
-        ? this.pointsRenderers.myRealm
-        : isAlly
-          ? this.pointsRenderers.allyRealm
-          : this.pointsRenderers.enemyRealm;
-    }
-    if (structureType === StructureType.Hyperstructure) {
-      return this.pointsRenderers.hyperstructure;
-    }
-    if (structureType === StructureType.Bank) {
-      return this.pointsRenderers.bank;
-    }
-    if (structureType === StructureType.FragmentMine) {
-      return this.pointsRenderers.fragmentMine;
-    }
-    return null;
+    return rendererKey ? this.pointsRenderers[rendererKey] : null;
   }
 
   private getVisibleStructuresForChunk(startRow: number, startCol: number): StructureInfo[] {

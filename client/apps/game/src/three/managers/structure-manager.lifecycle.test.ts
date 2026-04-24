@@ -6,6 +6,14 @@ vi.mock("@/hooks/store/use-account-store", () => ({
   },
 }));
 
+vi.mock("@/hooks/store/use-chain-time-store", () => ({
+  useChainTimeStore: {
+    getState: vi.fn(() => ({
+      getNowSeconds: () => 0,
+    })),
+  },
+}));
+
 vi.mock("@/config/game-modes", () => ({
   getGameModeConfig: vi.fn(() => ({
     assets: {
@@ -564,6 +572,35 @@ describe("StructureManager destroy lifecycle", () => {
     expect(subject.finalizeVisibleStructureModelPass).not.toHaveBeenCalled();
     expect(subject.finalizeVisibleStructurePass).not.toHaveBeenCalled();
     expect(setCount).not.toHaveBeenCalled();
+  });
+
+  it("keeps structure marker presentation alive even when a model bucket is unavailable", async () => {
+    const { subject } = createVisibleStructurePassSubject();
+    const visibleStructure = {
+      entityId: 11,
+      hexCoords: { col: 3, row: 7 },
+      structureType: "HolySite",
+    };
+
+    subject.getVisibleStructuresForChunk = vi.fn(() => [visibleStructure]);
+    subject.createVisibleStructureRenderPlan = vi.fn(() => ({
+      structuresByType: new Map([["HolySite", [visibleStructure]]]),
+      structuresByCosmeticId: new Map(),
+      missingStructureModels: [],
+      missingCosmeticModels: [],
+    }));
+    subject.finalizeVisibleStructureModelPass = vi.fn();
+
+    await subject.performVisibleStructuresUpdate();
+
+    expect(subject.syncVisibleStructurePresentation).toHaveBeenCalledWith(
+      undefined,
+      visibleStructure,
+      0,
+      expect.any(Set),
+    );
+    expect(subject.finalizeVisibleStructurePass).toHaveBeenCalledWith(new Set([11]), expect.any(Set));
+    expect(subject.finalizeVisibleStructureModelPass).toHaveBeenCalled();
   });
 
   it("discards an older visible refresh when a newer pass supersedes it", async () => {
