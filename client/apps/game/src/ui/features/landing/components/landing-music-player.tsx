@@ -20,7 +20,7 @@ const resolvePlayerContainerClasses = (presentation: LandingMusicPlayerPresentat
 
 const resolvePlayerShellClasses = (presentation: LandingMusicPlayerPresentation) => {
   if (presentation === "header") {
-    return "w-[240px] rounded-full border border-gold/15 bg-black/45 shadow-[0_10px_30px_rgba(0,0,0,0.3)]";
+    return "w-[172px] rounded-full border border-gold/15 bg-black/45 shadow-[0_10px_30px_rgba(0,0,0,0.3)] xl:w-[192px]";
   }
 
   return "w-full max-w-md rounded-full border border-gold/20 bg-black/70 shadow-[0_18px_70px_rgba(0,0,0,0.55)]";
@@ -28,7 +28,7 @@ const resolvePlayerShellClasses = (presentation: LandingMusicPlayerPresentation)
 
 const resolvePlayerRowClasses = (presentation: LandingMusicPlayerPresentation) => {
   if (presentation === "header") {
-    return "gap-2 px-3 py-2";
+    return "gap-1.5 px-2.5 py-1.5";
   }
 
   return "gap-3 px-4 py-3";
@@ -95,22 +95,29 @@ export const LandingMusicPlayer = ({ className, presentation = "floating" }: Lan
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className={cn("truncate font-cinzel text-gold", isHeaderPresentation ? "text-xs" : "text-sm")}>
-              {currentTrackLabel}
+            <p
+              className={cn(
+                "truncate font-cinzel text-gold",
+                isHeaderPresentation ? "text-[10px] uppercase tracking-[0.14em] text-gold/70" : "text-sm",
+              )}
+            >
+              {isHeaderPresentation ? "Music" : currentTrackLabel}
             </p>
-            <p className={cn(isHeaderPresentation ? "text-[10px]" : "text-[11px]", "text-gold/45")}>
-              {requiresInteraction ? "Start music with a control" : "Music"}
-            </p>
+            {!isHeaderPresentation ? (
+              <p className="text-[11px] text-gold/45">
+                {requiresInteraction ? "Start music with a control" : "Music"}
+              </p>
+            ) : null}
           </div>
 
-          <div className={cn("flex items-center gap-2", isHeaderPresentation ? "w-20" : "min-w-[132px]")}>
+          <div className={cn("flex items-center gap-2", isHeaderPresentation ? "w-12" : "min-w-[132px]")}>
             <input
               type="range"
               min={0}
               max={100}
               value={Math.round(musicVolume * 100)}
               onChange={(event) => setCategoryVolume(AudioCategory.MUSIC, Number(event.target.value) / 100)}
-              className="h-1.5 flex-1 cursor-pointer accent-[#dfaa54]"
+              className={cn("flex-1 cursor-pointer accent-[#dfaa54]", isHeaderPresentation ? "h-1" : "h-1.5")}
               aria-label="Music volume"
             />
             {!isHeaderPresentation ? (
