@@ -75,7 +75,8 @@ export const buildDisplayItems = (
 ) => {
   if (!resourceComponent) return [] as DisplayItem[];
 
-  const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick).filter(
+  const projectedTick = currentDefaultTick ?? 0;
+  const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, projectedTick).filter(
     (resource) => resource.amount > 0,
   );
 
