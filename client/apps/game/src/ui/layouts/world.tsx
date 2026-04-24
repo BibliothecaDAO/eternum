@@ -1,15 +1,29 @@
 import { ConnectionHealthMonitor, resolveConnectionHealthToriiBaseUrl } from "@/dojo/connection-health-monitor";
 import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
+import { resolveEntryContextFromPlayRoute } from "@/game-entry/context";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { bootstrapGameForEntryContext, resetBootstrap } from "@/init/bootstrap";
+import {
+  addNetworkBreadcrumb,
+  reportNetworkOutageDeadEnd,
+  reportNetworkOutageResolved,
+  setNetworkHealthScopeTags,
+} from "@/observability/network-health-reporting";
+import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { useActiveWorldProfile } from "@/runtime/world";
 import { getActiveSpatialStreamManager } from "@/three/scenes/worldmap";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { useDojo } from "@bibliothecadao/react";
 import { Leva } from "leva";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { useUIStore } from "../../hooks/store/use-ui-store";
+import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
 import { Tooltip } from "../design-system/molecules/tooltip";
+import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
+import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
 import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
@@ -56,6 +70,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
         <Tooltip />
         <VersionDisplay />
+        <ArmyMovementLatencyOverlay />
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
     </>
@@ -78,6 +93,8 @@ const BackgroundSystems = () => (
     <TransferAutomationManager />
     <ExplorationAutomationManager />
     <ConnectionMonitor />
+    <NetworkStatusBanner onRetry={triggerConnectionForceReconnect} />
+    <SentryUserSync />
   </>
 );
 
@@ -150,16 +167,59 @@ const ConnectionMonitor = () => {
       runtimeToriiUrl: dojoConfig.toriiUrl,
     });
 
+    const walletAddress = useAccountStore.getState().account?.address ?? null;
+    void setNetworkHealthScopeTags({ toriiBaseUrl, walletAddress });
+
+    let deadEndRecoveryFired = false;
+    const runDeadEndRecovery = async () => {
+      const context = resolveEntryContextFromPlayRoute(window.location);
+      if (!context) {
+        console.warn("[ConnectionMonitor] Dead-end fired but no play-route context to recover into");
+        return;
+      }
+
+      try {
+        addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
+        // Tear down the cached setup, then re-run the entry-context bootstrap.
+        // This rebuilds the EternumProvider, ToriiClient, and spatial manager
+        // in one pass — covers consumers that captured the old toriiClient
+        // outside of streamReconnectVersion-keyed effects.
+        resetBootstrap();
+        await bootstrapGameForEntryContext(context);
+        addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });
+        toast.success("Game state refreshed", {
+          description: "Reconnected after a prolonged outage.",
+        });
+      } catch (error) {
+        console.warn("[ConnectionMonitor] Dead-end recovery failed", error);
+        addNetworkBreadcrumb({ event: "reconnect_failure", streamType: "global" });
+      }
+    };
+
     const monitor = new ConnectionHealthMonitor({
       onReconnectSpatial: async () => {
-        const manager = getActiveSpatialStreamManager();
-        if (manager) {
-          await manager.resubscribe();
+        addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
+        try {
+          const manager = getActiveSpatialStreamManager();
+          if (manager) {
+            await manager.resubscribe();
+          }
+          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "spatial" });
+        } catch (error) {
+          addNetworkBreadcrumb({ event: "reconnect_failure", streamType: "spatial" });
+          throw error;
         }
       },
       onReconnectGlobal: async () => {
-        cancelEntityStreamSubscription();
-        await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
+        addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
+        try {
+          cancelEntityStreamSubscription();
+          await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
+          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });
+        } catch (error) {
+          addNetworkBreadcrumb({ event: "reconnect_failure", streamType: "global" });
+          throw error;
+        }
       },
       healthCheckFn: async () => {
         const response = await fetch(`${toriiBaseUrl}/health`, {
@@ -167,6 +227,18 @@ const ConnectionMonitor = () => {
           signal: AbortSignal.timeout(5_000),
         });
         return response.ok;
+      },
+      onRecovery: (outageMs, attempts) => {
+        toast.success("Back online", {
+          description: `Reconnected after ${Math.max(1, Math.round(outageMs / 1000))}s offline.`,
+        });
+        reportNetworkOutageResolved({ streamType: "both", outageMs, attempts });
+      },
+      onDeadEnd: (outageMs, attempts) => {
+        reportNetworkOutageDeadEnd({ streamType: "both", outageMs, attempts });
+        if (deadEndRecoveryFired) return;
+        deadEndRecoveryFired = true;
+        void runDeadEndRecovery();
       },
     });
 

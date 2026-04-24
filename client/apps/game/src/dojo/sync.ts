@@ -4,6 +4,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { sqlApi } from "@/services/api";
+import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {
   MAP_DATA_REFRESH_INTERVAL,
   MapDataStore,
@@ -38,13 +39,18 @@ interface SyncEntitiesSubscriptionOptions {
 }
 
 let entityStreamSubscription: { cancel: () => void; ready: Promise<void> } | null = null;
+let isInitialSyncInFlight = false;
 
 /**
  * Cancel the global entity stream subscription.
  * Used during game switching to stop the old Torii client from writing
  * stale data into RECS while the new world is being bootstrapped.
+ *
+ * No-op while a boot is still handshaking — tearing down a half-built
+ * subscription strands RECS and the monitor then re-enters the same loop.
  */
 export const cancelEntityStreamSubscription = () => {
+  if (isInitialSyncInFlight) return;
   if (entityStreamSubscription) {
     entityStreamSubscription.cancel();
     entityStreamSubscription = null;
@@ -552,6 +558,8 @@ export const initialSync = async (
     setInitialSyncProgress(0);
   }
 
+  isInitialSyncInFlight = true;
+  const globalStreamSubscribeStart = performance.now();
   try {
     entityStreamSubscription = await syncEntitiesDebounced(
       setup.network.toriiClient,
@@ -564,11 +572,18 @@ export const initialSync = async (
         onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
       },
     );
+    // Handshake succeeded — restart the staleness clock so the monitor
+    // measures "time since last entity *after* the subscription exists",
+    // not time since module load.
+    useConnectionStore.getState().recordGlobalUpdate();
   } catch (error) {
     if (error instanceof Error && error.message.includes("Timed out waiting for")) {
       throw new Error(`Timed out connecting to the world stream after ${subscriptionSetupTimeoutMs}ms.`);
     }
     throw error;
+  } finally {
+    recordGameEntryDuration("initial-sync-global-stream-subscribe", performance.now() - globalStreamSubscribeStart);
+    isInitialSyncInFlight = false;
   }
 
   const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
@@ -588,8 +603,12 @@ export const initialSync = async (
   const runTimedTask = async (label: string, targetProgress: number, task: () => Promise<void>) => {
     const start = performance.now();
     await task();
-    const end = performance.now();
-    console.log(`[sync] ${label}`, end - start);
+    const elapsedMs = performance.now() - start;
+    console.log(`[sync] ${label}`, elapsedMs);
+    // Surface in the boot debug panel under a deterministic key so a slow
+    // sub-step (e.g. "guilds query") immediately points at the bottleneck
+    // instead of being hidden inside the aggregate `initial-sync` total.
+    recordGameEntryDuration(`initial-sync-${label.replace(/\s+/g, "-")}`, elapsedMs);
     updateProgress(targetProgress);
   };
 
@@ -663,12 +682,16 @@ export const initialSync = async (
     }),
   ]);
 
+  const mapDataRefreshStart = performance.now();
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
+  recordGameEntryDuration("initial-sync-map-data-refresh", performance.now() - mapDataRefreshStart);
 
   // Block on the Torii stream's initial entity flush so the worldmap scene
   // observes populated RECS state instead of an empty world on fast loads.
   if (entityStreamSubscription) {
+    const flushStart = performance.now();
     await waitForInitialEntityFlush(entityStreamSubscription.ready, subscriptionSetupTimeoutMs);
+    recordGameEntryDuration("initial-sync-initial-entity-flush", performance.now() - flushStart);
   }
 
   updateProgress(100);

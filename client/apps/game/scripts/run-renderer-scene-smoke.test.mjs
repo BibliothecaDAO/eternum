@@ -172,6 +172,7 @@ describe("normalizeRendererDiagnosticsSnapshot", () => {
       postprocessPolicy: null,
       requestedMode: null,
       sceneName: null,
+      startupTimings: {},
     });
   });
 });

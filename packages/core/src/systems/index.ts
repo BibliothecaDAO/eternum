@@ -1,3 +1,4 @@
+export * from "./army-movement-latency-summary";
 export * from "./army-movement-latency-trace";
 export * from "./data-enhancer";
 export * from "./position";

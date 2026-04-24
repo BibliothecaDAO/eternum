@@ -11,7 +11,12 @@ export type ArmyMovementLatencyPhase =
   | "worldmap_tile_update_received"
   | "army_manager_tile_update_applied"
   | "movement_started"
-  | "movement_completed";
+  | "movement_completed"
+  | "optimistic_animation_started"
+  | "optimistic_animation_skipped"
+  | "optimistic_animation_reconciled"
+  | "optimistic_animation_rewound"
+  | "next_move_queued";
 
 export type ArmyMovementLatencySource = "worldmap" | "torii_sync" | "world_update_listener";
 

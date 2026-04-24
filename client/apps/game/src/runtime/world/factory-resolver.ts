@@ -65,6 +65,54 @@ export const fetchBulkAvailability = async (realtimeServerUrl: string): Promise<
   }
 };
 
+/**
+ * Probes a slot world's RPC URL with a `starknet_chainId` call — the exact
+ * request `ControllerConnector` makes during init. Returns:
+ *   - `true`  : RPC responded with a chain ID (deployment is alive)
+ *   - `false` : RPC explicitly reports the deployment is gone (HTTP 404, or
+ *               JSON-RPC `-32000 deployment {name} not found`). Caller should
+ *               evict the saved profile and fall back to env defaults.
+ *   - `null`  : indeterminate (network error, timeout, CORS). Caller MUST NOT
+ *               false-evict on null — a transient blip would wipe profiles
+ *               that are actually fine.
+ *
+ * The realtime-server's bulk availability endpoint isn't used here because it
+ * has a 30s polling lag plus a 5-min stale cache, so a freshly-GC'd Cartridge
+ * deployment can stay flagged "alive" long after `starknet_chainId` is 404'ing.
+ */
+export const probeSlotDeploymentRpcAlive = async (
+  rpcUrl: string | null | undefined,
+  timeoutMs = 2_000,
+): Promise<boolean | null> => {
+  if (!rpcUrl) return null;
+
+  try {
+    const response = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "starknet_chainId", params: [], id: 1 }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    if (response.status === 404) return false;
+    if (!response.ok) return null;
+
+    const payload = (await response.json()) as { result?: string; error?: { code?: number; message?: string } };
+    if (payload?.result) return true;
+
+    // Only treat as dead on EXPLICIT deployment-not-found message text. The
+    // `-32000` JSON-RPC code alone is too broad — Cartridge uses it for many
+    // transient server errors (rate limits, gateway hiccups), and treating
+    // those as "dead" would false-evict live worlds and bounce the user out.
+    const errorMessage = String(payload?.error?.message ?? "").toLowerCase();
+    if (errorMessage.includes("deployment") && errorMessage.includes("not found")) return false;
+    if (errorMessage.includes("no such deployment")) return false;
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 const normalizeAddress = (value: unknown): string | null => {
   if (value == null) return null;
   if (typeof value === "string") return value;

@@ -7,6 +7,7 @@ import {
 import { env } from "../../env";
 import { getActiveWorld } from "@/runtime/world";
 import { extractReadableErrorMessage } from "@/utils/error-message";
+import { resolveUserIdentity, resolveWalletIdentityMode } from "./wallet-identity";
 
 export type ClientTransactionSurface =
   | "dojo_provider"
@@ -68,16 +69,16 @@ const REVERT_REASON_PATTERNS = [
   /\brevert(?:ed)?\b/i,
   /\bentrypoint_failed\b/i,
 ];
+// Matches the "VrfProvider: not consumed" signature that fires when
+// `request_random` and the subsequent `consume_random` disagree on source —
+// typically a sign of stale-position salt drift or concurrent-account-explore
+// race. Tagged separately so Phase E regressions are easy to flag in Sentry.
+const VRF_NOT_CONSUMED_PATTERN = /vrf\s*provider[^a-z]*not\s*consumed/i;
 
 const reportedFailureKeys = new Map<string, number>();
 
 const readString = (value: unknown): string | undefined =>
   typeof value === "string" && value.length > 0 ? value : undefined;
-
-const resolveWalletIdentityMode = (): "hashed" | "raw" | "none" => {
-  const configuredMode = env.VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY;
-  return configuredMode === "raw" || configuredMode === "none" ? configuredMode : "hashed";
-};
 
 const isSentryTransactionMonitoringEnabled = (): boolean => {
   return import.meta.env.PROD && Boolean(env.VITE_PUBLIC_SENTRY_DSN) && env.VITE_PUBLIC_SENTRY_TX_FAILURES_ENABLED;
@@ -223,30 +224,6 @@ const buildDedupeKey = ({
   return `${surface}:${operation}:${stage}:${normalizedReason}`;
 };
 
-const resolveUserIdentity = async (walletAddress: string | null | undefined): Promise<string | null> => {
-  if (!walletAddress) {
-    return null;
-  }
-
-  const identityMode = resolveWalletIdentityMode();
-  if (identityMode === "none") {
-    return null;
-  }
-
-  if (identityMode === "raw") {
-    return walletAddress;
-  }
-
-  if (typeof globalThis.crypto?.subtle === "undefined") {
-    return null;
-  }
-
-  const payload = new TextEncoder().encode(walletAddress.toLowerCase());
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", payload);
-  const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `wallet:${hash}`;
-};
-
 const buildBreadcrumbData = (context: Partial<Omit<ClientTransactionFailureContext, "stage">> & { stage?: string }) => {
   const defaultContext = resolveDefaultContext();
   return sanitizeValue({
@@ -273,6 +250,14 @@ export const isWalletRejectedError = (error: unknown): boolean => {
   }
 
   return WALLET_REJECTION_PATTERNS.some((pattern) => pattern.test(readableMessage));
+};
+
+export const isVrfNotConsumedError = (error: unknown): boolean => {
+  const readableMessage = extractReadableErrorMessage(error, "").trim();
+  if (!readableMessage) {
+    return false;
+  }
+  return VRF_NOT_CONSUMED_PATTERN.test(readableMessage);
 };
 
 export const resolveClientTransactionFailureStageFromError = (
@@ -366,6 +351,7 @@ export const reportClientTransactionFailure = async ({
 
   const walletIdentity = await resolveUserIdentity(failureContext.walletAddress);
   const sanitizedError = error instanceof Error ? error : new Error(readableMessage);
+  const vrfNotConsumed = isVrfNotConsumedError(error);
   const tags = {
     feature: "transactions",
     "tx.surface": failureContext.surface,
@@ -374,6 +360,7 @@ export const reportClientTransactionFailure = async ({
     ...(failureContext.chain ? { chain: failureContext.chain } : {}),
     ...(failureContext.worldName ? { world: failureContext.worldName } : {}),
     has_tx_hash: failureContext.transactionHash ? "true" : "false",
+    ...(vrfNotConsumed ? { "tx.vrf_not_consumed": "true" } : {}),
   };
   const transactionContext = sanitizeValue({
     operation: failureContext.operation,

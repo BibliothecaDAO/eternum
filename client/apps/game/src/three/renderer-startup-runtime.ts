@@ -1,3 +1,5 @@
+import type { SceneName } from "./types";
+
 interface BootstrapRendererStartupRuntimeInput {
   animate: () => void;
   attachInteractionRuntime: () => void;
@@ -5,8 +7,9 @@ interface BootstrapRendererStartupRuntimeInput {
   debug?: (message: string) => void;
   document: Document;
   initializeHudScene: () => void;
+  initialSceneName: SceneName;
   isDestroyed: boolean;
-  prepareScenes: () => void;
+  prepareScenes: (initialSceneName: SceneName) => void;
   registerCleanupInterval: (intervalId: ReturnType<typeof setInterval>) => void;
   rendererDomElement: HTMLElement;
   setIntervalFn?: typeof setInterval;
@@ -32,7 +35,7 @@ export function bootstrapRendererStartupRuntime(input: BootstrapRendererStartupR
   });
   input.attachInteractionRuntime();
   input.initializeHudScene();
-  input.prepareScenes();
+  input.prepareScenes(input.initialSceneName);
   input.syncRouteFromLocation();
   input.animate();
 }

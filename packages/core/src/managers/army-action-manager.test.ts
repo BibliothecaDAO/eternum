@@ -259,6 +259,56 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
   });
 });
 
+describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
+  it("rejects explore when path[0] differs from ExplorerTroops.coord", async () => {
+    const systemCalls = {
+      explorer_explore: vi.fn().mockResolvedValue({}),
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const { manager, oldFeltStart } = createTestSetup(systemCalls);
+    // Pick two adjacent neighbor hexes that both differ from oldFeltStart.
+    // path[0] claims the army is at a neighbor (not the oldFeltStart that
+    // ExplorerTroops.coord reports), so the freshness guard must reject.
+    const neighbor1 = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    const neighbor2 = getNeighborHexes(neighbor1.col, neighbor1.row).find(
+      (n) => n.col !== oldFeltStart.col || n.row !== oldFeltStart.row,
+    )!;
+    expect(neighbor2).toBeDefined();
+
+    const actionPath = [
+      { hex: { col: neighbor1.col, row: neighbor1.row }, actionType: ActionType.Explore },
+      { hex: { col: neighbor2.col, row: neighbor2.row }, actionType: ActionType.Explore },
+    ];
+
+    const signer = { address: "0x123" } as any;
+
+    await expect(manager.moveArmy(signer, actionPath as any, false, 0)).rejects.toThrow(/drifted|position/i);
+    expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
+  });
+
+  it("allows explore when path[0] matches ExplorerTroops.coord", async () => {
+    const systemCalls = {
+      explorer_explore: vi.fn().mockResolvedValue({}),
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const { manager, oldFeltStart } = createTestSetup(systemCalls);
+    const neighbor = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+
+    const actionPath = [
+      { hex: { col: oldFeltStart.col, row: oldFeltStart.row }, actionType: ActionType.Explore },
+      { hex: { col: neighbor.col, row: neighbor.row }, actionType: ActionType.Explore },
+    ];
+
+    const signer = { address: "0x123" } as any;
+
+    await manager.moveArmy(signer, actionPath as any, false, 0);
+
+    expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("ArmyActionManager.moveArmy spire traversal", () => {
   it("calls toggle_alternate for spire travel action paths", async () => {
     const systemCalls = {

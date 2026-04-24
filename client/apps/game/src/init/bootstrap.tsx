@@ -5,8 +5,14 @@ import { world } from "@bibliothecadao/types";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
-import { patchManifestWithFactory, applyWorldSelection, type WorldProfile } from "@/runtime/world";
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
+import {
+  applyWorldSelection,
+  buildSharedSlotRpcUrl,
+  isSlotWorldChain,
+  patchManifestWithFactory,
+  type WorldProfile,
+} from "@/runtime/world";
 import { setSqlApiBaseUrl } from "@/services/api";
 import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
@@ -35,6 +41,7 @@ export interface BootstrappedEntrySession {
 
 type BootstrapResult = BootstrappedEntrySession;
 const bootstrapSession = createBootstrapSession<BootstrapResult>();
+const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 type BootstrapLifecycle = {
   onBootstrapCompleted?: () => void;
@@ -236,6 +243,10 @@ const resolveBootstrapRpcUrl = (chain: Chain, profile: WorldProfile): string => 
     return env.VITE_PUBLIC_NODE_URL;
   }
 
+  if (isSlotWorldChain(chain)) {
+    return buildSharedSlotRpcUrl(cartridgeApiBase);
+  }
+
   return profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
 };
 
@@ -281,9 +292,17 @@ const configureGameSystems = (setupResult: SetupResult, chain: Chain) => {
 };
 
 const startGameRenderer = async (setupResult: SetupResult) => {
-  bootstrapSession.replaceRendererCleanup(
-    await initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true),
-  );
+  // Renderer init = Three.js scene/shader/texture compilation + spatial Torii
+  // bounds subscription. Often the slowest single step on a cold reload, and
+  // previously had no breadcrumb between `initial-sync-completed` and
+  // `bootstrap-completed`, so a 30s+ hang here looked indistinguishable from
+  // a stuck initial sync.
+  const rendererInitStartedAt = performance.now();
+  markGameEntryMilestone("renderer-init-started");
+  const cleanup = await initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
+  markGameEntryMilestone("renderer-init-completed");
+  recordGameEntryDuration("renderer-init", performance.now() - rendererInitStartedAt);
+  bootstrapSession.replaceRendererCleanup(cleanup);
 };
 
 const cancelActiveBootstrapSubscriptions = () => {

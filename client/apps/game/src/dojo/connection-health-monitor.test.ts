@@ -75,6 +75,7 @@ describe("ConnectionHealthMonitor", () => {
     });
 
     monitor.start();
+    monitor.exitBootGraceForTests();
 
     useConnectionStore.setState({
       lastSpatialUpdate: Date.now() - 10_000,
@@ -104,6 +105,7 @@ describe("ConnectionHealthMonitor", () => {
     });
 
     monitor.start();
+    monitor.exitBootGraceForTests();
 
     useConnectionStore.setState({
       lastSpatialUpdate: Date.now() - 10_000,
@@ -144,6 +146,7 @@ describe("ConnectionHealthMonitor", () => {
     });
 
     monitor.start();
+    monitor.exitBootGraceForTests();
 
     useConnectionStore.setState({
       lastSpatialUpdate: Date.now() - 10_000,
@@ -185,6 +188,7 @@ describe("ConnectionHealthMonitor", () => {
     });
 
     monitor.start();
+    monitor.exitBootGraceForTests();
 
     useConnectionStore.setState({
       lastSpatialUpdate: Date.now() - 10_000,
@@ -197,6 +201,120 @@ describe("ConnectionHealthMonitor", () => {
     expect(onReconnectSpatial).not.toHaveBeenCalled();
     expect(onReconnectGlobal).not.toHaveBeenCalled();
     expect(useConnectionStore.getState().status).toBe("disconnected");
+
+    monitor.dispose();
+  });
+
+  it("sets per-stream status to reconnecting then connected around a reconnect", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    let spatialStatusDuringReconnect: string | null = null;
+    const origSetSpatialStatus = useConnectionStore.getState().setSpatialStatus;
+    useConnectionStore.setState({
+      setSpatialStatus: (s) => {
+        if (s === "reconnecting") spatialStatusDuringReconnect = s;
+        origSetSpatialStatus(s);
+      },
+    });
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now() - 10_000,
+      lastGlobalUpdate: Date.now(),
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(spatialStatusDuringReconnect).toBe("reconnecting");
+    expect(useConnectionStore.getState().spatialStatus).toBe("connected");
+
+    monitor.dispose();
+  });
+
+  it("forceReconnect bypasses the reconnect cooldown", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      reconnectCooldownMs: 20_000,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now() - 10_000,
+      lastGlobalUpdate: Date.now() - 10_000,
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
+
+    await monitor.forceReconnect();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(2);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(2);
+
+    monitor.dispose();
+  });
+
+  it("fires onRecovery after an outage >= recoveryToastThresholdMs", async () => {
+    const onRecovery = vi.fn();
+    let healthy = false;
+    const healthCheckFn = vi.fn(() => (healthy ? Promise.resolve(true) : Promise.reject(new Error("offline"))));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal: vi.fn(() => Promise.resolve()),
+      onReconnectSpatial: vi.fn(() => Promise.resolve()),
+      onRecovery,
+      staleThresholdMs: 5_000,
+      recoveryToastThresholdMs: 10_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+
+    // First tick: health check fails → pendingRecoveryToastFromMs is stamped.
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+    expect(useConnectionStore.getState().status).toBe("disconnected");
+    expect(onRecovery).not.toHaveBeenCalled();
+
+    // Keep failing for >10s of real (fake) time so outage threshold is cleared.
+    await vi.advanceTimersByTimeAsync(15_000);
+    await vi.runOnlyPendingTimersAsync();
+    expect(onRecovery).not.toHaveBeenCalled();
+
+    // Now succeed — next tick should flip to connected and fire onRecovery.
+    healthy = true;
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onRecovery).toHaveBeenCalledTimes(1);
+    expect(onRecovery.mock.calls[0][0]).toBeGreaterThanOrEqual(10_000);
 
     monitor.dispose();
   });
@@ -215,6 +333,7 @@ describe("ConnectionHealthMonitor", () => {
     });
 
     monitor.start();
+    monitor.exitBootGraceForTests();
 
     useConnectionStore.setState({
       lastSpatialUpdate: Date.now() - 10_000,
@@ -226,6 +345,129 @@ describe("ConnectionHealthMonitor", () => {
     await vi.runOnlyPendingTimersAsync();
 
     expect(useConnectionStore.getState().streamReconnectVersion).toBe(1);
+
+    monitor.dispose();
+  });
+
+  it("still bumps streamReconnectVersion when reconnect handlers reject so scoped subs can retry", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.reject(new Error("spatial torii hung")));
+    const onReconnectGlobal = vi.fn(() => Promise.reject(new Error("global initialSync timed out")));
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now() - 10_000,
+      lastGlobalUpdate: Date.now() - 10_000,
+      streamReconnectVersion: 0,
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(useConnectionStore.getState().streamReconnectVersion).toBe(1);
+    expect(onReconnectSpatial).toHaveBeenCalled();
+    expect(onReconnectGlobal).toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
+  it("does not auto-reconnect during boot grace even if stream timestamps look stale", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    // Simulate a slow boot: timestamps are from before the monitor started.
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now() - 10_000,
+      lastGlobalUpdate: Date.now() - 10_000,
+    });
+
+    // Several ticks pass with streams still "stale" by timestamp.
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).not.toHaveBeenCalled();
+    expect(onReconnectGlobal).not.toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
+  it("exits boot grace once both streams tick after start, then behaves normally", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+
+    // Simulate streams ticking healthily after start.
+    await vi.advanceTimersByTimeAsync(1_000);
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now(),
+      lastGlobalUpdate: Date.now(),
+    });
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    // Now drive them stale. Grace should have exited; reconnect should fire.
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now() - 10_000,
+    });
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+
+    monitor.dispose();
+  });
+
+  it("forceReconnect works during boot grace (manual retry always allowed)", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    // Grace is active (no exitBootGraceForTests call).
+
+    await monitor.forceReconnect();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
 
     monitor.dispose();
   });

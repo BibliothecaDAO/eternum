@@ -2046,6 +2046,26 @@ export class ArmyModel {
     this.movementCompleteCallbacks.set(entityId, callback);
   }
 
+  /**
+   * Cancel an in-flight tween WITHOUT invoking the complete callback. Used by
+   * optimistic rewinds where the tween should be torn down silently — the
+   * caller owns the visual restore (snap back to source position).
+   */
+  public cancelMovement(entityId: number): void {
+    this.splineMovingInstances.delete(entityId);
+    const movement = this.movingInstances.get(entityId);
+    if (movement) {
+      this.setAnimationState(movement.matrixIndex, false);
+    }
+    this.movingInstances.delete(entityId);
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.isMoving = false;
+      instanceData.path = undefined;
+    }
+    this.movementCompleteCallbacks.delete(entityId);
+  }
+
   public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;

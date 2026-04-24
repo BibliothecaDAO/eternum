@@ -24,6 +24,7 @@ interface ShouldClearPendingArmyMovementInput {
 
 interface ResolvePendingArmyMovementSelectionPlanInput extends ShouldClearPendingArmyMovementInput {
   hasPendingMovement: boolean;
+  isOptimisticMovementActive?: boolean;
 }
 
 interface ResolvePendingArmyMovementFallbackPlanInput extends ShouldClearPendingArmyMovementInput {
@@ -104,11 +105,24 @@ export function shouldClearPendingArmyMovement(input: ShouldClearPendingArmyMove
 
 /**
  * Decide stale-clear behavior when an army selection is attempted.
+ *
+ * When the optimistic tween is active, re-selection is allowed so the user can
+ * queue a next-move on top of the one currently animating. We don't treat the
+ * pending state as stale in that case — the tx is still valid, just visually
+ * running ahead of the indexer.
  */
 export function resolvePendingArmyMovementSelectionPlan(
   input: ResolvePendingArmyMovementSelectionPlanInput,
 ): PendingArmyMovementSelectionPlan {
   if (!input.hasPendingMovement) {
+    return {
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: false,
+    };
+  }
+
+  if (input.isOptimisticMovementActive) {
     return {
       shouldClearPendingMovement: false,
       shouldRequestChunkRefresh: false,

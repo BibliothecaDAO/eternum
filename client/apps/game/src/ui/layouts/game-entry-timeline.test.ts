@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   GAME_ENTRY_TIMELINE_EVENT_NAME,
+  getGameEntryTimelineSnapshot,
   markGameEntryMilestone,
   recordGameEntryDuration,
   startGameEntryTimeline,
@@ -70,5 +71,30 @@ describe("game-entry-timeline", () => {
       .__eternumGameEntryDurations;
 
     expect(durations).toEqual({ "initial-sync": 1234 });
+  });
+
+  it("exposes a snapshot of milestones, durations, and elapsed time for diagnostics", () => {
+    startGameEntryTimeline();
+    markGameEntryMilestone("bootstrap-started");
+    recordGameEntryDuration("initial-sync", 4242);
+
+    const snapshot = getGameEntryTimelineSnapshot();
+
+    expect(snapshot.milestones.map((entry) => entry.name)).toEqual([
+      "modal-opened",
+      "entry-requested",
+      "bootstrap-started",
+    ]);
+    expect(snapshot.durations).toEqual({ "initial-sync": 4242 });
+    expect(snapshot.elapsedMs).not.toBeNull();
+    expect(snapshot.elapsedMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("returns an empty snapshot when no timeline has started", () => {
+    const snapshot = getGameEntryTimelineSnapshot();
+
+    expect(snapshot.milestones).toEqual([]);
+    expect(snapshot.durations).toEqual({});
+    expect(snapshot.elapsedMs).toBeNull();
   });
 });

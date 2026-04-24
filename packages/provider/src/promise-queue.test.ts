@@ -512,4 +512,55 @@ describe("Parallel Category Processing", () => {
     // LOW should have resolved successfully
     expect(lowResult).toEqual({ statusReceipt: "PENDING", transaction_hash: "0xok" });
   });
+
+  // EXPLORE anti-batching ---------------------------------------------------
+  it("never merges multiple EXPLORE txs into one multicall even when they land in the same batch window", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({
+      signer,
+      calls: [makeCall("request_random"), makeCall("explorer_move"), makeCall("explorer_extract_reward")],
+      transactionType: TransactionType.EXPLORE,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: [makeCall("request_random"), makeCall("explorer_move"), makeCall("explorer_extract_reward")],
+      transactionType: TransactionType.EXPLORE,
+    });
+
+    await Promise.all([pA, pB]);
+
+    // Two independent executor calls — never flattened into a single multicall.
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+
+    for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
+      // Third arg is batchDetails — for a solo-submitted explore it must be
+      // absent (undefined), which is the "single item" branch of processBatch.
+      expect(call[2]).toBeUndefined();
+    }
+  });
+
+  it("still batches non-EXPLORE HIGH txs together", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({
+      signer,
+      calls: makeCall("attack_a"),
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: makeCall("attack_b"),
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
+    });
+
+    await Promise.all([pA, pB]);
+
+    // Other HIGH types still batch into one multicall (preserves existing behavior).
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+  });
 });

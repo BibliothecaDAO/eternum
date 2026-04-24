@@ -266,6 +266,9 @@
   "pnpm": {
     "patchedDependencies": {
       "@dojoengine/utils@1.8.4": "patches/@dojoengine__utils@1.8.4.patch"
+    },
+    "overrides": {
+      "@dojoengine/recs": "2.1.0"
     }
   },
   "workspaces": {
@@ -290,7 +293,7 @@
       "@dojoengine/core": "1.8.8",
       "@dojoengine/predeployed-connector": "1.8.4",
       "@dojoengine/react": "1.8.11",
-      "@dojoengine/recs": "^2.0.13",
+      "@dojoengine/recs": "2.1.0",
       "@dojoengine/sdk": "1.9.0",
       "@dojoengine/state": "1.8.5",
       "@dojoengine/torii-client": "1.8.2",

@@ -9,6 +9,7 @@ import type { TransitionManager } from "@/three/managers/transition-manager";
 import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
 import type { QualityFeatures } from "./utils/quality-controller";
+import type { SceneName } from "./types";
 import {
   bootstrapRendererSceneRuntime,
   createGameRendererSceneRegistry,
@@ -32,6 +33,7 @@ interface PrepareGameRendererScenesInput {
     "applyEnvironment" | "applyQualityFeatures" | "setupPostProcessingEffects" | "subscribeToQualityController"
   >;
   fastTravelEnabled: boolean;
+  initialSceneName: SceneName;
   inputSurface: HTMLElement;
   mouse: Vector2;
   qualityFeatures: QualityFeatures;
@@ -55,6 +57,7 @@ export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput)
     effectsBridgeRuntime: input.effectsBridgeRuntime,
     fastTravelScene: sceneRegistry.fastTravelScene,
     hexceptionScene: sceneRegistry.hexceptionScene,
+    initialSceneName: input.initialSceneName,
     qualityFeatures: input.qualityFeatures,
     renderer: input.renderer,
     sceneManager: sceneRegistry.sceneManager,
