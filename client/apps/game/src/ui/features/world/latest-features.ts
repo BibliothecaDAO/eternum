@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-24",
+    title: "Steadier Realm Sidebar",
+    description:
+      "Realm selection now stays in place when you switch structures, and balance cards use a cleaner 4-column layout with larger live values that stay readable as they update.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-24",
     title: "Header Music Buttons",
     description:
       "Removed the landing header music slider so the compact audio pill keeps playback controls handy without stretching across the navigation bar.",

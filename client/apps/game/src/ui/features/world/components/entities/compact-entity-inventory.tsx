@@ -1,12 +1,13 @@
 import { memo, useCallback, useMemo } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { divideByPrecision, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
+import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   EntityType,
@@ -31,6 +32,12 @@ interface CompactEntityInventoryProps {
   showLabels?: boolean;
   allowRelicActivation?: boolean;
   maxItems?: number;
+  /**
+   * When > 0, renders the first `heroCount` items in a larger, higher-contrast
+   * row above the tight grid. Useful for surfacing the highest-priority
+   * resources (lords / relics / food) at a glance.
+   */
+  heroCount?: number;
 }
 
 interface DisplayItem {
@@ -46,24 +53,30 @@ const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
-const formatInventoryAmount = (value: number): string => {
+const formatFullInventoryAmount = (value: number): string => Math.floor(value).toLocaleString();
+
+const formatInventoryAmount = (value: number, options?: { compact?: boolean }): string => {
   const flooredValue = Math.floor(value);
+  if (options?.compact === false) {
+    return formatFullInventoryAmount(flooredValue);
+  }
   if (flooredValue >= 1000) {
     return compactInventoryFormatter.format(flooredValue);
   }
-  return flooredValue.toLocaleString();
+  return formatFullInventoryAmount(flooredValue);
 };
 
-const buildDisplayItems = (
+export const buildDisplayItems = (
   resourceComponent?: ComponentValue<ClientComponents["Resource"]["schema"]> | null,
+  currentDefaultTick?: number,
   activeRelicIds: number[] = [],
   recipientType?: RelicRecipientType,
   resourceTiers?: Record<string, ResourcesIds[]>,
 ) => {
   if (!resourceComponent) return [] as DisplayItem[];
 
-  const { currentDefaultTick } = getBlockTimestamp();
-  const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick).filter(
+  const projectedTick = currentDefaultTick ?? 0;
+  const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, projectedTick).filter(
     (resource) => resource.amount > 0,
   );
 
@@ -143,13 +156,15 @@ export const CompactEntityInventory = memo(
     showLabels = false,
     allowRelicActivation = false,
     maxItems,
+    heroCount = 0,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
     const mode = useGameModeConfig();
+    const currentDefaultTick = useCurrentDefaultTick();
     const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
     const items = useMemo(
-      () => buildDisplayItems(resources, activeRelicIds, recipientType, resourceTiers),
-      [resources, activeRelicIds, recipientType, resourceTiers],
+      () => buildDisplayItems(resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers),
+      [resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers],
     );
 
     const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);
@@ -186,58 +201,67 @@ export const CompactEntityInventory = memo(
     }
 
     const baseGrid =
-      variant === "tight"
-        ? "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1"
-        : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
+      variant === "tight" ? "grid grid-cols-4 gap-1.5" : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
 
-    const compactItemClass = variant === "tight" ? "px-1 py-0.5" : "px-1.5 py-1";
+    const compactItemClass = variant === "tight" ? "px-1.5 py-1.5" : "px-1.5 py-1";
     const iconSize = variant === "tight" ? "xs" : "sm";
-    const amountClass = variant === "tight" ? "text-[10px]" : "text-xxs";
+    const amountClass = variant === "tight" ? "text-xs" : "text-xxs";
+
+    const effectiveHeroCount = Math.max(0, Math.min(heroCount, visibleItems.length));
+    const heroItems = effectiveHeroCount > 0 ? visibleItems.slice(0, effectiveHeroCount) : [];
+    const regularItems = effectiveHeroCount > 0 ? visibleItems.slice(effectiveHeroCount) : visibleItems;
+
+    const renderItem = (item: DisplayItem, options: { hero: boolean }) => {
+      const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
+      const isClickableRelic =
+        allowRelicActivation && item.isRelic && item.canActivate && !item.isActive && entityId && entityType != null;
+
+      const heroPadding = "px-2.5 py-2";
+      const heroIconSize = "sm";
+      const heroAmountClass = "text-base font-bold";
+
+      const itemClasses = cn(
+        "flex h-full w-full flex-col items-center justify-center rounded-xl border text-center shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        options.hero ? heroPadding : compactItemClass,
+        item.isRelic
+          ? item.isActive
+            ? "border-relic2/60 bg-[linear-gradient(180deg,rgba(165,124,255,0.18),rgba(14,10,22,0.92))]"
+            : "border-relic2/40 bg-[linear-gradient(180deg,rgba(137,98,233,0.12),rgba(10,8,16,0.94))]"
+          : options.hero
+            ? "border-gold/45 bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
+            : "border-gold/25 bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]",
+        isClickableRelic &&
+          "cursor-pointer transition-colors duration-150 hover:border-gold/60 hover:bg-gold/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+      );
+
+      return (
+        <div key={`inventory-item-${item.resourceId}`} className={itemClasses} onClick={() => handleRelicClick(item)}>
+          <ResourceIcon
+            resource={ResourcesIds[item.resourceId]}
+            size={options.hero ? heroIconSize : iconSize}
+            withTooltip={false}
+          />
+          <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold leading-none text-gold/95")}>
+            {formatInventoryAmount(item.amount, { compact: !options.hero })}
+          </span>
+          {showLabels && resourceDef && (
+            <span className="mt-0.5 text-[10px] text-gold/65 truncate" title={resourceDef.trait}>
+              {resourceDef.ticker ?? resourceDef.trait}
+            </span>
+          )}
+          {item.isRelic && item.isActive && <Sparkles className="mt-1 h-3 w-3 text-relic2" />}
+        </div>
+      );
+    };
 
     return (
-      <div className={cn("flex flex-col gap-1", className)}>
-        <div className={cn(baseGrid)}>
-          {visibleItems.map((item) => {
-            const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
-            const isClickableRelic =
-              allowRelicActivation &&
-              item.isRelic &&
-              item.canActivate &&
-              !item.isActive &&
-              entityId &&
-              entityType != null;
-            const itemClasses = cn(
-              "flex h-full w-full flex-col items-center justify-center rounded-md border text-center",
-              compactItemClass,
-              item.isRelic
-                ? item.isActive
-                  ? "border-relic2/60 bg-relic/15"
-                  : "border-relic2/40 bg-relic/10"
-                : "border-gold/25 bg-dark/40",
-              isClickableRelic &&
-                "cursor-pointer transition-colors duration-150 hover:border-gold/60 hover:bg-gold/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
-            );
-
-            return (
-              <div
-                key={`inventory-item-${item.resourceId}`}
-                className={itemClasses}
-                onClick={() => handleRelicClick(item)}
-              >
-                <ResourceIcon resource={ResourcesIds[item.resourceId]} size={iconSize} withTooltip={false} />
-                <span className={cn(amountClass, "font-semibold text-gold/90")}>
-                  {formatInventoryAmount(item.amount)}
-                </span>
-                {showLabels && resourceDef && (
-                  <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
-                    {resourceDef.ticker ?? resourceDef.trait}
-                  </span>
-                )}
-                {item.isRelic && item.isActive && <Sparkles className="mt-1 h-3 w-3 text-relic2" />}
-              </div>
-            );
-          })}
-        </div>
+      <div className={cn("flex flex-col gap-2", className)}>
+        {heroItems.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">{heroItems.map((item) => renderItem(item, { hero: true }))}</div>
+        )}
+        {regularItems.length > 0 && (
+          <div className={cn(baseGrid)}>{regularItems.map((item) => renderItem(item, { hero: false }))}</div>
+        )}
         {hiddenCount > 0 && (
           <span className="text-[10px] text-gold/60">
             Showing {visibleItems.length} of {items.length}

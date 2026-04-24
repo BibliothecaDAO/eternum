@@ -1,6 +1,5 @@
 import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -33,20 +32,14 @@ import {
 } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   countOccupiedBuildingTilesByStructure,
-  formatAvailableBuildingTilesLabel,
   formatPopulationStatusLabel,
+  formatUsedBuildingTilesLabel,
   resolveAvailableBuildingTiles,
 } from "@/ui/features/world/containers/structure-status";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
-import {
-  configManager,
-  getStructureArmyRelicEffects,
-  getStructureRelicEffects,
-  Position,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
+import { configManager, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   ClientComponents,
@@ -107,7 +100,7 @@ type StructureWithMetadata = Structure & {
   realmLevelLabel: string | null;
   population: number;
   populationCapacity: number;
-  buildingTilesAvailable: number | null;
+  buildingTilesOccupied: number | null;
   buildingTilesTotal: number | null;
   groupColor: StructureGroupColor | null;
   isFavorite: boolean;
@@ -226,7 +219,7 @@ const StructureStatusStats = ({
   <div className="flex flex-wrap items-center gap-1.5">
     <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" />
     {buildingTilesLabel ? (
-      <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Available / total building tiles" />
+      <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
     ) : null}
   </div>
 );
@@ -244,6 +237,7 @@ const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] =
 const HEADER_HEIGHT = 64;
 const PANEL_WIDTH = 420;
 const HANDLE_WIDTH = 14;
+const MAX_VISIBLE_STRUCTURE_ROWS = 5;
 
 const LeftPanelHeader = memo(
   ({
@@ -259,6 +253,7 @@ const LeftPanelHeader = memo(
     onToggleFavorite,
   }: LeftPanelHeaderProps) => {
     const [activeTab, setActiveTab] = useState(0);
+    const [showAllStructures, setShowAllStructures] = useState(false);
     const mode = useGameModeConfig();
 
     const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
@@ -375,7 +370,7 @@ const LeftPanelHeader = memo(
           realmLevelLabel,
           population,
           populationCapacity,
-          buildingTilesAvailable: buildingTileSummary?.available ?? null,
+          buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
           buildingTilesTotal: buildingTileSummary?.total ?? null,
           groupColor,
           isFavorite,
@@ -394,11 +389,9 @@ const LeftPanelHeader = memo(
 
     const orderedStructures = useMemo(() => {
       const currentTab = structureTabs[activeTab] ?? structureTabs[0];
-      const filtered =
-        currentTab?.categories?.length === 0
-          ? structuresWithMetadata
-          : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
-      return filtered.toSorted((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
+      return currentTab?.categories?.length === 0
+        ? structuresWithMetadata
+        : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
     }, [activeTab, structureTabs, structuresWithMetadata]);
 
     const categoryCounts = useMemo(() => {
@@ -453,10 +446,10 @@ const LeftPanelHeader = memo(
       : null;
     const buildingTilesStatusLabel =
       selectedStructureMetadata &&
-      selectedStructureMetadata.buildingTilesAvailable !== null &&
+      selectedStructureMetadata.buildingTilesOccupied !== null &&
       selectedStructureMetadata.buildingTilesTotal !== null
-        ? formatAvailableBuildingTilesLabel(
-            selectedStructureMetadata.buildingTilesAvailable,
+        ? formatUsedBuildingTilesLabel(
+            selectedStructureMetadata.buildingTilesOccupied,
             selectedStructureMetadata.buildingTilesTotal,
           )
         : null;
@@ -575,18 +568,34 @@ const LeftPanelHeader = memo(
           </Tabs>
 
           {orderedStructures.length > 0 ? (
-            <div className="max-h-[16rem] space-y-1 overflow-y-auto pr-1">
-              {orderedStructures.map((structure) => (
-                <StructureListItem
-                  key={structure.entityId}
-                  structure={structure}
-                  isSelected={structure.entityId === structureEntityId}
-                  onSelectStructure={onSelectStructure}
-                  onToggleFavorite={onToggleFavorite}
-                  components={components}
-                />
-              ))}
-            </div>
+            (() => {
+              const visibleStructures = showAllStructures
+                ? orderedStructures
+                : orderedStructures.slice(0, MAX_VISIBLE_STRUCTURE_ROWS);
+              const hiddenCount = Math.max(orderedStructures.length - MAX_VISIBLE_STRUCTURE_ROWS, 0);
+              return (
+                <div className="flex flex-col gap-1">
+                  {visibleStructures.map((structure) => (
+                    <StructureChip
+                      key={structure.entityId}
+                      structure={structure}
+                      isSelected={structure.entityId === structureEntityId}
+                      onSelectStructure={onSelectStructure}
+                      onToggleFavorite={onToggleFavorite}
+                    />
+                  ))}
+                  {hiddenCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllStructures((prev) => !prev)}
+                      className="w-full rounded border border-gold/20 bg-black/30 px-2 py-1 text-[10px] uppercase tracking-wide text-gold/70 hover:border-gold/40 hover:text-gold"
+                    >
+                      {showAllStructures ? "Show fewer" : `Show ${hiddenCount} more`}
+                    </button>
+                  )}
+                </div>
+              );
+            })()
           ) : (
             <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
               No structures available for this category.
@@ -600,147 +609,102 @@ const LeftPanelHeader = memo(
 
 LeftPanelHeader.displayName = "LeftPanelHeader";
 
-type StructureListItemProps = {
+type StructureChipProps = {
   structure: StructureWithMetadata;
   isSelected: boolean;
   onSelectStructure: (entityId: ID) => void;
   onToggleFavorite: (entityId: ID) => void;
-  components: ClientComponents;
 };
 
-const StructureListItem = memo(
-  ({ structure, isSelected, onSelectStructure, onToggleFavorite, components }: StructureListItemProps) => {
-    const entityKey = useMemo(() => {
-      try {
-        return getEntityIdFromKeys([BigInt(structure.entityId)]);
-      } catch {
-        return null;
-      }
-    }, [structure.entityId]);
+const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggleFavorite }: StructureChipProps) => {
+  const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
+  const hasPopulationDetails = structureCapabilities.hasPopulationDetails;
+  const levelAbbrev = hasPopulationDetails
+    ? getLevelName(
+        Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
+      ).charAt(0)
+    : null;
 
-    const liveStructure = useComponentValue(components.Structure, entityKey as any);
-    const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
-    const productionBoostBonus = useComponentValue(components.ProductionBoostBonus, entityKey as any);
-    const currentArmiesTick = useCurrentArmiesTick();
-
-    const activeRelicEffects = useMemo(() => {
-      const structureRelics = productionBoostBonus
-        ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
-        : [];
-      const armyRelics = liveStructure ? getStructureArmyRelicEffects(liveStructure, currentArmiesTick) : [];
-      return [...structureRelics, ...armyRelics];
-    }, [productionBoostBonus, liveStructure, currentArmiesTick]);
-
-    const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
-    const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
-    const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);
-    const levelLabel = structureCapabilities.hasPopulationDetails
-      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
+  const populationStatusLabel = hasPopulationDetails
+    ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
+    : null;
+  const buildingTilesStatusLabel =
+    hasPopulationDetails && structure.buildingTilesOccupied !== null && structure.buildingTilesTotal !== null
+      ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
       : null;
 
-    const basePopulationCapacity = structureCapabilities.hasPopulationDetails
-      ? configManager.getBasePopulationCapacity()
-      : 0;
-    const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
-      ? Math.max(Number(basePopulationCapacity ?? 0), 6)
-      : 0;
+  const handleClick = useCallback(() => onSelectStructure(structure.entityId), [onSelectStructure, structure.entityId]);
 
-    const population = Number(liveStructureBuildings?.population.current ?? structure.population ?? 0);
-    const populationCapacity =
-      Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) +
-      normalizedBasePopulationCapacity;
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.target !== event.currentTarget) return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleClick();
+      }
+    },
+    [handleClick],
+  );
 
-    const showInfoLine = structureCapabilities.hasPopulationDetails;
-    const populationStatusLabel = formatPopulationStatusLabel(population, populationCapacity);
-    const buildingTilesStatusLabel =
-      structure.buildingTilesAvailable !== null && structure.buildingTilesTotal !== null
-        ? formatAvailableBuildingTilesLabel(structure.buildingTilesAvailable, structure.buildingTilesTotal)
-        : null;
-    const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
-
-    const handleSelectStructure = useCallback(
-      () => onSelectStructure(structure.entityId),
-      [onSelectStructure, structure.entityId],
-    );
-
-    const handleKeyDown = useCallback(
-      (event: KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          handleSelectStructure();
-        }
-      },
-      [handleSelectStructure],
-    );
-
-    return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={handleSelectStructure}
-        onKeyDown={handleKeyDown}
-        className={`w-full rounded-lg border px-2 py-1.5 text-left transition ${
-          isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
-        }`}
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={clsx(
+        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-left text-xs transition cursor-pointer",
+        isSelected
+          ? "border-gold bg-gold/15 text-gold"
+          : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
+      )}
+      title={structure.displayName}
+      aria-pressed={isSelected}
+    >
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleFavorite(structure.entityId);
+        }}
+        className="shrink-0 rounded p-0.5 text-gold/60 hover:text-gold"
+        title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
+        aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
       >
-        <div className="flex items-center gap-1.5 overflow-hidden">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleFavorite(structure.entityId);
-            }}
-            className="rounded border border-transparent p-0.5 text-gold/60 hover:text-gold shrink-0"
-            title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-          >
-            <Star className={`h-3.5 w-3.5 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
-          </button>
-          {structure.groupColor && (
-            <span
-              className={`h-2 w-2 shrink-0 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
-            />
+        <Star className={clsx("h-3.5 w-3.5", structure.isFavorite ? "fill-current text-gold" : "text-gold/60")} />
+      </button>
+      {structure.groupColor && (
+        <span
+          className={clsx(
+            "h-1.5 w-1.5 shrink-0 rounded-full",
+            STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? "",
           )}
-          <span
-            className={`min-w-0 max-w-[7rem] shrink truncate text-xs font-semibold ${
-              structure.groupColor
-                ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
-                : "text-gold"
-            }`}
-            title={structure.displayName}
-          >
-            {structure.displayName}
-          </span>
-          {showInfoLine && (
-            <>
-              <span className="shrink-0 whitespace-nowrap text-[10px] text-gold/50">{infoLineLabel}</span>
-              <StructureStatusStats
-                populationLabel={populationStatusLabel}
-                buildingTilesLabel={buildingTilesStatusLabel}
-              />
-            </>
-          )}
-          {activeRelicEffects.length > 0 && (
-            <div className="flex items-center gap-0.5 shrink-0 ml-auto">
-              {activeRelicEffects.map((effect) => {
-                const resourceId = Number(effect.id);
-                return (
-                  <div key={resourceId} className="rounded border border-relic2/30 bg-relic/10 p-0.5">
-                    <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" withTooltip />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {structure.category === StructureType.Realm && (
-            <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto shrink-0" />
-          )}
-        </div>
-      </div>
-    );
-  },
-);
+        />
+      )}
+      <span
+        className={clsx(
+          "min-w-0 flex-1 truncate font-semibold",
+          structure.groupColor ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold") : undefined,
+        )}
+      >
+        {structure.displayName}
+      </span>
+      {levelAbbrev && (
+        <span className="shrink-0 rounded-sm bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/60">
+          {levelAbbrev}
+        </span>
+      )}
+      {populationStatusLabel && (
+        <StructureStatusStats populationLabel={populationStatusLabel} buildingTilesLabel={buildingTilesStatusLabel} />
+      )}
+      {structure.category === StructureType.Realm && (
+        <StructureLevelUpButton structureEntityId={structure.entityId} className="shrink-0" />
+      )}
+    </div>
+  );
+});
 
-StructureListItem.displayName = "StructureListItem";
+StructureChip.displayName = "StructureChip";
 
 const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.entityDetails, // Realm Info

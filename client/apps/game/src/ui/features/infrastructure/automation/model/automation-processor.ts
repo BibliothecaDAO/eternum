@@ -797,11 +797,24 @@ export const planHasExecutableCalls = (plan: RealmProductionPlan): boolean => {
 export const buildExecutionSummary = (
   plan: RealmProductionPlan,
   executedAt: number,
-): RealmAutomationExecutionSummary => ({
-  executedAt,
-  resourceToResource: plan.resourceExecutions,
-  laborToResource: plan.laborExecutions,
-  consumptionByResource: plan.consumptionByResource,
-  outputsByResource: plan.outputsByResource,
-  skipped: plan.skipped,
-});
+): RealmAutomationExecutionSummary => {
+  const skippedByResource: Record<number, string> = {};
+  plan.skipped.forEach((entry) => {
+    // If the same resource skipped for multiple reasons (e.g. both the complex and labor
+    // recipes failed), keep the first reason since that's the primary signal the player
+    // cares about on the sidebar.
+    if (skippedByResource[entry.resourceId] === undefined) {
+      skippedByResource[entry.resourceId] = entry.reason;
+    }
+  });
+
+  return {
+    executedAt,
+    resourceToResource: plan.resourceExecutions,
+    laborToResource: plan.laborExecutions,
+    consumptionByResource: plan.consumptionByResource,
+    outputsByResource: plan.outputsByResource,
+    skipped: plan.skipped,
+    skippedByResource,
+  };
+};

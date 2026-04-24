@@ -6,9 +6,10 @@ import {
   isAutomationResourceBlocked,
   useAutomationStore,
 } from "@/hooks/store/use-automation-store";
+import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import Button from "@/ui/design-system/atoms/button";
-import { configManager } from "@bibliothecadao/eternum";
+import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
@@ -295,26 +296,24 @@ export const RealmAutomationPanel = ({
   }, [aggregatedUsageMap]);
 
   const aggregatedConsumptionMap = useMemo(() => {
-    const totals = new Map<number, number>();
-
-    automationRows.forEach(({ percentages, complexInputs, simpleInputs }) => {
-      const resourceRatio = Math.min(1, Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-      const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-
-      if (resourceRatio > 0) {
-        complexInputs.forEach((input) => {
-          totals.set(input.resource, (totals.get(input.resource) ?? 0) + resourceRatio * input.amount);
-        });
-      }
-
-      if (laborRatio > 0) {
-        simpleInputs.forEach((input) => {
-          totals.set(input.resource, (totals.get(input.resource) ?? 0) + laborRatio * input.amount);
-        });
-      }
+    const percentagesByResource: Record<number, ResourceAutomationPercentages> = {};
+    automationRows.forEach(({ resourceId, percentages }) => {
+      percentagesByResource[resourceId] = percentages;
     });
-
-    return totals;
+    const cycleSeconds = PROCESS_INTERVAL_MS / 1000;
+    const perSecond = aggregateConsumptionPerSecond(
+      automationRows.map((row) => row.resourceId),
+      percentagesByResource,
+      {
+        maxAllocationPercent: MAX_RESOURCE_ALLOCATION_PERCENT,
+        cycleSeconds,
+      },
+    );
+    const perCycle = new Map<number, number>();
+    perSecond.forEach((value, key) => {
+      perCycle.set(key, value * cycleSeconds);
+    });
+    return perCycle;
   }, [automationRows]);
 
   const aggregatedProductionMap = useMemo(() => {
