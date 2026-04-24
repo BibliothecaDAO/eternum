@@ -7,7 +7,7 @@ import { getSectionFromPath, getActiveSubItem, getSubItemHref } from "../context
 import { resolveLandingSurfacePath, type LandingEntryRouteState } from "../lib/landing-entry-state";
 
 interface LandingHeaderProps {
-  walletButton?: React.ReactNode;
+  headerControls?: React.ReactNode;
   onSettingsClick?: () => void;
   className?: string;
 }
@@ -128,7 +128,7 @@ const MobileMenuDrawer = ({
 /**
  * Top navigation header with dynamic submenu based on active sidebar section.
  */
-export const LandingHeader = ({ walletButton, onSettingsClick, className }: LandingHeaderProps) => {
+export const LandingHeader = ({ headerControls, onSettingsClick, className }: LandingHeaderProps) => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchParams = new URLSearchParams(location.search);
@@ -204,9 +204,9 @@ export const LandingHeader = ({ walletButton, onSettingsClick, className }: Land
         {/* Spacer for centering on desktop */}
         <div className="hidden flex-1 lg:block" />
 
-        {/* Right side: Wallet + Hamburger (mobile) */}
+        {/* Right side: Header controls + Hamburger (mobile) */}
         <div className="flex items-center gap-2">
-          {walletButton}
+          {headerControls}
 
           {/* Hamburger menu button - mobile only */}
           <button
