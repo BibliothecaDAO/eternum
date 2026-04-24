@@ -30,6 +30,30 @@ const allLatestFeatures: LatestFeature[] = [
     gameSlug: "eternum",
   },
   {
+    date: "2026-04-24",
+    title: "Header Music Buttons",
+    description:
+      "Removed the landing header music slider so the compact audio pill keeps playback controls handy without stretching across the navigation bar.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-24",
+    title: "Slimmer Header Music",
+    description:
+      "Tightened the landing header music controls into a smaller pill, so audio stays accessible without crowding the home dashboard navigation.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-24",
+    title: "Header Music Controls",
+    description:
+      "Moved the landing music controls into the top header beside the network and wallet actions, so the home dashboard stays clear while playback controls remain close at hand.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-23",
     title: "Bounded Renderer Startup",
     description:
