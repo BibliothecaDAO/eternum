@@ -20,7 +20,7 @@ const resolvePlayerContainerClasses = (presentation: LandingMusicPlayerPresentat
 
 const resolvePlayerShellClasses = (presentation: LandingMusicPlayerPresentation) => {
   if (presentation === "header") {
-    return "w-[172px] rounded-full border border-gold/15 bg-black/45 shadow-[0_10px_30px_rgba(0,0,0,0.3)] xl:w-[192px]";
+    return "w-[124px] rounded-full border border-gold/15 bg-black/45 shadow-[0_10px_30px_rgba(0,0,0,0.3)] xl:w-[132px]";
   }
 
   return "w-full max-w-md rounded-full border border-gold/20 bg-black/70 shadow-[0_18px_70px_rgba(0,0,0,0.55)]";
@@ -110,22 +110,22 @@ export const LandingMusicPlayer = ({ className, presentation = "floating" }: Lan
             ) : null}
           </div>
 
-          <div className={cn("flex items-center gap-2", isHeaderPresentation ? "w-12" : "min-w-[132px]")}>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(musicVolume * 100)}
-              onChange={(event) => setCategoryVolume(AudioCategory.MUSIC, Number(event.target.value) / 100)}
-              className={cn("flex-1 cursor-pointer accent-[#dfaa54]", isHeaderPresentation ? "h-1" : "h-1.5")}
-              aria-label="Music volume"
-            />
-            {!isHeaderPresentation ? (
+          {!isHeaderPresentation ? (
+            <div className="flex min-w-[132px] items-center gap-2">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round(musicVolume * 100)}
+                onChange={(event) => setCategoryVolume(AudioCategory.MUSIC, Number(event.target.value) / 100)}
+                className="h-1.5 flex-1 cursor-pointer accent-[#dfaa54]"
+                aria-label="Music volume"
+              />
               <span className="w-10 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-gold/50">
                 {Math.round(musicVolume * 100)}%
               </span>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       </section>
     </div>

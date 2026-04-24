@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-24",
+    title: "Header Music Buttons",
+    description:
+      "Removed the landing header music slider so the compact audio pill keeps playback controls handy without stretching across the navigation bar.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-24",
     title: "Slimmer Header Music",
     description:
       "Tightened the landing header music controls into a smaller pill, so audio stays accessible without crowding the home dashboard navigation.",
