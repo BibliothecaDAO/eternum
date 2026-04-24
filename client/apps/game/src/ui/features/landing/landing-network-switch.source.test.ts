@@ -13,7 +13,8 @@ describe("Landing network switch wiring", () => {
 
     expect(layoutSource).toContain('import { DashboardNetworkSwitch } from "./components/dashboard-network-switch"');
     expect(layoutSource).toContain("<LandingHeader");
-    expect(layoutSource).toContain("walletButton={");
+    expect(layoutSource).toContain("headerControls={");
+    expect(layoutSource).toContain('<LandingMusicPlayer className="hidden lg:flex" presentation="header" />');
     expect(layoutSource).toContain('<DashboardNetworkSwitch className="hidden md:flex" />');
     expect(layoutSource).toContain("<Controller />");
   });
