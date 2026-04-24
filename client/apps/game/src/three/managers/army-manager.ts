@@ -1884,17 +1884,28 @@ export class ArmyManager {
     };
   }
 
-  public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<void> {
+  /**
+   * Apply a pre-computed movement plan. Returns `true` when the plan started
+   * an optimistic tween (for `optimistic: true`) or a non-optimistic visual
+   * update, and `false` when it early-returned without effect. Callers that
+   * mirror predicted state into sibling caches (e.g. worldmap.armyHexes) must
+   * only mirror on `true` — otherwise a drifted/target-matched/unslotted plan
+   * would pin a stale destination into caches with no lock to rewind it.
+   */
+  public async applyMovementPlan(
+    plan: ArmyMovementPlan,
+    options: { optimistic: boolean },
+  ): Promise<boolean> {
     const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
 
     const armyData = this.armies.get(entityId);
-    if (!armyData) return;
+    if (!armyData) return false;
 
     const currentNorm = armyData.hexCoords.getNormalized();
     // Already at target (either this plan or a later authoritative update landed first).
-    if (currentNorm.x === targetNormalized.x && currentNorm.y === targetNormalized.y) return;
+    if (currentNorm.x === targetNormalized.x && currentNorm.y === targetNormalized.y) return false;
     // Source drifted (another update moved the army since plan was computed). Abandon this plan.
-    if (currentNorm.x !== sourceNormalized.x || currentNorm.y !== sourceNormalized.y) return;
+    if (currentNorm.x !== sourceNormalized.x || currentNorm.y !== sourceNormalized.y) return false;
 
     const sourceBucketKey = this.getSpatialKey(sourceNormalized.x, sourceNormalized.y);
     const destBucketKey = this.getSpatialKey(targetNormalized.x, targetNormalized.y);
@@ -1918,7 +1929,10 @@ export class ArmyManager {
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
       this.runMovementStartListeners(numericEntityId);
       this.runMovementCompleteListeners(numericEntityId);
-      return;
+      // No tween played and no optimistic lock was registered. If the caller
+      // mirrored armyHexes to target now and the chain later reverts, nothing
+      // would snap the spatial cache back. Report no-op so the mirror bails.
+      return false;
     }
 
     this.armyPaths.set(entityId, path);
@@ -1953,6 +1967,7 @@ export class ArmyManager {
     this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
+    return true;
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position): Promise<void> {
@@ -2064,9 +2079,7 @@ export class ArmyManager {
     // canonical source-of-truth for the pre-tx hex, set for every optimistic
     // move regardless of whether the source/dest share a spatial bucket.
     const lock = this.optimisticPositionLocks.get(entityId);
-    const lockedSource = lock
-      ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y }
-      : null;
+    const lockedSource = lock ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y } : null;
 
     this.optimisticallyMovingArmies.delete(entityId);
     this.authoritativeReconciledArmies.delete(entityId);

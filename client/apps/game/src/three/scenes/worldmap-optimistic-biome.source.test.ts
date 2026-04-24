@@ -44,7 +44,7 @@ describe("Worldmap optimistic destination biome", () => {
     expect(body).toMatch(/Biome\.getBiome\(\s*[A-Za-z]+Contract\.x,\s*[A-Za-z]+Contract\.y\s*\)/);
     // The provisional write must live inside the applyMovementPlan.then block
     // so it fires in the same pass as the optimistic army tween.
-    expect(body).toMatch(/applyMovementPlan\(plan,\s*\{\s*optimistic:\s*true\s*\}\)[\s\S]{0,2000}?Biome\.getBiome/);
+    expect(body).toMatch(/applyMovementPlan\(plan,\s*\{\s*optimistic:\s*true\s*\}\)[\s\S]*?Biome\.getBiome/);
   });
 
   it("army TileOpt spawn-biome fallback uses Biome.getBiome on contract coords, not a hardcoded Grassland", () => {

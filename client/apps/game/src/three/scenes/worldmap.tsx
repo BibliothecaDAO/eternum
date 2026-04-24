@@ -1104,7 +1104,23 @@ export default class WorldmapScene extends WarpTravel {
         this.pendingMovementPlans.delete(entityId);
         void planPromise.then((plan) => {
           if (!plan) return;
-          void this.armyManager.applyMovementPlan(plan, { optimistic: true }).then(() => {
+          void this.armyManager.applyMovementPlan(plan, { optimistic: true }).then((planApplied) => {
+            if (!planApplied) {
+              // applyMovementPlan early-returned (army gone / already at
+              // target / source drifted / no render slot). No optimistic
+              // lock was registered and no tween is in flight, so mirroring
+              // the destination into armyHexes now would pin a stale
+              // selectable hex with nothing left to rewind it — producing
+              // the "mesh at source, destination still clickable" desync.
+              // Let Torii's authoritative update reconcile naturally.
+              recordArmyMovementLatencyPhase({
+                phase: "optimistic_animation_skipped",
+                source: "worldmap",
+                entityId,
+                txHash,
+              });
+              return;
+            }
             recordArmyMovementLatencyPhase({
               phase: "optimistic_animation_started",
               source: "worldmap",

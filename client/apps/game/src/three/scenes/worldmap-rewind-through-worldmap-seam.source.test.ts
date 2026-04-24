@@ -90,10 +90,7 @@ describe("Worldmap rewind seam (armyManager + armyHexes)", () => {
 describe("ArmyManager.rewindOptimisticMovement returns locked source", () => {
   it("reads normalizedSource from the lock before deleting it", () => {
     const currentDir = dirname(fileURLToPath(import.meta.url));
-    const source = readFileSync(
-      resolve(currentDir, "../managers/army-manager.ts"),
-      "utf8",
-    );
+    const source = readFileSync(resolve(currentDir, "../managers/army-manager.ts"), "utf8");
 
     const methodStart = source.indexOf("public rewindOptimisticMovement(entityId: ID)");
     expect(methodStart).toBeGreaterThan(0);
@@ -103,7 +100,9 @@ describe("ArmyManager.rewindOptimisticMovement returns locked source", () => {
 
     // Signature must advertise the returned source (or null) so worldmap
     // callers can pair the visual rewind with an armyHexes update.
-    expect(body).toMatch(/public rewindOptimisticMovement\(entityId: ID\):\s*\{\s*col: number;\s*row: number;?\s*\}\s*\|\s*null/);
+    expect(body).toMatch(
+      /public rewindOptimisticMovement\(entityId: ID\):\s*\{\s*col: number;\s*row: number;?\s*\}\s*\|\s*null/,
+    );
 
     // The read must happen BEFORE optimisticPositionLocks.delete, else we
     // can't recover the source once the lock is cleared.

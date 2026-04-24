@@ -13,6 +13,7 @@ export type ArmyMovementLatencyPhase =
   | "movement_started"
   | "movement_completed"
   | "optimistic_animation_started"
+  | "optimistic_animation_skipped"
   | "optimistic_animation_reconciled"
   | "optimistic_animation_rewound"
   | "next_move_queued";
