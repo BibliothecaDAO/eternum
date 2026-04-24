@@ -49,4 +49,14 @@ describe("useAutomation source", () => {
     // The pruneForGame effect must reset the scheduler clock via the shared helper.
     expect(source).toMatch(/pruneForGame\(gameId\);[\s\S]*computePostPassSchedulerUpdate\(nowMs\)/);
   });
+
+  it("rebuilds the automation projection inside the realm loop instead of planning the whole pass up front", () => {
+    const source = readSource("src/hooks/use-automation.tsx");
+
+    expect(source).toContain("Starting just-in-time planning");
+    expect(source).toContain("Rebuild the conservative projection immediately before each realm submission");
+    expect(source).toContain("const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();");
+    expect(source).not.toContain("const executablePlans: ExecutableProductionPlan[] = [];");
+    expect(source).not.toContain("executeProductionPlansSequentially");
+  });
 });

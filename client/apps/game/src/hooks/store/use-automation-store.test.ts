@@ -214,6 +214,7 @@ describe("useAutomationStore", () => {
         consumptionByResource: {},
         outputsByResource: {},
         skipped: [],
+        skippedByResource: {},
       });
       const realm = useAutomationStore.getState().realms["1"];
       expect(realm.lastExecution?.executedAt).toBe(111);
@@ -239,6 +240,7 @@ describe("useAutomationStore", () => {
         consumptionByResource: {},
         outputsByResource: {},
         skipped: [],
+        skippedByResource: {},
       });
       expect(useAutomationStore.getState().realms["nope"]).toBeUndefined();
     });

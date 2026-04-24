@@ -2,8 +2,8 @@ import { BUILDINGS_CENTER, RealmLevels } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import {
   countOccupiedBuildingTilesByStructure,
-  formatAvailableBuildingTilesLabel,
   formatPopulationStatusLabel,
+  formatUsedBuildingTilesLabel,
   resolveAvailableBuildingTiles,
 } from "./structure-status";
 
@@ -12,8 +12,8 @@ describe("structure-status", () => {
     expect(formatPopulationStatusLabel(7, 12)).toBe("7/12");
   });
 
-  it("formats available building tile labels explicitly", () => {
-    expect(formatAvailableBuildingTilesLabel(53, 60)).toBe("53/60");
+  it("formats used building tile labels explicitly", () => {
+    expect(formatUsedBuildingTilesLabel(7, 60)).toBe("7/60");
   });
 
   it("counts occupied building tiles from RECS rows and skips the center keep tile", () => {

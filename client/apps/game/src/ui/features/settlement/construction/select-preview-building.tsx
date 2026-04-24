@@ -19,7 +19,6 @@ import {
   reconcileBuildReservationState,
   releaseOccupiedBuildSpot,
   reserveOccupiedBuildSpot,
-  reserveVacatedBuildSpot,
 } from "./build-reservation-store";
 
 import {
@@ -220,7 +219,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       const key = `${pos.col},${pos.row}`;
       if (key === centerKey) return false;
       if (occupied.has(key)) return false;
-      if (vacated.has(key)) return true;
+      if (vacated.has(key) && tileManager.isHexOccupied({ col: pos.col, row: pos.row })) return false;
       return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
     });
   }, [
@@ -279,7 +278,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           const key = `${pos.col},${pos.row}`;
           if (key === centerKey) return false;
           if (occupied.has(key)) return false;
-          if (vacated.has(key)) return true;
+          if (vacated.has(key) && tileManager.isHexOccupied({ col: pos.col, row: pos.row })) return false;
           return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
         });
 
@@ -382,14 +381,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         toast.error("No building of this type found to destroy.");
         return;
       }
-
-      const destroyedKey = `${existing.col},${existing.row}`;
-
       setPendingDestroys((prev) => ({ ...prev, [buildingKey]: true }));
 
       try {
         await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
-        reserveVacatedBuildSpot(entityId, destroyedKey);
         if (
           previewBuilding?.type === target.type &&
           (!target.resource || previewBuilding?.resource === target.resource)

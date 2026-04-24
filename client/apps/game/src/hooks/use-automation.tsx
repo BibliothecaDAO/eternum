@@ -8,13 +8,7 @@ import {
   type RealmProductionPlan,
   type RealmResourceSnapshot,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
-import {
-  AutomationCancelledError,
-  AutomationSignerSkippedError,
-  executeProductionPlansSequentially,
-  isSignerTransientError,
-  type ExecutableProductionPlan,
-} from "@/ui/features/infrastructure/automation/model/automation-runner";
+import { isSignerTransientError } from "@/ui/features/infrastructure/automation/model/automation-runner";
 import { computeAutomationConfigSignature } from "@/utils/automation-signature";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import {
@@ -39,7 +33,6 @@ import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Account as StarknetAccount } from "starknet";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
@@ -245,24 +238,80 @@ export const useAutomation = () => {
       return { ran: false, anyExecuted: false };
     }
 
+    const recordRealmSkippedStatus = ({
+      realmId,
+      message,
+      resetConsecutiveFailures = false,
+    }: {
+      realmId: string;
+      message: string;
+      resetConsecutiveFailures?: boolean;
+    }) => {
+      const prev = getRealmConfig(realmId);
+      recordStatus(realmId, {
+        status: "skipped",
+        message,
+        attemptedAt: Date.now(),
+        consecutiveFailures: resetConsecutiveFailures ? 0 : (prev?.lastStatus?.consecutiveFailures ?? 0),
+      });
+    };
+
     processingRef.current = true;
     let anyExecuted = false;
 
     try {
-      // Use the automation projection tick (deeper buffer than the default conservative
-      // accessor) so the planner's projected balance stays behind what the chain will
-      // report at tx-inclusion, preventing Insufficient Balance reverts on overshoot.
-      const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();
+      let skipRemainingRealmsMessage: string | null = null;
+      let signerFaultSurfacedForTick = false;
 
-      // Phase 1: Build all plans synchronously (no awaits, so no event loop yields)
-      const executablePlans: ExecutableProductionPlan[] = [];
-
+      console.log(`[Automation] Starting just-in-time planning for ${realmList.length} realms`);
       for (const realmConfig of realmList) {
+        const realmLabel = realmConfig.realmName ?? `Realm ${realmConfig.realmId}`;
+
+        if (skipRemainingRealmsMessage) {
+          recordRealmSkippedStatus({
+            realmId: realmConfig.realmId,
+            message: skipRemainingRealmsMessage,
+          });
+          continue;
+        }
+
+        if (isGameOver()) {
+          skipRemainingRealmsMessage = "Game has ended";
+          recordRealmSkippedStatus({
+            realmId: realmConfig.realmId,
+            message: skipRemainingRealmsMessage,
+          });
+          continue;
+        }
+
+        const accountAddress = starknetSignerAccount?.address;
+        if (!accountAddress || accountAddress === "0x0") {
+          skipRemainingRealmsMessage = "Signer unavailable";
+          recordRealmSkippedStatus({
+            realmId: realmConfig.realmId,
+            message: skipRemainingRealmsMessage,
+          });
+          continue;
+        }
+
         let activeRealmConfig = realmConfig;
         let runStatusNote: string | undefined;
         const realmIdNum = Number(activeRealmConfig.realmId);
-        const realmLabel = activeRealmConfig.realmName ?? `Realm ${activeRealmConfig.realmId}`;
+        if (
+          Number.isFinite(realmIdNum) &&
+          realmIdNum > 0 &&
+          !isEntityOwnedByAccount(components, realmIdNum, accountAddress)
+        ) {
+          recordRealmSkippedStatus({
+            realmId: activeRealmConfig.realmId,
+            message: "Realm no longer owned",
+          });
+          continue;
+        }
 
+        // Rebuild the conservative projection immediately before each realm submission so
+        // projected balances reflect the freshest local state available at submit time.
+        const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();
         const snapshot =
           Number.isFinite(realmIdNum) && realmIdNum > 0
             ? buildRealmResourceSnapshot({
@@ -291,11 +340,10 @@ export const useAutomation = () => {
             realmId: activeRealmConfig.realmId,
             realmName: realmLabel,
           });
-          recordStatus(activeRealmConfig.realmId, {
-            status: "skipped",
+          recordRealmSkippedStatus({
+            realmId: activeRealmConfig.realmId,
             message: "Idle preset",
-            attemptedAt: Date.now(),
-            consecutiveFailures: 0,
+            resetConsecutiveFailures: true,
           });
           continue;
         }
@@ -381,165 +429,126 @@ export const useAutomation = () => {
         if (!planHasExecutableCalls(plan)) {
           console.log("[Automation] No executable automation calls detected", planLogPayload);
           recordExecution(activeRealmConfig.realmId, buildExecutionSummary(plan, Date.now()));
-          recordStatus(activeRealmConfig.realmId, {
-            status: "skipped",
+          recordRealmSkippedStatus({
+            realmId: activeRealmConfig.realmId,
             message: [runStatusNote, buildAutomationPlanSkipMessage(plan)].filter(Boolean).join("; "),
-            attemptedAt: Date.now(),
-            consecutiveFailures: 0,
+            resetConsecutiveFailures: true,
           });
           continue;
         }
 
-        // Collect executable plans for isolated execution.
-        executablePlans.push({
-          plan,
-          realmConfig: activeRealmConfig,
-          realmLabel,
-          planLogPayload: {
-            ...planLogPayload,
-            runStatusNote,
-          },
-        });
-      }
+        if (isGameOver()) {
+          skipRemainingRealmsMessage = "Game has ended";
+          recordRealmSkippedStatus({
+            realmId: activeRealmConfig.realmId,
+            message: skipRemainingRealmsMessage,
+          });
+          continue;
+        }
+        if (
+          Number.isFinite(realmIdNum) &&
+          realmIdNum > 0 &&
+          !isEntityOwnedByAccount(components, realmIdNum, accountAddress)
+        ) {
+          recordRealmSkippedStatus({
+            realmId: activeRealmConfig.realmId,
+            message: "Realm no longer owned",
+          });
+          continue;
+        }
 
-      // Phase 2: Execute all plans sequentially so isolated per-realm txs do not race the same signer nonce.
-      console.log(
-        `[Automation] Planning complete: ${executablePlans.length} executable out of ${realmList.length} realms`,
-      );
-      if (executablePlans.length > 0) {
-        console.log(`[Automation] Executing ${executablePlans.length} production plans sequentially`);
+        const planLogPayloadWithStatus = {
+          ...planLogPayload,
+          runStatusNote,
+        };
 
-        let signerFaultSurfacedForTick = false;
-        const results = await executeProductionPlansSequentially({
-          executablePlans,
-          signer: starknetSignerAccount as StarknetAccount,
-          executeRealmProductionPlan: execute_realm_production_plan,
-          onBeforeExecute: ({ planLogPayload }) => {
-            console.log("[Automation] Executing production plan", planLogPayload);
-          },
-          isCancelled: ({ plan, realmConfig }) => {
-            if (isGameOver()) {
-              return { cancelled: true, reason: "Game has ended", scope: "pass" };
-            }
-            const accountAddress = starknetSignerAccount?.address;
-            if (!accountAddress || accountAddress === "0x0") {
-              return { cancelled: true, reason: "Signer unavailable", scope: "pass" };
-            }
-            const realmIdNum = Number(realmConfig.realmId);
-            const entityId = Number.isFinite(realmIdNum) && realmIdNum > 0 ? realmIdNum : plan.realmId;
-            if (!isEntityOwnedByAccount(components, entityId, accountAddress)) {
-              return { cancelled: true, reason: "Realm no longer owned", scope: "realm" };
-            }
-            return { cancelled: false };
-          },
-        });
+        console.log("[Automation] Executing production plan", planLogPayloadWithStatus);
 
-        // Phase 3: Process results
-        for (const result of results) {
-          if (result.status === "fulfilled") {
-            const { plan, realmConfig, realmLabel, planLogPayload } = result.value;
-            const summary = buildExecutionSummary(plan, Date.now());
-            recordExecution(realmConfig.realmId, summary);
-            recordStatus(realmConfig.realmId, {
-              status: "success",
-              message: typeof planLogPayload.runStatusNote === "string" ? planLogPayload.runStatusNote : undefined,
-              attemptedAt: Date.now(),
-              consecutiveFailures: 0,
-            });
-            console.log("[Automation] Automation execution complete", {
-              realmId: plan.realmId,
-              realmName: realmLabel,
-              outputs: planLogPayload.outputs,
-              consumption: planLogPayload.consumption,
-              resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
-              laborExecutions: labelExecutionEntries(plan.laborExecutions),
-              skipped: planLogPayload.skipped,
-            });
-            anyExecuted = true;
+        try {
+          await execute_realm_production_plan({
+            signer: starknetSignerAccount,
+            realm_entity_id: plan.realmId,
+            resource_to_resource: plan.callset.resourceToResource.map((item) => ({
+              resource_id: item.resourceId,
+              cycles: item.cycles,
+            })),
+            labor_to_resource: plan.callset.laborToResource.map((item) => ({
+              resource_id: item.resourceId,
+              cycles: item.cycles,
+            })),
+          });
 
-            const producedResources = Object.entries(plan.outputsByResource);
-            if (producedResources.length > 0) {
-              const detail = producedResources
-                .map(([resId, amount]) => {
-                  const label = resolveResourceLabel(Number(resId));
-                  return `${Math.round(amount).toLocaleString()} ${label}`;
-                })
-                .join(", ");
-              toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`);
-            } else {
-              toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
+          const summary = buildExecutionSummary(plan, Date.now());
+          recordExecution(activeRealmConfig.realmId, summary);
+          recordStatus(activeRealmConfig.realmId, {
+            status: "success",
+            message:
+              typeof planLogPayloadWithStatus.runStatusNote === "string"
+                ? planLogPayloadWithStatus.runStatusNote
+                : undefined,
+            attemptedAt: Date.now(),
+            consecutiveFailures: 0,
+          });
+          console.log("[Automation] Automation execution complete", {
+            realmId: plan.realmId,
+            realmName: realmLabel,
+            outputs: planLogPayload.outputs,
+            consumption: planLogPayload.consumption,
+            resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
+            laborExecutions: labelExecutionEntries(plan.laborExecutions),
+            skipped: planLogPayload.skipped,
+          });
+          anyExecuted = true;
+
+          const producedResources = Object.entries(plan.outputsByResource);
+          if (producedResources.length > 0) {
+            const detail = producedResources
+              .map(([resId, amount]) => {
+                const label = resolveResourceLabel(Number(resId));
+                return `${Math.round(amount).toLocaleString()} ${label}`;
+              })
+              .join(", ");
+            toast.success(
+              `Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`,
+            );
+          } else {
+            toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
+          }
+        } catch (rawError) {
+          const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
+          const isSignerFault = isSignerTransientError(rawError);
+
+          console.error(`Automation: Failed to execute plan for ${realmLabel}`, {
+            error: rawError,
+            message: errorMessage,
+          });
+
+          const prev = getRealmConfig(activeRealmConfig.realmId);
+          recordStatus(activeRealmConfig.realmId, {
+            status: "failed",
+            message: errorMessage,
+            attemptedAt: Date.now(),
+            consecutiveFailures: isSignerFault
+              ? (prev?.lastStatus?.consecutiveFailures ?? 0)
+              : (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
+          });
+
+          if (isSignerFault) {
+            skipRemainingRealmsMessage = "Skipped: signer error earlier in pass — next tick will retry";
+            if (!signerFaultSurfacedForTick) {
+              signerFaultSurfacedForTick = true;
+              toast.error(`Automation paused this tick: signer error — next tick will retry (${errorMessage})`);
             }
           } else {
-            const rejection = result.reason;
-            const rawError = rejection.error;
-            const realmConfig = rejection.realmConfig;
-            const realmLabel = rejection.realmLabel;
-
-            if (rawError instanceof AutomationCancelledError) {
-              console.log("[Automation] Skipped realm due to cancellation", {
-                realmLabel,
-                reason: rawError.message,
-                scope: rawError.scope,
-              });
-              if (realmConfig) {
-                const prev = getRealmConfig(realmConfig.realmId);
-                recordStatus(realmConfig.realmId, {
-                  status: "skipped",
-                  message: rawError.message,
-                  attemptedAt: Date.now(),
-                  consecutiveFailures: prev?.lastStatus?.consecutiveFailures ?? 0,
-                });
-              }
-              continue;
-            }
-
-            if (rawError instanceof AutomationSignerSkippedError) {
-              console.log("[Automation] Skipped realm after signer fault earlier in pass", {
-                realmLabel,
-                reason: rawError.message,
-              });
-              if (realmConfig) {
-                const prev = getRealmConfig(realmConfig.realmId);
-                recordStatus(realmConfig.realmId, {
-                  status: "skipped",
-                  message: rawError.message,
-                  attemptedAt: Date.now(),
-                  consecutiveFailures: prev?.lastStatus?.consecutiveFailures ?? 0,
-                });
-              }
-              continue;
-            }
-
-            const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
-            const isSignerFault = isSignerTransientError(rawError);
-
-            console.error(`Automation: Failed to execute plan for ${realmLabel}`, {
-              error: rawError,
-              message: errorMessage,
-            });
-
-            if (realmConfig) {
-              const prev = getRealmConfig(realmConfig.realmId);
-              recordStatus(realmConfig.realmId, {
-                status: "failed",
-                message: errorMessage,
-                attemptedAt: Date.now(),
-                consecutiveFailures: isSignerFault
-                  ? (prev?.lastStatus?.consecutiveFailures ?? 0)
-                  : (prev?.lastStatus?.consecutiveFailures ?? 0) + 1,
-              });
-            }
-
-            if (isSignerFault) {
-              if (!signerFaultSurfacedForTick) {
-                signerFaultSurfacedForTick = true;
-                toast.error(`Automation paused this tick: signer error — next tick will retry (${errorMessage})`);
-              }
-            } else {
-              toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
-            }
+            toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
           }
         }
+      }
+
+      if (skipRemainingRealmsMessage) {
+        console.log("[Automation] Pass ended early", {
+          reason: skipRemainingRealmsMessage,
+        });
       }
     } finally {
       processingRef.current = false;
