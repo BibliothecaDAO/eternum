@@ -53,12 +53,17 @@ const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
-const formatInventoryAmount = (value: number): string => {
+const formatFullInventoryAmount = (value: number): string => Math.floor(value).toLocaleString();
+
+const formatInventoryAmount = (value: number, options?: { compact?: boolean }): string => {
   const flooredValue = Math.floor(value);
+  if (options?.compact === false) {
+    return formatFullInventoryAmount(flooredValue);
+  }
   if (flooredValue >= 1000) {
     return compactInventoryFormatter.format(flooredValue);
   }
-  return flooredValue.toLocaleString();
+  return formatFullInventoryAmount(flooredValue);
 };
 
 export const buildDisplayItems = (
@@ -236,7 +241,7 @@ export const CompactEntityInventory = memo(
             withTooltip={false}
           />
           <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold leading-none text-gold/95")}>
-            {formatInventoryAmount(item.amount)}
+            {formatInventoryAmount(item.amount, { compact: !options.hero })}
           </span>
           {showLabels && resourceDef && (
             <span className="mt-0.5 text-[10px] text-gold/65 truncate" title={resourceDef.trait}>
