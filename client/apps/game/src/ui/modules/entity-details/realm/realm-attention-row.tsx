@@ -1,5 +1,8 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { BuildingType, getBuildingFromResource, ResourcesIds } from "@bibliothecadao/types";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import Hammer from "lucide-react/dist/esm/icons/hammer";
 import ShieldAlert from "lucide-react/dist/esm/icons/shield-alert";
 import { memo } from "react";
 
@@ -40,39 +43,84 @@ const AttentionChip = ({ icon: Icon, label, tone, onClick, title }: AttentionChi
   );
 };
 
-type RealmAttentionRowProps = {
-  starvingCount: number;
-  emptyGuardSlots: number;
-  onManageGuards?: () => void;
+type StarvingResourceChipProps = {
+  resourceId: ResourcesIds;
+  reason?: string;
+  canBuild: boolean;
+  onBuild?: () => void;
 };
 
-export const RealmAttentionRow = memo(({ starvingCount, emptyGuardSlots, onManageGuards }: RealmAttentionRowProps) => {
-  if (starvingCount === 0 && emptyGuardSlots === 0) {
-    return null;
-  }
+const StarvingResourceChip = ({ resourceId, reason, canBuild, onBuild }: StarvingResourceChipProps) => {
+  const label = ResourcesIds[resourceId] ?? String(resourceId);
+  const title = reason ? `${label} starving — ${reason}` : `${label} starving`;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded border border-gold/15 bg-black/30 px-2 py-1.5">
-      <span className="text-[9px] uppercase tracking-[0.2em] text-gold/45">Attention</span>
-      {starvingCount > 0 && (
-        <AttentionChip
-          icon={AlertTriangle}
-          tone="danger"
-          label={`${starvingCount} starving`}
-          title="Production buildings that are starving — see the highlighted badges below"
-        />
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border border-danger/40 bg-danger/10 px-1.5 py-0.5 text-[10px] font-semibold text-danger",
       )}
-      {emptyGuardSlots > 0 && (
-        <AttentionChip
-          icon={ShieldAlert}
-          tone="warning"
-          label={`${emptyGuardSlots} guard ${emptyGuardSlots === 1 ? "slot" : "slots"} open`}
-          onClick={onManageGuards}
-          title="Open the guard creation popup"
-        />
+      title={title}
+    >
+      <AlertTriangle className="h-3 w-3" />
+      <ResourceIcon resource={label} size="xs" withTooltip={false} />
+      <span>{label}</span>
+      {canBuild && onBuild && (
+        <button
+          type="button"
+          onClick={onBuild}
+          className="ml-0.5 inline-flex items-center rounded border border-danger/40 bg-danger/20 px-1 py-[1px] text-[9px] uppercase tracking-wide hover:bg-danger/40"
+          title={`Build a ${label} producer`}
+          aria-label={`Build ${label} producer`}
+        >
+          <Hammer className="h-2.5 w-2.5" />
+          <span className="ml-0.5">Build</span>
+        </button>
       )}
-    </div>
+    </span>
   );
-});
+};
+
+type RealmAttentionRowProps = {
+  starvedResources: Map<ResourcesIds, string>;
+  emptyGuardSlots: number;
+  onManageGuards?: () => void;
+  onBuildForResource?: (resourceId: ResourcesIds) => void;
+};
+
+export const RealmAttentionRow = memo(
+  ({ starvedResources, emptyGuardSlots, onManageGuards, onBuildForResource }: RealmAttentionRowProps) => {
+    const starvingEntries = Array.from(starvedResources.entries());
+    if (starvingEntries.length === 0 && emptyGuardSlots === 0) {
+      return null;
+    }
+
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 rounded border border-gold/15 bg-black/30 px-2 py-1.5">
+        <span className="text-[9px] uppercase tracking-[0.2em] text-gold/45">Attention</span>
+        {starvingEntries.map(([resourceId, reason]) => {
+          const canBuild = onBuildForResource ? getBuildingFromResource(resourceId) !== BuildingType.None : false;
+          return (
+            <StarvingResourceChip
+              key={resourceId}
+              resourceId={resourceId}
+              reason={reason}
+              canBuild={canBuild}
+              onBuild={canBuild && onBuildForResource ? () => onBuildForResource(resourceId) : undefined}
+            />
+          );
+        })}
+        {emptyGuardSlots > 0 && (
+          <AttentionChip
+            icon={ShieldAlert}
+            tone="warning"
+            label={`${emptyGuardSlots} guard ${emptyGuardSlots === 1 ? "slot" : "slots"} open`}
+            onClick={onManageGuards}
+            title="Open the guard creation popup"
+          />
+        )}
+      </div>
+    );
+  },
+);
 
 RealmAttentionRow.displayName = "RealmAttentionRow";

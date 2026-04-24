@@ -2,6 +2,7 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LeftView } from "@/types";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
@@ -25,10 +26,13 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import {
+  BuildingType,
   ClientComponents,
   ContractAddress,
   EntityType,
+  getBuildingFromResource,
   RelicRecipientType,
+  ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -158,6 +162,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  const setSelectedBuilding = useUIStore((state) => state.setSelectedBuilding);
+  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const automationRealms = useAutomationStore((state) => state.realms);
   const hasAutomationFailures = useAutomationStore(
     useCallback((state) => Object.values(state.realms).some((r) => (r.lastStatus?.consecutiveFailures ?? 0) >= 3), []),
@@ -199,7 +206,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const statusLabel = resolveAutomationStatusLabel(automationConfig);
 
   const starvedResources = useRealmStarvedResources(realmId);
-  const consumptionPerSecondById = useRealmConsumptionPerSecond(structure, realmId);
+  const consumptionPerSecondById = useRealmConsumptionPerSecond(structure, resources, realmId);
 
   const handleModifyClick = useCallback(() => {
     if (!realmId) return;
@@ -250,7 +257,8 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
 
   const canManageGuards = isOwned && structureCapabilities.canManageGuardArmy;
   const emptyGuardSlots = canManageGuards && maxGuardArmies !== null ? Math.max(maxGuardArmies - guardArmyCount, 0) : 0;
-  const starvingCount = canShowProductionCard ? starvedResources.size : 0;
+  const attentionStarvedResources = canShowProductionCard ? starvedResources : new Map<ResourcesIds, string>();
+  const canBuildFromAttention = isOwned && structureCapabilities.canOpenConstruction;
 
   const handleManageGuards = useCallback(() => {
     if (!structureEntityId || !canManageGuards) return;
@@ -261,6 +269,17 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       maxDefenseSlots,
     });
   }, [canManageGuards, openArmyCreationPopup, structure?.base?.troop_max_guard_count, structureEntityId]);
+
+  const handleBuildForResource = useCallback(
+    (resourceId: ResourcesIds) => {
+      const building = getBuildingFromResource(resourceId);
+      if (building === BuildingType.None) return;
+      setSelectedBuilding(building);
+      setPreviewBuilding({ type: building, resource: resourceId });
+      setLeftNavigationView(LeftView.ConstructionView);
+    },
+    [setLeftNavigationView, setPreviewBuilding, setSelectedBuilding],
+  );
   const shouldRenderVillageUi = isVillage;
   const isVillageMilitiaClaimed = Boolean(villageTroop?.claimed);
   const [isClaimingVillageMilitia, setIsClaimingVillageMilitia] = useState(false);
@@ -341,9 +360,10 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   return (
     <div className={cn("flex h-full flex-col gap-2 p-2 text-gold", className)}>
       <RealmAttentionRow
-        starvingCount={starvingCount}
+        starvedResources={attentionStarvedResources}
         emptyGuardSlots={emptyGuardSlots}
         onManageGuards={canManageGuards ? handleManageGuards : undefined}
+        onBuildForResource={canBuildFromAttention ? handleBuildForResource : undefined}
       />
       {canShowProductionCard && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">

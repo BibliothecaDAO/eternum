@@ -1,7 +1,7 @@
 import { MAX_RESOURCE_ALLOCATION_PERCENT, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { calculatePresetAllocations, inferRealmPreset } from "@/utils/automation-presets";
-import { aggregateConsumptionPerSecond } from "@bibliothecadao/eternum";
+import { aggregateConsumptionPerSecond, ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings } from "@bibliothecadao/react";
 import { ClientComponents, ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
@@ -16,6 +16,7 @@ const EMPTY_MAP: Map<ResourcesIds, number> = new Map();
  */
 export const useRealmConsumptionPerSecond = (
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | null | undefined,
+  resources: ComponentValue<ClientComponents["Resource"]["schema"]> | null | undefined,
   structureEntityId: number | string | null | undefined,
 ): Map<ResourcesIds, number> => {
   const realmKey = useMemo(() => {
@@ -32,17 +33,21 @@ export const useRealmConsumptionPerSecond = (
   const buildings = useBuildings(coordX, coordY);
 
   const producedResourceIds = useMemo<ResourcesIds[]>(() => {
-    if (!buildings?.length) return [];
+    if (!buildings?.length || !resources) return [];
     const unique = new Set<ResourcesIds>();
     buildings.forEach((building) => {
       if (!building) return;
       const producedResource = getProducedResource(building.category);
       if (!producedResource) return;
       if (producedResource === ResourcesIds.Labor) return;
-      unique.add(producedResource as ResourcesIds);
+      const resourceId = producedResource as ResourcesIds;
+      const productionInfo = ResourceManager.balanceAndProduction(resources, resourceId);
+      const hasActiveProduction = Number(productionInfo.production?.building_count ?? 0) > 0;
+      if (!hasActiveProduction) return;
+      unique.add(resourceId);
     });
     return Array.from(unique);
-  }, [buildings]);
+  }, [buildings, resources]);
 
   return useMemo(() => {
     if (!automationConfig) return EMPTY_MAP;

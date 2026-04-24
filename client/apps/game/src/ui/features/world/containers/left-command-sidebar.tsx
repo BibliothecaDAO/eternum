@@ -393,8 +393,13 @@ const LeftPanelHeader = memo(
         currentTab?.categories?.length === 0
           ? structuresWithMetadata
           : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
-      return filtered.toSorted((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
-    }, [activeTab, structureTabs, structuresWithMetadata]);
+      return filtered.toSorted((a, b) => {
+        const aSelected = a.entityId === structureEntityId ? 0 : 1;
+        const bSelected = b.entityId === structureEntityId ? 0 : 1;
+        if (aSelected !== bSelected) return aSelected - bSelected;
+        return Number(b.isFavorite) - Number(a.isFavorite);
+      });
+    }, [activeTab, structureTabs, structuresWithMetadata, structureEntityId]);
 
     const categoryCounts = useMemo(() => {
       const counts: Partial<Record<StructureType, number>> = {};
@@ -504,32 +509,14 @@ const LeftPanelHeader = memo(
               )}
             </div>
             {selectedStructureMetadata && (
-              <div className="flex-shrink-0 flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => onToggleFavorite(selectedStructureMetadata.entityId)}
-                  className="rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
-                  title={selectedStructureMetadata.isFavorite ? "Remove from favorites" : "Favorite structure"}
-                  aria-label={selectedStructureMetadata.isFavorite ? "Remove from favorites" : "Favorite structure"}
-                >
-                  <Star
-                    className={`h-4 w-4 ${
-                      selectedStructureMetadata.isFavorite ? "fill-current text-gold" : "text-gold/70"
-                    }`}
-                  />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
-                  className="rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
-                  title="Rename structure"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                {selectedStructureMetadata.category === StructureType.Realm && (
-                  <StructureLevelUpButton structureEntityId={selectedStructureMetadata.entityId} />
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
+                className="flex-shrink-0 rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
+                title="Rename structure"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
             )}
           </div>
         </div>
@@ -601,6 +588,7 @@ const LeftPanelHeader = memo(
                       structure={structure}
                       isSelected={structure.entityId === structureEntityId}
                       onSelectStructure={onSelectStructure}
+                      onToggleFavorite={onToggleFavorite}
                     />
                   ))}
                   {hiddenCount > 0 && (
@@ -632,20 +620,31 @@ type StructureChipProps = {
   structure: StructureWithMetadata;
   isSelected: boolean;
   onSelectStructure: (entityId: ID) => void;
+  onToggleFavorite: (entityId: ID) => void;
 };
 
-const StructureChip = memo(({ structure, isSelected, onSelectStructure }: StructureChipProps) => {
+const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggleFavorite }: StructureChipProps) => {
   const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
-  const levelAbbrev = structureCapabilities.hasPopulationDetails
+  const hasPopulationDetails = structureCapabilities.hasPopulationDetails;
+  const levelAbbrev = hasPopulationDetails
     ? getLevelName(
         Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
       ).charAt(0)
     : null;
 
+  const populationStatusLabel = hasPopulationDetails
+    ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
+    : null;
+  const buildingTilesStatusLabel =
+    hasPopulationDetails && structure.buildingTilesOccupied !== null && structure.buildingTilesTotal !== null
+      ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
+      : null;
+
   const handleClick = useCallback(() => onSelectStructure(structure.entityId), [onSelectStructure, structure.entityId]);
 
   const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLButtonElement>) => {
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.target !== event.currentTarget) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         handleClick();
@@ -655,12 +654,13 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure }: Struct
   );
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={clsx(
-        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-left text-xs transition",
+        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-left text-xs transition cursor-pointer",
         isSelected
           ? "border-gold bg-gold/15 text-gold"
           : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
@@ -668,7 +668,18 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure }: Struct
       title={structure.displayName}
       aria-pressed={isSelected}
     >
-      {structure.isFavorite && <Star className="h-3 w-3 shrink-0 fill-current text-gold" aria-label="Favorited" />}
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleFavorite(structure.entityId);
+        }}
+        className="shrink-0 rounded p-0.5 text-gold/60 hover:text-gold"
+        title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
+        aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
+      >
+        <Star className={clsx("h-3.5 w-3.5", structure.isFavorite ? "fill-current text-gold" : "text-gold/60")} />
+      </button>
       {structure.groupColor && (
         <span
           className={clsx(
@@ -690,7 +701,13 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure }: Struct
           {levelAbbrev}
         </span>
       )}
-    </button>
+      {populationStatusLabel && (
+        <StructureStatusStats populationLabel={populationStatusLabel} buildingTilesLabel={buildingTilesStatusLabel} />
+      )}
+      {structure.category === StructureType.Realm && (
+        <StructureLevelUpButton structureEntityId={structure.entityId} className="shrink-0" />
+      )}
+    </div>
   );
 });
 
