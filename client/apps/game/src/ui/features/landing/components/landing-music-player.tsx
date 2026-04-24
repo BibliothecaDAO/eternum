@@ -42,10 +42,7 @@ const resolveControlButtonClasses = (presentation: LandingMusicPlayerPresentatio
   return "rounded-full border border-gold/15 bg-black/35 p-2 text-gold/65 transition-colors hover:border-gold/35 hover:text-gold";
 };
 
-export const LandingMusicPlayer = ({
-  className,
-  presentation = "floating",
-}: LandingMusicPlayerProps) => {
+export const LandingMusicPlayer = ({ className, presentation = "floating" }: LandingMusicPlayerProps) => {
   const { audioState, setCategoryVolume, setMuted } = useAudio();
   const { currentTrackId, trackName, next, requiresInteraction, requestStart } = useMusicPlayer();
 
@@ -71,12 +68,7 @@ export const LandingMusicPlayer = ({
 
   return (
     <div className={cn(resolvePlayerContainerClasses(presentation), className)}>
-      <section
-        className={cn(
-          "pointer-events-auto backdrop-blur-xl",
-          resolvePlayerShellClasses(presentation),
-        )}
-      >
+      <section className={cn("pointer-events-auto backdrop-blur-xl", resolvePlayerShellClasses(presentation))}>
         <div className={cn("flex items-center", resolvePlayerRowClasses(presentation))}>
           <div className="flex items-center gap-2 text-gold/55">
             <Music2 className={cn(isHeaderPresentation ? "h-3.5 w-3.5" : "h-4 w-4")} />
