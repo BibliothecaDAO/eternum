@@ -324,6 +324,29 @@ export class ArmyActionManager {
       return Promise.reject(new Error("Missing destination tile for explore"));
     }
 
+    // Position-freshness guard. The vrf_source_salt below is baked into the
+    // multicall from `destinationHex`, but the chain's actual end tile is
+    // `explorer.coord + direction`. If the client's path[0] disagrees with the
+    // chain-visible coord, the salted request_random and the real consume will
+    // reference different tiles → "VrfProvider: not consumed". Reject upfront
+    // so the user retries with a fresh action path instead of eating a failed tx.
+    const pathStart = path[0]?.hex;
+    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const chainCoord = explorerTroops?.coord as { x?: unknown; y?: unknown } | undefined;
+    if (pathStart && chainCoord !== undefined && chainCoord.x !== undefined && chainCoord.y !== undefined) {
+      const chainCol = Number(chainCoord.x);
+      const chainRow = Number(chainCoord.y);
+      if (Number.isFinite(chainCol) && Number.isFinite(chainRow)) {
+        if (pathStart.col !== chainCol || pathStart.row !== chainRow) {
+          return Promise.reject(
+            new Error(
+              `Explorer position drifted — path expected (${pathStart.col}, ${pathStart.row}) but chain reports (${chainCol}, ${chainRow}). Retry with a fresh path.`,
+            ),
+          );
+        }
+      }
+    }
+
     const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
 
     try {

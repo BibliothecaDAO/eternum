@@ -153,9 +153,24 @@ export class PromiseQueue {
 
   /**
    * Process a batch of queue items as a single multicall transaction.
+   *
+   * EXPLORE-type items never merge with others. `explorer_explore` bundles a
+   * `vrf_request_random` / `consume_random(source)` pair per call; flattening
+   * multiple explores into one multicall causes the VRF provider to see
+   * overlapping requests and fail with "VrfProvider: not consumed". When a
+   * batch contains any EXPLORE item we recurse per-item so each explore
+   * submits as its own transaction. Non-explore items in the same batch also
+   * submit individually — rare and safe, since batching is an optimization.
    */
   private async processBatch(batch: QueueItem[]) {
     if (batch.length === 0) return;
+
+    if (batch.length > 1 && batch.some((item) => item.transaction.transactionType === TransactionType.EXPLORE)) {
+      for (const item of batch) {
+        await this.processBatch([item]);
+      }
+      return;
+    }
 
     if (batch.length === 1) {
       const { transaction, resolve, reject } = batch[0];

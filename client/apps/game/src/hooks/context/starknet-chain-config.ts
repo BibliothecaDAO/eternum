@@ -1,6 +1,6 @@
 import type { Chain } from "@contracts";
 
-import { isRpcUrlCompatibleForChain, normalizeRpcUrl } from "@/runtime/world";
+import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, normalizeRpcUrl } from "@/runtime/world";
 import { constants, shortString } from "starknet";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
@@ -96,7 +96,7 @@ export const resolveStarknetRuntimeConfig = ({
   const effectiveChain = selectedChain ?? fallbackChain;
   const mainnetRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/starknet/mainnet/rpc/v0_9");
   const sepoliaRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/starknet/sepolia/rpc/v0_9");
-  const slotRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/eternum-blitz-slot-4/katana/rpc/v0_9");
+  const slotRpcUrl = buildSharedSlotRpcUrl(cartridgeApiBase);
 
   if (effectiveChain === "local") {
     return {
@@ -137,11 +137,7 @@ export const resolveStarknetRuntimeConfig = ({
     };
   }
 
-  const runtimeRpcUrl = resolveChainCompatibleRuntimeRpcUrl({
-    chain: effectiveChain,
-    fallbackRpcUrl: slotRpcUrl,
-    requestedRpcUrl: normalizedBaseRpcUrl,
-  });
+  const runtimeRpcUrl = slotRpcUrl;
 
   return {
     chainKind: "slot",

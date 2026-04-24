@@ -144,6 +144,7 @@ describe("renderer-diagnostics", () => {
       },
       requestedMode: "experimental-webgpu-auto",
       sceneName: "worldmap",
+      startupTimings: {},
     });
   });
 
@@ -151,7 +152,7 @@ describe("renderer-diagnostics", () => {
     syncRendererBackendDiagnostics({
       activeMode: "legacy-webgl",
       buildMode: "experimental-webgpu-force-webgl",
-      fallbackReason: "manual-kill-switch",
+      fallbackReason: "experimental-init-error",
       initTimeMs: 12,
       requestedMode: "legacy-webgl",
     });
@@ -179,7 +180,7 @@ describe("renderer-diagnostics", () => {
       },
       degradations: [],
       effectPlan: null,
-      fallbackReason: "manual-kill-switch",
+      fallbackReason: "experimental-init-error",
       fallbacks: 0,
       gpuTelemetry: {
         activeMode: "legacy-webgl",
@@ -198,6 +199,7 @@ describe("renderer-diagnostics", () => {
       postprocessPolicy: null,
       requestedMode: "legacy-webgl",
       sceneName: null,
+      startupTimings: {},
     });
   });
 

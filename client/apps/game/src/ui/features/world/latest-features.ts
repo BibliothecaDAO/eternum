@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-23",
+    title: "Bounded Renderer Startup",
+    description:
+      "Game entry now measures WebGPU startup and falls back cleanly when the experimental renderer stalls, so loading reaches the world instead of waiting indefinitely.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-21",
     title: "Auto-Settle Timing Fix",
     description:

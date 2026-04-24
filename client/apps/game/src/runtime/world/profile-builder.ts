@@ -5,13 +5,28 @@ import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { env, hasPublicNodeUrl } from "../../../env";
 import { getFactorySqlBaseUrl } from "./factory-endpoints";
 import { resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./factory-resolver";
-import { isRpcUrlCompatibleForChain, normalizeRpcUrl } from "./normalize";
+import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, isSlotWorldChain, normalizeRpcUrl } from "./normalize";
 import { saveWorldProfile } from "./store";
 import type { WorldProfile } from "./types";
 
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 const toriiBaseUrlFromName = (name: string) => `${cartridgeApiBase}/x/${name}/torii`;
+
+const assertSlotWorldAddressIsAvailable = ({
+  chain,
+  name,
+  worldAddress,
+}: {
+  chain: Chain;
+  name: string;
+  worldAddress: string | null;
+}) => {
+  if (!isSlotWorldChain(chain)) return;
+  if (worldAddress) return;
+
+  throw new Error(`Slot world deployment is not available: ${name}`);
+};
 
 const measureAsyncDuration = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
   const startedAt = performance.now();
@@ -20,6 +35,22 @@ const measureAsyncDuration = async <T>(name: string, run: () => Promise<T>): Pro
   } finally {
     recordGameEntryDuration(name, performance.now() - startedAt);
   }
+};
+
+const resolveWorldProfileRpcUrl = ({
+  chain,
+  deploymentRpcUrl,
+  fallbackRpcUrl,
+}: {
+  chain: Chain;
+  deploymentRpcUrl: string | null | undefined;
+  fallbackRpcUrl: string;
+}) => {
+  if (isSlotWorldChain(chain)) {
+    return fallbackRpcUrl;
+  }
+
+  return deploymentRpcUrl ?? fallbackRpcUrl;
 };
 
 const normalizeAddress = (addr: unknown): string | null => {
@@ -110,10 +141,12 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
     worldAddress = normalizeAddress(deployment?.worldAddress) ?? deployment?.worldAddress ?? null;
   }
 
+  assertSlotWorldAddressIsAvailable({ chain, name, worldAddress });
+
   // As a last resort, default to 0x0 so configuration can still proceed with patched contracts
   if (!worldAddress) worldAddress = "0x0";
 
-  const slotDefaultRpcUrl = `${cartridgeApiBase}/x/${name}/katana`;
+  const slotDefaultRpcUrl = buildSharedSlotRpcUrl(cartridgeApiBase);
   const chainDefaultRpcUrl =
     chain === "slot" || chain === "slottest"
       ? slotDefaultRpcUrl
@@ -121,12 +154,15 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
         ? `${cartridgeApiBase}/x/starknet/${chain}`
         : env.VITE_PUBLIC_NODE_URL;
   const canUseEnvRpc =
-    hasPublicNodeUrl &&
-    chain !== "slot" &&
-    chain !== "slottest" &&
-    isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
+    !isSlotWorldChain(chain) && hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
   const fallbackRpcUrl = canUseEnvRpc ? env.VITE_PUBLIC_NODE_URL : chainDefaultRpcUrl;
-  const rpcUrl = normalizeRpcUrl(deployment?.rpcUrl ?? fallbackRpcUrl);
+  const rpcUrl = normalizeRpcUrl(
+    resolveWorldProfileRpcUrl({
+      chain,
+      deploymentRpcUrl: deployment?.rpcUrl,
+      fallbackRpcUrl,
+    }),
+  );
 
   const profile: WorldProfile = {
     name,
