@@ -193,13 +193,11 @@ export const CompactEntityInventory = memo(
     }
 
     const baseGrid =
-      variant === "tight"
-        ? "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1"
-        : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
+      variant === "tight" ? "grid grid-cols-4 gap-1.5" : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
 
-    const compactItemClass = variant === "tight" ? "px-1 py-0.5" : "px-1.5 py-1";
+    const compactItemClass = variant === "tight" ? "px-1.5 py-1.5" : "px-1.5 py-1";
     const iconSize = variant === "tight" ? "xs" : "sm";
-    const amountClass = variant === "tight" ? "text-[10px]" : "text-xxs";
+    const amountClass = variant === "tight" ? "text-xs" : "text-xxs";
 
     const effectiveHeroCount = Math.max(0, Math.min(heroCount, visibleItems.length));
     const heroItems = effectiveHeroCount > 0 ? visibleItems.slice(0, effectiveHeroCount) : [];
@@ -210,20 +208,20 @@ export const CompactEntityInventory = memo(
       const isClickableRelic =
         allowRelicActivation && item.isRelic && item.canActivate && !item.isActive && entityId && entityType != null;
 
-      const heroPadding = "px-2 py-1.5";
+      const heroPadding = "px-2.5 py-2";
       const heroIconSize = "sm";
-      const heroAmountClass = "text-sm font-bold";
+      const heroAmountClass = "text-base font-bold";
 
       const itemClasses = cn(
-        "flex h-full w-full flex-col items-center justify-center rounded-md border text-center",
+        "flex h-full w-full flex-col items-center justify-center rounded-xl border text-center shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
         options.hero ? heroPadding : compactItemClass,
         item.isRelic
           ? item.isActive
-            ? "border-relic2/60 bg-relic/15"
-            : "border-relic2/40 bg-relic/10"
+            ? "border-relic2/60 bg-[linear-gradient(180deg,rgba(165,124,255,0.18),rgba(14,10,22,0.92))]"
+            : "border-relic2/40 bg-[linear-gradient(180deg,rgba(137,98,233,0.12),rgba(10,8,16,0.94))]"
           : options.hero
-            ? "border-gold/40 bg-dark/60"
-            : "border-gold/25 bg-dark/40",
+            ? "border-gold/45 bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
+            : "border-gold/25 bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]",
         isClickableRelic &&
           "cursor-pointer transition-colors duration-150 hover:border-gold/60 hover:bg-gold/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
       );
@@ -235,11 +233,11 @@ export const CompactEntityInventory = memo(
             size={options.hero ? heroIconSize : iconSize}
             withTooltip={false}
           />
-          <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold text-gold/95")}>
+          <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold leading-none text-gold/95")}>
             {formatInventoryAmount(item.amount)}
           </span>
           {showLabels && resourceDef && (
-            <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
+            <span className="mt-0.5 text-[10px] text-gold/65 truncate" title={resourceDef.trait}>
               {resourceDef.ticker ?? resourceDef.trait}
             </span>
           )}
@@ -249,9 +247,9 @@ export const CompactEntityInventory = memo(
     };
 
     return (
-      <div className={cn("flex flex-col gap-1.5", className)}>
+      <div className={cn("flex flex-col gap-2", className)}>
         {heroItems.length > 0 && (
-          <div className="grid grid-cols-3 gap-1.5">{heroItems.map((item) => renderItem(item, { hero: true }))}</div>
+          <div className="grid grid-cols-3 gap-2">{heroItems.map((item) => renderItem(item, { hero: true }))}</div>
         )}
         {regularItems.length > 0 && (
           <div className={cn(baseGrid)}>{regularItems.map((item) => renderItem(item, { hero: false }))}</div>

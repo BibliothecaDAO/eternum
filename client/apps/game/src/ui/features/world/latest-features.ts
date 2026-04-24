@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-24",
+    title: "Steadier Realm Sidebar",
+    description:
+      "Realm selection now stays in place when you switch structures, and balance cards use a cleaner 4-column layout with larger values for quicker scanning.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-23",
     title: "Bounded Renderer Startup",
     description:

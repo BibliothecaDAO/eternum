@@ -389,17 +389,10 @@ const LeftPanelHeader = memo(
 
     const orderedStructures = useMemo(() => {
       const currentTab = structureTabs[activeTab] ?? structureTabs[0];
-      const filtered =
-        currentTab?.categories?.length === 0
-          ? structuresWithMetadata
-          : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
-      return filtered.toSorted((a, b) => {
-        const aSelected = a.entityId === structureEntityId ? 0 : 1;
-        const bSelected = b.entityId === structureEntityId ? 0 : 1;
-        if (aSelected !== bSelected) return aSelected - bSelected;
-        return Number(b.isFavorite) - Number(a.isFavorite);
-      });
-    }, [activeTab, structureTabs, structuresWithMetadata, structureEntityId]);
+      return currentTab?.categories?.length === 0
+        ? structuresWithMetadata
+        : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
+    }, [activeTab, structureTabs, structuresWithMetadata]);
 
     const categoryCounts = useMemo(() => {
       const counts: Partial<Record<StructureType, number>> = {};
