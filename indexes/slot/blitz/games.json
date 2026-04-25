@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-24T23:02:09.226Z",
+  "updatedAt": "2026-04-25T15:33:06.253Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -633,6 +633,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-04-23T07:12:22.063Z"
       }
+    },
+    "bltz-bolt-396": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-bolt-396",
+      "path": "runs/slot/blitz/bltz-bolt-396.json",
+      "inputPath": "inputs/slot/blitz/bltz-bolt-396/24934292705-1.json",
+      "status": "running",
+      "updatedAt": "2026-04-25T15:33:06.253Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-04-25T16:00:00.000Z",
+      "durationSeconds": 5400,
+      "artifacts": {}
     }
   }
 }
