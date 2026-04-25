@@ -1269,7 +1269,7 @@ export class StructureManager {
         // Note: setCount will be called once per model after all structures are processed
       }
 
-      const fallbackVisibleStructureIds = presentVisibleStructures({
+      const fallbackVisibleStructureIds = presentVisibleStructures<StructureInfo, ID>({
         visibleStructures: visibleStructures.filter((structure) => !presentedStructureIds.has(structure.entityId)),
         presentStructure: (structure) => {
           const rotationY = this.resolveVisibleStructureRotationY(structure);
