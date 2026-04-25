@@ -22,6 +22,38 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-25",
+    title: "Sidebar Transfer Bars",
+    description:
+      "The realm sidebar now shows minimal transfer bars for active live and automated routes, so you can see what is moving between structures at a glance without reopening the transfers panel.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-25",
+    title: "Clearer Attention Reasons",
+    description:
+      "Attention warnings now explain why a resource is blocked, so chips like Knight T2 tell you whether they are waiting on inputs or missing an active producer instead of showing a bare name.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-25",
+    title: "Overview Build Shortcuts",
+    description:
+      "Realm building counts now show resource icons and hover build shortcuts in both construction and overview, so you can scan what is built and add the next structure faster.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-25",
+    title: "Realm Build Counts",
+    description:
+      "Construction now shows a compact built-here summary for the selected realm, so you can check existing building counts without hovering the map.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-24",
     title: "Steadier Realm Sidebar",
     description:
