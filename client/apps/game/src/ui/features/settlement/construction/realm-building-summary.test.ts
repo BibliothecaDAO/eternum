@@ -27,9 +27,9 @@ describe("buildRealmBuildingSummary", () => {
     });
 
     expect(items).toEqual([
-      { buildingId: BuildingType.ResourceWood, label: "Wood", count: 2 },
-      { buildingId: BuildingType.WorkersHut, label: "Workers Hut", count: 1 },
-      { buildingId: BuildingType.ResourceKnightT1, label: "Knight T1", count: 3 },
+      { buildingId: BuildingType.ResourceWood, label: "Wood", iconResource: "Wood", count: 2 },
+      { buildingId: BuildingType.WorkersHut, label: "Workers Hut", iconResource: "House", count: 1 },
+      { buildingId: BuildingType.ResourceKnightT1, label: "Knight T1", iconResource: "Knight", count: 3 },
     ]);
   });
 

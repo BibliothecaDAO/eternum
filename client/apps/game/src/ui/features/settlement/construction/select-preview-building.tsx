@@ -20,11 +20,13 @@ import {
   releaseOccupiedBuildSpot,
   reserveOccupiedBuildSpot,
 } from "./build-reservation-store";
+import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";
 import {
   buildRealmBuildingSummary,
   getMilitaryBuildingInfo,
   MILITARY_BUILDING_GROUP_ORDER,
   RealmBuildingSummary,
+  resolveRealmBuildingSummaryBuildability,
 } from "./realm-building-summary";
 
 import {
@@ -44,13 +46,11 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
-  BUILDINGS_CENTER,
   BiomeType,
   BuildingType,
   BuildingTypeToString,
   findResourceById,
   getBuildingFromResource,
-  getNeighborHexes,
   ID,
   isEconomyBuilding,
   ResourceMiningTypes,
@@ -73,57 +73,6 @@ type ArmyGroup = {
   buildings: string[];
   isRecommended: boolean;
   bonus?: number;
-};
-
-const buildablePositionsCache = new Map<number, Array<{ col: number; row: number }>>();
-const OCCUPIED_SPACE_REASON = "space is occupied";
-
-const extractErrorMessage = (error: unknown): string => {
-  if (typeof error === "string") return error;
-  if (error instanceof Error) return error.message;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
-  }
-};
-
-const isOccupiedSpaceError = (error: unknown): boolean =>
-  extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
-
-const generateBuildablePositions = (radius: number) => {
-  const cached = buildablePositionsCache.get(radius);
-  if (cached) return cached;
-  const positions: Array<{ col: number; row: number }> = [];
-  const seen = new Set<string>();
-
-  const addPosition = (col: number, row: number) => {
-    const key = `${col},${row}`;
-    if (seen.has(key)) return;
-    positions.push({ col, row });
-    seen.add(key);
-  };
-
-  const start = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
-  addPosition(start.col, start.row);
-
-  let currentLayer = [start];
-  for (let i = 0; i < radius; i++) {
-    const nextLayer: Array<{ col: number; row: number }> = [];
-    currentLayer.forEach((pos) => {
-      getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
-        const key = `${neighbor.col},${neighbor.row}`;
-        if (!seen.has(key)) {
-          addPosition(neighbor.col, neighbor.row);
-          nextLayer.push(neighbor);
-        }
-      });
-    });
-    currentLayer = nextLayer;
-  }
-
-  buildablePositionsCache.set(radius, positions);
-  return positions;
 };
 
 type ResourceProductionStatus = {
@@ -206,26 +155,15 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     structureBuildings,
   ]);
   const hasAvailableBuildingTile = useMemo(() => {
-    if (!realm?.position) return true;
-
-    const outerCol = Number(realm.position.x);
-    const outerRow = Number(realm.position.y);
-    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-      col: outerCol,
-      row: outerRow,
-    });
-    const buildRadius = Math.max(1, Number(tileManager.getRealmLevel(entityId)) + 1);
-    const candidates = generateBuildablePositions(buildRadius);
-    const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
-    const occupied = occupiedSpotsRef.current;
-    const vacated = vacatedSpotsRef.current;
-
-    return candidates.some((pos) => {
-      const key = `${pos.col},${pos.row}`;
-      if (key === centerKey) return false;
-      if (occupied.has(key)) return false;
-      if (vacated.has(key) && tileManager.isHexOccupied({ col: pos.col, row: pos.row })) return false;
-      return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
+    return resolveRealmHasAvailableBuildingTile({
+      entityId,
+      realmPosition: realm?.position,
+      world: {
+        components: dojo.setup.components,
+        systemCalls: dojo.setup.systemCalls,
+      },
+      occupiedSpots: occupiedSpotsRef.current,
+      vacatedSpots: vacatedSpotsRef.current,
     });
   }, [
     dojo.setup.components,
@@ -255,98 +193,31 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const handleAutoBuild = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
-      if (!realm?.position) {
-        toast.error("Select a realm before building.");
-        return;
-      }
       const buildingKey = target.type.toString();
-      const outerCol = Number(realm.position.x);
-      const outerRow = Number(realm.position.y);
-      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-        col: outerCol,
-        row: outerRow,
-      });
-      const occupied = occupiedSpotsRef.current;
-      const vacated = vacatedSpotsRef.current;
-      let occupiedKey: string | null = null;
-      let didBuild = false;
-      let occupiedTileFailures = 0;
 
       setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
 
       try {
-        const buildRadius = Math.max(1, Number(tileManager.getRealmLevel(entityId)) + 1);
-        const candidates = generateBuildablePositions(buildRadius);
-        const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
-
-        const availableSpots = candidates.filter((pos) => {
-          const key = `${pos.col},${pos.row}`;
-          if (key === centerKey) return false;
-          if (occupied.has(key)) return false;
-          if (vacated.has(key) && tileManager.isHexOccupied({ col: pos.col, row: pos.row })) return false;
-          return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
-        });
-
-        if (availableSpots.length === 0) {
-          toast.error("No empty building tiles available.");
-          return;
-        }
-
-        for (const availableSpot of availableSpots) {
-          const candidateKey = `${availableSpot.col},${availableSpot.row}`;
-          occupiedKey = candidateKey;
-          reserveOccupiedBuildSpot(entityId, candidateKey);
-
-          try {
-            await tileManager.placeBuilding(
-              dojo.account.account,
-              entityId,
-              target.type,
-              { col: availableSpot.col, row: availableSpot.row },
-              useSimpleCost,
-            );
-            didBuild = true;
-
+        await buildRealmBuilding({
+          entityId,
+          realmPosition: realm?.position,
+          target,
+          useSimpleCost,
+          world: {
+            account: dojo.account.account,
+            components: dojo.setup.components,
+            systemCalls: dojo.setup.systemCalls,
+          },
+          occupiedSpots: occupiedSpotsRef.current,
+          vacatedSpots: vacatedSpotsRef.current,
+          onReserveSpot: (spotKey) => reserveOccupiedBuildSpot(entityId, spotKey),
+          onReleaseSpot: (spotKey) => releaseOccupiedBuildSpot(entityId, spotKey),
+          onBuildSuccess: (selection) => {
             setPreviewBuilding(null);
-            setSelectedBuildingHex({
-              outerCol,
-              outerRow,
-              innerCol: availableSpot.col,
-              innerRow: availableSpot.row,
-            });
-            break;
-          } catch (error) {
-            releaseOccupiedBuildSpot(entityId, candidateKey);
-            occupiedKey = null;
-
-            if (isOccupiedSpaceError(error)) {
-              occupiedTileFailures += 1;
-              continue;
-            }
-
-            throw error;
-          }
-        }
-
-        if (!didBuild) {
-          if (occupiedTileFailures > 0) {
-            toast.error("All auto-selected tiles became occupied. Please try again.");
-            return;
-          }
-          toast.error("No empty building tiles available.");
-          return;
-        }
-      } catch (error) {
-        console.error("Failed to auto-build", error);
-        if (isOccupiedSpaceError(error)) {
-          toast.error("This tile is occupied. Please try again.");
-        } else {
-          toast.error("Building failed. Please try again.");
-        }
+            setSelectedBuildingHex(selection);
+          },
+        });
       } finally {
-        if (occupiedKey && !didBuild) {
-          releaseOccupiedBuildSpot(entityId, occupiedKey);
-        }
         setPendingBuilds((prev) => {
           const next = { ...prev };
           delete next[buildingKey];
@@ -694,6 +565,23 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   );
 
   const activeArmyType = selectedArmyType ?? recommendedArmyType ?? armyGroups[0]?.armyType ?? null;
+  const getSummaryBuildState = useCallback(
+    (buildingId: BuildingType) => {
+      const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, buildingId, useSimpleCost);
+      const hasBalance = Boolean(buildingCosts && checkBalance(buildingCosts));
+      const hasEnoughPopulation = Boolean(realm && hasEnoughPopulationForBuilding(realm, buildingId));
+
+      return resolveRealmBuildingSummaryBuildability({
+        buildingId,
+        hasBalance,
+        hasEnoughPopulation,
+        hasCapacity: Boolean(realm?.hasCapacity),
+        hasAvailableBuildingTile,
+        useSimpleCost,
+      });
+    },
+    [checkBalance, dojo.setup.components, entityId, hasAvailableBuildingTile, realm, useSimpleCost],
+  );
   const allowedBuildingTypes = useMemo(
     () =>
       buildingTypes
@@ -709,6 +597,26 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         getBuildingCount: getBuildingCountFor,
       }),
     [allowedBuildingTypes, getBuildingCountFor, realm?.resources],
+  );
+  const realmBuildingSummaryActions = useMemo(
+    () =>
+      new Map(
+        realmBuildingSummary.map((item) => {
+          const buildState = getSummaryBuildState(item.buildingId);
+          const isPending = Boolean(pendingBuilds[item.buildingId.toString()]);
+
+          return [
+            item.buildingId,
+            {
+              onBuild: () => void handleAutoBuild({ type: item.buildingId }),
+              disabled: !buildState.canBuild || isPending,
+              loading: isPending,
+              title: isPending ? `Building ${item.label}...` : (buildState.disabledReason ?? `Build ${item.label}`),
+            },
+          ] as const;
+        }),
+      ),
+    [getSummaryBuildState, handleAutoBuild, pendingBuilds, realmBuildingSummary],
   );
 
   const tabs = useMemo(
@@ -1143,7 +1051,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         </div>
       </div>
 
-      <RealmBuildingSummary className="realm-summary-selector" headline="Built here" items={realmBuildingSummary} />
+      <RealmBuildingSummary
+        className="realm-summary-selector"
+        headline="Built here"
+        items={realmBuildingSummary}
+        buildActions={realmBuildingSummaryActions}
+      />
 
       <Tabs
         selectedIndex={selectedTab}

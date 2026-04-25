@@ -3,9 +3,12 @@ import {
   BuildingType,
   BuildingTypeToString,
   getBuildingFromResource,
+  getProducedResource,
   isEconomyBuilding,
   ResourcesIds,
 } from "@bibliothecadao/types";
+import Plus from "lucide-react/dist/esm/icons/plus";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
 export const MILITARY_BUILDING_GROUP_ORDER = ["Archery", "Stable", "Barracks"] as const;
 
@@ -14,6 +17,7 @@ type MilitaryBuildingGroup = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type RealmBuildingSummaryItem = {
   buildingId: BuildingType;
   label: string;
+  iconResource: string;
   count: number;
 };
 
@@ -21,6 +25,22 @@ type BuildRealmBuildingSummaryOptions = {
   realmResourceIds: ResourcesIds[];
   allowedBuildingTypes: BuildingType[];
   getBuildingCount: (buildingType: BuildingType) => number;
+};
+
+type RealmBuildingSummaryBuildAction = {
+  onBuild: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  title?: string;
+};
+
+type RealmBuildAvailabilityOptions = {
+  buildingId: BuildingType;
+  hasBalance: boolean;
+  hasEnoughPopulation: boolean;
+  hasCapacity: boolean;
+  hasAvailableBuildingTile: boolean;
+  useSimpleCost: boolean;
 };
 
 const prioritizeEconomicBuilding = (buildingType: BuildingType) => {
@@ -68,6 +88,19 @@ const resolveRealmBuildingSummaryOrder = (realmResourceIds: ResourcesIds[], allo
 
 const toSummaryLabel = (buildingType: BuildingType) => BuildingTypeToString[buildingType] ?? "Building";
 
+const toSummaryIconResource = (buildingType: BuildingType) => {
+  if (buildingType === BuildingType.WorkersHut) return "House";
+  if (buildingType === BuildingType.Storehouse) return "Silo";
+  if (buildingType === BuildingType.ResourceDonkey) return "Donkey";
+
+  const producedResource = getProducedResource(buildingType);
+  if (producedResource !== undefined) {
+    return ResourcesIds[producedResource];
+  }
+
+  return "House";
+};
+
 export const buildRealmBuildingSummary = ({
   realmResourceIds,
   allowedBuildingTypes,
@@ -81,6 +114,7 @@ export const buildRealmBuildingSummary = ({
       items.push({
         buildingId: buildingType,
         label: toSummaryLabel(buildingType),
+        iconResource: toSummaryIconResource(buildingType),
         count,
       });
       return items;
@@ -88,19 +122,73 @@ export const buildRealmBuildingSummary = ({
     [],
   );
 
+export const resolveRealmBuildingSummaryBuildability = ({
+  buildingId,
+  hasBalance,
+  hasEnoughPopulation,
+  hasCapacity,
+  hasAvailableBuildingTile,
+  useSimpleCost,
+}: RealmBuildAvailabilityOptions) => {
+  if (!hasAvailableBuildingTile) {
+    return { canBuild: false, disabledReason: "Realm full" };
+  }
+
+  const militaryInfo = getMilitaryBuildingInfo(buildingId);
+  if (useSimpleCost && (militaryInfo?.tier ?? 0) > 1) {
+    return {
+      canBuild: false,
+      disabledReason: `Switch to Resource mode to build Tier ${militaryInfo?.tier} military buildings.`,
+    };
+  }
+
+  const isLaborLockedResource =
+    useSimpleCost &&
+    (buildingId === BuildingType.ResourceDragonhide ||
+      buildingId === BuildingType.ResourceMithral ||
+      buildingId === BuildingType.ResourceAdamantine);
+  if (isLaborLockedResource) {
+    return { canBuild: false, disabledReason: "Switch to Resource mode to create this building." };
+  }
+
+  if (!hasBalance) {
+    return { canBuild: false, disabledReason: "Need more resources." };
+  }
+
+  if (buildingId === BuildingType.WorkersHut) {
+    return { canBuild: true, disabledReason: undefined };
+  }
+
+  if (!hasCapacity) {
+    return { canBuild: false, disabledReason: "Need more capacity." };
+  }
+
+  if (!hasEnoughPopulation) {
+    return { canBuild: false, disabledReason: "Need more population." };
+  }
+
+  return { canBuild: true, disabledReason: undefined };
+};
+
 export const RealmBuildingSummary = ({
   items,
   className,
   headline = "Built here",
+  variant = "section",
+  buildActions,
 }: {
   items: RealmBuildingSummaryItem[];
   className?: string;
   headline?: string;
+  variant?: "section" | "card";
+  buildActions?: Map<BuildingType, RealmBuildingSummaryBuildAction>;
 }) => {
   const totalBuildings = items.reduce((total, item) => total + item.count, 0);
+  const containerClassName =
+    variant === "card" ? "rounded border border-gold/20 bg-black/50 p-2" : "border-b border-gold/10 px-3 py-2";
 
   return (
-    <section className={clsx("realm-summary-selector border-b border-gold/10 px-3 py-2", className)}>
+    <section className={clsx("realm-summary-selector", containerClassName, className)}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold/60">{headline}</p>
         <p className="text-[10px] text-gold/45">{totalBuildings > 0 ? `${totalBuildings} total` : "Empty realm"}</p>
@@ -108,17 +196,42 @@ export const RealmBuildingSummary = ({
 
       {items.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {items.map((item) => (
-            <div
-              key={item.buildingId}
-              className="flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-[11px] text-gold/90"
-            >
-              <span className="max-w-[8rem] truncate">{item.label}</span>
-              <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">
-                {item.count}
-              </span>
-            </div>
-          ))}
+          {items.map((item) => {
+            const buildAction = buildActions?.get(item.buildingId);
+
+            return (
+              <div
+                key={item.buildingId}
+                className={clsx(
+                  "group relative flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-[11px] text-gold/90",
+                  buildAction && "pr-8",
+                )}
+              >
+                <span className="max-w-[8rem] truncate">{item.label}</span>
+                <span className="flex items-center gap-1 rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">
+                  <ResourceIcon resource={item.iconResource} size="xs" withTooltip={false} />
+                  <span>{item.count}</span>
+                </span>
+                {buildAction && (
+                  <button
+                    type="button"
+                    onClick={buildAction.onBuild}
+                    disabled={buildAction.disabled || buildAction.loading}
+                    title={buildAction.title}
+                    aria-label={`Build ${item.label}`}
+                    className={clsx(
+                      "absolute right-1 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full border border-gold/40 bg-black/70 text-gold transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-gold",
+                      !(buildAction.disabled || buildAction.loading) && "hover:bg-gold/15",
+                      (buildAction.disabled || buildAction.loading) &&
+                        "cursor-not-allowed opacity-40 group-hover:opacity-40",
+                    )}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <p className="mt-2 text-xs italic text-gold/55">No buildings yet.</p>

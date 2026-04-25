@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-25",
+    title: "Overview Build Shortcuts",
+    description:
+      "Realm building counts now show resource icons and hover build shortcuts in both construction and overview, so you can scan what is built and add the next structure faster.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-25",
     title: "Realm Build Counts",
     description:
       "Construction now shows a compact built-here summary for the selected realm, so you can check existing building counts without hovering the map.",

@@ -2,11 +2,21 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { LeftView } from "@/types";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ProductionModal } from "@/ui/features/settlement";
+import {
+  buildRealmBuilding,
+  resolveRealmHasAvailableBuildingTile,
+} from "@/ui/features/settlement/construction/realm-build-actions";
+import {
+  buildRealmBuildingSummary,
+  RealmBuildingSummary,
+  resolveRealmBuildingSummaryBuildability,
+} from "@/ui/features/settlement/construction/realm-building-summary";
 import { productionAutomation } from "@/ui/features/world/components/config";
 import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
@@ -19,10 +29,16 @@ import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/uti
 import { inferRealmPreset } from "@/utils/automation-presets";
 import { getRealmStatusColor, getFailureSeverity, timeAgo } from "@/utils/automation-status";
 import {
+  divideByPrecision,
   formatTime,
+  getBalance,
+  getBuildingCosts,
+  getBuildingCount,
   getGuardsByStructure,
+  getRealmInfo,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
+  hasEnoughPopulationForBuilding,
 } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import {
@@ -164,7 +180,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const setSelectedBuilding = useUIStore((state) => state.setSelectedBuilding);
+  const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const automationRealms = useAutomationStore((state) => state.realms);
   const hasAutomationFailures = useAutomationStore(
     useCallback((state) => Object.values(state.realms).some((r) => (r.lastStatus?.consecutiveFailures ?? 0) >= 3), []),
@@ -181,10 +199,18 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     components.Resource,
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   ) as ComponentValue<ClientComponents["Resource"]["schema"]> | null;
+  const structureBuildings = useComponentValue(
+    components.StructureBuildings,
+    structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
+  );
   const villageTroop = useComponentValue(
     components.VillageTroop,
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   ) as ComponentValue<ClientComponents["VillageTroop"]["schema"]> | null;
+  const realm = useMemo(
+    () => (structureEntityId ? getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), components) : null),
+    [components, structureEntityId],
+  );
 
   const isVillage = structure?.base?.category === StructureType.Village;
   const isOwned = structure ? structure.owner === ContractAddress(account.account.address) : false;
@@ -226,7 +252,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   );
 
-  const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
+  const { currentArmiesTick, currentBlockTimestamp, currentDefaultTick } = useBlockTimestamp();
+  const mode = useGameModeConfig();
+  const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
 
   const relicEffects = useMemo(() => {
     if (!structure) return [];
@@ -279,6 +307,132 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       setLeftNavigationView(LeftView.ConstructionView);
     },
     [setLeftNavigationView, setPreviewBuilding, setSelectedBuilding],
+  );
+  const getBuildingCountFor = useCallback(
+    (buildingType: BuildingType) => {
+      if (!structureBuildings) return 0;
+
+      const packedCounts = [
+        structureBuildings.packed_counts_1 || 0n,
+        structureBuildings.packed_counts_2 || 0n,
+        structureBuildings.packed_counts_3 || 0n,
+      ];
+      return getBuildingCount(buildingType, packedCounts) || 0;
+    },
+    [structureBuildings],
+  );
+  const checkBalance = useCallback(
+    (cost: any) =>
+      Object.keys(cost).every((resourceId) => {
+        const resourceCost = cost[Number(resourceId)];
+        const balance = getBalance(realmId ?? 0, resourceCost.resource, currentDefaultTick, components);
+        return divideByPrecision(balance.balance) >= resourceCost.amount;
+      }),
+    [components, currentDefaultTick, realmId],
+  );
+  const allowedBuildingTypes = useMemo(
+    () =>
+      Object.keys(BuildingType)
+        .filter((buildingType) => mode.rules.isBuildingTypeAllowed(buildingType))
+        .map((buildingType) => BuildingType[buildingType as keyof typeof BuildingType])
+        .filter((buildingType): buildingType is BuildingType => typeof buildingType === "number"),
+    [mode],
+  );
+  const hasAvailableBuildingTile = useMemo(
+    () =>
+      resolveRealmHasAvailableBuildingTile({
+        entityId: realmId ?? 0,
+        realmPosition: realm?.position,
+        world: {
+          components,
+          systemCalls: setup.systemCalls,
+        },
+      }),
+    [components, realm?.position, realmId, setup.systemCalls],
+  );
+  const realmBuildingSummary = useMemo(
+    () =>
+      buildRealmBuildingSummary({
+        realmResourceIds: realm?.resources ?? [],
+        allowedBuildingTypes,
+        getBuildingCount: getBuildingCountFor,
+      }),
+    [allowedBuildingTypes, getBuildingCountFor, realm?.resources],
+  );
+  const handleBuildSummaryItem = useCallback(
+    async (buildingId: BuildingType) => {
+      if (!realmId) return;
+
+      const buildingKey = buildingId.toString();
+      setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
+
+      try {
+        await buildRealmBuilding({
+          entityId: realmId,
+          realmPosition: realm?.position,
+          target: { type: buildingId },
+          useSimpleCost,
+          world: {
+            account: account.account,
+            components,
+            systemCalls: setup.systemCalls,
+          },
+          onBuildSuccess: (selection) => setSelectedBuildingHex(selection),
+        });
+      } finally {
+        setPendingBuilds((prev) => {
+          const next = { ...prev };
+          delete next[buildingKey];
+          return next;
+        });
+      }
+    },
+    [account.account, components, realm?.position, realmId, setSelectedBuildingHex, setup.systemCalls, useSimpleCost],
+  );
+  const realmBuildingSummaryActions = useMemo(
+    () =>
+      new Map(
+        realmBuildingSummary.map((item) => {
+          const buildingCosts = getBuildingCosts(realmId ?? 0, components, item.buildingId, useSimpleCost);
+          const hasBalance = Boolean(buildingCosts && checkBalance(buildingCosts));
+          const hasEnoughPopulation = Boolean(realm && hasEnoughPopulationForBuilding(realm, item.buildingId));
+          const buildState = resolveRealmBuildingSummaryBuildability({
+            buildingId: item.buildingId,
+            hasBalance,
+            hasEnoughPopulation,
+            hasCapacity: Boolean(realm?.hasCapacity),
+            hasAvailableBuildingTile,
+            useSimpleCost,
+          });
+          const isPending = Boolean(pendingBuilds[item.buildingId.toString()]);
+
+          return [
+            item.buildingId,
+            {
+              onBuild: () => void handleBuildSummaryItem(item.buildingId),
+              disabled: !isOwned || !buildState.canBuild || isPending,
+              loading: isPending,
+              title: !isOwned
+                ? "You do not own this realm."
+                : isPending
+                  ? `Building ${item.label}...`
+                  : (buildState.disabledReason ?? `Build ${item.label}`),
+            },
+          ] as const;
+        }),
+      ),
+    [
+      checkBalance,
+      components,
+      handleBuildSummaryItem,
+      hasAvailableBuildingTile,
+      isOwned,
+      pendingBuilds,
+      realm,
+      realmBuildingSummary,
+      realmId,
+      useSimpleCost,
+    ],
   );
   const shouldRenderVillageUi = isVillage;
   const isVillageMilitiaClaimed = Boolean(villageTroop?.claimed);
@@ -446,6 +600,15 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
             />
           </div>
         </div>
+      )}
+
+      {structureCapabilities.canOpenConstruction && (
+        <RealmBuildingSummary
+          headline="Built here"
+          items={realmBuildingSummary}
+          variant="card"
+          buildActions={realmBuildingSummaryActions}
+        />
       )}
 
       {relicEffects.length > 0 && structureEntityId && (
