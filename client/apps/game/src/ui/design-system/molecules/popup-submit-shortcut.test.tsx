@@ -41,6 +41,12 @@ import { SecondaryPopup } from "./secondary-popup";
 const SecondaryPopupWithSubmit = SecondaryPopup as typeof SecondaryPopup & ((props: any) => React.ReactElement);
 const BasePopupWithSubmit = BasePopup as typeof BasePopup & ((props: any) => React.ReactElement);
 
+declare global {
+  // React checks this flag in tests to suppress act environment warnings.
+  // It is only present at runtime, so the test declares it explicitly here.
+  var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
+}
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("popup submit shortcuts", () => {
