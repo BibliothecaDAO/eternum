@@ -258,7 +258,10 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const { data: storyEvents = [] } = useStoryEvents(200);
   const mode = useGameModeConfig();
   const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
-  const structureName = useMemo(() => (structure ? mode.structure.getName(structure).name : "Structure"), [mode, structure]);
+  const structureName = useMemo(
+    () => (structure ? mode.structure.getName(structure).name : "Structure"),
+    [mode, structure],
+  );
 
   const relicEffects = useMemo(() => {
     if (!structure) return [];
