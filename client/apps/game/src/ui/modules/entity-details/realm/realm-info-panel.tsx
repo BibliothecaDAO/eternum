@@ -207,10 +207,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     components.VillageTroop,
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   ) as ComponentValue<ClientComponents["VillageTroop"]["schema"]> | null;
-  const realm = useMemo(
-    () => (structureEntityId ? getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), components) : null),
-    [components, structureEntityId],
-  );
+  const realm = structureEntityId ? getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), components) : null;
 
   const isVillage = structure?.base?.category === StructureType.Village;
   const isOwned = structure ? structure.owner === ContractAddress(account.account.address) : false;
