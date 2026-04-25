@@ -80,6 +80,8 @@ const toIconResources = (resourceIds: number[]) =>
 const resolveStructureLabel = (entityId: number, resolveStructureName: (entityId: number) => string | null) =>
   resolveStructureName(entityId) ?? `Structure ${entityId}`;
 
+const isDefined = <T,>(value: T | null): value is T => value !== null;
+
 const buildCurrentTransferBarModels = ({
   selectedStructureId,
   currentTimeMs,
@@ -88,9 +90,9 @@ const buildCurrentTransferBarModels = ({
 }: Omit<BuildRealmTransferBarModelsOptions, "automationEntries">): TransferBarModel[] => {
   if (!selectedStructureId) return [];
 
-  return storyEvents
+  const bars = storyEvents
     .filter((event) => event.story === "ResourceTransferStory" && !event.resource_transfer_is_mint)
-    .map((event) => {
+    .map((event): TransferBarModel | null => {
       const sourceId = normalizeEntityId(event.resource_transfer_from_entity_id);
       const destinationId = normalizeEntityId(event.resource_transfer_to_entity_id);
       const travelTimeMs = parseTravelTimeMs(event.resource_transfer_travel_time);
@@ -118,9 +120,9 @@ const buildCurrentTransferBarModels = ({
         progress,
       };
     })
-    .filter((entry): entry is TransferBarModel => Boolean(entry))
-    .toSorted((left, right) => (right.progress ?? 0) - (left.progress ?? 0))
-    .slice(0, 3);
+    .filter(isDefined);
+
+  return bars.toSorted((left, right) => (right.progress ?? 0) - (left.progress ?? 0)).slice(0, 3);
 };
 
 const buildAutomationTransferBarModels = ({
@@ -130,9 +132,9 @@ const buildAutomationTransferBarModels = ({
 }: Omit<BuildRealmTransferBarModelsOptions, "storyEvents" | "currentTimeMs">): TransferBarModel[] => {
   if (!selectedStructureId) return [];
 
-  return automationEntries
+  const bars = automationEntries
     .filter((entry) => entry.active)
-    .map((entry) => {
+    .map((entry): TransferBarModel | null => {
       const sourceId = normalizeEntityId(entry.sourceEntityId);
       const destinationId = normalizeEntityId(entry.destinationEntityId);
       if (!sourceId || !destinationId) return null;
@@ -151,8 +153,9 @@ const buildAutomationTransferBarModels = ({
         iconResources,
       };
     })
-    .filter((entry): entry is TransferBarModel => Boolean(entry))
-    .slice(0, 3);
+    .filter(isDefined);
+
+  return bars.slice(0, 3);
 };
 
 export const buildRealmTransferBarModels = ({

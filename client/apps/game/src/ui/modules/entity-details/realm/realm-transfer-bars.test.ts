@@ -13,7 +13,7 @@ describe("buildRealmTransferBarModels", () => {
       story: "ResourceTransferStory",
       timestampMs: 1_000,
       tx_hash: "0xabc",
-      presentation: {},
+      presentation: { title: "Transfer", icon: "resource" },
       id: "story-1",
       resource_transfer_from_entity_id: 209,
       resource_transfer_to_entity_id: 101,
