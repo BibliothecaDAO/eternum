@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-bolt-396",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-bolt-396/24934292705-1.json",
   "latestLaunchRequestId": "24934292705-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-04-25T15:33:06.253Z",
-  "updatedAt": "2026-04-25T15:35:35.035Z",
+  "updatedAt": "2026-04-25T15:35:41.589Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,12 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-04-25T15:35:35.035Z"
+      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-bolt-396\" on slot.blitz\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-bolt-396\"\n\u001b[2m[+146ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-bolt-396\" in 127ms (0x010abf8a...61b039)\n\u001b[2m[+156ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x010abf8a...61b039\n\u001b[2m[+439ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 283ms: Unable to verify whether Torii deployment \"bltz-bolt-396\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\nError: Unable to verify whether Torii deployment \"bltz-bolt-396\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:372:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:891:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:889:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1055:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1089:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1104:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:149:25)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-04-25T15:35:35.035Z",
+      "finishedAt": "2026-04-25T15:35:41.589Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-bolt-396\" on slot.blitz\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-bolt-396\"\n\u001b[2m[+146ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-bolt-396\" in 127ms (0x010abf8a...61b039)\n\u001b[2m[+156ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x010abf8a...61b039\n\u001b[2m[+439ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 283ms: Unable to verify whether Torii deployment \"bltz-bolt-396\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\nError: Unable to verify whether Torii deployment \"bltz-bolt-396\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:372:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:891:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:889:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1055:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1089:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1104:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:149:25)\n    at processTicksAndRejections (native:7:39)"
     }
   ],
   "artifacts": {
@@ -78,13 +80,5 @@
     "configureTxHash": "0xa8d14e5ffb4e9f7202aafcb5a374268e121f587ae0e6ee772b4af2ee6a95f",
     "worldConfigTxHash": "0xa8d14e5ffb4e9f7202aafcb5a374268e121f587ae0e6ee772b4af2ee6a95f",
     "lootChestRoleTxHash": "0x35711cbd7c38c9d293d16ea76aa4661ebc79e1363ea40de681f603d1419efa4"
-  },
-  "activeLease": {
-    "launchRequestId": "24934292705-1",
-    "workflowRunId": 24934292705,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-04-25T15:35:35.035Z",
-    "expiresAt": "2026-04-25T16:20:35.035Z"
   }
 }
