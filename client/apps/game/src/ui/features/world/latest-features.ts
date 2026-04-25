@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-25",
+    title: "Clearer Attention Reasons",
+    description:
+      "Attention warnings now explain why a resource is blocked, so chips like Knight T2 tell you whether they are waiting on inputs or missing an active producer instead of showing a bare name.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-25",
     title: "Overview Build Shortcuts",
     description:
       "Realm building counts now show resource icons and hover build shortcuts in both construction and overview, so you can scan what is built and add the next structure faster.",
