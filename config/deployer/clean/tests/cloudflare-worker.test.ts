@@ -250,6 +250,40 @@ describe("factory worker map config overrides", () => {
     ]);
   });
 
+  test("rejects duplicate weekly cadence slots before dispatching the workflow", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/rotation-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          rotationName: "blitz-rotation",
+          firstGameStartTime: "2026-04-20T01:00:00Z",
+          maxGames: 5200,
+          advanceWindowGames: 5,
+          evaluationIntervalMinutes: 15,
+          weeklyCadence: [
+            { gameNamePrefix: "na-gladiator", weekday: "monday", utcTime: "01:00" },
+            { gameNamePrefix: "eu-gladiator", weekday: "monday", utcTime: "01:00" },
+          ],
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "weeklyCadence contains more than one game at monday 01:00 UTC",
+    });
+    expect(fetchCalls).toHaveLength(0);
+  });
+
   test("reuses stored map config overrides during continue", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {

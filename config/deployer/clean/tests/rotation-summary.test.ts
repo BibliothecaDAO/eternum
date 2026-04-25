@@ -43,11 +43,11 @@ describe("rotation launch summary", () => {
     );
 
     expect(summary.games.map((game) => [game.gameName, game.startTimeIso])).toEqual([
-      ["apac-gladiator-21-04-26", "2026-04-21T11:00:00.000Z"],
-      ["na-gladiator-22-04-26", "2026-04-22T02:00:00.000Z"],
-      ["eu-gladiator-22-04-26", "2026-04-22T19:00:00.000Z"],
-      ["apac-gladiator-23-04-26", "2026-04-23T10:00:00.000Z"],
-      ["na-gladiator-24-04-26", "2026-04-24T01:00:00.000Z"],
+      ["apac-gladiator-21-04-26-1100", "2026-04-21T11:00:00.000Z"],
+      ["na-gladiator-22-04-26-0200", "2026-04-22T02:00:00.000Z"],
+      ["eu-gladiator-22-04-26-1900", "2026-04-22T19:00:00.000Z"],
+      ["apac-gladiator-23-04-26-1000", "2026-04-23T10:00:00.000Z"],
+      ["na-gladiator-24-04-26-0100", "2026-04-24T01:00:00.000Z"],
     ]);
   });
 
@@ -77,7 +77,7 @@ describe("rotation launch summary", () => {
     );
 
     expect(initialSummary.games.at(-1)).toMatchObject({
-      gameName: "na-gladiator-27-04-26",
+      gameName: "na-gladiator-27-04-26-0100",
       startTimeIso: "2026-04-27T01:00:00.000Z",
       seriesGameNumber: 13,
     });
@@ -104,10 +104,31 @@ describe("rotation launch summary", () => {
     );
 
     expect(summary.games[0]).toMatchObject({
-      gameName: "weekend-gladiator-25-04-26",
+      gameName: "weekend-gladiator-25-04-26-1200",
       blitzRegistrationOverrides: {
         fee_amount: "1000000000000000000000",
       },
     });
+  });
+
+  test("keeps same-day cadence game names unique per slot", () => {
+    const request = buildWeeklyRotationRequest({
+      advanceWindowGames: 2,
+      weeklyCadence: [
+        { gameNamePrefix: "na-gladiator", weekday: "monday", utcTime: "01:00" },
+        { gameNamePrefix: "na-gladiator", weekday: "monday", utcTime: "03:00" },
+      ],
+    });
+
+    const summary = reconcileRotationLaunchSummary(
+      request,
+      buildInitialRotationLaunchSummary(request),
+      Date.parse("2026-04-20T00:30:00Z"),
+    );
+
+    expect(summary.games.map((game) => game.gameName)).toEqual([
+      "na-gladiator-20-04-26-0100",
+      "na-gladiator-20-04-26-0300",
+    ]);
   });
 });

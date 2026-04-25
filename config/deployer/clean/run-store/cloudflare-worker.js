@@ -1173,9 +1173,19 @@ function validateWeeklyCadence(weeklyCadence) {
     throw new HttpError(400, "weeklyCadence must be a non-empty array");
   }
 
+  const scheduledOffsets = new Set();
   for (const [index, entry] of weeklyCadence.entries()) {
     validateWeeklyCadenceEntry(entry, index);
+    const scheduledOffset = resolveWeeklyCadenceOffsetKey(entry);
+    if (scheduledOffsets.has(scheduledOffset)) {
+      throw new HttpError(400, `weeklyCadence contains more than one game at ${entry.weekday} ${entry.utcTime} UTC`);
+    }
+    scheduledOffsets.add(scheduledOffset);
   }
+}
+
+function resolveWeeklyCadenceOffsetKey(entry) {
+  return `${entry.weekday.toLowerCase()}-${entry.utcTime}`;
 }
 
 function validateWeeklyCadenceEntry(entry, index) {

@@ -146,7 +146,9 @@ function buildWeeklyCadenceGameName(gameNamePrefix: string, startTime: number): 
   const day = String(date.getUTCDate()).padStart(2, "0");
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const year = String(date.getUTCFullYear()).slice(-2);
-  return `${toRotationSlug(gameNamePrefix) || "rotation"}-${day}-${month}-${year}`;
+  const hour = String(date.getUTCHours()).padStart(2, "0");
+  const minute = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${toRotationSlug(gameNamePrefix) || "rotation"}-${day}-${month}-${year}-${hour}${minute}`;
 }
 
 function toRotationSlug(value: string): string {
