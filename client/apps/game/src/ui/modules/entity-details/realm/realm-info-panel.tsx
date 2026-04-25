@@ -22,6 +22,7 @@ import { ActiveRelicEffects } from "@/ui/features/world/components/entities/acti
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
 import { RealmAttentionRow } from "@/ui/modules/entity-details/realm/realm-attention-row";
+import { buildRealmTransferBarModels, RealmTransferBars } from "@/ui/modules/entity-details/realm/realm-transfer-bars";
 import { useRealmStarvedResources } from "@/ui/modules/entity-details/realm/use-realm-starved-resources";
 import { useRealmConsumptionPerSecond } from "@/ui/modules/entity-details/realm/use-realm-consumption-per-second";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
@@ -54,6 +55,8 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
+import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Bot from "lucide-react/dist/esm/icons/bot";
 import Shield from "lucide-react/dist/esm/icons/shield";
@@ -183,7 +186,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const playerStructures = useUIStore((state) => state.playerStructures);
   const automationRealms = useAutomationStore((state) => state.realms);
+  const transferAutomationEntries = useTransferAutomationStore((state) => Object.values(state.entries));
   const hasAutomationFailures = useAutomationStore(
     useCallback((state) => Object.values(state.realms).some((r) => (r.lastStatus?.consecutiveFailures ?? 0) >= 3), []),
   );
@@ -250,8 +255,13 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   );
 
   const { currentArmiesTick, currentBlockTimestamp, currentDefaultTick } = useBlockTimestamp();
+  const { data: storyEvents = [] } = useStoryEvents(200);
   const mode = useGameModeConfig();
   const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
+  const structureName = useMemo(
+    () => (structure ? mode.structure.getName(structure.structure).name : "Structure"),
+    [mode, structure],
+  );
 
   const relicEffects = useMemo(() => {
     if (!structure) return [];
@@ -431,6 +441,28 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       useSimpleCost,
     ],
   );
+  const resolveTransferStructureName = useCallback(
+    (entityId: number) => {
+      if (realmId === entityId) return structureName;
+
+      const matchingStructure = playerStructures.find(
+        (playerStructure) => Number(playerStructure.entityId) === entityId,
+      );
+      return matchingStructure ? mode.structure.getName(matchingStructure.structure).name : null;
+    },
+    [mode, playerStructures, realmId, structureName],
+  );
+  const transferBarModels = useMemo(
+    () =>
+      buildRealmTransferBarModels({
+        selectedStructureId: realmId,
+        currentTimeMs: Date.now(),
+        storyEvents,
+        automationEntries: transferAutomationEntries,
+        resolveStructureName: resolveTransferStructureName,
+      }),
+    [realmId, resolveTransferStructureName, storyEvents, transferAutomationEntries],
+  );
   const shouldRenderVillageUi = isVillage;
   const isVillageMilitiaClaimed = Boolean(villageTroop?.claimed);
   const [isClaimingVillageMilitia, setIsClaimingVillageMilitia] = useState(false);
@@ -598,6 +630,8 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
           </div>
         </div>
       )}
+
+      <RealmTransferBars current={transferBarModels.current} automation={transferBarModels.automation} />
 
       {structureCapabilities.canOpenConstruction && (
         <RealmBuildingSummary
