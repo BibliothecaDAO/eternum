@@ -3,6 +3,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes transfer-token {
+  0% {
+    left: 0%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+.animate-transfer-token {
+  left: 0%;
+  animation: transfer-token 2.8s linear infinite;
+}
+
 .boot-loader-surface {
   font-family:
     "Space Grotesk",

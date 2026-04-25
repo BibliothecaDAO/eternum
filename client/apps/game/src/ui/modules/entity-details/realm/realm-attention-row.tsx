@@ -43,6 +43,37 @@ const AttentionChip = ({ icon: Icon, label, tone, onClick, title }: AttentionChi
   );
 };
 
+const prettifyAttentionResourceLabel = (resourceId: ResourcesIds) =>
+  (ResourcesIds[resourceId] ?? String(resourceId)).replace(/([a-z])([A-Z])/g, "$1 $2");
+
+const summarizeStarvingReason = (resourceId: ResourcesIds, resourceLabel: string, reason?: string) => {
+  if (!reason) {
+    return `${resourceLabel} needs attention`;
+  }
+
+  const rawResourceLabel = ResourcesIds[resourceId] ?? String(resourceId);
+  const strippedReason = reason
+    .replace(new RegExp(`^${rawResourceLabel}\\s*`, "i"), "")
+    .replace(new RegExp(`^${resourceLabel}\\s*`, "i"), "")
+    .replace(/^:\s*/, "")
+    .trim();
+
+  if (strippedReason === "waiting for recipe inputs") {
+    return `${resourceLabel} waiting for inputs`;
+  }
+
+  if (strippedReason === "has no active production building") {
+    return `${resourceLabel} needs an active producer`;
+  }
+
+  return `${resourceLabel} ${strippedReason}`.trim();
+};
+
+export const buildStarvingResourceAttentionLabel = (resourceId: ResourcesIds, reason?: string) => {
+  const resourceLabel = prettifyAttentionResourceLabel(resourceId);
+  return summarizeStarvingReason(resourceId, resourceLabel, reason);
+};
+
 type StarvingResourceChipProps = {
   resourceId: ResourcesIds;
   reason?: string;
@@ -51,8 +82,9 @@ type StarvingResourceChipProps = {
 };
 
 const StarvingResourceChip = ({ resourceId, reason, canBuild, onBuild }: StarvingResourceChipProps) => {
-  const label = ResourcesIds[resourceId] ?? String(resourceId);
-  const title = reason ? `${label} starving — ${reason}` : `${label} starving`;
+  const resourceLabel = prettifyAttentionResourceLabel(resourceId);
+  const label = buildStarvingResourceAttentionLabel(resourceId, reason);
+  const title = reason ? `${resourceLabel} starving — ${reason}` : `${resourceLabel} starving`;
 
   return (
     <span
@@ -62,15 +94,15 @@ const StarvingResourceChip = ({ resourceId, reason, canBuild, onBuild }: Starvin
       title={title}
     >
       <AlertTriangle className="h-3 w-3" />
-      <ResourceIcon resource={label} size="xs" withTooltip={false} />
+      <ResourceIcon resource={resourceLabel} size="xs" withTooltip={false} />
       <span>{label}</span>
       {canBuild && onBuild && (
         <button
           type="button"
           onClick={onBuild}
           className="ml-0.5 inline-flex items-center rounded border border-danger/40 bg-danger/20 px-1 py-[1px] text-[9px] uppercase tracking-wide hover:bg-danger/40"
-          title={`Build a ${label} producer`}
-          aria-label={`Build ${label} producer`}
+          title={`Build a ${resourceLabel} producer`}
+          aria-label={`Build ${resourceLabel} producer`}
         >
           <Hammer className="h-2.5 w-2.5" />
           <span className="ml-0.5">Build</span>
