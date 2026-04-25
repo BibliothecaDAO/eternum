@@ -188,7 +188,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const automationRealms = useAutomationStore((state) => state.realms);
-  const transferAutomationEntries = useTransferAutomationStore((state) => Object.values(state.entries));
+  const transferAutomationEntriesById = useTransferAutomationStore((state) => state.entries);
   const hasAutomationFailures = useAutomationStore(
     useCallback((state) => Object.values(state.realms).some((r) => (r.lastStatus?.consecutiveFailures ?? 0) >= 3), []),
   );
@@ -455,10 +455,10 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
         selectedStructureId: realmId,
         currentTimeMs: Date.now(),
         storyEvents,
-        automationEntries: transferAutomationEntries,
+        automationEntries: Object.values(transferAutomationEntriesById),
         resolveStructureName: resolveTransferStructureName,
       }),
-    [realmId, resolveTransferStructureName, storyEvents, transferAutomationEntries],
+    [realmId, resolveTransferStructureName, storyEvents, transferAutomationEntriesById],
   );
   const shouldRenderVillageUi = isVillage;
   const isVillageMilitiaClaimed = Boolean(villageTroop?.claimed);

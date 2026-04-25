@@ -14,5 +14,7 @@ describe("RealmInfoPanel transfer bars wiring", () => {
     expect(source).toContain("buildRealmTransferBarModels");
     expect(source).toContain("transferBarModels.current");
     expect(source).toContain("transferBarModels.automation");
+    expect(source).toContain("useTransferAutomationStore((state) => state.entries)");
+    expect(source).not.toContain("useTransferAutomationStore((state) => Object.values(state.entries))");
   });
 });
