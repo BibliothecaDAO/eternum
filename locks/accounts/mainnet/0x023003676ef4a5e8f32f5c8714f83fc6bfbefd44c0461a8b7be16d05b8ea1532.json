@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-boost-423",
-    "launchRequestId": "24857851317-1",
+    "gameName": "bltz-lilt-31",
+    "launchRequestId": "24927101180-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24857851317,
+    "workflowRunId": 24927101180,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "68245955-2c5e-4dd7-a594-3a564ee28e2f"
+    "stepId": "create-world",
+    "leaseId": "22e626df-ca50-473b-b6f7-3ef4da84e112"
   },
-  "acquiredAt": "2026-04-23T20:47:01.512Z",
-  "heartbeatAt": "2026-04-23T20:47:06.797Z",
-  "expiresAt": "2026-04-23T20:47:06.797Z",
-  "releasedAt": "2026-04-23T20:47:06.797Z"
+  "acquiredAt": "2026-04-25T08:49:51.230Z",
+  "heartbeatAt": "2026-04-25T08:49:51.230Z",
+  "expiresAt": "2026-04-25T08:59:51.230Z"
 }
