@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-25T08:52:04.536Z",
+  "updatedAt": "2026-04-25T08:52:27.216Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -339,11 +339,10 @@
       "path": "runs/mainnet/blitz/bltz-lilt-31.json",
       "inputPath": "inputs/mainnet/blitz/bltz-lilt-31/24927101180-1.json",
       "status": "running",
-      "updatedAt": "2026-04-25T08:52:04.536Z",
+      "updatedAt": "2026-04-25T08:52:27.216Z",
       "workflowRef": "next",
-      "currentStepId": "configure-world",
-      "activeLeaseExpiresAt": "2026-04-25T09:37:04.536Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1777111200,
