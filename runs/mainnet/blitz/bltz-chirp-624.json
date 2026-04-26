@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24963856686-1",
   "currentStepId": null,
   "createdAt": "2026-04-26T18:27:57.245Z",
-  "updatedAt": "2026-04-26T21:10:34.064Z",
+  "updatedAt": "2026-04-26T21:12:06.919Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -88,14 +88,12 @@
     "configureTxHash": "0x55522e1db2bacd84801dee37a5b260b1e71b560dca6f239703ba09e95faa676",
     "worldConfigTxHash": "0x55522e1db2bacd84801dee37a5b260b1e71b560dca6f239703ba09e95faa676",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-chirp-624/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-26T19:22:18.869Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-04-26T21:10:32.554Z"
+    "lastIndexerDescribeAt": "2026-04-26T21:12:06.919Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-04-26T18:32:16.335Z"
 }
