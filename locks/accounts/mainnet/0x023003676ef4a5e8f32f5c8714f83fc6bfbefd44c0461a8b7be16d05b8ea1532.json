@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-chirp-624",
-    "launchRequestId": "24963856686-1",
+    "gameName": "bltz-blip-982",
+    "launchRequestId": "24964085533-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24963856686,
+    "workflowRunId": 24964085533,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "3d0373f1-c372-4461-8a3e-7d4b9fefe601"
+    "stepId": "create-world",
+    "leaseId": "b4e916df-f472-4685-a9a8-59583c701ad6"
   },
-  "acquiredAt": "2026-04-26T18:31:09.180Z",
-  "heartbeatAt": "2026-04-26T18:31:14.739Z",
-  "expiresAt": "2026-04-26T18:31:14.739Z",
-  "releasedAt": "2026-04-26T18:31:14.739Z"
+  "acquiredAt": "2026-04-26T18:39:26.081Z",
+  "heartbeatAt": "2026-04-26T18:39:26.081Z",
+  "expiresAt": "2026-04-26T18:49:26.081Z"
 }
