@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-chirp-624/24963856686-1.json",
   "latestLaunchRequestId": "24963856686-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-26T18:27:57.245Z",
-  "updatedAt": "2026-04-26T18:31:27.580Z",
+  "updatedAt": "2026-04-26T18:31:52.413Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-04-26T18:31:27.580Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-04-26T18:31:27.580Z",
+      "finishedAt": "2026-04-26T18:31:52.413Z"
     },
     {
       "id": "sync-paymaster",
@@ -83,14 +84,12 @@
     "worldAddress": "0x0077974a726b2294ae054c962b874d5a4b6430781503139cdb5f0119ecc5ef86",
     "createGameTxHash": "0x29c25036cdd52eef398e5c5f8fd0669737930becfe730f0bad38775621c95f5",
     "configureTxHash": "0x55522e1db2bacd84801dee37a5b260b1e71b560dca6f239703ba09e95faa676",
-    "worldConfigTxHash": "0x55522e1db2bacd84801dee37a5b260b1e71b560dca6f239703ba09e95faa676"
-  },
-  "activeLease": {
-    "launchRequestId": "24963856686-1",
-    "workflowRunId": 24963856686,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-04-26T18:31:27.580Z",
-    "expiresAt": "2026-04-26T19:16:27.580Z"
+    "worldConfigTxHash": "0x55522e1db2bacd84801dee37a5b260b1e71b560dca6f239703ba09e95faa676",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-chirp-624/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-04-26T18:31:50.486Z"
   }
 }
