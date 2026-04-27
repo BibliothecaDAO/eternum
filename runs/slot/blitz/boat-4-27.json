@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/boat-4-27/24983099345-1.json",
   "latestLaunchRequestId": "24983099345-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-04-27T07:53:21.387Z",
-  "updatedAt": "2026-04-27T07:55:19.575Z",
+  "updatedAt": "2026-04-27T07:55:39.696Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-04-27T07:55:19.575Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-04-27T07:55:19.575Z",
+      "finishedAt": "2026-04-27T07:55:39.696Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,14 +71,8 @@
     "durationSeconds": 432000,
     "summaryPath": ".context/game-launch/slot-blitz-boat-4-27.json",
     "worldAddress": "0x0465cdcc1b7ef9dbf394183d93169fe28b92eda6dabeeb6aea91386753c14233",
-    "createGameTxHash": "0x182067746bacbc484f874f6af111bf119a3b176a7963e087402b0880439874b"
-  },
-  "activeLease": {
-    "launchRequestId": "24983099345-1",
-    "workflowRunId": 24983099345,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-04-27T07:55:19.575Z",
-    "expiresAt": "2026-04-27T08:40:19.575Z"
+    "createGameTxHash": "0x182067746bacbc484f874f6af111bf119a3b176a7963e087402b0880439874b",
+    "configureTxHash": "0x62ddf01526804eb7465fafd428d245f8affb1389e057e5e668b709d1ac73fc1",
+    "worldConfigTxHash": "0x62ddf01526804eb7465fafd428d245f8affb1389e057e5e668b709d1ac73fc1"
   }
 }
