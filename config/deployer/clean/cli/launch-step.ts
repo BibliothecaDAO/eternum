@@ -37,7 +37,7 @@ function usage(): void {
       "  --series-name <series-name> --series-games-json <json-array>",
       "",
       "Rotation launch:",
-      "  --rotation-name <rotation-name> --first-game-start-time <unix|iso> --game-interval-minutes <n> --max-games <n> --evaluation-interval-minutes <n>",
+      "  --rotation-name <rotation-name> --first-game-start-time <unix|iso> --max-games <n> --evaluation-interval-minutes <n> (--game-interval-minutes <n> or --weekly-cadence-json <json-array>)",
       "",
       "Optional env or flags:",
       "  GAME_LAUNCH_CONFIG_PATH / --config-path",
@@ -59,6 +59,7 @@ function usage(): void {
       "  DURATION_SECONDS=<integer> / --duration-seconds <integer>",
       "  MAP_CONFIG_OVERRIDES_JSON=<json> / --map-config-overrides-json <json>",
       "  BLITZ_REGISTRATION_OVERRIDES_JSON=<json> / --blitz-registration-overrides-json <json>",
+      "  GAME_LAUNCH_WEEKLY_CADENCE_JSON=<json> / --weekly-cadence-json <json>",
       "  --auto-retry-enabled <true|false>",
       "  --auto-retry-interval-minutes <number>",
       "  --mode <batched|sequential>",
@@ -160,7 +161,7 @@ main().catch((error: unknown) => {
     message.includes("--environment, --game, and --start-time are required") ||
     message.includes("--environment and --series-name are required for series launches") ||
     message.includes(
-      "--environment, --rotation-name, --first-game-start-time, --game-interval-minutes, --max-games, and --evaluation-interval-minutes are required for rotation launches",
+      "--environment, --rotation-name, --first-game-start-time, --max-games, and --evaluation-interval-minutes are required for rotation launches",
     ) ||
     message.includes("--series-games-json is required for series launches") ||
     message.includes('Unsupported launch step "') ||

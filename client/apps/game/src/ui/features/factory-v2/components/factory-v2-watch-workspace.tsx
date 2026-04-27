@@ -877,7 +877,7 @@ const FactoryV2RotationScheduleCard = ({ run }: { run: FactoryRun }) => {
           value={`${run.rotation.createdGameCount} of ${run.rotation.maxGames}`}
         />
         <FactoryV2RotationMetric label="Queued ahead" value={`${run.rotation.queuedGameCount} games`} />
-        <FactoryV2RotationMetric label="Game interval" value={`Every ${run.rotation.gameIntervalMinutes} minutes`} />
+        <FactoryV2RotationMetric label="Cadence" value={resolveRotationCadenceLabel(run)} />
         <FactoryV2RotationMetric
           label="Next evaluation"
           value={
@@ -890,6 +890,15 @@ const FactoryV2RotationScheduleCard = ({ run }: { run: FactoryRun }) => {
     </div>
   );
 };
+
+function resolveRotationCadenceLabel(run: FactoryRun) {
+  const weeklySlotCount = run.rotation?.weeklyCadence?.length ?? 0;
+  if (weeklySlotCount > 0) {
+    return `${weeklySlotCount} weekly slots`;
+  }
+
+  return `Every ${run.rotation?.gameIntervalMinutes ?? 0} minutes`;
+}
 
 const FactoryV2RotationMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded-[18px] border border-gold/10 bg-black/20 px-3 py-3 text-center">

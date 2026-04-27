@@ -268,6 +268,11 @@ export interface FactoryWorkerRotationRunRecord extends FactoryWorkerBaseRunReco
     maxGames: number;
     advanceWindowGames: number;
     evaluationIntervalMinutes: number;
+    weeklyCadence?: Array<{
+      gameNamePrefix: string;
+      weekday: string;
+      utcTime: string;
+    }>;
     rpcUrl: string;
     factoryAddress: string;
     autoRetryEnabled: boolean;

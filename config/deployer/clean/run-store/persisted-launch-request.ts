@@ -190,6 +190,7 @@ export function buildPersistedRotationLaunchRequest(
     gameIntervalMinutes: summary.gameIntervalMinutes,
     maxGames: summary.maxGames,
     advanceWindowGames: summary.advanceWindowGames,
+    weeklyCadence: summary.weeklyCadence,
     targetGameNames: undefined,
     evaluationIntervalMinutes: summary.evaluationIntervalMinutes,
     autoRetryEnabled: summary.autoRetryEnabled,

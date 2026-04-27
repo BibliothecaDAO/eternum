@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildLaunchWorkflowEnvironment } from "../cli/launch-workflow-env";
-import type { LaunchSeriesRequest } from "../types";
+import type { LaunchRotationRequest, LaunchSeriesRequest } from "../types";
 
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
@@ -13,6 +13,22 @@ function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): Launc
     autoRetryIntervalMinutes: 15,
     workflowFile: "factory-torii-deployer.yml",
     ref: "feature/yaml-schedule",
+    ...overrides,
+  };
+}
+
+function buildRotationRequest(overrides: Partial<LaunchRotationRequest> = {}): LaunchRotationRequest {
+  return {
+    launchKind: "rotation",
+    environmentId: "slot.blitz",
+    rotationName: "blitz-rotation",
+    firstGameStartTime: "2026-04-20T01:00:00Z",
+    gameIntervalMinutes: 0,
+    maxGames: 5200,
+    advanceWindowGames: 5,
+    evaluationIntervalMinutes: 15,
+    durationSeconds: 3600,
+    weeklyCadence: [{ gameNamePrefix: "na-gladiator", weekday: "monday", utcTime: "01:00" }],
     ...overrides,
   };
 }
@@ -45,6 +61,18 @@ describe("launch workflow env", () => {
     expect(JSON.parse(environment.GAME_LAUNCH_OPTIONS_JSON)).toMatchObject({
       workflowFile: "factory-torii-deployer.yml",
       ref: "feature/yaml-schedule",
+    });
+  });
+
+  test("exports rotation weekly cadence for workflow replay", () => {
+    const environment = buildLaunchWorkflowEnvironment(buildRotationRequest());
+
+    expect(environment.GAME_LAUNCH_WEEKLY_CADENCE_JSON).toBe(
+      '[{"gameNamePrefix":"na-gladiator","weekday":"monday","utcTime":"01:00"}]',
+    );
+    expect(JSON.parse(environment.GAME_LAUNCH_OPTIONS_JSON)).toMatchObject({
+      durationSeconds: 3600,
+      weeklyCadence: [{ gameNamePrefix: "na-gladiator", weekday: "monday", utcTime: "01:00" }],
     });
   });
 });
