@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-twist-193",
-    "launchRequestId": "24972497031-1",
+    "gameName": "boat-4-27",
+    "launchRequestId": "24983099345-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24972497031,
+    "workflowRunId": 24983099345,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "b9e34136-a3c7-4336-aafe-33184d689cde"
+    "stepId": "create-world",
+    "leaseId": "35f89703-6e34-4431-a2b7-a4e441d68625"
   },
-  "acquiredAt": "2026-04-27T01:39:49.381Z",
-  "heartbeatAt": "2026-04-27T01:40:05.909Z",
-  "expiresAt": "2026-04-27T01:40:05.909Z",
-  "releasedAt": "2026-04-27T01:40:05.909Z"
+  "acquiredAt": "2026-04-27T07:53:30.352Z",
+  "heartbeatAt": "2026-04-27T07:53:30.352Z",
+  "expiresAt": "2026-04-27T08:03:30.352Z"
 }
