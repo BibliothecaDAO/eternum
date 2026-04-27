@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24972497031-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-04-27T01:38:01.183Z",
-  "updatedAt": "2026-04-27T01:39:11.273Z",
+  "updatedAt": "2026-04-27T01:39:15.633Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-27T01:39:15.633Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,5 +71,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-twist-193.json",
     "worldAddress": "0x0510d730398590ac2a34f75bc003cf361d41546be76971e4ee8b16a6c5db3384",
     "createGameTxHash": "0x70724b8ceac204ea359a787c62b58ffbe1afa0e25888da34e06a150fb9fe0d6"
+  },
+  "activeLease": {
+    "launchRequestId": "24972497031-1",
+    "workflowRunId": 24972497031,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-04-27T01:39:15.633Z",
+    "expiresAt": "2026-04-27T02:24:15.633Z"
   }
 }
