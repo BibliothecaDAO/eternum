@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-27T04:12:07.908Z",
+  "updatedAt": "2026-04-27T08:02:19.513Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1493,6 +1493,19 @@
         "describedAt": "2026-04-27T04:12:07.907Z"
       },
       "updatedAt": "2026-04-27T04:12:07.908Z"
+    },
+    "boat-4-27": {
+      "gameName": "boat-4-27",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/boat-4-27/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-04-27T08:02:19.513Z"
+      },
+      "updatedAt": "2026-04-27T08:02:19.513Z"
     }
   }
 }
