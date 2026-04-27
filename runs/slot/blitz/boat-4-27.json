@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24983099345-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-04-27T07:53:21.387Z",
-  "updatedAt": "2026-04-27T07:55:15.692Z",
+  "updatedAt": "2026-04-27T07:55:19.575Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-04-27T07:55:19.575Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,5 +71,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-boat-4-27.json",
     "worldAddress": "0x0465cdcc1b7ef9dbf394183d93169fe28b92eda6dabeeb6aea91386753c14233",
     "createGameTxHash": "0x182067746bacbc484f874f6af111bf119a3b176a7963e087402b0880439874b"
+  },
+  "activeLease": {
+    "launchRequestId": "24983099345-1",
+    "workflowRunId": 24983099345,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-04-27T07:55:19.575Z",
+    "expiresAt": "2026-04-27T08:40:19.575Z"
   }
 }
