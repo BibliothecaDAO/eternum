@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "24972497031-1",
   "currentStepId": null,
   "createdAt": "2026-04-27T01:38:01.183Z",
-  "updatedAt": "2026-04-27T04:10:33.509Z",
+  "updatedAt": "2026-04-27T04:12:05.924Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x678f9bbe3366b58e367eaa7480272bf75e297e1a461dc27fdccbe9610ee5b25",
     "lootChestRoleTxHash": "0x40760bc8786629e3e9940c6c0a760fe53ff3e84bd041c788e228f6f0c20c7ef",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-twist-193/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-27T02:07:59.541Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-04-27T04:10:32.188Z"
+    "lastIndexerDescribeAt": "2026-04-27T04:12:05.924Z"
   },
   "completedAt": "2026-04-27T01:40:41.736Z"
 }
