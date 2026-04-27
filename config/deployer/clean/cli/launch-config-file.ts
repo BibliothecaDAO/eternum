@@ -286,6 +286,7 @@ function buildRotationLaunchConfigArgs(record: LaunchConfigRecord, configPath: s
     "evaluation-interval-minutes",
     resolveOptionalNumberValue(record, ["evaluationIntervalMinutes", "evaluation_interval_minutes"]),
   );
+  setOptionalJsonArg(args, "weekly-cadence-json", resolveValue(record, ["weeklyCadence", "weekly_cadence"]));
   applySharedLaunchArgs(record, args);
   setOptionalJsonArg(args, "target-game-names-json", resolveValue(record, ["targetGameNames", "target_game_names"]));
   setOptionalBooleanArg(
@@ -343,6 +344,7 @@ function applyConfigOwnedTargetArgs(mergedArgs: CliArgs, configArgs: CliArgs): v
       delete mergedArgs["max-games"];
       delete mergedArgs["advance-window-games"];
       delete mergedArgs["evaluation-interval-minutes"];
+      delete mergedArgs["weekly-cadence-json"];
       return;
     case "rotation":
       mergedArgs["rotation-name"] = configArgs["rotation-name"];
@@ -353,6 +355,9 @@ function applyConfigOwnedTargetArgs(mergedArgs: CliArgs, configArgs: CliArgs): v
         mergedArgs["advance-window-games"] = configArgs["advance-window-games"];
       }
       mergedArgs["evaluation-interval-minutes"] = configArgs["evaluation-interval-minutes"];
+      if (configArgs["weekly-cadence-json"]) {
+        mergedArgs["weekly-cadence-json"] = configArgs["weekly-cadence-json"];
+      }
       delete mergedArgs.game;
       delete mergedArgs["start-time"];
       delete mergedArgs["series-name"];
@@ -375,6 +380,7 @@ function applyConfigOwnedTargetArgs(mergedArgs: CliArgs, configArgs: CliArgs): v
       delete mergedArgs["max-games"];
       delete mergedArgs["advance-window-games"];
       delete mergedArgs["evaluation-interval-minutes"];
+      delete mergedArgs["weekly-cadence-json"];
       return;
   }
 }

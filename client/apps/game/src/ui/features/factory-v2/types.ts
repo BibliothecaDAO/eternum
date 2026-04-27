@@ -191,6 +191,12 @@ export interface FactoryRotationEvaluationState {
   lastNudgedAt: string | null;
 }
 
+interface FactoryRotationWeeklyCadenceEntry {
+  gameNamePrefix: string;
+  weekday: string;
+  utcTime: string;
+}
+
 export interface FactoryRotationRunState {
   rotationName: string;
   maxGames: number;
@@ -198,6 +204,7 @@ export interface FactoryRotationRunState {
   createdGameCount: number;
   queuedGameCount: number;
   gameIntervalMinutes: number;
+  weeklyCadence?: FactoryRotationWeeklyCadenceEntry[];
   firstGameStartTimeIso: string;
 }
 

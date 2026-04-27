@@ -11,6 +11,7 @@ export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.b
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
+export type LaunchRotationWeekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 export type LaunchGameStepId =
   | "create-world"
   | "wait-for-factory-index"
@@ -249,6 +250,7 @@ export interface LaunchRotationRequest {
   advanceWindowGames?: number;
   targetGameNames?: string[];
   evaluationIntervalMinutes: number;
+  weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
   rpcUrl?: string;
   factoryAddress?: string;
   accountAddress?: string;
@@ -281,6 +283,13 @@ export interface LaunchRotationRequest {
 
 export interface LaunchRotationStepRequest extends LaunchRotationRequest {
   stepId: RotationLaunchStepId;
+}
+
+export interface LaunchRotationWeeklyCadenceEntry {
+  gameNamePrefix: string;
+  weekday: LaunchRotationWeekday;
+  utcTime: string;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
 }
 
 export interface LaunchGameSummary {
@@ -370,6 +379,7 @@ export interface SeriesLaunchGameSummary {
   startTime: number;
   startTimeIso: string;
   durationSeconds?: number;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   seriesGameNumber: number;
   currentStepId: SeriesLaunchStepId | null;
   latestEvent: string;
@@ -408,6 +418,7 @@ export interface LaunchRotationSummary {
   maxGames: number;
   advanceWindowGames: number;
   evaluationIntervalMinutes: number;
+  weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
   rpcUrl: string;
   factoryAddress: string;
   autoRetryEnabled: boolean;

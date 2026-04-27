@@ -31,6 +31,9 @@ function buildReplayableLaunchOptions(request: LaunchRequest): Record<string, un
   assignOptionalLaunchOption(launchOptions, "singleRealmMode", request.singleRealmMode);
   assignOptionalLaunchOption(launchOptions, "twoPlayerMode", request.twoPlayerMode);
   assignOptionalLaunchOption(launchOptions, "durationSeconds", request.durationSeconds);
+  if (request.launchKind === "rotation") {
+    assignOptionalLaunchOption(launchOptions, "weeklyCadence", request.weeklyCadence);
+  }
   assignOptionalLaunchOption(launchOptions, "mapConfigOverrides", request.mapConfigOverrides);
   assignOptionalLaunchOption(launchOptions, "blitzRegistrationOverrides", request.blitzRegistrationOverrides);
   assignOptionalLaunchOption(launchOptions, "cartridgeApiBase", request.cartridgeApiBase);
@@ -140,6 +143,10 @@ function assignRotationWorkflowEnvironment(
   environment.GAME_LAUNCH_MAX_GAMES = String(request.maxGames);
   environment.GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES = String(request.evaluationIntervalMinutes);
   environment.GAME_LAUNCH_AUTO_RETRY_ENABLED = request.autoRetryEnabled === false ? "false" : "true";
+
+  if (request.weeklyCadence?.length) {
+    environment.GAME_LAUNCH_WEEKLY_CADENCE_JSON = JSON.stringify(request.weeklyCadence);
+  }
 
   if (request.advanceWindowGames !== undefined) {
     environment.GAME_LAUNCH_ADVANCE_WINDOW_GAMES = String(request.advanceWindowGames);
