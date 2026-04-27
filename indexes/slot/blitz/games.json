@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-27T07:55:15.692Z",
+  "updatedAt": "2026-04-27T07:55:19.575Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -679,12 +679,13 @@
       "path": "runs/slot/blitz/boat-4-27.json",
       "inputPath": "inputs/slot/blitz/boat-4-27/24983099345-1.json",
       "status": "running",
-      "updatedAt": "2026-04-27T07:55:15.692Z",
+      "updatedAt": "2026-04-27T07:55:19.575Z",
       "workflowRef": "next",
       "currentStepId": "configure-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-04-27T08:40:19.575Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "configure-world",
+      "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1777276800,
       "durationSeconds": 432000,
       "artifacts": {}
