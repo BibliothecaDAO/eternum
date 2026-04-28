@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25039892454-1.json",
   "latestLaunchRequestId": "25039892454-1",
   "currentStepId": "create-series",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-04-28T07:31:33.171Z",
+  "updatedAt": "2026-04-28T07:31:40.174Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,21 +27,24 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-04-28T07:46:40.174Z",
     "lastRetryAt": "2026-04-28T07:30:20.838Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-28T07:46:26.710Z",
-    "lastEvaluatedAt": "2026-04-28T07:31:26.710Z"
+    "nextEvaluationAt": "2026-04-28T07:46:40.174Z",
+    "lastEvaluatedAt": "2026-04-28T07:31:40.174Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series started",
-      "startedAt": "2026-04-28T07:31:33.171Z"
+      "latestEvent": "Creating series failed: Error: game interval minutes must be a positive integer\n    at validateRotationPositiveInteger (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-summary.ts:67:15)\n    at validateRotationLaunchRequest (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-summary.ts:51:5)\n    at runLaunchRotationStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-runner.ts:50:3)\n    at main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:140:27)",
+      "startedAt": "2026-04-28T07:31:33.171Z",
+      "finishedAt": "2026-04-28T07:31:40.174Z",
+      "errorMessage": "Error: game interval minutes must be a positive integer\n    at validateRotationPositiveInteger (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-summary.ts:67:15)\n    at validateRotationLaunchRequest (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-summary.ts:51:5)\n    at runLaunchRotationStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-runner.ts:50:3)\n    at main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:140:27)"
     },
     {
       "id": "create-worlds",
@@ -1197,13 +1200,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25039892454-1",
-    "workflowRunId": 25039892454,
-    "workflowRunAttempt": 1,
-    "stepId": "create-series",
-    "acquiredAt": "2026-04-28T07:31:33.171Z",
-    "expiresAt": "2026-04-28T08:16:33.171Z"
   }
 }
