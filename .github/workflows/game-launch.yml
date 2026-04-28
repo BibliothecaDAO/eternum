@@ -289,6 +289,11 @@ jobs:
           fi
 
           cat > .context/game-launch/launch-env.sh <<'EOF'
+          if [ -f .context/game-launch/launch-config-inputs.sh ]; then
+            # shellcheck disable=SC1091
+            source .context/game-launch/launch-config-inputs.sh
+          fi
+
           if [ -f .context/game-launch/launch-options.sh ]; then
             # shellcheck disable=SC1091
             source .context/game-launch/launch-options.sh
