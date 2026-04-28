@@ -7,44 +7,40 @@
   "gameType": "blitz",
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
-  "status": "attention",
+  "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25043312643-1.json",
-  "latestLaunchRequestId": "25043312643-1",
-  "currentStepId": "create-series",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25044218311-1.json",
+  "latestLaunchRequestId": "25044218311-1",
+  "currentStepId": null,
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-04-28T09:10:20.853Z",
+  "updatedAt": "2026-04-28T09:11:41.950Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 25043312643,
+    "workflowRunId": 25044218311,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25043312643",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25044218311",
     "ref": "next",
-    "sha": "80979657b8cbf37b13b0195cf03481c8b6555279"
+    "sha": "5cf9ea40c7b6251dcb3fa3fda6df4799bd5d34af"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-04-28T09:25:20.853Z",
     "lastRetryAt": "2026-04-28T09:10:20.853Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-28T09:06:37.139Z",
-    "lastEvaluatedAt": "2026-04-28T08:51:37.139Z"
+    "nextEvaluationAt": "2026-04-28T09:26:41.950Z",
+    "lastEvaluatedAt": "2026-04-28T09:11:41.950Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "failed",
+      "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series failed: Error: game interval minutes must be a positive integer\n    at validateRotationPositiveInteger (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-summary.ts:67:15)\n    at validateRotationLaunchRequest (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-summary.ts:51:5)\n    at runLaunchRotationStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-runner.ts:50:3)\n    at main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:140:27)",
-      "startedAt": "2026-04-28T08:51:30.964Z",
-      "finishedAt": "2026-04-28T08:51:37.139Z",
-      "errorMessage": "Error: game interval minutes must be a positive integer\n    at validateRotationPositiveInteger (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-summary.ts:67:15)\n    at validateRotationLaunchRequest (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-summary.ts:51:5)\n    at runLaunchRotationStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/rotation-runner.ts:50:3)\n    at main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:140:27)"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
