@@ -1493,6 +1493,173 @@ describe("factory worker recovery signals", () => {
     expect(nextRunRecord.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
   });
 
+  test("scheduled rotation evaluation replays weekly cadence from the run summary", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const startedAt = new Date(Date.now() - 60_000).toISOString();
+    const weeklyCadence = [
+      {
+        gameNamePrefix: "na-gladiator",
+        weekday: "monday",
+        utcTime: "01:00",
+        blitzRegistrationOverrides: {
+          fee_amount: "500000000000000000000",
+        },
+      },
+    ];
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/indexes/slot/blitz/rotations.json?ref=factory-runs")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "rotation",
+          updatedAt: startedAt,
+          entries: {
+            "blitz-rotation": {
+              kind: "rotation",
+              environment: "slot.blitz",
+              rotationName: "blitz-rotation",
+              path: "runs/slot/blitz/rotations/blitz-rotation.json",
+              inputPath: "inputs/slot/blitz/rotations/blitz-rotation/101-1.json",
+              status: "running",
+              updatedAt: startedAt,
+              workflowRef: "next",
+              currentStepId: null,
+              hasRunningStep: false,
+              recoverableFailedStepId: null,
+              recoverablePendingStepId: null,
+              evaluation: {
+                intervalMinutes: 15,
+                nextEvaluationAt: offsetTimestamp(-1_000),
+              },
+            },
+          },
+        });
+      }
+
+      if (
+        value.includes("/contents/runs/slot/blitz/rotations/blitz-rotation.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          kind: "rotation",
+          runId: "slot.blitz:rotation:blitz-rotation",
+          environment: "slot.blitz",
+          chain: "slot",
+          gameType: "blitz",
+          rotationName: "blitz-rotation",
+          seriesName: "blitz-rotation",
+          status: "running",
+          executionMode: "fast_trial",
+          requestedLaunchStep: "full",
+          inputPath: "inputs/slot/blitz/rotations/blitz-rotation/101-1.json",
+          latestLaunchRequestId: "101-1",
+          currentStepId: null,
+          createdAt: offsetTimestamp(-120_000),
+          updatedAt: offsetTimestamp(-30_000),
+          workflow: {
+            workflowName: "game-launch.yml",
+            ref: "next",
+          },
+          steps: [],
+          evaluation: {
+            intervalMinutes: 15,
+            nextEvaluationAt: offsetTimestamp(-1_000),
+          },
+          summary: {
+            environment: "slot.blitz",
+            chain: "slot",
+            gameType: "blitz",
+            rotationName: "blitz-rotation",
+            seriesName: "blitz-rotation",
+            firstGameStartTime: 1776646800,
+            firstGameStartTimeIso: "2026-04-20T01:00:00.000Z",
+            gameIntervalMinutes: 0,
+            maxGames: 5200,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 15,
+            weeklyCadence,
+            dryRun: false,
+            configMode: "batched",
+            seriesCreated: true,
+            games: [],
+          },
+        });
+      }
+
+      if (value.includes("/contents/inputs/slot/blitz/rotations/blitz-rotation/101-1.json")) {
+        return buildGitHubContentsResponse({
+          environment: "slot.blitz",
+          rotationName: "blitz-rotation",
+          request: {
+            environmentId: "slot.blitz",
+            rotationName: "blitz-rotation",
+            firstGameStartTime: 1776646800,
+            gameIntervalMinutes: 0,
+            maxGames: 5200,
+            advanceWindowGames: 5,
+            evaluationIntervalMinutes: 15,
+          },
+        });
+      }
+
+      if (value.includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      if (value.includes("/contents/runs/slot/blitz/rotations/blitz-rotation.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (value.includes("/contents/indexes/slot/blitz/rotations.json") && (!init?.method || init.method === "GET")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "rotation",
+          updatedAt: startedAt,
+          entries: {},
+        });
+      }
+
+      if (value.includes("/contents/indexes/slot/blitz/rotations.json") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (value.includes("/contents/indexes/") && value.includes("?ref=factory-runs")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const scheduledTasks: Promise<unknown>[] = [];
+    await worker.scheduled({}, buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next" }), {
+      waitUntil(promise: Promise<unknown>) {
+        scheduledTasks.push(promise);
+      },
+    });
+    await Promise.all(scheduledTasks);
+
+    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
+
+    expect(dispatchBody.inputs.launch_kind).toBe("rotation");
+    expect(dispatchBody.inputs.rotation_name).toBe("blitz-rotation");
+    expect(dispatchBody.inputs.game_interval_minutes).toBeUndefined();
+    expect(launchOptions.weeklyCadence).toEqual(weeklyCadence);
+  });
+
   test("scheduled tier reconciliation batches operations per workflow ref and records batch failures once", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     const startedAt = new Date(Date.now() - 60_000).toISOString();

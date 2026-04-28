@@ -1460,6 +1460,7 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
   const normalizedLaunchStep = resolveRotationRecoveryLaunchScope(run, launchStep);
   const environment = inputRecord.environment || rawRequest.environmentId || route.environment;
   const rotationName = inputRecord.rotationName || rawRequest.rotationName || route.rotationName;
+  const weeklyCadence = resolveRotationWeeklyCadence(rawRequest, run.summary);
   const targetGameNames = resolveContinueTargetGameNames(run.summary?.games, requestedGameNames, normalizedLaunchStep, {
     label: "rotation",
     runName: rotationName || route.rotationName,
@@ -1481,11 +1482,11 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     environment,
     rotationName,
     firstGameStartTime: String(rawRequest.firstGameStartTime),
-    gameIntervalMinutes: rawRequest.gameIntervalMinutes,
-    maxGames: rawRequest.maxGames,
-    advanceWindowGames: rawRequest.advanceWindowGames,
-    evaluationIntervalMinutes: rawRequest.evaluationIntervalMinutes,
-    weeklyCadence: rawRequest.weeklyCadence,
+    gameIntervalMinutes: resolveRotationGameIntervalMinutes(rawRequest, run.summary, weeklyCadence),
+    maxGames: rawRequest.maxGames ?? run.summary?.maxGames,
+    advanceWindowGames: rawRequest.advanceWindowGames ?? run.summary?.advanceWindowGames,
+    evaluationIntervalMinutes: rawRequest.evaluationIntervalMinutes ?? run.summary?.evaluationIntervalMinutes,
+    weeklyCadence,
     rpcUrl: rawRequest.rpcUrl,
     factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
@@ -1512,6 +1513,26 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     targetGameNames,
     launchStep: normalizedLaunchStep,
   };
+}
+
+function resolveRotationWeeklyCadence(rawRequest, summary) {
+  if (rawRequest.weeklyCadence?.length) {
+    return rawRequest.weeklyCadence;
+  }
+
+  if (summary?.weeklyCadence?.length) {
+    return summary.weeklyCadence;
+  }
+
+  return undefined;
+}
+
+function resolveRotationGameIntervalMinutes(rawRequest, summary, weeklyCadence) {
+  if (weeklyCadence?.length) {
+    return undefined;
+  }
+
+  return rawRequest.gameIntervalMinutes ?? summary?.gameIntervalMinutes;
 }
 
 function buildNudgeRotationWorkflowRequest(route, run, inputRecord) {
@@ -4118,7 +4139,7 @@ async function evaluateEligibleFactoryRotationRuns(github, branch) {
       } catch (error) {
         logFactoryError("rotation_evaluation_failed", {
           environment,
-          rotationName: run.rotationName,
+          rotationName: entry.rotationName,
           message: error instanceof Error ? error.message : String(error),
         });
       }
