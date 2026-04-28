@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25034748159-1.json",
   "latestLaunchRequestId": "25034748159-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-04-28T04:59:38.409Z",
+  "updatedAt": "2026-04-28T05:08:51.290Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-28T05:14:34.549Z",
-    "lastEvaluatedAt": "2026-04-28T04:59:34.549Z"
+    "nextEvaluationAt": "2026-04-28T05:23:51.290Z",
+    "lastEvaluatedAt": "2026-04-28T05:08:51.290Z"
   },
   "steps": [
     {
@@ -46,10 +46,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-04-28T04:59:38.409Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-04-28T04:59:38.409Z",
+      "finishedAt": "2026-04-28T05:08:51.290Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -215,8 +216,8 @@
         },
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -226,8 +227,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-28T05:01:34.900Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -255,7 +257,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x02741a0bfff04b2bab06ef8e66ad99ba23a8923f02a472aae154209626cfc24c",
+          "createGameTxHash": "0x3c1222f96f2e95effdb361884bb99f5e7351b36d62bab08bba32010191d994c"
+        }
       },
       {
         "gameName": "na-gladiator-29-04-26-0200",
@@ -267,8 +272,8 @@
         },
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -278,8 +283,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-28T05:03:19.857Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -307,7 +313,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x065309e23ededfb4a16bd0838fc461132d8f140598a6fd8a7aace566aaeb333f",
+          "createGameTxHash": "0x34910858458f94a7b8d6d351786ede0beeb9e3605870b036221e46deea59d4f"
+        }
       },
       {
         "gameName": "eu-gladiator-29-04-26-1900",
@@ -319,8 +328,8 @@
         },
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -330,8 +339,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-28T05:05:09.575Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -359,7 +369,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x0089ef73bd09b53f39e0eaac2227d209b2efd46c2003ff1bb973950495a98173",
+          "createGameTxHash": "0x2e81cd6342295c95e6cde2a0937c0159a19588f967025c38e5471b630d5465c"
+        }
       },
       {
         "gameName": "apac-gladiator-30-04-26-1000",
@@ -371,8 +384,8 @@
         },
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -382,8 +395,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-28T05:07:00.471Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -411,7 +425,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x01e12cb63a97bdae2b3ce4563da45539892ed61999a0161bb548ad05f61d7be8",
+          "createGameTxHash": "0x4241f4ff2e7a9c310f458996ec6d1fb6a3dd9900f9f633a5d133e11a0a75816"
+        }
       },
       {
         "gameName": "na-gladiator-01-05-26-0100",
@@ -423,8 +440,8 @@
         },
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -434,8 +451,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-04-28T05:08:46.497Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -463,7 +481,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x072c48a23ae5339397bcadea3a516958345e8ec28fde7bb48c3640289f458903",
+          "createGameTxHash": "0x26bbeafd4a9fcf113938455bd7fa2578ebd5288db463b9edf7fad07988fe08d"
+        }
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
@@ -473,13 +494,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25034748159-1",
-    "workflowRunId": 25034748159,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-04-28T04:59:38.409Z",
-    "expiresAt": "2026-04-28T05:44:38.409Z"
   }
 }
