@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25034748159-1.json",
   "latestLaunchRequestId": "25034748159-1",
-  "currentStepId": "create-series",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-04-28T04:59:13.341Z",
+  "updatedAt": "2026-04-28T04:59:34.549Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,17 +30,18 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-28T05:14:08.099Z",
-    "lastEvaluatedAt": "2026-04-28T04:59:08.099Z"
+    "nextEvaluationAt": "2026-04-28T05:14:34.549Z",
+    "lastEvaluatedAt": "2026-04-28T04:59:34.549Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series started",
-      "startedAt": "2026-04-28T04:59:13.341Z"
+      "latestEvent": "Series is ready to accept rotation games",
+      "startedAt": "2026-04-28T04:59:13.341Z",
+      "finishedAt": "2026-04-28T04:59:34.549Z"
     },
     {
       "id": "create-worlds",
@@ -201,7 +202,7 @@
     "autoRetryIntervalMinutes": 15,
     "dryRun": false,
     "configMode": "batched",
-    "seriesCreated": false,
+    "seriesCreated": true,
     "games": [
       {
         "gameName": "apac-gladiator-28-04-26-1100",
@@ -464,18 +465,12 @@
         "artifacts": {}
       }
     ],
-    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json"
+    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
+    "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
   },
   "artifacts": {
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
-    "seriesCreated": false
-  },
-  "activeLease": {
-    "launchRequestId": "25034748159-1",
-    "workflowRunId": 25034748159,
-    "workflowRunAttempt": 1,
-    "stepId": "create-series",
-    "acquiredAt": "2026-04-28T04:59:13.341Z",
-    "expiresAt": "2026-04-28T05:44:13.341Z"
+    "seriesCreated": true,
+    "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
   }
 }
