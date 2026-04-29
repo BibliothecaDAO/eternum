@@ -126,9 +126,9 @@ describe("explorer stamina source selection", () => {
     });
   });
 
-  it("discards a pending overlay once onchain snapshots have caught up to its tick", () => {
+  it("discards a pending overlay once onchain snapshots have caught up to its tick and amount", () => {
     const liveTroops = buildTroops(6n, 80n);
-    const snapshotTroops = buildTroops(6n, 50n);
+    const snapshotTroops = buildTroops(6n, 20n);
 
     expect(
       selectFreshestTroopsSnapshot({

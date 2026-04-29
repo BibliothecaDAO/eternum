@@ -21,7 +21,7 @@ describe("Worldmap pending movement input lock", () => {
     expect(prologue).toContain("this.clearSelection()");
 
     const lockCheck = prologue.indexOf("this.isArmyMovementInputLocked(selectedEntityId)");
-    const affordCheck = prologue.indexOf("this.canAffordMove(selectedEntityId, actionPath)");
+    const affordCheck = prologue.indexOf("this.resolveMovementStaminaForAction");
     expect(lockCheck).toBeGreaterThan(0);
     expect(affordCheck).toBeGreaterThan(lockCheck);
   });

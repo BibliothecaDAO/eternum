@@ -22,6 +22,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-30",
+    title: "Reliable Army Stamina",
+    description:
+      "Fixed army movement stamina checks so explored moves use the freshest available stamina and no longer get blocked by stale optimistic state.",
+    type: "fix",
+  },
+  {
     date: "2026-04-29",
     title: "Smoother Army Movement",
     description:

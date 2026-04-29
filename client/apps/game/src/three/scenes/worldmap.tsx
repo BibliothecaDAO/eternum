@@ -13,7 +13,13 @@ import {
 } from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { getFreshPendingStaminaSource, useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
+import {
+  buildPendingMovementStaminaSource,
+  resolveMovementStamina,
+  type MovementStaminaFallbackArmy,
+  type MovementStaminaResolution,
+} from "@/lib/army-stamina/movement-affordability";
+import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -109,7 +115,7 @@ import { HoverLabelManager } from "../managers/hover-label-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
-import { SceneName } from "../types/common";
+import { SceneName, type ArmyData } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
   getChunkKeysContainingHexInRenderBoundsAnalytically,
@@ -2510,17 +2516,27 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    // Universal stamina pre-check. Blocks submit when the
-    // client-visible stamina can't cover the action cost - prevents "insufficient
-    // stamina" server rejections from reaching the user as a tx failure toast.
-    if (actionPath.length > 0 && !this.canAffordMove(selectedEntityId, actionPath)) {
+    const actionType = ActionPaths.getActionType(actionPath);
+    const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
+    const movementStamina = this.resolveMovementStaminaForAction({
+      entityId: selectedEntityId,
+      actionPath,
+      currentArmiesTick,
+    });
+
+    if (actionPath.length > 0 && !movementStamina.canAfford) {
+      this.logBlockedMovementStamina({
+        entityId: selectedEntityId,
+        actionType,
+        actionPath,
+        movementStamina,
+      });
       toast.error("Not enough stamina for this move");
       this.state.updateEntityActionHoveredHex(null);
       this.clearSelection();
       return;
     }
 
-    const actionType = ActionPaths.getActionType(actionPath);
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
@@ -2676,16 +2692,12 @@ export default class WorldmapScene extends WarpTravel {
 
       // Monitor memory usage before army movement action
       this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
-      const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
-      if (selectedArmy) {
-        this.queuePendingMovementStamina({
-          entityId: selectedEntityId,
-          currentStamina: selectedArmy.currentStamina,
-          currentArmiesTick,
-          actionPath,
-          actionKind: isTravelAction ? "travel" : "explore",
-        });
-      }
+      this.queuePendingMovementStamina({
+        entityId: selectedEntityId,
+        currentStamina: movementStamina.currentStamina,
+        currentArmiesTick,
+        staminaCost: movementStamina.staminaCost,
+      });
 
       armyActionManager
         .moveArmy(account!, actionPath, isTravelAction, currentArmiesTick)
@@ -2952,21 +2964,14 @@ export default class WorldmapScene extends WarpTravel {
     entityId: ID;
     currentStamina: number;
     currentArmiesTick: number;
-    actionPath: ActionPath[];
-    actionKind: "travel" | "explore";
+    staminaCost: number;
   }): void {
-    const staminaCost = input.actionPath.reduce((total, pathStep) => total + (pathStep.staminaCost ?? 0), 0);
-    if (!Number.isFinite(staminaCost) || staminaCost <= 0) {
+    const pendingStamina = buildPendingMovementStaminaSource(input);
+    if (!pendingStamina) {
       return;
     }
 
-    useArmyStaminaSourceStore.getState().setPendingStaminaSource({
-      source: "pending",
-      entityId: input.entityId,
-      amount: BigInt(Math.max(0, Math.floor(input.currentStamina) - Math.floor(staminaCost))),
-      updatedTick: input.currentArmiesTick,
-      capturedAtMs: Date.now(),
-    });
+    useArmyStaminaSourceStore.getState().setPendingStaminaSource(pendingStamina);
   }
 
   private hasPendingTravelEffectForHex(key: string): boolean {
@@ -3153,14 +3158,64 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private canAffordMove(entityId: ID, actionPath: ActionPath[]): boolean {
-    const staminaCost = actionPath.reduce((total, pathStep) => total + (pathStep.staminaCost ?? 0), 0);
-    if (!Number.isFinite(staminaCost) || staminaCost <= 0) return true;
-    const army = this.armyManager.getArmy(entityId);
-    if (!army) return false;
-    const pendingStamina = getFreshPendingStaminaSource(entityId);
-    const currentStamina = pendingStamina ? Number(pendingStamina.amount) : (army.currentStamina ?? 0);
-    return Math.floor(currentStamina) >= Math.floor(staminaCost);
+  private resolveMovementStaminaForAction(input: {
+    entityId: ID;
+    actionPath: ActionPath[];
+    currentArmiesTick: number;
+  }): MovementStaminaResolution {
+    const army = this.armyManager.getArmy(input.entityId);
+    return resolveMovementStamina({
+      entityId: input.entityId,
+      actionPath: input.actionPath,
+      currentArmiesTick: input.currentArmiesTick,
+      liveTroops: this.resolveLiveExplorerTroopsForMovementStamina(input.entityId),
+      fallbackArmy: this.buildMovementStaminaFallbackArmy(army),
+    });
+  }
+
+  private resolveLiveExplorerTroopsForMovementStamina(entityId: ID) {
+    return (
+      getComponentValue(this.dojo.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]))?.troops ?? null
+    );
+  }
+
+  private buildMovementStaminaFallbackArmy(army: ArmyData | undefined): MovementStaminaFallbackArmy | null {
+    if (!army) {
+      return null;
+    }
+
+    return {
+      category: army.category,
+      tier: army.tier,
+      troopCount: army.troopCount,
+      currentStamina: army.currentStamina,
+      onChainStamina: army.onChainStamina,
+    };
+  }
+
+  private logBlockedMovementStamina(input: {
+    entityId: ID;
+    actionType: ActionType | undefined;
+    actionPath: ActionPath[];
+    movementStamina: MovementStaminaResolution;
+  }): void {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    const targetHex = input.actionPath[input.actionPath.length - 1]?.hex;
+    console.warn("[worldmap] Blocked army movement for stamina", {
+      entityId: input.entityId,
+      actionType: input.actionType,
+      targetCol: targetHex?.col,
+      targetRow: targetHex?.row,
+      isExploredMove: input.actionType === ActionType.Move,
+      staminaCost: input.movementStamina.staminaCost,
+      currentStamina: input.movementStamina.currentStamina,
+      source: input.movementStamina.source,
+      currentArmiesTick: input.movementStamina.currentArmiesTick,
+      ...input.movementStamina.diagnostics,
+    });
   }
 
   /**
@@ -3173,7 +3228,7 @@ export default class WorldmapScene extends WarpTravel {
    *   - The scene knows about it (armyManager.getArmy returns non-nullish).
    *   - It has at least the minimum travel stamina cost — i.e. there's SOME
    *     one-hex action it could perform. Finer-grained stamina is still
-   *     enforced at submit by canAffordMove.
+   *     enforced at submit by the movement stamina resolver.
    *   - It is not sitting in a battle cooldown (battleTimerLeft > 0).
    */
   private canArmyAct(entityId: ID): boolean {
