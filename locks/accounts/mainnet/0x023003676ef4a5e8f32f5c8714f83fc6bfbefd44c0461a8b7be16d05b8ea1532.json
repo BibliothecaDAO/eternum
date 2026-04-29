@@ -13,6 +13,7 @@
     "leaseId": "babe6500-c1e4-49d1-b1b4-3ca32f58cff6"
   },
   "acquiredAt": "2026-04-29T10:52:59.586Z",
-  "heartbeatAt": "2026-04-29T10:52:59.586Z",
-  "expiresAt": "2026-04-29T11:02:59.586Z"
+  "heartbeatAt": "2026-04-29T10:53:05.175Z",
+  "expiresAt": "2026-04-29T10:53:05.175Z",
+  "releasedAt": "2026-04-29T10:53:05.175Z"
 }
