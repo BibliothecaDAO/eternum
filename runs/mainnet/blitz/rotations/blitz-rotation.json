@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25093411215-1.json",
-  "latestLaunchRequestId": "25093411215-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25094027520-1.json",
+  "latestLaunchRequestId": "25094027520-1",
   "currentStepId": null,
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-04-29T06:20:50.959Z",
+  "updatedAt": "2026-04-29T06:22:09.679Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 25093411215,
+    "workflowRunId": 25094027520,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25093411215",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25094027520",
     "ref": "next",
     "sha": "edf15a0e2f430a5a6c26b20b283a091dbea4d00b"
   },
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-04-29T06:35:50.959Z",
-    "lastEvaluatedAt": "2026-04-29T06:20:50.959Z"
+    "nextEvaluationAt": "2026-04-29T06:37:09.679Z",
+    "lastEvaluatedAt": "2026-04-29T06:22:09.679Z"
   },
   "steps": [
     {
@@ -40,63 +40,49 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-04-29T06:02:00.902Z",
-      "finishedAt": "2026-04-29T06:02:06.732Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-04-29T06:02:10.476Z",
-      "finishedAt": "2026-04-29T06:02:21.797Z"
+      "latestEvent": "Creating games is complete"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-04-29T06:02:30.582Z",
-      "finishedAt": "2026-04-29T06:02:36.412Z"
+      "latestEvent": "Waiting for games is complete"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
       "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-04-29T06:02:40.217Z",
-      "finishedAt": "2026-04-29T06:02:51.601Z"
+      "latestEvent": "Applying settings is complete"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-04-29T06:03:00.376Z",
-      "finishedAt": "2026-04-29T06:03:12.049Z"
+      "latestEvent": "Setting up loot chests is complete"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-04-29T06:03:21.261Z",
-      "finishedAt": "2026-04-29T06:03:27.108Z"
+      "latestEvent": "Finishing setup is complete"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
       "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage is complete",
-      "startedAt": "2026-04-29T06:03:30.912Z",
-      "finishedAt": "2026-04-29T06:03:36.682Z"
+      "latestEvent": "Setting up gas coverage is complete"
     }
   ],
   "summary": {
