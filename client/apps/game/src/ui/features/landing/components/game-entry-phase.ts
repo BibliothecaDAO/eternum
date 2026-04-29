@@ -49,6 +49,26 @@ interface ResolveGameEntryModalPhaseInput {
   isBlitzSettlementUnlocked: boolean;
 }
 
+interface GameEntryPreflightInput {
+  isEternumMode: boolean;
+  isSpectateMode: boolean;
+  isForgeMode: boolean;
+  isBlitzMode: boolean;
+  settlementCheckComplete: boolean;
+}
+
+export const isGameEntryPreflightComplete = ({
+  isEternumMode,
+  isSpectateMode,
+  isForgeMode,
+  isBlitzMode,
+  settlementCheckComplete,
+}: GameEntryPreflightInput): boolean => {
+  const waitsForPlayerSettlementCheck = !isEternumMode && !isSpectateMode && !(isForgeMode && isBlitzMode);
+
+  return !waitsForPlayerSettlementCheck || settlementCheckComplete;
+};
+
 export const resolveBlitzSettlementPhase = ({
   canPlay,
   isSettlementUnlocked,

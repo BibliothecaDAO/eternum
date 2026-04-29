@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { buildInitialRotationLaunchSummary, reconcileRotationLaunchSummary } from "../launch/rotation-summary";
+import {
+  buildInitialRotationLaunchSummary,
+  reconcileRotationLaunchSummary,
+  resolveRotationRequestWithPersistedSchedule,
+  validateRotationLaunchRequest,
+} from "../launch/rotation-summary";
 import type { LaunchRotationRequest } from "../types";
 
 function buildWeeklyRotationRequest(overrides: Partial<LaunchRotationRequest> = {}): LaunchRotationRequest {
@@ -130,5 +135,18 @@ describe("rotation launch summary", () => {
       "na-gladiator-20-04-26-0100",
       "na-gladiator-20-04-26-0300",
     ]);
+  });
+
+  test("validates a retry request with the persisted weekly cadence", () => {
+    const persistedRequest = buildWeeklyRotationRequest();
+    const retryRequest = buildWeeklyRotationRequest({
+      weeklyCadence: undefined,
+      resumeSummary: buildInitialRotationLaunchSummary(persistedRequest),
+    });
+
+    const resolvedRequest = resolveRotationRequestWithPersistedSchedule(retryRequest);
+
+    expect(() => validateRotationLaunchRequest(resolvedRequest)).not.toThrow();
+    expect(resolvedRequest.weeklyCadence).toEqual(persistedRequest.weeklyCadence);
   });
 });

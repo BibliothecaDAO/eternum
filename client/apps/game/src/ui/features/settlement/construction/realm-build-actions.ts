@@ -1,6 +1,11 @@
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/types";
 import { TileManager } from "@bibliothecadao/eternum";
 import { toast } from "sonner";
+import {
+  getBuildReservationState,
+  releaseOccupiedBuildSpot,
+  reserveOccupiedBuildSpot,
+} from "./build-reservation-store";
 
 type RealmPosition = {
   x: bigint | number;
@@ -25,6 +30,11 @@ type BuildSelection = {
   innerRow: number;
 };
 
+type BuildSpot = {
+  col: number;
+  row: number;
+};
+
 type RealmBuildActionOptions = {
   entityId: number;
   realmPosition?: RealmPosition | null;
@@ -46,7 +56,7 @@ type RealmAvailableTileOptions = {
   vacatedSpots?: ReadonlySet<string>;
 };
 
-const buildablePositionsCache = new Map<number, Array<{ col: number; row: number }>>();
+const buildablePositionsCache = new Map<number, BuildSpot[]>();
 const OCCUPIED_SPACE_REASON = "space is occupied";
 
 const extractErrorMessage = (error: unknown): string => {
@@ -63,15 +73,73 @@ const extractErrorMessage = (error: unknown): string => {
 const isOccupiedSpaceError = (error: unknown): boolean =>
   extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
 
+const resolveReservedSpots = (
+  entityId: number,
+  occupiedSpots?: ReadonlySet<string>,
+  vacatedSpots?: ReadonlySet<string>,
+) => {
+  const reservationState = getBuildReservationState(entityId);
+
+  return {
+    occupiedSpots: occupiedSpots ?? reservationState.occupied,
+    vacatedSpots: vacatedSpots ?? reservationState.vacated,
+  };
+};
+
+const reserveAutoBuildSpot = (entityId: number, spotKey: string, onReserveSpot?: (spotKey: string) => void) => {
+  if (onReserveSpot) {
+    onReserveSpot(spotKey);
+    return;
+  }
+
+  reserveOccupiedBuildSpot(entityId, spotKey);
+};
+
+const releaseAutoBuildSpot = (entityId: number, spotKey: string, onReleaseSpot?: (spotKey: string) => void) => {
+  if (onReleaseSpot) {
+    onReleaseSpot(spotKey);
+    return;
+  }
+
+  releaseOccupiedBuildSpot(entityId, spotKey);
+};
+
+const isCenterBuildSpot = (spot: BuildSpot) => spot.col === BUILDINGS_CENTER[0] && spot.row === BUILDINGS_CENTER[1];
+
+const toBuildSpotKey = ({ col, row }: BuildSpot) => `${col},${row}`;
+
+const isReservedVacatedSpotStillOccupied = (
+  tileManager: TileManager,
+  reservedSpots: ReturnType<typeof resolveReservedSpots>,
+  spot: BuildSpot,
+) => reservedSpots.vacatedSpots.has(toBuildSpotKey(spot)) && tileManager.isHexOccupied(spot);
+
+const isAvailableBuildSpot = (
+  tileManager: TileManager,
+  reservedSpots: ReturnType<typeof resolveReservedSpots>,
+  spot: BuildSpot,
+) => {
+  if (isCenterBuildSpot(spot)) return false;
+  if (reservedSpots.occupiedSpots.has(toBuildSpotKey(spot))) return false;
+  if (isReservedVacatedSpotStillOccupied(tileManager, reservedSpots, spot)) return false;
+  return !tileManager.isHexOccupied(spot);
+};
+
+const resolveAvailableBuildSpots = (
+  tileManager: TileManager,
+  reservedSpots: ReturnType<typeof resolveReservedSpots>,
+  candidates: BuildSpot[],
+) => candidates.filter((candidate) => isAvailableBuildSpot(tileManager, reservedSpots, candidate));
+
 const generateBuildablePositions = (radius: number) => {
   const cached = buildablePositionsCache.get(radius);
   if (cached) return cached;
 
-  const positions: Array<{ col: number; row: number }> = [];
+  const positions: BuildSpot[] = [];
   const seen = new Set<string>();
 
   const addPosition = (col: number, row: number) => {
-    const key = `${col},${row}`;
+    const key = toBuildSpotKey({ col, row });
     if (seen.has(key)) return;
     positions.push({ col, row });
     seen.add(key);
@@ -82,10 +150,10 @@ const generateBuildablePositions = (radius: number) => {
 
   let currentLayer = [start];
   for (let i = 0; i < radius; i += 1) {
-    const nextLayer: Array<{ col: number; row: number }> = [];
+    const nextLayer: BuildSpot[] = [];
     currentLayer.forEach((position) => {
       getNeighborHexes(position.col, position.row).forEach((neighbor) => {
-        const key = `${neighbor.col},${neighbor.row}`;
+        const key = toBuildSpotKey(neighbor);
         if (seen.has(key)) return;
 
         addPosition(neighbor.col, neighbor.row);
@@ -123,23 +191,17 @@ const hasBuildableCandidate = ({
   entityId,
   realmPosition,
   world,
-  occupiedSpots = new Set<string>(),
-  vacatedSpots = new Set<string>(),
+  occupiedSpots,
+  vacatedSpots,
 }: RealmAvailableTileOptions) => {
   if (!realmPosition) return true;
 
   const { tileManager, buildRadiusResolver } = createTileManager(entityId, realmPosition, world);
   const buildRadius = buildRadiusResolver();
   const candidates = generateBuildablePositions(buildRadius);
-  const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
+  const reservedSpots = resolveReservedSpots(entityId, occupiedSpots, vacatedSpots);
 
-  return candidates.some((position) => {
-    const key = `${position.col},${position.row}`;
-    if (key === centerKey) return false;
-    if (occupiedSpots.has(key)) return false;
-    if (vacatedSpots.has(key) && tileManager.isHexOccupied({ col: position.col, row: position.row })) return false;
-    return !tileManager.isHexOccupied({ col: position.col, row: position.row });
-  });
+  return candidates.some((candidate) => isAvailableBuildSpot(tileManager, reservedSpots, candidate));
 };
 
 export const resolveRealmHasAvailableBuildingTile = (options: RealmAvailableTileOptions) =>
@@ -151,8 +213,8 @@ export const buildRealmBuilding = async ({
   target,
   useSimpleCost,
   world,
-  occupiedSpots = new Set<string>(),
-  vacatedSpots = new Set<string>(),
+  occupiedSpots,
+  vacatedSpots,
   onReserveSpot,
   onReleaseSpot,
   onBuildSuccess,
@@ -165,29 +227,20 @@ export const buildRealmBuilding = async ({
   const { outerCol, outerRow, tileManager, buildRadiusResolver } = createTileManager(entityId, realmPosition, world);
   const buildRadius = buildRadiusResolver();
   const candidates = generateBuildablePositions(buildRadius);
-  const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
-
-  const availableSpots = candidates.filter((position) => {
-    const key = `${position.col},${position.row}`;
-    if (key === centerKey) return false;
-    if (occupiedSpots.has(key)) return false;
-    if (vacatedSpots.has(key) && tileManager.isHexOccupied({ col: position.col, row: position.row })) return false;
-    return !tileManager.isHexOccupied({ col: position.col, row: position.row });
-  });
+  const reservedSpots = resolveReservedSpots(entityId, occupiedSpots, vacatedSpots);
+  const availableSpots = resolveAvailableBuildSpots(tileManager, reservedSpots, candidates);
 
   if (availableSpots.length === 0) {
     toast.error("No empty building tiles available.");
     return false;
   }
 
-  let reservedSpotKey: string | null = null;
   let occupiedTileFailures = 0;
 
   try {
     for (const availableSpot of availableSpots) {
-      const spotKey = `${availableSpot.col},${availableSpot.row}`;
-      reservedSpotKey = spotKey;
-      onReserveSpot?.(spotKey);
+      const spotKey = toBuildSpotKey(availableSpot);
+      reserveAutoBuildSpot(entityId, spotKey, onReserveSpot);
 
       try {
         await tileManager.placeBuilding(
@@ -206,14 +259,12 @@ export const buildRealmBuilding = async ({
         });
         return true;
       } catch (error) {
-        onReleaseSpot?.(spotKey);
-        reservedSpotKey = null;
-
         if (isOccupiedSpaceError(error)) {
           occupiedTileFailures += 1;
           continue;
         }
 
+        releaseAutoBuildSpot(entityId, spotKey, onReleaseSpot);
         throw error;
       }
     }
@@ -233,9 +284,5 @@ export const buildRealmBuilding = async ({
       toast.error("Building failed. Please try again.");
     }
     return false;
-  } finally {
-    if (reservedSpotKey) {
-      onReleaseSpot?.(reservedSpotKey);
-    }
   }
 };

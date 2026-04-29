@@ -22,6 +22,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-04-30",
+    title: "Safer Rapid Building",
+    description:
+      "Rapid build clicks now reserve pending building spots immediately, so auto-build and manual placement avoid duplicate occupied-space errors while the chain catches up.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-29",
+    title: "Unblocked Spectating",
+    description:
+      "Spectate now opens directly from game cards and skips player-only settlement checks, so watching a world no longer gets stuck behind a wallet switch or blitz preflight.",
+    type: "fix",
+  },
+  {
     date: "2026-04-25",
     title: "Sidebar Transfer Bars",
     description:

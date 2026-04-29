@@ -13,6 +13,10 @@ import {
   resolveRealmHasAvailableBuildingTile,
 } from "@/ui/features/settlement/construction/realm-build-actions";
 import {
+  beginRealmBuildPlacement,
+  completeRealmBuildPlacement,
+} from "@/ui/features/settlement/construction/build-reservation-store";
+import {
   buildRealmBuildingSummary,
   RealmBuildingSummary,
   resolveRealmBuildingSummaryBuildability,
@@ -371,6 +375,10 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       if (!realmId) return;
 
       const buildingKey = buildingId.toString();
+      const placement = beginRealmBuildPlacement(realmId, buildingId);
+
+      if (!placement.started) return;
+
       setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
 
       try {
@@ -392,6 +400,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
           delete next[buildingKey];
           return next;
         });
+        completeRealmBuildPlacement(realmId, buildingId);
       }
     },
     [account.account, components, realm?.position, realmId, setSelectedBuildingHex, setup.systemCalls, useSimpleCost],

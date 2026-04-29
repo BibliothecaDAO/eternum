@@ -36,6 +36,127 @@ export function buildApiUrl(baseUrl: string, query: string): string {
   return `${baseUrl}?query=${encodeQuery(query)}`;
 }
 
+export interface FetchWithErrorHandlingOptions {
+  timeoutMs?: number;
+  retryDelaysMs?: number[];
+}
+
+const DEFAULT_FETCH_TIMEOUT_MS = 15_000;
+const DEFAULT_FETCH_RETRY_DELAYS_MS = [250, 1_000];
+const RETRYABLE_HTTP_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+class FetchTimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(`Request timed out after ${timeoutMs}ms`);
+    this.name = "FetchTimeoutError";
+  }
+}
+
+class FetchResponseError extends Error {
+  constructor(
+    readonly status: number,
+    readonly statusText: string,
+  ) {
+    super(statusText);
+    this.name = "FetchResponseError";
+  }
+}
+
+const waitForRetryDelay = (delayMs: number): Promise<void> =>
+  delayMs <= 0 ? Promise.resolve() : new Promise((resolve) => setTimeout(resolve, delayMs));
+
+const createFetchTimeout = (timeoutMs: number): { signal?: AbortSignal; clear: () => void } => {
+  if (timeoutMs <= 0 || typeof AbortController === "undefined") {
+    return { clear: () => undefined };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort(new FetchTimeoutError(timeoutMs));
+  }, timeoutMs);
+
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timeoutId),
+  };
+};
+
+const isRetryableFetchError = (error: unknown): boolean => {
+  if (error instanceof FetchResponseError) {
+    return RETRYABLE_HTTP_STATUSES.has(error.status);
+  }
+
+  if (error instanceof FetchTimeoutError) {
+    return true;
+  }
+
+  if (typeof DOMException !== "undefined" && error instanceof DOMException && error.name === "AbortError") {
+    return true;
+  }
+
+  if (error instanceof TypeError) {
+    return true;
+  }
+
+  return false;
+};
+
+const normalizeFetchError = (error: unknown, timeoutMs: number): Error => {
+  if (error instanceof Error) {
+    if (error.name === "AbortError") {
+      return new FetchTimeoutError(timeoutMs);
+    }
+    return error;
+  }
+
+  return new Error(String(error));
+};
+
+const formatFetchErrorMessage = (errorMessage: string, error: unknown): string => {
+  const detail = error instanceof Error ? error.message : String(error);
+  return `${errorMessage}: ${detail}`;
+};
+
+const fetchJsonOnce = async (url: string, options: FetchWithErrorHandlingOptions): Promise<unknown> => {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS;
+  const timeout = createFetchTimeout(timeoutMs);
+
+  try {
+    const response = await fetch(url, timeout.signal ? { signal: timeout.signal } : undefined);
+
+    if (!response.ok) {
+      throw new FetchResponseError(response.status, response.statusText);
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw normalizeFetchError(error, timeoutMs);
+  } finally {
+    timeout.clear();
+  }
+};
+
+const fetchJsonWithRetry = async (
+  url: string,
+  errorMessage: string,
+  options: FetchWithErrorHandlingOptions,
+): Promise<unknown> => {
+  const retryDelaysMs = options.retryDelaysMs ?? DEFAULT_FETCH_RETRY_DELAYS_MS;
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await fetchJsonOnce(url, options);
+    } catch (error) {
+      const retryDelayMs = retryDelaysMs[attempt];
+      if (retryDelayMs === undefined || !isRetryableFetchError(error)) {
+        throw new Error(formatFetchErrorMessage(errorMessage, error));
+      }
+
+      await waitForRetryDelay(retryDelayMs);
+    }
+  }
+};
+
 /**
  * Generic function to handle SQL API responses with error checking.
  * SQL queries always return arrays, even for single row results.
@@ -46,14 +167,12 @@ export function buildApiUrl(baseUrl: string, query: string): string {
  * @returns Promise resolving to an array of T items
  * @throws Error if the request fails or response is not ok
  */
-export async function fetchWithErrorHandling<T>(url: string, errorMessage: string): Promise<T[]> {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`${errorMessage}: ${response.statusText}`);
-  }
-
-  const result = await response.json();
+export async function fetchWithErrorHandling<T>(
+  url: string,
+  errorMessage: string,
+  options: FetchWithErrorHandlingOptions = {},
+): Promise<T[]> {
+  const result = await fetchJsonWithRetry(url, errorMessage, options);
 
   // Ensure the result is always an array (defensive programming)
   if (!Array.isArray(result)) {
@@ -72,14 +191,12 @@ export async function fetchWithErrorHandling<T>(url: string, errorMessage: strin
  * @returns Promise resolving to the parsed JSON response
  * @throws Error if the request fails or response is not ok
  */
-export async function fetchJsonWithErrorHandling<T>(url: string, errorMessage: string): Promise<T> {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`${errorMessage}: ${response.statusText}`);
-  }
-
-  return (await response.json()) as T;
+export async function fetchJsonWithErrorHandling<T>(
+  url: string,
+  errorMessage: string,
+  options: FetchWithErrorHandlingOptions = {},
+): Promise<T> {
+  return (await fetchJsonWithRetry(url, errorMessage, options)) as T;
 }
 
 /**

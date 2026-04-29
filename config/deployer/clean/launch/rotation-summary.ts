@@ -62,10 +62,56 @@ export function validateRotationLaunchRequest(request: LaunchRotationRequest): v
   parseStartTime(request.firstGameStartTime);
 }
 
+export function resolveRotationRequestWithPersistedSchedule<TRequest extends LaunchRotationRequest>(
+  request: TRequest,
+): TRequest {
+  if (hasRequestSchedule(request)) {
+    return request;
+  }
+
+  const summary = resolvePersistedRotationScheduleSummary(request);
+  if (!summary) {
+    return request;
+  }
+
+  return {
+    ...request,
+    gameIntervalMinutes: resolvePersistedRotationGameIntervalMinutes(request, summary),
+    weeklyCadence: hasWeeklyCadence(request) ? request.weeklyCadence : summary.weeklyCadence,
+  };
+}
+
+function hasRequestSchedule(request: LaunchRotationRequest): boolean {
+  return hasWeeklyCadence(request) || isRotationPositiveInteger(request.gameIntervalMinutes);
+}
+
+function resolvePersistedRotationScheduleSummary(request: LaunchRotationRequest): LaunchRotationSummary | null {
+  return (
+    request.resumeSummary ?? loadRotationLaunchSummaryIfPresent(request.environmentId, request.rotationName.trim())
+  );
+}
+
+function resolvePersistedRotationGameIntervalMinutes(
+  request: LaunchRotationRequest,
+  summary: LaunchRotationSummary,
+): number {
+  if (hasWeeklyCadence(summary)) {
+    return request.gameIntervalMinutes;
+  }
+
+  return isRotationPositiveInteger(summary.gameIntervalMinutes)
+    ? summary.gameIntervalMinutes
+    : request.gameIntervalMinutes;
+}
+
 function validateRotationPositiveInteger(value: number, label: string): void {
-  if (!Number.isFinite(value) || !Number.isInteger(value) || value <= 0) {
+  if (!isRotationPositiveInteger(value)) {
     throw new Error(`${label} must be a positive integer`);
   }
+}
+
+function isRotationPositiveInteger(value: number): boolean {
+  return Number.isFinite(value) && Number.isInteger(value) && value > 0;
 }
 
 function hasWeeklyCadence(request: Pick<LaunchRotationRequest, "weeklyCadence">): boolean {
