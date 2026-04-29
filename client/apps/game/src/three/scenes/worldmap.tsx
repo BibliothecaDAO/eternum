@@ -8253,7 +8253,26 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
+  private installToriiBoundsDebugHook(): void {
+    if (!import.meta.env.DEV && !TORII_BOUNDS_DEBUG_OVERLAY) {
+      return;
+    }
+
+    const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
+    debugWindow.getToriiBoundsDebugSnapshot = () => this.getToriiBoundsDebugSnapshot();
+  }
+
+  private removeToriiBoundsDebugHook(): void {
+    if (!import.meta.env.DEV && !TORII_BOUNDS_DEBUG_OVERLAY) {
+      return;
+    }
+
+    const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
+    debugWindow.getToriiBoundsDebugSnapshot = undefined;
+  }
+
   private installChunkDiagnosticsDebugHooks(): void {
+    this.installToriiBoundsDebugHook();
     if (!import.meta.env.DEV) {
       return;
     }
@@ -8261,7 +8280,6 @@ export default class WorldmapScene extends WarpTravel {
     const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
     debugWindow.getWorldmapChunkDiagnostics = () => this.getChunkDiagnosticsSnapshot();
     debugWindow.getWorldmapChunkTrace = () => this.getChunkTraceSnapshot();
-    debugWindow.getToriiBoundsDebugSnapshot = () => this.getToriiBoundsDebugSnapshot();
     debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
     debugWindow.getWorldmapRenderDiagnostics = () => snapshotWorldmapRenderDiagnostics();
     debugWindow.resetWorldmapRenderDiagnostics = () => resetWorldmapRenderDiagnostics();
@@ -8281,6 +8299,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
+    this.removeToriiBoundsDebugHook();
     if (!import.meta.env.DEV) {
       return;
     }
@@ -8288,7 +8307,6 @@ export default class WorldmapScene extends WarpTravel {
     const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
     debugWindow.getWorldmapChunkDiagnostics = undefined;
     debugWindow.getWorldmapChunkTrace = undefined;
-    debugWindow.getToriiBoundsDebugSnapshot = undefined;
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
     debugWindow.getWorldmapRenderDiagnostics = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;

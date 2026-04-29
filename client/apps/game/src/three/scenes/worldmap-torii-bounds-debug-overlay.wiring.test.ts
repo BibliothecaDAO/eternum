@@ -17,6 +17,14 @@ describe("worldmap Torii bounds debug overlay wiring", () => {
     expect(source).toContain("VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY");
   });
 
+  it("keeps the console snapshot hook available when the overlay flag is enabled outside dev", () => {
+    const source = readWorldmapSource();
+
+    expect(source).toContain("private installToriiBoundsDebugHook");
+    expect(source).toContain("!import.meta.env.DEV && !TORII_BOUNDS_DEBUG_OVERLAY");
+    expect(source).toContain("debugWindow.getToriiBoundsDebugSnapshot = () => this.getToriiBoundsDebugSnapshot()");
+  });
+
   it("updates the overlay when bounds are requested and applied", () => {
     const source = readWorldmapSource();
     const methodStart = source.indexOf("private async updateToriiBoundsSubscription");
