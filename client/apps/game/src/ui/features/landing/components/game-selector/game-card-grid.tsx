@@ -974,7 +974,7 @@ const GameCard = ({
           {/* Right slot: Spectate (always in same position) */}
           {canSpectate && (
             <button
-              onClick={() => runWithNetworkGuard(onSpectate)}
+              onClick={onSpectate}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium",
                 "bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/10",

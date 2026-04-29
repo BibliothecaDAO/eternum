@@ -2,9 +2,37 @@
 
 import { describe, expect, it } from "vitest";
 
-import { resolveGameEntryBlockingError, resolveGameEntryModalPhase } from "./game-entry-phase";
+import {
+  isGameEntryPreflightComplete,
+  resolveGameEntryBlockingError,
+  resolveGameEntryModalPhase,
+} from "./game-entry-phase";
 
 describe("game entry phase resolution", () => {
+  it("marks spectator preflight complete without waiting for player settlement checks", () => {
+    const isComplete = isGameEntryPreflightComplete({
+      isEternumMode: false,
+      isSpectateMode: true,
+      isForgeMode: false,
+      isBlitzMode: true,
+      settlementCheckComplete: false,
+    });
+
+    expect(isComplete).toBe(true);
+  });
+
+  it("waits for player blitz settlement checks before normal play entry", () => {
+    const isComplete = isGameEntryPreflightComplete({
+      isEternumMode: false,
+      isSpectateMode: false,
+      isForgeMode: false,
+      isBlitzMode: true,
+      settlementCheckComplete: false,
+    });
+
+    expect(isComplete).toBe(false);
+  });
+
   it("surfaces a blocking error when world metadata settles into an unknown mode", () => {
     const error = resolveGameEntryBlockingError({
       worldAvailabilityErrorMessage: null,

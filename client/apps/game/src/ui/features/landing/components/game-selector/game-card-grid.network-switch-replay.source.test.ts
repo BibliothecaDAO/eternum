@@ -21,4 +21,11 @@ describe("Game card network switch replay", () => {
     expect(source).toContain("latestPendingAction:");
     expect(source).not.toContain("onClose={() => setPendingNetworkAction(null)}");
   });
+
+  it("does not block read-only spectate behind wallet network switching", () => {
+    const source = readFileSync(fileURLToPath(new URL("./game-card-grid.tsx", import.meta.url)), "utf8");
+
+    expect(source).toContain("onClick={onSpectate}");
+    expect(source).not.toContain("onClick={() => runWithNetworkGuard(onSpectate)}");
+  });
 });
