@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-04-29T19:15:53.542Z",
+  "updatedAt": "2026-04-29T19:16:17.809Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,11 +86,10 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25128609956-1.json",
       "status": "running",
-      "updatedAt": "2026-04-29T19:15:53.542Z",
+      "updatedAt": "2026-04-29T19:16:17.809Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-04-29T20:00:53.542Z",
-      "hasRunningStep": true,
+      "currentStepId": "sync-paymaster",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "sync-paymaster",
       "autoRetry": {
@@ -100,8 +99,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-04-29T19:30:43.436Z",
-        "lastEvaluatedAt": "2026-04-29T19:15:43.436Z"
+        "nextEvaluationAt": "2026-04-29T19:31:17.809Z",
+        "lastEvaluatedAt": "2026-04-29T19:16:17.809Z"
       },
       "games": [
         {
@@ -178,7 +177,11 @@
           "gameName": "eu-gladiator-02-05-26-2000",
           "startTime": 1777752000,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-04-29T19:16:15.933Z"
+          }
         }
       ]
     }
