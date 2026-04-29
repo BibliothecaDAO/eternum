@@ -238,6 +238,11 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
   VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS: z
     .string()
     .optional()
