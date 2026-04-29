@@ -15,6 +15,8 @@ import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
+  beginRealmBuildPlacement,
+  completeRealmBuildPlacement,
   getBuildReservationState,
   reconcileBuildReservationState,
   releaseOccupiedBuildSpot,
@@ -194,6 +196,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const handleAutoBuild = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
       const buildingKey = target.type.toString();
+      const placement = beginRealmBuildPlacement(entityId, target.type);
+
+      if (!placement.started) return;
 
       setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
 
@@ -223,6 +228,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           delete next[buildingKey];
           return next;
         });
+        completeRealmBuildPlacement(entityId, target.type);
       }
     },
     [

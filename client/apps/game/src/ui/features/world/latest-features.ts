@@ -29,6 +29,13 @@ const allLatestFeatures: LatestFeature[] = [
     type: "fix",
   },
   {
+    date: "2026-04-30",
+    title: "Safer Rapid Building",
+    description:
+      "Rapid build clicks now reserve pending building spots immediately, so auto-build and manual placement avoid duplicate occupied-space errors while the chain catches up.",
+    type: "fix",
+  },
+  {
     date: "2026-04-29",
     title: "Smoother Army Movement",
     description:

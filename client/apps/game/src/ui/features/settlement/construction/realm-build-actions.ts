@@ -259,13 +259,12 @@ export const buildRealmBuilding = async ({
         });
         return true;
       } catch (error) {
-        releaseAutoBuildSpot(entityId, spotKey, onReleaseSpot);
-
         if (isOccupiedSpaceError(error)) {
           occupiedTileFailures += 1;
           continue;
         }
 
+        releaseAutoBuildSpot(entityId, spotKey, onReleaseSpot);
         throw error;
       }
     }
