@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-30",
+    title: "Synced Army Positions",
+    description:
+      "Army visuals now follow live explorer coordinate updates even when tile occupancy events arrive late, so selected units no longer appear stranded on their previous hex.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-30",
     title: "Safer Rapid Building",
     description:
       "Rapid build clicks now reserve pending building spots immediately, so auto-build and manual placement avoid duplicate occupied-space errors while the chain catches up.",
