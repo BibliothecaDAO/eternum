@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25089722973-1",
   "currentStepId": null,
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-04-29T03:42:04.637Z",
+  "updatedAt": "2026-04-29T03:42:04.759Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -416,7 +416,7 @@
         },
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated legendary -> pro for na-gladiator-29-04-26-0200",
         "status": "succeeded",
         "configSteps": [
           {
@@ -586,11 +586,11 @@
           "worldConfigTxHash": "0x5c10891536afdb6f06969d0562474a7503089fcd1350da54411ca46f065f288",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "legendary",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/na-gladiator-29-04-26-0200/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-04-29T01:33:32.602Z",
+          "lastIndexerDescribeAt": "2026-04-29T03:42:04.758Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -600,9 +600,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-04-29T03:40:29.657Z"
+          "paymasterSynced": true
         }
       },
       {
