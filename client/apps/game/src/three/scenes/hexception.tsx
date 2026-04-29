@@ -46,6 +46,10 @@ import {
 } from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
+import {
+  releaseOccupiedBuildSpot,
+  reserveOccupiedBuildSpot,
+} from "@/ui/features/settlement/construction/build-reservation-store";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
@@ -634,10 +638,12 @@ export default class HexceptionScene extends HexagonScene {
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
         this.clearBuildingMode();
         const useSimpleCost = this.state.useSimpleCost;
+        const structureEntityId = useUIStore.getState().structureEntityId;
+        reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
         try {
           console.log("Placing building at:", {
             dojo: account!,
-            entityId: useUIStore.getState().structureEntityId,
+            entityId: structureEntityId,
             col: normalizedCoords.col,
             row: normalizedCoords.row,
             buildingId: buildingType.type,
@@ -645,7 +651,7 @@ export default class HexceptionScene extends HexagonScene {
 
           await this.tileManager.placeBuilding(
             account!,
-            useUIStore.getState().structureEntityId,
+            structureEntityId,
             buildingType.type,
             normalizedCoords,
             useSimpleCost,
@@ -653,6 +659,10 @@ export default class HexceptionScene extends HexagonScene {
           AudioManager.getInstance().play("ui.build_place");
         } catch (error) {
           console.log("catched error so removing building", error);
+          const message = error instanceof Error ? error.message : String(error);
+          if (!message.toLowerCase().includes("space is occupied")) {
+            releaseOccupiedBuildSpot(structureEntityId, normalizedCoords);
+          }
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
         }
         this.updateHexceptionGrid(this.hexceptionRadius);
