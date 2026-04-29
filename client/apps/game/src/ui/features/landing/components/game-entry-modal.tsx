@@ -64,6 +64,7 @@ import {
 } from "./game-entry-settlement.utils";
 import { runBlitzSettlementFlow } from "./game-entry-blitz-settlement-flow";
 import {
+  isGameEntryPreflightComplete,
   resolveGameEntryBlockingError,
   resolveGameEntryModalPhase,
   type GameEntryModalPhase as ModalPhase,
@@ -3531,9 +3532,16 @@ export const GameEntryModal = ({
     isLoadingVillagePassInventory ||
     isLoadingOwnedStructures ||
     !worldMeta;
+  const entryPreflightComplete = isGameEntryPreflightComplete({
+    isEternumMode,
+    isSpectateMode,
+    isForgeMode,
+    isBlitzMode,
+    settlementCheckComplete,
+  });
   const bootstrapStatus: "idle" | "pending-world" | "loading" | "ready" | "error" = preflightError
     ? "error"
-    : isCheckingWorldAvailability || isLoadingWorldSystemAddresses || (!isEternumMode && !settlementCheckComplete)
+    : isCheckingWorldAvailability || isLoadingWorldSystemAddresses || !entryPreflightComplete
       ? "loading"
       : "ready";
   const tasks = useMemo(
@@ -3551,10 +3559,10 @@ export const GameEntryModal = ({
       {
         id: "preflight",
         label: isBlitzMode ? "Checking blitz settlement state" : "Checking world entry state",
-        status: settlementCheckComplete || isEternumMode ? ("complete" as const) : ("running" as const),
+        status: entryPreflightComplete ? ("complete" as const) : ("running" as const),
       },
     ],
-    [isBlitzMode, isEternumMode, resolvedWorldSystemAddresses, settlementCheckComplete, worldMeta],
+    [entryPreflightComplete, isBlitzMode, resolvedWorldSystemAddresses, worldMeta],
   );
   const progress = useMemo(() => {
     const completed = tasks.filter((task) => task.status === "complete").length;
