@@ -47,6 +47,7 @@ interface ResolvePendingArmyMovementTxFailurePlanInput {
   txHash: string;
   txEntityMap: Map<string, number>;
   pendingEntities: Set<number>;
+  optimisticEntities?: Set<number>;
 }
 
 interface PendingArmyMovementTxFailurePlan {
@@ -106,23 +107,22 @@ export function shouldClearPendingArmyMovement(input: ShouldClearPendingArmyMove
 /**
  * Decide stale-clear behavior when an army selection is attempted.
  *
- * When the optimistic tween is active, re-selection is allowed so the user can
- * queue a next-move on top of the one currently animating. We don't treat the
- * pending state as stale in that case — the tx is still valid, just visually
- * running ahead of the indexer.
+ * When optimistic movement is unresolved, selection stays blocked. The tx is
+ * still valid, just visually running ahead of the indexer, and accepting a new
+ * command here would create a hidden follow-up intent rather than a real tx.
  */
 export function resolvePendingArmyMovementSelectionPlan(
   input: ResolvePendingArmyMovementSelectionPlanInput,
 ): PendingArmyMovementSelectionPlan {
-  if (!input.hasPendingMovement) {
+  if (input.isOptimisticMovementActive) {
     return {
       shouldClearPendingMovement: false,
       shouldRequestChunkRefresh: false,
-      shouldBlockSelection: false,
+      shouldBlockSelection: true,
     };
   }
 
-  if (input.isOptimisticMovementActive) {
+  if (!input.hasPendingMovement) {
     return {
       shouldClearPendingMovement: false,
       shouldRequestChunkRefresh: false,
@@ -175,7 +175,10 @@ export function resolvePendingArmyMovementTxFailurePlan(
     return { shouldClearPendingMovement: false, entityId: undefined };
   }
 
-  if (!input.pendingEntities.has(entityId)) {
+  const hasPendingMovement = input.pendingEntities.has(entityId);
+  const hasOptimisticMovement = input.optimisticEntities?.has(entityId) ?? false;
+
+  if (!hasPendingMovement && !hasOptimisticMovement) {
     return { shouldClearPendingMovement: false, entityId };
   }
 

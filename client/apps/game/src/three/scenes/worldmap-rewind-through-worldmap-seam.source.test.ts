@@ -8,7 +8,7 @@ function readSource(filename: string): string {
   return readFileSync(resolve(currentDir, filename), "utf8");
 }
 
-// At tx_confirmed the worldmap writes the optimistic destination into two
+// At tx submission the worldmap writes the optimistic destination into two
 // caches: the 3D mesh (armyManager.applyMovementPlan) and the spatial index
 // (this.updateArmyHexes — "cache mirror"). Rewinds must unwind BOTH layers,
 // otherwise the mesh snaps back to source while armyHexes keeps the army
@@ -25,7 +25,7 @@ describe("Worldmap rewind seam (armyManager + armyHexes)", () => {
     const seamBody = source.slice(seamStart, seamStart + 2000);
 
     // Must guard so a no-op caller doesn't dispatch empty spatial writes.
-    expect(seamBody).toContain("isArmyMovingOptimistically(entityId)");
+    expect(seamBody).toContain("hasUnresolvedOptimisticMovement(entityId)");
     // Must call the armyManager rewind for the visual layer.
     expect(seamBody).toContain("this.armyManager.rewindOptimisticMovement(entityId)");
     // Must mirror the rewound source into the spatial index.
@@ -111,8 +111,8 @@ describe("ArmyManager.rewindOptimisticMovement returns locked source", () => {
     expect(lockRead).toBeGreaterThan(0);
     expect(lockDelete).toBeGreaterThan(lockRead);
 
-    // Early return when no optimistic move is in flight keeps the seam a
-    // no-op for idle entities.
-    expect(body).toMatch(/if \(!this\.optimisticallyMovingArmies\.has\(entityId\)\) return null/);
+    // Early return when neither the tween nor its unresolved lock exists keeps
+    // the seam a no-op for idle entities.
+    expect(body).toMatch(/if \(!this\.optimisticallyMovingArmies\.has\(entityId\) && !lock\) return null/);
   });
 });
