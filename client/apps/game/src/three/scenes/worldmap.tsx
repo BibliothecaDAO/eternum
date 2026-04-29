@@ -191,6 +191,7 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { retryDeferredWorldmapArmyRemovals } from "./worldmap-deferred-army-removal-runtime";
+import { resolvePendingArmyMovementSubmitAction } from "./worldmap-army-movement-submit";
 import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
@@ -2492,18 +2493,32 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+    const pendingSubmitAction = resolvePendingArmyMovementSubmitAction({
+      actionPathLength: actionPath.length,
+      hasPendingMovement: this.pendingArmyMovements.has(selectedEntityId),
+      isOptimisticMovementActive: this.armyManager?.isArmyMovingOptimistically(selectedEntityId) ?? false,
+    });
+
+    switch (pendingSubmitAction) {
+      case "queue_next_move":
+        this.enqueueNextMove(account, actionPath, selectedEntityId);
+        this.state.updateEntityActionHoveredHex(null);
+        this.clearSelection();
+        return;
+      case "block_pending_handoff":
+        toast.error("Move already pending. Wait for it to start before queuing another.");
+        this.state.updateEntityActionHoveredHex(null);
+        this.clearSelection();
+        return;
+      case "submit":
+        break;
+    }
+
     // Universal stamina pre-check. Blocks any submit (not just queued) when the
     // client-visible stamina can't cover the action cost — prevents "insufficient
     // stamina" server rejections from reaching the user as a tx failure toast.
     if (actionPath.length > 0 && !this.canAffordMove(selectedEntityId, actionPath)) {
       toast.error("Not enough stamina for this move");
-      this.state.updateEntityActionHoveredHex(null);
-      this.clearSelection();
-      return;
-    }
-
-    if (actionPath.length > 0 && this.armyManager?.isArmyMovingOptimistically(selectedEntityId)) {
-      this.enqueueNextMove(account, actionPath, selectedEntityId);
       this.state.updateEntityActionHoveredHex(null);
       this.clearSelection();
       return;

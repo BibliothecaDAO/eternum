@@ -27,6 +27,25 @@ describe("Worldmap next-move queue wiring", () => {
     expect(prologue).toContain("this.enqueueNextMove(account, actionPath, selectedEntityId)");
   });
 
+  it("blocks pending handoff submits before command sound, effects, or tx submission", () => {
+    const source = readSource("worldmap.tsx");
+
+    const start = source.indexOf("private onArmyMovement(account:");
+    expect(start).toBeGreaterThan(0);
+    const body = source.slice(start, start + 9000);
+
+    const guardIndex = body.indexOf("resolvePendingArmyMovementSubmitAction");
+    const soundIndex = body.indexOf("playUnitCommandSoundForWorldmapAction(actionType)");
+    const txSubmitIndex = body.indexOf(".moveArmy(account!");
+
+    expect(guardIndex).toBeGreaterThan(0);
+    expect(soundIndex).toBeGreaterThan(guardIndex);
+    expect(txSubmitIndex).toBeGreaterThan(guardIndex);
+    expect(body).toContain('case "block_pending_handoff"');
+    expect(guardIndex).toBeLessThan(soundIndex);
+    expect(guardIndex).toBeLessThan(txSubmitIndex);
+  });
+
   it("records next_move_queued when enqueueing and replays via onMovementComplete", () => {
     const source = readSource("worldmap.tsx");
 
@@ -104,19 +123,24 @@ describe("Worldmap next-move queue wiring", () => {
     expect(body).toContain("army.currentStamina");
   });
 
-  it("runs canAffordMove at the top of onArmyMovement so every submit — not just queued — is gated", () => {
+  it("runs canAffordMove before command feedback or tx submit for non-pending moves", () => {
     const source = readSource("worldmap.tsx");
 
     const methodStart = source.indexOf(
       "private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID)",
     );
     expect(methodStart).toBeGreaterThan(0);
-    // The check must appear before the optimistic-short-circuit branch and before the
-    // tx submission path. First 400 chars of the method body comfortably cover the prologue.
-    const prologue = source.slice(methodStart, methodStart + 500);
+    const body = source.slice(methodStart, methodStart + 9000);
 
-    expect(prologue).toContain("this.canAffordMove(selectedEntityId, actionPath)");
-    expect(prologue).toContain("toast.error");
+    const guardIndex = body.indexOf("resolvePendingArmyMovementSubmitAction");
+    const staminaIndex = body.indexOf("this.canAffordMove(selectedEntityId, actionPath)");
+    const soundIndex = body.indexOf("playUnitCommandSoundForWorldmapAction(actionType)");
+    const txSubmitIndex = body.indexOf(".moveArmy(account!");
+
+    expect(staminaIndex).toBeGreaterThan(guardIndex);
+    expect(staminaIndex).toBeLessThan(soundIndex);
+    expect(staminaIndex).toBeLessThan(txSubmitIndex);
+    expect(body.slice(staminaIndex, staminaIndex + 300)).toContain("toast.error");
   });
 
   it("clears queued next-move on tx failure, submission failure, fallback timeout, and scene destroy", () => {
