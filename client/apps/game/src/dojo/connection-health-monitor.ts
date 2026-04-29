@@ -1,4 +1,5 @@
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
+import { addToriiStreamBreadcrumb, reportToriiSubscriptionLifecycle } from "@/observability/network-health-reporting";
 
 const DEFAULT_HEALTH_CHECK_INTERVAL_MS = 10_000;
 const DEFAULT_STALE_THRESHOLD_MS = 15_000;
@@ -25,9 +26,36 @@ interface ConnectionHealthToriiInput {
   fallbackToriiUrl: string;
 }
 
+interface ToriiHeartbeatClient {
+  onIndexerUpdated?: (contractAddress: string | null, callback: () => void) => Promise<{ cancel: () => void }>;
+}
+
 let activeMonitor: ConnectionHealthMonitor | null = null;
 
 export const getConnectionHealthMonitor = (): ConnectionHealthMonitor | null => activeMonitor;
+
+export async function subscribeToToriiHeartbeat(
+  toriiClient: ToriiHeartbeatClient,
+): Promise<{ cancel: () => void } | null> {
+  if (typeof toriiClient.onIndexerUpdated !== "function") {
+    return null;
+  }
+
+  try {
+    const subscription = await toriiClient.onIndexerUpdated(null, () => {
+      useConnectionStore.getState().recordToriiHeartbeat();
+      addToriiStreamBreadcrumb({
+        event: "heartbeat_received",
+        streamType: "both",
+      });
+    });
+    useConnectionStore.getState().markToriiHeartbeatAvailable();
+    return subscription;
+  } catch (error) {
+    console.warn("[ConnectionHealthMonitor] Failed to subscribe to Torii heartbeat", error);
+    return null;
+  }
+}
 
 export class ConnectionHealthMonitor {
   private readonly config: ConnectionHealthMonitorConfig;
@@ -66,12 +94,14 @@ export class ConnectionHealthMonitor {
     this.hasObservedHealthyStreams = false;
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
     window.addEventListener("online", this.handleOnline);
+    window.addEventListener("pageshow", this.handlePageShow);
     this.startHealthCheckLoop();
   }
 
   stop(): void {
     document.removeEventListener("visibilitychange", this.handleVisibilityChange);
     window.removeEventListener("online", this.handleOnline);
+    window.removeEventListener("pageshow", this.handlePageShow);
     this.stopHealthCheckLoop();
     if (activeMonitor === this) activeMonitor = null;
   }
@@ -102,12 +132,9 @@ export class ConnectionHealthMonitor {
     if (!this.hasObservedHealthyStreams) return;
 
     const store = useConnectionStore.getState();
-    const now = Date.now();
-    const spatialStale = now - store.lastSpatialUpdate > this.staleThresholdMs;
-    const globalStale = now - store.lastGlobalUpdate > this.staleThresholdMs;
 
-    if (spatialStale || globalStale) {
-      void this.reconnectStaleStreams(spatialStale, globalStale);
+    if (this.isHeartbeatStale(store)) {
+      void this.reconnectStaleStreams(true, true);
     }
   };
 
@@ -117,6 +144,11 @@ export class ConnectionHealthMonitor {
 
     useConnectionStore.getState().resetReconnectAttempts();
     void this.reconnectStaleStreams(true, true);
+  };
+
+  private handlePageShow = (): void => {
+    if (this.disposed) return;
+    void this.runHealthCheck();
   };
 
   // --- Phase 4: Health Polling ---
@@ -177,27 +209,51 @@ export class ConnectionHealthMonitor {
     store.incrementReconnectAttempts();
     this.markOutageStart();
     this.reportDeadEndIfNeeded();
+    this.reconnectAfterFailedHealthCheck();
   }
 
   private haveStreamsTickedSinceStart(store: ReturnType<typeof useConnectionStore.getState>): boolean {
-    return store.lastSpatialUpdate > this.startedAtMs && store.lastGlobalUpdate > this.startedAtMs;
+    const lastSpatialActivity = Math.max(store.lastSpatialHandshake, store.lastSpatialUpdate);
+    const lastGlobalActivity = Math.max(store.lastGlobalHandshake, store.lastGlobalUpdate);
+    return lastSpatialActivity > this.startedAtMs && lastGlobalActivity > this.startedAtMs;
   }
 
   private reconnectSilentStreamsAfterCooldown(store: ReturnType<typeof useConnectionStore.getState>): void {
     const now = Date.now();
     if (now - this.lastStreamReconnectAtMs < this.reconnectCooldownMs) return;
 
-    const spatialStale = now - store.lastSpatialUpdate > this.staleThresholdMs;
-    const globalStale = now - store.lastGlobalUpdate > this.staleThresholdMs;
-    if (!spatialStale && !globalStale) return;
+    if (!this.isHeartbeatStale(store)) return;
 
+    reportToriiSubscriptionLifecycle({
+      streamType: "both",
+      kind: "heartbeat",
+      outcome: "stale",
+      durationMs: now - store.lastToriiHeartbeat,
+    });
     this.lastStreamReconnectAtMs = now;
-    void this.reconnectStaleStreams(spatialStale, globalStale);
+    void this.reconnectStaleStreams(true, true);
   }
 
-  private async reconnectStaleStreams(spatial: boolean, global: boolean): Promise<void> {
+  private reconnectAfterFailedHealthCheck(): void {
+    const now = Date.now();
+    if (now - this.lastStreamReconnectAtMs < this.reconnectCooldownMs) return;
+
+    this.lastStreamReconnectAtMs = now;
+    void this.reconnectStaleStreams(true, true, { markConnectedOnSuccess: false });
+  }
+
+  private isHeartbeatStale(store: ReturnType<typeof useConnectionStore.getState>): boolean {
+    return store.toriiHeartbeatAvailable && Date.now() - store.lastToriiHeartbeat > this.staleThresholdMs;
+  }
+
+  private async reconnectStaleStreams(
+    spatial: boolean,
+    global: boolean,
+    options: { markConnectedOnSuccess?: boolean } = {},
+  ): Promise<void> {
     if (this.reconnecting || this.disposed) return;
 
+    const markConnectedOnSuccess = options.markConnectedOnSuccess ?? true;
     this.reconnecting = true;
     const store = useConnectionStore.getState();
     if (spatial) store.setSpatialStatus("reconnecting");
@@ -209,10 +265,15 @@ export class ConnectionHealthMonitor {
       if (global) promises.push(this.config.onReconnectGlobal());
       attempted = promises.length > 0;
       await Promise.all(promises);
-      if (spatial) store.setSpatialStatus("connected");
-      if (global) store.setGlobalStatus("connected");
-      if (attempted) {
-        this.markConnectedIfNeeded();
+      if (markConnectedOnSuccess) {
+        if (spatial) store.setSpatialStatus("connected");
+        if (global) store.setGlobalStatus("connected");
+        if (attempted) {
+          this.markConnectedIfNeeded();
+        }
+      } else {
+        if (spatial) store.setSpatialStatus("failed");
+        if (global) store.setGlobalStatus("failed");
       }
     } catch (error) {
       console.warn("[ConnectionHealthMonitor] Failed to reconnect stale streams", error);

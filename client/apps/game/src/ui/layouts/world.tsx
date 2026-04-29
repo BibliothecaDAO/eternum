@@ -1,4 +1,8 @@
-import { ConnectionHealthMonitor, resolveConnectionHealthToriiBaseUrl } from "@/dojo/connection-health-monitor";
+import {
+  ConnectionHealthMonitor,
+  resolveConnectionHealthToriiBaseUrl,
+  subscribeToToriiHeartbeat,
+} from "@/dojo/connection-health-monitor";
 import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
 import { resolveEntryContextFromPlayRoute } from "@/game-entry/context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -169,6 +173,16 @@ const ConnectionMonitor = () => {
 
     const walletAddress = useAccountStore.getState().account?.address ?? null;
     void setNetworkHealthScopeTags({ toriiBaseUrl, walletAddress });
+    let cancelled = false;
+    let heartbeatSubscription: { cancel: () => void } | null = null;
+
+    void subscribeToToriiHeartbeat(setup.network.toriiClient).then((subscription) => {
+      if (cancelled) {
+        subscription?.cancel();
+        return;
+      }
+      heartbeatSubscription = subscription;
+    });
 
     let deadEndRecoveryFired = false;
     const runDeadEndRecovery = async () => {
@@ -243,7 +257,11 @@ const ConnectionMonitor = () => {
     });
 
     monitor.start();
-    return () => monitor.dispose();
+    return () => {
+      cancelled = true;
+      heartbeatSubscription?.cancel();
+      monitor.dispose();
+    };
   }, [activeWorld, fallbackToriiBaseUrl, setup, state]);
 
   return null;
