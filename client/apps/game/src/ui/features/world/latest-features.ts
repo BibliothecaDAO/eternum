@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-04-29",
+    title: "Smoother Army Movement",
+    description:
+      "Army movement now starts as soon as the transaction is submitted, blocks follow-up commands until authoritative world state catches up, and rewinds cleanly if the transaction fails.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-29",
     title: "Unblocked Spectating",
     description:
       "Spectate now opens directly from game cards and skips player-only settlement checks, so watching a world no longer gets stuck behind a wallet switch or blitz preflight.",

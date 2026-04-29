@@ -36,7 +36,7 @@ export const ARMY_MOVEMENT_LATENCY_PHASE_PAIRS: readonly ArmyMovementLatencyPhas
   { from: "tx_response_received", to: "tx_submitted" },
   { from: "tx_submitted", to: "tx_confirmed" },
   { from: "move_requested", to: "tx_confirmed" },
-  { from: "tx_confirmed", to: "optimistic_animation_started" },
+  { from: "tx_submitted", to: "optimistic_animation_started" },
   { from: "tx_confirmed", to: "tileopt_stream_received" },
   { from: "tileopt_stream_received", to: "tileopt_component_received" },
   { from: "tileopt_stream_received", to: "movement_started" },

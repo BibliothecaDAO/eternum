@@ -157,6 +157,6 @@ describe("summarizeArmyMovementLatency", () => {
     expect(pairs).toContain("tileopt_stream_received->movement_started");
     expect(pairs).toContain("move_requested->movement_started");
     expect(pairs).toContain("movement_started->movement_completed");
-    expect(pairs).toContain("tx_confirmed->optimistic_animation_started");
+    expect(pairs).toContain("tx_submitted->optimistic_animation_started");
   });
 });
