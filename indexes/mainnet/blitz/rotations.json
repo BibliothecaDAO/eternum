@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-04-29T02:15:22.254Z",
+  "updatedAt": "2026-04-29T02:16:49.270Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,14 +84,14 @@
       "environment": "mainnet.blitz",
       "rotationName": "blitz-rotation",
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25087083626-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25087609622-1.json",
       "status": "running",
-      "updatedAt": "2026-04-29T02:15:22.254Z",
+      "updatedAt": "2026-04-29T02:16:49.270Z",
       "workflowRef": "next",
-      "currentStepId": null,
+      "currentStepId": "create-worlds",
       "hasRunningStep": false,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
+      "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
@@ -99,8 +99,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-04-29T02:30:22.254Z",
-        "lastEvaluatedAt": "2026-04-29T02:15:22.254Z"
+        "nextEvaluationAt": "2026-04-29T02:31:49.270Z",
+        "lastEvaluatedAt": "2026-04-29T02:16:49.270Z"
       },
       "games": [
         {
@@ -162,6 +162,12 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-04-28T11:15:37.404Z"
           }
+        },
+        {
+          "gameName": "apac-gladiator-02-05-26-1200",
+          "startTime": 1777723200,
+          "durationSeconds": 3600,
+          "artifacts": {}
         }
       ]
     }
