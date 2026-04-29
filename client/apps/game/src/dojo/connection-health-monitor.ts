@@ -140,52 +140,60 @@ export class ConnectionHealthMonitor {
     // Skip polling if tab is hidden to save resources
     if (document.visibilityState === "hidden") return;
 
-    const store = useConnectionStore.getState();
-
     try {
       const healthy = await this.config.healthCheckFn();
-
-      if (healthy) {
-        store.recordHealthCheck();
-        this.markConnectedIfNeeded();
-        store.resetReconnectAttempts();
-
-        // Boot grace: only consider streams stale once we've seen both tick
-        // at least once *after* the monitor started. Until then, a quiet
-        // subscription could just be mid-handshake — don't cancel it.
-        if (!this.hasObservedHealthyStreams) {
-          if (store.lastSpatialUpdate > this.startedAtMs && store.lastGlobalUpdate > this.startedAtMs) {
-            this.hasObservedHealthyStreams = true;
-          } else {
-            return;
-          }
-        }
-
-        // Server is reachable, but a stream can silently die (WASM gRPC drop
-        // without onError firing) while the tab stays visible. If either stream
-        // has been silent past the stale threshold, force a resubscribe.
-        // Cooldown prevents reconnect storms when the area is genuinely idle.
-        const now = Date.now();
-        if (now - this.lastStreamReconnectAtMs >= this.reconnectCooldownMs) {
-          const spatialStale = now - store.lastSpatialUpdate > this.staleThresholdMs;
-          const globalStale = now - store.lastGlobalUpdate > this.staleThresholdMs;
-          if (spatialStale || globalStale) {
-            this.lastStreamReconnectAtMs = now;
-            void this.reconnectStaleStreams(spatialStale, globalStale);
-          }
-        }
+      if (!healthy) {
+        this.markHealthCheckFailed();
+        return;
       }
+
+      this.markHealthCheckPassed();
     } catch {
-      store.setStatus("disconnected");
-      store.setSpatialStatus("failed");
-      store.setGlobalStatus("failed");
-      store.incrementReconnectAttempts();
-      this.markOutageStart();
-      this.reportDeadEndIfNeeded();
+      this.markHealthCheckFailed();
     }
   }
 
   // --- Shared reconnect logic ---
+
+  private markHealthCheckPassed(): void {
+    const store = useConnectionStore.getState();
+    store.recordHealthCheck();
+    this.markConnectedIfNeeded();
+    store.resetReconnectAttempts();
+
+    if (!this.hasObservedHealthyStreams) {
+      this.hasObservedHealthyStreams = this.haveStreamsTickedSinceStart(store);
+      if (!this.hasObservedHealthyStreams) return;
+    }
+
+    this.reconnectSilentStreamsAfterCooldown(store);
+  }
+
+  private markHealthCheckFailed(): void {
+    const store = useConnectionStore.getState();
+    store.setStatus("disconnected");
+    store.setSpatialStatus("failed");
+    store.setGlobalStatus("failed");
+    store.incrementReconnectAttempts();
+    this.markOutageStart();
+    this.reportDeadEndIfNeeded();
+  }
+
+  private haveStreamsTickedSinceStart(store: ReturnType<typeof useConnectionStore.getState>): boolean {
+    return store.lastSpatialUpdate > this.startedAtMs && store.lastGlobalUpdate > this.startedAtMs;
+  }
+
+  private reconnectSilentStreamsAfterCooldown(store: ReturnType<typeof useConnectionStore.getState>): void {
+    const now = Date.now();
+    if (now - this.lastStreamReconnectAtMs < this.reconnectCooldownMs) return;
+
+    const spatialStale = now - store.lastSpatialUpdate > this.staleThresholdMs;
+    const globalStale = now - store.lastGlobalUpdate > this.staleThresholdMs;
+    if (!spatialStale && !globalStale) return;
+
+    this.lastStreamReconnectAtMs = now;
+    void this.reconnectStaleStreams(spatialStale, globalStale);
+  }
 
   private async reconnectStaleStreams(spatial: boolean, global: boolean): Promise<void> {
     if (this.reconnecting || this.disposed) return;

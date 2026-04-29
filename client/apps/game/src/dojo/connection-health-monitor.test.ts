@@ -205,6 +205,34 @@ describe("ConnectionHealthMonitor", () => {
     monitor.dispose();
   });
 
+  it("treats an unhealthy HTTP response as disconnected", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(false));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(onReconnectSpatial).not.toHaveBeenCalled();
+    expect(onReconnectGlobal).not.toHaveBeenCalled();
+    expect(useConnectionStore.getState().status).toBe("disconnected");
+    expect(useConnectionStore.getState().spatialStatus).toBe("failed");
+    expect(useConnectionStore.getState().globalStatus).toBe("failed");
+    expect(useConnectionStore.getState().reconnectAttempts).toBe(1);
+
+    monitor.dispose();
+  });
+
   it("sets per-stream status to reconnecting then connected around a reconnect", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
