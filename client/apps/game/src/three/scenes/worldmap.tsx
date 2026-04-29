@@ -206,6 +206,7 @@ import {
 } from "../managers/arrival-ghost-policy";
 import {
   resolveExploreCompletionPendingClearPlan,
+  shouldClearPendingMovementOnAuthoritativePosition,
   shouldCleanupTrackedTravelEffectOnPendingClear,
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
@@ -631,6 +632,7 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
+  private pendingArmyMovementTargetKeys: Map<ID, string> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
   // Pre-computed optimistic movement plans keyed by entityId. Planned at submit
   // time in parallel with the tx, applied on tx_confirmed so the animation
@@ -1398,6 +1400,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         await this.armyManager.onTileUpdate(update);
+        this.clearPendingArmyMovementFromAuthoritativePosition(update);
         recordArmyMovementLatencyPhase({
           phase: "army_manager_tile_update_applied",
           source: "worldmap",
@@ -1431,6 +1434,7 @@ export default class WorldmapScene extends WarpTravel {
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+          onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
           shouldSkipStalePositionUpdate: (entityId, normalized) =>
             this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
         });
@@ -2520,7 +2524,7 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       // Play effect based on action type: compass for exploring, travel for moving
-      const key = `${targetHex.col},${targetHex.row}`;
+      const key = this.resolveContractHexKey(targetHex);
       const effectType = isTravelAction ? "travel" : "compass";
       const effectLabel = isTravelAction ? "Traveling" : "Exploring";
       let cleanup = () => {};
@@ -2635,7 +2639,7 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       // Mark army as having pending movement transaction
-      this.markPendingArmyMovement(selectedEntityId);
+      this.markPendingArmyMovement(selectedEntityId, key);
       recordArmyMovementLatencyPhase({
         phase: "move_requested",
         source: "worldmap",
@@ -2683,7 +2687,10 @@ export default class WorldmapScene extends WarpTravel {
             entityId: selectedEntityId,
             txHash,
           });
-          if (txHash) {
+          // Torii can reconcile the authoritative target before the RPC promise
+          // returns. Avoid re-registering tx lifecycle for a move we already
+          // resolved from the stream.
+          if (txHash && this.pendingArmyMovements.has(selectedEntityId)) {
             this.pendingArmyMovementTxMap.set(txHash, selectedEntityId);
             recordArmyMovementLatencyPhase({
               phase: "tx_submitted",
@@ -2877,6 +2884,7 @@ export default class WorldmapScene extends WarpTravel {
   ): void {
     this.pendingArmyMovements.delete(entityId);
     this.pendingArmyMovementStartedAt.delete(entityId);
+    this.pendingArmyMovementTargetKeys.delete(entityId);
 
     const fallbackTimeout = this.pendingArmyMovementFallbackTimeouts.get(entityId);
     if (fallbackTimeout) {
@@ -2895,6 +2903,29 @@ export default class WorldmapScene extends WarpTravel {
     if (trackedEffect && shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason })) {
       trackedEffect.cleanup();
     }
+  }
+
+  private clearPendingArmyMovementFromAuthoritativePosition(update: { entityId: ID; hexCoords: HexPosition }): void {
+    const entityId = update.entityId;
+    const pendingTargetKey = this.pendingArmyMovementTargetKeys.get(entityId);
+    const authoritativePositionKey = this.resolveContractHexKey(update.hexCoords);
+    const shouldClearPendingMovement = shouldClearPendingMovementOnAuthoritativePosition({
+      pendingTargetKey,
+      authoritativePositionKey,
+      isMovementInFlight:
+        this.armyManager.isArmyMoving(entityId) || this.armyManager.isArmyMovingOptimistically(entityId),
+    });
+
+    if (!shouldClearPendingMovement) {
+      return;
+    }
+
+    this.pendingMovementPlans.delete(entityId);
+    this.clearQueuedNextMove(entityId);
+    this.clearPendingArmyMovement(entityId, "authoritative_reconciled");
+    useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
+    this.disposePendingMovementVisualLifecycle(entityId);
+    this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
   }
 
   private installPendingMovementVisualLifecycle(input: {
@@ -2941,10 +2972,16 @@ export default class WorldmapScene extends WarpTravel {
     dispose();
   }
 
-  private markPendingArmyMovement(entityId: ID): void {
+  private markPendingArmyMovement(entityId: ID, targetKey: string): void {
     this.pendingArmyMovements.add(entityId);
     this.pendingArmyMovementStartedAt.set(entityId, Date.now());
+    this.pendingArmyMovementTargetKeys.set(entityId, targetKey);
     this.schedulePendingArmyMovementFallback(entityId);
+  }
+
+  private resolveContractHexKey(hexCoords: HexPosition): string {
+    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return `${contract.x},${contract.y}`;
   }
 
   private queuePendingMovementStamina(input: {
