@@ -13,6 +13,7 @@ describe("processExplorerTroopsUpdate stale-position skip", () => {
     const updateArmyHexes = vi.fn();
     const updateArmyFromExplorerTroopsUpdate = vi.fn();
     const shouldSkipStalePositionUpdate = vi.fn(() => true);
+    const reconcileArmyPositionFromManager = vi.fn();
 
     processExplorerTroopsUpdate(baseUpdate, {
       cancelPendingArmyRemoval: vi.fn(),
@@ -20,17 +21,20 @@ describe("processExplorerTroopsUpdate stale-position skip", () => {
       updateArmyHexes,
       updateArmyFromExplorerTroopsUpdate,
       shouldSkipStalePositionUpdate,
+      reconcileArmyPositionFromManager,
     });
 
     expect(shouldSkipStalePositionUpdate).toHaveBeenCalledWith(7, expect.objectContaining({ x: expect.any(Number) }));
     expect(updateArmyHexes).not.toHaveBeenCalled();
     expect(updateArmyFromExplorerTroopsUpdate).toHaveBeenCalledWith(baseUpdate);
+    expect(reconcileArmyPositionFromManager).toHaveBeenCalledWith(7);
   });
 
   it("applies both handlers when the predicate returns false", () => {
     const updateArmyHexes = vi.fn();
     const updateArmyFromExplorerTroopsUpdate = vi.fn();
     const shouldSkipStalePositionUpdate = vi.fn(() => false);
+    const reconcileArmyPositionFromManager = vi.fn();
 
     processExplorerTroopsUpdate(baseUpdate, {
       cancelPendingArmyRemoval: vi.fn(),
@@ -38,10 +42,12 @@ describe("processExplorerTroopsUpdate stale-position skip", () => {
       updateArmyHexes,
       updateArmyFromExplorerTroopsUpdate,
       shouldSkipStalePositionUpdate,
+      reconcileArmyPositionFromManager,
     });
 
     expect(updateArmyHexes).toHaveBeenCalledWith(baseUpdate);
     expect(updateArmyFromExplorerTroopsUpdate).toHaveBeenCalledWith(baseUpdate);
+    expect(reconcileArmyPositionFromManager).not.toHaveBeenCalled();
   });
 
   it("never consults the predicate on zero-troop removal events", () => {

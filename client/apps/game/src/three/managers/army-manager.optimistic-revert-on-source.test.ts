@@ -21,9 +21,9 @@ describe("ArmyManager optimistic revert-on-source", () => {
   it("stores normalizedSource alongside normalizedTarget in the lock type", () => {
     const source = readSource();
 
-    const fieldStart = source.indexOf("private optimisticPositionLocks: Map<");
+    const fieldStart = source.indexOf("interface OptimisticPositionLockState");
     expect(fieldStart).toBeGreaterThan(0);
-    const declaration = source.slice(fieldStart, fieldStart + 500);
+    const declaration = source.slice(fieldStart, fieldStart + 250);
     expect(declaration).toContain("normalizedSource");
     expect(declaration).toContain("normalizedTarget");
   });
@@ -87,5 +87,43 @@ describe("ArmyManager optimistic revert-on-source", () => {
     // Target match is the success path — no rewind; the tween completes naturally.
     const targetBlock = body.slice(body.indexOf("matchesTarget"), body.indexOf("matchesSource"));
     expect(targetBlock).not.toContain("rewindOptimisticMovement");
+  });
+
+  it("keeps stale-source protection after the optimistic target has been confirmed", () => {
+    const source = readSource();
+
+    const methodStart = source.indexOf(
+      "public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean",
+    );
+    expect(methodStart).toBeGreaterThan(0);
+    const methodEnd = source.indexOf("\n  public ", methodStart + 20);
+    const body = source.slice(methodStart, methodEnd);
+
+    const targetBlock = body.slice(body.indexOf("matchesTarget"), body.indexOf("matchesSource"));
+    expect(targetBlock).toContain("this.markOptimisticTargetConfirmed(entityId, lock)");
+    expect(targetBlock).not.toContain("this.optimisticPositionLocks.delete(entityId)");
+
+    const sourceBlock = body.slice(body.indexOf("matchesSource"), body.indexOf("if (nowMs - lock.lockedAtMs"));
+    expect(sourceBlock).toMatch(/hasFreshConfirmedOptimisticTarget\(lock, nowMs\)[\s\S]{0,160}?return true/);
+    expect(sourceBlock).toMatch(
+      /hasConfirmedOptimisticTarget\(lock\)[\s\S]{0,160}?optimisticPositionLocks\.delete\(entityId\)/,
+    );
+    expect(sourceBlock.indexOf("return true")).toBeLessThan(sourceBlock.indexOf("rewindOptimisticMovement"));
+  });
+
+  it("rewindOptimisticMovement restores manager state from the lock when no source bucket exists", () => {
+    const source = readSource();
+
+    const methodStart = source.indexOf("public rewindOptimisticMovement(entityId: ID)");
+    expect(methodStart).toBeGreaterThan(0);
+    const methodEnd = source.indexOf("\n  }\n", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+    const body = source.slice(methodStart, methodEnd);
+
+    // Same-bucket moves do not populate movingArmySourceBuckets, so the rewind
+    // path must still use the lock's normalizedSource to restore armyData.
+    expect(body).toContain("const rewindSource = resolveOptimisticRewindSource");
+    expect(body).toMatch(/if \(rewindSource && armyData\)/);
+    expect(body).toMatch(/new Position\(\{ x: rewindSource\.col, y: rewindSource\.row \}\)/);
   });
 });

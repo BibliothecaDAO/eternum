@@ -23,7 +23,8 @@ describe("ArmyManager authoritative reconciliation seam", () => {
     expect(moveArmyStart).toBeGreaterThan(0);
     const body = source.slice(moveArmyStart, moveArmyStart + 900);
 
-    expect(body).toMatch(/optimisticallyMovingArmies\.has\(entityId\)[\s\S]*?runAuthoritativeReconcileListeners/);
+    expect(body).toMatch(/optimisticallyMovingArmies\.has\(entityId\)[\s\S]*?markOptimisticTargetConfirmed/);
+    expect(source).toMatch(/private markOptimisticTargetConfirmed[\s\S]*?runAuthoritativeReconcileListeners/);
   });
 
   it("exposes hasReceivedAuthoritativeReconciliation accessor for gating dequeue", () => {

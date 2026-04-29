@@ -126,15 +126,56 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
 // Auto-release window for an optimistic position lock. If no authoritative
-// update matches the locked destination within this window, the lock is
-// released so the next update can drive a correction tween — covers the rare
-// server-divergent-path case without stranding the visual state.
+// update reconciles within this window, later divergent updates can drive a
+// correction tween — covers the rare server-divergent-path case without
+// stranding the visual state.
 const OPTIMISTIC_POSITION_LOCK_TTL_MS = 15_000;
 
 interface MovingArmySourceState {
   bucketKey: string;
   col: number;
   row: number;
+}
+
+interface OptimisticPositionLockState {
+  normalizedSource: { x: number; y: number };
+  normalizedTarget: { x: number; y: number };
+  lockedAtMs: number;
+  targetConfirmedAtMs?: number;
+}
+
+interface OptimisticRewindSource {
+  col: number;
+  row: number;
+}
+
+function resolveOptimisticRewindSource(input: {
+  lock: OptimisticPositionLockState | undefined;
+  sourceState: MovingArmySourceState | undefined;
+}): OptimisticRewindSource | null {
+  if (input.sourceState) {
+    return {
+      col: input.sourceState.col,
+      row: input.sourceState.row,
+    };
+  }
+
+  if (!input.lock) {
+    return null;
+  }
+
+  return {
+    col: input.lock.normalizedSource.x,
+    row: input.lock.normalizedSource.y,
+  };
+}
+
+function hasConfirmedOptimisticTarget(lock: OptimisticPositionLockState): boolean {
+  return lock.targetConfirmedAtMs !== undefined;
+}
+
+function hasFreshConfirmedOptimisticTarget(lock: OptimisticPositionLockState, nowMs: number): boolean {
+  return lock.targetConfirmedAtMs !== undefined && nowMs - lock.targetConfirmedAtMs <= OPTIMISTIC_POSITION_LOCK_TTL_MS;
 }
 
 export interface ArmyMovementPlan {
@@ -256,15 +297,9 @@ export class ArmyManager {
   // pre-tx tile. normalizedSource is retained so explore-discovery reverts —
   // where the chain leaves `explorer.coord = from` after rolling a treasure —
   // are recognised as authoritative and allowed through instead of being
-  // suppressed as stale. Auto-release on matching update or TTL expiry.
-  private optimisticPositionLocks: Map<
-    ID,
-    {
-      normalizedSource: { x: number; y: number };
-      normalizedTarget: { x: number; y: number };
-      lockedAtMs: number;
-    }
-  > = new Map();
+  // suppressed as stale. Target confirmations stay fresh long enough to skip
+  // delayed source replays, then expire so later corrections can proceed.
+  private optimisticPositionLocks: Map<ID, OptimisticPositionLockState> = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
   private suppressedArmies: Set<ID> = new Set();
@@ -1638,10 +1673,7 @@ export class ArmyManager {
       return false;
     }
 
-    const numericEntityId = this.toNumericId(entityId);
-    const { x, y } = army.hexCoords.getContract();
-    const biome = Biome.getBiome(x, y);
-    const modelType = this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
+    const modelType = this.resolveArmyModelType(army);
     await this.armyModel.preloadModels([modelType]);
 
     const latestArmy = this.armies.get(entityId);
@@ -1661,6 +1693,13 @@ export class ArmyManager {
     this.updateArmyAttachmentTransforms();
     this.updateVisibleArmyBuffers();
     return true;
+  }
+
+  private resolveArmyModelType(army: ArmyData): ModelType {
+    const numericEntityId = this.toNumericId(army.entityId);
+    const { x, y } = army.hexCoords.getContract();
+    const biome = Biome.getBiome(x, y);
+    return this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
   }
 
   public restoreArmyVisualIfVisible(entityId: ID): Promise<boolean> {
@@ -1974,9 +2013,8 @@ export class ArmyManager {
         source: "world_update_listener",
         entityId,
       });
+      this.markOptimisticTargetConfirmed(entityId, this.optimisticPositionLocks.get(entityId));
       this.optimisticallyMovingArmies.delete(entityId);
-      this.authoritativeReconciledArmies.add(entityId);
-      this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
     }
 
     const plan = await this.computeMovementPlan(entityId, hexCoords);
@@ -1994,29 +2032,38 @@ export class ArmyManager {
 
   /**
    * True when an incoming position update should be skipped because it disagrees
-   * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
-   * release the lock as a side effect.
+   * with an active optimistic lock and the TTL hasn't elapsed. Target matches
+   * confirm the optimistic destination while keeping the lock alive briefly so
+   * late source replays cannot start a reverse tween.
    *
-   * Source-match is treated the same as target-match: `explorer_explore` can
-   * roll a treasure that leaves `explorer.coord = from` on-chain
-   * (troop_movement.cairo:193). That authoritative revert would otherwise be
-   * swallowed as "stale" and the army would stay visually stranded on the
-   * discovered tile until the TTL expired.
+   * Source-match before target confirmation is an authoritative revert:
+   * `explorer_explore` can roll a treasure that leaves `explorer.coord = from`
+   * on-chain (troop_movement.cairo:193). After target confirmation, a fresh
+   * source-match is treated as a late replay and skipped only within the lock
+   * window.
    */
   public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
     const lock = this.optimisticPositionLocks.get(entityId);
     if (!lock) return false;
+    const nowMs = Date.now();
 
     const matchesTarget =
       lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
     if (matchesTarget) {
-      this.optimisticPositionLocks.delete(entityId);
+      this.markOptimisticTargetConfirmed(entityId, lock);
       return false;
     }
 
     const matchesSource =
       lock.normalizedSource.x === incomingNormalized.x && lock.normalizedSource.y === incomingNormalized.y;
     if (matchesSource) {
+      if (hasFreshConfirmedOptimisticTarget(lock, nowMs)) {
+        return true;
+      }
+      if (hasConfirmedOptimisticTarget(lock)) {
+        this.optimisticPositionLocks.delete(entityId);
+        return false;
+      }
       // Discovery revert: `explorer_explore` rolled a treasure, the chain left
       // `explorer.coord = from`, and the tx emits an ExplorerTroops delta
       // (stamina/biomes) but no TileOpt change for the source tile. The
@@ -2031,12 +2078,21 @@ export class ArmyManager {
       return false;
     }
 
-    if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
+    if (nowMs - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
       this.optimisticPositionLocks.delete(entityId);
       return false;
     }
 
     return true;
+  }
+
+  private markOptimisticTargetConfirmed(entityId: ID, lock: OptimisticPositionLockState | undefined): void {
+    if (lock && lock.targetConfirmedAtMs === undefined) {
+      lock.targetConfirmedAtMs = Date.now();
+    }
+
+    this.authoritativeReconciledArmies.add(entityId);
+    this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
   }
 
   public onAuthoritativeReconciliation(entityId: ID, callback: () => void): () => void {
@@ -2072,11 +2128,11 @@ export class ArmyManager {
 
   public rewindOptimisticMovement(entityId: ID): { col: number; row: number } | null {
     if (!this.optimisticallyMovingArmies.has(entityId)) return null;
-    // Read the lock's normalizedSource before the delete below — it's the
-    // canonical source-of-truth for the pre-tx hex, set for every optimistic
-    // move regardless of whether the source/dest share a spatial bucket.
     const lock = this.optimisticPositionLocks.get(entityId);
-    const lockedSource = lock ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y } : null;
+    const sourceState = this.movingArmySourceBuckets.get(entityId);
+    // Same-bucket moves do not create source-bucket bookkeeping, so the lock is
+    // the canonical fallback for restoring the pre-tx source.
+    const rewindSource = resolveOptimisticRewindSource({ lock, sourceState });
 
     this.optimisticallyMovingArmies.delete(entityId);
     this.authoritativeReconciledArmies.delete(entityId);
@@ -2084,7 +2140,6 @@ export class ArmyManager {
     this.optimisticPositionLocks.delete(entityId);
 
     const numericEntityId = this.toNumericId(entityId);
-    const sourceState = this.movingArmySourceBuckets.get(entityId);
     const armyData = this.armies.get(entityId);
 
     // Clear the complete callback so cancelMovement's teardown doesn't fire listeners.
@@ -2099,23 +2154,14 @@ export class ArmyManager {
     this.movementStartListeners.delete(numericEntityId);
     this.movementCompleteListeners.delete(numericEntityId);
 
-    if (sourceState && armyData) {
-      const sourcePosition = new Position({ x: sourceState.col, y: sourceState.row });
+    if (rewindSource && armyData) {
+      const sourcePosition = new Position({ x: rewindSource.col, y: rewindSource.row });
       const previousHex = armyData.hexCoords;
       this.armies.set(entityId, { ...armyData, hexCoords: sourcePosition });
-      // Remove from the destination bucket we added during applyMovementPlan.
-      // Leave the source bucket intact — the army never left it.
-      const destNorm = previousHex.getNormalized();
-      const destKey = this.getSpatialKey(destNorm.x, destNorm.y);
-      if (destKey !== sourceState.bucketKey) {
-        const destBucket = this.chunkToArmies.get(destKey);
-        if (destBucket) {
-          destBucket.delete(entityId);
-          if (destBucket.size === 0) this.chunkToArmies.delete(destKey);
-        }
-      }
+      this.updateSpatialIndex(entityId, previousHex, sourcePosition);
       this.movingArmySourceBuckets.delete(entityId);
-      void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      this.lastKnownVisibleHexes.delete(entityId);
+      this.syncArmyVisualToTrackedPosition(entityId);
     }
 
     recordArmyMovementLatencyPhase({
@@ -2124,7 +2170,36 @@ export class ArmyManager {
       entityId,
     });
 
-    return lockedSource;
+    return rewindSource;
+  }
+
+  public syncArmyVisualToTrackedPosition(entityId: ID): void {
+    const army = this.armies.get(entityId);
+    if (!army) return;
+
+    const slot = this.visibleArmyIndices.get(entityId);
+    if (!this.isArmyVisibleInCurrentChunk(army)) {
+      if (slot !== undefined) {
+        this.removeVisibleArmy(entityId);
+        this.flushVisibleArmyPresentation();
+      }
+      return;
+    }
+
+    if (slot === undefined) {
+      void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      return;
+    }
+
+    this.refreshArmyInstance(army, slot, this.resolveArmyModelType(army));
+    this.flushVisibleArmyPresentation();
+  }
+
+  private flushVisibleArmyPresentation(): void {
+    this.refreshVisibleArmyCollection();
+    this.syncVisibleArmyAttachments(this.visibleArmies);
+    this.updateArmyAttachmentTransforms();
+    this.updateVisibleArmyBuffers();
   }
 
   /**

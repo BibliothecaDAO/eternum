@@ -128,6 +128,11 @@ import {
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
+import {
+  planArmyPositionRepairs,
+  type ArmyPositionRepair,
+  type ArmyPositionRepairTarget,
+} from "./worldmap-army-position-repair";
 import { shouldTrackHydrationUpdateForFetch } from "./worldmap-hydration-tracking";
 import {
   claimWorldmapInteractionOwner,
@@ -486,6 +491,12 @@ type DirectionalPrefetchAnchor = {
   movementSign: -1 | 1;
 };
 type WorldmapCameraTransitionStatus = "idle" | "transitioning";
+type WorldmapArmyPositionRepairReason = "tile_update" | "explorer_troops_update" | "army_selection" | "chunk_hydrated";
+interface WorldmapArmyPositionRepairTarget extends ArmyPositionRepairTarget {
+  ownerAddress: bigint;
+  ownerStructureId: ID | null;
+}
+type WorldmapArmyPositionRepair = ArmyPositionRepair<WorldmapArmyPositionRepairTarget>;
 
 /**
  * Module-level ref to the active spatial ToriiStreamManager.
@@ -1388,6 +1399,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         await this.armyManager.onTileUpdate(update);
+        this.reconcileArmyPositionFromManager(update.entityId, "tile_update");
         recordArmyMovementLatencyPhase({
           phase: "army_manager_tile_update_applied",
           source: "worldmap",
@@ -1423,6 +1435,8 @@ export default class WorldmapScene extends WarpTravel {
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
           shouldSkipStalePositionUpdate: (entityId, normalized) =>
             this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
+          reconcileArmyPositionFromManager: (entityId) =>
+            this.reconcileArmyPositionFromManager(entityId, "explorer_troops_update"),
         });
       }),
     );
@@ -3343,6 +3357,7 @@ export default class WorldmapScene extends WarpTravel {
     options?: { deferDuringChunkTransition?: boolean },
   ): boolean {
     const deferDuringChunkTransition = options?.deferDuringChunkTransition ?? true;
+    this.reconcileArmyPositionFromManager(selectedEntityId, "army_selection");
 
     // Check if army has pending movement transactions
     const selectionPlan = resolvePendingArmyMovementSelectionPlan({
@@ -4223,6 +4238,107 @@ export default class WorldmapScene extends WarpTravel {
         }
       });
     });
+  }
+
+  private reconcileAllArmyPositionsFromManager(reason: WorldmapArmyPositionRepairReason): void {
+    this.planArmyPositionRepairs(this.resolveArmyPositionRepairTargets()).forEach((repair) =>
+      this.applyArmyPositionRepair(repair, reason),
+    );
+  }
+
+  private reconcileArmyPositionFromManager(entityId: ID, reason: WorldmapArmyPositionRepairReason): boolean {
+    const target = this.resolveArmyPositionRepairTarget(entityId);
+    if (!target) {
+      return false;
+    }
+
+    const repair = this.planArmyPositionRepairs([target])[0];
+    if (!repair) {
+      return false;
+    }
+
+    this.applyArmyPositionRepair(repair, reason);
+    return true;
+  }
+
+  private resolveArmyPositionRepairTargets(): WorldmapArmyPositionRepairTarget[] {
+    return this.armyManager.getArmies().flatMap((army) => this.resolveArmyPositionRepairTarget(army.entityId) ?? []);
+  }
+
+  private resolveArmyPositionRepairTarget(entityId: ID): WorldmapArmyPositionRepairTarget | null {
+    if (this.armyManager.isArmyMovingOptimistically(entityId)) {
+      return null;
+    }
+
+    const army = this.armyManager.getArmy(entityId);
+    if (!army || army.owner.address === undefined) {
+      return null;
+    }
+
+    const normalized = army.hexCoords.getNormalized();
+    return {
+      canonicalPosition: { col: normalized.x, row: normalized.y },
+      entityId,
+      ownerAddress: army.owner.address,
+      ownerStructureId: army.owningStructureId ?? this.armyStructureOwners.get(entityId) ?? null,
+    };
+  }
+
+  private planArmyPositionRepairs(targets: Iterable<WorldmapArmyPositionRepairTarget>): WorldmapArmyPositionRepair[] {
+    return planArmyPositionRepairs({
+      armiesPositions: this.armiesPositions,
+      armyHexes: this.armyHexes,
+      targets,
+    });
+  }
+
+  private applyArmyPositionRepair(repair: WorldmapArmyPositionRepair, reason: WorldmapArmyPositionRepairReason): void {
+    const {
+      cachedPosition,
+      shouldUpdatePositionCache,
+      staleEntries,
+      target: { canonicalPosition, entityId, ownerAddress, ownerStructureId },
+    } = repair;
+
+    this.removeArmyHexEntries(entityId, staleEntries);
+
+    if (shouldUpdatePositionCache) {
+      this.updateArmyHexes({
+        entityId,
+        hexCoords: canonicalPosition,
+        ownerAddress,
+        ownerStructureId,
+      });
+    }
+
+    this.armyManager.syncArmyVisualToTrackedPosition(entityId);
+    if (import.meta.env.DEV) {
+      console.debug("[WorldMap] Repaired stale army position", {
+        entityId,
+        reason,
+        cachedPosition,
+        canonicalPosition,
+        removedStaleEntries: staleEntries,
+      });
+    }
+  }
+
+  private removeArmyHexEntries(entityId: ID, positions: HexPosition[]): void {
+    positions.forEach((position) => this.removeArmyHexEntry(entityId, position));
+  }
+
+  private removeArmyHexEntry(entityId: ID, position: HexPosition): void {
+    const rowMap = this.armyHexes.get(position.col);
+    if (rowMap?.get(position.row)?.id !== entityId) {
+      return;
+    }
+
+    rowMap.delete(position.row);
+    if (rowMap.size === 0) {
+      this.armyHexes.delete(position.col);
+    }
+    gameWorkerManager.updateArmyHex(position.col, position.row, null);
+    this.invalidateAllChunkCachesContainingHex(position.col, position.row);
   }
 
   // used to track the position of the armies on the map
@@ -7374,6 +7490,7 @@ export default class WorldmapScene extends WarpTravel {
       now: () => performance.now(),
       onChunkHydrated: (hydratedChunkKey) => {
         this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+        this.reconcileAllArmyPositionsFromManager("chunk_hydrated");
       },
       onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info as never),
       phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
