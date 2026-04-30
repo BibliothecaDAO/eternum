@@ -59,4 +59,22 @@ describe("useAutomation source", () => {
     expect(source).not.toContain("const executablePlans: ExecutableProductionPlan[] = [];");
     expect(source).not.toContain("executeProductionPlansSequentially");
   });
+
+  it("applies and records automation resource reservations around production submits", () => {
+    const source = readSource("src/hooks/use-automation.tsx");
+
+    expect(source).toContain("applyAutomationReservationsToSnapshot");
+    expect(source).toContain("reserveAutomationResources");
+    expect(source).toContain("releaseAutomationReservation(reservationToken)");
+    expect(source).toContain("buildProductionReservationResources(plan)");
+  });
+
+  it("scheduled transfer automation plans against spendable reserved balances", () => {
+    const source = readSource("src/hooks/use-transfer-automation-runner.ts");
+
+    expect(source).toContain("getSpendableResourceBalance");
+    expect(source).toContain("reserveAutomationResources");
+    expect(source).toContain("releaseAutomationReservation(reservationToken)");
+    expect(source).toMatch(/resources: transferList/);
+  });
 });
