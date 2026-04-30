@@ -81,13 +81,17 @@ function createSyncHarness() {
   let onEntityUpdated: EntityUpdatedCallback | null = null;
   const cancelEntitySubscription = vi.fn();
   const cancelEventSubscription = vi.fn();
+  const entitySubscription = { cancel: cancelEntitySubscription };
+  const eventSubscription = { cancel: cancelEventSubscription };
 
   const client = {
     onEntityUpdated: vi.fn(async (_clause, callback: EntityUpdatedCallback) => {
       onEntityUpdated = callback;
-      return { cancel: cancelEntitySubscription };
+      return entitySubscription;
     }),
-    onEventMessageUpdated: vi.fn(async () => ({ cancel: cancelEventSubscription })),
+    onEventMessageUpdated: vi.fn(async () => eventSubscription),
+    updateEntitySubscription: vi.fn(async () => undefined),
+    updateEventMessageSubscription: vi.fn(async () => undefined),
   };
 
   const setup = {
@@ -213,5 +217,142 @@ describe("syncEntitiesDebounced", () => {
     await readyRejection;
     expect(harness.cancelEntitySubscription).toHaveBeenCalledTimes(1);
     expect(harness.cancelEventSubscription).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates the active Torii subscription pair without recreating callbacks", async () => {
+    const harness = createSyncHarness();
+    const initialClause = { initial: true };
+    const updatedClause = { updated: true };
+
+    const subscription = await syncEntitiesDebounced(
+      harness.client as any,
+      harness.setup as any,
+      initialClause as any,
+      false,
+    );
+
+    expect(subscription.updateClause).toEqual(expect.any(Function));
+
+    await subscription.updateClause?.(updatedClause as any);
+
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(1);
+    expect(harness.client.onEventMessageUpdated).toHaveBeenCalledTimes(1);
+    expect(harness.client.updateEntitySubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ cancel: harness.cancelEntitySubscription }),
+      updatedClause,
+    );
+    expect(harness.client.updateEventMessageSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ cancel: harness.cancelEventSubscription }),
+      updatedClause,
+    );
+  });
+
+  it("waits for a fresh ready entity after updating the subscription clause", async () => {
+    vi.useFakeTimers();
+    const harness = createSyncHarness();
+    const subscription = await syncEntitiesDebounced(
+      harness.client as any,
+      harness.setup as any,
+      null,
+      false,
+      undefined,
+      {
+        isReadyEntity: (entity) => Boolean(entity.models["s1_eternum-TileOpt"]),
+      },
+    );
+
+    harness.emitEntityUpdate({
+      hashed_keys: "tile-1",
+      models: {
+        "s1_eternum-TileOpt": { col: 1, row: 2, data: "3" },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await subscription.ready;
+
+    await subscription.updateClause?.({ updated: true } as any);
+
+    let secondReadyResolved = false;
+    subscription.ready.then(() => {
+      secondReadyResolved = true;
+    });
+
+    await Promise.resolve();
+    expect(secondReadyResolved).toBe(false);
+
+    harness.emitEntityUpdate({
+      hashed_keys: "structure-1",
+      models: {
+        "s1_eternum-Structure": { entity_id: 1 },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    expect(secondReadyResolved).toBe(false);
+
+    harness.emitEntityUpdate({
+      hashed_keys: "tile-2",
+      models: {
+        "s1_eternum-TileOpt": { col: 3, row: 4, data: "5" },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await subscription.ready;
+
+    expect(secondReadyResolved).toBe(true);
+  });
+
+  it("counts ready entities that arrive while the subscription update is in flight", async () => {
+    vi.useFakeTimers();
+    const harness = createSyncHarness();
+    const subscription = await syncEntitiesDebounced(
+      harness.client as any,
+      harness.setup as any,
+      null,
+      false,
+      undefined,
+      {
+        isReadyEntity: (entity) => Boolean(entity.models["s1_eternum-TileOpt"]),
+      },
+    );
+
+    harness.emitEntityUpdate({
+      hashed_keys: "tile-1",
+      models: {
+        "s1_eternum-TileOpt": { col: 1, row: 2, data: "3" },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await subscription.ready;
+
+    harness.client.updateEntitySubscription.mockImplementationOnce(async () => {
+      harness.emitEntityUpdate({
+        hashed_keys: "tile-2",
+        models: {
+          "s1_eternum-TileOpt": { col: 3, row: 4, data: "5" },
+        },
+      });
+    });
+
+    await subscription.updateClause?.({ updated: true } as any);
+
+    let secondReadyResolved = false;
+    subscription.ready.then(() => {
+      secondReadyResolved = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(200);
+    await subscription.ready;
+
+    expect(secondReadyResolved).toBe(true);
+  });
+
+  it("omits updateClause when the Torii client does not expose subscription update APIs", async () => {
+    const harness = createSyncHarness();
+    delete (harness.client as any).updateEntitySubscription;
+    delete (harness.client as any).updateEventMessageSubscription;
+
+    const subscription = await syncEntitiesDebounced(harness.client as any, harness.setup as any, null, false);
+
+    expect(subscription.updateClause).toBeUndefined();
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveExploreCompletionPendingClearPlan,
+  shouldClearPendingMovementOnAuthoritativePosition,
   shouldCleanupTrackedTravelEffectOnPendingClear,
 } from "./worldmap-travel-effect-policy";
 
@@ -65,6 +66,45 @@ describe("resolveExploreCompletionPendingClearPlan", () => {
       shouldCleanupTrackedTravelEffectOnPendingClear({
         trackedEffect: { key: "7,8", effectType: "travel" },
         reason: "cleanup_requested",
+      }),
+    ).toBe(true);
+  });
+
+  it("clears pending movement when authoritative position reaches the submitted target", () => {
+    expect(
+      shouldClearPendingMovementOnAuthoritativePosition({
+        authoritativePositionKey: "2103,2104",
+        isMovementInFlight: false,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps pending movement for unrelated authoritative updates", () => {
+    expect(
+      shouldClearPendingMovementOnAuthoritativePosition({
+        authoritativePositionKey: "2100,2100",
+        isMovementInFlight: false,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps pending movement while the local tween is still active", () => {
+    expect(
+      shouldClearPendingMovementOnAuthoritativePosition({
+        authoritativePositionKey: "2103,2104",
+        isMovementInFlight: true,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toBe(false);
+  });
+
+  it("cleans up travel effects when authoritative reconciliation clears pending movement", () => {
+    expect(
+      shouldCleanupTrackedTravelEffectOnPendingClear({
+        trackedEffect: { key: "7,8", effectType: "travel" },
+        reason: "authoritative_reconciled",
       }),
     ).toBe(true);
   });

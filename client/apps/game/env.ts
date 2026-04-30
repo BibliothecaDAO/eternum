@@ -238,12 +238,22 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
   VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS: z
     .string()
     .optional()
     .default("8000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_SPATIAL_SUBSCRIPTION_UPDATE_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
   VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS: z
     .string()
     .optional()

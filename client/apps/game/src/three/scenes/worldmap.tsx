@@ -211,6 +211,7 @@ import {
 } from "../managers/arrival-ghost-policy";
 import {
   resolveExploreCompletionPendingClearPlan,
+  shouldClearPendingMovementOnAuthoritativePosition,
   shouldCleanupTrackedTravelEffectOnPendingClear,
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
@@ -366,6 +367,12 @@ import {
   type WorldmapChunkTraceEntry,
   type WorldmapChunkTraceEvent,
 } from "./worldmap-chunk-trace";
+import {
+  removeToriiBoundsDebugOverlay,
+  upsertToriiBoundsDebugOverlay,
+  type ToriiBoundsDebugOverlaySnapshot,
+  type ToriiBoundsDebugRange,
+} from "./worldmap-torii-bounds-debug-overlay";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -452,6 +459,7 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
   resetWorldmapRenderDiagnostics?: () => void;
   getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
+  getToriiBoundsDebugSnapshot?: () => ToriiBoundsDebugOverlaySnapshot;
 };
 
 const dummy = new Object3D();
@@ -460,6 +468,7 @@ const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
+const TORII_BOUNDS_DEBUG_OVERLAY = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY === true;
 const TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS = env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
 const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
@@ -628,6 +637,7 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
+  private pendingArmyMovementTargetKeys: Map<ID, string> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
   // Pre-computed optimistic movement plans keyed by entityId. Planned at submit
   // time in parallel with the tx, applied as soon as the tx hash is submitted
@@ -958,6 +968,7 @@ export default class WorldmapScene extends WarpTravel {
   private cosmeticsSubscriptionCleanup?: () => void;
   private toriiStreamManager?: ToriiStreamManager;
   private toriiBoundsAreaKey: string | null = null;
+  private toriiBoundsDebugSnapshot: ToriiBoundsDebugOverlaySnapshot = {};
   private toriiBoundsUpdateCounts: Record<ToriiBoundsCounterKey, number> = {
     tiles: 0,
     structureTiles: 0,
@@ -1022,6 +1033,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     activeSpatialStreamManager = this.toriiStreamManager;
     this.startToriiBoundsCounterLog();
+    this.refreshToriiBoundsDebugOverlay({ lastOutcome: "waiting" });
   }
 
   private handleSpatialTileOptStreamReceived(info: {
@@ -1154,6 +1166,7 @@ export default class WorldmapScene extends WarpTravel {
     txHash: string,
     plan: ArmyMovementPlan | null,
   ): Promise<void> {
+    if (!this.pendingArmyMovements.has(entityId)) return;
     if (!plan) return;
 
     const planApplied = await this.armyManager.applyMovementPlan(plan, { optimistic: true });
@@ -1419,6 +1432,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         await this.armyManager.onTileUpdate(update);
+        this.clearPendingArmyMovementFromAuthoritativePosition(update);
         recordArmyMovementLatencyPhase({
           phase: "army_manager_tile_update_applied",
           source: "worldmap",
@@ -1452,6 +1466,7 @@ export default class WorldmapScene extends WarpTravel {
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+          onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
           shouldSkipStalePositionUpdate: (entityId, normalized) =>
             this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
         });
@@ -2551,7 +2566,7 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       // Play effect based on action type: compass for exploring, travel for moving
-      const key = `${targetHex.col},${targetHex.row}`;
+      const key = this.resolveContractHexKey(targetHex);
       const effectType = isTravelAction ? "travel" : "compass";
       const effectLabel = isTravelAction ? "Traveling" : "Exploring";
       let cleanup = () => {};
@@ -2666,7 +2681,7 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       // Mark army as having pending movement transaction
-      this.markPendingArmyMovement(selectedEntityId);
+      this.markPendingArmyMovement(selectedEntityId, key);
       recordArmyMovementLatencyPhase({
         phase: "move_requested",
         source: "worldmap",
@@ -2710,7 +2725,10 @@ export default class WorldmapScene extends WarpTravel {
             entityId: selectedEntityId,
             txHash,
           });
-          if (txHash) {
+          // Torii can reconcile the authoritative target before the RPC promise
+          // returns. Avoid re-registering tx lifecycle for a move we already
+          // resolved from the stream.
+          if (txHash && this.pendingArmyMovements.has(selectedEntityId)) {
             this.handleSubmittedArmyMovementTx({ entityId: selectedEntityId, txHash });
           }
           // Monitor memory usage after army movement completion
@@ -2897,6 +2915,7 @@ export default class WorldmapScene extends WarpTravel {
   ): void {
     this.pendingArmyMovements.delete(entityId);
     this.pendingArmyMovementStartedAt.delete(entityId);
+    this.pendingArmyMovementTargetKeys.delete(entityId);
 
     const fallbackTimeout = this.pendingArmyMovementFallbackTimeouts.get(entityId);
     if (fallbackTimeout) {
@@ -2908,6 +2927,28 @@ export default class WorldmapScene extends WarpTravel {
     if (trackedEffect && shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason })) {
       trackedEffect.cleanup();
     }
+  }
+
+  private clearPendingArmyMovementFromAuthoritativePosition(update: { entityId: ID; hexCoords: HexPosition }): void {
+    const entityId = update.entityId;
+    const pendingTargetKey = this.pendingArmyMovementTargetKeys.get(entityId);
+    const authoritativePositionKey = this.resolveContractHexKey(update.hexCoords);
+    const shouldClearPendingMovement = shouldClearPendingMovementOnAuthoritativePosition({
+      pendingTargetKey,
+      authoritativePositionKey,
+      isMovementInFlight:
+        this.armyManager.isArmyMoving(entityId) || this.armyManager.isArmyMovingOptimistically(entityId),
+    });
+
+    if (!shouldClearPendingMovement) {
+      return;
+    }
+
+    this.pendingMovementPlans.delete(entityId);
+    this.clearPendingArmyMovement(entityId, "authoritative_reconciled");
+    useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
+    this.disposePendingMovementVisualLifecycle(entityId);
+    this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
   }
 
   private installPendingMovementVisualLifecycle(input: {
@@ -2954,10 +2995,16 @@ export default class WorldmapScene extends WarpTravel {
     dispose();
   }
 
-  private markPendingArmyMovement(entityId: ID): void {
+  private markPendingArmyMovement(entityId: ID, targetKey: string): void {
     this.pendingArmyMovements.add(entityId);
     this.pendingArmyMovementStartedAt.set(entityId, Date.now());
+    this.pendingArmyMovementTargetKeys.set(entityId, targetKey);
     this.schedulePendingArmyMovementFallback(entityId);
+  }
+
+  private resolveContractHexKey(hexCoords: HexPosition): string {
+    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return `${contract.x},${contract.y}`;
   }
 
   private queuePendingMovementStamina(input: {
@@ -5828,6 +5875,58 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private buildToriiBoundsDebugRanges(areaKey: string): {
+    localBounds: ToriiBoundsDebugRange;
+    subscriptionBounds: ToriiBoundsDebugRange;
+  } {
+    const localBounds = this.getRenderFetchBoundsForArea(areaKey);
+    const feltCenter = FELT_CENTER();
+
+    return {
+      localBounds,
+      subscriptionBounds: {
+        minCol: localBounds.minCol + feltCenter,
+        maxCol: localBounds.maxCol + feltCenter,
+        minRow: localBounds.minRow + feltCenter,
+        maxRow: localBounds.maxRow + feltCenter,
+      },
+    };
+  }
+
+  private buildToriiBoundsDebugSnapshot(
+    extra: Partial<ToriiBoundsDebugOverlaySnapshot> = {},
+  ): ToriiBoundsDebugOverlaySnapshot {
+    const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
+
+    this.toriiBoundsDebugSnapshot = {
+      ...this.toriiBoundsDebugSnapshot,
+      currentChunk: this.currentChunk,
+      currentAreaKey,
+      subscribedAreaKey: this.toriiBoundsAreaKey,
+      ...extra,
+    };
+
+    return this.toriiBoundsDebugSnapshot;
+  }
+
+  private refreshToriiBoundsDebugOverlay(extra: Partial<ToriiBoundsDebugOverlaySnapshot> = {}): void {
+    const snapshot = this.buildToriiBoundsDebugSnapshot(extra);
+    if (!TORII_BOUNDS_DEBUG_OVERLAY) {
+      removeToriiBoundsDebugOverlay();
+      return;
+    }
+
+    upsertToriiBoundsDebugOverlay(snapshot);
+  }
+
+  private getToriiBoundsDebugSnapshot(): ToriiBoundsDebugOverlaySnapshot {
+    return this.buildToriiBoundsDebugSnapshot();
+  }
+
+  private clearToriiBoundsDebugOverlay(): void {
+    removeToriiBoundsDebugOverlay();
+  }
+
   private incrementToriiBoundsCounter(key: ToriiBoundsCounterKey): void {
     if (!TORII_BOUNDS_DEBUG) {
       return;
@@ -5856,6 +5955,7 @@ export default class WorldmapScene extends WarpTravel {
     this.toriiBoundsLogInterval = setInterval(() => {
       const snapshot = { ...this.toriiBoundsUpdateCounts };
       const total = Object.values(snapshot).reduce((sum, value) => sum + value, 0);
+      this.refreshToriiBoundsDebugOverlay({ updateCounts: snapshot });
       console.log("[ToriiBounds] Update counts (last 5s)", {
         areaKey: this.toriiBoundsAreaKey,
         chunkKey: this.currentChunk,
@@ -5889,6 +5989,7 @@ export default class WorldmapScene extends WarpTravel {
       });
     }
     this.toriiBoundsAreaKey = null;
+    this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: "bounds_setup_timeout" });
     this.requestToriiResubscribe("bounds_setup_timeout", this.currentChunk);
     this.scheduleChunkRecovery("torii_bounds_timeout", this.currentChunk, {
       requestId: info.requestId,
@@ -5997,6 +6098,7 @@ export default class WorldmapScene extends WarpTravel {
       this.state.setLoading(LoadingStateKey.Map, false);
     }
     this.toriiBoundsAreaKey = null;
+    this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: "chunk_transition_hard_timeout" });
     this.clearStalledChunkAreaState(chunkKey);
     this.requestToriiResubscribe("chunk_transition_hard_timeout", chunkKey);
     this.scheduleChunkRecovery("chunk_transition_hard_timeout", chunkKey, {
@@ -6021,6 +6123,10 @@ export default class WorldmapScene extends WarpTravel {
 
     if (info.phase === "bounds_ready" || info.phase === "tile_fetch") {
       this.toriiBoundsAreaKey = null;
+      this.refreshToriiBoundsDebugOverlay({
+        subscribedAreaKey: null,
+        lastOutcome: `chunk_presentation_timeout:${info.phase}`,
+      });
       this.requestToriiResubscribe(`chunk_presentation_timeout:${info.phase}`, info.chunkKey);
     }
 
@@ -6032,6 +6138,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private stopToriiBoundsCounterLog(): void {
+    this.clearToriiBoundsDebugOverlay();
     if (!this.toriiBoundsLogInterval) {
       return;
     }
@@ -6043,6 +6150,7 @@ export default class WorldmapScene extends WarpTravel {
   private async updateToriiBoundsSubscription(chunkKey: string, transitionToken?: number): Promise<void> {
     if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_stale_token");
+      this.refreshToriiBoundsDebugOverlay({ lastOutcome: "stale_token_before_switch" });
       return;
     }
 
@@ -6053,26 +6161,38 @@ export default class WorldmapScene extends WarpTravel {
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_requested");
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const { localBounds, subscriptionBounds } = this.buildToriiBoundsDebugRanges(areaKey);
+    const debugBounds = {
+      requestedAreaKey: areaKey,
+      localBounds,
+      subscriptionBounds,
+      modelCount: TORII_BOUNDS_MODELS.length,
+    };
     this.traceChunk("torii_bounds_switch_requested", {
       chunkKey,
       areaKey,
       transitionToken: transitionToken ?? null,
     });
+    this.refreshToriiBoundsDebugOverlay({
+      ...debugBounds,
+      lastOutcome: "requested",
+    });
+
     if (areaKey === this.toriiBoundsAreaKey) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
+      this.refreshToriiBoundsDebugOverlay({
+        ...debugBounds,
+        subscribedAreaKey: areaKey,
+        lastOutcome: "skipped_same_signature",
+      });
       if (TORII_BOUNDS_DEBUG) {
         console.log("[ToriiBounds] Skip switch (area unchanged)", { chunkKey, areaKey });
       }
       return;
     }
 
-    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBoundsForArea(areaKey);
-    const feltCenter = FELT_CENTER();
     const descriptor: BoundsDescriptor = {
-      minCol: minCol + feltCenter,
-      maxCol: maxCol + feltCenter,
-      minRow: minRow + feltCenter,
-      maxRow: maxRow + feltCenter,
+      ...subscriptionBounds,
       models: TORII_BOUNDS_MODELS,
     };
 
@@ -6081,23 +6201,39 @@ export default class WorldmapScene extends WarpTravel {
         console.log("[ToriiBounds] Switching bounds", {
           chunkKey,
           areaKey,
-          bounds: { minCol, maxCol, minRow, maxRow },
+          bounds: localBounds,
+          subscriptionBounds,
           models: TORII_BOUNDS_MODELS.map((model) => model.model),
         });
       }
       const result = await this.toriiStreamManager.switchBounds(descriptor);
       if (result.outcome === "stale_dropped") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_stale_dropped");
+        this.refreshToriiBoundsDebugOverlay({
+          ...debugBounds,
+          subscribedAreaKey: this.toriiBoundsAreaKey,
+          lastOutcome: "stale_dropped",
+        });
         return;
       }
       if (result.outcome === "skipped_same_signature") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
       }
       if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
+        this.refreshToriiBoundsDebugOverlay({
+          ...debugBounds,
+          subscribedAreaKey: this.toriiBoundsAreaKey,
+          lastOutcome: "stale_token_after_switch",
+        });
         return;
       }
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
+      this.refreshToriiBoundsDebugOverlay({
+        ...debugBounds,
+        subscribedAreaKey: areaKey,
+        lastOutcome: result.outcome,
+      });
       this.traceChunk("torii_bounds_switch_applied", {
         chunkKey,
         areaKey,
@@ -6105,6 +6241,11 @@ export default class WorldmapScene extends WarpTravel {
       });
     } catch (error) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_failed");
+      this.refreshToriiBoundsDebugOverlay({
+        ...debugBounds,
+        subscribedAreaKey: this.toriiBoundsAreaKey,
+        lastOutcome: "failed",
+      });
       this.traceChunk("torii_bounds_switch_failed", {
         chunkKey,
         areaKey,
@@ -8139,7 +8280,26 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
+  private installToriiBoundsDebugHook(): void {
+    if (!import.meta.env.DEV && !TORII_BOUNDS_DEBUG_OVERLAY) {
+      return;
+    }
+
+    const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
+    debugWindow.getToriiBoundsDebugSnapshot = () => this.getToriiBoundsDebugSnapshot();
+  }
+
+  private removeToriiBoundsDebugHook(): void {
+    if (!import.meta.env.DEV && !TORII_BOUNDS_DEBUG_OVERLAY) {
+      return;
+    }
+
+    const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
+    debugWindow.getToriiBoundsDebugSnapshot = undefined;
+  }
+
   private installChunkDiagnosticsDebugHooks(): void {
+    this.installToriiBoundsDebugHook();
     if (!import.meta.env.DEV) {
       return;
     }
@@ -8166,6 +8326,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
+    this.removeToriiBoundsDebugHook();
     if (!import.meta.env.DEV) {
       return;
     }

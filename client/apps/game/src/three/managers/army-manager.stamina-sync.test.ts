@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { Position } from "@bibliothecadao/eternum";
 import { describe, expect, it, vi } from "vitest";
 
 interface NavigatorWithBattery extends Navigator {
@@ -75,6 +76,64 @@ vi.mock("@dojoengine/utils", async () => {
 import { ArmyManager } from "./army-manager";
 
 describe("ArmyManager stamina sync", () => {
+  it("uses ExplorerTroops coordinate updates to advance cached army position when TileOpt is quiet", () => {
+    const sourceHex = new Position({ x: 10, y: 20 });
+    const targetHex = new Position({ x: 11, y: 21 });
+    const army = {
+      entityId: 1,
+      hexCoords: sourceHex,
+      isMine: true,
+      owningStructureId: 99,
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+      color: "#ffffff",
+      category: "Knight",
+      tier: 1,
+      isDaydreamsAgent: false,
+      troopCount: 10,
+      currentStamina: 0,
+      maxStamina: 120,
+      onChainStamina: { amount: 10n, updatedTick: 1 },
+    };
+    const updateSpatialIndex = vi.fn();
+
+    const fakeManager = Object.assign(Object.create(ArmyManager.prototype), {
+      armies: new Map([[1, army]]),
+      entityIdLabels: new Map(),
+      visibleArmyIndices: new Map(),
+      optimisticallyMovingArmies: new Set(),
+      authoritativeReconciledArmies: new Set(),
+      resolveArmyStaminaSnapshot: vi.fn(() => ({
+        current: 15,
+        max: 120,
+        displayRatio: 0.125,
+      })),
+      resolveArmyOwnerFromStructure: vi.fn(() => ({
+        ownerAddress: 123n,
+        ownerName: "Alice",
+      })),
+      syncTrackedArmyOwnerState: vi.fn(),
+      updateArmyLabelData: vi.fn(),
+      updateSpatialIndex,
+      refreshArmyPositionPresentation: vi.fn(),
+    });
+
+    ArmyManager.prototype.updateArmyFromExplorerTroopsUpdate.call(fakeManager, {
+      entityId: 1,
+      hexCoords: { col: 11, row: 21 },
+      troopCount: 10,
+      onChainStamina: { amount: 15n, updatedTick: 5 },
+      ownerAddress: 123n,
+      ownerName: "Alice",
+      ownerStructureId: 99,
+      battleCooldownEnd: 0,
+    });
+
+    const updatedArmy = fakeManager.armies.get(1);
+
+    expect(updatedArmy?.hexCoords.getNormalized()).toEqual(targetHex.getNormalized());
+    expect(updateSpatialIndex).toHaveBeenCalledWith(1, sourceHex, expect.any(Position));
+  });
+
   it("recomputes passive stamina from live explorer troops when available", () => {
     const army = {
       entityId: 1,

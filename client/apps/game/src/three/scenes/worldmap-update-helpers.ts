@@ -6,6 +6,7 @@ type ExplorerTroopsUpdateHandlers = {
   scheduleArmyRemoval: (entityId: ID, reason: "tile" | "zero") => void;
   updateArmyHexes: (update: ExplorerTroopsSystemUpdate) => void;
   updateArmyFromExplorerTroopsUpdate: (update: ExplorerTroopsSystemUpdate) => void;
+  onAuthoritativePositionApplied?: (update: ExplorerTroopsSystemUpdate) => void;
   shouldSkipStalePositionUpdate?: (entityId: ID, normalized: { x: number; y: number }) => boolean;
 };
 
@@ -32,4 +33,8 @@ export function processExplorerTroopsUpdate(
   // Always apply non-positional fields (stamina/troop-count/owner). Tick-based
   // staleness resolution downstream handles any regression in those fields.
   handlers.updateArmyFromExplorerTroopsUpdate(update);
+
+  if (!shouldSkipPosition) {
+    handlers.onAuthoritativePositionApplied?.(update);
+  }
 }

@@ -3198,6 +3198,9 @@ ${
       return;
     }
 
+    this.markAuthoritativeMovementReconciliation(update.entityId);
+    this.reconcileArmyPositionFromExplorerTroopsUpdate(update, army);
+
     // Log troop count diff and play visual FX for battle damage/healing
     const previousCount = army.troopCount;
     const newCount = update.troopCount;
@@ -3256,6 +3259,46 @@ ${
     if (label) {
       this.updateArmyLabelData(update.entityId, army, label);
     }
+  }
+
+  private markAuthoritativeMovementReconciliation(entityId: ID): void {
+    if (!this.optimisticallyMovingArmies.has(entityId)) {
+      return;
+    }
+
+    this.markOptimisticMovementReconciled(entityId);
+  }
+
+  private reconcileArmyPositionFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate, army: ArmyData): void {
+    const nextHexCoords = new Position({ x: update.hexCoords.col, y: update.hexCoords.row });
+    const currentNormalized = army.hexCoords.getNormalized();
+    const nextNormalized = nextHexCoords.getNormalized();
+
+    if (currentNormalized.x === nextNormalized.x && currentNormalized.y === nextNormalized.y) {
+      return;
+    }
+
+    const previousHexCoords = army.hexCoords;
+    army.hexCoords = nextHexCoords;
+    this.armies.set(update.entityId, army);
+    this.updateSpatialIndex(update.entityId, previousHexCoords, nextHexCoords);
+    this.refreshArmyPositionPresentation(army);
+  }
+
+  private refreshArmyPositionPresentation(army: ArmyData): void {
+    const slot = this.visibleArmyIndices.get(army.entityId);
+    if (slot === undefined) {
+      return;
+    }
+
+    const numericId = this.toNumericId(army.entityId);
+    const { x, y } = army.hexCoords.getContract();
+    const biome = Biome.getBiome(x, y);
+    const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+
+    this.refreshArmyInstance(army, slot, modelType);
+    this.refreshVisibleArmyCollection();
+    this.updateVisibleArmyBuffers();
   }
 
   public destroy() {

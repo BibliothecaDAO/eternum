@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@dojoengine/sdk", () => ({
   AndComposeClause: vi.fn(() => ({
@@ -13,8 +13,29 @@ vi.mock("@dojoengine/torii-client", () => ({
   PatternMatching: {},
 }));
 
+const envMock = vi.hoisted(() => ({
+  env: {
+    VITE_PUBLIC_TORII_SPATIAL_SUBSCRIPTION_UPDATE_ENABLED: true,
+  },
+}));
+
+vi.mock("../../env", () => envMock);
+
 vi.mock("./sync", () => ({
   syncEntitiesDebounced: vi.fn(),
+}));
+
+const { addToriiStreamBreadcrumbMock, reportToriiReadinessTimeoutMock, reportToriiSubscriptionLifecycleMock } =
+  vi.hoisted(() => ({
+    addToriiStreamBreadcrumbMock: vi.fn(),
+    reportToriiReadinessTimeoutMock: vi.fn(),
+    reportToriiSubscriptionLifecycleMock: vi.fn(),
+  }));
+
+vi.mock("@/observability/network-health-reporting", () => ({
+  addToriiStreamBreadcrumb: addToriiStreamBreadcrumbMock,
+  reportToriiReadinessTimeout: reportToriiReadinessTimeoutMock,
+  reportToriiSubscriptionLifecycle: reportToriiSubscriptionLifecycleMock,
 }));
 
 import { syncEntitiesDebounced } from "./sync";
@@ -33,11 +54,17 @@ function deferred<T>() {
 type SyncSubscriptionStub = {
   cancel: () => void;
   ready: Promise<void>;
+  updateClause?: (clause: unknown) => Promise<void>;
 };
 
-const syncSubscription = (cancel: () => void, ready: Promise<void> = Promise.resolve()): SyncSubscriptionStub => ({
+const syncSubscription = (
+  cancel: () => void,
+  ready: Promise<void> = Promise.resolve(),
+  updateClause?: (clause: unknown) => Promise<void>,
+): SyncSubscriptionStub => ({
   cancel,
   ready,
+  updateClause,
 });
 
 const descriptor = (minCol: number): BoundsDescriptor => ({
@@ -49,6 +76,11 @@ const descriptor = (minCol: number): BoundsDescriptor => ({
 });
 
 describe("ToriiStreamManager", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    envMock.env.VITE_PUBLIC_TORII_SPATIAL_SUBSCRIPTION_UPDATE_ENABLED = true;
+  });
+
   it("reports skipped outcome when switching to an unchanged signature", async () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
     const cancel = vi.fn();
@@ -66,6 +98,121 @@ describe("ToriiStreamManager", () => {
     expect(first.outcome).toBe("applied");
     expect(second.outcome).toBe("skipped_same_signature");
     expect(syncMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates the active spatial subscription instead of recreating it when bounds change", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const updateClause = vi.fn(async () => undefined);
+    const cancel = vi.fn();
+    syncMock.mockImplementation(async () => syncSubscription(cancel, Promise.resolve(), updateClause));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    const first = await manager.switchBounds(descriptor(0));
+    const second = await manager.switchBounds(descriptor(24));
+
+    manager.cancelCurrentSubscription();
+
+    expect(first.outcome).toBe("applied");
+    expect(second.outcome).toBe("applied");
+    expect(syncMock).toHaveBeenCalledTimes(1);
+    expect(updateClause).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to recreating the spatial subscription when an update fails", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const updateClause = vi.fn(async () => {
+      throw new Error("update failed");
+    });
+    const cancelOld = vi.fn();
+    const cancelFresh = vi.fn();
+    syncMock
+      .mockImplementationOnce(async () => syncSubscription(cancelOld, Promise.resolve(), updateClause))
+      .mockImplementationOnce(async () => syncSubscription(cancelFresh));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    await manager.switchBounds(descriptor(0));
+    const second = await manager.switchBounds(descriptor(24));
+
+    manager.cancelCurrentSubscription();
+
+    expect(second.outcome).toBe("applied");
+    expect(updateClause).toHaveBeenCalledTimes(1);
+    expect(syncMock).toHaveBeenCalledTimes(2);
+    expect(cancelOld).toHaveBeenCalledTimes(1);
+    expect(cancelFresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports fallback recreate failure and leaves the old subscription live", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const updateClause = vi.fn(async () => {
+      throw new Error("update failed");
+    });
+    const cancelOld = vi.fn();
+    syncMock
+      .mockImplementationOnce(async () => syncSubscription(cancelOld, Promise.resolve(), updateClause))
+      .mockRejectedValueOnce(new Error("recreate failed"));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    await manager.switchBounds(descriptor(0));
+
+    await expect(manager.switchBounds(descriptor(24))).rejects.toThrow("recreate failed");
+
+    expect(cancelOld).not.toHaveBeenCalled();
+    expect(reportToriiSubscriptionLifecycleMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        streamType: "spatial",
+        kind: "fallback_recreate",
+        outcome: "failed",
+        requestId: 2,
+        reason: "recreate failed",
+      }),
+    );
+
+    manager.cancelCurrentSubscription();
+  });
+
+  it("uses the recreate path when spatial subscription updates are disabled", async () => {
+    envMock.env.VITE_PUBLIC_TORII_SPATIAL_SUBSCRIPTION_UPDATE_ENABLED = false;
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const updateClause = vi.fn(async () => undefined);
+    const cancelFirst = vi.fn();
+    const cancelSecond = vi.fn();
+    syncMock
+      .mockImplementationOnce(async () => syncSubscription(cancelFirst, Promise.resolve(), updateClause))
+      .mockImplementationOnce(async () => syncSubscription(cancelSecond));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    await manager.switchBounds(descriptor(0));
+    const second = await manager.switchBounds(descriptor(24));
+
+    manager.cancelCurrentSubscription();
+
+    expect(second.outcome).toBe("applied");
+    expect(updateClause).not.toHaveBeenCalled();
+    expect(syncMock).toHaveBeenCalledTimes(2);
+    expect(cancelFirst).toHaveBeenCalledTimes(1);
+    expect(cancelSecond).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the newest bounds subscription active when switches race", async () => {
@@ -162,7 +309,7 @@ describe("ToriiStreamManager", () => {
     vi.useRealTimers();
   });
 
-  it("uses TileOpt as the spatial stream readiness entity", async () => {
+  it("uses in-bounds TileOpt as the spatial stream readiness entity", async () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
     syncMock.mockImplementationOnce(async (...args) => {
       const options = args[5] as
@@ -172,7 +319,16 @@ describe("ToriiStreamManager", () => {
         | undefined;
 
       expect(options?.isReadyEntity?.({ models: { "s1_eternum-Structure": {} } })).toBe(false);
-      expect(options?.isReadyEntity?.({ models: { "s1_eternum-TileOpt": {} } })).toBe(true);
+      expect(
+        options?.isReadyEntity?.({
+          models: { "s1_eternum-TileOpt": { col: 100, row: 100 } },
+        }),
+      ).toBe(false);
+      expect(
+        options?.isReadyEntity?.({
+          models: { "s1_eternum-TileOpt": { col: 1, row: 2 } },
+        }),
+      ).toBe(true);
 
       return syncSubscription(vi.fn());
     });

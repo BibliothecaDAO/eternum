@@ -265,6 +265,7 @@ export const usePlayerStructureSync = () => {
       };
 
       const subscription = await syncEntitiesDebounced(toriiClient, setup, clause, false, undefined, {
+        streamType: "player",
         subscriptionSetupTimeoutMs: env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS,
       });
 
