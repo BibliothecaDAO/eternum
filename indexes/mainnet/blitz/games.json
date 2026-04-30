@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-04-30T00:14:08.395Z",
+  "updatedAt": "2026-04-30T00:14:17.383Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -424,6 +424,23 @@
       "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-04-30T01:00:00.000Z",
       "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "bltz-snap-312": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-snap-312",
+      "path": "runs/mainnet/blitz/bltz-snap-312.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-snap-312/25140550976-1.json",
+      "status": "running",
+      "updatedAt": "2026-04-30T00:14:17.383Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-04-30T01:00:00.000Z",
+      "durationSeconds": 432000,
       "artifacts": {}
     }
   }
