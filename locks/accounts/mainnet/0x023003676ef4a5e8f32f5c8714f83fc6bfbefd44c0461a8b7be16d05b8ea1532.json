@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-riff-609",
-    "launchRequestId": "25140538602-1",
+    "gameName": "bltz-snap-312",
+    "launchRequestId": "25140550976-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25140538602,
+    "workflowRunId": 25140550976,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "141c2c4b-7711-4b16-8f15-5cd795c7ded9"
+    "leaseId": "8ed10597-c775-4d34-aa7e-02fd93504da8"
   },
-  "acquiredAt": "2026-04-30T00:14:12.790Z",
-  "heartbeatAt": "2026-04-30T00:16:05.909Z",
-  "expiresAt": "2026-04-30T00:16:05.909Z",
-  "releasedAt": "2026-04-30T00:16:05.909Z"
+  "acquiredAt": "2026-04-30T00:16:15.863Z",
+  "heartbeatAt": "2026-04-30T00:16:15.863Z",
+  "expiresAt": "2026-04-30T00:26:15.863Z"
 }
