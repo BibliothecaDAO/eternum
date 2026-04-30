@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25162548728-1",
   "currentStepId": null,
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-04-30T11:40:23.002Z",
+  "updatedAt": "2026-04-30T11:40:32.031Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -818,7 +818,7 @@
         },
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for apac-gladiator-30-04-26-1000",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1002,7 +1002,9 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true
+          "paymasterSynced": true,
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-04-30T11:40:30.364Z"
         }
       },
       {
