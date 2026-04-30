@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25140550976-1",
   "currentStepId": null,
   "createdAt": "2026-04-30T00:14:17.383Z",
-  "updatedAt": "2026-04-30T00:50:46.704Z",
+  "updatedAt": "2026-04-30T00:52:11.930Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -88,14 +88,12 @@
     "configureTxHash": "0x4dcbcf70bdf0ea82ad9f708613a8196dbaab07a8d77f44f621d56bad108308e",
     "worldConfigTxHash": "0x4dcbcf70bdf0ea82ad9f708613a8196dbaab07a8d77f44f621d56bad108308e",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-snap-312/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-04-30T00:19:35.845Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-04-30T00:50:45.133Z"
+    "lastIndexerDescribeAt": "2026-04-30T00:52:11.929Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-04-30T00:19:49.052Z"
 }
