@@ -62,10 +62,26 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     const catchStart = source.indexOf(".catch((e) => {", txResponseStart);
     const body = source.slice(txResponseStart, catchStart);
     const pendingGuard = body.indexOf("this.pendingArmyMovements.has(selectedEntityId)");
-    const txMapSet = body.indexOf("this.pendingArmyMovementTxMap.set(txHash, selectedEntityId)");
+    const submittedTxRegistration = body.indexOf(
+      "this.handleSubmittedArmyMovementTx({ entityId: selectedEntityId, txHash })",
+    );
 
     expect(pendingGuard).toBeGreaterThan(-1);
-    expect(txMapSet).toBeGreaterThan(-1);
-    expect(pendingGuard).toBeLessThan(txMapSet);
+    expect(submittedTxRegistration).toBeGreaterThan(-1);
+    expect(pendingGuard).toBeLessThan(submittedTxRegistration);
+  });
+
+  it("does not apply submitted movement plans after authoritative updates already cleared pending movement", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const applyStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
+    expect(applyStart).toBeGreaterThan(-1);
+
+    const applyEnd = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache", applyStart);
+    const body = source.slice(applyStart, applyEnd);
+
+    expect(body).toContain("if (!this.pendingArmyMovements.has(entityId)) return");
+    expect(body.indexOf("this.pendingArmyMovements.has(entityId)")).toBeLessThan(
+      body.indexOf("this.armyManager.applyMovementPlan"),
+    );
   });
 });

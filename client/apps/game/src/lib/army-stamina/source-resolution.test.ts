@@ -126,4 +126,33 @@ describe("selectFreshestTroopsSnapshot", () => {
     expect(selected?.stamina?.amount).toBe(90n);
     expect(selected?.stamina?.updated_tick).toBe(101n);
   });
+
+  it("keeps pending when live RECS has the same tick but a different stamina amount", () => {
+    const entityId = 4321;
+    const actionTick = 100;
+
+    useArmyStaminaSourceStore.setState({
+      pendingSources: {
+        [String(entityId)]: {
+          source: "pending",
+          entityId,
+          amount: 60n,
+          updatedTick: actionTick,
+          capturedAtMs: Date.now(),
+        },
+      },
+      authoritativeSources: {},
+    });
+
+    const liveTroops = buildTroops({ amount: 80n, updatedTick: BigInt(actionTick) });
+
+    const selected = selectFreshestTroopsSnapshot({
+      entityId,
+      liveTroops,
+    });
+
+    expect(selected).not.toBe(liveTroops);
+    expect(selected?.stamina?.amount).toBe(60n);
+    expect(selected?.stamina?.updated_tick).toBe(BigInt(actionTick));
+  });
 });

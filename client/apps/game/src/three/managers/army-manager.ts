@@ -240,7 +240,7 @@ export class ArmyManager {
   private preCommitArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
-  // Armies animating via an optimistic tween started at tx_confirmed. Used to
+  // Armies animating via an optimistic tween started at tx submission. Used to
   // distinguish predicted moves from authoritative ones so we can reconcile or
   // rewind without double-animating when Torii eventually delivers the update.
   private optimisticallyMovingArmies: Set<ID> = new Set();
@@ -1885,12 +1885,9 @@ export class ArmyManager {
   }
 
   /**
-   * Apply a pre-computed movement plan. Returns `true` when the plan started
-   * an optimistic tween (for `optimistic: true`) or a non-optimistic visual
-   * update, and `false` when it early-returned without effect. Callers that
-   * mirror predicted state into sibling caches (e.g. worldmap.armyHexes) must
-   * only mirror on `true` — otherwise a drifted/target-matched/unslotted plan
-   * would pin a stale destination into caches with no lock to rewind it.
+   * Apply a pre-computed movement plan. Returns `true` when the plan wrote a
+   * local predicted or authoritative position. For optimistic calls, `true`
+   * means a rewind/reconcile lock exists, so sibling caches can mirror safely.
    */
   public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<boolean> {
     const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
@@ -1918,6 +1915,18 @@ export class ArmyManager {
     this.addToSpatialBucket(entityId, targetHexCoords);
     this.armies.set(entityId, { ...armyData, hexCoords: targetHexCoords });
 
+    if (options.optimistic) {
+      // Reset any prior reconciliation flag from an earlier optimistic move on
+      // this entity — we're starting fresh and will wait for the next authoritative
+      // update.
+      this.authoritativeReconciledArmies.delete(entityId);
+      this.optimisticPositionLocks.set(entityId, {
+        normalizedSource: { x: sourceNormalized.x, y: sourceNormalized.y },
+        normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
+        lockedAtMs: Date.now(),
+      });
+    }
+
     const matrixIndex = armyData.matrixIndex;
     if (matrixIndex === undefined) {
       this.armyPaths.delete(entityId);
@@ -1926,10 +1935,9 @@ export class ArmyManager {
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
       this.runMovementStartListeners(numericEntityId);
       this.runMovementCompleteListeners(numericEntityId);
-      // No tween played and no optimistic lock was registered. If the caller
-      // mirrored armyHexes to target now and the chain later reverts, nothing
-      // would snap the spatial cache back. Report no-op so the mirror bails.
-      return false;
+      // No tween played, but optimistic callers still own a lock that can
+      // reconcile or rewind the predicted position.
+      return options.optimistic;
     }
 
     this.armyPaths.set(entityId, path);
@@ -1945,15 +1953,6 @@ export class ArmyManager {
 
     if (options.optimistic) {
       this.optimisticallyMovingArmies.add(entityId);
-      // Reset any prior reconciliation flag from an earlier optimistic move on
-      // this entity — we're starting fresh and will wait for the next authoritative
-      // update.
-      this.authoritativeReconciledArmies.delete(entityId);
-      this.optimisticPositionLocks.set(entityId, {
-        normalizedSource: { x: sourceNormalized.x, y: sourceNormalized.y },
-        normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
-        lockedAtMs: Date.now(),
-      });
     }
 
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
@@ -1968,7 +1967,9 @@ export class ArmyManager {
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position): Promise<void> {
-    this.markAuthoritativeMovementReconciliation(entityId);
+    if (this.optimisticallyMovingArmies.has(entityId)) {
+      this.markOptimisticMovementReconciled(entityId);
+    }
 
     const plan = await this.computeMovementPlan(entityId, hexCoords);
     if (!plan) return;
@@ -1977,6 +1978,10 @@ export class ArmyManager {
 
   public isArmyMovingOptimistically(entityId: ID): boolean {
     return this.optimisticallyMovingArmies.has(entityId);
+  }
+
+  public hasUnresolvedOptimisticMovement(entityId: ID): boolean {
+    return this.optimisticallyMovingArmies.has(entityId) || this.optimisticPositionLocks.has(entityId);
   }
 
   public hasReceivedAuthoritativeReconciliation(entityId: ID): boolean {
@@ -2002,6 +2007,7 @@ export class ArmyManager {
       lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
     if (matchesTarget) {
       this.optimisticPositionLocks.delete(entityId);
+      this.markOptimisticMovementReconciled(entityId);
       return false;
     }
 
@@ -2028,6 +2034,18 @@ export class ArmyManager {
     }
 
     return true;
+  }
+
+  private markOptimisticMovementReconciled(entityId: ID): void {
+    recordArmyMovementLatencyPhase({
+      phase: "optimistic_animation_reconciled",
+      source: "world_update_listener",
+      entityId,
+    });
+    this.optimisticallyMovingArmies.delete(entityId);
+    this.optimisticPositionLocks.delete(entityId);
+    this.authoritativeReconciledArmies.add(entityId);
+    this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
   }
 
   public onAuthoritativeReconciliation(entityId: ID, callback: () => void): () => void {
@@ -2062,11 +2080,12 @@ export class ArmyManager {
   }
 
   public rewindOptimisticMovement(entityId: ID): { col: number; row: number } | null {
-    if (!this.optimisticallyMovingArmies.has(entityId)) return null;
     // Read the lock's normalizedSource before the delete below — it's the
     // canonical source-of-truth for the pre-tx hex, set for every optimistic
     // move regardless of whether the source/dest share a spatial bucket.
     const lock = this.optimisticPositionLocks.get(entityId);
+    if (!this.optimisticallyMovingArmies.has(entityId) && !lock) return null;
+
     const lockedSource = lock ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y } : null;
 
     this.optimisticallyMovingArmies.delete(entityId);
@@ -2090,21 +2109,14 @@ export class ArmyManager {
     this.movementStartListeners.delete(numericEntityId);
     this.movementCompleteListeners.delete(numericEntityId);
 
-    if (sourceState && armyData) {
-      const sourcePosition = new Position({ x: sourceState.col, y: sourceState.row });
+    if (armyData && (sourceState || lockedSource)) {
+      const sourcePosition = new Position({
+        x: sourceState?.col ?? lockedSource!.col,
+        y: sourceState?.row ?? lockedSource!.row,
+      });
       const previousHex = armyData.hexCoords;
       this.armies.set(entityId, { ...armyData, hexCoords: sourcePosition });
-      // Remove from the destination bucket we added during applyMovementPlan.
-      // Leave the source bucket intact — the army never left it.
-      const destNorm = previousHex.getNormalized();
-      const destKey = this.getSpatialKey(destNorm.x, destNorm.y);
-      if (destKey !== sourceState.bucketKey) {
-        const destBucket = this.chunkToArmies.get(destKey);
-        if (destBucket) {
-          destBucket.delete(entityId);
-          if (destBucket.size === 0) this.chunkToArmies.delete(destKey);
-        }
-      }
+      this.atomicSpatialTransfer(entityId, previousHex, sourcePosition);
       this.movingArmySourceBuckets.delete(entityId);
       void this.renderArmyIntoCurrentChunkIfVisible(entityId);
     }
@@ -3254,14 +3266,7 @@ ${
       return;
     }
 
-    recordArmyMovementLatencyPhase({
-      phase: "optimistic_animation_reconciled",
-      source: "world_update_listener",
-      entityId,
-    });
-    this.optimisticallyMovingArmies.delete(entityId);
-    this.authoritativeReconciledArmies.add(entityId);
-    this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
+    this.markOptimisticMovementReconciled(entityId);
   }
 
   private reconcileArmyPositionFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate, army: ArmyData): void {

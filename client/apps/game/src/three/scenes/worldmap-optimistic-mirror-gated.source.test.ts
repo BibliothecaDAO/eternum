@@ -8,14 +8,11 @@ function readSource(filename: string): string {
   return readFileSync(resolve(currentDir, filename), "utf8");
 }
 
-// applyMovementPlan has four early-return paths (missing army, already at
-// target, source drifted, no render slot). When any of those fires, no
-// optimistic lock is written and no tween runs — but the tx_confirmed mirror
-// still fires in the .then() continuation. Without gating, armyHexes[dest]
-// gets pinned with nothing left to rewind it on discovery-revert or stale
-// Torii replay, producing the "mesh at source, destination still selectable"
-// desync. Two concurrent moves make this path statistically more likely
-// because matrixIndex can flicker during the other unit's chunk work.
+// applyMovementPlan has unsafe early-return paths (missing army, already at
+// target, source drifted). When any of those fires, no optimistic lock is
+// written and no tween runs. Without gating, armyHexes[dest] would get pinned
+// with nothing left to rewind it on discovery-revert or stale Torii replay,
+// producing the "mesh at source, destination still selectable" desync.
 describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
   it("applyMovementPlan returns Promise<boolean>", () => {
     const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -26,7 +23,7 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
     );
   });
 
-  it("every early-return path in applyMovementPlan returns false", () => {
+  it("unsafe early-return paths in applyMovementPlan return false", () => {
     const currentDir = dirname(fileURLToPath(import.meta.url));
     const source = readFileSync(resolve(currentDir, "../managers/army-manager.ts"), "utf8");
 
@@ -42,34 +39,38 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
     expect(body).toMatch(/=== targetNormalized\.x &&[\s\S]{0,80}=== targetNormalized\.y\) return false/);
     // Source drifted — stale plan, refuse to pin a wrong destination.
     expect(body).toMatch(/!== sourceNormalized\.x \|\|[\s\S]{0,80}!== sourceNormalized\.y\) return false/);
-    // matrixIndex undefined — army not rendered, no tween, no lock.
-    // Find the block after matrixIndex === undefined and confirm it ends with return false.
+    // matrixIndex undefined — no tween, but optimistic calls still have a lock.
     const matrixStart = body.indexOf("matrixIndex === undefined");
     expect(matrixStart).toBeGreaterThan(0);
+    const optimisticLockStart = body.indexOf("this.optimisticPositionLocks.set(entityId");
+    expect(optimisticLockStart).toBeGreaterThan(0);
+    expect(optimisticLockStart).toBeLessThan(matrixStart);
     const matrixBlock = body.slice(matrixStart, matrixStart + 800);
-    expect(matrixBlock).toMatch(/return false;/);
+    expect(matrixBlock).toMatch(/return options\.optimistic;/);
 
     // Final return on the happy path must be true so the caller knows the
     // optimistic lock is registered and the mirror is safe to fire.
     expect(body).toMatch(/return true;/);
   });
 
-  it("handleTransactionComplete gates the mirror on applyMovementPlan's return", () => {
+  it("the submitted optimistic-plan helper gates the mirror on applyMovementPlan's return", () => {
     const source = readSource("worldmap.tsx");
 
-    const handlerStart = source.indexOf("this.handleTransactionComplete = ");
+    const handlerStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
     expect(handlerStart).toBeGreaterThan(0);
-    const handlerEnd = source.indexOf("this.handleTransactionFailed = ", handlerStart);
+    const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
     expect(handlerEnd).toBeGreaterThan(handlerStart);
     const handler = source.slice(handlerStart, handlerEnd);
 
     // The .then receives a boolean and bails early when it's falsy.
-    expect(handler).toMatch(/applyMovementPlan\(plan, \{ optimistic: true \}\)\.then\(\(planApplied\) => \{/);
+    expect(handler).toContain(
+      "const planApplied = await this.armyManager.applyMovementPlan(plan, { optimistic: true });",
+    );
     expect(handler).toMatch(/if \(!planApplied\)[\s\S]*?return;/);
     // The mirror and biome paint must live AFTER the guard, not before.
     const guardIdx = handler.search(/if \(!planApplied\)/);
-    const mirrorIdx = handler.indexOf("this.updateArmyHexes(", guardIdx);
-    const biomeIdx = handler.indexOf("Biome.getBiome(", guardIdx);
+    const mirrorIdx = handler.indexOf("this.mirrorOptimisticArmyDestinationIntoWorldmapCache(", guardIdx);
+    const biomeIdx = handler.indexOf("this.paintOptimisticDestinationBiome(", guardIdx);
     expect(mirrorIdx).toBeGreaterThan(guardIdx);
     expect(biomeIdx).toBeGreaterThan(guardIdx);
   });
@@ -77,8 +78,8 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
   it("emits optimistic_animation_skipped latency phase when the plan no-ops", () => {
     const source = readSource("worldmap.tsx");
 
-    const handlerStart = source.indexOf("this.handleTransactionComplete = ");
-    const handlerEnd = source.indexOf("this.handleTransactionFailed = ", handlerStart);
+    const handlerStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
+    const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
     const handler = source.slice(handlerStart, handlerEnd);
 
     // Observability: without this phase marker, the no-op path is invisible

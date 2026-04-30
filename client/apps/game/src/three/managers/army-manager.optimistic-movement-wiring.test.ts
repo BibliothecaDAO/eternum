@@ -51,8 +51,21 @@ describe("ArmyManager optimistic movement wiring", () => {
   it("records optimistic_animation_reconciled when an authoritative update arrives for an optimistic army", () => {
     const source = readSource("army-manager.ts");
 
-    expect(source).toContain('"optimistic_animation_reconciled"');
-    expect(source).toMatch(/optimisticallyMovingArmies\.has\(entityId\)[\s\S]{0,200}optimistic_animation_reconciled/);
+    const moveArmyStart = source.indexOf("public async moveArmy(entityId: ID, hexCoords: Position)");
+    expect(moveArmyStart).toBeGreaterThan(0);
+    const nextPublic = source.indexOf("\n  public ", moveArmyStart + 20);
+    const moveArmyBody = source.slice(moveArmyStart, nextPublic);
+    expect(moveArmyBody).toContain("this.optimisticallyMovingArmies.has(entityId)");
+    expect(moveArmyBody).toContain("this.markOptimisticMovementReconciled(entityId)");
+
+    const reconcileStart = source.indexOf("private markOptimisticMovementReconciled(entityId: ID)");
+    expect(reconcileStart).toBeGreaterThan(0);
+    const reconcileEnd = source.indexOf("\n  public ", reconcileStart + 20);
+    const reconcileBody = source.slice(reconcileStart, reconcileEnd);
+    expect(reconcileBody).toContain('"optimistic_animation_reconciled"');
+    expect(reconcileBody).toContain("this.optimisticallyMovingArmies.delete(entityId)");
+    expect(reconcileBody).toContain("this.optimisticPositionLocks.delete(entityId)");
+    expect(reconcileBody).toContain("this.authoritativeReconciledArmies.add(entityId)");
   });
 
   it("clears optimistic tracking when the authoritative move completes", () => {

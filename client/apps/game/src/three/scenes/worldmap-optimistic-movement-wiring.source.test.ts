@@ -22,7 +22,20 @@ describe("Worldmap optimistic movement wiring", () => {
     expect(source).toMatch(/this\.pendingMovementPlans\.set/);
   });
 
-  it("applies the optimistic plan from handleTransactionComplete on tx_confirmed", () => {
+  it("starts the optimistic plan from the submitted transaction hash", () => {
+    const source = readSource("worldmap.tsx");
+
+    const submitStart = source.indexOf("private handleSubmittedArmyMovementTx(");
+    expect(submitStart).toBeGreaterThan(0);
+    const submitEnd = source.indexOf("\n  private ", submitStart + 20);
+    expect(submitEnd).toBeGreaterThan(submitStart);
+    const submitHandler = source.slice(submitStart, submitEnd);
+
+    expect(submitHandler).toContain('"tx_submitted"');
+    expect(submitHandler).toContain("startSubmittedArmyMovementOptimisticPlan");
+  });
+
+  it("records confirmation without waiting to start the optimistic tween", () => {
     const source = readSource("worldmap.tsx");
 
     const handlerStart = source.indexOf("this.handleTransactionComplete = ");
@@ -32,9 +45,7 @@ describe("Worldmap optimistic movement wiring", () => {
 
     const handler = source.slice(handlerStart, handlerEnd);
     expect(handler).toContain('"tx_confirmed"');
-    expect(handler).toContain("applyMovementPlan");
-    expect(handler).toContain("optimistic: true");
-    expect(handler).toContain('"optimistic_animation_started"');
+    expect(handler).not.toContain("applyMovementPlan");
   });
 
   it("rewinds optimistic movement when the tx fails", () => {

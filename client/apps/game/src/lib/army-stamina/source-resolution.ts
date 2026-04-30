@@ -4,7 +4,7 @@ import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getAuthoritativeTroopsSnapshot, getFreshPendingStaminaSource } from "./source-store";
 import { ArmyStaminaSourceKind, ArmyStaminaSourceSnapshot } from "./types";
 
-interface ExplorerArmyFallback {
+export interface ExplorerArmyFallback {
   category: TroopType;
   tier: TroopTier;
   troopCount: number;
@@ -106,14 +106,9 @@ const buildPendingTroopsSnapshot = (input: {
     return null;
   }
 
-  // If onchain data (live/snapshot/fallback) has caught up to or surpassed the
-  // pending's updated_tick, the prediction is obsolete. Skip pending so live
-  // data drives the computation and regen calculates from the true chain state.
-  const onchainTicks = [input.liveTroops, input.snapshotTroops, input.fallbackTroops]
-    .map((troops) => Number(troops?.stamina?.updated_tick ?? 0n))
-    .filter((tick) => Number.isFinite(tick));
-  const maxOnchainTick = onchainTicks.length > 0 ? Math.max(...onchainTicks) : -Infinity;
-  if (maxOnchainTick >= pendingSource.updatedTick) {
+  if (
+    hasOnchainStaminaCaughtUpToPending([input.liveTroops, input.snapshotTroops, input.fallbackTroops], pendingSource)
+  ) {
     return null;
   }
 
@@ -130,6 +125,27 @@ const buildPendingTroopsSnapshot = (input: {
   };
 };
 
+const hasOnchainStaminaCaughtUpToPending = (
+  onchainTroops: Array<Troops | null | undefined>,
+  pendingSource: { amount: bigint; updatedTick: number },
+): boolean =>
+  onchainTroops.some((troops) => {
+    if (!troops?.stamina) {
+      return false;
+    }
+
+    const onchainTick = Number(troops.stamina.updated_tick);
+    if (!Number.isFinite(onchainTick)) {
+      return false;
+    }
+
+    if (onchainTick > pendingSource.updatedTick) {
+      return true;
+    }
+
+    return onchainTick === pendingSource.updatedTick && troops.stamina.amount === pendingSource.amount;
+  });
+
 const compareSnapshots = (
   left: ArmyStaminaSourceSnapshot,
   right: ArmyStaminaSourceSnapshot,
@@ -145,7 +161,7 @@ const compareSnapshots = (
   return (left.capturedAtMs ?? 0) >= (right.capturedAtMs ?? 0) ? left : right;
 };
 
-export const selectFreshestTroopsSnapshot = (input: {
+export const selectFreshestArmyStaminaSource = (input: {
   entityId?: ID;
   snapshotTroops?: Troops | null;
   liveTroops?: Troops | null;
@@ -154,7 +170,7 @@ export const selectFreshestTroopsSnapshot = (input: {
     amount: bigint;
     updatedTick: number;
   } | null;
-}): Troops | null => {
+}): ArmyStaminaSourceSnapshot | null => {
   const fallbackTroops = input.fallbackArmy ? buildFallbackTroopsSnapshot(input.fallbackArmy) : null;
   const authoritativeSnapshot = input.entityId ? getAuthoritativeTroopsSnapshot(input.entityId) : undefined;
   const candidates = [
@@ -175,9 +191,20 @@ export const selectFreshestTroopsSnapshot = (input: {
     return null;
   }
 
-  const winner = candidates.reduce(compareSnapshots);
+  return candidates.reduce(compareSnapshots);
+};
 
-  return winner.troops ?? null;
+export const selectFreshestTroopsSnapshot = (input: {
+  entityId?: ID;
+  snapshotTroops?: Troops | null;
+  liveTroops?: Troops | null;
+  fallbackArmy?: ExplorerArmyFallback | null;
+  pendingStamina?: {
+    amount: bigint;
+    updatedTick: number;
+  } | null;
+}): Troops | null => {
+  return selectFreshestArmyStaminaSource(input)?.troops ?? null;
 };
 
 export const getExplorerStaminaSnapshot = (

@@ -219,7 +219,7 @@ describe("resolvePendingArmyMovementSelectionPlan", () => {
     });
   });
 
-  it("allows re-selection while the optimistic tween is active so the user can queue a next move", () => {
+  it("blocks re-selection while optimistic movement is still unresolved", () => {
     expect(
       resolvePendingArmyMovementSelectionPlan({
         hasPendingMovement: true,
@@ -231,7 +231,23 @@ describe("resolvePendingArmyMovementSelectionPlan", () => {
     ).toEqual({
       shouldClearPendingMovement: false,
       shouldRequestChunkRefresh: false,
-      shouldBlockSelection: false,
+      shouldBlockSelection: true,
+    });
+  });
+
+  it("blocks selection when pending state cleared but optimistic movement is still unresolved", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: false,
+        isOptimisticMovementActive: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 2000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: true,
     });
   });
 
@@ -341,9 +357,28 @@ describe("resolvePendingArmyMovementTxFailurePlan", () => {
         txHash: "0xabc",
         txEntityMap,
         pendingEntities,
+        optimisticEntities: new Set<number>(),
       }),
     ).toEqual({
       shouldClearPendingMovement: false,
+      entityId: 42,
+    });
+  });
+
+  it("clears when txHash maps to an active optimistic tween after pending selection state cleared", () => {
+    const txEntityMap = new Map<string, number>([["0xabc", 42]]);
+    const pendingEntities = new Set<number>();
+    const optimisticEntities = new Set<number>([42]);
+
+    expect(
+      resolvePendingArmyMovementTxFailurePlan({
+        txHash: "0xabc",
+        txEntityMap,
+        pendingEntities,
+        optimisticEntities,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: true,
       entityId: 42,
     });
   });

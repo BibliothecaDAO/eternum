@@ -9,20 +9,15 @@ function readSource(filename: string): string {
 }
 
 describe("Optimistic worldmap cache mirror", () => {
-  it("calls updateArmyHexes with the optimistic target from handleTransactionComplete", () => {
+  it("calls updateArmyHexes with the optimistic target after submitted tx starts the tween", () => {
     const source = readSource("worldmap.tsx");
 
-    const handlerStart = source.indexOf("this.handleTransactionComplete = ");
+    const handlerStart = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache(");
     expect(handlerStart).toBeGreaterThan(0);
-    const handlerEnd = source.indexOf("this.handleTransactionFailed = ", handlerStart);
+    const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
     expect(handlerEnd).toBeGreaterThan(handlerStart);
     const handlerBody = source.slice(handlerStart, handlerEnd);
 
-    // After resolving the movement plan, the handler must mirror the target
-    // position into the worldmap's spatial cache so getHexagonEntity(A) stops
-    // returning the moved army. This prevents the "click the stale tile and
-    // submit a doomed tx" trap during the optimistic tween window.
-    expect(handlerBody).toContain("applyMovementPlan(plan, { optimistic: true })");
     expect(handlerBody).toMatch(/this\.updateArmyHexes\(\s*\{[\s\S]*?entityId[\s\S]*?hexCoords/);
     expect(handlerBody).toContain("plan.targetHexCoords.getContract()");
   });
@@ -32,10 +27,10 @@ describe("Optimistic worldmap cache mirror", () => {
 
     // updateArmyHexes early-returns on undefined ownerAddress — we read the
     // address from armyManager.getArmy(entityId).owner, which can be zero for
-    // detached/failed armies. The handler must only invoke the mirror when a
+    // detached/failed armies. The mirror must only write cache state when a
     // usable owner exists.
-    const handlerStart = source.indexOf("this.handleTransactionComplete = ");
-    const handlerEnd = source.indexOf("this.handleTransactionFailed = ", handlerStart);
+    const handlerStart = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache(");
+    const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
     const handlerBody = source.slice(handlerStart, handlerEnd);
 
     expect(handlerBody).toContain("this.armyManager.getArmy(entityId)");

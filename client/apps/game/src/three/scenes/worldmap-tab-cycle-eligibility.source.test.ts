@@ -24,7 +24,7 @@ describe("Worldmap tab-cycle eligibility", () => {
     expect(body).toMatch(/battleTimerLeft|battleCooldownEnd/);
   });
 
-  it("consults canArmyAct in the tab cycle loop after the pending-movement skip", () => {
+  it("consults canArmyAct in the tab cycle loop after the movement lock skip", () => {
     const source = readSource("worldmap.tsx");
 
     const methodStart = source.indexOf("private async selectNextArmy(");
@@ -34,11 +34,25 @@ describe("Worldmap tab-cycle eligibility", () => {
 
     expect(body).toContain("this.canArmyAct(army.entityId)");
 
-    // Order: the pending skip comes before the canArmyAct skip.
-    const pendingPos = body.indexOf("this.pendingArmyMovements.has(army.entityId)");
+    // Order: the movement lock skip comes before the canArmyAct skip.
+    const pendingPos = body.indexOf("this.isArmyMovementInputLocked(army.entityId)");
     const eligibilityPos = body.indexOf("this.canArmyAct(army.entityId)");
     expect(pendingPos).toBeGreaterThan(0);
     expect(eligibilityPos).toBeGreaterThan(pendingPos);
+  });
+
+  it("treats unresolved optimistic movement as ineligible for tab cycle", () => {
+    const source = readSource("worldmap.tsx");
+
+    const helperStart = source.indexOf("private isArmyMovementInputLocked(entityId: ID)");
+    expect(helperStart).toBeGreaterThan(0);
+    const helperBody = source.slice(helperStart, helperStart + 500);
+
+    expect(helperBody).toContain("this.pendingArmyMovements.has(entityId)");
+    expect(helperBody).toContain("this.armyManager.hasUnresolvedOptimisticMovement(entityId)");
+    expect(source).toMatch(
+      /this\.selectableArmies\.some\(\s*\(army\) => !this\.isArmyMovementInputLocked\(army\.entityId\)/,
+    );
   });
 
   it("shortcut registration gates on eligibility, not raw selectableArmies count", () => {

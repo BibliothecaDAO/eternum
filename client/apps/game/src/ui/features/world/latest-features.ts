@@ -30,9 +30,23 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-04-30",
+    title: "Reliable Army Stamina",
+    description:
+      "Fixed army movement stamina checks so explored moves use the freshest available stamina and no longer get blocked by stale optimistic state.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-30",
     title: "Safer Rapid Building",
     description:
       "Rapid build clicks now reserve pending building spots immediately, so auto-build and manual placement avoid duplicate occupied-space errors while the chain catches up.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-29",
+    title: "Smoother Army Movement",
+    description:
+      "Army movement now starts as soon as the transaction is submitted, blocks follow-up commands until authoritative world state catches up, and rewinds cleanly if the transaction fails.",
     type: "fix",
   },
   {
