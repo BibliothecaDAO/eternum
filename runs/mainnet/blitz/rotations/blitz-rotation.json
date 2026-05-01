@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25196838893-1.json",
-  "latestLaunchRequestId": "25196838893-1",
-  "currentStepId": null,
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25197401944-1.json",
+  "latestLaunchRequestId": "25197401944-1",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-01T01:10:34.402Z",
+  "updatedAt": "2026-05-01T01:11:58.414Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 25196838893,
+    "workflowRunId": 25197401944,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25196838893",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25197401944",
     "ref": "next",
     "sha": "10fbee21a3ae9f2f7fc9e20eb7b825d76155844b"
   },
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-01T01:25:34.402Z",
-    "lastEvaluatedAt": "2026-05-01T01:10:34.402Z"
+    "nextEvaluationAt": "2026-05-01T01:26:58.414Z",
+    "lastEvaluatedAt": "2026-05-01T01:11:58.414Z"
   },
   "steps": [
     {
@@ -40,63 +40,49 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-05-01T00:51:52.452Z",
-      "finishedAt": "2026-05-01T00:51:58.353Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-05-01T00:52:02.064Z",
-      "finishedAt": "2026-05-01T00:52:15.957Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-05-01T00:52:25.050Z",
-      "finishedAt": "2026-05-01T00:52:30.797Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-05-01T00:52:34.831Z",
-      "finishedAt": "2026-05-01T00:52:46.360Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-05-01T00:52:55.013Z",
-      "finishedAt": "2026-05-01T00:53:06.321Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-05-01T00:53:15.394Z",
-      "finishedAt": "2026-05-01T00:53:21.004Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage is complete",
-      "startedAt": "2026-05-01T00:53:24.716Z",
-      "finishedAt": "2026-05-01T00:53:30.294Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -1989,6 +1975,58 @@
           },
           "paymasterSynced": true
         }
+      },
+      {
+        "gameName": "apac-gladiator-03-05-26-1100",
+        "startTime": 1777806000,
+        "startTimeIso": "2026-05-03T11:00:00.000Z",
+        "durationSeconds": 3600,
+        "blitzRegistrationOverrides": {
+          "fee_amount": "1000000000000000000000"
+        },
+        "seriesGameNumber": 10,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
