@@ -11,6 +11,8 @@ const DEFAULT_WORLD_NAME = "eternum-blitz-slot-4";
 const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl", "bloom"]);
 const VALID_SCENES = new Set(["map", "hex", "travel"]);
 const DEFAULT_WAIT_MS = 20000;
+const AGENT_BROWSER_RETRY_DELAY_MS = 2000;
+const AGENT_BROWSER_RETRY_ATTEMPTS = 2;
 const DEFAULT_CARTRIDGE_API_BASE = "https://api.cartridge.gg";
 const FACTORY_SQL_BASE_URLS = {
   local: [],
@@ -265,6 +267,49 @@ function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
   return result.stdout.trim();
 }
 
+export function isRetryableAgentBrowserFailure({ commandArgs, stderr = "", stdout = "" }) {
+  if (commandArgs[0] !== "eval") {
+    return false;
+  }
+
+  const output = `${stderr}\n${stdout}`;
+  return output.includes("CDP command timed out: Runtime.evaluate");
+}
+
+async function runAgentBrowserWithRetries(
+  session,
+  commandArgs,
+  { headed = false, retryAttempts = AGENT_BROWSER_RETRY_ATTEMPTS, retryDelayMs = AGENT_BROWSER_RETRY_DELAY_MS } = {},
+) {
+  let lastOutput = "";
+
+  for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
+    const result = invokeAgentBrowser(session, commandArgs, { headed });
+    if (result.status === 0) {
+      return (result.stdout ?? "").trim();
+    }
+
+    const stdout = (result.stdout ?? "").trim();
+    const stderr = (result.stderr ?? "").trim();
+    lastOutput = stderr || stdout || `agent-browser failed for session ${session}`;
+
+    if (
+      attempt === retryAttempts ||
+      !isRetryableAgentBrowserFailure({
+        commandArgs,
+        stderr,
+        stdout,
+      })
+    ) {
+      throw new Error(lastOutput);
+    }
+
+    await sleep(retryDelayMs * (attempt + 1));
+  }
+
+  throw new Error(lastOutput);
+}
+
 function tryRunAgentBrowser(session, commandArgs, { headed = false } = {}) {
   const result = invokeAgentBrowser(session, commandArgs, { headed });
   return {
@@ -348,9 +393,16 @@ async function runSceneSmoke({
   await sleep(waitMs);
 
   const openedUrl = runAgentBrowser(session, ["get", "url"]);
-  const canvasExists = runAgentBrowser(session, ["eval", "Boolean(document.getElementById('main-canvas'))"]) === "true";
+  const canvasExists =
+    (await runAgentBrowserWithRetries(session, ["eval", "Boolean(document.getElementById('main-canvas'))"], {
+      headed,
+    })) === "true";
   const diagnostics = normalizeRendererDiagnosticsSnapshot(
-    JSON.parse(runAgentBrowser(session, ["eval", "JSON.stringify(window.__rendererDiagnostics ?? null)"]) || "null"),
+    JSON.parse(
+      (await runAgentBrowserWithRetries(session, ["eval", "JSON.stringify(window.__rendererDiagnostics ?? null)"], {
+        headed,
+      })) || "null",
+    ),
   );
   const unableToStartCount = Number(runAgentBrowser(session, ["get", "count", "text=Unable to Start"]) || "0");
   const errors = parseErrorLines(runAgentBrowser(session, ["errors"]));
