@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-01T00:32:22.129Z",
+  "updatedAt": "2026-05-01T00:52:03.791Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1581,9 +1581,9 @@
         "url": "https://api.cartridge.gg/x/na-gladiator-01-05-26-0100/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-01T00:32:22.129Z"
+        "describedAt": "2026-05-01T00:52:03.791Z"
       },
-      "updatedAt": "2026-05-01T00:32:22.129Z"
+      "updatedAt": "2026-05-01T00:52:03.791Z"
     }
   }
 }
