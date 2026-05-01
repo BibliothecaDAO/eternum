@@ -1,0 +1,31 @@
+---
+layout: docs
+---
+
+# 1st May 2026
+
+### Blitz Stamina & Relic Configuration Clarification
+
+- [Blitz/Stamina & Biomes](/blitz/military/stamina-and-biomes): Updated Blitz stamina regeneration to **30 stamina per phase** and clarified combat stamina thresholds as **75** to attack and **60** to defend.
+- Confirmed combat stamina thresholds are config-driven values, not dynamically derived at runtime from regeneration.
+
+### Relic Duration Standardisation
+
+- [Blitz/Relics](/blitz/materials/relics): Standardised all timed relic effects to **3 Eternum Days (18 minutes)**.
+- Updated relic reference table and explanatory text to remove older mixed-duration values.
+
+### Troop Production Relic Rebalance
+
+- [Blitz/Relics](/blitz/materials/relics): Updated Troop Production Relics to:
+  - **Relic I**: +15% troop production for 3 Eternum Days.
+  - **Relic II**: +30% troop production for 3 Eternum Days.
+- Updated shared relic metadata and descriptive resource text to match the new values.
+
+### Reviewer Note
+
+- Documentation and TypeScript config/constants were updated to reflect intended game state.
+- **Onchain config was not deployed, and Cairo contract defaults were not patched in this change.** Reviewing devs should verify whether any additional contract-side or deployment-side follow-up is required before release.
+
+---
+
+_This changelog covers the Blitz stamina and relic consistency pass completed on 1 May 2026._

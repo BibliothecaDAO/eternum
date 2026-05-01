@@ -5,7 +5,7 @@ autoload: false
 
 ⚔️ Realms: Blitz Official Game Guide
 
-Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 90-minute match, players
+Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each 60-minute match, players
 strategically manage resources, explore territories, and engage in high-intensity military confrontations.
 
 Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
@@ -17,7 +17,7 @@ bracket\*\*.
 
 📜 Rule Summary
 
-Game Duration Each Blitz game runs for exactly 90 minutes. Time is measured in Eternum Days (6 minutes long), divided
+Game Duration Each Blitz game runs for exactly 60 minutes. Time is measured in Eternum Days (6 minutes long), divided
 into six 'phases'.
 
 Realms Three Starting Realms:** Evenly spaced in a triangle formation. Equal Capability:** All Realms are functionally
@@ -37,7 +37,7 @@ Production Accelerated Rates:** All production is increased for the fast-paced f
 resources or labor. Troops require lower-tier troops as inputs. Donkeys are one-time use.
 
 World Map & Military Exploration:** Reveal hexes to find Essence, Hyperstructures, and enemies. Biomes:** 16 unique
-types affecting combat (+/- 30% damage) and movement. Stamina:_ Armies recover _+20 stamina per Phase** (+120 per Day).
+types affecting combat (+/- 30% damage) and movement. Stamina:_ Armies recover _+30 stamina per Phase** (+180 per Day).
 Army Types:** Field Armies: Map exploration and conquest. Guard Armies: Static defense of structures.
 
 Victory Leaderboard ranking is determined by Victory Points (VP) awarded for exploring, claiming structures, opening
@@ -49,8 +49,8 @@ outside these protocols.
 
 ⏳ Time & Duration
 
-Total Duration:** 90 Minutes. Eternum Day:** 6 Minutes. Phases:** 6 per day (1 minute each). Total Days:* A single game
-spans *15 Eternum Days**.
+Total Duration:** 60 Minutes. Eternum Day:** 6 Minutes. Phases:** 6 per day (1 minute each). Total Days:* A single game
+spans *10 Eternum Days**.
 
 📦 Materials & Economy
 
@@ -58,7 +58,7 @@ Note: "Materials" refers to all tangible assets (Food, Resources, Essence, Labor
 specifically refers to the 9 mined materials.
 
 Cost of Production With the exception of food and labor, nothing is free. Every unit of production demands an input.
-Lords must balance costs to maximize their score within the 90-minute window.
+Lords must balance costs to maximize their score within the 60-minute window.
 
 Travel & Logistics Donkeys:* Required for *every* transfer of materials. They are *single-use** and consumed upon
 arrival. Troop Movement:** Inventory: Moved via Donkeys (cannot fight). Deployed: Moved via Stamina on the map (cannot
@@ -133,8 +133,8 @@ Exploration The world is hidden in mist. Exploring a hex permanently reveals its
 Hyperstructure Positioning Algorithm Rings ($r$):** $\sqrt{P/6}$ (Where $P$ is players). Hyperstructures per ring
 ($H$):** $6r$.
 
-Relic Crates Randomly appear near explored tiles. Reward:** 3 Relics + 1,000 Victory Points. Effect:** Relics boost
-production, stamina regen, or combat damage.
+Relic Crates Randomly appear near explored tiles. Reward:** 3 Relics + Victory Points. Effect:** Relics boost
+production, stamina regen, or combat damage for 3 Eternum Days (18 minutes).
 
 🏗️ World Structures
 

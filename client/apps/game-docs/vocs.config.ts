@@ -174,7 +174,6 @@ export default defineConfig({
           text: "Realms & Villages",
           link: "/eternum/realm-and-villages/realm",
           collapsed: true,
-          link: "/eternum/realm-and-villages/realm",
           items: [
             { text: "Villages", link: "/eternum/realm-and-villages/villages" },
             { text: "Buildings", link: "/eternum/realm-and-villages/buildings" },
@@ -185,7 +184,6 @@ export default defineConfig({
           text: "Materials",
           link: "/eternum/resources/resources",
           collapsed: true,
-          link: "/eternum/resources/resources",
           items: [
             { text: "Production", link: "/eternum/resources/production" },
             { text: "Automation", link: "/eternum/resources/automation" },
@@ -198,7 +196,6 @@ export default defineConfig({
           text: "Military",
           link: "/eternum/military/armies",
           collapsed: true,
-          link: "/eternum/military/armies",
           items: [
             { text: "Troop Tiers", link: "/eternum/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/eternum/military/stamina-and-biomes" },
@@ -210,7 +207,6 @@ export default defineConfig({
           text: "World Map & Movement",
           link: "/eternum/worldmap-movement/worldmap",
           collapsed: true,
-          link: "/eternum/worldmap-movement/worldmap",
           items: [{ text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" }],
         },
         { text: "World Structures", link: "/eternum/world-structures" },
@@ -248,8 +244,9 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
-      link: "/changelog/28-march-2026",
+      link: "/changelog/1-may-2026",
       items: [
+        { text: "1 May 2026", link: "/changelog/1-may-2026" },
         { text: "28 March 2026", link: "/changelog/28-march-2026" },
         { text: "18 February 2026", link: "/changelog/18-february-2026" },
         { text: "31 January 2026", link: "/changelog/31-january-2026" },
