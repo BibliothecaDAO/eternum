@@ -8,6 +8,7 @@ import {
   GLOW_REPRO_TARGETS,
   evaluateRendererParitySummary,
   evaluateSceneSmokeResult,
+  isRetryableAgentBrowserFailure,
   normalizeRendererDiagnosticsSnapshot,
   normalizeSceneList,
   resolveAgentBrowserWorkingDirectory,
@@ -117,6 +118,38 @@ describe("resolveAgentBrowserWorkingDirectory", () => {
   it("runs npx outside the repository workspace to avoid npm duplicate workspace-name failures", () => {
     expect(resolveAgentBrowserWorkingDirectory({ RUNNER_TEMP: "/runner-temp", TMPDIR: "/tmp" })).toBe("/runner-temp");
     expect(resolveAgentBrowserWorkingDirectory({ TMPDIR: "/tmp" })).toBe("/tmp");
+  });
+});
+
+describe("isRetryableAgentBrowserFailure", () => {
+  it("retries transient CDP Runtime.evaluate timeouts for eval commands", () => {
+    expect(
+      isRetryableAgentBrowserFailure({
+        commandArgs: ["eval", "Boolean(document.getElementById('main-canvas'))"],
+        stderr: "Error: ✗ CDP command timed out: Runtime.evaluate",
+        stdout: "",
+      }),
+    ).toBe(true);
+  });
+
+  it("does not retry non-eval failures", () => {
+    expect(
+      isRetryableAgentBrowserFailure({
+        commandArgs: ["get", "url"],
+        stderr: "Error: ✗ CDP command timed out: Runtime.evaluate",
+        stdout: "",
+      }),
+    ).toBe(false);
+  });
+
+  it("does not retry regular application failures", () => {
+    expect(
+      isRetryableAgentBrowserFailure({
+        commandArgs: ["eval", "JSON.stringify(window.__rendererDiagnostics ?? null)"],
+        stderr: "Error: page reported runtime errors",
+        stdout: "",
+      }),
+    ).toBe(false);
   });
 });
 
