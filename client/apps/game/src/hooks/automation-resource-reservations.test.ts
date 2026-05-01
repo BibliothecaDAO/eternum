@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from "vitest";
 import { ResourcesIds } from "@bibliothecadao/types";
+import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import {
   applyAutomationReservationsToSnapshot,
   clearAutomationResourceReservationsForTests,
@@ -123,5 +124,22 @@ describe("automation resource reservations", () => {
 
     expect(adjusted.get(ResourcesIds.Wood)?.balanceHuman).toBe(40);
     expect(snapshot.get(ResourcesIds.Wood)?.balanceHuman).toBe(100);
+  });
+
+  it("expires default reservations before the next automation pass", () => {
+    reserveAutomationResources({
+      entityId: 42,
+      resources: [{ resourceId: ResourcesIds.Wood, humanAmount: 60 }],
+      nowMs: 1_000,
+    });
+
+    expect(
+      getSpendableResourceBalance({
+        entityId: 42,
+        resourceId: ResourcesIds.Wood,
+        balanceHuman: 100,
+        nowMs: 1_000 + PROCESS_INTERVAL_MS,
+      }),
+    ).toBe(100);
   });
 });

@@ -1,5 +1,8 @@
 import { ResourcesIds } from "@bibliothecadao/types";
-import type { RealmResourceSnapshot } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import {
+  PROCESS_INTERVAL_MS,
+  type RealmResourceSnapshot,
+} from "@/ui/features/infrastructure/automation/model/automation-processor";
 
 interface AutomationResourceReservationItem {
   resourceId: ResourcesIds;
@@ -12,7 +15,10 @@ interface AutomationResourceReservation {
   expiresAtMs: number;
 }
 
-const DEFAULT_RESERVATION_TTL_MS = 90_000;
+// Keep successful reservations alive long enough to cover tx submission/indexer lag,
+// but never long enough to survive into the next scheduled automation pass.
+const NEXT_PASS_RESERVATION_BUFFER_MS = 5_000;
+const DEFAULT_RESERVATION_TTL_MS = Math.max(1_000, PROCESS_INTERVAL_MS - NEXT_PASS_RESERVATION_BUFFER_MS);
 
 let nextReservationId = 1;
 const reservations = new Map<string, AutomationResourceReservation>();
