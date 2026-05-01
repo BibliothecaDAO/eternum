@@ -57,6 +57,9 @@ import {
   ResourceIdToMiningType,
   ResourceManager,
   TileManager,
+  divideByPrecision,
+  getBalance,
+  getBuildingCosts,
   getEntityIdFromKeys,
   getStructureStage,
 } from "@bibliothecadao/eternum";
@@ -77,6 +80,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import gsap from "gsap";
+import { toast } from "sonner";
 import {
   AnimationClip,
   AnimationMixer,
@@ -382,6 +386,23 @@ export default class HexceptionScene extends HexagonScene {
     this.state.setPreviewBuilding(null);
   }
 
+  private canAffordPreviewBuilding(
+    structureEntityId: number,
+    buildingCategory: BuildingType,
+    useSimpleCost: boolean,
+  ): boolean {
+    const { currentDefaultTick } = getBlockTimestamp();
+    const buildingCosts = getBuildingCosts(structureEntityId, this.dojo.components, buildingCategory, useSimpleCost);
+    if (!buildingCosts?.length) {
+      return false;
+    }
+
+    return buildingCosts.every((resourceCost) => {
+      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, this.dojo.components);
+      return divideByPrecision(balance.balance) >= resourceCost.amount;
+    });
+  }
+
   private loadBuildingModels() {
     for (const category of Object.values(BUILDINGS_GROUPS)) {
       const categoryPaths = this.mode.assets.buildingModelPaths[category];
@@ -639,6 +660,11 @@ export default class HexceptionScene extends HexagonScene {
         this.clearBuildingMode();
         const useSimpleCost = this.state.useSimpleCost;
         const structureEntityId = useUIStore.getState().structureEntityId;
+        if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost)) {
+          toast.error("Insufficient resources to build here.");
+          this.updateHexceptionGrid(this.hexceptionRadius);
+          return;
+        }
         reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
         try {
           console.log("Placing building at:", {

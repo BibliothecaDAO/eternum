@@ -1,5 +1,11 @@
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/types";
-import { TileManager } from "@bibliothecadao/eternum";
+import {
+  TileManager,
+  divideByPrecision,
+  getBalance,
+  getBuildingCosts,
+  getBlockTimestamp,
+} from "@bibliothecadao/eternum";
 import { toast } from "sonner";
 import {
   getBuildReservationState,
@@ -207,6 +213,24 @@ const hasBuildableCandidate = ({
 export const resolveRealmHasAvailableBuildingTile = (options: RealmAvailableTileOptions) =>
   hasBuildableCandidate(options);
 
+const canAffordRealmBuilding = ({
+  entityId,
+  target,
+  useSimpleCost,
+  world,
+}: Pick<RealmBuildActionOptions, "entityId" | "target" | "useSimpleCost" | "world">): boolean => {
+  const { currentDefaultTick } = getBlockTimestamp();
+  const buildingCosts = getBuildingCosts(entityId, world.components, target.type, useSimpleCost);
+  if (!buildingCosts?.length) {
+    return false;
+  }
+
+  return buildingCosts.every((resourceCost) => {
+    const balance = getBalance(entityId, resourceCost.resource, currentDefaultTick, world.components);
+    return divideByPrecision(balance.balance) >= resourceCost.amount;
+  });
+};
+
 export const buildRealmBuilding = async ({
   entityId,
   realmPosition,
@@ -221,6 +245,11 @@ export const buildRealmBuilding = async ({
 }: RealmBuildActionOptions) => {
   if (!realmPosition) {
     toast.error("Select a realm before building.");
+    return false;
+  }
+
+  if (!canAffordRealmBuilding({ entityId, target, useSimpleCost, world })) {
+    toast.error("Insufficient resources to build.");
     return false;
   }
 
