@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25206234701-1",
   "currentStepId": "grant-lootchest-roles",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-01T07:17:54.510Z",
+  "updatedAt": "2026-05-01T08:05:33.745Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-01T07:32:45.179Z",
-    "lastEvaluatedAt": "2026-05-01T07:17:45.179Z"
+    "nextEvaluationAt": "2026-05-01T08:20:33.745Z",
+    "lastEvaluatedAt": "2026-05-01T08:05:33.745Z"
   },
   "steps": [
     {
