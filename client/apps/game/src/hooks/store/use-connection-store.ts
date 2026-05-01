@@ -9,6 +9,12 @@ interface ConnectionState {
   globalStatus: StreamStatus;
   lastSpatialUpdate: number;
   lastGlobalUpdate: number;
+  lastSpatialDataUpdate: number;
+  lastGlobalDataUpdate: number;
+  lastSpatialHandshake: number;
+  lastGlobalHandshake: number;
+  lastToriiHeartbeat: number;
+  toriiHeartbeatAvailable: boolean;
   lastHealthCheck: number;
   lastConnectedAt: number;
   lastDisconnectedAt: number | null;
@@ -19,6 +25,10 @@ interface ConnectionState {
   setGlobalStatus: (status: StreamStatus) => void;
   recordSpatialUpdate: () => void;
   recordGlobalUpdate: () => void;
+  recordSpatialHandshake: () => void;
+  recordGlobalHandshake: () => void;
+  recordToriiHeartbeat: () => void;
+  markToriiHeartbeatAvailable: () => void;
   recordHealthCheck: () => void;
   recordStreamReconnect: () => void;
   incrementReconnectAttempts: () => void;
@@ -37,6 +47,12 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
   globalStatus: "connected",
   lastSpatialUpdate: Date.now(),
   lastGlobalUpdate: Date.now(),
+  lastSpatialDataUpdate: Date.now(),
+  lastGlobalDataUpdate: Date.now(),
+  lastSpatialHandshake: Date.now(),
+  lastGlobalHandshake: Date.now(),
+  lastToriiHeartbeat: Date.now(),
+  toriiHeartbeatAvailable: false,
   lastHealthCheck: Date.now(),
   lastConnectedAt: Date.now(),
   lastDisconnectedAt: null,
@@ -88,8 +104,24 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
               : state.lastDisconnectedAt,
       };
     }),
-  recordSpatialUpdate: () => set({ lastSpatialUpdate: Date.now() }),
-  recordGlobalUpdate: () => set({ lastGlobalUpdate: Date.now() }),
+  recordSpatialUpdate: () => {
+    const now = Date.now();
+    set({ lastSpatialUpdate: now, lastSpatialDataUpdate: now });
+  },
+  recordGlobalUpdate: () => {
+    const now = Date.now();
+    set({ lastGlobalUpdate: now, lastGlobalDataUpdate: now });
+  },
+  recordSpatialHandshake: () => {
+    const now = Date.now();
+    set({ lastSpatialUpdate: now, lastSpatialHandshake: now });
+  },
+  recordGlobalHandshake: () => {
+    const now = Date.now();
+    set({ lastGlobalUpdate: now, lastGlobalHandshake: now });
+  },
+  recordToriiHeartbeat: () => set({ lastToriiHeartbeat: Date.now(), toriiHeartbeatAvailable: true }),
+  markToriiHeartbeatAvailable: () => set({ lastToriiHeartbeat: Date.now(), toriiHeartbeatAvailable: true }),
   recordHealthCheck: () => set({ lastHealthCheck: Date.now() }),
   recordStreamReconnect: () => set((state) => ({ streamReconnectVersion: state.streamReconnectVersion + 1 })),
   incrementReconnectAttempts: () => set((state) => ({ reconnectAttempts: state.reconnectAttempts + 1 })),

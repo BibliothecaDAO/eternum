@@ -36,9 +36,13 @@ vi.stubGlobal("import.meta", { env: { PROD: true } });
 
 import {
   addNetworkBreadcrumb,
+  addToriiStreamBreadcrumb,
   reportNetworkOutageDeadEnd,
   reportNetworkOutageResolved,
   reportSubscriptionSetupTimeout,
+  reportToriiQueuePressure,
+  reportToriiReadinessTimeout,
+  reportToriiSubscriptionLifecycle,
   resetNetworkHealthStateForTests,
   setNetworkHealthEnabledForTests,
   setNetworkHealthScopeTags,
@@ -124,5 +128,95 @@ describe("network-health-reporting", () => {
     expect(tags["network.torii_host"]).toBe("api.cartridge.gg");
     expect(tags["chain"]).toBe("mainnet");
     expect(tags["world"]).toBe("eternum");
+  });
+
+  it("addToriiStreamBreadcrumb writes bounded stream lifecycle data", () => {
+    addToriiStreamBreadcrumb({
+      event: "subscription_update_succeeded",
+      streamType: "spatial",
+      requestId: 7,
+      areaKey: "1:2",
+      durationMs: 42.4,
+      signatureHash: "abc123",
+    });
+
+    expect(sentryMocks.addBreadcrumb).toHaveBeenCalledTimes(1);
+    const crumb = sentryMocks.addBreadcrumb.mock.calls[0][0];
+    expect(crumb.category).toBe("torii-stream");
+    expect(crumb.message).toBe("torii-stream:subscription_update_succeeded");
+    expect(crumb.data).toMatchObject({
+      stream_type: "spatial",
+      request_id: "7",
+      area_key: "1:2",
+      duration_ms: 42,
+      signature_hash: "abc123",
+    });
+  });
+
+  it("reportToriiSubscriptionLifecycle captures update fallback with filterable tags", () => {
+    reportToriiSubscriptionLifecycle({
+      streamType: "spatial",
+      kind: "subscription_update",
+      outcome: "fallback",
+      requestId: 7,
+      durationMs: 125.2,
+      areaKey: "1:2",
+      reason: "update failed",
+    });
+
+    expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(1);
+    const [message, opts] = sentryMocks.captureMessage.mock.calls[0];
+    expect(message).toContain("subscription_update");
+    expect(opts.level).toBe("warning");
+    expect(opts.tags["network.stream_type"]).toBe("spatial");
+    expect(opts.tags["network.kind"]).toBe("subscription_update");
+    expect(opts.tags["network.outcome"]).toBe("fallback");
+    expect(opts.contexts.network).toMatchObject({
+      request_id: "7",
+      duration_ms: 125,
+      area_key: "1:2",
+      reason: "update failed",
+    });
+  });
+
+  it("reportToriiSubscriptionLifecycle redacts long hex values and truncates reasons", () => {
+    reportToriiSubscriptionLifecycle({
+      streamType: "spatial",
+      kind: "fallback_recreate",
+      outcome: "failed",
+      reason: `failed for 0x${"a".repeat(64)} ${"x".repeat(260)}`,
+    });
+
+    const [, opts] = sentryMocks.captureMessage.mock.calls[0];
+    const reason = opts.contexts.network.reason;
+    expect(reason).toContain("0x[redacted]");
+    expect(reason).not.toContain(`0x${"a".repeat(64)}`);
+    expect(reason.length).toBeLessThanOrEqual(180);
+  });
+
+  it("reportToriiReadinessTimeout captures spatial readiness failures", () => {
+    reportToriiReadinessTimeout({
+      streamType: "spatial",
+      requestId: 8,
+      timeoutMs: 8000,
+      elapsedMs: 8012.8,
+    });
+
+    expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(1);
+    const [message, opts] = sentryMocks.captureMessage.mock.calls[0];
+    expect(message).toContain("readiness timed out");
+    expect(opts.tags["network.kind"]).toBe("readiness_timeout");
+    expect(opts.contexts.network.timeout_ms).toBe(8000);
+  });
+
+  it("reportToriiQueuePressure dedups by stream and queue bucket", () => {
+    reportToriiQueuePressure({ streamType: "spatial", queueSize: 550, batchSize: 25, threshold: 500 });
+    reportToriiQueuePressure({ streamType: "spatial", queueSize: 575, batchSize: 25, threshold: 500 });
+    reportToriiQueuePressure({ streamType: "spatial", queueSize: 1_250, batchSize: 25, threshold: 500 });
+
+    expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(2);
+    const [, firstOpts] = sentryMocks.captureMessage.mock.calls[0];
+    expect(firstOpts.tags["network.kind"]).toBe("queue_pressure");
+    expect(firstOpts.tags["network.queue_bucket"]).toBe("500-999");
   });
 });

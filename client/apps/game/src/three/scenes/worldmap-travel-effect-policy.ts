@@ -1,7 +1,10 @@
 import type { ID } from "@bibliothecadao/types";
 
 export type TravelEffectType = "travel" | "compass";
-export type PendingArmyMovementEffectClearReason = "movement_started" | "cleanup_requested";
+export type PendingArmyMovementEffectClearReason =
+  | "movement_started"
+  | "cleanup_requested"
+  | "authoritative_reconciled";
 
 export interface TrackedTravelEffect {
   key: string;
@@ -48,9 +51,25 @@ export function shouldCleanupTrackedTravelEffectOnPendingClear(input: {
     return false;
   }
 
-  if (input.reason === "cleanup_requested") {
-    return true;
+  if (input.reason === "movement_started") {
+    return input.trackedEffect.effectType !== "travel";
   }
 
-  return input.trackedEffect.effectType !== "travel";
+  return true;
+}
+
+export function shouldClearPendingMovementOnAuthoritativePosition(input: {
+  pendingTargetKey?: string;
+  authoritativePositionKey: string;
+  isMovementInFlight: boolean;
+}): boolean {
+  if (!input.pendingTargetKey) {
+    return false;
+  }
+
+  if (input.isMovementInFlight) {
+    return false;
+  }
+
+  return input.pendingTargetKey === input.authoritativePositionKey;
 }

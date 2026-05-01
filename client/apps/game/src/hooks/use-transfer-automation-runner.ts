@@ -14,6 +14,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/structure-capabilities";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
+import {
+  getSpendableResourceBalance,
+  releaseAutomationReservation,
+  reserveAutomationResources,
+} from "./automation-resource-reservations";
 import { assessDonkeyCapacity, buildSendResourcesArgs, planTransferAmounts } from "./transfer-automation-planner";
 
 export const useTransferAutomationRunner = () => {
@@ -127,6 +132,7 @@ export const useTransferAutomationRunner = () => {
 
       try {
         for (const entry of due) {
+          let reservationToken: string | null = null;
           try {
             const sourceId = Number(entry.sourceEntityId);
             const destId = Number(entry.destinationEntityId);
@@ -168,12 +174,23 @@ export const useTransferAutomationRunner = () => {
             }
 
             const rm = new ResourceManager(components, sourceId);
+            const reservationNowMs = Date.now();
             const donkeyBalRaw = rm.balanceWithProduction(conservativeTick, ResourcesIds.Donkey).balance ?? 0n;
-            const donkeyBalHuman = Number(donkeyBalRaw) / RESOURCE_PRECISION;
+            const donkeyBalHuman = getSpendableResourceBalance({
+              entityId: sourceId,
+              resourceId: ResourcesIds.Donkey,
+              balanceHuman: Number(donkeyBalRaw) / RESOURCE_PRECISION,
+              nowMs: reservationNowMs,
+            });
 
             const transferList = planTransferAmounts(entry, (rid) => {
               const balRaw = rm.balanceWithProduction(conservativeTick, rid).balance ?? 0n;
-              return Number(balRaw) / RESOURCE_PRECISION;
+              return getSpendableResourceBalance({
+                entityId: sourceId,
+                resourceId: rid,
+                balanceHuman: Number(balRaw) / RESOURCE_PRECISION,
+                nowMs: reservationNowMs,
+              });
             });
 
             if (transferList.length === 0) {
@@ -189,6 +206,11 @@ export const useTransferAutomationRunner = () => {
             }
 
             const resources = buildSendResourcesArgs(transferList);
+            reservationToken = reserveAutomationResources({
+              entityId: sourceId,
+              resources: transferList,
+              nowMs: reservationNowMs,
+            });
 
             await systemCalls.send_resources_multiple({
               signer: account,
@@ -208,6 +230,7 @@ export const useTransferAutomationRunner = () => {
               .join(", ");
             toast.success(`Transfer scheduled: ${summary}`);
           } catch (err) {
+            releaseAutomationReservation(reservationToken);
             console.error("Transfer automation: execution failed", err);
             scheduleNext(entry.id, nowMs);
             toast.error("Scheduled transfer failed. Check console for details.");

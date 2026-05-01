@@ -1,5 +1,6 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { reportToriiQueuePressure, type NetworkStreamType } from "@/observability/network-health-reporting";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -26,14 +27,20 @@ import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
-import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
+import {
+  setupToriiSubscriptions,
+  updateToriiSubscriptions,
+  type ToriiSubscriptionSetupTimeoutInfo,
+} from "./torii-subscription-setup";
 
 export const EVENT_QUERY_LIMIT = 40_000;
+const TORII_SYNC_WORKER_QUEUE_WARNING_THRESHOLD = 500;
 
 interface SyncEntitiesSubscriptionOptions {
   isReadyEntity?: SyncEntityReadinessMatcher;
   onReadyEntityApplied?: (info: SyncEntityReadinessInfo) => void;
   onReadyEntityReceived?: (info: SyncEntityReadinessInfo) => void;
+  streamType?: NetworkStreamType;
   subscriptionSetupTimeoutMs?: number;
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 }
@@ -174,12 +181,14 @@ interface QueueProcessor {
 interface SyncEntitiesSubscription {
   cancel: () => void;
   ready: Promise<void>;
+  updateClause?: (clause: Clause | undefined | null) => Promise<void>;
 }
 
 interface SyncReadinessController {
   ready: Promise<void>;
   trackReadyEntityWrite: (writeComplete: Promise<void>) => void;
   markSubscriptionsReady: () => void;
+  reset: () => void;
   cancel: () => void;
 }
 
@@ -199,12 +208,21 @@ const createSyncReadinessController = (): SyncReadinessController => {
 
   let resolveReady!: () => void;
   let rejectReady!: (error: Error) => void;
-  const ready = new Promise<void>((resolve, reject) => {
-    resolveReady = resolve;
-    rejectReady = reject;
-  });
+  let ready: Promise<void>;
 
-  ready.catch(() => undefined);
+  const createReadyPromise = () => {
+    readyEntityUpdateReceived = false;
+    subscriptionsReady = false;
+    pendingReadyEntityWrites = 0;
+    settled = false;
+    ready = new Promise<void>((resolve, reject) => {
+      resolveReady = resolve;
+      rejectReady = reject;
+    });
+    ready.catch(() => undefined);
+  };
+
+  createReadyPromise();
 
   const resolveWhenReadyEntitiesAreApplied = () => {
     if (settled || !readyEntityUpdateReceived || !subscriptionsReady || pendingReadyEntityWrites > 0) {
@@ -216,7 +234,9 @@ const createSyncReadinessController = (): SyncReadinessController => {
   };
 
   return {
-    ready,
+    get ready() {
+      return ready;
+    },
     trackReadyEntityWrite: (writeComplete: Promise<void>) => {
       readyEntityUpdateReceived = true;
       pendingReadyEntityWrites += 1;
@@ -234,6 +254,12 @@ const createSyncReadinessController = (): SyncReadinessController => {
     markSubscriptionsReady: () => {
       subscriptionsReady = true;
       resolveWhenReadyEntitiesAreApplied();
+    },
+    reset: () => {
+      if (!settled) {
+        rejectReady(new Error("syncEntitiesDebounced readiness reset before ready"));
+      }
+      createReadyPromise();
     },
     cancel: () => {
       if (settled) {
@@ -389,6 +415,7 @@ const createMainThreadQueueProcessor = (
 const createWorkerQueueProcessor = (
   applyBatch: (batch: BatchPayload) => void,
   logging: boolean,
+  streamType: NetworkStreamType,
 ): QueueProcessor | null => {
   if (typeof window === "undefined" || typeof Worker === "undefined") {
     return null;
@@ -403,6 +430,12 @@ const createWorkerQueueProcessor = (
         const syncBatch = { upserts: batch.upserts, deletions: batch.deletions };
         applyBatch(syncBatch);
         writeCompletion.resolveBatch(syncBatch);
+        reportToriiQueuePressure({
+          streamType,
+          queueSize: batch.queueSize,
+          batchSize: batch.upserts.length + batch.deletions.length,
+          threshold: TORII_SYNC_WORKER_QUEUE_WARNING_THRESHOLD,
+        });
       },
       onError: (message, error) => {
         console.error("[sync-worker] error", message, error);
@@ -470,8 +503,9 @@ export const syncEntitiesDebounced = async (
     }
   };
 
+  const streamType = options?.streamType ?? "global";
   const queueProcessor =
-    createWorkerQueueProcessor(applyBatch, logging) ?? createMainThreadQueueProcessor(applyBatch, logging);
+    createWorkerQueueProcessor(applyBatch, logging, streamType) ?? createMainThreadQueueProcessor(applyBatch, logging);
   const readiness = createSyncReadinessController();
   const isReadyEntity = options?.isReadyEntity ?? (() => true);
 
@@ -513,14 +547,37 @@ export const syncEntitiesDebounced = async (
 
     readiness.markSubscriptionsReady();
 
-    return {
-      ready: readiness.ready,
+    const canUpdateSubscriptionClause =
+      typeof client.updateEntitySubscription === "function" &&
+      typeof client.updateEventMessageSubscription === "function";
+
+    const subscription: SyncEntitiesSubscription = {
+      get ready() {
+        return readiness.ready;
+      },
       cancel: () => {
         subscriptions.cancel();
         queueProcessor.dispose();
         readiness.cancel();
       },
     };
+
+    if (canUpdateSubscriptionClause) {
+      subscription.updateClause = async (clause: Clause | undefined | null) => {
+        readiness.reset();
+        await updateToriiSubscriptions({
+          updateEntitySubscription: () =>
+            client.updateEntitySubscription(subscriptions.entitySubscription as any, clause),
+          updateEventSubscription: () =>
+            client.updateEventMessageSubscription(subscriptions.eventSubscription as any, clause),
+          subscriptionSetupTimeoutMs: options?.subscriptionSetupTimeoutMs,
+          onSubscriptionSetupTimeout: options?.onSubscriptionSetupTimeout,
+        });
+        readiness.markSubscriptionsReady();
+      };
+    }
+
+    return subscription;
   } catch (error) {
     queueProcessor.dispose();
     throw error;
@@ -564,14 +621,14 @@ export const initialSync = async (
       logging,
       () => useConnectionStore.getState().recordGlobalUpdate(),
       {
+        streamType: "global",
         subscriptionSetupTimeoutMs,
         onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
       },
     );
-    // Handshake succeeded — restart the staleness clock so the monitor
-    // measures "time since last entity *after* the subscription exists",
-    // not time since module load.
-    useConnectionStore.getState().recordGlobalUpdate();
+    // Handshake succeeded; data freshness is recorded separately from
+    // subscription transport freshness so quiet worlds do not look stale.
+    useConnectionStore.getState().recordGlobalHandshake();
   } catch (error) {
     if (error instanceof Error && error.message.includes("Timed out waiting for")) {
       throw new Error(`Timed out connecting to the world stream after ${subscriptionSetupTimeoutMs}ms.`);

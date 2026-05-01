@@ -4,7 +4,7 @@ import { env } from "../../env";
 import { getActiveWorld } from "@/runtime/world";
 import { resolveUserIdentity } from "./wallet-identity";
 
-type NetworkStreamType = "spatial" | "global" | "both";
+export type NetworkStreamType = "spatial" | "global" | "player" | "both";
 type NetworkHealthEvent =
   | "outage_start"
   | "stream_stale"
@@ -14,6 +14,23 @@ type NetworkHealthEvent =
   | "force_retry"
   | "visibility_resume"
   | "online_event";
+type ToriiStreamBreadcrumbEvent =
+  | "bounds_switch_requested"
+  | "subscription_update_attempted"
+  | "subscription_update_succeeded"
+  | "subscription_update_failed"
+  | "fallback_recreate_attempted"
+  | "fallback_recreate_succeeded"
+  | "heartbeat_received"
+  | "queue_batch";
+
+type ToriiSubscriptionLifecycleKind =
+  | "subscription_setup"
+  | "subscription_update"
+  | "fallback_recreate"
+  | "heartbeat"
+  | "readiness";
+type ToriiSubscriptionLifecycleOutcome = "succeeded" | "failed" | "fallback" | "timeout" | "stale";
 
 interface OutageReport {
   streamType: NetworkStreamType;
@@ -27,12 +44,50 @@ interface SetupTimeoutReport {
   requestId?: number | string;
 }
 
+interface ToriiStreamBreadcrumbReport {
+  event: ToriiStreamBreadcrumbEvent;
+  streamType: NetworkStreamType;
+  areaKey?: string;
+  batchSize?: number;
+  durationMs?: number;
+  modelCount?: number;
+  queueSize?: number;
+  requestId?: number | string;
+  signatureHash?: string;
+}
+
+interface ToriiSubscriptionLifecycleReport {
+  streamType: NetworkStreamType;
+  kind: ToriiSubscriptionLifecycleKind;
+  outcome: ToriiSubscriptionLifecycleOutcome;
+  areaKey?: string;
+  durationMs?: number;
+  reason?: string;
+  requestId?: number | string;
+  signatureHash?: string;
+}
+
+interface ToriiReadinessTimeoutReport {
+  streamType: NetworkStreamType;
+  elapsedMs: number;
+  requestId?: number | string;
+  timeoutMs: number;
+}
+
+interface ToriiQueuePressureReport {
+  streamType: NetworkStreamType;
+  batchSize?: number;
+  queueSize: number;
+  threshold: number;
+}
+
 interface NetworkScopeTags {
   toriiBaseUrl?: string | null;
   walletAddress?: string | null;
 }
 
 const DUPLICATE_TTL_MS = 5 * 60 * 1000;
+const MAX_CONTEXT_TEXT_LENGTH = 180;
 const reportedKeys = new Map<string, number>();
 let eventsThisSession = 0;
 let enabledOverride: boolean | null = null;
@@ -51,6 +106,13 @@ const bucketOutageSeconds = (outageMs: number): string => {
   if (seconds < 180) return "1-3m";
   if (seconds < 600) return "3-10m";
   return "10m+";
+};
+
+const bucketQueueSize = (queueSize: number): string => {
+  if (queueSize < 1_000) return "500-999";
+  if (queueSize < 2_000) return "1000-1999";
+  if (queueSize < 5_000) return "2000-4999";
+  return "5000+";
 };
 
 const pruneReportedKeys = (now: number) => {
@@ -80,6 +142,14 @@ const extractHost = (url: string | null | undefined): string | undefined => {
   } catch {
     return undefined;
   }
+};
+
+const sanitizeContextText = (value: string): string => {
+  const redacted = value.replace(/0x[a-fA-F0-9]{16,}/g, "0x[redacted]");
+  if (redacted.length <= MAX_CONTEXT_TEXT_LENGTH) {
+    return redacted;
+  }
+  return `${redacted.slice(0, MAX_CONTEXT_TEXT_LENGTH - 3)}...`;
 };
 
 export const setNetworkHealthScopeTags = async ({ toriiBaseUrl, walletAddress }: NetworkScopeTags): Promise<void> => {
@@ -122,6 +192,39 @@ export const addNetworkBreadcrumb = ({
       ...(streamType ? { stream_type: streamType } : {}),
       ...(status ? { status } : {}),
       ...(typeof ageMs === "number" ? { age_ms: Math.round(ageMs) } : {}),
+    },
+  });
+};
+
+const buildToriiStreamData = ({
+  areaKey,
+  batchSize,
+  durationMs,
+  modelCount,
+  queueSize,
+  requestId,
+  signatureHash,
+}: Omit<ToriiStreamBreadcrumbReport, "event" | "streamType">): Record<string, string | number> => ({
+  ...(typeof requestId !== "undefined" ? { request_id: String(requestId) } : {}),
+  ...(areaKey ? { area_key: areaKey } : {}),
+  ...(typeof durationMs === "number" ? { duration_ms: Math.round(durationMs) } : {}),
+  ...(typeof batchSize === "number" ? { batch_size: batchSize } : {}),
+  ...(typeof modelCount === "number" ? { model_count: modelCount } : {}),
+  ...(typeof queueSize === "number" ? { queue_size: queueSize } : {}),
+  ...(signatureHash ? { signature_hash: signatureHash } : {}),
+});
+
+export const addToriiStreamBreadcrumb = ({ event, streamType, ...data }: ToriiStreamBreadcrumbReport): void => {
+  if (!isEnabled()) return;
+
+  Sentry.addBreadcrumb({
+    category: "torii-stream",
+    type: "default",
+    level: event.includes("failed") ? "warning" : "info",
+    message: `torii-stream:${event}`,
+    data: {
+      stream_type: streamType,
+      ...buildToriiStreamData(data),
     },
   });
 };
@@ -189,6 +292,115 @@ export const reportSubscriptionSetupTimeout = ({ label, timeoutMs, requestId }: 
       },
     },
     fingerprint: ["network-health", "setup-timeout", label],
+  });
+};
+
+export const reportToriiSubscriptionLifecycle = ({
+  streamType,
+  kind,
+  outcome,
+  areaKey,
+  durationMs,
+  reason,
+  requestId,
+  signatureHash,
+}: ToriiSubscriptionLifecycleReport): void => {
+  if (!isEnabled()) return;
+  if (!canEmitMore()) return;
+
+  const dedupeKey = `torii-lifecycle:${streamType}:${kind}:${outcome}:${areaKey ?? "none"}`;
+  if (shouldSkipDuplicate(dedupeKey)) return;
+
+  eventsThisSession += 1;
+
+  const level = outcome === "failed" ? "error" : outcome === "succeeded" ? "info" : "warning";
+  Sentry.captureMessage(`Torii ${kind} ${outcome} (${streamType})`, {
+    level,
+    tags: {
+      feature: "network-health",
+      "network.stream_type": streamType,
+      "network.kind": kind,
+      "network.outcome": outcome,
+    },
+    contexts: {
+      network: {
+        ...(typeof requestId !== "undefined" ? { request_id: String(requestId) } : {}),
+        ...(areaKey ? { area_key: areaKey } : {}),
+        ...(typeof durationMs === "number" ? { duration_ms: Math.round(durationMs) } : {}),
+        ...(reason ? { reason: sanitizeContextText(reason) } : {}),
+        ...(signatureHash ? { signature_hash: signatureHash } : {}),
+      },
+    },
+    fingerprint: ["network-health", "torii", streamType, kind, outcome],
+  });
+};
+
+export const reportToriiReadinessTimeout = ({
+  streamType,
+  elapsedMs,
+  requestId,
+  timeoutMs,
+}: ToriiReadinessTimeoutReport): void => {
+  if (!isEnabled()) return;
+  if (!canEmitMore()) return;
+
+  const dedupeKey = `torii-readiness-timeout:${streamType}`;
+  if (shouldSkipDuplicate(dedupeKey)) return;
+
+  eventsThisSession += 1;
+
+  Sentry.captureMessage(`Torii ${streamType} readiness timed out`, {
+    level: "warning",
+    tags: {
+      feature: "network-health",
+      "network.stream_type": streamType,
+      "network.kind": "readiness_timeout",
+      "network.outcome": "timeout",
+    },
+    contexts: {
+      network: {
+        ...(typeof requestId !== "undefined" ? { request_id: String(requestId) } : {}),
+        elapsed_ms: Math.round(elapsedMs),
+        timeout_ms: timeoutMs,
+      },
+    },
+    fingerprint: ["network-health", "torii", streamType, "readiness-timeout"],
+  });
+};
+
+export const reportToriiQueuePressure = ({
+  streamType,
+  batchSize,
+  queueSize,
+  threshold,
+}: ToriiQueuePressureReport): void => {
+  if (!isEnabled()) return;
+  if (queueSize <= threshold) return;
+  if (!canEmitMore()) return;
+
+  const bucket = bucketQueueSize(queueSize);
+  const dedupeKey = `torii-queue-pressure:${streamType}:${bucket}`;
+  if (shouldSkipDuplicate(dedupeKey)) return;
+
+  eventsThisSession += 1;
+
+  Sentry.captureMessage(`Torii queue pressure (${streamType}, ${bucket})`, {
+    level: "warning",
+    tags: {
+      feature: "network-health",
+      "network.stream_type": streamType,
+      "network.kind": "queue_pressure",
+      "network.outcome": "pressure",
+      "network.queue_bucket": bucket,
+    },
+    contexts: {
+      network: {
+        queue_size: queueSize,
+        threshold,
+        ...(typeof batchSize === "number" ? { batch_size: batchSize } : {}),
+      },
+    },
+    fingerprint: ["network-health", "torii", streamType, "queue-pressure", bucket],
   });
 };
 

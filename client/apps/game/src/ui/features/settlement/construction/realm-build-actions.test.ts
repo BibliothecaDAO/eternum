@@ -10,12 +10,20 @@ import {
 } from "./build-reservation-store";
 import { buildRealmBuilding } from "./realm-build-actions";
 
-const placeBuilding = vi.fn();
-const isHexOccupied = vi.fn();
+const { placeBuilding, isHexOccupied, getBuildingCosts, getBalance, divideByPrecision, getBlockTimestamp, toastError } =
+  vi.hoisted(() => ({
+    placeBuilding: vi.fn(),
+    isHexOccupied: vi.fn(),
+    getBuildingCosts: vi.fn(),
+    getBalance: vi.fn(),
+    divideByPrecision: vi.fn((value: bigint | number) => Number(value)),
+    getBlockTimestamp: vi.fn(() => ({ currentDefaultTick: 123 })),
+    toastError: vi.fn(),
+  }));
 
 vi.mock("sonner", () => ({
   toast: {
-    error: vi.fn(),
+    error: toastError,
   },
 }));
 
@@ -25,6 +33,10 @@ vi.mock("@bibliothecadao/eternum", () => ({
     isHexOccupied,
     placeBuilding,
   })),
+  divideByPrecision,
+  getBlockTimestamp,
+  getBalance,
+  getBuildingCosts,
 }));
 
 describe("buildRealmBuilding", () => {
@@ -33,6 +45,28 @@ describe("buildRealmBuilding", () => {
     clearAllBuildReservationState();
     isHexOccupied.mockReturnValue(false);
     placeBuilding.mockResolvedValue({ transaction_hash: "0x1" });
+    getBuildingCosts.mockReturnValue([{ resource: 1, amount: 10 }]);
+    getBalance.mockReturnValue({ balance: 20n, resourceId: 1 });
+  });
+
+  it("re-checks resource affordability before submitting a build", async () => {
+    getBalance.mockReturnValueOnce({ balance: 5n, resourceId: 1 });
+
+    const result = await buildRealmBuilding({
+      entityId: 101,
+      realmPosition: { x: 20, y: 30 },
+      target: { type: BuildingType.ResourceWheat },
+      useSimpleCost: true,
+      world: {
+        account: {},
+        components: {},
+        systemCalls: {},
+      },
+    });
+
+    expect(result).toBe(false);
+    expect(placeBuilding).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith("Insufficient resources to build.");
   });
 
   it("keeps a successful auto-selected tile reserved until synced state confirms occupancy", async () => {
