@@ -8,19 +8,19 @@
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
   "status": "running",
-  "executionMode": "guided_recovery",
-  "requestedLaunchStep": "create-indexers",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25198067608-1.json",
-  "latestLaunchRequestId": "25198067608-1",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25198580524-1.json",
+  "latestLaunchRequestId": "25198580524-1",
   "currentStepId": null,
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-01T01:55:33.738Z",
+  "updatedAt": "2026-05-01T01:56:48.949Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 25198067608,
+    "workflowRunId": 25198580524,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25198067608",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25198580524",
     "ref": "next",
     "sha": "10fbee21a3ae9f2f7fc9e20eb7b825d76155844b"
   },
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-01T02:10:33.738Z",
-    "lastEvaluatedAt": "2026-05-01T01:55:33.738Z"
+    "nextEvaluationAt": "2026-05-01T02:11:48.949Z",
+    "lastEvaluatedAt": "2026-05-01T01:56:48.949Z"
   },
   "steps": [
     {
@@ -75,18 +75,14 @@
       "title": "Finishing setup",
       "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-05-01T01:36:42.900Z",
-      "finishedAt": "2026-05-01T01:37:02.292Z"
+      "latestEvent": "Finishing setup is complete"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
       "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage is complete",
-      "startedAt": "2026-05-01T01:37:06.515Z",
-      "finishedAt": "2026-05-01T01:37:13.900Z"
+      "latestEvent": "Setting up gas coverage is complete"
     }
   ],
   "summary": {
