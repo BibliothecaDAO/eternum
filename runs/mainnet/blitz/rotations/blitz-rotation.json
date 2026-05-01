@@ -12,9 +12,9 @@
   "requestedLaunchStep": "create-indexers",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25198067608-1.json",
   "latestLaunchRequestId": "25198067608-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-01T01:36:42.900Z",
+  "updatedAt": "2026-05-01T01:37:02.292Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-01T01:51:37.749Z",
-    "lastEvaluatedAt": "2026-05-01T01:36:37.749Z"
+    "nextEvaluationAt": "2026-05-01T01:52:02.292Z",
+    "lastEvaluatedAt": "2026-05-01T01:37:02.292Z"
   },
   "steps": [
     {
@@ -73,10 +73,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-01T01:36:42.900Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-05-01T01:36:42.900Z",
+      "finishedAt": "2026-05-01T01:37:02.292Z"
     },
     {
       "id": "sync-paymaster",
@@ -1986,127 +1987,10 @@
           "fee_amount": "1000000000000000000000"
         },
         "seriesGameNumber": 10,
-        "currentStepId": "create-indexers",
-        "latestEvent": "Unable to verify whether Torii deployment \"apac-gladiator-03-05-26-1100\" already exists. Refusing to create a duplicate while state is indeterminate.",
-        "status": "failed",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "camp-starting-resources",
-            "description": "Set camp starting resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "currentStepId": null,
+        "latestEvent": "Completed create-indexers",
+        "status": "succeeded",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -2139,10 +2023,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "failed",
-            "latestEvent": "Unable to verify whether Torii deployment \"apac-gladiator-03-05-26-1100\" already exists. Refusing to create a duplicate while state is indeterminate.",
-            "updatedAt": "2026-05-01T01:15:41.810Z",
-            "errorMessage": "Unable to verify whether Torii deployment \"apac-gladiator-03-05-26-1100\" already exists. Refusing to create a duplicate while state is indeterminate."
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-05-01T01:37:00.349Z"
           },
           {
             "id": "sync-paymaster",
@@ -2154,7 +2037,23 @@
           "worldAddress": "0x02419fb44f0fe83f2368d17be2bf32ca768045b702abf43eb053dbcd97d34d9b",
           "createGameTxHash": "0x366129f8ff948da3380571c330f362c3240464946a572986f5a4895067faea3",
           "configureTxHash": "0x5621f296649b741fa6e8ca2334280b8f944ab40f064f3ba33d0d4e967e2a955",
-          "worldConfigTxHash": "0x5621f296649b741fa6e8ca2334280b8f944ab40f064f3ba33d0d4e967e2a955"
+          "worldConfigTxHash": "0x5621f296649b741fa6e8ca2334280b8f944ab40f064f3ba33d0d4e967e2a955",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator-03-05-26-1100/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-05-01T01:37:00.348Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "apac-gladiator-03-05-26-1100",
+            "worldAddress": "0x02419fb44f0fe83f2368d17be2bf32ca768045b702abf43eb053dbcd97d34d9b",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       }
     ],
@@ -2165,13 +2064,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25198067608-1",
-    "workflowRunId": 25198067608,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-05-01T01:36:42.900Z",
-    "expiresAt": "2026-05-01T02:21:42.900Z"
   }
 }
